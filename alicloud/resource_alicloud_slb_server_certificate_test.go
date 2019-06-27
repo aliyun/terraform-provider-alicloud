@@ -104,6 +104,12 @@ func TestAccAlicloudSlbServerCertificate_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"server_certificate", "private_key"},
+			},
+			{
 				Config: testAccSlbServerCertificateBasicConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					// the alicloud_certificate_id/alicloud_certificate_name depend on anothor alibaba cloud certificate product.

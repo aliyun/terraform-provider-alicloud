@@ -196,6 +196,12 @@ func TestAccAlicloudRamUser(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+			{
 				Config: testAccRamUserDisplayNameConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

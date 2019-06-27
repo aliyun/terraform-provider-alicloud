@@ -224,6 +224,11 @@ func TestAccAlicloudInstance_vpc(t *testing.T) {
 						"PayByTraffic"),
 				),
 			},
+			{
+				ResourceName:      "alicloud_instance.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }

@@ -178,6 +178,11 @@ func TestAccAlicloudEipBasic_PayByBandwidth(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccCheckEipConfig_bandwidth(rand, "PayByBandwidth"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

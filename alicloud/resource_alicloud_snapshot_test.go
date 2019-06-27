@@ -96,13 +96,14 @@ func testSweepSnapshots(region string) error {
 }
 
 func TestAccAlicloudSnapshot_basic(t *testing.T) {
+	resourceId := "alicloud_snapshot.snapshot"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_snapshot.snapshot",
+		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckSnapshotDestroy,
@@ -117,6 +118,11 @@ func TestAccAlicloudSnapshot_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_snapshot.snapshot", "tags.%", "1"),
 					resource.TestCheckResourceAttr("alicloud_snapshot.snapshot", "tags.version", "1.0"),
 				),
+			},
+			resource.TestStep{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			resource.TestStep{
 				Config: testAccSnapshotConfigUpdate,

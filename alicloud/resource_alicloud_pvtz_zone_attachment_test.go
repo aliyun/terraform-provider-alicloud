@@ -16,11 +16,12 @@ func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
 	var zone pvtz.DescribeZoneInfoResponse
 	var vpc vpc.DescribeVpcAttributeResponse
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_pvtz_zone_attachment.zone-attachment"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: "alicloud_pvtz_zone_attachment.zone-attachment",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccAlicloudPvtzZoneAttachmentDestroy,
 		Steps: []resource.TestStep{
@@ -33,6 +34,11 @@ func TestAccAlicloudPvtzZoneAttachment_update(t *testing.T) {
 					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone_attachment.zone-attachment", "zone_id"),
 					resource.TestCheckResourceAttr("alicloud_pvtz_zone_attachment.zone-attachment", "vpc_ids.#", "1"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccPvtzZoneAttachmentConfigUpdate(rand),

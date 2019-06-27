@@ -130,6 +130,11 @@ func TestAccAlicloudCommonBandwidthPackage_PayByTraffic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccCommonBandwidthPackageName(rand, "PayByTraffic"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -200,6 +205,11 @@ func TestAccAlicloudCommonBandwidthPackage_PayByBandwidth(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccCommonBandwidthPackageName(rand, "PayByBandwidth"),

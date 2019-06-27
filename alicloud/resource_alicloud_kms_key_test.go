@@ -80,11 +80,13 @@ func testSweepKmsKey(region string) error {
 
 func TestAccAlicloudKmsKey_basic(t *testing.T) {
 	var keyBefore kms.KeyMetadata
-
+	resourceId := "alicloud_kms_key.key"
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudKmsKeyDestroy,
+		PreCheck: func() { testAccPreCheck(t) },
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckAlicloudKmsKeyDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudKmsKeyBasic,
@@ -96,6 +98,12 @@ func TestAccAlicloudKmsKey_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_kms_key.key", "deletion_window_in_days", "7"),
 					resource.TestCheckResourceAttrSet("alicloud_kms_key.key", "arn"),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"deletion_window_in_days"},
 			},
 			{
 				Config: testAlicloudKmsKeyUpdate,

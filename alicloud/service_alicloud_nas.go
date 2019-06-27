@@ -1,11 +1,12 @@
 package alicloud
 
 import (
+	"strings"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strings"
-	"time"
 )
 
 type NasService struct {
@@ -21,8 +22,11 @@ func (s *NasService) DescribeNasFileSystem(id string) (fs nas.DescribeFileSystem
 			return nasClient.DescribeFileSystems(request)
 		})
 		if err != nil {
+			if IsExceptedErrors(err, []string{ServiceUnavailable, Throttling}) {
+				return resource.RetryableError(err)
+			}
 			if IsExceptedErrors(err, []string{InvalidFileSystemIDNotFound, ForbiddenNasNotFound}) {
-				return resource.RetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
@@ -34,7 +38,7 @@ func (s *NasService) DescribeNasFileSystem(id string) (fs nas.DescribeFileSystem
 		fs = response.FileSystems.FileSystem[0]
 		return nil
 	})
-	return
+	return fs, WrapError(err)
 }
 
 func (s *NasService) DescribeNasMountTarget(id string) (fs nas.DescribeMountTargetsMountTarget1, err error) {
@@ -48,8 +52,11 @@ func (s *NasService) DescribeNasMountTarget(id string) (fs nas.DescribeMountTarg
 			return nasClient.DescribeMountTargets(request)
 		})
 		if err != nil {
+			if IsExceptedErrors(err, []string{ServiceUnavailable, Throttling}) {
+				return resource.RetryableError(err)
+			}
 			if IsExceptedErrors(err, NasNotFound) {
-				return resource.RetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
@@ -63,7 +70,7 @@ func (s *NasService) DescribeNasMountTarget(id string) (fs nas.DescribeMountTarg
 		}
 		return resource.NonRetryableError(WrapErrorf(Error(GetNotFoundMessage("NasMountTarget", id)), NotFoundMsg, ProviderERROR))
 	})
-	return
+	return fs, WrapError(err)
 }
 
 func (s *NasService) DescribeNasAccessGroup(id string) (ag nas.DescribeAccessGroupsAccessGroup1, err error) {
@@ -77,8 +84,11 @@ func (s *NasService) DescribeNasAccessGroup(id string) (ag nas.DescribeAccessGro
 			return nasClient.DescribeAccessGroups(request)
 		})
 		if err != nil {
+			if IsExceptedErrors(err, []string{ServiceUnavailable, Throttling}) {
+				return resource.RetryableError(err)
+			}
 			if IsExceptedErrors(err, []string{InvalidAccessGroupNotFound, ForbiddenNasNotFound}) {
-				return resource.RetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
@@ -90,7 +100,7 @@ func (s *NasService) DescribeNasAccessGroup(id string) (ag nas.DescribeAccessGro
 		ag = response.AccessGroups.AccessGroup[0]
 		return nil
 	})
-	return
+	return ag, WrapError(err)
 }
 
 func (s *NasService) DescribeNasAccessRule(id string) (fs nas.DescribeAccessRulesAccessRule1, err error) {
@@ -109,8 +119,11 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.DescribeAccessRule
 			return nasClient.DescribeAccessRules(request)
 		})
 		if err != nil {
+			if IsExceptedErrors(err, []string{ServiceUnavailable, Throttling}) {
+				return resource.RetryableError(err)
+			}
 			if IsExceptedErrors(err, []string{InvalidAccessGroupNotFound, ForbiddenNasNotFound}) {
-				return resource.RetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
@@ -124,7 +137,7 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.DescribeAccessRule
 		}
 		return resource.NonRetryableError(WrapErrorf(Error(GetNotFoundMessage("NasAccessRule", id)), NotFoundMsg, ProviderERROR))
 	})
-	return
+	return fs, WrapError(err)
 }
 
 func (s *NasService) WaitForNasMountTarget(id string, status Status, timeout int) error {

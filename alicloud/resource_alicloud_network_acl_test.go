@@ -135,6 +135,11 @@ func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccNetworkAcl_name(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

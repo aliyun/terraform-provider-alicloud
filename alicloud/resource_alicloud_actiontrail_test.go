@@ -129,6 +129,11 @@ func TestAccAlicloudActionTrailUpdate(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testActionTrailUpdateConfig_event_rw(num),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

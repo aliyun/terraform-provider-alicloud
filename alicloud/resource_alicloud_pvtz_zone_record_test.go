@@ -14,12 +14,15 @@ import (
 func TestAccAlicloudPvtzZoneRecord_update(t *testing.T) {
 	var record pvtz.Record
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_pvtz_zone_record.foo"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccAlicloudPvtzZoneRecordDestroy,
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccAlicloudPvtzZoneRecordDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPvtzZoneRecordConfig(rand),
@@ -33,6 +36,10 @@ func TestAccAlicloudPvtzZoneRecord_update(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			}, {
 				Config: testAccPvtzZoneRecordConfigUpdateType(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccAlicloudPvtzZoneRecordExists("alicloud_pvtz_zone_record.foo", &record),

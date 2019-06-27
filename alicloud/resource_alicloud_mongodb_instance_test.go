@@ -160,6 +160,11 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testMongoDBInstance_classic_name,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -257,6 +262,11 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testMongoDBInstance_vpc_name,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -352,6 +362,11 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 						"replication_factor":   "3",
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testMongoDBInstance_multiAZ_name,

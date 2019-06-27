@@ -123,13 +123,14 @@ func testSweepOtsInstances(region string) error {
 func TestAccAlicloudOtsInstanceCapacity_basic(t *testing.T) {
 	var instance ots.InstanceInfo
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_ots_instance.foo"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ots_instance.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsInstanceDestroy,
 		Steps: []resource.TestStep{
@@ -146,6 +147,11 @@ func TestAccAlicloudOtsInstanceCapacity_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 
@@ -154,6 +160,7 @@ func TestAccAlicloudOtsInstanceCapacity_basic(t *testing.T) {
 func TestAccAlicloudOtsInstanceCapacity_updateAccessBy(t *testing.T) {
 	var instance ots.InstanceInfo
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_ots_instance.foo"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
@@ -161,7 +168,7 @@ func TestAccAlicloudOtsInstanceCapacity_updateAccessBy(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ots_instance.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsInstanceDestroy,
 		Steps: []resource.TestStep{
@@ -177,6 +184,11 @@ func TestAccAlicloudOtsInstanceCapacity_updateAccessBy(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccOtsInstanceUpdateAccessBy(string(OtsCapacity), rand),
@@ -199,13 +211,14 @@ func TestAccAlicloudOtsInstanceCapacity_updateAccessBy(t *testing.T) {
 func TestAccAlicloudOtsInstanceCapacity_updateTags(t *testing.T) {
 	var instance ots.InstanceInfo
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_ots_instance.foo"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ots_instance.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsInstanceDestroy,
 		Steps: []resource.TestStep{
@@ -221,6 +234,11 @@ func TestAccAlicloudOtsInstanceCapacity_updateTags(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccOtsInstanceUpdateTags(string(OtsCapacity), rand),
@@ -243,13 +261,14 @@ func TestAccAlicloudOtsInstanceCapacity_updateTags(t *testing.T) {
 func TestAccAlicloudOtsInstanceCapacity_updateAll(t *testing.T) {
 	var instance ots.InstanceInfo
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_ots_instance.foo"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ots_instance.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsInstanceDestroy,
 		Steps: []resource.TestStep{
@@ -265,6 +284,11 @@ func TestAccAlicloudOtsInstanceCapacity_updateAll(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccOtsInstanceUpdateAll(string(OtsCapacity), rand),
@@ -289,13 +313,14 @@ func TestAccAlicloudOtsInstanceCapacity_updateAll(t *testing.T) {
 func TestAccAlicloudOtsInstanceHighPerformance_basic(t *testing.T) {
 	var instance ots.InstanceInfo
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_ots_instance.foo"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ots_instance.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsInstanceDestroy,
 		Steps: []resource.TestStep{
@@ -312,6 +337,11 @@ func TestAccAlicloudOtsInstanceHighPerformance_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 
@@ -320,13 +350,14 @@ func TestAccAlicloudOtsInstanceHighPerformance_basic(t *testing.T) {
 func TestAccAlicloudOtsInstanceHighPerformance_updateAccessBy(t *testing.T) {
 	var instance ots.InstanceInfo
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_ots_instance.foo"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ots_instance.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsInstanceDestroy,
 		Steps: []resource.TestStep{
@@ -342,6 +373,11 @@ func TestAccAlicloudOtsInstanceHighPerformance_updateAccessBy(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccOtsInstanceUpdateAccessBy(string(OtsHighPerformance), rand),
@@ -364,13 +400,15 @@ func TestAccAlicloudOtsInstanceHighPerformance_updateAccessBy(t *testing.T) {
 func TestAccAlicloudOtsInstanceHighPerformance_updateTags(t *testing.T) {
 	var instance ots.InstanceInfo
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_ots_instance.foo"
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ots_instance.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsInstanceDestroy,
 		Steps: []resource.TestStep{
@@ -386,6 +424,11 @@ func TestAccAlicloudOtsInstanceHighPerformance_updateTags(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccOtsInstanceUpdateTags(string(OtsHighPerformance), rand),
@@ -408,13 +451,15 @@ func TestAccAlicloudOtsInstanceHighPerformance_updateTags(t *testing.T) {
 func TestAccAlicloudOtsInstanceHighPerformance_updateAll(t *testing.T) {
 	var instance ots.InstanceInfo
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_ots_instance.foo"
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ots_instance.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsInstanceDestroy,
 		Steps: []resource.TestStep{
@@ -430,6 +475,11 @@ func TestAccAlicloudOtsInstanceHighPerformance_updateAll(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
 					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccOtsInstanceUpdateAll(string(OtsHighPerformance), rand),

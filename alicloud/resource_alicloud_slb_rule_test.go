@@ -44,6 +44,11 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccSlbRuleBasic_server_group_id,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),

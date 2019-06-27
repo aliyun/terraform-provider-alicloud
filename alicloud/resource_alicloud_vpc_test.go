@@ -182,6 +182,11 @@ func TestAccAlicloudVpcBasic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccCheckVpcConfig_name(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

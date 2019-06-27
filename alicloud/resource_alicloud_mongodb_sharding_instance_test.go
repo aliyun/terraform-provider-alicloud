@@ -158,6 +158,11 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testMongoDBShardingInstance_classic_name,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -265,6 +270,11 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 						"instance_charge_type":      "PostPaid",
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testMongoDBShardingInstance_vpc_name,

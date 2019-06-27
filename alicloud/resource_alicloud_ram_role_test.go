@@ -138,6 +138,12 @@ func TestAccAlicloudRamRole_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+			{
 				Config: testAccRamRoleNameConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{"name": fmt.Sprintf("tf-testAcc%sRamRoleConfig-%d-N", defaultRegionToTest, rand)}),

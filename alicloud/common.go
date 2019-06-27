@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/resource"
 	"io/ioutil"
 	"log"
 	"os"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/resource"
 
 	"gopkg.in/yaml.v2"
 

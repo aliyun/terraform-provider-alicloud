@@ -131,6 +131,11 @@ func TestAccAlicloudEssScheduledTask_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccEssScheduleUpdateScheduledTaskName(EcsInstanceCommonTestCase,
 					time.Now().Add(oneDay).Format("2006-01-02T15:04Z"), rand),
 

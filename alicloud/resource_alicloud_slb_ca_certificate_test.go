@@ -102,6 +102,12 @@ func TestAccAlicloudSlbCACertificate_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"ca_certificate"},
+			},
+			{
 				Config: testAccSlbCACertificateBasicConfigUpdate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

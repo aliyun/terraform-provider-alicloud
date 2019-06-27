@@ -114,12 +114,15 @@ func testSweepPvtzZones(region string) error {
 func TestAccAlicloudPvtzZone_update(t *testing.T) {
 	var zone pvtz.DescribeZoneInfoResponse
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_pvtz_zone.foo"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccAlicloudPvtzZoneDestroy,
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccAlicloudPvtzZoneDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPvtzZoneConfig(rand),
@@ -135,6 +138,11 @@ func TestAccAlicloudPvtzZone_update(t *testing.T) {
 					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "is_ptr"),
 					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "record_count"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccPvtzZoneConfigUpdate(rand),

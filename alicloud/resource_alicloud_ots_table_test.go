@@ -18,13 +18,14 @@ func TestAccAlicloudOtsTableStoreCapatity(t *testing.T) {
 	var table tablestore.DescribeTableResponse
 	var instance ots.InstanceInfo
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_ots_table.basic"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ots_table.basic",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsTableDestroy,
 		Steps: []resource.TestStep{
@@ -42,6 +43,11 @@ func TestAccAlicloudOtsTableStoreCapatity(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
 					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "deviation_cell_version_in_sec", "86400"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -239,13 +245,14 @@ func TestAccAlicloudOtsTableStoreHighPerformance(t *testing.T) {
 	var table tablestore.DescribeTableResponse
 	var instance ots.InstanceInfo
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_ots_table.basic"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
 		},
 
 		// module name
-		IDRefreshName: "alicloud_ots_table.basic",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckOtsTableDestroy,
 		Steps: []resource.TestStep{
@@ -263,6 +270,11 @@ func TestAccAlicloudOtsTableStoreHighPerformance(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "max_version", "1"),
 					resource.TestCheckResourceAttr("alicloud_ots_table.basic", "deviation_cell_version_in_sec", "86400"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

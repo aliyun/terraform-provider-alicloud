@@ -152,6 +152,11 @@ func TestAccAlicloudRouteTableBasic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccRouteTableConfig_name(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
