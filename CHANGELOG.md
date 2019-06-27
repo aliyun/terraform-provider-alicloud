@@ -1,4 +1,33 @@
 ## 1.49.0 (Unreleased)
+
+- **New Date Source:** `alicloud_kvstore_instance_classes` [GH-1315]
+
+IMPROVEMENTS:
+
+- Support attach & detach operation for loadbalancers and dbinstances [GH-1346]
+- update security_group_rule md [GH-1345]
+- Improve mongodb,rds testcase [GH-1339]
+- Deprecate field statement and use field document to replace [GH-1338]
+- Add function BuildStateConf for common timeouts setting [GH-1330]
+- drds_instance resource supports timeouts setting [GH-1329]
+- add support get Ak from config file [GH-1328]
+- Improve api_gateway_vpc use common method. [GH-1323]
+- Organize official documents in alphabetical order [GH-1322]
+- improve snapshot_policy testcase [GH-1313]
+- Improve api_gateway_group use common method [GH-1311]
+- Improve api_gateway_app use common method [GH-1306]
+
+BUG FIXES:
+
+- fix(nas): convert some retrable error to nonretryable [GH-1344]
+- fix mongodb testcase [GH-1341]
+- fix log_store fields cannot be changed [GH-1337]
+- fix(nas): fix error handling [GH-1336]
+- fix db_instance_classes,db_instance_engines [GH-1331]
+- fix sls-logconfig config_name field to name [GH-1326]
+- fix db_instance_engines testcase [GH-1325]
+- fix forward_entries testcase bug [GH-1324]
+
 ## 1.48.0 (June 21, 2019)
 
 - **New Resource:** `alicloud_gpdb_connection` ([#1290](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1290))
