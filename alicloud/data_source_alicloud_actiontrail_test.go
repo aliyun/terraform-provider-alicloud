@@ -65,7 +65,23 @@ variable "name" {
 
 resource "alicloud_ram_role" "default" {
 	  name = "${var.name}"
-	  services = ["actiontrail.aliyuncs.com", "oss.aliyuncs.com"]
+	  document = <<EOF
+			{
+			  "Statement": [
+				{
+				  "Action": "sts:AssumeRole",
+				  "Effect": "Allow",
+				  "Principal": {
+					"Service": [
+					  "actiontrail.aliyuncs.com",
+					  "oss.aliyuncs.com"
+					]
+				  }
+				}
+			  ],
+			  "Version": "1"
+			}
+		  EOF
 	  description = "this is a test"
 	  force = "true"
 }
@@ -76,14 +92,23 @@ resource "alicloud_oss_bucket" "default" {
 
 resource "alicloud_ram_policy" "default" {
 	  name = "${var.name}"
-	  statement = [
-	    {
-	      effect = "Allow"
-	      action = ["*"]
-	      resource = [
-		"acs:oss:*:*:${alicloud_oss_bucket.default.id}",
-		"acs:oss:*:*:${alicloud_oss_bucket.default.id}"]
-	    }]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": [
+				"*"
+			  ],
+			  "Effect": "Allow",
+			  "Resource": [
+				"acs:oss:*:*:${alicloud_oss_bucket.default.id}",
+				"acs:oss:*:*:${alicloud_oss_bucket.default.id}"
+			  ]
+			}
+		  ],
+			"Version": "1"
+		}
+	  EOF
 	  description = "this is a policy test"
 	  force = true
 	}

@@ -74,7 +74,22 @@ resource "alicloud_instance" "foo" {
 }
 resource "alicloud_ram_role" "role" {
   name = "testrole"
-  services = ["ecs.aliyuncs.com"]
+  document = <<EOF
+  {
+    "Statement": [
+      {
+        "Action": "sts:AssumeRole",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": [
+            "ecs.aliyuncs.com"
+          ]
+        }
+      }
+    ],
+    "Version": "1"
+  }
+  EOF
   description = "this is a test"
   force = true
 }

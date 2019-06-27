@@ -16,23 +16,47 @@ Provides a RAM Role attachment resource.
 # Create a RAM Role Policy attachment.
 resource "alicloud_ram_role" "role" {
   name = "roleName"
-  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+  document = <<EOF
+    {
+      "Statement": [
+        {
+          "Action": "sts:AssumeRole",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": [
+              "apigateway.aliyuncs.com", 
+              "ecs.aliyuncs.com"
+            ]
+          }
+        }
+      ],
+      "Version": "1"
+    }
+    EOF
   description = "this is a role test."
   force = true
 }
 
 resource "alicloud_ram_policy" "policy" {
   name = "policyName"
-  statement = [
-    {
-      effect = "Allow"
-      action = [
-        "oss:ListObjects",
-        "oss:GetObject"]
-      resource = [
-        "acs:oss:*:*:mybucket",
-        "acs:oss:*:*:mybucket/*"]
-    }]
+  document = <<EOF
+  {
+    "Statement": [
+      {
+        "Action": [
+          "oss:ListObjects",
+          "oss:GetObject"
+        ],
+        "Effect": "Allow",
+        "Resource": [
+          "acs:oss:*:*:mybucket",
+          "acs:oss:*:*:mybucket/*"
+        ]
+      }
+    ],
+      "Version": "1"
+  }
+  EOF
   description = "this is a policy test"
   force = true
 }

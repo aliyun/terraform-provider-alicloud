@@ -78,13 +78,22 @@ resource "alicloud_ram_role" "role" {
 resource "alicloud_ram_policy" "policy" {
   name = "EcsRamRolePolicyTest"
 
-  statement = [
-    {
-      effect   = "Allow"
-      action   = ["ecs:*"]
-      resource = ["*"]
-    },
-  ]
+  document = <<EOF
+  {
+    "Statement": [
+      {
+        "Action": [
+          "ecs:*"
+        ],
+        "Effect": "Allow",
+        "Resource": [
+          "*"
+        ]
+      }
+    ],
+      "Version": "1"
+  }
+  EOF
 
   description = "New role policy for ECS."
   force       = true

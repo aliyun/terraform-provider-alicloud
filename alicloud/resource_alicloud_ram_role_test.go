@@ -205,7 +205,23 @@ func testAccRamRoleCreateConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_role" "default" {
 	  name = "tf-testAcc%sRamRoleConfig-%d"
-	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "apigateway.aliyuncs.com", 
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
 	  description = "this is a test"
 	  force = true
 	}`, defaultRegionToTest, rand)
@@ -214,7 +230,23 @@ func testAccRamRoleNameConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_role" "default" {
 	  name = "tf-testAcc%sRamRoleConfig-%d-N"
-	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "apigateway.aliyuncs.com", 
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
 	  description = "this is a test"
 	  force = true
 	}`, defaultRegionToTest, rand)
@@ -224,7 +256,23 @@ func testAccRamRoleForceConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_role" "default" {
 	  name = "tf-testAcc%sRamRoleConfig-%d-N"
-	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "apigateway.aliyuncs.com", 
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
 	  description = "this is a test"
 	  force = false
 	}`, defaultRegionToTest, rand)
@@ -233,7 +281,22 @@ func testAccRamRoleDocumentConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_role" "default" {
 	  name = "tf-testAcc%sRamRoleConfig-%d-N"
-	  services = ["apigateway.aliyuncs.com"]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "apigateway.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
 	  description = "this is a test"
 	  force = false
 	}`, defaultRegionToTest, rand)
@@ -243,7 +306,23 @@ func testAccRamRoleMultiConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_role" "default" {
 	  name = "tf-testAccRamRoleConfig-%d-${count.index}"
-	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "apigateway.aliyuncs.com", 
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
 	  description = "this is a test"
 	  force = true
 	  count = 10
@@ -258,36 +337,6 @@ var ramRoleMap = map[string]string{
 	"version":     "1",
 	"force":       "true",
 	"arn":         CHECKSET,
-}
-
-func testAccCheckRamRoleExists(n string, role *ram.Role) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No role ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateGetRoleRequest()
-		request.RoleName = rs.Primary.Attributes["name"]
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.GetRole(request)
-		})
-		log.Printf("[WARN] Role id %#v", rs.Primary.ID)
-
-		if err == nil {
-			response, _ := raw.(*ram.GetRoleResponse)
-			*role = response.Role
-			return nil
-		}
-		return WrapError(err)
-	}
 }
 
 func testAccCheckRamRoleDestroy(s *terraform.State) error {

@@ -11,7 +11,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -124,6 +123,9 @@ func TestAccAlicloudRamGroup_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sRamGroupConfig-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceRamGroupConfigDependence)
+
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -133,33 +135,75 @@ func TestAccAlicloudRamGroup_basic(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRamGroupDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamGroupNameConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"name": fmt.Sprintf("tf-testAcc%sRamGroupConfig-%d", defaultRegionToTest, rand)}),
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
 				),
 			},
 			{
-				Config: testAccRamGroupConmmentsConfig(rand),
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "_u",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"comments": "group comments"}),
+					testAccCheck(map[string]string{
+						"name": name + "_u",
+					}),
 				),
 			},
 			{
-				Config: testAccRamGroupForceConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"comments": "group comments",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"force": "true"}),
+					testAccCheck(map[string]string{
+						"comments": "group comments",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"comments": "group comments update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"comments": "group comments update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"force": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"force": "true",
+					}),
 				),
 			},
 
 			{
-				Config: testAccRamGroupAllConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name":     fmt.Sprintf("tf-testAcc%sRamGroupConfig-%d", defaultRegionToTest, rand),
+					"comments": "group comments",
+					"force":    "false",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":     fmt.Sprintf("tf-testAcc%sRamGroupConfig-all-%d", defaultRegionToTest, rand),
-						"comments": "group comments all",
+						"name":     fmt.Sprintf("tf-testAcc%sRamGroupConfig-%d", defaultRegionToTest, rand),
+						"comments": "group comments",
 						"force":    "false",
 					}),
 				),
@@ -171,7 +215,7 @@ func TestAccAlicloudRamGroup_basic(t *testing.T) {
 func TestAccAlicloudRamGroup_multi(t *testing.T) {
 	var v *ram.GetGroupResponse
 	resourceId := "alicloud_ram_group.default.9"
-	ra := resourceAttrInit(resourceId, nil)
+	ra := resourceAttrInit(resourceId, ramGroupBasicMap)
 	serviceFunc := func() interface{} {
 		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
@@ -179,7 +223,11 @@ func TestAccAlicloudRamGroup_multi(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sRamGroupConfig-%d-9", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceRamGroupConfigDependence)
+
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -188,16 +236,15 @@ func TestAccAlicloudRamGroup_multi(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRamGroupDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamGroupMultiConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name":  fmt.Sprintf("tf-testAcc%sRamGroupConfig-%d-${count.index}", defaultRegionToTest, rand),
+					"count": "10",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":     fmt.Sprintf("tf-testAcc%sRamGroupConfig-%d-9", defaultRegionToTest, rand),
-						"comments": "group comments",
-						"force":    "false",
-					}),
+					testAccCheck(nil),
 				),
 			},
 		},
@@ -209,96 +256,6 @@ var ramGroupBasicMap = map[string]string{
 	"force":    CHECKSET,
 }
 
-func testAccRamGroupNameConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_group" "default" {
-	  name = "tf-testAcc%sRamGroupConfig-%d"
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccRamGroupConmmentsConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_group" "default" {
-	  name = "tf-testAcc%sRamGroupConfig-%d"
-	  comments = "group comments"
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccRamGroupForceConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_group" "default" {
-	  name = "tf-testAcc%sRamGroupConfig-%d"
-	  comments = "group comments"
-	  force=true
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccRamGroupAllConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_group" "default" {
-	  name = "tf-testAcc%sRamGroupConfig-all-%d"
-	  comments = "group comments all"
-	  force=false
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccRamGroupMultiConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_group" "default" {
-	  name = "tf-testAcc%sRamGroupConfig-%d-${count.index}"
-	  comments = "group comments"
-	  count=10
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccCheckRamGroupExists(n string, group *ram.Group) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No Group ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateGetGroupRequest()
-		request.GroupName = rs.Primary.ID
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.GetGroup(request)
-		})
-
-		if err == nil {
-			response, _ := raw.(*ram.GetGroupResponse)
-			*group = response.Group
-			return nil
-		}
-		return WrapError(err)
-	}
-}
-
-func testAccCheckRamGroupDestroy(s *terraform.State) error {
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ram_group" {
-			continue
-		}
-
-		// Try to find the group
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateGetGroupRequest()
-		request.GroupName = rs.Primary.ID
-
-		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.GetGroup(request)
-		})
-
-		if err != nil && !RamEntityNotExist(err) {
-			return WrapError(err)
-		}
-	}
-	return nil
+func resourceRamGroupConfigDependence(name string) string {
+	return ""
 }

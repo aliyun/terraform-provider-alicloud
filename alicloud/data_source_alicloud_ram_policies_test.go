@@ -83,16 +83,24 @@ func testAccCheckAlicloudRamPoliciesDataSourceConfig(rand int, attrMap map[strin
 	}
 	resource "alicloud_ram_policy" "default" {
 	  name = "${var.name}"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/*"]
-	    }]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": [
+				"oss:ListObjects",
+				"oss:ListObjects"
+			  ],
+			  "Effect": "Deny",
+			  "Resource": [
+				"acs:oss:*:*:mybucket",
+				"acs:oss:*:*:mybucket/*"
+			  ]
+			}
+		  ],
+			"Version": "1"
+		}
+	  EOF
 	  description = "this is a policy test"
 	  force = true
 	}
@@ -104,7 +112,23 @@ func testAccCheckAlicloudRamPoliciesDataSourceConfig(rand int, attrMap map[strin
 	}
 	resource "alicloud_ram_role" "default" {
 	  name = "${var.name}"
-	  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "apigateway.aliyuncs.com", 
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
 	  description = "this is a test"
 	  force = true
 	}

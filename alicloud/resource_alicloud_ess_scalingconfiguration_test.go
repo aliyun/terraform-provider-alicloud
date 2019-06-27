@@ -337,7 +337,22 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 
 	resource "alicloud_ram_role" "default" {
 	  name = "${var.name}"
-	  services = ["ecs.aliyuncs.com"]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
 	  description = "this is a test"
 	  force = true
 	}

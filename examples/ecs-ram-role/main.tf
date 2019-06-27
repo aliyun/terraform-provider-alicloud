@@ -128,7 +128,22 @@ resource "alicloud_key_pair_attchment" "default" {
 // RAM Role for the module
 resource "alicloud_ram_role" "role" {
   name     = "${var.ram_role_name}"
-  services = "${var.ram_role_services}"
+  document = <<EOF
+    {
+      "Statement": [
+        {
+          "Action": "sts:AssumeRole",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": [
+              "ecs.aliyuncs.com"
+            ]
+          }
+        }
+      ],
+      "Version": "1"
+    }
+  EOF
   force    = "${var.ram_role_terminate_force}"
 }
 

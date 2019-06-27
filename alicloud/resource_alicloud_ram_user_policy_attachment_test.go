@@ -60,16 +60,24 @@ func testAccRamUserPolicyAttachmentConfig(rand int) string {
 	}
 	resource "alicloud_ram_policy" "default" {
 	  name = "${var.name}"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/*"]
-	    }]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": [
+				"oss:ListObjects",
+				"oss:ListObjects"
+			  ],
+			  "Effect": "Deny",
+			  "Resource": [
+				"acs:oss:*:*:mybucket",
+				"acs:oss:*:*:mybucket/*"
+			  ]
+			}
+		  ],
+			"Version": "1"
+		}
+	  EOF
 	  description = "this is a policy test"
 	  force = true
 	}
