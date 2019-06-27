@@ -2,10 +2,13 @@ package alicloud
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/hashcode"
@@ -77,6 +80,16 @@ func Provider() terraform.ResourceProvider {
 				Deprecated: "Field 'fc' has been deprecated from provider version 1.28.0. New field 'fc' which in nested endpoints instead.",
 			},
 			"endpoints": endpointsSchema(),
+			"shared_credentials_file": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: descriptions["shared_credentials_file"],
+			},
+			"profile": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: descriptions["profile"],
+			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 
@@ -325,24 +338,61 @@ func Provider() terraform.ResourceProvider {
 	}
 }
 
+var providerConfig map[string]interface{}
+
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	region, ok := d.GetOk("region")
-	if !ok {
-		if region == "" {
-			region = DEFAULT_REGION
+
+	accessKey := d.Get("access_key").(string)
+	if accessKey == "" {
+		accessKeyId, err := getConfigFromProfile(d, "access_key_id")
+		if err == nil {
+			accessKey = accessKeyId.(string)
 		}
 	}
-	config := connectivity.Config{
-		AccessKey:   strings.TrimSpace(d.Get("access_key").(string)),
-		SecretKey:   strings.TrimSpace(d.Get("secret_key").(string)),
-		EcsRoleName: strings.TrimSpace(d.Get("ecs_role_name").(string)),
-		Region:      connectivity.Region(strings.TrimSpace(region.(string))),
-		RegionId:    strings.TrimSpace(region.(string)),
+
+	secretKey := d.Get("secret_key").(string)
+	if secretKey == "" {
+		accessKeySecret, err := getConfigFromProfile(d, "access_key_secret")
+		if err == nil {
+			secretKey = accessKeySecret.(string)
+		}
 	}
 
-	if token, ok := d.GetOk("security_token"); ok && token.(string) != "" {
-		config.SecurityToken = strings.TrimSpace(token.(string))
+	region := d.Get("region").(string)
+	if region == "" {
+		regionId, err := getConfigFromProfile(d, "region_id")
+		if err == nil {
+			region = regionId.(string)
+		}
 	}
+	if region == "" {
+		region = DEFAULT_REGION
+	}
+
+	ecsRoleName := d.Get("ecs_role_name").(string)
+	if ecsRoleName == "" {
+		ramRoleName, err := getConfigFromProfile(d, "ram_role_name")
+		if err == nil {
+			ecsRoleName = ramRoleName.(string)
+		}
+	}
+
+	config := connectivity.Config{
+		AccessKey:   strings.TrimSpace(accessKey),
+		SecretKey:   strings.TrimSpace(secretKey),
+		EcsRoleName: strings.TrimSpace(ecsRoleName),
+		Region:      connectivity.Region(strings.TrimSpace(region)),
+		RegionId:    strings.TrimSpace(region),
+	}
+
+	token := d.Get("security_token").(string)
+	if token == "" {
+		stsToken, err := getConfigFromProfile(d, "sts_token")
+		if err == nil {
+			token = stsToken.(string)
+		}
+	}
+	config.SecurityToken = strings.TrimSpace(token)
 
 	assumeRoleList := d.Get("assume_role").(*schema.Set).List()
 	if len(assumeRoleList) == 1 {
@@ -354,7 +404,18 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		log.Printf("[INFO] assume_role configuration set: (RamRoleArn: %q, RamRoleSessionName: %q, RamRolePolicy: %q, RamRoleSessionExpiration: %d)",
 			config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration)
 	} else {
-		log.Printf("[INFO] No assume_role block read from configuration")
+		roleArn, err := getConfigFromProfile(d, "ram_role_arn")
+		if err == nil {
+			config.RamRoleArn = roleArn.(string)
+		}
+		sessionName, err := getConfigFromProfile(d, "ram_session_name")
+		if err == nil {
+			config.RamRoleSessionName = sessionName.(string)
+		}
+		sessionExpiration, err := getConfigFromProfile(d, "expired_seconds")
+		if err == nil {
+			config.RamRoleSessionExpiration = (int)(sessionExpiration.(float64))
+		}
 	}
 
 	endpointsSet := d.Get("endpoints").(*schema.Set)
@@ -440,6 +501,10 @@ func init() {
 		"security_token": "security token. A security token is only required if you are using Security Token Service.",
 
 		"account_id": "The account ID for some service API operations. You can retrieve this from the 'Security Settings' section of the Alibaba Cloud console.",
+
+		"profile": "The profile for API operations. If not set, the default profile created with `aliyun configure` will be used.",
+
+		"shared_credentials_file": "The path to the shared credentials file. If not set this defaults to ~/.aliyun/config.json",
 
 		"assume_role_role_arn": "The ARN of a RAM role to assume prior to making API calls.",
 
@@ -806,4 +871,65 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["bssopenapi"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ddoscoo"].(string)))
 	return hashcode.String(buf.String())
+}
+
+func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{}, error) {
+
+	if providerConfig == nil {
+		profilePath := d.Get("shared_credentials_file").(string)
+		if profilePath == "" {
+			profilePath = fmt.Sprintf("%s/.aliyun/config.json", os.Getenv("HOME"))
+			if runtime.GOOS == "windows" {
+				profilePath = fmt.Sprintf("%s/.aliyun/config.json", os.Getenv("USERPROFILE"))
+			}
+		}
+		providerConfig = make(map[string]interface{})
+		_, err := os.Stat(profilePath)
+		if !os.IsNotExist(err) {
+			data, err := ioutil.ReadFile(profilePath)
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			config := map[string]interface{}{}
+			err = json.Unmarshal(data, &config)
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			current := "default"
+			if v, ok := d.GetOk("profile"); ok && v.(string) != "" {
+				current = v.(string)
+			}
+			for _, v := range config["profiles"].([]interface{}) {
+				if current == v.(map[string]interface{})["name"] {
+					providerConfig = v.(map[string]interface{})
+				}
+			}
+		}
+	}
+
+	mode := providerConfig["mode"].(string)
+	switch ProfileKey {
+	case "access_key_id", "access_key_secret":
+		if mode == "EcsRamRole" {
+			return "", nil
+		}
+	case "ram_role_name":
+		if mode != "EcsRamRole" {
+			return "", nil
+		}
+	case "sts_token":
+		if mode != "StsToken" {
+			return "", nil
+		}
+	case "ram_role_arn", "ram_session_name":
+		if mode != "RamRoleArn" {
+			return "", nil
+		}
+	case "expired_seconds":
+		if mode != "RamRoleArn" {
+			return float64(0), nil
+		}
+	}
+
+	return providerConfig[ProfileKey], nil
 }
