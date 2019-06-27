@@ -176,6 +176,8 @@ func testAccRamLoginProfileAllConfig(rand int) string {
 	resource "alicloud_ram_login_profile" "default" {
 	  user_name = "${alicloud_ram_user.default.name}"
 	  password = "Yourpassword_1234"
+	  password_reset_required = "false"
+	  mfa_bind_required = "false"
 	}`, defaultRegionToTest, rand)
 }
 

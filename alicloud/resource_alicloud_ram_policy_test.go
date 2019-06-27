@@ -195,16 +195,24 @@ func testAccRamPolicyCreateConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_policy" "default" {
 	  name = "tf-testAcc%sRamPolicyConfig-%d"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/*"]
-	    }]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": [
+				"oss:ListObjects",
+				"oss:ListObjects"
+			  ],
+			  "Effect": "Deny",
+			  "Resource": [
+				"acs:oss:*:*:mybucket",
+				"acs:oss:*:*:mybucket/*"
+			  ]
+			}
+		  ],
+			"Version": "1"
+		}
+	  EOF
 	  description = "this is a policy test"
 	  force = true
 	}`, defaultRegionToTest, rand)
@@ -214,16 +222,24 @@ func testAccRamPolicyNameConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_policy" "default" {
 	  name = "tf-testAcc%sRamPolicyConfig-%d-N"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/*"]
-	    }]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": [
+				"oss:ListObjects",
+				"oss:ListObjects"
+			  ],
+			  "Effect": "Deny",
+			  "Resource": [
+				"acs:oss:*:*:mybucket",
+				"acs:oss:*:*:mybucket/*"
+			  ]
+			}
+		  ],
+			"Version": "1"
+		}
+	  EOF
 	  description = "this is a policy test"
 	  force = true
 	}`, defaultRegionToTest, rand)
@@ -233,16 +249,24 @@ func testAccRamPolicyDescriptionConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_policy" "default" {
 	  name = "tf-testAcc%sRamPolicyConfig-%d-N"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/*"]
-	    }]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": [
+				"oss:ListObjects",
+				"oss:ListObjects"
+			  ],
+			  "Effect": "Deny",
+			  "Resource": [
+				"acs:oss:*:*:mybucket",
+				"acs:oss:*:*:mybucket/*"
+			  ]
+			}
+		  ],
+			"Version": "1"
+		}
+	  EOF
 	  description = "this is a policy description test"
 	  force = true
 	}`, defaultRegionToTest, rand)
@@ -251,16 +275,24 @@ func testAccRamPolicyStatementConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_policy" "default" {
 	  name = "tf-testAcc%sRamPolicyConfig-%d-N"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/N/*"]
-	    }]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": [
+				"oss:ListObjects",
+				"oss:ListObjects"
+			  ],
+			  "Effect": "Deny",
+			  "Resource": [
+				"acs:oss:*:*:mybucket",
+				"acs:oss:*:*:mybucket/*"
+			  ]
+			}
+		  ],
+			"Version": "1"
+		}
+	  EOF
 	  description = "this is a policy description test"
 	  force = true
 	}`, defaultRegionToTest, rand)
@@ -270,51 +302,28 @@ func testAccRamPolicyMultiConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_policy" "default" {
 	  name = "tf-testAcc%sRamPolicyConfig-%d-${count.index}"
-	  statement = [
-	    {
-	      effect = "Deny"
-	      action = [
-		"oss:ListObjects",
-		"oss:ListObjects"]
-	      resource = [
-		"acs:oss:*:*:mybucket",
-		"acs:oss:*:*:mybucket/*"]
-	    }]
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": [
+				"oss:ListObjects",
+				"oss:ListObjects"
+			  ],
+			  "Effect": "Deny",
+			  "Resource": [
+				"acs:oss:*:*:mybucket",
+				"acs:oss:*:*:mybucket/*"
+			  ]
+			}
+		  ],
+			"Version": "1"
+		}
+	  EOF
 	  description = "this is a policy test"
 	  force = true
 	  count = 10
 	}`, defaultRegionToTest, rand)
-}
-
-func testAccCheckRamPolicyExists(n string, policy *ram.Policy) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No Policy ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateGetPolicyRequest()
-		request.PolicyName = rs.Primary.ID
-		request.PolicyType = "Custom"
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.GetPolicy(request)
-		})
-		log.Printf("[WARN] Policy id %#v", rs.Primary.ID)
-
-		if err == nil {
-			response, _ := raw.(*ram.GetPolicyResponse)
-			*policy = response.Policy
-			return nil
-		}
-		return WrapError(err)
-	}
 }
 
 func testAccCheckRamPolicyDestroy(s *terraform.State) error {

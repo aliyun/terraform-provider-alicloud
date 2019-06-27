@@ -34,6 +34,7 @@ func resourceAlicloudRamRole() *schema.Resource {
 				},
 				Set:           schema.HashString,
 				ConflictsWith: []string{"document"},
+				Deprecated:    "Field 'ram_users' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
 			},
 			"services": {
 				Type:     schema.TypeSet,
@@ -44,6 +45,7 @@ func resourceAlicloudRamRole() *schema.Resource {
 				},
 				Set:           schema.HashString,
 				ConflictsWith: []string{"document"},
+				Deprecated:    "Field 'services' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
 			},
 			"document": {
 				Type:          schema.TypeString,
@@ -67,6 +69,7 @@ func resourceAlicloudRamRole() *schema.Resource {
 				Default:       "1",
 				ConflictsWith: []string{"document"},
 				ValidateFunc:  validatePolicyDocVersion,
+				Deprecated:    "Field 'version' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
 			},
 			"force": {
 				Type:     schema.TypeBool,

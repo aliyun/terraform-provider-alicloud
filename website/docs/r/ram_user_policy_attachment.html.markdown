@@ -25,16 +25,24 @@ resource "alicloud_ram_user" "user" {
 
 resource "alicloud_ram_policy" "policy" {
   name = "policyName"
-  statement = [
-    {
-      effect = "Allow"
-      action = [
-        "oss:ListObjects",
-        "oss:GetObject"]
-      resource = [
-        "acs:oss:*:*:mybucket",
-        "acs:oss:*:*:mybucket/*"]
-    }]
+  document = <<EOF
+  {
+    "Statement": [
+      {
+        "Action": [
+          "oss:ListObjects",
+          "oss:GetObject"
+        ],
+        "Effect": "Allow",
+        "Resource": [
+          "acs:oss:*:*:mybucket",
+          "acs:oss:*:*:mybucket/*"
+        ]
+      }
+    ],
+      "Version": "1"
+  }
+  EOF
   description = "this is a policy test"
   force = true
 }

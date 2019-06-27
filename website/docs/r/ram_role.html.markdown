@@ -18,7 +18,23 @@ Provides a RAM Role resource.
 # Create a new RAM Role.
 resource "alicloud_ram_role" "role" {
   name = "testrole"
-  services = ["apigateway.aliyuncs.com", "ecs.aliyuncs.com"]
+  document = <<EOF
+  {
+    "Statement": [
+      {
+        "Action": "sts:AssumeRole",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": [
+            "apigateway.aliyuncs.com", 
+            "ecs.aliyuncs.com"
+          ]
+        }
+      }
+    ],
+    "Version": "1"
+  }
+  EOF
   description = "this is a role test."
   force = true
 }
@@ -28,9 +44,9 @@ resource "alicloud_ram_role" "role" {
 The following arguments are supported:
 
 * `name` - (Required, ForceNew) Name of the RAM role. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphens, such as "-", "_", and must not begin with a hyphen.
-* `services` - (Optional, Type: list, Conflicts with `document`) List of services which can assume the RAM role. The format of each item in this list is `${service}.aliyuncs.com` or `${account_id}@${service}.aliyuncs.com`, such as `ecs.aliyuncs.com` and `1234567890000@ots.aliyuncs.com`. The `${service}` can be `ecs`, `log`, `apigateway` and so on, the `${account_id}` refers to someone's Alicloud account id.
-* `ram_users` - (Optional, Type: list, Conflicts with `document`) List of ram users who can assume the RAM role. The format of each item in this list is `acs:ram::${account_id}:root` or `acs:ram::${account_id}:user/${user_name}`, such as `acs:ram::1234567890000:root` and `acs:ram::1234567890001:user/Mary`. The `${user_name}` is the name of a RAM user which must exists in the Alicloud account indicated by the `${account_id}`.
-* `version` - (Optional, Conflicts with `document`) Version of the RAM role policy document. Valid value is `1`. Default value is `1`.
+* `services` - (Deprecated, Optional, Type: list, Conflicts with `document`) (It has been deprecated from version 1.49.0, and use field 'document' to replace.) List of services which can assume the RAM role. The format of each item in this list is `${service}.aliyuncs.com` or `${account_id}@${service}.aliyuncs.com`, such as `ecs.aliyuncs.com` and `1234567890000@ots.aliyuncs.com`. The `${service}` can be `ecs`, `log`, `apigateway` and so on, the `${account_id}` refers to someone's Alicloud account id.
+* `ram_users` - (Deprecated, Optional, Type: list, Conflicts with `document`) (It has been deprecated from version 1.49.0, and use field 'document' to replace.) List of ram users who can assume the RAM role. The format of each item in this list is `acs:ram::${account_id}:root` or `acs:ram::${account_id}:user/${user_name}`, such as `acs:ram::1234567890000:root` and `acs:ram::1234567890001:user/Mary`. The `${user_name}` is the name of a RAM user which must exists in the Alicloud account indicated by the `${account_id}`.
+* `version` - (Deprecated, Optional, Conflicts with `document`) (It has been deprecated from version 1.49.0, and use field 'document' to replace.) Version of the RAM role policy document. Valid value is `1`. Default value is `1`.
 * `document` - (Optional, Conflicts with `services`, `ram_users` and `version`) Authorization strategy of the RAM role. It is required when the `services` and `ram_users` are not specified.
 * `description` - (Optional, Forces new resource) Description of the RAM role. This name can have a string of 1 to 1024 characters.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.

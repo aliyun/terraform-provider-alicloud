@@ -222,12 +222,6 @@ variable "ram_role_ram_users" {
   default     = []
 }
 
-variable "ram_role_services" {
-  description = "The services of assuming RAM role document"
-  type        = "list"
-  default     = ["ecs.aliyuncs.com"]
-}
-
 variable "ram_role_terminate_force" {
   description = "Whether release relationship forcibly when deleting RAM role."
   default     = true

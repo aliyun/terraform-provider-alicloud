@@ -27,9 +27,10 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 				ForceNew: true,
 			},
 			"statement": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'statement' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"effect": {
@@ -84,6 +85,7 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 				Default:       "1",
 				ConflictsWith: []string{"document"},
 				ValidateFunc:  validatePolicyDocVersion,
+				Deprecated:    "Field 'version' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
 			},
 			"force": {
 				Type:     schema.TypeBool,

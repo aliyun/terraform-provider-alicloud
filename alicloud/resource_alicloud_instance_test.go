@@ -2153,19 +2153,43 @@ func testAccCheckInstanceRamRole(common string, rand int) string {
 
 	resource "alicloud_ram_role" "role" {
 		  name = "${var.name}"
-		  services = ["ecs.aliyuncs.com"]
+		  document = <<EOF
+			{
+			  "Statement": [
+				{
+				  "Action": "sts:AssumeRole",
+				  "Effect": "Allow",
+				  "Principal": {
+					"Service": [
+					  "ecs.aliyuncs.com"
+					]
+				  }
+				}
+			  ],
+			  "Version": "1"
+			}
+		  EOF
 		  force = "true"
 	}
 
 	resource "alicloud_ram_policy" "policy" {
 	  name = "${var.name}"
-	  statement = [
+	  document = <<EOF
 		{
-		  effect = "Allow"
-		  action = ["CreateInstance"]
-		  resource = ["*"]
+		  "Statement": [
+			{
+			  "Action": [
+				"CreateInstance"
+			  ],
+			  "Effect": "Allow",
+			  "Resource": [
+				"*"
+			  ]
+			}
+		  ],
+			"Version": "1"
 		}
-	  ]
+	  EOF
 	  force = "true"
 	}
 
