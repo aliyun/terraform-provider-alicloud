@@ -379,3 +379,42 @@ func slbDeleteProtectionSuppressFunc(k, old, new string, d *schema.ResourceData)
 	}
 	return false
 }
+
+func slbRuleStickySessionTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	listenerSync := slbRuleListenerSyncDiffSuppressFunc(k, old, new, d)
+	if session, ok := d.GetOk("sticky_session"); !listenerSync && ok && session.(string) == string(OnFlag) {
+		return false
+	}
+	return true
+}
+
+func slbRuleCookieTimeoutDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	stickSessionTypeDiff := slbRuleStickySessionTypeDiffSuppressFunc(k, old, new, d)
+	if session_type, ok := d.GetOk("sticky_session_type"); !stickSessionTypeDiff && ok && session_type.(string) == string(InsertStickySessionType) {
+		return false
+	}
+	return true
+}
+
+func slbRuleCookieDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	stickSessionTypeDiff := slbRuleStickySessionTypeDiffSuppressFunc(k, old, new, d)
+	if session_type, ok := d.GetOk("sticky_session_type"); !stickSessionTypeDiff && ok && session_type.(string) == string(ServerStickySessionType) {
+		return false
+	}
+	return true
+}
+
+func slbRuleHealthCheckDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	listenerSync := slbRuleListenerSyncDiffSuppressFunc(k, old, new, d)
+	if health, ok := d.GetOk("health_check"); !listenerSync && ok && health.(string) == string(OnFlag) {
+		return false
+	}
+	return true
+}
+
+func slbRuleListenerSyncDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if listenerSync, ok := d.GetOk("listener_sync"); ok && listenerSync.(string) == string(OffFlag) {
+		return false
+	}
+	return true
+}

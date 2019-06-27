@@ -44,6 +44,20 @@ func resourceAliyunSlbRule() *schema.Resource {
 				ForceNew: true,
 				Default:  "tf-slb-rule",
 			},
+
+			"listener_sync": {
+				Type:         schema.TypeString,
+				ValidateFunc: validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				Optional:     true,
+				Default:      string(OnFlag),
+			},
+			"scheduler": {
+				Type:             schema.TypeString,
+				ValidateFunc:     validateSlbListenerScheduler,
+				Optional:         true,
+				Default:          WRRScheduler,
+				DiffSuppressFunc: slbRuleListenerSyncDiffSuppressFunc,
+			},
 			"domain": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -57,6 +71,98 @@ func resourceAliyunSlbRule() *schema.Resource {
 			"server_group_id": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"cookie": {
+				Type:             schema.TypeString,
+				ValidateFunc:     validateSlbListenerCookie,
+				Optional:         true,
+				DiffSuppressFunc: slbRuleCookieDiffSuppressFunc,
+			},
+			"cookie_timeout": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateSlbListenerCookieTimeout,
+				Optional:         true,
+				DiffSuppressFunc: slbRuleCookieTimeoutDiffSuppressFunc,
+			},
+			"health_check": {
+				Type:             schema.TypeString,
+				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				Optional:         true,
+				Default:          OnFlag,
+				DiffSuppressFunc: slbRuleListenerSyncDiffSuppressFunc,
+			},
+			"health_check_http_code": {
+				Type: schema.TypeString,
+				ValidateFunc: validateAllowedSplitStringValue([]string{
+					string(HTTP_2XX), string(HTTP_3XX), string(HTTP_4XX), string(HTTP_5XX)}, ","),
+				Optional:         true,
+				Default:          HTTP_2XX,
+				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
+			},
+			"health_check_interval": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateIntegerInRange(1, 50),
+				Optional:         true,
+				Default:          2,
+				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
+			},
+			"health_check_domain": {
+				Type:             schema.TypeString,
+				ValidateFunc:     validateSlbListenerHealthCheckDomain,
+				Optional:         true,
+				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
+			},
+			"health_check_uri": {
+				Type:             schema.TypeString,
+				ValidateFunc:     validateSlbListenerHealthCheckUri,
+				Optional:         true,
+				Default:          "/",
+				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
+			},
+			"health_check_connect_port": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateSlbListenerHealthCheckConnectPort,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
+			},
+			"health_check_timeout": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateIntegerInRange(1, 300),
+				Optional:         true,
+				Default:          5,
+				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
+			},
+			"healthy_threshold": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateIntegerInRange(1, 10),
+				Optional:         true,
+				Default:          3,
+				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
+			},
+			"unhealthy_threshold": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validateIntegerInRange(1, 10),
+				Optional:         true,
+				Default:          3,
+				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
+			},
+			//http & https
+			"sticky_session": {
+				Type:             schema.TypeString,
+				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				Optional:         true,
+				Default:          OffFlag,
+				DiffSuppressFunc: slbRuleListenerSyncDiffSuppressFunc,
+			},
+			//http & https
+			"sticky_session_type": {
+				Type: schema.TypeString,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(InsertStickySessionType),
+					string(ServerStickySessionType)}),
+				Optional:         true,
+				DiffSuppressFunc: slbRuleStickySessionTypeDiffSuppressFunc,
 			},
 		},
 	}
@@ -113,7 +219,7 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 	response, _ := raw.(*slb.CreateRulesResponse)
 	d.SetId(response.Rules.Rule[0].RuleId)
 
-	return resourceAliyunSlbRuleRead(d, meta)
+	return resourceAliyunSlbRuleUpdate(d, meta)
 }
 
 func resourceAliyunSlbRuleRead(d *schema.ResourceData, meta interface{}) error {
@@ -139,15 +245,86 @@ func resourceAliyunSlbRuleRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("domain", object.Domain)
 	d.Set("url", object.Url)
 	d.Set("server_group_id", object.VServerGroupId)
-
+	d.Set("sticky_session", object.StickySession)
+	d.Set("sticky_session_type", object.StickySessionType)
+	d.Set("unhealthy_threshold", object.UnhealthyThreshold)
+	d.Set("healthy_threshold", object.HealthyThreshold)
+	d.Set("health_check_timeout", object.HealthCheckTimeout)
+	d.Set("health_check_connect_port", object.HealthCheckConnectPort)
+	d.Set("health_check_uri", object.HealthCheckURI)
+	d.Set("health_check", object.HealthCheck)
+	d.Set("health_check_http_code", object.HealthCheckHttpCode)
+	d.Set("health_check_interval", object.HealthCheckInterval)
+	d.Set("scheduler", object.Scheduler)
+	d.Set("listener_sync", object.ListenerSync)
+	d.Set("cookie_timeout", object.CookieTimeout)
+	d.Set("cookie", object.Cookie)
+	d.Set("health_check_domain", object.HealthCheckDomain)
 	return nil
 }
 
 func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+	update := false
+	fullUpdate := false
+	request := slb.CreateSetRuleRequest()
+	request.RuleId = d.Id()
+	if listenerSync, ok := d.GetOk("listener_sync"); ok && listenerSync == string(OffFlag) {
+		if stickySession := d.Get("sticky_session"); stickySession == string(OnFlag) {
+			if _, ok := d.GetOk("sticky_session_type"); !ok {
+				return WrapError(Error(`'sticky_session_type': required field is not set when the sticky_session is 'on'.`))
+			}
+		}
+		if stickySessionType := d.Get("sticky_session_type"); stickySessionType == string(InsertStickySessionType) {
+			if _, ok := d.GetOk("cookie_timeout"); !ok {
+				return WrapError(Error(`'cookie_timeout': required field is not set when the sticky_session_type is 'insert'.`))
+			}
+		}
+		if stickySessionType := d.Get("sticky_session_type"); stickySessionType == string(ServerStickySessionType) {
+			if _, ok := d.GetOk("cookie"); !ok {
+				return WrapError(Error(`'cookie': required field is not set when the sticky_session_type is 'server'.`))
+			}
+		}
+	}
 	if d.HasChange("server_group_id") {
-		request := slb.CreateSetRuleRequest()
-		request.RuleId = d.Id()
 		request.VServerGroupId = d.Get("server_group_id").(string)
+		update = true
+	}
+	fullUpdate = d.HasChange("listener_sync") || d.HasChange("scheduler") || d.HasChange("cookie") || d.HasChange("cookie_timeout") || d.HasChange("health_check") || d.HasChange("health_check_http_code") ||
+		d.HasChange("health_check_interval") || d.HasChange("health_check_domain") || d.HasChange("health_check_uri") || d.HasChange("health_check_connect_port") || d.HasChange("health_check_timeout") ||
+		d.HasChange("healthy_threshold") || d.HasChange("unhealthy_threshold") || d.HasChange("sticky_session") || d.HasChange("sticky_session_type")
+
+	if fullUpdate {
+		if listenerSync, ok := d.GetOk("listener_sync"); ok && listenerSync == string(OffFlag) {
+			request.Scheduler = d.Get("scheduler").(string)
+			request.HealthCheck = d.Get("health_check").(string)
+			request.StickySession = d.Get("sticky_session").(string)
+			if request.HealthCheck == string(OnFlag) {
+				request.HealthCheckTimeout = requests.NewInteger(d.Get("health_check_timeout").(int))
+				request.HealthCheckURI = d.Get("health_check_uri").(string)
+				request.HealthyThreshold = requests.NewInteger(d.Get("healthy_threshold").(int))
+				request.UnhealthyThreshold = requests.NewInteger(d.Get("unhealthy_threshold").(int))
+				request.HealthCheckInterval = requests.NewInteger(d.Get("health_check_interval").(int))
+				request.HealthCheckHttpCode = d.Get("health_check_http_code").(string)
+				if healthCheckDomain, ok := d.GetOk("health_check_domain"); ok {
+					request.HealthCheckDomain = healthCheckDomain.(string)
+				}
+				if healthCheckConnectPort, ok := d.GetOk("health_check_connect_port"); ok {
+					request.HealthCheckConnectPort = requests.NewInteger(healthCheckConnectPort.(int))
+				}
+			}
+			if request.StickySession == string(OnFlag) {
+				request.StickySessionType = d.Get("sticky_session_type").(string)
+				if request.StickySessionType == string(InsertStickySessionType) {
+					request.CookieTimeout = requests.NewInteger(d.Get("cookie_timeout").(int))
+				}
+				if request.StickySessionType == string(ServerStickySessionType) {
+					request.Cookie = d.Get("cookie").(string)
+				}
+			}
+		}
+
+	}
+	if update || fullUpdate {
 		client := meta.(*connectivity.AliyunClient)
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.SetRule(request)
