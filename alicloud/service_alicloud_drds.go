@@ -1,9 +1,7 @@
 package alicloud
 
 import (
-	"fmt"
-
-	"time"
+	"github.com/hashicorp/terraform/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -13,94 +11,44 @@ type DrdsService struct {
 	client *connectivity.AliyunClient
 }
 
-// crate Drdsinstance
-func (s *DrdsService) CreateDrdsInstance(req *drds.CreateDrdsInstanceRequest) (response *drds.CreateDrdsInstanceResponse, err error) {
-
+func (s *DrdsService) DescribeDrdsInstance(id string) (response *drds.DescribeDrdsInstanceResponse, err error) {
+	request := drds.CreateDescribeDrdsInstanceRequest()
+	request.DrdsInstanceId = id
 	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
-		return drdsClient.CreateDrdsInstance(req)
+		return drdsClient.DescribeDrdsInstance(request)
 	})
-	resp, _ := raw.(*drds.CreateDrdsInstanceResponse)
 
 	if err != nil {
-		return resp, fmt.Errorf("createDrdsInstance got an error: %#v", err)
-	}
-
-	return resp, nil
-}
-
-func (s *DrdsService) DescribeDrdsInstance(drdsInstanceId string) (response *drds.DescribeDrdsInstanceResponse, err error) {
-	req := drds.CreateDescribeDrdsInstanceRequest()
-	req.DrdsInstanceId = drdsInstanceId
-	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
-		return drdsClient.DescribeDrdsInstance(req)
-	})
-
-	if err != nil && IsExceptedError(err, InvalidDRDSInstanceIdNotFound) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("Instance", drdsInstanceId))
-	}
-	resp, _ := raw.(*drds.DescribeDrdsInstanceResponse)
-
-	if resp == nil {
-		err = GetNotFoundErrorFromString(GetNotFoundMessage("Instance", drdsInstanceId))
-	}
-	return resp, err
-}
-
-func (s *DrdsService) DescribeDrdsInstances(regionId string) (response *drds.DescribeDrdsInstancesResponse, err error) {
-	req := drds.CreateDescribeDrdsInstancesRequest()
-	req.Type = string(Private)
-	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
-		return drdsClient.DescribeDrdsInstances(req)
-	})
-	resp, _ := raw.(*drds.DescribeDrdsInstancesResponse)
-
-	return resp, err
-
-}
-
-func (s *DrdsService) ModifyDrdsInstanceDescription(request *drds.ModifyDrdsInstanceDescriptionRequest) (response *drds.ModifyDrdsInstanceDescriptionResponse, err error) {
-	req := drds.CreateModifyDrdsInstanceDescriptionRequest()
-	req.DrdsInstanceId = request.DrdsInstanceId
-	req.Description = request.Description
-	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
-		return drdsClient.ModifyDrdsInstanceDescription(req)
-	})
-	resp, _ := raw.(*drds.ModifyDrdsInstanceDescriptionResponse)
-
-	return resp, err
-
-}
-
-func (s *DrdsService) RemoveDrdsInstance(drdsInstanceId string) (response *drds.RemoveDrdsInstanceResponse, err error) {
-	req := drds.CreateRemoveDrdsInstanceRequest()
-	req.DrdsInstanceId = drdsInstanceId
-	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
-		return drdsClient.RemoveDrdsInstance(req)
-	})
-	resp, _ := raw.(*drds.RemoveDrdsInstanceResponse)
-
-	return resp, err
-}
-
-func (s *DrdsService) WaitForDrdsInstance(instanceId string, status string, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
-	for {
-		instance, err := s.DescribeDrdsInstance(instanceId)
-		if err != nil && !NotFoundError(err) {
-			return err
+		if IsExceptedError(err, InvalidDRDSInstanceIdNotFound) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		if instance != nil && instance.Data.Status == status {
-			break
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ = raw.(*drds.DescribeDrdsInstanceResponse)
+	if response.Data.Status == "5" {
+		return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
+}
+
+func (s *DrdsService) DrdsInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeDrdsInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
 		}
 
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("DRDS Instance", instanceId))
+		for _, failState := range failStates {
+			if object.Data.Status == failState {
+				return object, object.Data.Status, WrapError(Error(FailedToReachTargetStatus, object.Data.Status))
+			}
 		}
 
-		timeout = timeout - DefaultIntervalMedium
-		time.Sleep(DefaultIntervalMedium * time.Second)
+		return object, object.Data.Status, nil
 	}
-	return nil
 }

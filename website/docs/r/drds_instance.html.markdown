@@ -54,6 +54,16 @@ The following arguments are supported:
     - `drds.sn1.32c64g` for DRDS instance Extreme Edition;
         - value range : `drds.sn1.32c64g.128c256g`
        
+### Timeouts
+
+-> **NOTE:** Available in 1.49.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the drds instance (until it reaches running status). 
+* `delete` - (Defaults to 10 mins) Used when terminating the drds instance. 
+       
+       
 ## Attributes Reference
 
 The following attributes are exported:
