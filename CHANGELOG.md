@@ -4,6 +4,7 @@
 
 IMPROVEMENTS:
 
+- remove the skipped testcase [GH-1349]
 - Move some import testcase into resource testcase [GH-1348]
 - Support attach & detach operation for loadbalancers and dbinstances [GH-1346]
 - update security_group_rule md [GH-1345]
