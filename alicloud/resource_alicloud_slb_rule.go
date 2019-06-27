@@ -294,6 +294,7 @@ func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error
 		d.HasChange("healthy_threshold") || d.HasChange("unhealthy_threshold") || d.HasChange("sticky_session") || d.HasChange("sticky_session_type")
 
 	if fullUpdate {
+		request.ListenerSync = d.Get("listener_sync").(string)
 		if listenerSync, ok := d.GetOk("listener_sync"); ok && listenerSync == string(OffFlag) {
 			request.Scheduler = d.Get("scheduler").(string)
 			request.HealthCheck = d.Get("health_check").(string)
