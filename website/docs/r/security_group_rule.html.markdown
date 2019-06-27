@@ -57,8 +57,17 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the security group rule
+* `id` - The ID of the security group rule and formates as `security_group_id`:`type`:`ip_protocol`:`port_range`:`nic_type`:`cidr_ip`:`policy`:`priority`.
 * `type` - The type of rule, `ingress` or `egress`
 * `name` - The name of the security group
 * `port_range` - The range of port numbers
 * `ip_protocol` - The protocol of the security group rule
+
+## Import
+
+Security Group can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_security_group_rule.example sg-uf6gt9aqt570nvpgp448:ingress:tcp:1/65535:internet:0.0.0.0/0:accept:1
+
+```
