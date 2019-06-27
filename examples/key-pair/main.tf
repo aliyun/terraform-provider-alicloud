@@ -52,7 +52,7 @@ resource "alicloud_instance" "instance" {
   host_name         = "${var.short_name}-${var.role}-${format(var.count_format, count.index+1)}"
   image_id          = "${var.image_id}"
   instance_type     = "${data.alicloud_instance_types.instance_type.instance_types.0.id}"
-  count             = "${var.count}"
+  count             = "${var.number}"
   availability_zone = "${var.availability_zones}"
   security_groups   = ["${alicloud_security_group.group.*.id}"]
 

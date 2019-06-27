@@ -26,7 +26,7 @@ resource "alicloud_disk" "ecs_disk" {
   availability_zone = "cn-beijing-a"
   size              = "50"
 
-  tags {
+  tags = {
     Name = "TerraformTest-disk"
   }
 }
@@ -40,7 +40,7 @@ resource "alicloud_instance" "ecs_instance" {
   instance_network_type = "classic"
   internet_charge_type  = "PayByBandwidth"
 
-  tags {
+  tags = {
     Name = "TerraformTest-instance"
   }
 }

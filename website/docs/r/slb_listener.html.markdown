@@ -52,7 +52,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -65,16 +65,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+  }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
-    }
-  ]
+   }
 }
 ```
 

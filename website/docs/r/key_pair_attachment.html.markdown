@@ -18,8 +18,8 @@ Basic Usage
 
 ```
 data "alicloud_zones" "default" {
-  "available_disk_category"= "cloud_ssd"
-  "available_resource_creation"= "VSwitch"
+  available_disk_category = "cloud_ssd"
+  available_resource_creation = "VSwitch"
 }
 data "alicloud_instance_types" "type" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"

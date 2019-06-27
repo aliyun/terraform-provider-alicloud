@@ -89,7 +89,7 @@ resource "alicloud_instance" "instances" {
 
   period = "${var.period}"
 
-  tags {
+  tags = {
     created_by   = "${lookup(var.instance_tags, "created_by")}"
     created_from = "${lookup(var.instance_tags, "created_from")}"
   }
@@ -104,7 +104,7 @@ resource "alicloud_disk" "disks" {
   category          = "${var.disk_category}"
   size              = "${var.disk_size}"
 
-  tags {
+  tags = {
     created_by   = "${lookup(var.disk_tags, "created_by")}"
     created_from = "${lookup(var.disk_tags, "created_from")}"
   }
@@ -128,22 +128,7 @@ resource "alicloud_key_pair_attchment" "default" {
 // RAM Role for the module
 resource "alicloud_ram_role" "role" {
   name     = "${var.ram_role_name}"
-  document = <<EOF
-    {
-      "Statement": [
-        {
-          "Action": "sts:AssumeRole",
-          "Effect": "Allow",
-          "Principal": {
-            "Service": [
-              "ecs.aliyuncs.com"
-            ]
-          }
-        }
-      ],
-      "Version": "1"
-    }
-  EOF
+  services = "${var.ram_role_services}"
   force    = "${var.ram_role_terminate_force}"
 }
 
@@ -170,5 +155,5 @@ resource "alicloud_ram_role_policy_attachment" "role-policy" {
 
 resource "alicloud_ram_role_attachment" "attach" {
   role_name    = "${alicloud_ram_role.role.name}"
-  instance_ids = ["${alicloud_instance.instances.*.id}"]
+  instance_ids = "${alicloud_instance.instances.*.id}"
 }

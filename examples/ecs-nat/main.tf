@@ -35,7 +35,7 @@ resource "alicloud_instance" "nat" {
   depends_on = ["alicloud_instance.worker"]
   user_data  = "${data.template_file.shell.rendered}"
 
-  tags {
+  tags = {
     Name = "ecs-nat"
   }
 }
@@ -59,7 +59,7 @@ resource "alicloud_instance" "worker" {
   system_disk_category = "cloud_efficiency"
   password             = "${var.instance_pwd}"
 
-  tags {
+  tags = {
     Name = "ecs-worker"
   }
 }

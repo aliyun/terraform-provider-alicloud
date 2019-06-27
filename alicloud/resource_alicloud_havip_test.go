@@ -87,12 +87,13 @@ import (
 // At present, only white list users can operate HaVip Resource.
 func SkipTestAccAlicloudHaVip_basic(t *testing.T) {
 	var havip vpc.HaVip
+	resourceId := "alicloud_havip.foo"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: "alicloud_havip.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckHaVipDestroy,
 		Steps: []resource.TestStep{
@@ -105,6 +106,11 @@ func SkipTestAccAlicloudHaVip_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_havip.foo", "description", "tf_testAcc_havip"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -189,7 +195,7 @@ resource "alicloud_vpc" "foo" {
 	name = "tf_testAcc_havip"
 }
  data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation = "VSwitch"
 }
  resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"
@@ -210,7 +216,7 @@ resource "alicloud_vpc" "foo" {
 	name = "tf_testAcc_havip"
 }
  data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation = "VSwitch"
 }
  resource "alicloud_vswitch" "foo" {
 	vpc_id = "${alicloud_vpc.foo.id}"

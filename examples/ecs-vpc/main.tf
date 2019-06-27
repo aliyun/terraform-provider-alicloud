@@ -38,7 +38,7 @@ resource "alicloud_instance" "instance" {
   host_name       = "${var.short_name}-${format(var.count_format, count.index+1)}"
   image_id        = "${var.image_id}"
   instance_type   = "${var.ecs_type == ""? data.alicloud_instance_types.default.instance_types.0.id : var.ecs_type}"
-  count           = "${var.count}"
+  count           = "${var.number}"
   security_groups = ["${var.sg_id == "" ? join("", alicloud_security_group.group.*.id) : var.sg_id}"]
   vswitch_id      = "${var.vswitch_id == "" ? join("", alicloud_vswitch.vswitch.*.id) : var.vswitch_id}"
 
@@ -50,7 +50,7 @@ resource "alicloud_instance" "instance" {
   instance_charge_type = "${var.instance_charge_type}"
   system_disk_category = "${var.system_disk_category}"
 
-  tags {
+  tags = {
     role = "${var.role}"
   }
 }

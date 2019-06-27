@@ -32,12 +32,10 @@ resource "alicloud_log_store_index" "example" {
     case_sensitive = true
     token = " #$%^*\r\n\t"
   }
-  field_search = [
-    {
+  field_search {
       name = "terraform"
       enable_analytics = true
     }
-  ]
 }
 ```
 ## Argument Reference

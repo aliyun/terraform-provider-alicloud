@@ -171,12 +171,12 @@ func testAccPvtzZoneAttachmentConfigUpdate(rand int) string {
 
 func testAccPvtzZoneAttachmentConfigMulti(rand int) string {
 	return fmt.Sprintf(`
-	variable "count" {
+	variable "number" {
 		  default = "2"
 	}
 
 	resource "alicloud_vpc" "vpcs" {
-		count = "${var.count}"
+		count = "${var.number}"
 		cidr_block = "172.16.0.0/12"
 		name = "tf-testaccPvtzZoneAttachmentConfigMulti"
 	}
@@ -187,7 +187,7 @@ func testAccPvtzZoneAttachmentConfigMulti(rand int) string {
 
 	resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
 		zone_id = "${alicloud_pvtz_zone.zone.id}"
-		vpc_ids = ["${alicloud_vpc.vpcs.*.id}"]
+		vpc_ids = "${alicloud_vpc.vpcs.*.id}"
 	}
 	`, rand)
 }

@@ -18,7 +18,7 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
 
   service_type = "HTTP"
 
-  http_service_config = {
+  http_service_config {
     address   = "http://apigateway-backend.alicloudapi.com:8080"
     method    = "GET"
     path      = "/web/cloudapi"
@@ -26,16 +26,14 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
     aone_name = "cloudapi-openapi"
   }
 
-  request_parameters = [
-    {
+  request_parameters {
       name         = "aa"
       type         = "STRING"
       required     = "REQUIRED"
       in           = "QUERY"
       in_service   = "QUERY"
       name_service = "testparams"
-    },
-  ]
+    }
 
   stage_names = [
     "RELEASE",

@@ -30,7 +30,7 @@ Static Website
 resource "alicloud_oss_bucket" "bucket-website" {
   bucket = "bucket-170309-website"
 
-  website = {
+  website {
     index_document = "index.html"
     error_document = "error.html"
   }
@@ -145,7 +145,7 @@ resource "alicloud_oss_bucket" "bucket-tags"{
   bucket = "bucket-170309-tags"
   acl = "private"
 
-  tags {
+  tags = {
     key1 = "value1"
     key2 = "value2"
   }

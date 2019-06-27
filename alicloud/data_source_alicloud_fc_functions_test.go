@@ -42,8 +42,8 @@ func TestAccAlicloudFCFunctionsDataSourceUpdate(t *testing.T) {
 			"functions.0.handler":                      "hello.handler",
 			"functions.0.timeout":                      "120",
 			"functions.0.memory_size":                  "512",
-			"functions.0.code_size":                    "105",
-			"functions.0.code_checksum":                "5237022206872530469",
+			"functions.0.code_size":                    "104",
+			"functions.0.code_checksum":                "9215491358437610348",
 			"functions.0.creation_time":                CHECKSET,
 			"functions.0.last_modification_time":       CHECKSET,
 			"functions.0.environment_variables.test":   "terraform",
@@ -103,7 +103,7 @@ resource "alicloud_fc_function" "default" {
 	runtime = "python2.7"
 	handler = "hello.handler"
 	timeout = "120"
-    environment_variables {
+    environment_variables = {
      test = "terraform"
      prefix = "tfAcc"
   }

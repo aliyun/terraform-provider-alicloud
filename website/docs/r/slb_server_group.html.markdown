@@ -60,7 +60,7 @@ resource "alicloud_instance" "instance" {
     instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
     instance_name = "${var.name}"
     count = "2"
-    security_groups = ["${alicloud_security_group.default.*.id}"]
+    security_groups = "${alicloud_security_group.default.*.id}"
     internet_charge_type = "PayByTraffic"
     internet_max_bandwidth_out = "10"
     availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -75,18 +75,16 @@ resource "alicloud_slb" "default" {
 resource "alicloud_slb_server_group" "default" {
     load_balancer_id = "${alicloud_slb.default.id}"
     name = "${var.name}"
-    servers = [
-        {
+    servers {
             server_ids = ["${alicloud_instance.instance.0.id}", "${alicloud_instance.instance.1.id}"]
             port = 100
             weight = 10
-        },
-        {
+    }
+    servers {
             server_ids = ["${alicloud_instance.instance.*.id}"]
             port = 80
             weight = 100
-        }
-    ]
+    }
 }
 ```
 

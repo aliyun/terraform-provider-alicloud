@@ -94,7 +94,7 @@ func TestAccAlicloudEssAlarm_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"alarm_actions": []string{"${alicloud_ess_scaling_rule.default.*.ari}"},
+					"alarm_actions": "${alicloud_ess_scaling_rule.default.*.ari}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

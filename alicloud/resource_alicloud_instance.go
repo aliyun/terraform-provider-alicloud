@@ -1129,13 +1129,24 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 
 	if update {
 		client := meta.(*connectivity.AliyunClient)
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyInstanceVpcAttribute(request)
+		err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.ModifyInstanceVpcAttribute(request)
+			})
+			if err != nil {
+				if IsExceptedErrors(err, []string{"OperationConflict"}) {
+					time.Sleep(1 * time.Second)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw)
+			return nil
 		})
+
 		if err != nil {
 			return update, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
 		ecsService := EcsService{client}
 		if err := ecsService.WaitForVpcAttributesChanged(d.Id(), request.VSwitchId, request.PrivateIpAddress); err != nil {
 			return update, WrapError(err)

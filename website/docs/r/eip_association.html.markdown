@@ -56,7 +56,7 @@ resource "alicloud_instance" "ecs_instance" {
   security_groups       = ["${alicloud_security_group.group.id}"]
   vswitch_id            = "${alicloud_vswitch.vsw.id}"
   instance_name         = "hello"
-  tags {
+  tags = {
     Name = "TerraformTest-instance"
   }
 }

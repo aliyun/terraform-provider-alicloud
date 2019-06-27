@@ -190,7 +190,7 @@ resource "alicloud_instance" "default" {
 
   security_groups = ["${alicloud_security_group.default.id}"]
   instance_name = "${var.name}"
-  tags {
+  tags = {
     Name = "TerraformTest-instance"
   }
 }
@@ -225,7 +225,7 @@ variable "name" {
 	default = "tf-testAccEipAssociation%d"
 }
 
-variable "count" {
+variable "number" {
 		default = "2"
 }
 
@@ -248,7 +248,7 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_instance" "default" {
-  count = "${var.count}"
+  count = "${var.number}"
   vswitch_id = "${alicloud_vswitch.default.id}"
   image_id = "${data.alicloud_images.default.images.0.id}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -257,18 +257,18 @@ resource "alicloud_instance" "default" {
 
   security_groups = ["${alicloud_security_group.default.id}"]
   instance_name = "${var.name}"
-  tags {
+  tags = {
     Name = "TerraformTest-instance"
   }
 }
 
 resource "alicloud_eip" "default" {
-	count = "${var.count}"
+	count = "${var.number}"
 	name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "default" {
-  count = "${var.count}"
+  count = "${var.number}"
   allocation_id = "${element(alicloud_eip.default.*.id,count.index)}"
   instance_id = "${element(alicloud_instance.default.*.id,count.index)}"
 }
@@ -287,7 +287,7 @@ resource "alicloud_vpc" "default" {
 }
 
 data "alicloud_zones" "default" {
-    "available_resource_creation"= "VSwitch"
+    available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vswitch" "default" {

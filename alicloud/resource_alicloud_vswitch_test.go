@@ -276,7 +276,7 @@ func testAccVSwitchConfigBasic(rand int) string {
 	return fmt.Sprintf(
 		`
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 variable "name" {
   default = "tf-testAccVswitchConfig%d"
@@ -299,7 +299,7 @@ func testAccVSwitchConfig_name(rand int) string {
 	return fmt.Sprintf(
 		`
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 variable "name" {
   default = "tf-testAccVswitchConfig%d"
@@ -322,7 +322,7 @@ func testAccVSwitchConfig_description(rand int) string {
 	return fmt.Sprintf(
 		`
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 variable "name" {
   default = "tf-testAccVswitchConfig%d"
@@ -346,7 +346,7 @@ func testAccVSwitchConfig_all(rand int) string {
 	return fmt.Sprintf(
 		`
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 variable "name" {
   default = "tf-testAccVswitchConfig%d"
@@ -369,12 +369,12 @@ resource "alicloud_vswitch" "default" {
 func testAccVSwitchConfigMulti(rand int) string {
 	return fmt.Sprintf(
 		`
-variable "count" {
+variable "number" {
 	default = "3"
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 variable "name" {
   default = "tf-testAccVswitchConfig%d"
@@ -385,7 +385,7 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  count = "${var.count}"
+  count = "${var.number}"
   vpc_id = "${ alicloud_vpc.default.id }"
   cidr_block = "172.16.${count.index}.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"

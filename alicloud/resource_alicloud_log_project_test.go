@@ -69,10 +69,12 @@ func testSweepLogProjects(region string) error {
 func TestAccAlicloudLogProject_basic(t *testing.T) {
 	var project sls.LogProject
 	randInt := acctest.RandInt()
+	resourceId := "alicloud_log_project.foo"
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudLogProjectDestroy,
+		PreCheck:      func() { testAccPreCheck(t) },
+		Providers:     testAccProviders,
+		IDRefreshName: resourceId,
+		CheckDestroy:  testAccCheckAlicloudLogProjectDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccLogProjectBasic(randInt),
@@ -80,6 +82,11 @@ func TestAccAlicloudLogProject_basic(t *testing.T) {
 					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
 					resource.TestCheckResourceAttr("alicloud_log_project.foo", "description", "tf unit test"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccLogProjectUpdate(randInt),

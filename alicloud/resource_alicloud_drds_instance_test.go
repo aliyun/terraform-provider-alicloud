@@ -275,7 +275,7 @@ variable "name" {
 	default = "%s"
 }
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation = "VSwitch"
 }
 
 variable "instance_series" {

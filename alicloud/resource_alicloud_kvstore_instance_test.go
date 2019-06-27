@@ -693,12 +693,10 @@ func testAccKVStoreInstance_classicUpdateParameter(instanceType, instanceClass, 
 		instance_type = "%s"
 		instance_class = "%s"
 		engine_version = "%s"
-		parameters = [
-			{
+		parameters {
 			  name = "maxmemory-policy"
 			  value = "volatile-ttl"
 			}
-		]
 	}
 	`, instanceType, instanceClass, engineVersion)
 }
@@ -719,16 +717,14 @@ func testAccKVStoreInstance_classicAddParameter(instanceType, instanceClass, eng
 		instance_type = "%s"
 		instance_class = "%s"
 		engine_version = "%s"
-		parameters = [
-			{
+		parameters {
 				name = "maxmemory-policy"
 				value = "volatile-ttl"
-			  },
-			  {
+			  }
+		parameters {
 				  name = "slowlog-max-len"
 				  value = "1111"
 			  }
-		]
 	}
 	`, instanceType, instanceClass, engineVersion)
 }
@@ -749,12 +745,10 @@ func testAccKVStoreInstance_classicDeleteParameter(instanceType, instanceClass, 
 		instance_type = "%s"
 		instance_class = "%s"
 		engine_version = "%s"
-		parameters = [
-			{
+		parameters {
 				name = "slowlog-max-len"
 				value = "1111"
 			}
-		]
 	}
 	`, instanceType, instanceClass, engineVersion)
 }
@@ -916,12 +910,10 @@ func testAccKVStoreInstance_vpcUpdateParameter(common, instanceClass, instanceTy
 		vswitch_id     = "${alicloud_vswitch.default.id}"
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.3", "10.0.0.2"]
-		parameters = [
-			{
+		parameters {
 			  name = "maxmemory-policy"
 			  value = "volatile-ttl"
 			}
-		]
 		instance_type = "%s"
 		engine_version = "%s"
 	}
@@ -943,16 +935,14 @@ func testAccKVStoreInstance_vpcAddParameter(common, instanceClass, instanceType,
 		vswitch_id     = "${alicloud_vswitch.default.id}"
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.3", "10.0.0.2"]
-		parameters = [
-			{
+		parameters {
 			  name = "maxmemory-policy"
 			  value = "volatile-ttl"
-			},
-			{
+			}
+        parameters {
 				name = "slowlog-max-len"
 				value = "1111"
 			}
-		]
 		instance_type = "%s"
 		engine_version = "%s"
 	}
@@ -974,12 +964,10 @@ func testAccKVStoreInstance_vpcDeleteParameter(common, instanceClass, instanceTy
 		vswitch_id     = "${alicloud_vswitch.default.id}"
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.3", "10.0.0.2"]
-		parameters = [
-			{
+		parameters {
 				name = "slowlog-max-len"
 				value = "1111"
 			}
-		]
 		instance_type = "%s"
 		engine_version = "%s"
 	}

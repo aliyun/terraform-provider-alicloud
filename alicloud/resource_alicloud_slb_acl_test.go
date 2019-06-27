@@ -207,16 +207,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -231,16 +229,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -255,20 +251,18 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+  entry_list {
 		entry="168.10.10.0/24"
 		comment="second"
-	},
-	{		
+	}
+  entry_list {		
       entry="172.10.10.0/24"
       comment="third"
     }
-  ]
 }
 `
 const testAccSlbAclBasicConfig_mulit = `
@@ -278,22 +272,20 @@ variable "name" {
 variable "ip_version" {
 	default = "ipv4"
 }
-variable "count" {
+variable "number" {
 	default = "10"
 }
 resource "alicloud_slb_acl" "default" {
-	count = "${var.count}"
+	count = "${var.number}"
   name = "${var.name}-${count.index}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `

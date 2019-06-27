@@ -262,7 +262,7 @@ resource "alicloud_security_group" "default" {
   inner_access = true
   name = "${var.name}"
   description = "${var.name}_describe"
-  tags {
+  tags = {
 		foo  = "foo"
         test = "test"
   }
@@ -285,7 +285,7 @@ resource "alicloud_security_group" "default" {
   inner_access = false
   name = "${var.name}"
   description = "${var.name}_describe"
-  tags {
+  tags = {
 		foo  = "foo"
         test = "test"
   }
@@ -309,7 +309,7 @@ resource "alicloud_security_group" "default" {
   inner_access = false
   name = "${var.name}_change"
   description = "${var.name}_describe"
-  tags {
+  tags = {
 		foo  = "foo"
         test = "test"
   }
@@ -333,7 +333,7 @@ resource "alicloud_security_group" "default" {
   inner_access = false
   name = "${var.name}_change"
   description = "${var.name}_describe_change"
-  tags {
+  tags = {
 		foo  = "foo"
         test = "test"
   }
@@ -357,7 +357,7 @@ resource "alicloud_security_group" "default" {
   inner_access = false
   name = "${var.name}_change"
   description = "${var.name}_describe_change"
-  tags {
+  tags = {
 		foo  = "foo"
   }
 }
@@ -380,7 +380,7 @@ resource "alicloud_security_group" "default" {
   inner_access = true
   name = "${var.name}"
   description = "${var.name}_describe"
-  tags {
+  tags = {
 		foo  = "foo"
         test = "test"
   }

@@ -1,33 +1,42 @@
-## 1.49.0 (Unreleased)
-
-- **New Date Source:** `alicloud_kvstore_instance_classes` [GH-1315]
+## 1.50.0 (Unreleased)
 
 IMPROVEMENTS:
 
-- Move some import testcase into resource testcase [GH-1348]
-- Support attach & detach operation for loadbalancers and dbinstances [GH-1346]
-- update security_group_rule md [GH-1345]
-- Improve mongodb,rds testcase [GH-1339]
-- Deprecate field statement and use field document to replace [GH-1338]
-- Add function BuildStateConf for common timeouts setting [GH-1330]
-- drds_instance resource supports timeouts setting [GH-1329]
-- add support get Ak from config file [GH-1328]
-- Improve api_gateway_vpc use common method. [GH-1323]
-- Organize official documents in alphabetical order [GH-1322]
-- improve snapshot_policy testcase [GH-1313]
-- Improve api_gateway_group use common method [GH-1311]
-- Improve api_gateway_app use common method [GH-1306]
+- This is a Terraform 0.12 compatible release of this provider.
+
+## 1.49.0 (June 28, 2019)
+
+- **New Date Source:** `alicloud_kvstore_instance_classes` ([#1315](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1315))
+
+IMPROVEMENTS:
+
+- remove the skipped testcase ([#1349](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1349))
+- Move some import testcase into resource testcase ([#1348](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1348))
+- Support attach & detach operation for loadbalancers and dbinstances ([#1346](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1346))
+- update security_group_rule md ([#1345](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1345))
+- Improve mongodb,rds testcase ([#1339](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1339))
+- Deprecate field statement and use field document to replace ([#1338](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1338))
+- Add function BuildStateConf for common timeouts setting ([#1330](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1330))
+- drds_instance resource supports timeouts setting ([#1329](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1329))
+- add support get Ak from config file ([#1328](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1328))
+- Improve api_gateway_vpc use common method. ([#1323](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1323))
+- Organize official documents in alphabetical order ([#1322](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1322))
+- improve snapshot_policy testcase ([#1313](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1313))
+- Improve api_gateway_group use common method ([#1311](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1311))
+- Improve api_gateway_app use common method ([#1306](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1306))
 
 BUG FIXES:
 
-- fix(nas): convert some retrable error to nonretryable [GH-1344]
-- fix mongodb testcase [GH-1341]
-- fix log_store fields cannot be changed [GH-1337]
-- fix(nas): fix error handling [GH-1336]
-- fix db_instance_classes,db_instance_engines [GH-1331]
-- fix sls-logconfig config_name field to name [GH-1326]
-- fix db_instance_engines testcase [GH-1325]
-- fix forward_entries testcase bug [GH-1324]
+- bugfix: modify ess loadbalancers batch size ([#1352](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1352))
+- fix instance OperationConflict bug ([#1351](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1351))
+- fix(nas): convert some retrable error to nonretryable ([#1344](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1344))
+- fix mongodb testcase ([#1341](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1341))
+- fix log_store fields cannot be changed ([#1337](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1337))
+- fix(nas): fix error handling ([#1336](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1336))
+- fix db_instance_classes,db_instance_engines ([#1331](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1331))
+- fix sls-logconfig config_name field to name ([#1326](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1326))
+- fix db_instance_engines testcase ([#1325](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1325))
+- fix forward_entries testcase bug ([#1324](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1324))
 
 ## 1.48.0 (June 21, 2019)
 

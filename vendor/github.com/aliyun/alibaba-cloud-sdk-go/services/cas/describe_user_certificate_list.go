@@ -82,31 +82,14 @@ type DescribeUserCertificateListRequest struct {
 	Lang        string           `position:"Query" name:"Lang"`
 }
 
-type Certificate struct {
-	Id			int		`json:"id" xml:"id"`
-	Name		string	`json:"name" xml:"name"`
-	Common		string	`json:"common" xml:"common"`
-	Fingerprint string	`json:"fingerprint" xml:"fingerprint"`
-	Issuer		string	`json:"issuer" xml:"issuer"`
-	OrgName		string	`json:"orgName" xml:"orgName"`
-	Province	string	`json:"province" xml:"province"`
-	City		string	`json:"city" xml:"city"`
-	Country		string	`json:"country" xml:"country"`
-	StartDate	string	`json:"startDate" xml:"startDate"`
-	EndDate		string	`json:"endDate" xml:"endDate"`
-	Sans		string	`json:"sans" xml:"sans"`
-	Expired		bool	`json:"expired" xml:"expired"`
-	BuyInAliyun	bool	`json:"buyInAliyun" xml:"buyInAliyun"`
-}
-
 // DescribeUserCertificateListResponse is the response struct for api DescribeUserCertificateList
 type DescribeUserCertificateListResponse struct {
 	*responses.BaseResponse
-	RequestId       string			`json:"RequestId" xml:"RequestId"`
-	TotalCount      int				`json:"TotalCount" xml:"TotalCount"`
-	ShowSize        int				`json:"ShowSize" xml:"ShowSize"`
-	CurrentPage     int				`json:"CurrentPage" xml:"CurrentPage"`
-	CertificateList []Certificate	`json:"CertificateList" xml:"CertificateList"`
+	RequestId       string        `json:"RequestId" xml:"RequestId"`
+	TotalCount      int           `json:"TotalCount" xml:"TotalCount"`
+	ShowSize        int           `json:"ShowSize" xml:"ShowSize"`
+	CurrentPage     int           `json:"CurrentPage" xml:"CurrentPage"`
+	CertificateList []Certificate `json:"CertificateList" xml:"CertificateList"`
 }
 
 // CreateDescribeUserCertificateListRequest creates a request to invoke DescribeUserCertificateList API

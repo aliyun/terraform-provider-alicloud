@@ -27,8 +27,7 @@ resource "alicloud_kvstore_instance" "myredis" {
   vpc_auth_mode  = "Close"
 
   //Refer to https://help.aliyun.com/document_detail/43885.html
-  parameters = [
-    {
+  parameters {
       # {
       #   name = "cluster_compat_enable"
       #   value = "1"
@@ -36,8 +35,7 @@ resource "alicloud_kvstore_instance" "myredis" {
       name = "maxmemory-policy"
 
       value = "volatile-ttl"
-    },
-  ]
+    }
 }
 
 resource "alicloud_kvstore_backup_policy" "redisbackup" {

@@ -74,7 +74,7 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 					if d.Get("type").(string) == string(fc.TRIGGER_TYPE_MNS_TOPIC) {
 						return true
 					}
-					return old == removeSpaceAndEnter(new)
+					return removeSpaceAndEnter(old) == removeSpaceAndEnter(new)
 				},
 				ValidateFunc: validateJsonString,
 			},

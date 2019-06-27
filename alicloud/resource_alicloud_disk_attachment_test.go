@@ -160,7 +160,7 @@ func testAccDiskAttachmentConfig() string {
 	  size = "50"
 	  name = "${var.name}"
 
-	  tags {
+	  tags = {
 	    Name = "TerraformTest-disk"
 	  }
 	}
@@ -189,17 +189,17 @@ func testAccMultiDiskAttachmentConfig(common string) string {
 		default = "tf-testAccEcsDiskAttachmentConfig"
 	}
 
-	variable "count" {
+	variable "number" {
 		default = "2"
 	}
 
 	resource "alicloud_disk" "default" {
 		name = "${var.name}-${count.index}"
-		count = "${var.count}"
+		count = "${var.number}"
 		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 		size = "50"
 
-		tags {
+		tags = {
 			Name = "TerraformTest-disk-${count.index}"
 		}
 	}
@@ -216,7 +216,7 @@ func testAccMultiDiskAttachmentConfig(common string) string {
 	}
 
 	resource "alicloud_disk_attachment" "default" {
-		count = "${var.count}"
+		count = "${var.number}"
 		disk_id     = "${element(alicloud_disk.default.*.id, count.index)}"
 		instance_id = "${alicloud_instance.default.id}"
 	}

@@ -45,63 +45,7 @@ type InterpolationScope struct {
 func (i *Interpolater) Values(
 	scope *InterpolationScope,
 	vars map[string]config.InterpolatedVariable) (map[string]ast.Variable, error) {
-	if scope == nil {
-		scope = &InterpolationScope{}
-	}
-
-	result := make(map[string]ast.Variable, len(vars))
-
-	// Copy the default variables
-	if i.Module != nil && scope != nil {
-		mod := i.Module
-		if len(scope.Path) > 1 {
-			mod = i.Module.Child(scope.Path[1:])
-		}
-		for _, v := range mod.Config().Variables {
-			// Set default variables
-			if v.Default == nil {
-				continue
-			}
-
-			n := fmt.Sprintf("var.%s", v.Name)
-			variable, err := hil.InterfaceToVariable(v.Default)
-			if err != nil {
-				return nil, fmt.Errorf("invalid default map value for %s: %v", v.Name, v.Default)
-			}
-
-			result[n] = variable
-		}
-	}
-
-	for n, rawV := range vars {
-		var err error
-		switch v := rawV.(type) {
-		case *config.CountVariable:
-			err = i.valueCountVar(scope, n, v, result)
-		case *config.ModuleVariable:
-			err = i.valueModuleVar(scope, n, v, result)
-		case *config.PathVariable:
-			err = i.valuePathVar(scope, n, v, result)
-		case *config.ResourceVariable:
-			err = i.valueResourceVar(scope, n, v, result)
-		case *config.SelfVariable:
-			err = i.valueSelfVar(scope, n, v, result)
-		case *config.SimpleVariable:
-			err = i.valueSimpleVar(scope, n, v, result)
-		case *config.TerraformVariable:
-			err = i.valueTerraformVar(scope, n, v, result)
-		case *config.UserVariable:
-			err = i.valueUserVar(scope, n, v, result)
-		default:
-			err = fmt.Errorf("%s: unknown variable type: %T", n, rawV)
-		}
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return result, nil
+	return nil, fmt.Errorf("type Interpolator is no longer supported; use the evaluator API instead")
 }
 
 func (i *Interpolater) valueCountVar(
@@ -140,7 +84,6 @@ func (i *Interpolater) valueModuleVar(
 	n string,
 	v *config.ModuleVariable,
 	result map[string]ast.Variable) error {
-
 	// Build the path to the child module we want
 	path := make([]string, len(scope.Path), len(scope.Path)+1)
 	copy(path, scope.Path)
@@ -152,7 +95,7 @@ func (i *Interpolater) valueModuleVar(
 	defer i.StateLock.RUnlock()
 
 	// Get the module where we're looking for the value
-	mod := i.State.ModuleByPath(path)
+	mod := i.State.ModuleByPath(normalizeModulePath(path))
 	if mod == nil {
 		// If the module doesn't exist, then we can return an empty string.
 		// This happens usually only in Refresh() when we haven't populated
@@ -256,13 +199,13 @@ func (i *Interpolater) valueResourceVar(
 	}
 
 	if variable == nil {
-		// During the input walk we tolerate missing variables because
+		// During the refresh walk we tolerate missing variables because
 		// we haven't yet had a chance to refresh state, so dynamic data may
 		// not yet be complete.
 		// If it truly is missing, we'll catch it on a later walk.
 		// This applies only to graph nodes that interpolate during the
-		// config walk, e.g. providers.
-		if i.Operation == walkInput || i.Operation == walkRefresh {
+		// refresh walk, e.g. providers.
+		if i.Operation == walkRefresh {
 			result[n] = unknownVariable()
 			return nil
 		}
@@ -317,7 +260,6 @@ func (i *Interpolater) valueTerraformVar(
 	n string,
 	v *config.TerraformVariable,
 	result map[string]ast.Variable) error {
-
 	// "env" is supported for backward compatibility, but it's deprecated and
 	// so we won't advertise it as being allowed in the error message. It will
 	// be removed in a future version of Terraform.
@@ -332,6 +274,59 @@ func (i *Interpolater) valueTerraformVar(
 	}
 
 	result[n] = ast.Variable{Type: ast.TypeString, Value: i.Meta.Env}
+	return nil
+}
+
+func (i *Interpolater) valueLocalVar(
+	scope *InterpolationScope,
+	n string,
+	v *config.LocalVariable,
+	result map[string]ast.Variable,
+) error {
+	i.StateLock.RLock()
+	defer i.StateLock.RUnlock()
+
+	modTree := i.Module
+	if len(scope.Path) > 1 {
+		modTree = i.Module.Child(scope.Path[1:])
+	}
+
+	// Get the resource from the configuration so we can verify
+	// that the resource is in the configuration and so we can access
+	// the configuration if we need to.
+	var cl *config.Local
+	for _, l := range modTree.Config().Locals {
+		if l.Name == v.Name {
+			cl = l
+			break
+		}
+	}
+
+	if cl == nil {
+		return fmt.Errorf("%s: no local value of this name has been declared", n)
+	}
+
+	// Get the relevant module
+	module := i.State.ModuleByPath(normalizeModulePath(scope.Path))
+	if module == nil {
+		result[n] = unknownVariable()
+		return nil
+	}
+
+	rawV, exists := module.Locals[v.Name]
+	if !exists {
+		result[n] = unknownVariable()
+		return nil
+	}
+
+	varV, err := hil.InterfaceToVariable(rawV)
+	if err != nil {
+		// Should never happen, since interpolation should always produce
+		// something we can feed back in to interpolation.
+		return fmt.Errorf("%s: %s", n, err)
+	}
+
+	result[n] = varV
 	return nil
 }
 
@@ -465,6 +460,16 @@ func (i *Interpolater) computeResourceVariable(
 		return &v, err
 	}
 
+	// special case for the "id" field which is usually also an attribute
+	if v.Field == "id" && r.Primary.ID != "" {
+		// This is usually pulled from the attributes, but is sometimes missing
+		// during destroy. We can return the ID field in this case.
+		// FIXME: there should only be one ID to rule them all.
+		log.Printf("[WARN] resource %s missing 'id' attribute", v.ResourceId())
+		v, err := hil.InterfaceToVariable(r.Primary.ID)
+		return &v, err
+	}
+
 	// computed list or map attribute
 	_, isList = r.Primary.Attributes[v.Field+".#"]
 	_, isMap = r.Primary.Attributes[v.Field+".%"]
@@ -521,10 +526,7 @@ MISSING:
 	//
 	// For a Destroy, we're also fine with computed values, since our goal is
 	// only to get destroy nodes for existing resources.
-	//
-	// For an input walk, computed values are okay to return because we're only
-	// looking for missing variables to prompt the user for.
-	if i.Operation == walkRefresh || i.Operation == walkPlanDestroy || i.Operation == walkInput {
+	if i.Operation == walkRefresh || i.Operation == walkPlanDestroy {
 		return &unknownVariable, nil
 	}
 
@@ -543,13 +545,6 @@ func (i *Interpolater) computeResourceMultiVariable(
 	defer i.StateLock.RUnlock()
 
 	unknownVariable := unknownVariable()
-
-	// If we're only looking for input, we don't need to expand a
-	// multi-variable. This prevents us from encountering things that should be
-	// known but aren't because the state has yet to be refreshed.
-	if i.Operation == walkInput {
-		return &unknownVariable, nil
-	}
 
 	// Get the information about this resource variable, and verify
 	// that it exists and such.
@@ -602,6 +597,11 @@ func (i *Interpolater) computeResourceMultiVariable(
 			continue
 		}
 
+		if v.Field == "id" && r.Primary.ID != "" {
+			log.Printf("[WARN] resource %s missing 'id' attribute", v.ResourceId())
+			values = append(values, r.Primary.ID)
+		}
+
 		// computed list or map attribute
 		_, isList := r.Primary.Attributes[v.Field+".#"]
 		_, isMap := r.Primary.Attributes[v.Field+".%"]
@@ -627,7 +627,7 @@ func (i *Interpolater) computeResourceMultiVariable(
 		//
 		// For an input walk, computed values are okay to return because we're only
 		// looking for missing variables to prompt the user for.
-		if i.Operation == walkRefresh || i.Operation == walkPlanDestroy || i.Operation == walkDestroy || i.Operation == walkInput {
+		if i.Operation == walkRefresh || i.Operation == walkPlanDestroy || i.Operation == walkDestroy {
 			return &unknownVariable, nil
 		}
 
@@ -646,7 +646,6 @@ func (i *Interpolater) computeResourceMultiVariable(
 func (i *Interpolater) interpolateComplexTypeAttribute(
 	resourceID string,
 	attributes map[string]string) (ast.Variable, error) {
-
 	// We can now distinguish between lists and maps in state by the count field:
 	//    - lists (and by extension, sets) use the traditional .# notation
 	//    - maps use the newer .% notation
@@ -709,7 +708,7 @@ func (i *Interpolater) resourceVariableInfo(
 	}
 
 	// Get the relevant module
-	module := i.State.ModuleByPath(scope.Path)
+	module := i.State.ModuleByPath(normalizeModulePath(scope.Path))
 	return module, cr, nil
 }
 
@@ -722,7 +721,8 @@ func (i *Interpolater) resourceCountMax(
 	// If we're NOT applying, then we assume we can read the count
 	// from the state. Plan and so on may not have any state yet so
 	// we do a full interpolation.
-	if i.Operation != walkApply {
+	// Don't forget walkDestroy, which is a special case of walkApply
+	if !(i.Operation == walkApply || i.Operation == walkDestroy) {
 		if cr == nil {
 			return 0, nil
 		}
@@ -753,7 +753,13 @@ func (i *Interpolater) resourceCountMax(
 	// use "cr.Count()" but that doesn't work if the count is interpolated
 	// and we can't guarantee that so we instead depend on the state.
 	max := -1
-	for k, _ := range ms.Resources {
+	for k, s := range ms.Resources {
+		// This resource may have been just removed, in which case the Primary
+		// may be nil, or just empty.
+		if s == nil || s.Primary == nil || len(s.Primary.Attributes) == 0 {
+			continue
+		}
+
 		// Get the index number for this resource
 		index := ""
 		if k == id {

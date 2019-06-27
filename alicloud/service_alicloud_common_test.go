@@ -442,12 +442,52 @@ func listValue(indentation int, val reflect.Value) string {
 func mapValue(indentation int, val reflect.Value) string {
 	var valList []string
 	for _, keyV := range val.MapKeys() {
+		mapVal := getRealValueType(val.MapIndex(keyV))
+		var line string
+		switch mapVal.Kind() {
+		case reflect.Slice:
+			if mapVal.Len() > 0 {
+				eleVal := getRealValueType(mapVal.Index(0))
+				if eleVal.Kind() == reflect.Map {
+					line = fmt.Sprintf(`%s%s`, addIndentation(indentation),
+						listValueMapChild(indentation+CHILDINDEND, keyV.String(), mapVal))
+				} else {
+					line = fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), keyV.String(),
+						valueConvert(indentation+len(keyV.String())+CHILDINDEND+3, val.MapIndex(keyV)))
+				}
+			} else {
+				return ""
+			}
 
-		line := fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), keyV.String(),
-			valueConvert(indentation+len(keyV.String())+CHILDINDEND+3, val.MapIndex(keyV)))
+		default:
+			line = fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), keyV.String(),
+				valueConvert(indentation+len(keyV.String())+CHILDINDEND+3, val.MapIndex(keyV)))
+		}
+		mapVal.Kind()
+
 		valList = append(valList, line)
 	}
 	return fmt.Sprintf("{\n%s\n%s}", strings.Join(valList, "\n"), addIndentation(indentation))
+}
+
+// deal with list parameter
+func listValueMapChild(indentation int, key string, val reflect.Value) string {
+	var valList []string
+	for i := 0; i < val.Len(); i++ {
+		valList = append(valList, addIndentation(indentation)+key+" "+
+			mapValue(indentation, val.Index(i)))
+	}
+
+	return fmt.Sprintf("%s\n%s", strings.Join(valList, "\n"), addIndentation(indentation))
+}
+
+func getRealValueType(value reflect.Value) reflect.Value {
+	switch value.Kind() {
+	case reflect.Interface:
+		return getRealValueType(reflect.ValueOf(value.Interface()))
+	default:
+		return value
+	}
 }
 
 func addIndentation(indentation int) string {

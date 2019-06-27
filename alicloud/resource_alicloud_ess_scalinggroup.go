@@ -311,7 +311,7 @@ func attachOrDetachLoadbalancers(d *schema.ResourceData, client *connectivity.Al
 	attachLoadbalancerSet := newLoadbalancerSet.Difference(oldLoadbalancerSet)
 	// attach
 	if attachLoadbalancerSet.Len() > 0 {
-		var subLists = partition(attachLoadbalancerSet)
+		var subLists = partition(attachLoadbalancerSet, int(AttachDetachLoadbalancersBatchsize))
 		for _, subList := range subLists {
 			attachLoadbalancersRequest := ess.CreateAttachLoadBalancersRequest()
 			attachLoadbalancersRequest.ScalingGroupId = d.Id()
@@ -328,7 +328,7 @@ func attachOrDetachLoadbalancers(d *schema.ResourceData, client *connectivity.Al
 	}
 	// detach
 	if detachLoadbalancerSet.Len() > 0 {
-		var subLists = partition(detachLoadbalancerSet)
+		var subLists = partition(detachLoadbalancerSet, int(AttachDetachLoadbalancersBatchsize))
 		for _, subList := range subLists {
 			detachLoadbalancersRequest := ess.CreateDetachLoadBalancersRequest()
 			detachLoadbalancersRequest.ScalingGroupId = d.Id()
@@ -351,7 +351,7 @@ func attachOrDetachDbInstances(d *schema.ResourceData, client *connectivity.Aliy
 	attachDbInstanceSet := newDbInstanceIdSet.Difference(oldDbInstanceIdSet)
 	// attach
 	if attachDbInstanceSet.Len() > 0 {
-		var subLists = partition(attachDbInstanceSet)
+		var subLists = partition(attachDbInstanceSet, int(AttachDetachDbinstancesBatchsize))
 		for _, subList := range subLists {
 			attachDbInstancesRequest := ess.CreateAttachDBInstancesRequest()
 			attachDbInstancesRequest.ScalingGroupId = d.Id()
@@ -368,7 +368,7 @@ func attachOrDetachDbInstances(d *schema.ResourceData, client *connectivity.Aliy
 	}
 	// detach
 	if detachDbInstanceSet.Len() > 0 {
-		var subLists = partition(detachDbInstanceSet)
+		var subLists = partition(detachDbInstanceSet, int(AttachDetachDbinstancesBatchsize))
 		for _, subList := range subLists {
 			detachDbInstancesRequest := ess.CreateDetachDBInstancesRequest()
 			detachDbInstancesRequest.ScalingGroupId = d.Id()
@@ -386,9 +386,8 @@ func attachOrDetachDbInstances(d *schema.ResourceData, client *connectivity.Aliy
 	return nil
 }
 
-func partition(instanceIds *schema.Set) [][]string {
+func partition(instanceIds *schema.Set, batchSize int) [][]string {
 	var res [][]string
-	batchSize := 1
 	size := instanceIds.Len()
 	batchCount := int(math.Ceil(float64(size) / float64(batchSize)))
 	idList := expandStringList(instanceIds.List())

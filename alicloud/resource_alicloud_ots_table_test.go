@@ -526,7 +526,7 @@ func testAccOtsTableStore(instanceType string, rand int) string {
 	  description = "${var.name}"
 	  accessed_by = "Any"
 	  instance_type = "%s"
-	  tags {
+	  tags = {
 	    Created = "TF"
 	    For = "acceptance test"
 	  }
@@ -535,7 +535,7 @@ func testAccOtsTableStore(instanceType string, rand int) string {
 	resource "alicloud_ots_table" "basic" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  table_name = "${var.name}"
-	  primary_key = {
+	  primary_key  {
 	    name = "pk1"
 	    type = "Integer"
 	  }
@@ -556,7 +556,7 @@ func testAccOtsTableStoreUpdateMaxVersion(instanceType string, rand int) string 
 	  description = "${var.name}"
 	  accessed_by = "Any"
 	  instance_type = "%s"
-	  tags {
+	  tags = {
 	    Created = "TF"
 	    For = "acceptance test"
 	  }
@@ -565,7 +565,7 @@ func testAccOtsTableStoreUpdateMaxVersion(instanceType string, rand int) string 
 	resource "alicloud_ots_table" "basic" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  table_name = "${var.name}"
-	  primary_key = {
+	  primary_key  {
 	    name = "pk1"
 	    type = "Integer"
 	  }
@@ -584,7 +584,7 @@ func testAccOtsTableStoreUpdateTimeToLive(instanceType string, rand int) string 
 	  description = "${var.name}"
 	  accessed_by = "Any"
 	  instance_type = "%s"
-	  tags {
+	  tags = {
 	    Created = "TF"
 	    For = "acceptance test"
 	  }
@@ -593,7 +593,7 @@ func testAccOtsTableStoreUpdateTimeToLive(instanceType string, rand int) string 
 	resource "alicloud_ots_table" "basic" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  table_name = "${var.name}"
-	  primary_key = {
+	  primary_key  {
 	    name = "pk1"
 	    type = "Integer"
 	  }
@@ -612,7 +612,7 @@ func testAccOtsTableStoreUpdateDeviationCellVersion(instanceType string, rand in
 	  description = "${var.name}"
 	  accessed_by = "Any"
 	  instance_type = "%s"
-	  tags {
+	  tags = {
 	    Created = "TF"
 	    For = "acceptance test"
 	  }
@@ -621,7 +621,7 @@ func testAccOtsTableStoreUpdateDeviationCellVersion(instanceType string, rand in
 	resource "alicloud_ots_table" "basic" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  table_name = "${var.name}"
-	  primary_key = {
+	  primary_key  {
 	    name = "pk1"
 	    type = "Integer"
 	  }
@@ -641,7 +641,7 @@ func testAccOtsTableStoreUpdateAll(instanceType string, rand int) string {
 	  description = "${var.name}"
 	  accessed_by = "Any"
 	  instance_type = "%s"
-	  tags {
+	  tags = {
 	    Created = "TF"
 	    For = "acceptance test"
 	  }
@@ -650,7 +650,7 @@ func testAccOtsTableStoreUpdateAll(instanceType string, rand int) string {
 	resource "alicloud_ots_table" "basic" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  table_name = "${var.name}"
-	  primary_key = {
+	  primary_key  {
 	    name = "pk1"
 	    type = "Integer"
 	  }

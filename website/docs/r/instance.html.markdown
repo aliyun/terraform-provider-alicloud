@@ -34,7 +34,7 @@ resource "alicloud_security_group" "group" {
 resource "alicloud_instance" "instance" {
   # cn-beijing
   availability_zone = "cn-beijing-b"
-  security_groups = ["${alicloud_security_group.group.*.id}"]
+  security_groups = "${alicloud_security_group.group.*.id}"
 
   # series III
   instance_type        = "ecs.n4.large"

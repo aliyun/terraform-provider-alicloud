@@ -973,7 +973,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -986,16 +986,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+  }
+  entry_list {
       entry="168.10.10.0/24"
       comment="second"
-    }
-  ]
+  }
 }
 `, rand)
 }
@@ -1032,7 +1030,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1045,16 +1043,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+  }
+  entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1092,7 +1088,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1105,16 +1101,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+  }
+  entry_list {
       entry="168.10.10.0/24"
       comment="second"
-    }
-  ]
+  }
 }
 `, rand)
 }
@@ -1152,7 +1146,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1165,16 +1159,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+  entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1212,7 +1204,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1225,16 +1217,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1272,7 +1262,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1285,16 +1275,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1332,7 +1320,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1345,16 +1333,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+  entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1392,7 +1378,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1405,16 +1391,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+  entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1452,7 +1436,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1465,16 +1449,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1512,7 +1494,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 9
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1525,16 +1507,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1572,7 +1552,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 9
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1585,16 +1565,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1632,7 +1610,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 9
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1646,16 +1624,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1693,7 +1669,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 9
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1707,16 +1683,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1754,7 +1728,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 9
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1768,16 +1742,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1815,7 +1787,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 9
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1829,16 +1801,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1876,7 +1846,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 9
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1890,16 +1860,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1937,7 +1905,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 9
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -1951,16 +1919,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -1998,7 +1964,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -2011,16 +1977,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }
@@ -2096,7 +2060,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -2112,16 +2076,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2161,7 +2123,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2177,16 +2139,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2227,7 +2187,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2243,16 +2203,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2293,7 +2251,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2309,16 +2267,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2359,7 +2315,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2375,16 +2331,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2426,7 +2380,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2442,16 +2396,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2492,7 +2444,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2508,16 +2460,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2558,7 +2508,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2574,16 +2524,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2624,7 +2572,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2640,16 +2588,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2690,7 +2636,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2706,16 +2652,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2756,7 +2700,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2773,16 +2717,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2823,7 +2765,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2840,16 +2782,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2890,7 +2830,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2907,16 +2847,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -2957,7 +2895,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -2974,16 +2912,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -3024,7 +2960,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 4
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 15
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = false
     retrive_slb_id = false
   }
@@ -3041,16 +2977,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -3061,8 +2995,8 @@ resource "alicloud_slb_server_certificate" "default" {
 
 const testAccSlbListenerTcp_server_group = `
 data "alicloud_zones" "default" {
-  "available_disk_category"= "cloud_efficiency"
-  "available_resource_creation"= "VSwitch"
+  available_disk_category = "cloud_efficiency"
+  available_resource_creation= "VSwitch"
 }
 
 data "alicloud_instance_types" "default" {
@@ -3103,7 +3037,7 @@ resource "alicloud_instance" "default" {
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   instance_name = "${var.name}"
   count = "2"
-  security_groups = ["${alicloud_security_group.default.*.id}"]
+  security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -3120,18 +3054,16 @@ resource "alicloud_slb" "default" {
 resource "alicloud_slb_server_group" "default" {
   load_balancer_id = "${alicloud_slb.default.id}"
   name = "${var.name}"
-  servers = [
-    {
+  servers {
       server_ids = ["${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"]
       port = 100
       weight = 10
-    },
-    {
-      server_ids = ["${alicloud_instance.default.*.id}"]
+    }
+   servers {
+      server_ids = "${alicloud_instance.default.*.id}"
       port = 80
       weight = 100
     }
-  ]
 }
 
 resource "alicloud_slb_listener" "default" {
@@ -3173,7 +3105,6 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx"
-  health_check_timeout = 8
   health_check_connect_port = 20
   health_check_uri = "/console"
   acl_status = "on"
@@ -3190,16 +3121,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3219,7 +3148,6 @@ resource "alicloud_slb_listener" "default" {
   persistence_timeout = 3000
   healthy_threshold = 8
   unhealthy_threshold = 8
-  health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx"
   health_check_timeout = 8
@@ -3239,16 +3167,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3271,7 +3197,6 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx"
-  health_check_timeout = 8
   health_check_connect_port = 20
   health_check_uri = "/console"
   acl_status = "on"
@@ -3288,16 +3213,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3321,7 +3244,6 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx"
   health_check_uri = "/cn"
-  health_check_timeout = 8
   health_check_connect_port = 20
   acl_status = "on"
   acl_type   = "black"
@@ -3337,16 +3259,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3370,7 +3290,6 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   health_check_uri = "/cn"
-  health_check_timeout = 8
   health_check_connect_port = 20
   acl_status = "on"
   acl_type   = "black"
@@ -3386,16 +3305,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3434,16 +3351,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3482,16 +3397,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3530,16 +3443,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3578,16 +3489,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3626,16 +3535,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3674,23 +3581,21 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
 const testAccSlbListenerTcp_server_group_update = `
 data "alicloud_zones" "default" {
-  "available_disk_category"= "cloud_efficiency"
-  "available_resource_creation"= "VSwitch"
+  available_disk_category = "cloud_efficiency"
+  available_resource_creation= "VSwitch"
 }
 
 data "alicloud_instance_types" "default" {
@@ -3731,7 +3636,7 @@ resource "alicloud_instance" "default" {
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   instance_name = "${var.name}"
   count = "2"
-  security_groups = ["${alicloud_security_group.group.*.id}"]
+  security_groups = "${alicloud_security_group.group.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -3748,18 +3653,16 @@ resource "alicloud_slb" "default" {
 resource "alicloud_slb_server_group" "default" {
   load_balancer_id = "${alicloud_slb.default.id}"
   name = "${var.name}"
-  servers = [
-    {
+  servers {
       server_ids = ["${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"]
       port = 100
       weight = 10
-    },
-    {
-      server_ids = ["${alicloud_instance.default.*.id}"]
+    }
+   servers {
+      server_ids = "${alicloud_instance.default.*.id}"
       port = 80
       weight = 100
     }
-  ]
 }
 
 resource "alicloud_slb_listener" "default" {
@@ -3812,16 +3715,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3857,16 +3758,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3902,16 +3801,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3947,16 +3844,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -3992,16 +3887,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -4037,16 +3930,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -4082,16 +3973,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
@@ -4127,22 +4016,20 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `
 
 func testAccSlbListenerHttpConfig_multi(rand int) string {
 	return fmt.Sprintf(`
-variable "count" {
+variable "number" {
   default = 10
 }
 variable "name" {
@@ -4157,7 +4044,7 @@ resource "alicloud_slb" "default" {
   internet = true
 }
 resource "alicloud_slb_listener" "default" {
-  count = "${var.count}"
+  count = "${var.number}"
   load_balancer_id = "${alicloud_slb.default.id}"
   backend_port = "${count.index+1}"
   frontend_port = "${count.index+1}"
@@ -4176,7 +4063,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -4189,16 +4076,14 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+   entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 `, rand)
 }

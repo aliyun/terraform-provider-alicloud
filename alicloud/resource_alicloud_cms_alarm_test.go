@@ -10,7 +10,8 @@ import (
 
 	"os"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"strconv"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -38,38 +39,37 @@ func testSweepCMSAlarms(region string) error {
 		"tf_testAcc",
 	}
 
-	var alarms []cms.AlarmInListAlarm
-	req := cms.CreateListAlarmRequest()
+	var alarms []cms.Alarm
+	req := cms.CreateDescribeMetricRuleListRequest()
 	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
-	req.PageNumber = requests.NewInteger(1)
+	req.PageSize = strconv.Itoa(PageSizeLarge)
+	req.Page = strconv.Itoa(1)
 	for {
 		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.ListAlarm(req)
+			return cmsClient.DescribeMetricRuleList(req)
 		})
 		if err != nil {
 			log.Printf("[ERROR] Error retrieving CMS Alarm: %s", err)
 		}
-		resp, _ := raw.(*cms.ListAlarmResponse)
-		if resp == nil || len(resp.AlarmList.Alarm) < 1 {
+		resp, _ := raw.(*cms.DescribeMetricRuleListResponse)
+		if resp == nil || len(resp.Alarms.Alarm) < 1 {
 			break
 		}
-		alarms = append(alarms, resp.AlarmList.Alarm...)
+		alarms = append(alarms, resp.Alarms.Alarm...)
 
-		if len(resp.AlarmList.Alarm) < PageSizeLarge {
+		if len(resp.Alarms.Alarm) < PageSizeLarge {
 			break
 		}
-
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
-		} else {
-			req.PageNumber = page
+		current, err := strconv.Atoi(req.Page)
+		if err != nil {
+			break
 		}
+		req.Page = strconv.Itoa(current + 1)
 	}
 
 	for _, v := range alarms {
-		name := v.Name
-		id := v.Id
+		name := v.RuleName
+		id := v.RuleId
 		skip := true
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
@@ -77,7 +77,7 @@ func testSweepCMSAlarms(region string) error {
 				break
 			}
 		}
-		if skip && v.State == "INSUFFICIENT_DATA" {
+		if skip && v.AlertState == "INSUFFICIENT_DATA" {
 			skip = false
 		}
 		if skip {
@@ -86,10 +86,10 @@ func testSweepCMSAlarms(region string) error {
 		}
 
 		log.Printf("[INFO] Deleting CMS Alarm: %s (%s). Status: %s", name, id, v.State)
-		req := cms.CreateDeleteAlarmRequest()
-		req.Id = id
+		req := cms.CreateDeleteMetricRulesRequest()
+		req.Id = &[]string{id}
 		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DeleteAlarm(req)
+			return cmsClient.DeleteMetricRules(req)
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete CMS Alarm (%s (%s)): %s", name, id, err)
@@ -101,15 +101,15 @@ func testSweepCMSAlarms(region string) error {
 // At present, the provider does not support creating contact group resource, so you should create manually a contact group
 // by web console and set it by environment variable ALICLOUD_CMS_CONTACT_GROUP before running the following test case.
 func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
-	var alarm cms.AlarmInListAlarm
-
+	var alarm cms.Alarm
+	resourceName := "alicloud_cms_alarm.basic"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithCmsContactGroupSetting(t)
 		},
 
-		IDRefreshName: "alicloud_cms_alarm.basic",
+		IDRefreshName: resourceName,
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCmsAlarmDestroy,
@@ -123,12 +123,18 @@ func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "dimensions.device", "/dev/vda1,/dev/vdb1"),
 				),
 			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dimensions", "start_time", "end_time"},
+			},
 		},
 	})
 }
 
 func TestAccAlicloudCmsAlarm_update(t *testing.T) {
-	var alarm cms.AlarmInListAlarm
+	var alarm cms.Alarm
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -148,6 +154,8 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "name", "tf-testAccCmsAlarm_update"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "operator", "<="),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "triggered_count", "2"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "dimensions.%", "2"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "dimensions.device", "/dev/vda1,/dev/vdb1"),
 					resource.TestMatchResourceAttr("alicloud_cms_alarm.update", "webhook", regexp.MustCompile("^https://[0-9]+.eu-central-1.fc.aliyuncs.com/[0-9-]+/proxy/Terraform/AlarmEndpointMock/$")),
 				),
 			},
@@ -158,6 +166,8 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.update", &alarm),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "operator", "=="),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "triggered_count", "3"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "dimensions.%", "2"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "dimensions.device", "/dev/vda1,/dev/vdb1"),
 					resource.TestMatchResourceAttr("alicloud_cms_alarm.update", "webhook", regexp.MustCompile("^https://[0-9]+.eu-central-1.fc.aliyuncs.com/[0-9-]+/proxy/Terraform/AlarmEndpointMock/updated$")),
 				),
 			},
@@ -166,7 +176,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 }
 
 func TestAccAlicloudCmsAlarm_disable(t *testing.T) {
-	var alarm cms.AlarmInListAlarm
+	var alarm cms.Alarm
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -191,7 +201,7 @@ func TestAccAlicloudCmsAlarm_disable(t *testing.T) {
 	})
 }
 
-func testAccCheckCmsAlarmExists(n string, d *cms.AlarmInListAlarm) resource.TestCheckFunc {
+func testAccCheckCmsAlarmExists(n string, d *cms.Alarm) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		alarm, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -211,7 +221,7 @@ func testAccCheckCmsAlarmExists(n string, d *cms.AlarmInListAlarm) resource.Test
 			return err
 		}
 
-		if attr.Id == "" {
+		if attr.RuleId == "" {
 			return fmt.Errorf("Alarm rule not found")
 		}
 
@@ -238,7 +248,7 @@ func testAccCheckCmsAlarmDestroy(s *terraform.State) error {
 			return err
 		}
 
-		if alarm.Id != "" {
+		if alarm.RuleId != "" {
 			return fmt.Errorf("Error alarm rule %s still exists.", rs.Primary.ID)
 		}
 	}
@@ -262,9 +272,7 @@ func testAccCmsAlarm_basic(group string) string {
 	  threshold = 35
 	  triggered_count = 2
 	  contact_groups = ["%s"]
-	  end_time = 20
-	  start_time = 6
-	  notify_type = 1
+      effective_interval = "06:00-20:00"
 	}
 	`, group)
 }
@@ -288,9 +296,7 @@ resource "alicloud_cms_alarm" "update" {
   threshold = 35
   triggered_count = 2
   contact_groups = ["%s"]
-  end_time = 20
-  start_time = 6
-  notify_type = 1
+  effective_interval = "06:00-20:00"
   webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
 }
 `, group)
@@ -315,9 +321,7 @@ func testAccCmsAlarm_updateAfter(group string) string {
 	  threshold = 35
 	  triggered_count = 3
 	  contact_groups = ["%s"]
-	  end_time = 20
-	  start_time = 6
-	  notify_type = 1
+      effective_interval = "06:00-20:00"
   	  webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/updated"
 	}
 	`, group)
@@ -342,9 +346,7 @@ func testAccCmsAlarm_disable(group string) string {
 	  threshold = 35
 	  triggered_count = 3
 	  contact_groups = ["%s"]
-	  end_time = 20
-	  start_time = 6
-	  notify_type = 1
+      effective_interval = "06:00-20:00"
 	  enabled = false
 	  webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
 	}

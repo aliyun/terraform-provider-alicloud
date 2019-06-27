@@ -290,9 +290,11 @@ func TestAccAlicloudFCServiceVpcUpdate(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name": "${var.name}",
 					"role": "${alicloud_ram_role.default.arn}",
-					"vpc_config": map[string]interface{}{
-						"vswitch_ids":       []string{"${alicloud_vswitch.default.id}"},
-						"security_group_id": "${alicloud_security_group.default.id}",
+					"vpc_config": []map[string]interface{}{
+						{
+							"vswitch_ids":       "${alicloud_vswitch.default.*.id}",
+							"security_group_id": "${alicloud_security_group.default.id}",
+						},
 					},
 					"depends_on": []string{"alicloud_ram_role_policy_attachment.default", "alicloud_ram_role_policy_attachment.default1"},
 				}),

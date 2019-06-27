@@ -4,6 +4,13 @@ const UserId = "userId"
 const ScalingGroup = "scaling_group"
 const GroupId = "groupId"
 
+type BatchSize int
+
+const (
+	AttachDetachLoadbalancersBatchsize = BatchSize(5)
+	AttachDetachDbinstancesBatchsize   = BatchSize(5)
+)
+
 type ComparisonOperator string
 
 const (

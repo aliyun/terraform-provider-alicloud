@@ -17,6 +17,12 @@ func HashString(v interface{}) int {
 	return hashcode.String(v.(string))
 }
 
+// HashInt hashes integers. If you want a Set of integers, this is the
+// SchemaSetFunc you want.
+func HashInt(v interface{}) int {
+	return hashcode.String(strconv.Itoa(v.(int)))
+}
+
 // HashResource hashes complex structures that are described using
 // a *Resource. This is the default set implementation used when a set's
 // element type is a full resource.
@@ -153,6 +159,31 @@ func (s *Set) Equal(raw interface{}) bool {
 	return reflect.DeepEqual(s.m, other.m)
 }
 
+// HashEqual simply checks to the keys the top-level map to the keys in the
+// other set's top-level map to see if they are equal. This obviously assumes
+// you have a properly working hash function - use HashResource if in doubt.
+func (s *Set) HashEqual(raw interface{}) bool {
+	other, ok := raw.(*Set)
+	if !ok {
+		return false
+	}
+
+	ks1 := make([]string, 0)
+	ks2 := make([]string, 0)
+
+	for k := range s.m {
+		ks1 = append(ks1, k)
+	}
+	for k := range other.m {
+		ks2 = append(ks2, k)
+	}
+
+	sort.Strings(ks1)
+	sort.Strings(ks2)
+
+	return reflect.DeepEqual(ks1, ks2)
+}
+
 func (s *Set) GoString() string {
 	return fmt.Sprintf("*Set(%#v)", s.m)
 }
@@ -167,6 +198,16 @@ func (s *Set) add(item interface{}, computed bool) string {
 	code := s.hash(item)
 	if computed {
 		code = "~" + code
+
+		if isProto5() {
+			tmpCode := code
+			count := 0
+			for _, exists := s.m[tmpCode]; exists; _, exists = s.m[tmpCode] {
+				count++
+				tmpCode = fmt.Sprintf("%s%d", code, count)
+			}
+			code = tmpCode
+		}
 	}
 
 	if _, ok := s.m[code]; !ok {

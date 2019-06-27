@@ -13,8 +13,8 @@ Provides a ESS lifecycle hook resource. More about Ess lifecycle hook, see [Life
 ## Example Usage
 ```
 data "alicloud_zones" "default" {
-	"available_disk_category"= "cloud_efficiency"
-	"available_resource_creation"= "VSwitch"
+	available_disk_category = "cloud_efficiency"
+	available_resource_creation = "VSwitch"
 }
 
 resource "alicloud_vpc" "foo" {

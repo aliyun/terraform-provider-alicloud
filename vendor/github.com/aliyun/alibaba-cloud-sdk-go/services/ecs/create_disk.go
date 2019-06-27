@@ -85,18 +85,28 @@ type CreateDiskRequest struct {
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	DiskName             string           `position:"Query" name:"DiskName"`
 	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
+	InstanceId           string           `position:"Query" name:"InstanceId"`
 	Size                 requests.Integer `position:"Query" name:"Size"`
 	Encrypted            requests.Boolean `position:"Query" name:"Encrypted"`
 	DiskCategory         string           `position:"Query" name:"DiskCategory"`
 	ZoneId               string           `position:"Query" name:"ZoneId"`
 	Tag                  *[]CreateDiskTag `position:"Query" name:"Tag"  type:"Repeated"`
+	Arn                  *[]CreateDiskArn `position:"Query" name:"Arn"  type:"Repeated"`
 	KMSKeyId             string           `position:"Query" name:"KMSKeyId"`
+	AdvancedFeatures     string           `position:"Query" name:"AdvancedFeatures"`
 }
 
 // CreateDiskTag is a repeated param struct in CreateDiskRequest
 type CreateDiskTag struct {
 	Value string `name:"Value"`
 	Key   string `name:"Key"`
+}
+
+// CreateDiskArn is a repeated param struct in CreateDiskRequest
+type CreateDiskArn struct {
+	Rolearn       string `name:"Rolearn"`
+	RoleType      string `name:"RoleType"`
+	AssumeRoleFor string `name:"AssumeRoleFor"`
 }
 
 // CreateDiskResponse is the response struct for api CreateDisk

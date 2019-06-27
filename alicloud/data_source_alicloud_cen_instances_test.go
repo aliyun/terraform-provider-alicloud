@@ -47,7 +47,7 @@ func TestAccAlicloudCenInstancesDataSource_multi(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 	multiConf := dataSourceTestAccConfig{
 		existConfig: testAccAlicloudCenInstancesDataSourceConfig_multi(rand, map[string]string{
-			"ids": `["${alicloud_cen_instance.default.*.id}"]`,
+			"ids": `"${alicloud_cen_instance.default.*.id}"`,
 		}),
 	}
 

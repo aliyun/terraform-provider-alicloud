@@ -13,8 +13,8 @@ Provides a ESS alarm task resource.
 ## Example Usage
 ```
 data "alicloud_zones" "default" {
-	"available_disk_category"= "cloud_efficiency"
-	"available_resource_creation"= "VSwitch"
+	available_disk_category = "cloud_efficiency"
+	available_resource_creation = "VSwitch"
 }
 
 data "alicloud_images" "ecs_image" {

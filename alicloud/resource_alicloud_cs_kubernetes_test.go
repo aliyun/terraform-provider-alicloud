@@ -130,7 +130,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
-					"service_cidr", "enable_ssh", "password", "install_cloud_monitor"},
+					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca"},
 			},
 		},
 	})
@@ -171,7 +171,7 @@ func TestAccAlicloudCSKubernetes_autoVpc(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
-					"service_cidr", "enable_ssh", "password", "install_cloud_monitor"},
+					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca"},
 			},
 		},
 	})
@@ -223,7 +223,7 @@ func TestAccAlicloudCSKubernetes_userCa(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
-					"service_cidr", "enable_ssh", "password", "install_cloud_monitor"},
+					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca"},
 			},
 		},
 	})

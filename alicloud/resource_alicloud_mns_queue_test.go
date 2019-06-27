@@ -80,10 +80,13 @@ func testSweepMnsQueues(region string) error {
 func TestAccAlicloudMnsQueue_basic(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var attr ali_mns.QueueAttribute
+	resourceId := "alicloud_mns_queue.queue"
+
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckMNSQueueDestroy,
+		PreCheck:      func() { testAccPreCheck(t) },
+		Providers:     testAccProviders,
+		IDRefreshName: resourceId,
+		CheckDestroy:  testAccCheckMNSQueueDestroy,
 		Steps: []resource.TestStep{
 			{
 
@@ -92,6 +95,11 @@ func TestAccAlicloudMnsQueue_basic(t *testing.T) {
 					testAccMNSQueueExist("alicloud_mns_queue.queue", &attr),
 					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "name", fmt.Sprintf("tf-testAccMNSQueueConfig-%d", rand)),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 

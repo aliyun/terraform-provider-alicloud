@@ -15,13 +15,15 @@ func TestAccAlicloudMnsTopicSubscription_basic(t *testing.T) {
 
 	var attr ali_mns.TopicAttribute
 	var subscriptionAttr ali_mns.SubscriptionAttribute
+	resourceId := "alicloud_mns_topic_subscription.subscription"
 
 	rand := acctest.RandIntRange(10000, 999999)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckMNSTopicSubscriptionDestroy,
+		PreCheck:      func() { testAccPreCheck(t) },
+		Providers:     testAccProviders,
+		IDRefreshName: resourceId,
+		CheckDestroy:  testAccCheckMNSTopicSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccMNSTopicSubscriptionConfig(rand),
@@ -32,6 +34,11 @@ func TestAccAlicloudMnsTopicSubscription_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_mns_topic_subscription.subscription", "endpoint", "http://www.test.com/test"),
 					resource.TestCheckResourceAttr("alicloud_mns_topic_subscription.subscription", "notify_content_format", "SIMPLIFIED"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 

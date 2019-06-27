@@ -184,7 +184,7 @@ func testAccRouteEntryConfig_instance(rand int) string {
 	return fmt.Sprintf(
 		`
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 data "alicloud_instance_types" "default" {
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -256,7 +256,7 @@ func testAccRouteEntryConfig_interface(rand int) string {
 	return fmt.Sprintf(
 		`
 data "alicloud_zones" "default" {
-  "available_resource_creation"= "VSwitch"
+  available_resource_creation= "VSwitch"
 }
 variable "name" {
 	default = "tf-testAccRouteEntryInterfaceConfig%d"
@@ -317,7 +317,7 @@ func testAccRouteEntryConfig_natGateway(rand int) string {
 	return fmt.Sprintf(
 		`
 data "alicloud_zones" "default" {
-  "available_resource_creation"= "VSwitch"
+  available_resource_creation= "VSwitch"
 }
 variable "name" {
 	default = "tf-testAccRouteEntryNatGatewayConfig%d"
@@ -351,7 +351,7 @@ resource "alicloud_route_entry" "default" {
 func testAccRouteEntryConfigMulti(rand int) string {
 	return fmt.Sprintf(`
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 variable "name" {

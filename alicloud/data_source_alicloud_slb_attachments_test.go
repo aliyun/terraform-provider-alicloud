@@ -62,7 +62,7 @@ variable "name" {
 }
 
 data "alicloud_zones" "az" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 data "alicloud_images" "default" {
   name_regex = "^ubuntu_16.*_64"

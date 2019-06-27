@@ -85,12 +85,13 @@ import (
 
 // At present, only white list users can operate HaVip Resource.
 func SkipTestAccAlicloudHaVipAttachment_basic(t *testing.T) {
+	resourceId := "alicloud_havip_attachment.foo"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: "alicloud_havip_attachment.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckHaVipAttachmentDestroy,
 		Steps: []resource.TestStep{
@@ -103,6 +104,11 @@ func SkipTestAccAlicloudHaVipAttachment_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet(
 						"alicloud_havip_attachment.foo", "instance_id"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -158,7 +164,7 @@ func testAccCheckHaVipAttachmentDestroy(s *terraform.State) error {
 const testAccHaVipAttachmentConfig = `
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation = "VSwitch"
 }
 
 data "alicloud_instance_types" "default" {

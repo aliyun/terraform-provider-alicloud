@@ -16,11 +16,13 @@ import (
 func TestAccAlicloudLogStore_basic(t *testing.T) {
 	var project sls.LogProject
 	var store sls.LogStore
+	resourceId := "alicloud_log_store.foo"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudLogStoreDestroy,
+		PreCheck:      func() { testAccPreCheck(t) },
+		Providers:     testAccProviders,
+		IDRefreshName: resourceId,
+		CheckDestroy:  testAccCheckAlicloudLogStoreDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudLogStoreBasic(acctest.RandInt()),
@@ -34,6 +36,11 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_log_store.foo", "append_meta", "true"),
 					resource.TestCheckResourceAttr("alicloud_log_store.foo", "enable_web_tracking", "false"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

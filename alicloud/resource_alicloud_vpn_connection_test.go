@@ -300,7 +300,7 @@ resource "alicloud_vpc" "default" {
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vswitch" "default" {
