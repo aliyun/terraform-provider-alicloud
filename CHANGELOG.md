@@ -21,6 +21,8 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- bugfix: modify ess loadbalancers batch size [GH-1352]
+- fix instance OperationConflict bug [GH-1351]
 - fix(nas): convert some retrable error to nonretryable [GH-1344]
 - fix mongodb testcase [GH-1341]
 - fix log_store fields cannot be changed [GH-1337]
