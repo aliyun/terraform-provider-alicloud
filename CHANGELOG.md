@@ -1,3 +1,4 @@
+## 1.50.0 (Unreleased)
 ## 1.49.0 (June 28, 2019)
 
 - **New Date Source:** `alicloud_kvstore_instance_classes` ([#1315](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1315))
