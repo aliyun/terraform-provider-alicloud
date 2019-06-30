@@ -36,6 +36,7 @@ func testSweepMongoDBShardingInstances(region string) error {
 	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
+	request.DBInstanceType = "sharding"
 	for {
 		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
 			return ddsClient.DescribeDBInstances(request)
@@ -63,6 +64,8 @@ func testSweepMongoDBShardingInstances(region string) error {
 	}
 
 	sweeped := false
+	service := VpcService{client}
+	ddsService := MongoDBService{client}
 	for _, v := range insts {
 		name := v.DBInstanceDescription
 		id := v.DBInstanceId
@@ -73,13 +76,24 @@ func testSweepMongoDBShardingInstances(region string) error {
 				break
 			}
 		}
+		// If a mongoDB name is not set successfully, it should be fetched by vpc name and deleted.
 		if skip {
-			log.Printf("[INFO] Skipping MongoDB instance: %s (%s)\n", name, id)
+			instance, err := ddsService.DescribeMongoDBInstance(id)
+			if err != nil {
+				if NotFoundError(err) {
+					continue
+				}
+				log.Printf("[INFO] Describe MongoDB sharding instance: %s (%s) got an error: %#v\n", name, id, err)
+			}
+			if need, err := service.needSweepVpc(instance.VPCId, instance.VSwitchId); err == nil {
+				skip = !need
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping MongoDB sharding instance: %s (%s)\n", name, id)
 			continue
 		}
-		log.Printf("[INFO] Deleting MongoDB instance: %s (%s)\n", name, id)
-
-		sweeped = true
+		log.Printf("[INFO] Deleting MongoDB sharding instance: %s (%s)\n", name, id)
 
 		request := dds.CreateDeleteDBInstanceRequest()
 		request.DBInstanceId = id
@@ -88,7 +102,9 @@ func testSweepMongoDBShardingInstances(region string) error {
 		})
 
 		if err != nil {
-			log.Printf("[error] Failed to delete MongoDB instance,ID:%v(%v)\n", id, request.GetActionName())
+			log.Printf("[error] Failed to delete MongoDB sharding instance,ID:%v(%v)\n", id, request.GetActionName())
+		} else {
+			sweeped = true
 		}
 		addDebug(request.GetActionName(), raw)
 	}

@@ -112,10 +112,11 @@ func testSweepVSwitches(region string) error {
 			log.Printf("[INFO] Skipping VSwitch: %s (%s)", name, id)
 			continue
 		}
-		sweeped = true
 		log.Printf("[INFO] Deleting VSwitch: %s (%s)", name, id)
 		if err := service.sweepVSwitch(id); err != nil {
 			log.Printf("[ERROR] Failed to delete VSwitch (%s (%s)): %s", name, id, err)
+		} else {
+			sweeped = true
 		}
 	}
 	if sweeped {

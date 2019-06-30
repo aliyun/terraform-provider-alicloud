@@ -80,7 +80,6 @@ func testSweepDBInstances(region string) error {
 			continue
 		}
 
-		sweeped = true
 		log.Printf("[INFO] Deleting RDS Instance: %s (%s)", name, id)
 		if len(v.ReadOnlyDBInstanceIds.ReadOnlyDBInstanceId) > 0 {
 			request := rds.CreateReleaseReadWriteSplittingConnectionRequest()
@@ -100,6 +99,8 @@ func testSweepDBInstances(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete RDS Instance (%s (%s)): %s", name, id, err)
+		} else {
+			sweeped = true
 		}
 	}
 	if sweeped {

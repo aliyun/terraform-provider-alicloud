@@ -83,7 +83,6 @@ func testSweepOtsInstances(region string) error {
 			log.Printf("[INFO] Skipping OTS Instance: %s", name)
 			continue
 		}
-		sweeped = true
 		log.Printf("[INFO] Deleting OTS Instance %s table stores.", name)
 		raw, err := otsService.client.WithTableStoreClient(name, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			return tableStoreClient.ListTable()
@@ -112,6 +111,8 @@ func testSweepOtsInstances(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete OTS Instance (%s): %s", name, err)
+		} else {
+			sweeped = true
 		}
 	}
 	if sweeped {

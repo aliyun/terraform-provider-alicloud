@@ -106,9 +106,6 @@ func testSweepMongoDBInstances(region string) error {
 			continue
 		}
 		log.Printf("[INFO] Deleting MongoDB instance: %s (%s)\n", name, id)
-
-		sweeped = true
-
 		request := dds.CreateDeleteDBInstanceRequest()
 		request.DBInstanceId = id
 		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
@@ -117,6 +114,8 @@ func testSweepMongoDBInstances(region string) error {
 
 		if err != nil {
 			log.Printf("[error] Failed to delete MongoDB instance,ID:%v(%v)\n", id, request.GetActionName())
+		} else {
+			sweeped = true
 		}
 		addDebug(request.GetActionName(), raw)
 	}
