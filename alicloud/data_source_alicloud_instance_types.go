@@ -281,7 +281,7 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []ecs.Inst
 		}
 		mapping["burstable_instance"] = brust
 		local := map[string]interface{}{
-			"capacity": strconv.Itoa(t.LocalStorageCapacity),
+			"capacity": strconv.FormatInt(t.LocalStorageCapacity, 10),
 			"amount":   strconv.Itoa(t.LocalStorageAmount),
 			"category": t.LocalStorageCategory,
 		}

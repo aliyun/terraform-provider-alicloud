@@ -173,7 +173,7 @@ func testAccCheckAlicloudOtsTablesDataSource_basic(randInt int) string {
 	  description = "${var.name}"
 	  accessed_by = "Any"
 	  instance_type = "Capacity"
-	  tags {
+	  tags = {
 	    Created = "TF"
 	    For = "acceptance test"
 	  }
@@ -182,16 +182,14 @@ func testAccCheckAlicloudOtsTablesDataSource_basic(randInt int) string {
 	resource "alicloud_ots_table" "basic" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  table_name = "${var.name}"
-	  primary_key = [
-		{
+	  primary_key {
           name = "pk1"
 	      type = "Integer"
-	    },
-		{
+	  }
+	  primary_key {
           name = "pk2"
           type = "String"
-        },
-      ]
+      }
 	  time_to_live = -1
 	  max_version = 1
 	}
@@ -212,7 +210,7 @@ func testAccCheckAlicloudOtsTablesDataSource_name_regex_exist(randInt int) strin
 	  description = "${var.name}"
 	  accessed_by = "Any"
 	  instance_type = "Capacity"
-	  tags {
+	  tags = {
 	    Created = "TF"
 	    For = "acceptance test"
 	  }
@@ -221,16 +219,14 @@ func testAccCheckAlicloudOtsTablesDataSource_name_regex_exist(randInt int) strin
 	resource "alicloud_ots_table" "basic" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  table_name = "${var.name}"
-	  primary_key = [
-		{
+	  primary_key {
           name = "pk1"
 	      type = "Integer"
-	    },
-		{
+	    }
+	  primary_key {
           name = "pk2"
           type = "String"
-        },
-      ]
+        }
 	  time_to_live = -1
 	  max_version = 1
 	}
@@ -252,7 +248,7 @@ func testAccCheckAlicloudOtsTablesDataSource_name_regex_fake(randInt int) string
 	  description = "${var.name}"
 	  accessed_by = "Any"
 	  instance_type = "Capacity"
-	  tags {
+	  tags = {
 	    Created = "TF"
 	    For = "acceptance test"
 	  }
@@ -261,16 +257,14 @@ func testAccCheckAlicloudOtsTablesDataSource_name_regex_fake(randInt int) string
 	resource "alicloud_ots_table" "basic" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  table_name = "${var.name}"
-	  primary_key = [
-		{
+	  primary_key {
           name = "pk1"
 	      type = "Integer"
-	    },
-		{
+	    }
+	  primary_key {
           name = "pk2"
           type = "String"
-        },
-      ]
+        }
 	  time_to_live = -1
 	  max_version = 1
 	}
@@ -292,7 +286,7 @@ func testAccCheckAlicloudOtsTablesDataSource_ids_exist(randInt int) string {
 	  description = "${var.name}"
 	  accessed_by = "Any"
 	  instance_type = "Capacity"
-	  tags {
+	  tags = {
 	    Created = "TF"
 	    For = "acceptance test"
 	  }
@@ -301,16 +295,14 @@ func testAccCheckAlicloudOtsTablesDataSource_ids_exist(randInt int) string {
 	resource "alicloud_ots_table" "basic" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  table_name = "${var.name}"
-	  primary_key = [
-		{
+	  primary_key {
           name = "pk1"
 	      type = "Integer"
-	    },
-		{
+	    }
+      primary_key {
           name = "pk2"
           type = "String"
-        },
-      ]
+        }
 	  time_to_live = -1
 	  max_version = 1
 	}
@@ -332,7 +324,7 @@ func testAccCheckAlicloudOtsTablesDataSource_ids_fake(randInt int) string {
 	  description = "${var.name}"
 	  accessed_by = "Any"
 	  instance_type = "Capacity"
-	  tags {
+	  tags = {
 	    Created = "TF"
 	    For = "acceptance test"
 	  }
@@ -341,16 +333,14 @@ func testAccCheckAlicloudOtsTablesDataSource_ids_fake(randInt int) string {
 	resource "alicloud_ots_table" "basic" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  table_name = "${var.name}"
-	  primary_key = [
-		{
+	  primary_key {
           name = "pk1"
 	      type = "Integer"
-	    },
-		{
+	    }
+       primary_key {
           name = "pk2"
           type = "String"
-        },
-      ]
+        }
 	  time_to_live = -1
 	  max_version = 1
 	}
@@ -372,7 +362,7 @@ func testAccCheckAlicloudOtsTablesDataSource_all_exist(randInt int) string {
 	  description = "${var.name}"
 	  accessed_by = "Any"
 	  instance_type = "Capacity"
-	  tags {
+	  tags = {
 	    Created = "TF"
 	    For = "acceptance test"
 	  }
@@ -381,16 +371,14 @@ func testAccCheckAlicloudOtsTablesDataSource_all_exist(randInt int) string {
 	resource "alicloud_ots_table" "basic" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  table_name = "${var.name}"
-	  primary_key = [
-		{
+	  primary_key {
           name = "pk1"
 	      type = "Integer"
-	    },
-		{
+	    }
+      primary_key {
           name = "pk2"
           type = "String"
-        },
-      ]
+        }
 	  time_to_live = -1
 	  max_version = 1
 	}
@@ -413,7 +401,7 @@ func testAccCheckAlicloudOtsTablesDataSource_all_fake(randInt int) string {
 	  description = "${var.name}"
 	  accessed_by = "Any"
 	  instance_type = "Capacity"
-	  tags {
+	  tags = {
 	    Created = "TF"
 	    For = "acceptance test"
 	  }
@@ -422,16 +410,14 @@ func testAccCheckAlicloudOtsTablesDataSource_all_fake(randInt int) string {
 	resource "alicloud_ots_table" "basic" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  table_name = "${var.name}"
-	  primary_key = [
-		{
+	  primary_key {
           name = "pk1"
 	      type = "Integer"
-	    },
-		{
+	    }
+	  primary_key {
           name = "pk2"
           type = "String"
-        },
-      ]
+        }
 	  time_to_live = -1
 	  max_version = 1
 	}

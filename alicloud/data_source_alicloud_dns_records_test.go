@@ -154,7 +154,6 @@ resource "alicloud_dns_record" "default" {
   host_record = "alimail"
   type = "CNAME"
   value = "mail.mxhichin.com"
-  count = 1
 }
 `, name)
 }

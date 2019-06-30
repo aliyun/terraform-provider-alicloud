@@ -293,12 +293,12 @@ variable "name" {
 	default = "tf-testAccForwardEntryConfig%d"
 }
 
-variable "count" {
+variable "number" {
 	default = "2"
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
@@ -320,12 +320,12 @@ resource "alicloud_nat_gateway" "default" {
 }
 
 resource "alicloud_eip" "default" {
-	count = "${var.count}"
+	count = "${var.number}"
 	name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "default" {
-	count = "${var.count}"
+	count = "${var.number}"
 	allocation_id = "${element(alicloud_eip.default.*.id,count.index)}"
 	instance_id = "${alicloud_nat_gateway.default.id}"
 }

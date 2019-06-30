@@ -54,7 +54,7 @@ func TestAccAlicloudCenBandwidthPackagesDataSource_multi(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig_multi(rand, map[string]string{
-			"ids": `["${alicloud_cen_bandwidth_package.default.*.id}"]`,
+			"ids": `"${alicloud_cen_bandwidth_package.default.*.id}"`,
 		}),
 	}
 	cenBandwidthPackagesCheckInfo_multi.dataSourceTestCheck(t, rand, allConf)

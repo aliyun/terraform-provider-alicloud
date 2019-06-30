@@ -555,7 +555,7 @@ func testAccOtsInstance(instanceType string, rand int) string {
 	  name = "${var.name}"
 	  description = "${var.name}"
 	  instance_type = "%s"
-	  tags {
+	  tags = {
 		Created = "TF"
 		For = "acceptance test"
 	  }
@@ -573,7 +573,7 @@ func testAccOtsInstanceUpdateAccessBy(instanceType string, rand int) string {
 	  description = "${var.name}"
 	  accessed_by = "Vpc"
 	  instance_type = "%s"
-	  tags {
+	  tags = {
 		Created = "TF"
 		For = "acceptance test"
 	  }
@@ -590,7 +590,7 @@ func testAccOtsInstanceUpdateTags(instanceType string, rand int) string {
 	  name = "${var.name}"
 	  description = "${var.name}"
 	  instance_type = "%s"
-	  tags {
+	  tags = {
 		Updated = "TF"
 		For = "acceptance test"
 		From = "TF"
@@ -609,7 +609,7 @@ func testAccOtsInstanceUpdateAll(instanceType string, rand int) string {
 	  description = "${var.name}"
 	  accessed_by = "ConsoleOrVpc"
 	  instance_type = "%s"
-	  tags {
+	  tags = {
 		Updated = "TF"
 		For = "acceptance test"
 		From = "TF"

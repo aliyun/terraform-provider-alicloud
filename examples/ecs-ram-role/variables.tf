@@ -137,7 +137,7 @@ variable "disk_tags" {
 
 variable "number_of_disks" {
   description = "The number of launching disks one time."
-  default     = 0
+  default     = 4
 }
 
 # Ecs instance variables
@@ -208,7 +208,7 @@ variable "instance_tags" {
 
 variable "number_of_instances" {
   description = "The number of launching instances one time."
-  default     = 1
+  default     = 3
 }
 
 variable "ram_role_name" {
@@ -220,6 +220,12 @@ variable "ram_role_ram_users" {
   description = "The RAM users of assuming RAM role document"
   type        = "list"
   default     = []
+}
+
+variable "ram_role_services" {
+  description = "The services of assuming RAM role document"
+  type        = "list"
+  default     = ["ecs.aliyuncs.com"]
 }
 
 variable "ram_role_terminate_force" {

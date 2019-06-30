@@ -38,7 +38,7 @@ type StateChangeConf struct {
 // specified in the configuration using the specified Refresh() func,
 // waiting the number of seconds specified in the timeout configuration.
 //
-// If the Refresh function returns a error, exit immediately with that error.
+// If the Refresh function returns an error, exit immediately with that error.
 //
 // If the Refresh function returns a state other than the Target state or one
 // listed in Pending, return immediately with an error.
@@ -46,7 +46,7 @@ type StateChangeConf struct {
 // If the Timeout is exceeded before reaching the Target state, return an
 // error.
 //
-// Otherwise, result the result of the first call to the Refresh function to
+// Otherwise, the result is the result of the first call to the Refresh function to
 // reach the target state.
 func (conf *StateChangeConf) WaitForState() (interface{}, error) {
 	log.Printf("[DEBUG] Waiting for state to become: %s", conf.Target)

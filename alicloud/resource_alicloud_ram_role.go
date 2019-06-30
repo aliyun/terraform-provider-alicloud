@@ -101,18 +101,33 @@ func resourceAlicloudRamRoleCreate(d *schema.ResourceData, meta interface{}) err
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*ram.CreateRoleResponse)
 	d.SetId(response.Role.RoleName)
-	return resourceAlicloudRamRoleUpdate(d, meta)
+	return resourceAlicloudRamRoleRead(d, meta)
 }
 
 func resourceAlicloudRamRoleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ramService := RamService{client}
 
-	request, attributeUpdate, err := buildAlicloudRamRoleUpdateArgs(d, meta)
-	if err != nil {
-		return WrapError(err)
+	request := ram.CreateUpdateRoleRequest()
+	request.RoleName = d.Id()
+
+	attributeUpdate := false
+
+	if d.HasChange("document") {
+		attributeUpdate = true
+		request.NewAssumeRolePolicyDocument = d.Get("document").(string)
+
+	} else if d.HasChange("ram_users") || d.HasChange("services") || d.HasChange("version") {
+		attributeUpdate = true
+
+		document, err := ramService.AssembleRolePolicyDocument(d.Get("ram_users").(*schema.Set).List(), d.Get("services").(*schema.Set).List(), d.Get("version").(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		request.NewAssumeRolePolicyDocument = document
 	}
 
-	if !d.IsNewResource() && attributeUpdate {
+	if attributeUpdate {
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.UpdateRole(request)
 		})
@@ -255,7 +270,6 @@ func buildAlicloudRamRoleUpdateArgs(d *schema.ResourceData, meta interface{}) (*
 	attributeUpdate := false
 
 	if d.HasChange("document") {
-		d.SetPartial("document")
 		attributeUpdate = true
 		request.NewAssumeRolePolicyDocument = d.Get("document").(string)
 

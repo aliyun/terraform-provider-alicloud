@@ -251,25 +251,21 @@ resource "alicloud_launch_template" "template" {
         tag1 = "hello"
         tag2 = "world"
     }
-    network_interfaces = [
-        {
+    network_interfaces {
             name = "eth0"
             description = "hello1"
             primary_ip = "10.0.0.2"
             security_group_id = "xxxx"
             vswitch_id = "xxxxxxx"
         }
-    ]
-    data_disks = [
-        {
+    data_disks {
             name = "disk1"
             description = "test1"
-        },
-        {
+        }
+    data_disks {
             name = "disk2"
             description = "test2"
         }
-    ]
 }
 `
 const lauchTemplateConfigUpdate = `
@@ -306,24 +302,20 @@ resource "alicloud_launch_template" "template" {
         tag1 = "bye"
         tag2 = "world"
     }
-    network_interfaces = [
-        {
+    network_interfaces {
             name = "eth0"
             description = "hello1"
             primary_ip = "10.0.0.2"
             security_group_id = "xxxx"
             vswitch_id = "xxxxxxx"
         }
-    ]
-    data_disks = [
-        {
+    data_disks {
             name = "disk1"
             description = "test1"
-        },
-        {
+        }
+    data_disks {
             name = "disk2"
             description = "test2"
         }
-    ]
 }
 `

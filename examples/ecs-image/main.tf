@@ -46,7 +46,7 @@ resource "alicloud_disk" "disk" {
   availability_zone = "${var.availability_zones}"
   category          = "${var.disk_category}"
   size              = "${var.disk_size}"
-  count             = "${var.count}"
+  count             = "${var.number}"
 }
 
 resource "alicloud_instance" "instance" {
@@ -54,7 +54,7 @@ resource "alicloud_instance" "instance" {
   host_name         = "${var.short_name}-${var.role}-${format(var.count_format, count.index+1)}"
   image_id          = "${data.alicloud_images.ecs_image.images.0.id}"
   instance_type     = "${var.ecs_type}"
-  count             = "${var.count}"
+  count             = "${var.number}"
   availability_zone = "${var.availability_zones}"
   security_groups   = ["${alicloud_security_group.group.*.id}"]
 
@@ -66,14 +66,14 @@ resource "alicloud_instance" "instance" {
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
 
-  tags {
+  tags = {
     role = "${var.role}"
     dc   = "${var.datacenter}"
   }
 }
 
 resource "alicloud_disk_attachment" "instance-attachment" {
-  count       = "${var.count}"
+  count       = "${var.number}"
   disk_id     = "${element(alicloud_disk.disk.*.id, count.index)}"
   instance_id = "${element(alicloud_instance.instance.*.id, count.index)}"
 }

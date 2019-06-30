@@ -18,8 +18,8 @@ This data source provides availability zones that can be accessed by an Alibaba 
 ```
 # Declare the data source
 data "alicloud_zones" "zones_ds" {
-  "available_instance_type" = "ecs.n4.large"
-  "available_disk_category" = "cloud_ssd"
+  available_instance_type = "ecs.n4.large"
+  available_disk_category  = "cloud_ssd"
 }
 
 # Create an ECS instance with the first matched zone

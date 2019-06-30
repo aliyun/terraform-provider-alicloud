@@ -94,7 +94,7 @@ resource "alicloud_fc_function" "foo" {
     memory_size = "512"
     runtime = "python2.7"
     handler = "hello.handler"
-    environment_variables {
+    environment_variables = {
         prefix = "terraform"
     }
 }

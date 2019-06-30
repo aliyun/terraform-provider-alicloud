@@ -475,7 +475,7 @@ variable "name" {
   default = "tf-testAccSlb4Vpc"
 }
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
@@ -502,7 +502,7 @@ variable "name" {
   default = "tf-testAccSlb4Vpc"
 }
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
@@ -529,7 +529,7 @@ variable "name" {
   default = "tf-testAccSlb4Vpc"
 }
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
@@ -557,7 +557,7 @@ variable "name" {
   default = "tf-testAccSlb4Vpc"
 }
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
@@ -587,7 +587,7 @@ variable "name" {
   default = "tf-testAccSlb4Vpc"
 }
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
@@ -624,7 +624,7 @@ variable "name" {
   default = "tf-testAccSlb4Vpcnew"
 }
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
@@ -661,7 +661,7 @@ variable "name" {
   default = "tf-testAccSlb4Vpc"
 }
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
@@ -709,7 +709,7 @@ variable "name" {
   default = "tf-testAccSlb4Vpc"
 }
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {

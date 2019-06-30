@@ -58,8 +58,8 @@ resource "alicloud_instance" "instance" {
   host_name       = "${var.short_name}-${var.role}-${format(var.count_format, count.index+1)}"
   image_id        = "${var.image_id}"
   instance_type   = "${data.alicloud_instance_types.instance_type.instance_types.0.id}"
-  count           = "${var.count}"
-  security_groups = ["${alicloud_security_group.group.*.id}"]
+  count           = "${var.number}"
+  security_groups = "${alicloud_security_group.group.*.id}"
 
   internet_charge_type       = "${var.internet_charge_type}"
   internet_max_bandwidth_out = "${var.internet_max_bandwidth_out}"
@@ -72,7 +72,7 @@ resource "alicloud_instance" "instance" {
 
   vswitch_id = "${alicloud_vswitch.main.id}"
 
-  tags {
+  tags = {
     role = "${var.role}"
   }
 }

@@ -1249,7 +1249,7 @@ resource "alicloud_instance" "foo" {
 	security_enhancement_strategy = "Active"
     deletion_protection = false
 
-	tags {
+	tags = {
 		foo = "bar"
 		work = "test"
 	}
@@ -1505,7 +1505,7 @@ func testAccInstanceConfig_multiSecurityGroupByCount(common string) string {
 	}
 	resource "alicloud_security_group" "tf_test_foo" {
 		name = "${var.name}"
-		count = 2
+		count = 3
 		description = "foo"
   		vpc_id = "${alicloud_vpc.default.id}"
 	}
@@ -1515,7 +1515,7 @@ func testAccInstanceConfig_multiSecurityGroupByCount(common string) string {
 		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		internet_charge_type = "PayByTraffic"
-		security_groups = ["${alicloud_security_group.default.id}", "${alicloud_security_group.tf_test_foo.*.id}"]
+		security_groups = "${alicloud_security_group.tf_test_foo.*.id}"
 		instance_name = "${var.name}"
 		system_disk_category = "cloud_efficiency"
 		vswitch_id = "${alicloud_vswitch.default.id}"
@@ -1562,7 +1562,7 @@ func testAccCheckInstanceConfigTags(common string) string {
 		security_groups = ["${alicloud_security_group.default.id}"]
 		instance_name = "${var.name}"
 
-		tags {
+		tags = {
 			foo = "bar"
 			bar = "foo"
 		}
@@ -1587,7 +1587,7 @@ func testAccCheckInstanceConfigTagsUpdate(common string) string {
 		security_groups = ["${alicloud_security_group.default.id}"]
 		instance_name = "${var.name}"
 
-		tags {
+		tags = {
 			bar1 = "zzz"
 			bar2 = "bar"
 			bar3 = "bar"
@@ -2176,7 +2176,6 @@ func testAccCheckInstanceRamRole(common string, rand int) string {
 		  EOF
 		  force = "true"
 	}
-
 	resource "alicloud_ram_policy" "policy" {
 	  name = "${var.name}"
 	  document = <<EOF
@@ -2224,22 +2223,20 @@ func testAccInstanceConfigDataDisk(common string) string {
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
 
-		data_disks = [
-		{
+		data_disks {
 			name = "disk1"
 			size = "20"
 			category = "cloud_efficiency"
 			description = "disk1"
-		},
-		{
+		}
+		data_disks {
 			name = "disk2"
 			size = "20"
 			category = "cloud_efficiency"
 			description = "disk2"
 		}
-		]
 
-		tags {
+		tags = {
 			foo = "bar"
 			work = "test"
 		}
@@ -2314,7 +2311,7 @@ func testAccCheckInstanceVolumeTags(common string) string {
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
-		volume_tags {
+		volume_tags = {
 			tag1 = "test"
 		}
 	}
@@ -2340,7 +2337,7 @@ func testAccCheckInstanceVolumeTags_update(common string) string {
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
-		volume_tags {
+		volume_tags = {
 			tag1 = "test1"
 			tag2 = "test2"
 		}
@@ -2367,7 +2364,7 @@ func testAccCheckInstanceVolumeTags_delete(common string) string {
 		instance_name = "${var.name}"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		vswitch_id = "${alicloud_vswitch.default.id}"
-		volume_tags {
+		volume_tags = {
 		}
 	}
 	`, common)

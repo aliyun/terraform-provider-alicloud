@@ -264,7 +264,7 @@ variable "name" {
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
@@ -302,7 +302,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -353,7 +353,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -373,16 +373,14 @@ variable "ip_version" {
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
   ip_version = "${var.ip_version}"
-  entry_list = [
-    {
+  entry_list {
       entry="10.10.10.0/24"
       comment="first"
-    },
-    {
+    }
+  entry_list {
       entry="168.10.10.0/24"
       comment="second"
     }
-  ]
 }
 resource "alicloud_slb_server_certificate" "default" {
   name = "${var.name}"
@@ -409,7 +407,7 @@ variable "name" {
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
@@ -462,7 +460,7 @@ variable "name" {
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {

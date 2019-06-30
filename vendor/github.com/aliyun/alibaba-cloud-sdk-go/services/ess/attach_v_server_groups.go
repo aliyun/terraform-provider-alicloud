@@ -76,17 +76,24 @@ func (client *Client) AttachVServerGroupsWithCallback(request *AttachVServerGrou
 // AttachVServerGroupsRequest is the request struct for api AttachVServerGroups
 type AttachVServerGroupsRequest struct {
 	*requests.RpcRequest
-	ResourceOwnerAccount string                             `position:"Query" name:"ResourceOwnerAccount"`
 	ScalingGroupId       string                             `position:"Query" name:"ScalingGroupId"`
 	ForceAttach          requests.Boolean                   `position:"Query" name:"ForceAttach"`
+	ResourceOwnerAccount string                             `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerId              requests.Integer                   `position:"Query" name:"OwnerId"`
 	VServerGroup         *[]AttachVServerGroupsVServerGroup `position:"Query" name:"VServerGroup"  type:"Repeated"`
 }
 
 // AttachVServerGroupsVServerGroup is a repeated param struct in AttachVServerGroupsRequest
 type AttachVServerGroupsVServerGroup struct {
-	LoadBalancerId        string    `name:"LoadBalancerId"`
-	VServerGroupAttribute *[]string `name:"VServerGroupAttribute" type:"Repeated"`
+	LoadBalancerId        string                                      `name:"LoadBalancerId"`
+	VServerGroupAttribute *[]AttachVServerGroupsVServerGroupAttribute `name:"VServerGroupAttribute" type:"Repeated"`
+}
+
+// AttachVServerGroupsVServerGroupAttribute is a repeated param struct in AttachVServerGroupsRequest
+type AttachVServerGroupsVServerGroupAttribute struct {
+	VServerGroupId string `name:"VServerGroupId"`
+	Port           string `name:"Port"`
+	Weight         string `name:"Weight"`
 }
 
 // AttachVServerGroupsResponse is the response struct for api AttachVServerGroups

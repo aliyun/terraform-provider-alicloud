@@ -45,7 +45,7 @@ resource "alicloud_instance" "instance" {
   host_name                  = "${var.short_name}-${var.role}-${format(var.count_format, count.index+1)}"
   image_id                   = "${var.image_id}"
   instance_type              = "${var.ecs_type}"
-  count                      = "${var.count}"
+  count                      = "${var.number}"
   security_groups            = ["${alicloud_security_group.group.*.id}"]
   internet_charge_type       = "${var.internet_charge_type}"
   internet_max_bandwidth_out = "${var.internet_max_bandwidth_out}"
@@ -54,7 +54,7 @@ resource "alicloud_instance" "instance" {
   instance_charge_type       = "PostPaid"
   system_disk_category       = "cloud_efficiency"
 
-  tags {
+  tags = {
     role = "${var.role}"
     dc   = "${var.datacenter}"
   }

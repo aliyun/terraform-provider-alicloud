@@ -199,7 +199,7 @@ resource "alicloud_vpc" "default" {
 	name = "${var.name}"
 }
  data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
  resource "alicloud_vswitch" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
@@ -228,7 +228,7 @@ variable "name" {
 	default = "tf-testAccRouteTableAttachment%d"
 }
 
-variable "count" {
+variable "number" {
 	default = "2"
 }
 
@@ -237,11 +237,11 @@ resource "alicloud_vpc" "default" {
 	name = "${var.name}"
 }
  data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vswitch" "default" {
-  count = "${var.count}"
+  count = "${var.number}"
   vpc_id = "${ alicloud_vpc.default.id }"
   cidr_block = "172.16.${count.index}.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -249,14 +249,14 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_route_table" "default" {
-	count = "${var.count}"
+	count = "${var.number}"
 	vpc_id = "${alicloud_vpc.default.id}"
     name = "${var.name}"
     description = "${var.name}_description"
 }
 
 resource "alicloud_route_table_attachment" "default" {
-    count = "${var.count}"
+    count = "${var.number}"
 	vswitch_id = "${element(alicloud_vswitch.default.*.id,count.index)}"
 	route_table_id = "${element(alicloud_route_table.default.*.id,count.index)}"
 }

@@ -27,7 +27,7 @@ resource "alicloud_vpc" "foo" {
         name = "${var.name}"
 }
 data "alicloud_zones" "default" {
-        "available_resource_creation"= "VSwitch"
+        available_resource_creation = "VSwitch"
 }
 resource "alicloud_vswitch" "foo" {
         vpc_id = "${alicloud_vpc.foo.id}"

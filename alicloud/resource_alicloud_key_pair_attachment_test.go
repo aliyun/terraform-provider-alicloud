@@ -71,8 +71,8 @@ func TestAccAlicloudKeyPairAttachmentBasic(t *testing.T) {
 
 const testAccKeyPairAttachmentConfigBasic = `
 data "alicloud_zones" "default" {
-	"available_disk_category"= "cloud_ssd"
-	"available_resource_creation"= "VSwitch"
+	available_disk_category = "cloud_ssd"
+	available_resource_creation= "VSwitch"
 }
 data "alicloud_instance_types" "default" {
  	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -127,7 +127,7 @@ resource "alicloud_key_pair" "default" {
 
 resource "alicloud_key_pair_attachment" "default" {
   key_name = "${alicloud_key_pair.default.id}"
-  instance_ids = ["${alicloud_instance.default.*.id}"]
+  instance_ids = "${alicloud_instance.default.*.id}"
 }
 `
 

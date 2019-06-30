@@ -93,7 +93,7 @@ resource "alicloud_security_group" "default" {
   name        = "${var.name}"
   description = "test security group"
   vpc_id      = "${alicloud_vpc.default.id}"
-  tags {
+  tags = {
 		from = "datasource"
 		usage1 = "test"
 		usage2 = "test"

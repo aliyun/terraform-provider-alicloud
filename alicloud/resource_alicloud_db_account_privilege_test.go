@@ -49,7 +49,7 @@ func TestAccAlicloudDBAccountPrivilege_update(t *testing.T) {
 					"instance_id":  "${alicloud_db_instance.default.id}",
 					"account_name": "${alicloud_db_account.default.name}",
 					"privilege":    "ReadOnly",
-					"db_names":     []string{"${alicloud_db_database.default.*.name}"},
+					"db_names":     "${alicloud_db_database.default.*.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -78,7 +78,7 @@ func TestAccAlicloudDBAccountPrivilege_update(t *testing.T) {
 					"instance_id":  "${alicloud_db_instance.default.id}",
 					"account_name": "${alicloud_db_account.default.name}",
 					"privilege":    "ReadOnly",
-					"db_names":     []string{"${alicloud_db_database.default.*.name}"},
+					"db_names":     "${alicloud_db_database.default.*.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

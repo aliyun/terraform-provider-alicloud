@@ -85,7 +85,7 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 		existConfig: testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand, map[string]string{
 			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
 		},
-			`tags {
+			`tags = {
 				from = "datasource"
 				usage1 = "test"
 				usage2 = "test"
@@ -98,7 +98,7 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand, map[string]string{
 			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
 		},
-			`tags {
+			`tags = {
 				from = "datasource_fake"
 				usage1 = "test"
 				usage2 = "test"
@@ -120,7 +120,7 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
 		},
-			`tags {
+			`tags = {
 				from = "datasource"
 				usage1 = "test"
 				usage2 = "test"
@@ -139,7 +139,7 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
 		},
-			`tags {
+			`tags = {
 				from = "datasource_fake"
 				usage1 = "test"
 				usage2 = "test"
@@ -175,7 +175,7 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 		instance_name = "${var.name}"
 		system_disk_category = "cloud_efficiency"
 		security_groups = ["${alicloud_security_group.default.id}"]
-        tags {
+        tags = {
 			from = "datasource"
 			usage1 = "test"
 			usage2 = "test"
@@ -213,7 +213,7 @@ func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[
 		instance_name = "${var.name}"
 		system_disk_category = "cloud_efficiency"
 		security_groups = ["${alicloud_security_group.default.id}"]
-        tags {
+        tags = {
 			from = "datasource"
 			usage1 = "test"
 			usage2 = "test"

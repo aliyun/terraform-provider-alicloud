@@ -135,7 +135,7 @@ variable "name" {
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_disk" "default" {
@@ -144,7 +144,7 @@ resource "alicloud_disk" "default" {
 	name = "${var.name}"
 	description = "${var.name}_description"
 	size = "20"
-	tags {
+	tags = {
 		Name = "TerraformTest"
 		Name1 = "TerraformTest"
 	}
@@ -174,7 +174,7 @@ resource "alicloud_disk" "default" {
 	category = "cloud_efficiency"
 	name = "${var.name}"
 	description = "${var.name}_description"
-	tags {
+	tags = {
 		Name = "TerraformTest"
 		Name1 = "TerraformTest"
 	}

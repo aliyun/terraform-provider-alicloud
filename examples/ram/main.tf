@@ -35,24 +35,16 @@ resource "alicloud_ram_group_membership" "membership" {
 resource "alicloud_ram_role" "role" {
   name = "${var.role_name}"
 
-  document = <<EOF
-    {
-      "Statement": [
-        {
-          "Action": "sts:AssumeRole",
-          "Effect": "Allow",
-          "Principal": {
-            "Service": [
-              "apigateway.aliyuncs.com",
-              "ecs.aliyuncs.com"
-            ]
-          }
-        }
-      ],
-      "Version": "1"
-    }
-  EOF
+  services = [
+    "apigateway.aliyuncs.com",
+    "ecs.aliyuncs.com",
+  ]
 
+  ram_users = [
+    "acs:ram::${var.account_id}:root",
+  ]
+
+  //    "acs:ram::${var.member_account_id}:user/username"]
   description = "this is a role test."
   force       = true
 }
@@ -60,24 +52,21 @@ resource "alicloud_ram_role" "role" {
 resource "alicloud_ram_policy" "policy" {
   name = "${var.policy_name}"
 
-  document = <<EOF
-  {
-    "Statement": [
-      {
-        "Action": [
-          "oss:ListObjects",
-          "oss:GetObject"
-        ],
-        "Effect": "Deny",
-        "Resource": [
-          "acs:oss:*:*:mybucket",
-          "acs:oss:*:*:mybucket/*"
-        ]
-      }
-    ],
-      "Version": "1"
-  }
-  EOF
+  statement = [
+    {
+      effect = "Deny"
+
+      action = [
+        "oss:ListObjects",
+        "oss:GetObject",
+      ]
+
+      resource = [
+        "acs:oss:*:*:mybucket",
+        "acs:oss:*:*:mybucket/*",
+      ]
+    },
+  ]
 
   description = "this is a policy test"
   force       = true
@@ -102,5 +91,5 @@ resource "alicloud_ram_role_policy_attachment" "attach" {
 }
 
 resource "alicloud_ram_account_alias" "alias" {
-  account_alias = "testAccHello"
+  account_alias = "hallo"
 }

@@ -221,26 +221,26 @@ func testAccCommonBandwidthPackageAttachmentConfigMulti(rand int) string {
     	default = "tf-testAccBandwidtchPackage%d"
     }
 
-	variable "count"{
+	variable "number" {
     	default = "2"
     }
 
 	resource "alicloud_common_bandwidth_package" "default" {
-		count = "${var.count}"
+		count = "${var.number}"
 		bandwidth = "2"
 		name = "${var.name}"
 		description = "${var.name}_description"
 	}
 
 	resource "alicloud_eip" "default" {
-		count = "${var.count}"
+		count = "${var.number}"
 		name = "${var.name}"
 		bandwidth            = "2"
 		internet_charge_type = "PayByTraffic"
 	}
 
 	resource "alicloud_common_bandwidth_package_attachment" "default" {
-		count = "${var.count}"
+		count = "${var.number}"
 		bandwidth_package_id = "${element(alicloud_common_bandwidth_package.default.*.id,count.index)}"
 		instance_id = "${element(alicloud_eip.default.*.id,count.index)}"
 	}

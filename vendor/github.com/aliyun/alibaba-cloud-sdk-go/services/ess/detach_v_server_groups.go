@@ -76,17 +76,23 @@ func (client *Client) DetachVServerGroupsWithCallback(request *DetachVServerGrou
 // DetachVServerGroupsRequest is the request struct for api DetachVServerGroups
 type DetachVServerGroupsRequest struct {
 	*requests.RpcRequest
-	ResourceOwnerAccount string                             `position:"Query" name:"ResourceOwnerAccount"`
 	ScalingGroupId       string                             `position:"Query" name:"ScalingGroupId"`
-	ForceDetach          requests.Boolean                   `position:"Query" name:"ForceDetach"`
+	ResourceOwnerAccount string                             `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerId              requests.Integer                   `position:"Query" name:"OwnerId"`
+	ForceDetach          requests.Boolean                   `position:"Query" name:"ForceDetach"`
 	VServerGroup         *[]DetachVServerGroupsVServerGroup `position:"Query" name:"VServerGroup"  type:"Repeated"`
 }
 
 // DetachVServerGroupsVServerGroup is a repeated param struct in DetachVServerGroupsRequest
 type DetachVServerGroupsVServerGroup struct {
-	LoadBalancerId        string    `name:"LoadBalancerId"`
-	VServerGroupAttribute *[]string `name:"VServerGroupAttribute" type:"Repeated"`
+	LoadBalancerId        string                                      `name:"LoadBalancerId"`
+	VServerGroupAttribute *[]DetachVServerGroupsVServerGroupAttribute `name:"VServerGroupAttribute" type:"Repeated"`
+}
+
+// DetachVServerGroupsVServerGroupAttribute is a repeated param struct in DetachVServerGroupsRequest
+type DetachVServerGroupsVServerGroupAttribute struct {
+	VServerGroupId string `name:"VServerGroupId"`
+	Port           string `name:"Port"`
 }
 
 // DetachVServerGroupsResponse is the response struct for api DetachVServerGroups

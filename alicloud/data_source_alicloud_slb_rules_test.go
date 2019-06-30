@@ -97,7 +97,7 @@ variable "name" {
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation" = "VSwitch"
+	available_resource_creation = "VSwitch"
 }
 data "alicloud_images" "default" {
   name_regex = "^ubuntu_16.*_64"
@@ -150,7 +150,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_http_code = "http_2xx,http_3xx"
   bandwidth = 10
-  x_forwarded_for = {
+  x_forwarded_for  {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
@@ -170,13 +170,11 @@ resource "alicloud_instance" "default" {
 
 resource "alicloud_slb_server_group" "default" {
   load_balancer_id = "${alicloud_slb.default.id}"
-  servers = [
-    {
+  servers {
       server_ids = ["${alicloud_instance.default.id}"]
       port = 80
       weight = 100
     }
-  ]
 }
 
 resource "alicloud_slb_rule" "default" {

@@ -163,6 +163,11 @@ func TestAccAlicloudVpnGatewayBasic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccVpnConfig_name(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -237,7 +242,7 @@ resource "alicloud_vpc" "default" {
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vswitch" "default" {
@@ -268,7 +273,7 @@ resource "alicloud_vpc" "default" {
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vswitch" "default" {
@@ -300,7 +305,7 @@ resource "alicloud_vpc" "default" {
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vswitch" "default" {
@@ -330,7 +335,7 @@ resource "alicloud_vpc" "default" {
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vswitch" "default" {
@@ -362,7 +367,7 @@ resource "alicloud_vpc" "default" {
 }
 
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vswitch" "default" {

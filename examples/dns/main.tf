@@ -16,7 +16,7 @@ data "alicloud_dns_records" "record" {
 
 resource "alicloud_dns_group" "group" {
   name  = "${var.group_name}"
-  count = "${var.count}"
+  count = "${var.number}"
 }
 
 resource "alicloud_dns" "dns" {

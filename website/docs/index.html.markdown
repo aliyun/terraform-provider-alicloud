@@ -6,13 +6,15 @@ description: |-
   The Alicloud provider is used to interact with many resources supported by Alicloud. The provider needs to be configured with the proper credentials before it can be used.
 ---
 
-# Alicloud Provider
+# Alibaba Cloud Provider
 
-The Alicloud provider is used to interact with the
-many resources supported by [Alicloud](https://www.alibabacloud.com). The provider needs to be configured
+The Alibaba Cloud provider is used to interact with the
+many resources supported by [Alibaba Cloud](https://www.alibabacloud.com). The provider needs to be configured
 with the proper credentials before it can be used.
 
 Use the navigation on the left to read about the available resources.
+
+-> **Note:** From version 1.50.0, the provider start to support Terraform 0.12.x.
 
 -> **Note:** When you use terraform on a `Windows` computer, please install [golang](https://golang.org/dl/) first.
 Otherwise, you may encounter an issue that occurs from the version 1.8.1 to 1.10.0. For more information, please read the [Crash Error](https://github.com/alibaba/terraform-provider/issues/469).

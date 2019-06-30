@@ -186,7 +186,7 @@ func testAccNasMountTargetVpcConfig(rand1 int, rand2 int) string {
 		default = "tf-testAccVswitch"
 	}
 	data "alicloud_zones" "default" {
-		"available_resource_creation"= "VSwitch"
+		available_resource_creation = "VSwitch"
 	}
 	resource "alicloud_vpc" "default" {
 		name = "${var.name}"
@@ -233,7 +233,7 @@ func testAccNasMountTargetConfigUpdateAccessGroup(rand1 int, rand2 int) string {
                 default = "tf-testAccVswitch"
 	}
 	data "alicloud_zones" "default" {
-                "available_resource_creation"= "VSwitch"
+		available_resource_creation = "VSwitch"
 	}
 	resource "alicloud_vpc" "default" {
                 name = "${var.name}"
@@ -279,7 +279,7 @@ func testAccNasMountTargetConfigUpdateStatus(rand1 int, rand2 int) string {
                 default = "tf-testAccVswitch"
 	}
 	data "alicloud_zones" "default" {
-                "available_resource_creation"= "VSwitch"
+		available_resource_creation = "VSwitch"
 	}
 	resource "alicloud_vpc" "default" {
                 name = "${var.name}"
@@ -326,7 +326,7 @@ func testAccNasMountTargetConfigUpdateAll(rand1 int, rand2 int) string {
                 default = "tf-testAccVswitch"
 	}
 	data "alicloud_zones" "default" {
-                "available_resource_creation"= "VSwitch"
+		available_resource_creation = "VSwitch"
 	}
 	resource "alicloud_vpc" "default" {
                 name = "${var.name}"
@@ -373,7 +373,7 @@ func testAccNasMountTargetVpcConfigT(rand1 int, rand2 int) string {
 		default = "tf-testAccVswitch"
 	}
 	data "alicloud_zones" "default" {
-		"available_resource_creation"= "VSwitch"
+		available_resource_creation = "VSwitch"
 	}
 	resource "alicloud_vpc" "default" {
 		name = "${var.name}"
@@ -420,7 +420,7 @@ func testAccNasMountTargetConfigUpdateAccessGroupT(rand1 int, rand2 int) string 
         	default = "tf-testAccVswitch"
 	}
 	data "alicloud_zones" "default" {
-        	"available_resource_creation"= "VSwitch"
+		available_resource_creation = "VSwitch"
 	}
 	resource "alicloud_vpc" "default" {
                 name = "${var.name}"
@@ -466,7 +466,7 @@ func testAccNasMountTargetConfigUpdateStatusT(rand1 int, rand2 int) string {
                 default = "tf-testAccVswitch"
 	}
 	data "alicloud_zones" "default" {
-                "available_resource_creation"= "VSwitch"
+		available_resource_creation = "VSwitch"
 	}
 	resource "alicloud_vpc" "default" {
                 name = "${var.name}"
@@ -513,7 +513,7 @@ func testAccNasMountTargetConfigUpdateAllT(rand1 int, rand2 int) string {
                 default = "tf-testAccVswitch"
 	}
 	data "alicloud_zones" "default" {
-                "available_resource_creation"= "VSwitch"
+		available_resource_creation = "VSwitch"
 	}
 	resource "alicloud_vpc" "default" {
                 name = "${var.name}"

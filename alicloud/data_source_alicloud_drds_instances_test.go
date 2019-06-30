@@ -77,7 +77,7 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 func dataSourceDRDSInstancesConfigDependence(name string) string {
 	return fmt.Sprintf(`
  	data "alicloud_zones" "default" {
-		"available_resource_creation"= "VSwitch"
+		available_resource_creation = "VSwitch"
 	}
  	variable "name" {
 		default = "%s"

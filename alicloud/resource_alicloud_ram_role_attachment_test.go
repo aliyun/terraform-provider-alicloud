@@ -105,7 +105,7 @@ func testAccRamRoleAttachmentConfig(common string, rand int) string {
 
 	resource "alicloud_ram_role_attachment" "default" {
 	  role_name = "${alicloud_ram_role.default.name}"
-	  instance_ids = ["${alicloud_instance.default.*.id}"]
+	  instance_ids = "${alicloud_instance.default.*.id}"
 	}`, common, defaultRegionToTest, rand)
 }
 

@@ -100,35 +100,29 @@ func dataSourceApigatewayApisConfigDependence(name string) string {
 	  group_id = "${alicloud_api_gateway_group.default.id}"
 	  description = "tf_testAcc_api description"
 	  auth_type = "APP"
-	  request_config = [
-	    {
+	  request_config {
 	      protocol = "HTTP"
 	      method = "GET"
 	      path = "/test/path"
 	      mode = "MAPPING"
-	    },
-	  ]
+	    }
 	  service_type = "HTTP"
-	  http_service_config = [
-	    {
+	  http_service_config {
 	      address = "http://apigateway-backend.default.com:8080"
 	      method = "GET"
 	      path = "/web/cloudapi"
 	      timeout = 20
 	      aone_name = "cloudapi-openapi"
-	    },
-	  ]
+	    }
 
-	  request_parameters = [
-	    {
+	  request_parameters {
 	      name = "testparam"
 	      type = "STRING"
 	      required = "OPTIONAL"
 	      in = "QUERY"
 	      in_service = "QUERY"
 	      name_service = "testparams"
-	    },
-	  ]
+	    }
 	}
 	`, name)
 }

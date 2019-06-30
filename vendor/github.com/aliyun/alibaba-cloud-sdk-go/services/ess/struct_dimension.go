@@ -17,6 +17,6 @@ package ess
 
 // Dimension is a nested struct in ess response
 type Dimension struct {
-	DimensionKey   string `json:"DimensionKey" xml:"DimensionKey"`
 	DimensionValue string `json:"DimensionValue" xml:"DimensionValue"`
+	DimensionKey   string `json:"DimensionKey" xml:"DimensionKey"`
 }

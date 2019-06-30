@@ -29,24 +29,24 @@ func (s *CmsService) BuildCmsAlarmRequest(id string) *requests.CommonRequest {
 	return request
 }
 
-func (s *CmsService) DescribeAlarm(id string) (alarm cms.AlarmInListAlarm, err error) {
+func (s *CmsService) DescribeAlarm(id string) (alarm cms.Alarm, err error) {
 
-	request := cms.CreateListAlarmRequest()
+	request := cms.CreateDescribeMetricRuleListRequest()
 
-	request.Id = id
+	request.RuleIds = id
 	raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.ListAlarm(request)
+		return cmsClient.DescribeMetricRuleList(request)
 	})
 	if err != nil {
 		return alarm, err
 	}
-	response, _ := raw.(*cms.ListAlarmResponse)
+	response, _ := raw.(*cms.DescribeMetricRuleListResponse)
 
-	if len(response.AlarmList.Alarm) < 1 {
+	if len(response.Alarms.Alarm) < 1 {
 		return alarm, GetNotFoundErrorFromString(GetNotFoundMessage("Alarm Rule", id))
 	}
 
-	return response.AlarmList.Alarm[0], nil
+	return response.Alarms.Alarm[0], nil
 }
 
 func (s *CmsService) WaitForCmsAlarm(id string, enabled bool, timeout int) error {
@@ -60,7 +60,7 @@ func (s *CmsService) WaitForCmsAlarm(id string, enabled bool, timeout int) error
 			return err
 		}
 
-		if alarm.Enable == enabled {
+		if alarm.EnableState == enabled {
 			break
 		}
 		timeout = timeout - DefaultIntervalShort

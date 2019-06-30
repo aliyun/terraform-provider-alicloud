@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"strconv"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -15,7 +17,7 @@ import (
 
 func resourceAlicloudCmsAlarm() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCmsAlarmCreate,
+		Create: resourceAlicloudCmsAlarmUpdate,
 		Read:   resourceAlicloudCmsAlarmRead,
 		Update: resourceAlicloudCmsAlarmUpdate,
 		Delete: resourceAlicloudCmsAlarmDelete,
@@ -84,12 +86,18 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Optional:     true,
 				Default:      0,
 				ValidateFunc: validateIntegerInRange(0, 24),
+				Deprecated:   "Field 'start_time' has been deprecated from provider version 1.50.0. New field 'effective_interval' instead.",
 			},
 			"end_time": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      24,
 				ValidateFunc: validateIntegerInRange(0, 24),
+				Deprecated:   "Field 'end_time' has been deprecated from provider version 1.50.0. New field 'effective_interval' instead.",
+			},
+			"effective_interval": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"silence_time": {
 				Type:         schema.TypeInt,
@@ -102,6 +110,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: validateAllowedIntValue([]int{0, 1}),
+				Removed:      "Field 'notify_type' has been removed from provider version 1.50.0.",
 			},
 
 			"enabled": {
@@ -122,28 +131,90 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 	}
 }
 
-func resourceAlicloudCmsAlarmCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
 
-	request := cms.CreateCreateAlarmRequest()
+	alarm, err := cmsService.DescribeAlarm(d.Id())
 
-	request.Name = d.Get("name").(string)
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return err
+	}
+
+	d.Set("name", alarm.RuleName)
+	d.Set("project", alarm.Namespace)
+	d.Set("metric", alarm.MetricName)
+	if period, err := strconv.Atoi(alarm.Period); err != nil {
+		return fmt.Errorf("Atoi Period got an error: %#v.", err)
+	} else {
+		d.Set("period", period)
+	}
+	d.Set("statistics", alarm.Escalations.Critical.Statistics)
+	oper := convertOperator(alarm.Escalations.Critical.ComparisonOperator)
+	if oper == MoreThan && d.Get("operator").(string) == Equal {
+		oper = Equal
+	}
+	d.Set("operator", oper)
+	d.Set("threshold", alarm.Escalations.Critical.Threshold)
+	if count, err := strconv.Atoi(alarm.Escalations.Critical.Times); err != nil {
+		return fmt.Errorf("Atoi Escalations.Critical.Times got an error: %#v.", err)
+	} else {
+		d.Set("triggered_count", count)
+	}
+	d.Set("effective_interval", alarm.EffectiveInterval)
+	//d.Set("start_time", parts[0])
+	//d.Set("end_time", parts[1])
+	if silence, err := strconv.Atoi(alarm.SilenceTime); err != nil {
+		return fmt.Errorf("Atoi SilenceTime got an error: %#v.", err)
+	} else {
+		d.Set("silence_time", silence)
+	}
+	d.Set("status", alarm.AlertState)
+	d.Set("enabled", alarm.EnableState)
+	d.Set("webhook", alarm.Webhook)
+	d.Set("contact_groups", strings.Split(alarm.ContactGroups, ","))
+
+	var dims []string
+	if alarm.Dimensions != "" {
+		if err := json.Unmarshal([]byte(alarm.Dimensions), &dims); err != nil {
+			return fmt.Errorf("Unmarshaling Dimensions got an error: %#v.", err)
+		}
+	}
+	d.Set("dimensions", dims)
+
+	return nil
+}
+
+func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	cmsService := CmsService{client}
+	d.SetId(resource.UniqueId())
+	d.Partial(true)
+
+	request := cms.CreatePutResourceMetricRuleRequest()
+	request.RuleId = d.Id()
+	request.RuleName = d.Get("name").(string)
 	request.Namespace = d.Get("project").(string)
 	request.MetricName = d.Get("metric").(string)
-	request.Period = requests.NewInteger(d.Get("period").(int))
-	request.Statistics = d.Get("statistics").(string)
-	request.ComparisonOperator = d.Get("operator").(string)
-	request.Threshold = d.Get("threshold").(string)
-	request.EvaluationCount = requests.NewInteger(d.Get("triggered_count").(int))
-	request.ContactGroups = convertListToJsonString(d.Get("contact_groups").([]interface{}))
-	request.StartTime = requests.NewInteger(d.Get("start_time").(int))
-	request.EndTime = requests.NewInteger(d.Get("end_time").(int))
+	request.Period = strconv.Itoa(d.Get("period").(int))
+	request.EscalationsCriticalStatistics = d.Get("statistics").(string)
+	request.EscalationsCriticalComparisonOperator = convertOperator(d.Get("operator").(string))
+	request.EscalationsCriticalThreshold = d.Get("threshold").(string)
+	request.EscalationsCriticalTimes = requests.NewInteger(d.Get("triggered_count").(int))
+	request.ContactGroups = strings.Join(expandStringList(d.Get("contact_groups").([]interface{})), ",")
+	if v, ok := d.GetOk("effective_interval"); ok && v.(string) != "" {
+		request.EffectiveInterval = v.(string)
+	} else {
+		request.EffectiveInterval = fmt.Sprintf("%d:00-%d:00", d.Get("start_time").(int), d.Get("end_time").(int))
+	}
 	request.SilenceTime = requests.NewInteger(d.Get("silence_time").(int))
-	request.NotifyType = requests.NewInteger(d.Get("notify_type").(int))
 
 	if webhook, ok := d.GetOk("webhook"); ok && webhook.(string) != "" {
-		request.Webhook = cmsService.BuildJsonWebhook(webhook.(string))
+		request.Webhook = webhook.(string)
 	}
 
 	var dimList []map[string]string
@@ -164,97 +235,45 @@ func resourceAlicloudCmsAlarmCreate(d *schema.ResourceData, meta interface{}) er
 		if bytes, err := json.Marshal(dimList); err != nil {
 			return fmt.Errorf("Marshaling dimensions to json string got an error: %#v.", err)
 		} else {
-			request.Dimensions = string(bytes[:])
+			request.Resources = string(bytes[:])
 		}
 	}
-	raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.CreateAlarm(request)
+	_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+		return cmsClient.PutResourceMetricRule(request)
 	})
 	if err != nil {
-		return fmt.Errorf("Creating alarm got an error: %#v", err)
+		return fmt.Errorf("Putting alarm got an error: %#v", err)
 	}
-	response, _ := raw.(*cms.CreateAlarmResponse)
-	d.SetId(response.Data)
-
-	return resourceAlicloudCmsAlarmUpdate(d, meta)
-}
-
-func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	cmsService := CmsService{client}
-
-	alarm, err := cmsService.DescribeAlarm(d.Id())
-
-	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
-		return err
-	}
-
-	d.Set("name", alarm.Name)
-	d.Set("project", alarm.Namespace)
-	d.Set("metric", alarm.MetricName)
-	d.Set("period", alarm.Period)
-	d.Set("statistics", alarm.Statistics)
-	d.Set("operator", alarm.ComparisonOperator)
-	d.Set("threshold", alarm.Threshold)
-	d.Set("triggered_count", alarm.EvaluationCount)
-	d.Set("start_time", alarm.StartTime)
-	d.Set("end_time", alarm.EndTime)
-	d.Set("silence_time", alarm.SilenceTime)
-	d.Set("notify_type", alarm.NotifyType)
-	d.Set("status", alarm.State)
-	d.Set("enabled", alarm.Enable)
-
-	if alarm.Webhook != "null" {
-		webhook, err := cmsService.ExtractWebhookFromJson(alarm.Webhook)
-		if err != nil {
-			return fmt.Errorf("Extracting webhook from json got an error: %#v.", err)
-
-		}
-		d.Set("webhook", webhook)
-	}
-
-	var groups []string
-	if err := json.Unmarshal([]byte(alarm.ContactGroups), &groups); err != nil {
-		return fmt.Errorf("Unmarshaling contact groups got an error: %#v.", err)
-	} else {
-		d.Set("contact_groups", groups)
-	}
-
-	var dims []string
-	if err := json.Unmarshal([]byte(alarm.Dimensions), &dims); err != nil {
-		return fmt.Errorf("Unmarshaling Dimensions got an error: %#v.", err)
-	}
-	d.Set("dimensions", dims)
-
-	return nil
-}
-
-func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	cmsService := CmsService{client}
-
-	d.Partial(true)
+	d.SetPartial("name")
+	d.SetPartial("period")
+	d.SetPartial("statistics")
+	d.SetPartial("operator")
+	d.SetPartial("threshold")
+	d.SetPartial("triggered_count")
+	d.SetPartial("contact_groups")
+	d.SetPartial("effective_interval")
+	d.SetPartial("start_time")
+	d.SetPartial("end_time")
+	d.SetPartial("silence_time")
+	d.SetPartial("notify_type")
+	d.SetPartial("webhook")
 
 	if d.Get("enabled").(bool) {
-		request := cms.CreateEnableAlarmRequest()
-		request.Id = d.Id()
+		request := cms.CreateEnableMetricRulesRequest()
+		request.RuleId = &[]string{d.Id()}
 
 		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.EnableAlarm(request)
+			return cmsClient.EnableMetricRules(request)
 		})
 		if err != nil {
 			return fmt.Errorf("Enabling alarm got an error: %#v", err)
 		}
 	} else {
-		request := cms.CreateDisableAlarmRequest()
-		request.Id = d.Id()
+		request := cms.CreateDisableMetricRulesRequest()
+		request.RuleId = &[]string{d.Id()}
 
 		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DisableAlarm(request)
+			return cmsClient.DisableMetricRules(request)
 		})
 		if err != nil {
 			return fmt.Errorf("Disableing alarm got an error: %#v", err)
@@ -262,86 +281,6 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 	if err := cmsService.WaitForCmsAlarm(d.Id(), d.Get("enabled").(bool), 102); err != nil {
 		return err
-	}
-
-	if d.IsNewResource() {
-		d.Partial(false)
-		return resourceAlicloudCmsAlarmRead(d, meta)
-	}
-
-	update := false
-	request := cms.CreateUpdateAlarmRequest()
-	request.Id = d.Id()
-	request.ComparisonOperator = d.Get("operator").(string)
-	request.Threshold = d.Get("threshold").(string)
-
-	if d.HasChange("Name") {
-		update = true
-		request.Name = d.Get("name").(string)
-	}
-	if d.HasChange("period") {
-		update = true
-		request.Period = requests.NewInteger(d.Get("period").(int))
-	}
-	if d.HasChange("statistics") {
-		update = true
-		request.Statistics = d.Get("statistics").(string)
-	}
-	if d.HasChange("operator") {
-		update = true
-	}
-	if d.HasChange("threshold") {
-		update = true
-	}
-	if d.HasChange("triggered_count") {
-		update = true
-		request.EvaluationCount = requests.NewInteger(d.Get("triggered_count").(int))
-	}
-	if d.HasChange("contact_groups") {
-		update = true
-		request.ContactGroups = convertListToJsonString(d.Get("contact_groups").([]interface{}))
-	}
-	if d.HasChange("start_time") {
-		update = true
-		request.StartTime = requests.NewInteger(d.Get("start_time").(int))
-	}
-	if d.HasChange("end_time") {
-		update = true
-		request.EndTime = requests.NewInteger(d.Get("end_time").(int))
-	}
-	if d.HasChange("silence_time") {
-		update = true
-		request.SilenceTime = requests.NewInteger(d.Get("silence_time").(int))
-	}
-	if d.HasChange("notify_type") {
-		update = true
-		request.NotifyType = requests.NewInteger(d.Get("notify_type").(int))
-	}
-	if d.HasChange("webhook") {
-		update = true
-		request.Webhook = cmsService.BuildJsonWebhook(d.Get("webhook").(string))
-	}
-
-	if update {
-		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.UpdateAlarm(request)
-		})
-		if err != nil {
-			return fmt.Errorf("Updating alarm got an error: %#v", err)
-		}
-
-		d.SetPartial("name")
-		d.SetPartial("period")
-		d.SetPartial("statistics")
-		d.SetPartial("operator")
-		d.SetPartial("threshold")
-		d.SetPartial("triggered_count")
-		d.SetPartial("contact_groups")
-		d.SetPartial("start_time")
-		d.SetPartial("end_time")
-		d.SetPartial("silence_time")
-		d.SetPartial("notify_type")
-		d.SetPartial("webhook")
 	}
 
 	d.Partial(false)
@@ -352,30 +291,56 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudCmsAlarmDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
-	request := cms.CreateDeleteAlarmRequest()
+	request := cms.CreateDeleteMetricRulesRequest()
 
-	request.Id = d.Id()
+	request.Id = &[]string{d.Id()}
 
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
 		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DeleteAlarm(request)
+			return cmsClient.DeleteMetricRules(request)
 		})
 
 		if err != nil {
 			return resource.NonRetryableError(fmt.Errorf("Deleting alarm rule got an error: %#v", err))
 		}
 
-		resp, err := cmsService.DescribeAlarm(d.Id())
+		_, err = cmsService.DescribeAlarm(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describe alarm rule got an error: %#v", err))
 		}
-		if resp.Id == "" {
-			return nil
-		}
 
 		return resource.RetryableError(fmt.Errorf("Deleting alarm rule got an error: %#v", err))
 	})
+}
+
+func convertOperator(operator string) string {
+	switch operator {
+	case MoreThan:
+		return "GreaterThanThreshold"
+	case MoreThanOrEqual:
+		return "GreaterThanOrEqualToThreshold"
+	case LessThan:
+		return "LessThanThreshold"
+	case LessThanOrEqual:
+		return "LessThanOrEqualToThreshold"
+	case NotEqual:
+		return "NotEqualToThreshold"
+	case Equal:
+		return "GreaterThanThreshold"
+	case "GreaterThanThreshold":
+		return MoreThan
+	case "GreaterThanOrEqualToThreshold":
+		return MoreThanOrEqual
+	case "LessThanThreshold":
+		return LessThan
+	case "LessThanOrEqualToThreshold":
+		return LessThanOrEqual
+	case "NotEqualToThreshold":
+		return NotEqual
+	default:
+		return ""
+	}
 }

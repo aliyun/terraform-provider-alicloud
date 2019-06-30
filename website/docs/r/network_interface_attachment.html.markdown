@@ -22,7 +22,7 @@ variable "name" {
   default = "networkInterfaceAttachment"
 }
 
-variable "count" {
+variable "number" {
   default = "2"
 }
 
@@ -32,7 +32,7 @@ resource "alicloud_vpc" "vpc" {
 }
 
 data "alicloud_zones" "default" {
-  "available_resource_creation"= "VSwitch"
+  available_resource_creation = "VSwitch"
 }
 
 resource "alicloud_vswitch" "vswitch" {
@@ -59,7 +59,7 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_instance" "instance" {
-  count = "${var.count}"
+  count = "${var.number}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   security_groups = ["${alicloud_security_group.group.id}"]
 
@@ -72,14 +72,14 @@ resource "alicloud_instance" "instance" {
 }
 
 resource "alicloud_network_interface" "interface" {
-  count = "${var.count}"
+  count = "${var.number}"
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.vswitch.id}"
   security_groups = [ "${alicloud_security_group.group.id}" ]
 }
 
 resource "alicloud_network_interface_attachment" "attachment" {
-  count = "${var.count}"
+  count = "${var.number}"
   instance_id = "${element(alicloud_instance.instance.*.id, count.index)}"
   network_interface_id = "${element(alicloud_network_interface.interface.*.id, count.index)}"
 }

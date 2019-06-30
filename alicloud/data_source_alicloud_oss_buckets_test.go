@@ -243,22 +243,20 @@ resource "alicloud_oss_bucket" "sample_bucket" {
 	bucket = "${var.name}-sample"
 	acl = "public-read"
 
-    cors_rule = [
-    	{
+    cors_rule {
 			allowed_origins=["*"]
 			allowed_methods=["PUT","GET"]
 			allowed_headers=["authorization"]
-		},
-		{
+		}
+	cors_rule {
 			allowed_origins=["http://www.a.com"]
 			allowed_methods=["GET"]
 			allowed_headers=["authorization"]
 			expose_headers=["x-oss-test"]
 			max_age_seconds=100
 		}
-    ]
 
-	website = {
+	website {
 		index_document = "index.html"
 		error_document = "error.html"
 	}
@@ -273,16 +271,15 @@ resource "alicloud_oss_bucket" "sample_bucket" {
 		referers = ["http://www.aliyun.com"]
 	}
 
-	lifecycle_rule = [
-		{
+	lifecycle_rule {
 			id = "rule1"
 			prefix = "path1/"
 			enabled = true
 			expiration {
 				days = 365
 			}
-		},
-		{
+		}
+	lifecycle_rule {
 			id = "rule2"
 			prefix = "path2/"
 			enabled = true
@@ -290,7 +287,6 @@ resource "alicloud_oss_bucket" "sample_bucket" {
 				date = "2018-01-12"
 			}
 		}
-	]
     policy = "{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}"
 }
 
@@ -316,11 +312,9 @@ resource "alicloud_oss_bucket" "sample_bucket" {
 	bucket = "${var.name}-sample"
 	acl = "public-read"
 
- 	server_side_encryption_rule = [
-		{
-			sse_algorithm = "AES256",
-		}
-	]
+ 	server_side_encryption_rule {
+		sse_algorithm = "AES256"
+	}
 }
 
 data "alicloud_oss_buckets" "buckets" {
@@ -361,7 +355,7 @@ resource "alicloud_oss_bucket" "sample_bucket" {
 	bucket = "${var.name}-sample"
 	acl = "public-read"
 
-	versioning = {
+	versioning {
 		status = "Enabled"
 	}
 }

@@ -1,6 +1,6 @@
 data "alicloud_zones" "default" {
-  "available_disk_category"     = "cloud_efficiency"
-  "available_resource_creation" = "VSwitch"
+  available_disk_category      = "cloud_efficiency"
+  available_resource_creation = "VSwitch"
 }
 
 data "alicloud_instance_types" "default" {
@@ -59,18 +59,16 @@ resource "alicloud_slb_server_group" "group" {
   load_balancer_id = "${alicloud_slb.instance.id}"
   name             = "${var.name}"
 
-  servers = [
-    {
+  servers {
       server_ids = ["${alicloud_instance.instance.0.id}", "${alicloud_instance.instance.1.id}"]
       port       = 100
       weight     = 10
-    },
-    {
+    }
+  servers {
       server_ids = ["${alicloud_instance.instance.*.id}"]
       port       = 80
       weight     = 100
-    },
-  ]
+    }
 }
 
 resource "alicloud_slb_listener" "tcp" {

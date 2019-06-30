@@ -16,11 +16,13 @@ func TestAccAlicloudLogStoreIndex_fullText(t *testing.T) {
 	var project sls.LogProject
 	var store sls.LogStore
 	var index sls.Index
+	resourceId := "alicloud_log_store_index.foo"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudLogStoreIndexDestroy,
+		PreCheck:      func() { testAccPreCheck(t) },
+		Providers:     testAccProviders,
+		IDRefreshName: resourceId,
+		CheckDestroy:  testAccCheckAlicloudLogStoreIndexDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudLogStoreIndexFullText(acctest.RandInt()),
@@ -33,6 +35,11 @@ func TestAccAlicloudLogStoreIndex_fullText(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_log_store_index.foo", "full_text.1.token", " #$^*\r\n\t"),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -41,11 +48,13 @@ func TestAccAlicloudLogStoreIndex_field(t *testing.T) {
 	var project sls.LogProject
 	var store sls.LogStore
 	var index sls.Index
+	resourceId := "alicloud_log_project.bar"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudLogStoreIndexDestroy,
+		PreCheck:      func() { testAccPreCheck(t) },
+		Providers:     testAccProviders,
+		IDRefreshName: resourceId,
+		CheckDestroy:  testAccCheckAlicloudLogStoreIndexDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudLogStoreIndexField(acctest.RandInt()),
@@ -56,6 +65,11 @@ func TestAccAlicloudLogStoreIndex_field(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_log_store_index.bar", "field_search.#", "1"),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -64,11 +78,13 @@ func TestAccAlicloudLogStoreIndex_all(t *testing.T) {
 	var project sls.LogProject
 	var store sls.LogStore
 	var index sls.Index
+	resourceId := "alicloud_log_project.all"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudLogStoreIndexDestroy,
+		PreCheck:      func() { testAccPreCheck(t) },
+		Providers:     testAccProviders,
+		IDRefreshName: resourceId,
+		CheckDestroy:  testAccCheckAlicloudLogStoreIndexDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudLogStoreIndexAll(acctest.RandInt()),
@@ -80,6 +96,11 @@ func TestAccAlicloudLogStoreIndex_all(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_log_store_index.all", "full_text.1.case_sensitive", "true"),
 					resource.TestCheckResourceAttr("alicloud_log_store_index.all", "field_search.#", "2"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -192,7 +213,6 @@ func testAlicloudLogStoreIndexField(rand int) string {
 	      name = "${var.name}"
 	      enable_analytics = true
 	      token = " #$^*\r\n\t"
-	      name = "${var.name}-1"
 	      type = "text"
 	    }
 	}
@@ -222,17 +242,15 @@ func testAlicloudLogStoreIndexAll(rand int) string {
 		case_sensitive = true
 		token = " #$^*\r\n\t"
 	    }
-	    field_search = [
-	    {
+	    field_search {
 		name = "${var.name}-1"
 		enable_analytics = true
-	    },
-	    {
+	    }
+		field_search {
 		token = " #$^*\r\n\t"
 		name = "${var.name}-2"
 		type = "text"
 	    }
-	    ]
 	}
 	`, rand)
 }

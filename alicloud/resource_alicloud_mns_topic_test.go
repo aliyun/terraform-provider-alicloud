@@ -81,11 +81,13 @@ func TestAccAlicloudMnsTopic_basic(t *testing.T) {
 
 	var attr ali_mns.TopicAttribute
 	rand := acctest.RandIntRange(10000, 999999)
+	resourceId := "alicloud_mns_topic.topic"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckMNSTopicDestroy,
+		PreCheck:      func() { testAccPreCheck(t) },
+		Providers:     testAccProviders,
+		IDRefreshName: resourceId,
+		CheckDestroy:  testAccCheckMNSTopicDestroy,
 
 		Steps: []resource.TestStep{
 			{
@@ -94,6 +96,11 @@ func TestAccAlicloudMnsTopic_basic(t *testing.T) {
 					testAccMNSTopicExist("alicloud_mns_topic.topic", &attr),
 					resource.TestCheckResourceAttr("alicloud_mns_topic.topic", "name", fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand)),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccMNSTopicConfigUpdate(rand),

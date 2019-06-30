@@ -39,7 +39,7 @@ Single AZ Kubernetes Cluster
 
 ```
 data "alicloud_zones" "default" {
-  "available_resource_creation"= "VSwitch"
+  available_resource_creation = "VSwitch"
 }
 
 resource "alicloud_cs_kubernetes" "main" {

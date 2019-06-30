@@ -184,7 +184,7 @@ func testAccCheckAlicloudOtsInstancesDataSource_ids_exist(randInt int) string {
 	  name = "${var.name}"
 	  description = "${var.name}"
 	  instance_type = "Capacity"
-	  tags {
+	  tags = {
 		Created = "TF"
 		For = "acceptance test"
 	  }
@@ -204,7 +204,7 @@ func testAccCheckAlicloudOtsInstancesDataSource_ids_fake(randInt int) string {
 	  name = "${var.name}"
 	  description = "${var.name}"
 	  instance_type = "Capacity"
-	  tags {
+	  tags = {
 		Created = "TF"
 		For = "acceptance test"
 	  }
@@ -224,7 +224,7 @@ func testAccCheckAlicloudOtsInstancesDataSource_name_regex_exist(randInt int) st
 	  name = "${var.name}"
 	  description = "${var.name}"
 	  instance_type = "Capacity"
-	  tags {
+	  tags = {
 		Created = "TF"
 		For = "acceptance test"
 	  }
@@ -244,7 +244,7 @@ func testAccCheckAlicloudOtsInstancesDataSource_name_regex_fake(randInt int) str
 	  name = "${var.name}"
 	  description = "${var.name}"
 	  instance_type = "Capacity"
-	  tags {
+	  tags = {
 		Created = "TF"
 		For = "acceptance test"
 	  }
@@ -264,7 +264,7 @@ func testAccCheckAlicloudOtsInstancesDataSource_tags_exist(randInt int) string {
 	  name = "${var.name}"
 	  description = "${var.name}"
 	  instance_type = "Capacity"
-	  tags {
+	  tags = {
 		Created = "TF%d"
 		For = "acceptance test"
 	  }

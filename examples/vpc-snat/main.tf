@@ -9,8 +9,8 @@ data "alicloud_instance_types" "1c2g" {
 }
 
 data "alicloud_zones" "default" {
-  "available_instance_type" = "${data.alicloud_instance_types.1c2g.instance_types.0.id}"
-  "available_disk_category" = "${var.disk_category}"
+  available_instance_type = "${data.alicloud_instance_types.1c2g.instance_types.0.id}"
+  available_disk_category  = "${var.disk_category}"
 }
 
 resource "alicloud_vpc" "default" {

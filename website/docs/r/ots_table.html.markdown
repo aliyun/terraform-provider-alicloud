@@ -23,7 +23,7 @@ resource "alicloud_ots_instance" "foo" {
   name = "${var.name}"
   description = "${var.name}"
   accessed_by = "Any"
-  tags {
+  tags = {
     Created = "TF"
     For = "acceptance test"
   }

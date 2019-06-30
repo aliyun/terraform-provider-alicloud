@@ -535,8 +535,26 @@ var testFCLogRoleTemplate = `
 }
 `
 
-var testTriggerCdnEventsTemplate = `{"eventName":"LogFileCreated","eventVersion":"1.0.0","notes":"cdn events trigger","filter":{"domain":["${alicloud_cdn_domain.default.domain_name}"]}}`
-var testTriggerUpdateCdnEventsTemplate = `{"eventName":"LogFileCreated","eventVersion":"1.0.0","notes":"update cdn events trigger","filter":{"domain":["${alicloud_cdn_domain.default.domain_name}"]}}`
+var testTriggerCdnEventsTemplate = `
+	{
+		"eventName": "LogFileCreated",
+		"eventVersion": "1.0.0",
+		"notes": "cdn events trigger",
+		"filter": {
+			"domain": ["${alicloud_cdn_domain.default.domain_name}"]
+		}
+	}
+`
+var testTriggerUpdateCdnEventsTemplate = `
+	{
+		"eventName": "LogFileCreated",
+		"eventVersion":"1.0.0",
+		"notes": "update cdn events trigger",
+		"filter": {
+			"domain": ["${alicloud_cdn_domain.default.domain_name}"]
+		}
+	}
+`
 
 var testFCcdnPolicyTemplate = `
 {
@@ -649,7 +667,8 @@ resource "alicloud_fc_trigger" "default" {
   source_arn = "acs:cdn:*:${data.alicloud_account.default.id}"
   type = "cdn_events"
   config = <<EOF
-%sEOF
+	%s
+  EOF
   depends_on = ["alicloud_ram_role_policy_attachment.default"]
 }
 `, name, role, policy, trigger)

@@ -16,11 +16,12 @@ import (
 func TestAccAlicloudLogMachineGroup_ip(t *testing.T) {
 	var project sls.LogProject
 	var group sls.MachineGroup
-
+	resourceId := "alicloud_log_project.foo"
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudLogMachineGroupDestroy,
+		PreCheck:      func() { testAccPreCheck(t) },
+		Providers:     testAccProviders,
+		IDRefreshName: resourceId,
+		CheckDestroy:  testAccCheckAlicloudLogMachineGroupDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudLogMachineGroupIp(acctest.RandInt()),
@@ -31,6 +32,11 @@ func TestAccAlicloudLogMachineGroup_ip(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_log_machine_group.foo", "topic", "terraform"),
 					resource.TestCheckResourceAttr("alicloud_log_machine_group.foo", "identify_list.#", "3"),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

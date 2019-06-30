@@ -702,12 +702,12 @@ func testAccAlicloudOssBucketCorsConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "cors" {
 	bucket = "tf-testacc-bucket-cors-%d"
-	cors_rule ={
+	cors_rule {
 		allowed_origins=["*"]
 		allowed_methods=["PUT","GET"]
 		allowed_headers=["authorization"]
 	}
-	cors_rule ={
+	cors_rule {
 		allowed_origins=["http://www.a.com", "http://www.b.com"]
 		allowed_methods=["GET"]
 		allowed_headers=["authorization"]
@@ -722,7 +722,7 @@ func testAccAlicloudOssBucketWebsiteConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "website"{
 	bucket = "tf-testacc-bucket-website-%d"
-	website = {
+	website {
 		index_document = "index.html"
 		error_document = "error.html"
 	}
@@ -803,7 +803,7 @@ func testAccAlicloudOssBucketSseRuleConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "sserule" {
 	bucket = "tf-testacc-bucket-sserule-%d"
-	server_side_encryption_rule = {
+	server_side_encryption_rule {
 		sse_algorithm = "AES256"
 	}
 }
@@ -814,7 +814,7 @@ func testAccAlicloudOssBucketUpdateSseRuleConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "sserule" {
 	bucket = "tf-testacc-bucket-sserule-%d"
-	server_side_encryption_rule = {
+	server_side_encryption_rule {
 		sse_algorithm = "KMS"
 	}
 }
@@ -833,7 +833,7 @@ func testAccAlicloudOssBucketTagsConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "tags" {
 	bucket = "tf-testacc-bucket-tags-%d"
-	tags {
+	tags = {
 		key1 = "value1", 
 		key2 = "value2", 
 	}
@@ -845,7 +845,7 @@ func testAccAlicloudOssBucketUpdateTagsConfig(randInt int) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "tags" {
 	bucket = "tf-testacc-bucket-tags-%d"
-	tags {
+	tags = {
 		key1-update = "value1-update", 
 		key2-update = "value2-update", 
 		key3-new = "value3-new", 
@@ -867,7 +867,7 @@ func testAccAlicloudOssBucketVersioningConfig(randInt int) string {
 resource "alicloud_oss_bucket" "versioning" {
 	bucket = "tf-testacc-bucket-version-%d"
 	
-	versioning = {
+	versioning {
 		status = "Enabled"
 	}
 }
@@ -879,7 +879,7 @@ func testAccAlicloudOssBucketUpdateVersioningConfig(randInt int) string {
 resource "alicloud_oss_bucket" "versioning" {
 	bucket = "tf-testacc-bucket-version-%d"
 	
-	versioning = {
+	versioning {
 		status = "Suspended"
 	}
 }

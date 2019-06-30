@@ -24,7 +24,7 @@ resource "alicloud_disk" "ecs_disk" {
   category          = "cloud_efficiency"
   size              = "30"
 
-  tags {
+  tags = {
     Name = "TerraformTest"
   }
 }

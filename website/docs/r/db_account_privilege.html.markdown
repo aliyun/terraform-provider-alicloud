@@ -64,7 +64,7 @@ Provides an RDS account privilege resource and used to grant several database so
 	  instance_id = "${alicloud_db_instance.instance.id}"
 	  account_name = "${alicloud_db_account.account.name}"
 	  privilege = "ReadOnly"
-	  db_names = ["${alicloud_db_database.db.*.name}"]
+	  db_names = "${alicloud_db_database.db.*.name}"
 	}
 ```
 

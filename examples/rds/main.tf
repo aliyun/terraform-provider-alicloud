@@ -28,7 +28,7 @@ resource "alicloud_db_instance" "instance" {
   instance_storage = "${var.storage}"
   vswitch_id       = "${var.vswitch_id == "" ? alicloud_vswitch.vswitch.id : var.vswitch_id}"
 
-  tags {
+  tags = {
     role = "${var.role}"
   }
 }
@@ -61,5 +61,5 @@ resource "alicloud_db_account_privilege" "privilege" {
   count        = 2
   instance_id  = "${alicloud_db_instance.instance.id}"
   account_name = "${element(alicloud_db_account.account.*.name, count.index)}"
-  db_names     = ["${alicloud_db_database.db.*.name}"]
+  db_names     = "${alicloud_db_database.db.*.name}"
 }

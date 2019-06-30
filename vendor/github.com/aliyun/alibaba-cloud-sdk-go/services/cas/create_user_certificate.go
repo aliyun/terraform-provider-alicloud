@@ -87,7 +87,7 @@ type CreateUserCertificateRequest struct {
 type CreateUserCertificateResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
-	CertId   requests.Integer `json:"CertId" xml:"CertId"`
+	CertId    int    `json:"CertId" xml:"CertId"`
 }
 
 // CreateCreateUserCertificateRequest creates a request to invoke CreateUserCertificate API

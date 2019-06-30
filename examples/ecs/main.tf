@@ -36,7 +36,7 @@ resource "alicloud_disk" "disk" {
   availability_zone = "${alicloud_instance.instance.0.availability_zone}"
   category          = "${var.disk_category}"
   size              = "${var.disk_size}"
-  count             = "${var.count}"
+  count             = "${var.number}"
 }
 
 resource "alicloud_vpc" "vpc" {
@@ -58,8 +58,8 @@ resource "alicloud_instance" "instance" {
   host_name       = "${var.short_name}-${var.role}-${format(var.count_format, count.index+1)}"
   image_id        = "${var.image_id}"
   instance_type   = "${data.alicloud_instance_types.instance_type.instance_types.0.id}"
-  count           = "${var.count}"
-  security_groups = ["${alicloud_security_group.group.*.id}"]
+  count           = "${var.number}"
+  security_groups = "${alicloud_security_group.group.*.id}"
   vswitch_id      = "${alicloud_vswitch.vswitch.id}"
 
   internet_charge_type       = "${var.internet_charge_type}"
@@ -86,14 +86,14 @@ resource "alicloud_instance" "instance" {
     },
   ]
 
-  tags {
+  tags = {
     role = "${var.role}"
     dc   = "${var.datacenter}"
   }
 }
 
 resource "alicloud_disk_attachment" "instance-attachment" {
-  count       = "${var.count}"
+  count       = "${var.number}"
   disk_id     = "${element(alicloud_disk.disk.*.id, count.index)}"
   instance_id = "${element(alicloud_instance.instance.*.id, count.index)}"
 }

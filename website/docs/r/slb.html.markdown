@@ -25,7 +25,7 @@ variable "name" {
   default = "terraformtestslbconfig"
 }
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation = "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
@@ -72,7 +72,7 @@ Terraform will autogenerate a name beginning with `tf-lb`.
   Before version 1.10.1, the valid values are "paybybandwidth" and "paybytraffic".
 * `bandwidth` - (Optional) Valid
   value is between 1 and 1000, If argument "internet_charge_type" is "paybytraffic", then this value will be ignore.
-* `listener` - (Deprecated) It has been deprecated from version 1.3.0, and use resource `alicloud_slb_listener` to replace.
+* `listener` - (Deprecated) The field has been deprecated from terraform-alicloud-provider [version 1.3.0](https://github.com/alibaba/terraform-provider/releases/tag/V1.3.0), and use resource `alicloud_slb_listener` to replace.
 * `vswitch_id` - (Required for a VPC SLB, Forces New Resource) The VSwitch ID to launch in.
 * `specification` - (Optional) The specification of the Server Load Balancer instance. Default to empty string indicating it is "Shared-Performance" instance.
  Launching "[Performance-guaranteed](https://www.alibabacloud.com/help/doc-detail/27657.htm)" instance, it is must be specified and it valid values are: "slb.s1.small", "slb.s2.small", "slb.s2.medium",

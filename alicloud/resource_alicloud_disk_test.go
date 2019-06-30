@@ -231,7 +231,7 @@ func TestAccAlicloudDisk_multi(t *testing.T) {
 
 const testAccDiskConfig_basic = `
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_disk" "default" {
@@ -242,7 +242,7 @@ resource "alicloud_disk" "default" {
 
 const testAccDiskConfig_size = `
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 
@@ -253,7 +253,7 @@ resource "alicloud_disk" "default" {
 `
 const testAccDiskConfig_name = `
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 
@@ -270,7 +270,7 @@ resource "alicloud_disk" "default" {
 
 const testAccDiskConfig_description = `
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 
@@ -288,7 +288,7 @@ resource "alicloud_disk" "default" {
 
 const testAccDiskConfig_tags = `
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 
@@ -313,7 +313,7 @@ resource "alicloud_disk" "default" {
 
 const testAccDiskConfig_all = `
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 variable "name" {
@@ -332,7 +332,7 @@ resource "alicloud_disk" "default" {
 
 const testAccDiskConfig_multi = `
 data "alicloud_zones" "default" {
-	"available_resource_creation"= "VSwitch"
+	available_resource_creation= "VSwitch"
 }
 
 variable "name" {

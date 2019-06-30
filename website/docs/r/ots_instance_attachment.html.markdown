@@ -18,7 +18,7 @@ resource "alicloud_ots_instance" "foo" {
   name = "my-ots-instance"
   description = "for table"
   accessed_by = "Vpc"
-  tags {
+  tags = {
     Created = "TF"
     For = "Building table"
   }

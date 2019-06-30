@@ -82,7 +82,7 @@ resource "alicloud_instance" "instances" {
 
   period = "${var.period}"
 
-  tags {
+  tags = {
     created_by   = "${lookup(var.instance_tags, "created_by")}"
     created_from = "${lookup(var.instance_tags, "created_from")}"
   }
@@ -97,7 +97,7 @@ resource "alicloud_disk" "disks" {
   category          = "${var.disk_category}"
   size              = "${var.disk_size}"
 
-  tags {
+  tags = {
     created_by   = "${lookup(var.disk_tags, "created_by")}"
     created_from = "${lookup(var.disk_tags, "created_from")}"
   }
