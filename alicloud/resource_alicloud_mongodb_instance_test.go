@@ -1027,7 +1027,7 @@ resource "alicloud_vswitch" "default" {
 }
 resource "alicloud_mongodb_instance" "default" {
   vswitch_id          = "${alicloud_vswitch.default.id}"
-  count               = 5
+  count               = 3
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
