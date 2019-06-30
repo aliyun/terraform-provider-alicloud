@@ -5,6 +5,10 @@ IMPROVEMENTS:
 - This is a Terraform 0.12 compatible release of this provider [GH-1356]
 - Deprecated resource `alicloud_cms_alarm` parameter start_time, end_time and removed notify_type based on the latest go sdk [GH-1356]
 
+BUG FIXES:
+
+- Fix deleting mongodb instance "NotFound" bug [GH-1358]
+
 ## 1.49.0 (June 28, 2019)
 
 - **New Date Source:** `alicloud_kvstore_instance_classes` ([#1315](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1315))
