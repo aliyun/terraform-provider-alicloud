@@ -63,13 +63,14 @@ func testSweepCSSwarms(region string) error {
 			log.Printf("[INFO] Skipping CS Swarm Clusters: %s (%s)", name, id)
 			continue
 		}
-		sweeped = true
 		log.Printf("[INFO] Deleting CS Swarm Clusters: %s (%s)", name, id)
 		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 			return nil, csClient.DeleteCluster(id)
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete CS Swarm Clusters (%s (%s)): %s", name, id, err)
+		} else {
+			sweeped = true
 		}
 		vpcIds = append(vpcIds, v.VPCID)
 		vswIds = append(vswIds, v.VSwitchID)

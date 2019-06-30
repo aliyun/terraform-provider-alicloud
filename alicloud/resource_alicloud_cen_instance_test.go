@@ -82,7 +82,6 @@ func testSweepCenInstances(region string) error {
 			log.Printf("[INFO] Skipping CEN Instance: %s (%s)", name, id)
 			continue
 		}
-		sweeped = true
 		describeCenAttachedChildInstancesRequest := cbn.CreateDescribeCenAttachedChildInstancesRequest()
 		describeCenAttachedChildInstancesRequest.CenId = id
 		raw, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
@@ -120,6 +119,8 @@ func testSweepCenInstances(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete CEN Instance (%s (%s)): %s", name, id, err)
+		} else {
+			sweeped = true
 		}
 	}
 	if sweeped {

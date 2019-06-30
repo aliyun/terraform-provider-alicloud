@@ -87,7 +87,6 @@ func testSweepInstances(region string) error {
 			log.Printf("[INFO] Skipping Instance: %s (%s)", name, id)
 			continue
 		}
-		sweeped = true
 		log.Printf("[INFO] Deleting Instance: %s (%s)", name, id)
 		if v.DeletionProtection {
 			request := ecs.CreateModifyInstanceAttributeRequest()
@@ -124,6 +123,8 @@ func testSweepInstances(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Instance (%s (%s)): %s", name, id, err)
+		} else {
+			sweeped = true
 		}
 	}
 	if sweeped {

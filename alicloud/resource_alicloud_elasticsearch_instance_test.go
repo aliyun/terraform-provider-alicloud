@@ -107,7 +107,6 @@ func testSweepElasticsearch(region string) error {
 			continue
 		}
 
-		sweeped = true
 		log.Printf("[INFO] Deleting Elasticsearch Instance: %s (%s)", description, id)
 		req := elasticsearch.CreateDeleteInstanceRequest()
 		req.InstanceId = id
@@ -116,6 +115,8 @@ func testSweepElasticsearch(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Elasticsearch Instance (%s (%s)): %s", description, id, err)
+		} else {
+			sweeped = true
 		}
 	}
 
