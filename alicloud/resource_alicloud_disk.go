@@ -53,14 +53,16 @@ func resourceAliyunDisk() *schema.Resource {
 			},
 
 			"snapshot_id": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"encrypted"},
 			},
 
 			"encrypted": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
+				Type:          schema.TypeBool,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"snapshot_id"},
 			},
 
 			"status": {
