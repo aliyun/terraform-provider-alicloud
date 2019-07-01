@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"strconv"
 
 	"strings"
@@ -196,11 +197,11 @@ func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 }
 
 func csKubernetesMasterPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return common.InstanceChargeType(d.Get("master_instance_charge_type").(string)) == common.PostPaid
+	return common.InstanceChargeType(d.Get("master_instance_charge_type").(string)) == common.PostPaid || !(d.Id() == "") && !d.Get("force_update").(bool)
 }
 
 func csKubernetesWorkerPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return common.InstanceChargeType(d.Get("worker_instance_charge_type").(string)) == common.PostPaid
+	return common.InstanceChargeType(d.Get("worker_instance_charge_type").(string)) == common.PostPaid || !(d.Id() == "") && !d.Get("force_update").(bool)
 }
 
 func csManagedKubernetesVswitchIdsSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -227,6 +228,14 @@ func csManagedKubernetesWorkerInstanceTypesSuppressFunc(k, old, new string, d *s
 		}
 	}
 	return false
+}
+
+func csForceUpdateSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	// many cs args are not returning from the server
+	// if this is a new resource, allow the diff
+	// args with this suppress func will always suppress the diff, unless user specified force_update
+	log.Printf("key %s, old %s, new %s, isnew %v, id %s", k, old, new, d.IsNewResource(), d.Id())
+	return !(d.Id() == "") && !d.Get("force_update").(bool)
 }
 
 func zoneIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -316,7 +325,7 @@ func rkvPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 
 func workerDataDiskSizeSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	_, ok := d.GetOk("worker_data_disk_category")
-	return !ok
+	return !ok || !(d.Id() == "") && !d.Get("force_update").(bool)
 }
 
 func imageIdSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -326,7 +335,7 @@ func imageIdSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 
 	// if we want to change cluster's image_id to default, we have to find out what the default image_id is,
 	// then fill that image_id in this field.
-	return new == ""
+	return new == "" || !(d.Id() == "") && !d.Get("force_update").(bool)
 }
 
 func esVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {

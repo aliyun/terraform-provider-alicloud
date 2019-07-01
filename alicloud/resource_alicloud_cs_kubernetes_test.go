@@ -130,7 +130,11 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
-					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca"},
+					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca", "force_update",
+					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types.#",
+					"master_instance_types.0", "node_cidr_mask", "slb_internet_enabled", "vswitch_ids.#", "vswitch_ids.0",
+					"worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_instance_types.#",
+					"worker_instance_types.0", "worker_numbers.#", "worker_numbers.0"},
 			},
 		},
 	})
@@ -297,7 +301,11 @@ func TestAccAlicloudCSMultiAZKubernetes_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
-					"service_cidr", "enable_ssh", "password", "install_cloud_monitor"},
+					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "force_update",
+					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types.#",
+					"master_instance_types.0", "node_cidr_mask", "slb_internet_enabled", "vswitch_ids.#", "vswitch_ids.0",
+					"worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_instance_types.#",
+					"worker_instance_types.0", "worker_numbers.#", "worker_numbers.0"},
 			},
 		},
 	})
@@ -450,6 +458,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
   worker_disk_category  = "cloud_ssd"
   master_disk_size = 50
   user_ca = "%s"
+  slb_internet_enabled = true
 }
 `, userCa)
 }
