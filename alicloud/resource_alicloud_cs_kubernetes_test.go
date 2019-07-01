@@ -140,47 +140,6 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCSKubernetes_autoVpc(t *testing.T) {
-	var k8s cs.ClusterType
-	resourceId := "alicloud_cs_kubernetes.k8s"
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions) },
-
-		IDRefreshName: resourceId,
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckKubernetesClusterDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccKubernetes_autoVpc,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckContainerClusterExists("alicloud_cs_kubernetes.k8s", &k8s),
-					resource.TestMatchResourceAttr("alicloud_cs_kubernetes.k8s", "name", regexp.MustCompile("^tf-testAccKubernetes-autoVpc*")),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_numbers.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_numbers.0", "1"),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_nodes.#", "3"),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_disk_category", "cloud_ssd"),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_disk_size", "50"),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "master_disk_category", "cloud_efficiency"),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "worker_disk_size", "40"),
-					resource.TestCheckResourceAttr("alicloud_cs_kubernetes.k8s", "connections.%", "4"),
-					resource.TestCheckResourceAttrSet("alicloud_cs_kubernetes.k8s", "connections.master_public_ip"),
-					resource.TestCheckResourceAttrSet("alicloud_cs_kubernetes.k8s", "connections.api_server_internet"),
-					resource.TestCheckResourceAttrSet("alicloud_cs_kubernetes.k8s", "connections.api_server_intranet"),
-					resource.TestCheckResourceAttrSet("alicloud_cs_kubernetes.k8s", "connections.service_domain"),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
-					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca"},
-			},
-		},
-	})
-}
-
 func TestAccAlicloudCSKubernetes_userCa(t *testing.T) {
 	tmpFile, err := ioutil.TempFile("", "tf-acc-alicloud-cs-kubernetes-userca")
 	if err != nil {
@@ -227,7 +186,11 @@ func TestAccAlicloudCSKubernetes_userCa(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
-					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca"},
+					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca", "force_update",
+					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types.#",
+					"master_instance_types.0", "node_cidr_mask", "slb_internet_enabled", "vswitch_ids.#", "vswitch_ids.0",
+					"worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_instance_types.#",
+					"worker_instance_types.0", "worker_numbers.#", "worker_numbers.0"},
 			},
 		},
 	})
@@ -301,7 +264,7 @@ func TestAccAlicloudCSMultiAZKubernetes_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
-					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "force_update",
+					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca", "force_update",
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types.#",
 					"master_instance_types.0", "node_cidr_mask", "slb_internet_enabled", "vswitch_ids.#", "vswitch_ids.0",
 					"worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_instance_types.#",
@@ -386,45 +349,6 @@ resource "alicloud_cs_kubernetes" "k8s" {
   service_cidr = "192.168.2.0/24"
   enable_ssh = true
   install_cloud_monitor = true
-}
-`
-
-const testAccKubernetes_autoVpc = `
-variable "name" {
-	default = "tf-testAccKubernetes-autoVpc"
-}
-data "alicloud_zones" main {
-  available_resource_creation = "VSwitch"
-}
-
-data "alicloud_instance_types" "master" {
-	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-	cpu_core_count = 2
-	memory_size = 4
-	kubernetes_node_role = "Master"
-}
-
-data "alicloud_instance_types" "worker" {
-	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-	cpu_core_count = 2
-	memory_size = 4
-	kubernetes_node_role = "Worker"
-}
-
-resource "alicloud_cs_kubernetes" "k8s" {
-  name_prefix = "${var.name}"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  new_nat_gateway = true
-  master_instance_types = ["${data.alicloud_instance_types.master.instance_types.0.id}"]
-  worker_instance_types = ["${data.alicloud_instance_types.worker.instance_types.0.id}"]
-  worker_numbers = [1]
-  password = "Yourpassword1234"
-  pod_cidr = "172.20.0.0/16"
-  service_cidr = "172.21.0.0/20"
-  enable_ssh = true
-  install_cloud_monitor = true
-  worker_disk_category  = "cloud_ssd"
-  master_disk_size = 50
 }
 `
 

@@ -22,7 +22,7 @@ Basic Usage
 
 ```
 provider "alicloud" {
-  endpoints = {
+  endpoints {
     bssopenapi = "business.aliyuncs.com"
   }
 }

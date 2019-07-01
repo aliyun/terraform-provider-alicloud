@@ -527,13 +527,14 @@ resource "alicloud_mongodb_sharding_instance" "default" {
   shard_list {
     node_class   = "dds.shard.mid"
     node_storage = 10
-    }{
+  }
+  shard_list {
     node_class   = "dds.shard.standard"
     node_storage = 20
-  }]
+  }
   mongo_list {
     node_class = "dds.mongos.mid"
-    }
+  }
   mongo_list {
     node_class = "dds.mongos.mid"
   }

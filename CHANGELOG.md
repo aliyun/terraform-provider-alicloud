@@ -2,12 +2,16 @@
 
 IMPROVEMENTS:
 
+- Remove cs kubernetes autovpc testcases [GH-1368]
+- disable nav-visible in the alicloud.erb file [GH-1365]
+- Improve sweeper test and remove some needless waiting [GH-1361]
 - This is a Terraform 0.12 compatible release of this provider [GH-1356]
 - Deprecated resource `alicloud_cms_alarm` parameter start_time, end_time and removed notify_type based on the latest go sdk [GH-1356]
-- Improve sweeper test and remove some needless waiting [GH-1361]
+- Adapt to new parameters of dedicated kubernetes cluster [GH-1354]
 
 BUG FIXES:
 
+- Fix alicloud_cas_certificate setId bug [GH-1368]
 - Fix oss bucket datasource testcase based on the 0.12 syntax [GH-1362]
 - Fix deleting mongodb instance "NotFound" bug [GH-1359]
 
