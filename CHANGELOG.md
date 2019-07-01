@@ -8,6 +8,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix oss bucket datasource testcase based on the 0.12 syntax [GH-1362]
 - Fix deleting mongodb instance "NotFound" bug [GH-1359]
 
 ## 1.49.0 (June 28, 2019)

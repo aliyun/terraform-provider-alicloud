@@ -207,7 +207,7 @@ resource "alicloud_oss_bucket" "sample_bucket" {
 	bucket = "${var.name}"
 	acl = "private"
 	force_destroy = true
-	versioning = {
+	versioning {
 		status = "Enabled"
 	}
 }
