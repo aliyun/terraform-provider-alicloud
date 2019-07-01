@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -71,7 +72,12 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeDRDSInstancesMapFunc,
 	}
 
-	drdsInstancesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
+		testAccPreCheckWithAccountSiteType(t, DomesticSite)
+	}
+
+	drdsInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceDRDSInstancesConfigDependence(name string) string {
