@@ -1,19 +1,19 @@
-## 1.50.0 (Unreleased)
+## 1.50.0 (July 01, 2019)
 
 IMPROVEMENTS:
 
-- Remove cs kubernetes autovpc testcases [GH-1368]
-- disable nav-visible in the alicloud.erb file [GH-1365]
-- Improve sweeper test and remove some needless waiting [GH-1361]
-- This is a Terraform 0.12 compatible release of this provider [GH-1356]
-- Deprecated resource `alicloud_cms_alarm` parameter start_time, end_time and removed notify_type based on the latest go sdk [GH-1356]
-- Adapt to new parameters of dedicated kubernetes cluster [GH-1354]
+- Remove cs kubernetes autovpc testcases ([#1368](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1368))
+- disable nav-visible in the alicloud.erb file ([#1365](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1365))
+- Improve sweeper test and remove some needless waiting ([#1361](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1361))
+- This is a Terraform 0.12 compatible release of this provider ([#1356](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1356))
+- Deprecated resource `alicloud_cms_alarm` parameter start_time, end_time and removed notify_type based on the latest go sdk ([#1356](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1356))
+- Adapt to new parameters of dedicated kubernetes cluster ([#1354](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1354))
 
 BUG FIXES:
 
-- Fix alicloud_cas_certificate setId bug [GH-1368]
-- Fix oss bucket datasource testcase based on the 0.12 syntax [GH-1362]
-- Fix deleting mongodb instance "NotFound" bug [GH-1359]
+- Fix alicloud_cas_certificate setId bug ([#1368](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1368))
+- Fix oss bucket datasource testcase based on the 0.12 syntax ([#1362](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1362))
+- Fix deleting mongodb instance "NotFound" bug ([#1359](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1359))
 
 ## 1.49.0 (June 28, 2019)
 
