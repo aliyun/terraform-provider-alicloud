@@ -1,5 +1,5 @@
 provider "alicloud" {
-  endpoints = {
+  endpoints {
     bssopenapi = "business.aliyuncs.com"
   }
 }

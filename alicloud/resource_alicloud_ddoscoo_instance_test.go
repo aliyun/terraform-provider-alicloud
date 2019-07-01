@@ -258,7 +258,7 @@ func testAccCheckDdoscooInstanceDestroy(s *terraform.State) error {
 func testAccDdoscooInstanceConfig_create(randInt int) string {
 	return fmt.Sprintf(`
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }
@@ -276,7 +276,7 @@ func testAccDdoscooInstanceConfig_create(randInt int) string {
 func testAccDdoscooInstanceConfig_name(randInt int) string {
 	return fmt.Sprintf(`
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }
@@ -294,7 +294,7 @@ func testAccDdoscooInstanceConfig_name(randInt int) string {
 func testAccDdoscooInstanceConfig_bandwidth(randInt int) string {
 	return fmt.Sprintf(`
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }
@@ -312,7 +312,7 @@ func testAccDdoscooInstanceConfig_bandwidth(randInt int) string {
 func testAccDdoscooInstanceConfig_base_bandwidth(randInt int) string {
 	return fmt.Sprintf(`
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }
@@ -330,7 +330,7 @@ func testAccDdoscooInstanceConfig_base_bandwidth(randInt int) string {
 func testAccDdoscooInstanceConfig_service_bandwidth(randInt int) string {
 	return fmt.Sprintf(`
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }
@@ -348,7 +348,7 @@ func testAccDdoscooInstanceConfig_service_bandwidth(randInt int) string {
 func testAccDdoscooInstanceConfig_port_count(randInt int) string {
 	return fmt.Sprintf(`
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }
@@ -366,7 +366,7 @@ func testAccDdoscooInstanceConfig_port_count(randInt int) string {
 func testAccDdoscooInstanceConfig_domain_count(randInt int) string {
 	return fmt.Sprintf(`
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }
@@ -384,7 +384,7 @@ func testAccDdoscooInstanceConfig_domain_count(randInt int) string {
 func testAccDdoscooInstanceConfig_all(randInt int) string {
 	return fmt.Sprintf(`
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }

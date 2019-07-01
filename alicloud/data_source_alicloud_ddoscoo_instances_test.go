@@ -96,7 +96,7 @@ func testAccCheckAlicloudDdoscooInstanceDataSource_from_name(randInt int) string
     }
 
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }
@@ -118,7 +118,7 @@ func testAccCheckAlicloudDdoscooInstanceDataSource_from_ids(randInt int) string 
     }
 
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }
@@ -141,7 +141,7 @@ func testAccCheckAlicloudDdoscooInstanceDataSource_from_both(randInt int) string
     }
 
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }
@@ -163,7 +163,7 @@ func testAccCheckAlicloudDdoscooInstanceDataSourceNameRegexConfig_mismatch_name(
     }
 
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }
@@ -185,7 +185,7 @@ func testAccCheckAlicloudDdoscooInstanceDataSourceNameRegexConfig_mismatch_ids(r
     }
 
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }
@@ -208,7 +208,7 @@ func testAccCheckAlicloudDdoscooInstanceDataSourceNameRegexConfig_mismatch_all(r
     }
 
     provider "alicloud" {
-        endpoints = {
+        endpoints {
             bssopenapi = "business.aliyuncs.com"
         }
     }

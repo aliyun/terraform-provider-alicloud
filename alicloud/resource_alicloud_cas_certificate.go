@@ -3,6 +3,8 @@ package alicloud
 import (
 	"time"
 
+	"strconv"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -62,7 +64,7 @@ func resourceAlicloudCasCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	response, _ := raw.(*cas.CreateUserCertificateResponse)
-	d.SetId(string(response.CertId))
+	d.SetId(strconv.Itoa(response.CertId))
 	return resourceAlicloudCasRead(d, meta)
 }
 

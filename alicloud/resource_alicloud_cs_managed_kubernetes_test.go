@@ -56,40 +56,6 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCSManagedKubernetes_autoVpc(t *testing.T) {
-	var k8s cs.ClusterType
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions) },
-
-		IDRefreshName: "alicloud_cs_managed_kubernetes.k8s",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckManagedKubernetesClusterDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccManagedKubernetes_autoVpc,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckContainerClusterExists("alicloud_cs_managed_kubernetes.k8s", &k8s),
-					resource.TestMatchResourceAttr("alicloud_cs_managed_kubernetes.k8s", "name", regexp.MustCompile("^tf-testAccManagedKubernetes-autoVpc*")),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_numbers.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_numbers.0", "2"),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_disk_size", "40"),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_disk_category", "cloud_efficiency"),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_instance_charge_type", "PostPaid"),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "worker_instance_types.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_cs_managed_kubernetes.k8s", "key_name", ""),
-
-					resource.TestCheckResourceAttrSet("alicloud_cs_managed_kubernetes.k8s", "image_id"),
-					resource.TestCheckResourceAttrSet("alicloud_cs_managed_kubernetes.k8s", "vpc_id"),
-					resource.TestCheckResourceAttrSet("alicloud_cs_managed_kubernetes.k8s", "security_group_id"),
-					resource.TestCheckResourceAttrSet("alicloud_cs_managed_kubernetes.k8s", "availability_zone"),
-				),
-			},
-		},
-	})
-}
-
 func TestAccAlicloudCSManagedKubernetes_update(t *testing.T) {
 	var k8s cs.ClusterType
 
@@ -211,36 +177,6 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
   install_cloud_monitor = true
   worker_disk_category  = "cloud_ssd"
   worker_disk_size = 50
-}
-`
-
-const testAccManagedKubernetes_autoVpc = `
-variable "name" {
-	default = "tf-testAccManagedKubernetes-autoVpc"
-}
-data "alicloud_zones" main {
-  available_resource_creation = "VSwitch"
-}
-
-data "alicloud_instance_types" "default" {
-	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-	cpu_core_count = 2
-	memory_size = 4
-	kubernetes_node_role = "Worker"
-}
-
-resource "alicloud_cs_managed_kubernetes" "k8s" {
-  name_prefix = "${var.name}"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  new_nat_gateway = true
-  worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  worker_numbers = [2]
-  password = "Test12345"
-  pod_cidr = "172.20.0.0/16"
-  service_cidr = "172.21.0.0/20"
-  install_cloud_monitor = true
-  slb_internet_enabled = true
-  worker_disk_category  = "cloud_efficiency"
 }
 `
 
