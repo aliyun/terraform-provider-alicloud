@@ -30,9 +30,18 @@ resource "alicloud_snapshot" "snapshot" {
 The following arguments are supported:
 
 * `disk_id` - (Required, ForceNew) The source disk ID.
-* `name` - (Optional) Name of the snapshot. This name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-", ".", "_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Default value is null.
-* `description` - (Optional) Description of the snapshot. This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
+* `name` - (Optional, ForceNew) Name of the snapshot. This name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-", ".", "_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Default value is null.
+* `description` - (Optional, ForceNew) Description of the snapshot. This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.51.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 2 mins) Used when creating the snapshot (until it reaches the initial `SnapshotCreatingAccomplished` status). 
+* `delete` - (Defaults to 2 mins) Used when terminating the snapshot. 
 
 ## Attributes Reference
 
