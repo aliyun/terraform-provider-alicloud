@@ -78,62 +78,62 @@ resource "alicloud_launch_template" "template" {
 The following arguments are supported:
 
 * `name` - (Optional, ForceNew) Instance launch template name. Can contain [2, 128] characters in length. It must start with an English letter (uppercase or lowercase) and can contain numbers, periods (.), colons (:), underscores (_), and hyphens (-). It cannot start with "http://" or "https://".
-* `description` - (Optional, ForceNew) Description of instance launch template version 1. It can be [2, 256] characters in length. It cannot start with "http://" or "https://". The default value is null.
-* `host_name` - (Optional, ForceNew) Instance host name.It cannot start or end with a period (.) or a hyphen (-) and it cannot have two or more consecutive periods (.) or hyphens (-).For Windows: The host name can be [2, 15] characters in length. It can contain A-Z, a-z, numbers, periods (.), and hyphens (-). It cannot only contain numbers. For other operating systems: The host name can be [2, 64] characters in length. It can be segments separated by periods (.). It can contain A-Z, a-z, numbers, and hyphens (-).
-* `image_id` - (Optional, ForceNew) Image ID.
-* `instance_name` - (Optional, ForceNew) The name of the instance. The name is a string of 2 to 128 characters. It must begin with an English or a Chinese character. It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).
-* `instance_charge_type` - (Optional, ForceNew)Billing methods. Optional values:
+* `description` - (Optional) Description of instance launch template version 1. It can be [2, 256] characters in length. It cannot start with "http://" or "https://". The default value is null.
+* `host_name` - (Optional) Instance host name.It cannot start or end with a period (.) or a hyphen (-) and it cannot have two or more consecutive periods (.) or hyphens (-).For Windows: The host name can be [2, 15] characters in length. It can contain A-Z, a-z, numbers, periods (.), and hyphens (-). It cannot only contain numbers. For other operating systems: The host name can be [2, 64] characters in length. It can be segments separated by periods (.). It can contain A-Z, a-z, numbers, and hyphens (-).
+* `image_id` - (Optional) Image ID.
+* `instance_name` - (Optional) The name of the instance. The name is a string of 2 to 128 characters. It must begin with an English or a Chinese character. It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).
+* `instance_charge_type` - (Optional)Billing methods. Optional values:
     - PrePaid: Monthly, or annual subscription. Make sure that your registered credit card is invalid or you have insufficient balance in your PayPal account. Otherwise, InvalidPayMethod error may occur.
     - PostPaid: Pay-As-You-Go.
 
     Default value: PostPaid.
-* `instance_type` - (Optional, ForceNew) Instance type. For more information, call resource_alicloud_instances to obtain the latest instance type list.
-* `auto_release_time` - (Optional, ForceNew) Instance auto release time. The time is presented using the ISO8601 standard and in UTC time. The format is  YYYY-MM-DDTHH:MM:SSZ.
-* `internet_charge_type` - (Optional, ForceNew) Internet bandwidth billing method. Optional values: PayByTraffic.
-* `internet_max_bandwidth_in` - (Optional, ForceNew) The maximum inbound bandwidth from the Internet network, measured in Mbit/s. Value range: [1, 200].
-* `internet_max_bandwidth_out` - (Optional, ForceNew) Maximum outbound bandwidth from the Internet, its unit of measurement is Mbit/s. Value range: [0, 100].
-* `io_optimized` - (Optional, ForceNew) Whether it is an I/O-optimized instance or not. Optional values:
+* `instance_type` - (Optional) Instance type. For more information, call resource_alicloud_instances to obtain the latest instance type list.
+* `auto_release_time` - (Optional) Instance auto release time. The time is presented using the ISO8601 standard and in UTC time. The format is  YYYY-MM-DDTHH:MM:SSZ.
+* `internet_charge_type` - (Optional) Internet bandwidth billing method. Optional values: PayByTraffic.
+* `internet_max_bandwidth_in` - (Optional) The maximum inbound bandwidth from the Internet network, measured in Mbit/s. Value range: [1, 200].
+* `internet_max_bandwidth_out` - (Optional) Maximum outbound bandwidth from the Internet, its unit of measurement is Mbit/s. Value range: [0, 100].
+* `io_optimized` - (Optional) Whether it is an I/O-optimized instance or not. Optional values:
     - none
     - optimized
-* `key_pair_name` - (Optional, ForceNew) The name of the key pair.
+* `key_pair_name` - (Optional) The name of the key pair.
     - Ignore this parameter for Windows instances. It is null by default. Even if you enter this parameter, only the  Password content is used.
     - The password logon method for Linux instances is set to forbidden upon initialization.
-* `network_type` - (Optional, ForceNew) Network type of the instance. Value options: Classic | VPC.
-* `ram_role_name` - (Optional, ForceNew) The RAM role name of the instance. You can use the RAM API ListRoles to query instance RAM role names.
-* `security_enhancement_strategy` - (Optional, ForceNew) Whether or not to activate the security enhancement feature and install network security software free of charge. Optional values: Active | Deactive.
-* `security_group_id` - (Optional, ForceNew) The security group ID.
-* `spot_price_limit` -(Optional, ForceNew) 	Sets the maximum hourly instance price. Supports up to three decimal places.
-* `spot_strategy` - (Optional, ForceNew) The spot strategy for a Pay-As-You-Go instance. This parameter is valid and required only when InstanceChargeType is set to PostPaid. Value range:
+* `network_type` - (Optional) Network type of the instance. Value options: Classic | VPC.
+* `ram_role_name` - (Optional) The RAM role name of the instance. You can use the RAM API ListRoles to query instance RAM role names.
+* `security_enhancement_strategy` - (Optional) Whether or not to activate the security enhancement feature and install network security software free of charge. Optional values: Active | Deactive.
+* `security_group_id` - (Optional) The security group ID.
+* `spot_price_limit` -(Optional) 	Sets the maximum hourly instance price. Supports up to three decimal places.
+* `spot_strategy` - (Optional) The spot strategy for a Pay-As-You-Go instance. This parameter is valid and required only when InstanceChargeType is set to PostPaid. Value range:
     - NoSpot: Normal Pay-As-You-Go instance.
     - SpotWithPriceLimit: Sets the maximum price for a spot instance.
     - SpotAsPriceGo: The system automatically calculates the price. The maximum value is the Pay-As-You-Go price.
-* `system_disk_category` - (Optional, ForceNew) The category of the system disk. System disk type. Optional values:
+* `system_disk_category` - (Optional) The category of the system disk. System disk type. Optional values:
     - cloud: Basic cloud disk.
     - cloud_efficiency: Ultra cloud disk.
     - cloud_ssd: SSD cloud Disks.
     - ephemeral_ssd: local SSD Disks
     - cloud_essd: ESSD cloud Disks.
-* `system_disk_description` - (Optional, ForceNew) System disk description. It cannot begin with http:// or https://.
-* `system_disk_name` - (Optional, ForceNew) System disk name. The name is a string of 2 to 128 characters. It must begin with an English or a Chinese character. It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).
-* `system_disk_size` - (Optional, ForceNew) Size of the system disk, measured in GB. Value range: [20, 500].
-* `userdata` - (Optional, ForceNew) User data of the instance, which is Base64-encoded. Size of the raw data cannot exceed 16 KB.
-* `vswitch_id` - (Optional, ForceNew) When creating a VPC-Connected instance, you must specify its VSwitch ID.
-* `zone_id` - (Optional, ForceNew) The zone ID of the instance.
-* `network_interfaces` - (Optional, ForceNew) The list of network interfaces created with instance.
-    * `name` - (Optional, ForceNew) ENI name.
-    * `description` - (Optional, ForceNew) The ENI description.
-    * `primary_ip` - (Optional, ForceNew) The primary private IP address of the ENI.
-    * `security_group_id` - (Optional, ForceNew) The security group ID must be one in the same VPC.
-    * `vswitch_id` - (Optional, ForceNew) The VSwitch ID for ENI. The instance must be in the same zone of the same VPC network as the ENI, but they may belong to different VSwitches.
-* `data_disks` - (Optional, ForceNew) The list of data disks created with instance.
-    * `name` - (Optional, Force New) The name of the data disk.
-    * `size` - (Required, Force New) The size of the data disk.
+* `system_disk_description` - (Optional) System disk description. It cannot begin with http:// or https://.
+* `system_disk_name` - (Optional) System disk name. The name is a string of 2 to 128 characters. It must begin with an English or a Chinese character. It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).
+* `system_disk_size` - (Optional) Size of the system disk, measured in GB. Value range: [20, 500].
+* `userdata` - (Optional) User data of the instance, which is Base64-encoded. Size of the raw data cannot exceed 16 KB.
+* `vswitch_id` - (Optional) When creating a VPC-Connected instance, you must specify its VSwitch ID.
+* `zone_id` - (Optional) The zone ID of the instance.
+* `network_interfaces` - (Optional) The list of network interfaces created with instance.
+    * `name` - (Optional) ENI name.
+    * `description` - (Optional) The ENI description.
+    * `primary_ip` - (Optional) The primary private IP address of the ENI.
+    * `security_group_id` - (Optional) The security group ID must be one in the same VPC.
+    * `vswitch_id` - (Optional) The VSwitch ID for ENI. The instance must be in the same zone of the same VPC network as the ENI, but they may belong to different VSwitches.
+* `data_disks` - (Optional) The list of data disks created with instance.
+    * `name` - (Optional) The name of the data disk.
+    * `size` - (Required) The size of the data disk.
         - cloud：[5, 2000]
         - cloud_efficiency：[20, 32768]
         - cloud_ssd：[20, 32768]
         - cloud_essd：[20, 32768]
         - ephemeral_ssd: [5, 800]
-    * `category` - (Optional, Force New) The category of the disk:
+    * `category` - (Optional) The category of the disk:
         - cloud: Basic cloud disk.
         - cloud_efficiency: Ultra cloud disk.
         - cloud_ssd: SSD cloud Disks.
@@ -141,15 +141,15 @@ The following arguments are supported:
         - cloud_essd: ESSD cloud Disks.
 
         Default to `cloud_efficiency`.
-    * `encrypted` -(Optional, Bool, Force New) Encrypted the data in this disk.
+    * `encrypted` -(Optional, Bool) Encrypted the data in this disk.
 
         Default to false
-    * `snapshot_id` - (Optional, Force New) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
-    * `delete_with_instance` - (Optional, Force New) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency, cloud_ssd and cloud_essd disk. If the category of this data disk was ephemeral_ssd, please don't set this param.
+    * `snapshot_id` - (Optional) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
+    * `delete_with_instance` - (Optional) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency, cloud_ssd and cloud_essd disk. If the category of this data disk was ephemeral_ssd, please don't set this param.
 
         Default to true
-    * `description` - (Optional, Force New) The description of the data disk.
-* `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
+    * `description` - (Optional) The description of the data disk.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
             
