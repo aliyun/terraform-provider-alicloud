@@ -2,17 +2,18 @@ package alicloud
 
 import (
 	"fmt"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strconv"
 )
 
 func resourceAliyunLaunchTemplate() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunLaunchTemplateCreate,
 		Read:   resourceAliyunLaunchTemplateRead,
+		Update: resourceAliyunLaunchTemplateUpdate,
 		Delete: resourceAliyunLaunchTemplateDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -29,67 +30,57 @@ func resourceAliyunLaunchTemplate() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateLaunchTemplateDescription,
 			},
 
 			"host_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"image_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"image_owner_alias": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateImageOwners,
 			},
 
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateInstanceChargeType,
 			},
 
 			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateInstanceName,
 			},
 
 			"instance_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateInstanceType,
 			},
 
 			"auto_release_time": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateInternetChargeType,
 			},
 
 			"internet_max_bandwidth_in": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
 				Computed:     true,
 				ValidateFunc: validateIntegerInRange(1, 200),
 			},
@@ -97,41 +88,35 @@ func resourceAliyunLaunchTemplate() *schema.Resource {
 			"internet_max_bandwidth_out": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateIntegerInRange(0, 100),
 			},
 
 			"io_optimized": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateIoOptimized,
 			},
 
 			"key_pair_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateKeyPairName,
 			},
 
 			"network_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateInstanceNetworkType,
 			},
 
 			"ram_role_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"security_enhancement_strategy": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				ValidateFunc: validateAllowedStringValue([]string{
 					string(ActiveSecurityEnhancementStrategy),
 					string(DeactiveSecurityEnhancementStrategy),
@@ -141,87 +126,73 @@ func resourceAliyunLaunchTemplate() *schema.Resource {
 			"security_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"spot_price_limit": {
 				Type:     schema.TypeFloat,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateInstanceSpotStrategy,
 			},
 
 			"system_disk_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateDiskCategory,
 			},
 			"system_disk_description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateDiskDescription,
 			},
 			"system_disk_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateDiskName,
 			},
 			"system_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validateIntegerInRange(20, 500),
 			},
 
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"userdata": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 
 			"network_interfaces": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -254,7 +225,6 @@ func resourceAliyunLaunchTemplate() *schema.Resource {
 			"data_disks": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"category": {
@@ -295,37 +265,37 @@ func resourceAliyunLaunchTemplate() *schema.Resource {
 func resourceAliyunLaunchTemplateCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := ecs.CreateCreateLaunchTemplateRequest()
-	args.LaunchTemplateName = d.Get("name").(string)
-	args.Description = d.Get("description").(string)
-	args.HostName = d.Get("host_name").(string)
-	args.ImageId = d.Get("image_id").(string)
-	args.ImageOwnerAlias = d.Get("image_owner_alias").(string)
-	args.InstanceChargeType = d.Get("instance_charge_type").(string)
-	args.InstanceName = d.Get("instance_name").(string)
-	args.InstanceType = d.Get("instance_type").(string)
-	args.AutoReleaseTime = d.Get("auto_release_time").(string)
-	args.InternetChargeType = d.Get("internet_charge_type").(string)
-	args.InternetMaxBandwidthIn = requests.NewInteger(d.Get("internet_max_bandwidth_in").(int))
-	args.InternetMaxBandwidthOut = requests.NewInteger(d.Get("internet_max_bandwidth_out").(int))
-	args.IoOptimized = d.Get("io_optimized").(string)
-	args.KeyPairName = d.Get("key_pair_name").(string)
-	args.NetworkType = d.Get("network_type").(string)
+	request := ecs.CreateCreateLaunchTemplateRequest()
+	request.LaunchTemplateName = d.Get("name").(string)
+	request.Description = d.Get("description").(string)
+	request.HostName = d.Get("host_name").(string)
+	request.ImageId = d.Get("image_id").(string)
+	request.ImageOwnerAlias = d.Get("image_owner_alias").(string)
+	request.InstanceChargeType = d.Get("instance_charge_type").(string)
+	request.InstanceName = d.Get("instance_name").(string)
+	request.InstanceType = d.Get("instance_type").(string)
+	request.AutoReleaseTime = d.Get("auto_release_time").(string)
+	request.InternetChargeType = d.Get("internet_charge_type").(string)
+	request.InternetMaxBandwidthIn = requests.NewInteger(d.Get("internet_max_bandwidth_in").(int))
+	request.InternetMaxBandwidthOut = requests.NewInteger(d.Get("internet_max_bandwidth_out").(int))
+	request.IoOptimized = d.Get("io_optimized").(string)
+	request.KeyPairName = d.Get("key_pair_name").(string)
+	request.NetworkType = d.Get("network_type").(string)
 
-	args.RamRoleName = d.Get("ram_role_name").(string)
-	args.ResourceGroupId = d.Get("resource_group_id").(string)
-	args.SecurityEnhancementStrategy = d.Get("security_enhancement_strategy").(string)
-	args.SecurityGroupId = d.Get("security_group_id").(string)
-	args.SpotPriceLimit = requests.NewFloat(d.Get("spot_price_limit").(float64))
-	args.SpotStrategy = d.Get("spot_strategy").(string)
-	args.SystemDiskDiskName = d.Get("system_disk_name").(string)
-	args.SystemDiskCategory = d.Get("system_disk_category").(string)
-	args.SystemDiskDescription = d.Get("system_disk_description").(string)
-	args.SystemDiskSize = requests.NewInteger(d.Get("system_disk_size").(int))
-	args.UserData = d.Get("userdata").(string)
-	args.VSwitchId = d.Get("vswitch_id").(string)
-	args.VpcId = d.Get("vpc_id").(string)
-	args.ZoneId = d.Get("zone_id").(string)
+	request.RamRoleName = d.Get("ram_role_name").(string)
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
+	request.SecurityEnhancementStrategy = d.Get("security_enhancement_strategy").(string)
+	request.SecurityGroupId = d.Get("security_group_id").(string)
+	request.SpotPriceLimit = requests.NewFloat(d.Get("spot_price_limit").(float64))
+	request.SpotStrategy = d.Get("spot_strategy").(string)
+	request.SystemDiskDiskName = d.Get("system_disk_name").(string)
+	request.SystemDiskCategory = d.Get("system_disk_category").(string)
+	request.SystemDiskDescription = d.Get("system_disk_description").(string)
+	request.SystemDiskSize = requests.NewInteger(d.Get("system_disk_size").(int))
+	request.UserData = d.Get("userdata").(string)
+	request.VSwitchId = d.Get("vswitch_id").(string)
+	request.VpcId = d.Get("vpc_id").(string)
+	request.ZoneId = d.Get("zone_id").(string)
 	netsRaw := d.Get("network_interfaces").([]interface{})
 	if netsRaw != nil {
 		var nets []ecs.CreateLaunchTemplateNetworkInterface
@@ -340,7 +310,7 @@ func resourceAliyunLaunchTemplateCreate(d *schema.ResourceData, meta interface{}
 			}
 			nets = append(nets, net)
 		}
-		args.NetworkInterface = &nets
+		request.NetworkInterface = &nets
 	}
 
 	disksRaw := d.Get("data_disks").([]interface{})
@@ -360,7 +330,7 @@ func resourceAliyunLaunchTemplateCreate(d *schema.ResourceData, meta interface{}
 			disks = append(disks, disk)
 		}
 
-		args.DataDisk = &disks
+		request.DataDisk = &disks
 	}
 	tagsRaw := d.Get("tags").(map[string]interface{})
 	var tags []ecs.CreateLaunchTemplateTag
@@ -370,18 +340,18 @@ func resourceAliyunLaunchTemplateCreate(d *schema.ResourceData, meta interface{}
 			Value: value.(string),
 		})
 	}
-	args.Tag = &tags
+	request.Tag = &tags
 
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.CreateLaunchTemplate(args)
+		return ecsClient.CreateLaunchTemplate(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_launch_template", args.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_launch_template", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(args.GetActionName(), raw)
-	resp, _ := raw.(*ecs.CreateLaunchTemplateResponse)
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ecs.CreateLaunchTemplateResponse)
 
-	d.SetId(resp.LaunchTemplateId)
+	d.SetId(response.LaunchTemplateId)
 
 	return resourceAliyunLaunchTemplateRead(d, meta)
 }
@@ -389,7 +359,15 @@ func resourceAliyunLaunchTemplateCreate(d *schema.ResourceData, meta interface{}
 func resourceAliyunLaunchTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	template, err := ecsService.DescribeLaunchTemplate(d.Id())
+	object, err := ecsService.DescribeLaunchTemplate(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+	latestVersion, err := ecsService.DescribeLaunchTemplateVersion(d.Id(), int(object.LatestVersionNumber))
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -398,39 +376,38 @@ func resourceAliyunLaunchTemplateRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
-	d.Set("name", template.LaunchTemplateName)
-	d.Set("description", template.LaunchTemplateData.Description)
-	d.Set("host_name", template.LaunchTemplateData.HostName)
-	d.Set("image_id", template.LaunchTemplateData.ImageId)
-	d.Set("image_owner_alias", template.LaunchTemplateData.ImageOwnerAlias)
-	d.Set("instance_charge_type", template.LaunchTemplateData.InstanceChargeType)
-	d.Set("instance_name", template.LaunchTemplateData.InstanceName)
-	d.Set("instance_type", template.LaunchTemplateData.InstanceType)
-	d.Set("auto_release_time", template.LaunchTemplateData.AutoReleaseTime)
-	d.Set("internet_charge_type", template.LaunchTemplateData.InternetChargeType)
-	d.Set("internet_max_bandwidth_in", template.LaunchTemplateData.InternetMaxBandwidthIn)
-	d.Set("internet_max_bandwidth_out", template.LaunchTemplateData.InternetMaxBandwidthOut)
-	d.Set("io_optimized", template.LaunchTemplateData.IoOptimized)
-	d.Set("key_pair_name", template.LaunchTemplateData.KeyPairName)
-	d.Set("network_type", template.LaunchTemplateData.NetworkType)
-	d.Set("ram_role_name", template.LaunchTemplateData.RamRoleName)
-	d.Set("resource_group_id", template.LaunchTemplateData.ResourceGroupId)
-	d.Set("security_enhancement_strategy", template.LaunchTemplateData.SecurityEnhancementStrategy)
-	d.Set("security_group_id", template.LaunchTemplateData.SecurityGroupId)
-	d.Set("spot_price_limit", template.LaunchTemplateData.SpotPriceLimit)
-	d.Set("spot_strategy", template.LaunchTemplateData.SpotStrategy)
-	d.Set("system_disk_name", template.LaunchTemplateData.SystemDiskDiskName)
-	d.Set("system_disk_category", template.LaunchTemplateData.SystemDiskCategory)
-	d.Set("system_disk_description", template.LaunchTemplateData.SystemDiskDescription)
-	d.Set("system_disk_size", template.LaunchTemplateData.SystemDiskSize)
-	d.Set("resource_group_id", template.LaunchTemplateData.ResourceGroupId)
-	d.Set("userdata", template.LaunchTemplateData.UserData)
-	d.Set("vswitch_id", template.LaunchTemplateData.VSwitchId)
-	d.Set("vpc_id", template.LaunchTemplateData.VpcId)
-	d.Set("zone_id", template.LaunchTemplateData.ZoneId)
-
+	d.Set("name", latestVersion.LaunchTemplateName)
+	d.Set("description", latestVersion.LaunchTemplateData.Description)
+	d.Set("host_name", latestVersion.LaunchTemplateData.HostName)
+	d.Set("image_id", latestVersion.LaunchTemplateData.ImageId)
+	d.Set("image_owner_alias", latestVersion.LaunchTemplateData.ImageOwnerAlias)
+	d.Set("instance_charge_type", latestVersion.LaunchTemplateData.InstanceChargeType)
+	d.Set("instance_name", latestVersion.LaunchTemplateData.InstanceName)
+	d.Set("instance_type", latestVersion.LaunchTemplateData.InstanceType)
+	d.Set("auto_release_time", latestVersion.LaunchTemplateData.AutoReleaseTime)
+	d.Set("internet_charge_type", latestVersion.LaunchTemplateData.InternetChargeType)
+	d.Set("internet_max_bandwidth_in", latestVersion.LaunchTemplateData.InternetMaxBandwidthIn)
+	d.Set("internet_max_bandwidth_out", latestVersion.LaunchTemplateData.InternetMaxBandwidthOut)
+	d.Set("io_optimized", latestVersion.LaunchTemplateData.IoOptimized)
+	d.Set("key_pair_name", latestVersion.LaunchTemplateData.KeyPairName)
+	d.Set("network_type", latestVersion.LaunchTemplateData.NetworkType)
+	d.Set("ram_role_name", latestVersion.LaunchTemplateData.RamRoleName)
+	d.Set("resource_group_id", latestVersion.LaunchTemplateData.ResourceGroupId)
+	d.Set("security_enhancement_strategy", latestVersion.LaunchTemplateData.SecurityEnhancementStrategy)
+	d.Set("security_group_id", latestVersion.LaunchTemplateData.SecurityGroupId)
+	d.Set("spot_price_limit", latestVersion.LaunchTemplateData.SpotPriceLimit)
+	d.Set("spot_strategy", latestVersion.LaunchTemplateData.SpotStrategy)
+	d.Set("system_disk_name", latestVersion.LaunchTemplateData.SystemDiskDiskName)
+	d.Set("system_disk_category", latestVersion.LaunchTemplateData.SystemDiskCategory)
+	d.Set("system_disk_description", latestVersion.LaunchTemplateData.SystemDiskDescription)
+	d.Set("system_disk_size", latestVersion.LaunchTemplateData.SystemDiskSize)
+	d.Set("resource_group_id", latestVersion.LaunchTemplateData.ResourceGroupId)
+	d.Set("userdata", latestVersion.LaunchTemplateData.UserData)
+	d.Set("vswitch_id", latestVersion.LaunchTemplateData.VSwitchId)
+	d.Set("vpc_id", latestVersion.LaunchTemplateData.VpcId)
+	d.Set("zone_id", latestVersion.LaunchTemplateData.ZoneId)
 	var interfaces []map[string]interface{}
-	for _, net := range template.LaunchTemplateData.NetworkInterfaces.NetworkInterface {
+	for _, net := range latestVersion.LaunchTemplateData.NetworkInterfaces.NetworkInterface {
 		ds := make(map[string]interface{})
 		ds["vswitch_id"] = net.VSwitchId
 		ds["security_group_id"] = net.SecurityGroupId
@@ -444,7 +421,7 @@ func resourceAliyunLaunchTemplateRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	var disks []map[string]interface{}
-	for _, disk := range template.LaunchTemplateData.DataDisks.DataDisk {
+	for _, disk := range latestVersion.LaunchTemplateData.DataDisks.DataDisk {
 		ds := make(map[string]interface{})
 		ds["size"] = disk.Size
 		ds["snapshot_id"] = disk.SnapshotId
@@ -460,7 +437,7 @@ func resourceAliyunLaunchTemplateRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	tags := make(map[string]interface{})
-	for _, tag := range template.LaunchTemplateData.Tags.InstanceTag {
+	for _, tag := range latestVersion.LaunchTemplateData.Tags.InstanceTag {
 		tags[tag.Key] = tag.Value
 	}
 	d.Set("tags", tags)
@@ -468,19 +445,172 @@ func resourceAliyunLaunchTemplateRead(d *schema.ResourceData, meta interface{}) 
 	return nil
 }
 
+func resourceAliyunLaunchTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
+	versions, err := getLaunchTemplateVersions(d.Id(), meta)
+	if err != nil {
+		return WrapError(err)
+	}
+	// Remove one of the oldest and non-default version when the total number reach 30
+	if len(versions) > 29 {
+		var oldestVersion int64
+		for _, version := range versions {
+			if !version.DefaultVersion && (oldestVersion == 0 || version.VersionNumber < oldestVersion) {
+				oldestVersion = version.VersionNumber
+			}
+		}
+
+		err = deleteLaunchTemplateVersion(d.Id(), int(oldestVersion), meta)
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+	return WrapError(createLaunchTemplateVersion(d, meta))
+
+}
+
 func resourceAliyunLaunchTemplateDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	req := ecs.CreateDeleteLaunchTemplateRequest()
-	req.LaunchTemplateId = d.Id()
+	request := ecs.CreateDeleteLaunchTemplateRequest()
+	request.LaunchTemplateId = d.Id()
 
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DeleteLaunchTemplate(req)
+		return ecsClient.DeleteLaunchTemplate(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(req.GetAcceptFormat(), raw)
+	addDebug(request.GetAcceptFormat(), raw)
+	ecsService := EcsService{client}
+	if err := ecsService.WaitForLaunchTemplate(d.Id(), Deleted, DefaultTimeout); err != nil {
+		return WrapError(err)
+	}
+	return resourceAliyunLaunchTemplateRead(d, meta)
+}
 
+func getLaunchTemplateVersions(id string, meta interface{}) ([]ecs.LaunchTemplateVersionSet, error) {
+	client := meta.(*connectivity.AliyunClient)
+	request := ecs.CreateDescribeLaunchTemplateVersionsRequest()
+	request.RegionId = client.RegionId
+	request.PageSize = requests.NewInteger(50)
+	request.LaunchTemplateId = id
+	raw, err := client.WithEcsClient(func(client *ecs.Client) (interface{}, error) {
+		return client.DescribeLaunchTemplateVersions(request)
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	response := raw.(*ecs.DescribeLaunchTemplateVersionsResponse)
+	if len(response.LaunchTemplateVersionSets.LaunchTemplateVersionSet) > 0 {
+		return response.LaunchTemplateVersionSets.LaunchTemplateVersionSet, nil
+	} else {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("LaunchTemplate", id)), NotFoundMsg, ProviderERROR)
+	}
+}
+
+func deleteLaunchTemplateVersion(id string, version int, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	request := ecs.CreateDeleteLaunchTemplateVersionRequest()
+	request.RegionId = client.RegionId
+	request.LaunchTemplateId = id
+	request.DeleteVersion = &[]string{strconv.FormatInt(int64(version), 10)}
+	raw, err := client.WithEcsClient(func(client *ecs.Client) (interface{}, error) {
+		return client.DeleteLaunchTemplateVersion(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), ProviderERROR)
+	}
+	addDebug(request.GetActionName(), raw)
 	return nil
+}
+
+func createLaunchTemplateVersion(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	request := ecs.CreateCreateLaunchTemplateVersionRequest()
+	request.LaunchTemplateId = d.Id()
+	request.Description = d.Get("description").(string)
+	request.HostName = d.Get("host_name").(string)
+	request.ImageId = d.Get("image_id").(string)
+	request.ImageOwnerAlias = d.Get("image_owner_alias").(string)
+	request.InstanceChargeType = d.Get("instance_charge_type").(string)
+	request.InstanceName = d.Get("instance_name").(string)
+	request.InstanceType = d.Get("instance_type").(string)
+	request.AutoReleaseTime = d.Get("auto_release_time").(string)
+	request.InternetChargeType = d.Get("internet_charge_type").(string)
+	request.InternetMaxBandwidthIn = requests.NewInteger(d.Get("internet_max_bandwidth_in").(int))
+	request.InternetMaxBandwidthOut = requests.NewInteger(d.Get("internet_max_bandwidth_out").(int))
+	request.IoOptimized = d.Get("io_optimized").(string)
+	request.KeyPairName = d.Get("key_pair_name").(string)
+	request.NetworkType = d.Get("network_type").(string)
+
+	request.RamRoleName = d.Get("ram_role_name").(string)
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
+	request.SecurityEnhancementStrategy = d.Get("security_enhancement_strategy").(string)
+	request.SecurityGroupId = d.Get("security_group_id").(string)
+	request.SpotPriceLimit = requests.NewFloat(d.Get("spot_price_limit").(float64))
+	request.SpotStrategy = d.Get("spot_strategy").(string)
+	request.SystemDiskDiskName = d.Get("system_disk_name").(string)
+	request.SystemDiskCategory = d.Get("system_disk_category").(string)
+	request.SystemDiskDescription = d.Get("system_disk_description").(string)
+	request.SystemDiskSize = requests.NewInteger(d.Get("system_disk_size").(int))
+	request.UserData = d.Get("userdata").(string)
+	request.VSwitchId = d.Get("vswitch_id").(string)
+	request.VpcId = d.Get("vpc_id").(string)
+	request.ZoneId = d.Get("zone_id").(string)
+	netsRaw := d.Get("network_interfaces").([]interface{})
+	if netsRaw != nil {
+		var nets []ecs.CreateLaunchTemplateVersionNetworkInterface
+		for _, raw := range netsRaw {
+			netRaw := raw.(map[string]interface{})
+			net := ecs.CreateLaunchTemplateVersionNetworkInterface{
+				NetworkInterfaceName: netRaw["name"].(string),
+				VSwitchId:            netRaw["vswitch_id"].(string),
+				SecurityGroupId:      netRaw["security_group_id"].(string),
+				Description:          netRaw["description"].(string),
+				PrimaryIpAddress:     netRaw["primary_ip"].(string),
+			}
+			nets = append(nets, net)
+		}
+		request.NetworkInterface = &nets
+	}
+
+	disksRaw := d.Get("data_disks").([]interface{})
+	if disksRaw != nil {
+		var disks []ecs.CreateLaunchTemplateVersionDataDisk
+		for _, raw := range disksRaw {
+			diskRaw := raw.(map[string]interface{})
+			disk := ecs.CreateLaunchTemplateVersionDataDisk{
+				Size:               fmt.Sprintf("%d", diskRaw["size"].(int)),
+				SnapshotId:         diskRaw["snapshot_id"].(string),
+				Category:           diskRaw["category"].(string),
+				Encrypted:          fmt.Sprintf("%v", diskRaw["encrypted"].(bool)),
+				DiskName:           diskRaw["name"].(string),
+				Description:        diskRaw["description"].(string),
+				DeleteWithInstance: fmt.Sprintf("%v", diskRaw["delete_with_instance"].(bool)),
+			}
+			disks = append(disks, disk)
+		}
+
+		request.DataDisk = &disks
+	}
+	tagsRaw := d.Get("tags").(map[string]interface{})
+	var tags []ecs.CreateLaunchTemplateVersionTag
+	for key, value := range tagsRaw {
+		tags = append(tags, ecs.CreateLaunchTemplateVersionTag{
+			Key:   key,
+			Value: value.(string),
+		})
+	}
+	request.Tag = &tags
+
+	raw, err := client.WithEcsClient(func(client *ecs.Client) (interface{}, error) {
+		return client.CreateLaunchTemplateVersion(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	return nil
+
 }

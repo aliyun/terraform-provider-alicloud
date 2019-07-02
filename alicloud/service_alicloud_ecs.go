@@ -985,27 +985,80 @@ func (s *EcsService) WaitForSnapshotPolicy(id string, status Status, timeout int
 	}
 }
 
-func (s *EcsService) DescribeLaunchTemplate(id string) (set ecs.LaunchTemplateVersionSet, err error) {
-	req := ecs.CreateDescribeLaunchTemplateVersionsRequest()
-	req.LaunchTemplateId = id
+func (s *EcsService) DescribeLaunchTemplate(id string) (set ecs.LaunchTemplateSet, err error) {
+
+	request := ecs.CreateDescribeLaunchTemplatesRequest()
+	request.RegionId = s.client.RegionId
+	request.LaunchTemplateId = &[]string{id}
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeLaunchTemplateVersions(req)
+		return ecsClient.DescribeLaunchTemplates(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw)
+	response := raw.(*ecs.DescribeLaunchTemplatesResponse)
+	if len(response.LaunchTemplateSets.LaunchTemplateSet) != 1 ||
+		response.LaunchTemplateSets.LaunchTemplateSet[0].LaunchTemplateId != id {
+		err = WrapErrorf(Error(GetNotFoundMessage("LaunchTemplate", id)), NotFoundMsg, ProviderERROR)
+		return
+	}
+
+	return response.LaunchTemplateSets.LaunchTemplateSet[0], nil
+
+}
+
+func (s *EcsService) DescribeLaunchTemplateVersion(id string, version int) (set ecs.LaunchTemplateVersionSet, err error) {
+
+	request := ecs.CreateDescribeLaunchTemplateVersionsRequest()
+	request.RegionId = s.client.RegionId
+	request.LaunchTemplateId = id
+	request.LaunchTemplateVersion = &[]string{strconv.FormatInt(int64(version), 10)}
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeLaunchTemplateVersions(request)
 	})
 	if err != nil {
 		if IsExceptedError(err, "InvalidLaunchTemplate.NotFound") {
 			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			return
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, req.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	resp := raw.(*ecs.DescribeLaunchTemplateVersionsResponse)
-	if len(resp.LaunchTemplateVersionSets.LaunchTemplateVersionSet) == 0 {
-		err = WrapErrorf(Error(GetNotFoundMessage("LaunchTemplate", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+	addDebug(request.GetActionName(), raw)
+	response := raw.(*ecs.DescribeLaunchTemplateVersionsResponse)
+	if len(response.LaunchTemplateVersionSets.LaunchTemplateVersionSet) != 1 ||
+		response.LaunchTemplateVersionSets.LaunchTemplateVersionSet[0].LaunchTemplateId != id {
+		err = WrapErrorf(Error(GetNotFoundMessage("LaunchTemplateVersion", id)), NotFoundMsg, ProviderERROR)
 		return
 	}
 
-	return resp.LaunchTemplateVersionSets.LaunchTemplateVersionSet[0], nil
+	return response.LaunchTemplateVersionSets.LaunchTemplateVersionSet[0], nil
 
+}
+
+func (s *EcsService) WaitForLaunchTemplate(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeLaunchTemplate(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.LaunchTemplateId == id && string(status) != string(Deleted) {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, Null, string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
 }
