@@ -137,7 +137,7 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 			stateConf := BuildStateConf([]string{"Modifying"}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, cenService.CenBandwidthLimitStateRefreshFunc(d.Id(), []string{}))
 
 			if _, err = stateConf.WaitForState(); err != nil {
-				if IsExceptedError(err, PvtzThrottlingUser) {
+				if IsExceptedError(err, CenThrottlingUser) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -182,7 +182,7 @@ func resourceAlicloudCenBandwidthLimitDelete(d *schema.ResourceData, meta interf
 		stateConf := BuildStateConf([]string{"Active", "Modifying"}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Second, cenService.CenBandwidthLimitStateRefreshFunc(d.Id(), []string{}))
 
 		_, err = stateConf.WaitForState()
-		if IsExceptedError(err, PvtzThrottlingUser) {
+		if IsExceptedError(err, CenThrottlingUser) {
 			return resource.RetryableError(err)
 		}
 		return resource.NonRetryableError(err)

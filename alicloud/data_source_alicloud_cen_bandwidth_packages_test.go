@@ -47,7 +47,10 @@ func TestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
 			"ids":         `["${alicloud_cen_bandwidth_package.default.id}"]`,
 		}),
 	}
-	cenBandwidthPackagesCheckInfo.dataSourceTestCheck(t, rand, idConf, nameRegexConf, idsConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithAccountSiteType(t, DomesticSite)
+	}
+	cenBandwidthPackagesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idConf, nameRegexConf, idsConf, allConf)
 }
 
 func TestAccAlicloudCenBandwidthPackagesDataSource_multi(t *testing.T) {
@@ -57,7 +60,10 @@ func TestAccAlicloudCenBandwidthPackagesDataSource_multi(t *testing.T) {
 			"ids": `"${alicloud_cen_bandwidth_package.default.*.id}"`,
 		}),
 	}
-	cenBandwidthPackagesCheckInfo_multi.dataSourceTestCheck(t, rand, allConf)
+	preCheck := func() {
+		testAccPreCheckWithAccountSiteType(t, DomesticSite)
+	}
+	cenBandwidthPackagesCheckInfo_multi.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
 }
 
 func testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand int, attrMap map[string]string) string {

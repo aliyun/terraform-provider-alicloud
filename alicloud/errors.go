@@ -311,6 +311,7 @@ const (
 	NotFoundRoute                    = "InvalidOperation.NotFoundRoute"
 	InvalidStateForOperationMsg      = "not in a valid state for the operation"
 	InstanceNotExistMsg              = "The instance is not exist"
+	CenThrottlingUser                = "Throttling.User"
 
 	// snapshot
 	SnapshotNotFound = "InvalidSnapshotId.NotFound"

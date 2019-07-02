@@ -5,6 +5,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"time"
 )
 
 func dataSourceAlicloudCenBandwidthLimits() *schema.Resource {
@@ -98,6 +99,10 @@ func getCenBandwidthLimits(instanceId string, meta interface{}) ([]cbn.CenInterR
 			return cbnClient.DescribeCenInterRegionBandwidthLimits(request)
 		})
 		if err != nil {
+			if IsExceptedError(err, CenThrottlingUser) {
+				time.Sleep(10 * time.Second)
+				continue
+			}
 			return allCenBwLimits, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_bandwidth_limits", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
