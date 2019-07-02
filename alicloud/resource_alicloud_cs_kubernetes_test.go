@@ -134,7 +134,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types.#",
 					"master_instance_types.0", "node_cidr_mask", "slb_internet_enabled", "vswitch_ids.#", "vswitch_ids.0",
 					"worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_instance_types.#",
-					"worker_instance_types.0", "worker_numbers.#", "worker_numbers.0"},
+					"worker_instance_types.0", "worker_numbers.#", "worker_numbers.0", "log_config"},
 			},
 		},
 	})
@@ -190,7 +190,7 @@ func TestAccAlicloudCSKubernetes_userCa(t *testing.T) {
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types.#",
 					"master_instance_types.0", "node_cidr_mask", "slb_internet_enabled", "vswitch_ids.#", "vswitch_ids.0",
 					"worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_instance_types.#",
-					"worker_instance_types.0", "worker_numbers.#", "worker_numbers.0"},
+					"worker_instance_types.0", "worker_numbers.#", "worker_numbers.0", "log_config"},
 			},
 		},
 	})
@@ -268,7 +268,7 @@ func TestAccAlicloudCSMultiAZKubernetes_basic(t *testing.T) {
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types.#",
 					"master_instance_types.0", "node_cidr_mask", "slb_internet_enabled", "vswitch_ids.#", "vswitch_ids.0",
 					"worker_disk_category", "worker_disk_size", "worker_instance_charge_type", "worker_instance_types.#",
-					"worker_instance_types.0", "worker_numbers.#", "worker_numbers.0"},
+					"worker_instance_types.0", "worker_numbers.#", "worker_numbers.0", "log_config"},
 			},
 		},
 	})
