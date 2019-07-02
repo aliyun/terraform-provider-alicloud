@@ -1,10 +1,11 @@
 package alicloud
 
 import (
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"strconv"
 	"time"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type OssService struct {

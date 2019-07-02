@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strconv"
 )
 
 func resourceAliyunLaunchTemplate() *schema.Resource {
