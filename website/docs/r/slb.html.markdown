@@ -82,7 +82,7 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 * `period` - (Optional, Available in v1.34.0+) The duration that you will buy the resource, in month. It is valid when `instance_charge_type` is `PrePaid`. Default to 1. Valid values: [1-9, 12, 24, 36].
 * `master_zone_id` - (Optional, ForceNew, Available in v1.36.0+) The primary zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the DescribeZone API.
 * `slave_zone_id` - (Optional, ForceNew, Available in v1.36.0+) The standby zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the DescribeZone API.
-
+* `delete_protection` - (Optional, Available in v1.51.0+) Whether enable the deletion protection or not. on: Enable deletion protection. off: Disable deletion protection. Default to off. Only postpaid instance support this function.                                   
 -> **NOTE:** A "Shared-Performance" instance can be changed to "Performance-guaranteed", but the change is irreversible.
 
 -> **NOTE:** To change a "Shared-Performance" instance to a "Performance-guaranteed" instance, the SLB will have a short probability of business interruption (10 seconds-30 seconds). Advise to change it during the business downturn, or migrate business to other SLB Instances by using GSLB before changing.
@@ -94,14 +94,7 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 The following attributes are exported:
 
 * `id` - The ID of the load balancer.
-* `name` - The name of the load balancer.
-* `internet` - The internet of the load balancer.
-* `internet_charge_type` - The internet_charge_type of the load balancer.
-* `bandwidth` - The bandwidth of the load balancer.
-* `vswitch_id` - The VSwitch ID of the load balancer. Only available on SLB launched in a VPC.
 * `address` - The IP address of the load balancer.
-* `specification` - The specification of the Server Load Balancer instance.
-
 ## Import
 
 Load balancer can be imported using the id, e.g.

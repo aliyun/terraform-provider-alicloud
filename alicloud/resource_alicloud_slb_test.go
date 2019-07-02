@@ -220,6 +220,7 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 						"address":              CHECKSET,
 						"master_zone_id":       CHECKSET,
 						"slave_zone_id":        CHECKSET,
+						"delete_protection":    "on",
 					}),
 				),
 			},
@@ -227,6 +228,14 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			{
+				Config: testAccSlbDeleteProtectionUpdate,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delete_protection": "off",
+					}),
+				),
 			},
 			{
 				Config: testAccSlbVpc,
@@ -727,5 +736,33 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_slb" "default" {
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
+  delete_protection = "on"
+}
+`
+
+const testAccSlbDeleteProtectionUpdate = `
+variable "name" {
+  default = "tf-testAccSlb4Vpc"
+}
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_slb" "default" {
+  name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.default.id}"
+  delete_protection = "off"
 }
 `
