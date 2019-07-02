@@ -3,6 +3,8 @@ package alicloud
 import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strconv"
+	"time"
 )
 
 type OssService struct {
@@ -18,4 +20,23 @@ func (s *OssService) QueryOssBucketById(id string) (info *oss.BucketInfo, err er
 	}
 	bucket, _ := raw.(oss.GetBucketInfoResult)
 	return &bucket.BucketInfo, nil
+}
+
+func (s *OssService) WaitForOssBucket(bucket *oss.Bucket, id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		exist, err := bucket.IsObjectExist(id)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, id, "IsObjectExist", AliyunOssGoSdk)
+		}
+		addDebug("IsObjectExist", exist)
+
+		if !exist {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, strconv.FormatBool(exist), status, ProviderERROR)
+		}
+	}
 }
