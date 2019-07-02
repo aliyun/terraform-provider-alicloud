@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 
 	"strconv"
 
@@ -258,6 +258,30 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
+	if !d.IsNewResource() && (d.HasChange("instance_charge_type") || d.HasChange("period")) {
+		prePaidRequest := r_kvstore.CreateTransformToPrePaidRequest()
+		prePaidRequest.InstanceId = d.Id()
+		prePaidRequest.Period = requests.Integer(strconv.Itoa(d.Get("period").(int)))
+
+		// for now we just support charge change from PostPaid to PrePaid
+		configPayType := PayType(d.Get("instance_charge_type").(string))
+		if configPayType == PrePaid {
+			raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+				return rkvClient.TransformToPrePaid(prePaidRequest)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), prePaidRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(prePaidRequest.GetActionName(), raw)
+			// wait instance status is Normal after modifying
+			if err := kvstoreService.WaitForKVstoreInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+				return WrapError(err)
+			}
+			d.SetPartial("instance_charge_type")
+			d.SetPartial("period")
+		}
+	}
+
 	if d.HasChange("auto_renew") || d.HasChange("auto_renew_period") {
 		request := r_kvstore.CreateModifyInstanceAutoRenewalAttributeRequest()
 		request.DBInstanceId = d.Id()
@@ -356,30 +380,6 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		d.SetPartial("instance_name")
 		d.SetPartial("password")
-	}
-
-	if d.HasChange("instance_charge_type") || d.HasChange("period") {
-		prePaidRequest := r_kvstore.CreateTransformToPrePaidRequest()
-		prePaidRequest.InstanceId = d.Id()
-		prePaidRequest.Period = requests.Integer(strconv.Itoa(d.Get("period").(int)))
-
-		// for now we just support charge change from PostPaid to PrePaid
-		configPayType := PayType(d.Get("instance_charge_type").(string))
-		if configPayType == PrePaid {
-			raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-				return rkvClient.TransformToPrePaid(prePaidRequest)
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
-			addDebug(request.GetActionName(), raw)
-			// wait instance status is Normal after modifying
-			if err := kvstoreService.WaitForKVstoreInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
-				return WrapError(err)
-			}
-			d.SetPartial("instance_charge_type")
-			d.SetPartial("period")
-		}
 	}
 
 	d.Partial(false)
