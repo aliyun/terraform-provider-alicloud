@@ -19,6 +19,7 @@ const (
 	SLBCode           = ServiceCode("SLB")
 	RDSCode           = ServiceCode("RDS")
 	OSSCode           = ServiceCode("OSS")
+	ONSCode           = ServiceCode("ONS")
 	CONTAINCode       = ServiceCode("CS")
 	CRCode            = ServiceCode("CR")
 	DOMAINCode        = ServiceCode("DOMAIN")

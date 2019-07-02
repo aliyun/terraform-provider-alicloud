@@ -247,6 +247,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_slb_server_certificate":      resourceAlicloudSlbServerCertificate(),
 			"alicloud_oss_bucket":                  resourceAlicloudOssBucket(),
 			"alicloud_oss_bucket_object":           resourceAlicloudOssBucketObject(),
+			"alicloud_ons_instance":                resourceAlicloudOnsInstance(),
 			"alicloud_dns_record":                  resourceAlicloudDnsRecord(),
 			"alicloud_dns":                         resourceAlicloudDns(),
 			"alicloud_dns_group":                   resourceAlicloudDnsGroup(),
@@ -429,6 +430,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.CenEndpoint = strings.TrimSpace(endpoints["cen"].(string))
 		config.EssEndpoint = strings.TrimSpace(endpoints["ess"].(string))
 		config.OssEndpoint = strings.TrimSpace(endpoints["oss"].(string))
+		config.OssEndpoint = strings.TrimSpace(endpoints["ons"].(string))
 		config.DnsEndpoint = strings.TrimSpace(endpoints["dns"].(string))
 		config.RamEndpoint = strings.TrimSpace(endpoints["ram"].(string))
 		config.CsEndpoint = strings.TrimSpace(endpoints["cs"].(string))
@@ -527,6 +529,8 @@ func init() {
 		"ess_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Autoscaling endpoints.",
 
 		"oss_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom OSS endpoints.",
+
+		"ons_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ONS endpoints.",
 
 		"dns_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DNS endpoints.",
 
@@ -666,6 +670,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["oss_endpoint"],
+				},
+				"ons": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ons_endpoint"],
 				},
 				"dns": {
 					Type:        schema.TypeString,
@@ -845,6 +855,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cen"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ess"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["oss"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ons"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dns"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ram"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cs"].(string)))

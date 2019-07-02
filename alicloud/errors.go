@@ -321,6 +321,11 @@ const (
 	QueueNotExist        = "QueueNotExist"
 	TopicNotExist        = "TopicNotExist"
 	SubscriptionNotExist = "SubscriptionNotExist"
+
+	// ONS
+	OnsInstanceNotExist = "INSTANCE_NOT_FOUND"
+	OnsInstanceNotEmpty = "INSTANCE_NOT_EMPTY"
+
 	//HaVip
 	InvalidHaVipIdNotFound = "InvalidHaVipId.NotFound"
 	InvalidVipStatus       = "InvalidVip.Status"

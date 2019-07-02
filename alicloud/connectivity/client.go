@@ -23,6 +23,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
@@ -71,6 +72,7 @@ type AliyunClient struct {
 	vpcconn                      *vpc.Client
 	nasconn                      *nas.Client
 	slbconn                      *slb.Client
+	onsconn                      *ons.Client
 	ossconn                      *oss.Client
 	dnsconn                      *alidns.Client
 	ramconn                      *ram.Client
@@ -1249,4 +1251,28 @@ func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (in
 	}
 
 	return do(client.bssopenapiconn)
+}
+
+func (client *AliyunClient) WithOnsClient(do func(*ons.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the ons client if necessary
+	if client.onsconn == nil {
+		endpoint := client.config.OnsEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, ONSCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(ONSCode), endpoint)
+		}
+		onsconn, err := ons.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the ONS client: %#v", err)
+		}
+		onsconn.AppendUserAgent(Terraform, version)
+		client.onsconn = onsconn
+	}
+
+	return do(client.onsconn)
 }

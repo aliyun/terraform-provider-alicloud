@@ -40,6 +40,7 @@ type Config struct {
 	CenEndpoint           string
 	EssEndpoint           string
 	OssEndpoint           string
+	OnsEndpoint           string
 	DnsEndpoint           string
 	RamEndpoint           string
 	CsEndpoint            string

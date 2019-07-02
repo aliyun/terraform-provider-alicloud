@@ -774,6 +774,22 @@ func validateDomainName(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
+func validateOnsInstanceName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) < 3 || len(value) > 64 {
+		errors = append(errors, fmt.Errorf("%q cannot be less than 3 and longer than 64 characters", k))
+	}
+	return
+}
+
+func validateOnsInstanceRemark(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) > 128 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 128 characters", k))
+	}
+	return
+}
+
 func validateDomainRecordType(v interface{}, k string) (ws []string, errors []error) {
 	// Valid Record types
 	// A, NS, MX, TXT, CNAME, SRV, AAAA, CAA, REDIRECT_URL, FORWORD_URL
