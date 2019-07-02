@@ -130,6 +130,7 @@ func TestAccAlicloudCenBandwidthPackage_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -220,6 +221,7 @@ func TestAccAlicloudCenBandwidthPackage_multi(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		// module name
 		IDRefreshName: resourceId,

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"regexp"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
@@ -119,6 +120,10 @@ func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, m
 			return cbnClient.DescribeCens(request)
 		})
 		if err != nil {
+			if IsExceptedError(err, CenThrottlingUser) {
+				time.Sleep(10 * time.Second)
+				continue
+			}
 			return allCens, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)

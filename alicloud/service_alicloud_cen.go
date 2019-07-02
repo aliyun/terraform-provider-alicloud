@@ -33,27 +33,34 @@ func (s *CenService) DescribeCenInstance(id string) (c cbn.Cen, err error) {
 
 	request.Filter = &filters
 
-	invoker := NewInvoker()
-	err = invoker.Run(func() error {
-		raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+	var raw interface{}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCens(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
-				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, CenThrottlingUser}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
 			}
-			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return resource.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
-
-		response, _ := raw.(*cbn.DescribeCensResponse)
-		if len(response.Cens.Cen) <= 0 || response.Cens.Cen[0].CenId != id {
-			return WrapErrorf(Error(GetNotFoundMessage("Cen Instance", id)), NotFoundMsg, ProviderERROR)
-		}
-		c = response.Cens.Cen[0]
 		return nil
 	})
-	return
+	if err != nil {
+		if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
+			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	response, _ := raw.(*cbn.DescribeCensResponse)
+	if len(response.Cens.Cen) <= 0 || response.Cens.Cen[0].CenId != id {
+		return c, WrapErrorf(Error(GetNotFoundMessage("Cen Instance", id)), NotFoundMsg, ProviderERROR)
+	}
+	c = response.Cens.Cen[0]
+	return c, nil
 }
 
 func (s *CenService) CenInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
@@ -147,27 +154,34 @@ func (s *CenService) DescribeCenBandwidthPackage(id string) (c cbn.CenBandwidthP
 	}}
 	request.Filter = &filters
 
-	invoker := NewInvoker()
-	err = invoker.Run(func() error {
-		raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+	var raw interface{}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenBandwidthPackages(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
-				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, CenThrottlingUser}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
 			}
-			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return resource.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
-		if len(response.CenBandwidthPackages.CenBandwidthPackage) <= 0 || response.CenBandwidthPackages.CenBandwidthPackage[0].CenBandwidthPackageId != id {
-			return WrapErrorf(Error(GetNotFoundMessage("CEN Bandwidth Package", id)), NotFoundMsg, ProviderERROR)
-		}
-		c = response.CenBandwidthPackages.CenBandwidthPackage[0]
 		return nil
 	})
+	if err != nil {
+		if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
+			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
 
-	return
+	response, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
+	if len(response.CenBandwidthPackages.CenBandwidthPackage) <= 0 || response.CenBandwidthPackages.CenBandwidthPackage[0].CenBandwidthPackageId != id {
+		return c, WrapErrorf(Error(GetNotFoundMessage("CEN Bandwidth Package", id)), NotFoundMsg, ProviderERROR)
+	}
+	c = response.CenBandwidthPackages.CenBandwidthPackage[0]
+	return c, nil
 }
 
 func (s *CenService) WaitForCenBandwidthPackage(id string, status Status, bandwidth, timeout int) error {
@@ -358,28 +372,35 @@ func (s *CenService) DescribeCenRouteEntry(id string) (c cbn.PublishedRouteEntry
 	request.ChildInstanceRouteTableId = vtbId
 	request.DestinationCidrBlock = cidr
 
-	invoker := NewInvoker()
-	err = invoker.Run(func() error {
-		raw, err := s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+	var raw interface{}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribePublishedRouteEntries(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{ParameterIllegal, ParameterIllegalCenInstanceId, InstanceNotExist}) {
-				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, CenThrottlingUser}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
 			}
-			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return resource.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*cbn.DescribePublishedRouteEntriesResponse)
-		if len(response.PublishedRouteEntries.PublishedRouteEntry) <= 0 || response.PublishedRouteEntries.PublishedRouteEntry[0].PublishStatus == string(NOPUBLISHED) {
-			return WrapErrorf(Error(GetNotFoundMessage("CenRouteEntries", id)), NotFoundMsg, ProviderERROR)
-		}
-		c = response.PublishedRouteEntries.PublishedRouteEntry[0]
-
 		return nil
 	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{ParameterIllegal, ParameterIllegalCenInstanceId, InstanceNotExist}) {
+			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 
-	return c, WrapError(err)
+	}
+	response, _ := raw.(*cbn.DescribePublishedRouteEntriesResponse)
+	if len(response.PublishedRouteEntries.PublishedRouteEntry) <= 0 || response.PublishedRouteEntries.PublishedRouteEntry[0].PublishStatus == string(NOPUBLISHED) {
+		return c, WrapErrorf(Error(GetNotFoundMessage("CenRouteEntries", id)), NotFoundMsg, ProviderERROR)
+	}
+	c = response.PublishedRouteEntries.PublishedRouteEntry[0]
+
+	return c, nil
 }
 
 func (s *CenService) WaitForCenRouterEntry(id string, status Status, timeout int) error {

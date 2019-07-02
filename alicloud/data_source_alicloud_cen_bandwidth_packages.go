@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"regexp"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
@@ -151,6 +152,11 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 			return cbnClient.DescribeCenBandwidthPackages(request)
 		})
 		if err != nil {
+			if IsExceptedError(err, CenThrottlingUser) {
+				time.Sleep(10 * time.Second)
+				continue
+			}
+
 			return allCenBwps, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_bandwidth_packages", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)

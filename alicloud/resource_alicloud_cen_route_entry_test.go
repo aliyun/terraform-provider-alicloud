@@ -42,7 +42,7 @@ func TestAccAlicloudCenRouteEntry_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":    "${alicloud_cen_instance.default.id}",
 					"route_table_id": "${alicloud_vpc.default.route_table_id}",
-					"cidr_block":     "${alicloud_route_entry.default.destination_cidrblock}",
+					"cidr_block":     "${alicloud_route_entry.default1.destination_cidrblock}",
 					"depends_on":     []string{"alicloud_cen_instance_attachment.default"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -89,7 +89,7 @@ func resourceCenRouteEntryConfigDependence(name string) string {
 	        "alicloud_vswitch.default"]
 	}
 
-	resource "alicloud_route_entry" "default" {
+	resource "alicloud_route_entry" "default1" {
 	    route_table_id = "${alicloud_vpc.default.route_table_id}"
 	    destination_cidrblock = "11.0.0.0/16"
 	    nexthop_type = "Instance"
