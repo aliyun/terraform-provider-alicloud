@@ -62,15 +62,13 @@ func dataSourceAlicloudSnapshots() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Computed:     true,
 				ValidateFunc: validateAllowedStringValue([]string{"System", "Data"}),
 			},
 			"usage": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"image", "disk", "image_disk", "node"}),
+				ValidateFunc: validateAllowedStringValue([]string{"image", "disk", "image_disk", "none"}),
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -152,32 +150,32 @@ func dataSourceAlicloudSnapshots() *schema.Resource {
 
 func dataSourceAlicloudSnapshotsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	args := ecs.CreateDescribeSnapshotsRequest()
+	request := ecs.CreateDescribeSnapshotsRequest()
 
 	if instanceId, ok := d.GetOk("instance_id"); ok {
-		args.InstanceId = instanceId.(string)
+		request.InstanceId = instanceId.(string)
 	}
 	if diskId, ok := d.GetOk("disk_id"); ok {
-		args.DiskId = diskId.(string)
+		request.DiskId = diskId.(string)
 	}
 	if encrypted, ok := d.GetOk("encrypted"); ok {
-		args.Encrypted = requests.NewBoolean(encrypted.(bool))
+		request.Encrypted = requests.NewBoolean(encrypted.(bool))
 	}
 	if ids, ok := d.GetOk("ids"); ok {
-		args.SnapshotIds = convertListToJsonString(ids.(*schema.Set).List())
+		request.SnapshotIds = convertListToJsonString(ids.(*schema.Set).List())
 	}
 	if status, ok := d.GetOk("status"); ok {
-		args.Status = status.(string)
+		request.Status = status.(string)
 	}
 	if typ, ok := d.GetOk("type"); ok {
-		args.SnapshotType = typ.(string)
+		request.SnapshotType = typ.(string)
 	}
 
 	if diskType, ok := d.GetOk("source_disk_type"); ok {
-		args.SourceDiskType = diskType.(string)
+		request.SourceDiskType = diskType.(string)
 	}
 	if usage, ok := d.GetOk("usage"); ok {
-		args.Usage = usage.(string)
+		request.Usage = usage.(string)
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
@@ -189,30 +187,31 @@ func dataSourceAlicloudSnapshotsRead(d *schema.ResourceData, meta interface{}) e
 				Value: value.(string),
 			})
 		}
-		args.Tag = &tags
+		request.Tag = &tags
 	}
 
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	var allSnapshots []ecs.Snapshot
 	for {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeSnapshots(args)
+			return ecsClient.DescribeSnapshots(request)
 		})
 		if err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_snapshots", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp := raw.(*ecs.DescribeSnapshotsResponse)
-		allSnapshots = append(allSnapshots, resp.Snapshots.Snapshot...)
+		addDebug(request.GetActionName(), raw)
+		response := raw.(*ecs.DescribeSnapshotsResponse)
+		allSnapshots = append(allSnapshots, response.Snapshots.Snapshot...)
 
-		if len(resp.Snapshots.Snapshot) < PageSizeLarge {
+		if len(response.Snapshots.Snapshot) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
 			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 

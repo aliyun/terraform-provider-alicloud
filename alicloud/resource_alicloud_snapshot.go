@@ -20,6 +20,11 @@ func resourceAliyunSnapshot() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(DefaultTimeout * time.Second),
+			Delete: schema.DefaultTimeout(DefaultTimeout * time.Second),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"disk_id": &schema.Schema{
 				Type:     schema.TypeString,
@@ -44,28 +49,32 @@ func resourceAliyunSnapshot() *schema.Resource {
 func resourceAliyunSnapshotCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := ecs.CreateCreateSnapshotRequest()
-	args.DiskId = d.Get("disk_id").(string)
-	args.ClientToken = buildClientToken(args.GetActionName())
+	request := ecs.CreateCreateSnapshotRequest()
+	request.DiskId = d.Get("disk_id").(string)
+	request.ClientToken = buildClientToken(request.GetActionName())
 	if name, ok := d.GetOk("name"); ok {
-		args.SnapshotName = name.(string)
+		request.SnapshotName = name.(string)
 	}
 	if description, ok := d.GetOk("description"); ok {
-		args.Description = description.(string)
+		request.Description = description.(string)
 	}
 
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.CreateSnapshot(args)
+		return ecsClient.CreateSnapshot(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultDebugMsg, "alicloud_snapshot", args.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultDebugMsg, "alicloud_snapshot", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(args.GetActionName(), raw)
-	resp := raw.(*ecs.CreateSnapshotResponse)
-	d.SetId(resp.SnapshotId)
+	addDebug(request.GetActionName(), raw)
+	response := raw.(*ecs.CreateSnapshotResponse)
+	d.SetId(response.SnapshotId)
 
 	ecsService := EcsService{client}
-	if err := ecsService.WaitForSnapshot(d.Id(), SnapshotCreatingAccomplished, DefaultLongTimeout); err != nil {
+
+	stateConf := BuildStateConf([]string{}, []string{string(SnapshotCreatingAccomplished)}, d.Timeout(schema.TimeoutCreate), 0,
+		ecsService.SnapshotStateRefreshFunc(d.Id(), []string{string(SnapshotCreatingFailed)}))
+
+	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
 
@@ -75,7 +84,7 @@ func resourceAliyunSnapshotCreate(d *schema.ResourceData, meta interface{}) erro
 func resourceAliyunSnapshotRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	snapshot, err := ecsService.DescribeSnapshotById(d.Id())
+	snapshot, err := ecsService.DescribeSnapshot(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -102,9 +111,8 @@ func resourceAliyunSnapshotUpdate(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 
 	if err := setTags(client, TagResourceSnapshot, d); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "setTags", ProviderERROR)
+		return WrapError(err)
 	}
-
 	return resourceAliyunSnapshotRead(d, meta)
 }
 
@@ -112,17 +120,16 @@ func resourceAliyunSnapshotDelete(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
-	args := ecs.CreateDeleteSnapshotRequest()
-	args.SnapshotId = d.Id()
+	request := ecs.CreateDeleteSnapshotRequest()
+	request.SnapshotId = d.Id()
 
-	err := resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DeleteSnapshot(args)
+	var raw interface{}
+	var err error
+	err = resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
+		raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DeleteSnapshot(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, SnapshotNotFound) {
-				return nil
-			}
 			if IsExceptedErrors(err, SnapshotInvalidOperations) {
 				return resource.RetryableError(err)
 			}
@@ -132,7 +139,17 @@ func resourceAliyunSnapshotDelete(d *schema.ResourceData, meta interface{}) erro
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), args.GetActionName(), AlibabaCloudSdkGoERROR)
+		if IsExceptedError(err, SnapshotNotFound) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(ecsService.WaitForSnapshot(d.Id(), Deleted, DefaultLongTimeout))
+	addDebug(request.GetActionName(), raw)
+
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 0,
+		ecsService.SnapshotStateRefreshFunc(d.Id(), []string{string(SnapshotCreatingFailed)}))
+
+	_, err = stateConf.WaitForState()
+	return WrapError(err)
+
 }

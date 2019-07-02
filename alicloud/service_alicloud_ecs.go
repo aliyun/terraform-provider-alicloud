@@ -900,44 +900,41 @@ func (s *EcsService) QueryInstanceAllDisks(id string) ([]string, error) {
 	return ids, nil
 }
 
-func (s *EcsService) WaitForSnapshot(snapshotId string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		if time.Now().After(deadline) {
-			return WrapErrorf(Error(GetTimeoutMessage("Snapshot", "timeout")), DefaultTimeoutMsg, snapshotId, "WaitForSnapshot", ProviderERROR)
-		}
-		snapshot, err := s.DescribeSnapshotById(snapshotId)
+func (s *EcsService) SnapshotStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeSnapshot(id)
 		if err != nil {
-			if NotFoundError(err) && status == Deleted {
-				return nil
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
 			}
-			return WrapErrorf(err, DefaultErrorMsg, snapshotId, "WaitForSnapshot", AlibabaCloudSdkGoERROR)
-		}
-		if snapshot.Status == string(status) {
-			return nil
-		}
-		if snapshot.Status == string(SnapshotCreatingFailed) {
-			return WrapErrorf(Error("create snapshot failed"), DefaultErrorMsg, snapshotId, "WaitForSnapshot", ProviderERROR)
+			return nil, "", WrapError(err)
 		}
 
-		time.Sleep(DefaultIntervalShort * time.Second)
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+		return object, object.Status, nil
 	}
 }
 
-func (s *EcsService) DescribeSnapshotById(snapshotId string) (*ecs.Snapshot, error) {
-	args := ecs.CreateDescribeSnapshotsRequest()
-	args.SnapshotIds = fmt.Sprintf("[\"%s\"]", snapshotId)
+func (s *EcsService) DescribeSnapshot(id string) (*ecs.Snapshot, error) {
+	request := ecs.CreateDescribeSnapshotsRequest()
+	request.SnapshotIds = fmt.Sprintf("[\"%s\"]", id)
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeSnapshots(args)
+		return ecsClient.DescribeSnapshots(request)
 	})
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, snapshotId, args.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp := raw.(*ecs.DescribeSnapshotsResponse)
-	if resp == nil || len(resp.Snapshots.Snapshot) < 1 {
-		return nil, WrapErrorf(GetNotFoundErrorFromString(GetNotFoundMessage("ECS snapshot", snapshotId)), DefaultErrorMsg, snapshotId, args.GetActionName(), AlibabaCloudSdkGoERROR)
+	addDebug(request.GetActionName(), raw)
+	response := raw.(*ecs.DescribeSnapshotsResponse)
+	if len(response.Snapshots.Snapshot) != 1 || response.Snapshots.Snapshot[0].SnapshotId != id {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("Snapshot", id)), NotFoundMsg, ProviderERROR)
 	}
-	return &resp.Snapshots.Snapshot[0], nil
+	return &response.Snapshots.Snapshot[0], nil
 }
 
 func (s *EcsService) DescribeSnapshotPolicy(id string) (*ecs.AutoSnapshotPolicy, error) {

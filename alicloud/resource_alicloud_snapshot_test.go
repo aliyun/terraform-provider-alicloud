@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"strings"
 	"testing"
@@ -10,7 +11,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -24,7 +24,7 @@ func init() {
 func testSweepSnapshots(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -34,31 +34,31 @@ func testSweepSnapshots(region string) error {
 	}
 
 	var snapshots []ecs.Snapshot
-	req := ecs.CreateDescribeSnapshotsRequest()
-	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
-	req.PageNumber = requests.NewInteger(1)
+	request := ecs.CreateDescribeSnapshotsRequest()
+	request.RegionId = client.RegionId
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	for {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeSnapshots(req)
+			return ecsClient.DescribeSnapshots(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving snapshots: %s", err)
+			return WrapError(err)
 		}
-		resp, _ := raw.(*ecs.DescribeSnapshotsResponse)
-		if resp == nil || len(resp.Snapshots.Snapshot) < 1 {
+		response, _ := raw.(*ecs.DescribeSnapshotsResponse)
+		if len(response.Snapshots.Snapshot) < 1 {
 			break
 		}
-		snapshots = append(snapshots, resp.Snapshots.Snapshot...)
+		snapshots = append(snapshots, response.Snapshots.Snapshot...)
 
-		if len(resp.Snapshots.Snapshot) < PageSizeLarge {
+		if len(response.Snapshots.Snapshot) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
 			return err
 		} else {
-			req.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -95,8 +95,30 @@ func testSweepSnapshots(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSnapshot_basic(t *testing.T) {
-	resourceId := "alicloud_snapshot.snapshot"
+func TestAccAlicloudSnapshotBasic(t *testing.T) {
+
+	var v *ecs.Snapshot
+	resourceId := "alicloud_snapshot.default"
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testAccSnapshotBasic%d", rand)
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"disk_id":      CHECKSET,
+		"name":         name,
+		"description":  name,
+		"tags.%":       "1",
+		"tags.version": "1.0",
+	})
+
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSnapshotConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -106,204 +128,166 @@ func TestAccAlicloudSnapshot_basic(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSnapshotDestroy,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccSnapshotConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSnapshotExists("alicloud_snapshot.snapshot"),
-					resource.TestCheckResourceAttrSet("alicloud_snapshot.snapshot", "disk_id"),
-					resource.TestCheckResourceAttr("alicloud_snapshot.snapshot", "name", "tf-testAcc-snapshot"),
-					resource.TestCheckResourceAttr("alicloud_snapshot.snapshot", "description", "TF Test"),
-					resource.TestCheckResourceAttr("alicloud_snapshot.snapshot", "tags.%", "1"),
-					resource.TestCheckResourceAttr("alicloud_snapshot.snapshot", "tags.version", "1.0"),
-				),
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disk_id":     "${alicloud_disk_attachment.default.0.disk_id}",
+					"name":        "${var.name}",
+					"description": "${var.name}",
+					"tags": map[string]string{
+						"version": "1.0",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(),
 			},
-			resource.TestStep{
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			resource.TestStep{
-				Config: testAccSnapshotConfigUpdate,
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"version": "1.0",
+						"tag2":    "tag2",
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSnapshotExists("alicloud_snapshot.snapshot"),
-					resource.TestCheckResourceAttrSet("alicloud_snapshot.snapshot", "disk_id"),
-					resource.TestCheckResourceAttr("alicloud_snapshot.snapshot", "name", "tf-testAcc-snapshot"),
-					resource.TestCheckResourceAttr("alicloud_snapshot.snapshot", "description", "TF Test"),
-					resource.TestCheckResourceAttr("alicloud_snapshot.snapshot", "tags.%", "1"),
-					resource.TestCheckResourceAttr("alicloud_snapshot.snapshot", "tags.version", "1.1"),
+					testAccCheck(map[string]string{
+						"tags.%":    "2",
+						"tags.tag2": "tag2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"version": "1.0",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":    "1",
+						"tags.tag2": REMOVEKEY,
+					}),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckSnapshotDestroy(s *terraform.State) error {
+func TestAccAlicloudSnapshotMulti(t *testing.T) {
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_snapshot" {
-			continue
-		}
+	var v *ecs.Snapshot
+	resourceId := "alicloud_snapshot.default.1"
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testAccSnapshotMulti%d", rand)
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"disk_id":      CHECKSET,
+		"name":         name,
+		"description":  name,
+		"tags.%":       "1",
+		"tags.version": "1.0",
+	})
 
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		ecsService := EcsService{client}
-
-		_, err := ecsService.DescribeSnapshotById(rs.Primary.ID)
-
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return fmt.Errorf("Describing snapshot (%s) failed while destoring, error: %#v.", rs.Primary.ID, err)
-		}
-		return fmt.Errorf("Error ECS Snapshot (%s) still exist", rs.Primary.ID)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 
-	return nil
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSnapshotConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"count":       "2",
+					"disk_id":     "${element(alicloud_disk_attachment.default.*.disk_id,count.index)}",
+					"name":        "${var.name}",
+					"description": "${var.name}",
+					"tags": map[string]string{
+						"version": "1.0",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
 }
 
-func testAccCheckSnapshotExists(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Snapshot ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		ecsService := EcsService{client}
-		_, err := ecsService.DescribeSnapshotById(rs.Primary.ID)
-
-		if err != nil {
-			return fmt.Errorf("While checking disk existing, describing disk got an error: %#v.", err)
-		}
-
-		return nil
-	}
+func resourceSnapshotConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
 }
 
-const testAccSnapshotConfig = `
-data "alicloud_instance_types" "instance_type" {
-  availability_zone = "${data.alicloud_zones.zone.zones.0.id}"
+data "alicloud_zones" "default" {
 }
 
-resource "alicloud_vpc" "vpc" {
-  name = "tf-testAcc-vpc"
+data "alicloud_instance_types" "default" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_vpc" "default" {
+  name = "${var.name}"
   cidr_block = "192.168.0.0/16"
 }
 
-data "alicloud_zones" "zone" {
-}
 
-resource "alicloud_vswitch" "vswitch" {
-  name = "tf-testAcc-vswitch"
+resource "alicloud_vswitch" "default" {
+  name = "${var.name}"
   cidr_block = "192.168.0.0/24"
-  availability_zone = "${data.alicloud_zones.zone.zones.0.id}"
-  vpc_id = "${alicloud_vpc.vpc.id}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_security_group" "group" {
-  name        = "tf-testACC-group"
+resource "alicloud_security_group" "default" {
+  name = "${var.name}"
   description = "New security group"
-  vpc_id = "${alicloud_vpc.vpc.id}"
+  vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_disk" "disk" {
-  name = "disk"
-  availability_zone = "${alicloud_instance.instance.availability_zone}"
+resource "alicloud_disk" "default" {
+  count = "2"
+  name = "${var.name}"
+  availability_zone = "${alicloud_instance.default.availability_zone}"
   category          = "cloud_efficiency"
   size              = "20"
 }
 
-data "alicloud_images" "sys_images" {
+data "alicloud_images" "default" {
   owners = "system"
 }
 
-resource "alicloud_instance" "instance" {
-  instance_name   = "tf-testAcc-instance"
+resource "alicloud_instance" "default" {
+  instance_name   = "${var.name}"
   host_name       = "tf-testAcc"
-  image_id        = "${data.alicloud_images.sys_images.images.0.id}"
-  instance_type   = "${data.alicloud_instance_types.instance_type.instance_types.0.id}"
-  security_groups = ["${alicloud_security_group.group.id}"]
-  vswitch_id      = "${alicloud_vswitch.vswitch.id}"
+  image_id        = "${data.alicloud_images.default.images.0.id}"
+  instance_type   = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  security_groups = ["${alicloud_security_group.default.id}"]
+  vswitch_id      = "${alicloud_vswitch.default.id}"
 }
 
-resource "alicloud_disk_attachment" "instance-attachment" {
-  disk_id     = "${alicloud_disk.disk.id}"
-  instance_id = "${alicloud_instance.instance.id}"
+resource "alicloud_disk_attachment" "default" {
+  count = "2"
+  disk_id     = "${element(alicloud_disk.default.*.id,count.index)}"
+  instance_id = "${alicloud_instance.default.id}"
 }
 
-resource "alicloud_snapshot" "snapshot" {
-  disk_id = "${alicloud_disk_attachment.instance-attachment.disk_id}"
-  name = "tf-testAcc-snapshot"
-  description = "TF Test"
-  tags = {
-    version = "1.0"
-  }
+`, name)
 }
-`
-
-const testAccSnapshotConfigUpdate = `
-data "alicloud_instance_types" "instance_type" {
-  availability_zone = "${data.alicloud_zones.zone.zones.0.id}"
-}
-
-resource "alicloud_vpc" "vpc" {
-  name = "tf-testAcc-vpc"
-  cidr_block = "192.168.0.0/16"
-}
-
-data "alicloud_zones" "zone" {
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  name = "tf-testAcc-vswitch"
-  cidr_block = "192.168.0.0/24"
-  availability_zone = "${data.alicloud_zones.zone.zones.0.id}"
-  vpc_id = "${alicloud_vpc.vpc.id}"
-}
-
-resource "alicloud_security_group" "group" {
-  name        = "tf-testACC-group"
-  description = "New security group"
-  vpc_id = "${alicloud_vpc.vpc.id}"
-}
-
-resource "alicloud_disk" "disk" {
-  name = "disk"
-  availability_zone = "${alicloud_instance.instance.availability_zone}"
-  category          = "cloud_efficiency"
-  size              = "20"
-}
-
-data "alicloud_images" "sys_images" {
-  owners = "system"
-}
-
-resource "alicloud_instance" "instance" {
-  instance_name   = "tf-testAcc-instance"
-  host_name       = "tf-testAcc"
-  image_id        = "${data.alicloud_images.sys_images.images.0.id}"
-  instance_type   = "${data.alicloud_instance_types.instance_type.instance_types.0.id}"
-  security_groups = ["${alicloud_security_group.group.id}"]
-  vswitch_id      = "${alicloud_vswitch.vswitch.id}"
-}
-
-resource "alicloud_disk_attachment" "instance-attachment" {
-  disk_id     = "${alicloud_disk.disk.id}"
-  instance_id = "${alicloud_instance.instance.id}"
-}
-
-resource "alicloud_snapshot" "snapshot" {
-  disk_id = "${alicloud_disk_attachment.instance-attachment.disk_id}"
-  name = "tf-testAcc-snapshot"
-  description = "TF Test"
-  tags = {
-    version = "1.1"
-  }
-}
-`
