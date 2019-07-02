@@ -444,33 +444,23 @@ func mapValue(indentation int, val reflect.Value) string {
 	for _, keyV := range val.MapKeys() {
 		mapVal := getRealValueType(val.MapIndex(keyV))
 		var line string
-		switch mapVal.Kind() {
-		case reflect.Slice:
-			if mapVal.Len() > 0 {
-				eleVal := getRealValueType(mapVal.Index(0))
-				if eleVal.Kind() == reflect.Map {
-					line = fmt.Sprintf(`%s%s`, addIndentation(indentation),
-						listValueMapChild(indentation+CHILDINDEND, keyV.String(), mapVal))
-				} else {
-					line = fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), keyV.String(),
-						valueConvert(indentation+len(keyV.String())+CHILDINDEND+3, val.MapIndex(keyV)))
-				}
-			} else {
-				return ""
+		if mapVal.Kind() == reflect.Slice && mapVal.Len() > 0 {
+			eleVal := getRealValueType(mapVal.Index(0))
+			if eleVal.Kind() == reflect.Map {
+				line = fmt.Sprintf(`%s%s`, addIndentation(indentation),
+					listValueMapChild(indentation+CHILDINDEND, keyV.String(), mapVal))
+				valList = append(valList, line)
+				continue
 			}
-
-		default:
-			line = fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), keyV.String(),
-				valueConvert(indentation+len(keyV.String())+CHILDINDEND+3, val.MapIndex(keyV)))
 		}
-		mapVal.Kind()
-
+		line = fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), keyV.String(),
+			valueConvert(indentation+len(keyV.String())+CHILDINDEND+3, val.MapIndex(keyV)))
 		valList = append(valList, line)
 	}
 	return fmt.Sprintf("{\n%s\n%s}", strings.Join(valList, "\n"), addIndentation(indentation))
 }
 
-// deal with list parameter
+// deal with list parameter that child element is map
 func listValueMapChild(indentation int, key string, val reflect.Value) string {
 	var valList []string
 	for i := 0; i < val.Len(); i++ {
