@@ -5,131 +5,190 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudOssBucketObjectsDataSource_basic(t *testing.T) {
-	randInt := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOssBucketObjectsDataSourceBasic(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_oss_bucket_objects.objects"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.key", fmt.Sprintf("tf-sample/tf-testacc-bucket-object-ds-basic-%d-object", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.acl", "default"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_type", "text/plain"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_length", "14"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.cache_control", "max-age=0"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_disposition", "attachment; filename=\"my-object\""),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_encoding", "gzip"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_md5", "1STMBJqp4X5QEQsYTbRmkQ=="),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.expires", "Wed, 06 May 2020 00:00:00 GMT"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_bucket_objects.objects", "objects.0.etag"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.storage_class", "Standard"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_bucket_objects.objects", "objects.0.last_modification_time"),
-				),
-			},
-		},
-	})
-}
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_oss_bucket_objects.default"
 
-func TestAccAlicloudOssBucketObjectsDataSource_filterByPrefix(t *testing.T) {
-	randInt := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOssBucketObjectsDataSourceFilterByPrefix(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_oss_bucket_objects.objects"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.key", fmt.Sprintf("tf-prefix1/tf-testacc-bucket-object-ds-prefix-%d-object", randInt)),
-				),
-			},
-		},
-	})
-}
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testacc-bucket-object-%d", rand),
+		dataSourceOssBucketObjectsConfigDependence)
 
-func TestAccAlicloudOssBucketObjectsDataSource_empty(t *testing.T) {
-	randInt := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOssBucketObjectsDataSourceEmpty(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_oss_bucket_objects.objects"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.key"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.acl"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_type"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_length"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.cache_control"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_disposition"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_encoding"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_md5"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.expires"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.etag"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.storage_class"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.last_modification_time"),
-				),
-			},
-		},
-	})
+	bucketNameConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+		}),
+	}
+
+	keyRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"key_regex":   "${alicloud_oss_bucket_object.default.key}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"key_regex":   "${alicloud_oss_bucket_object.default.key}-fake",
+		}),
+	}
+
+	keyPrefixConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"key_prefix":  "tf-sample/",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"key_prefix":  "tf-sample-fake/",
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"key_regex":   "${alicloud_oss_bucket_object.default.key}",
+			"key_prefix":  "tf-sample/",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"key_regex":   "${alicloud_oss_bucket_object.default.key}",
+			"key_prefix":  "tf-sample-fake/",
+		}),
+	}
+
+	var existOssBucketObjectsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"objects.#":                        "1",
+			"objects.0.key":                    fmt.Sprintf("tf-sample/%s-object", fmt.Sprintf("tf-testacc-bucket-object-%d", rand)),
+			"objects.0.acl":                    "default",
+			"objects.0.content_type":           "text/plain",
+			"objects.0.content_length":         CHECKSET,
+			"objects.0.cache_control":          "max-age=0",
+			"objects.0.content_disposition":    "attachment; filename=\"my-object\"",
+			"objects.0.content_encoding":       "gzip",
+			"objects.0.expires":                "Wed, 06 May 2020 00:00:00 GMT",
+			"objects.0.content_md5":            "1STMBJqp4X5QEQsYTbRmkQ==",
+			"objects.0.etag":                   CHECKSET,
+			"objects.0.storage_class":          CHECKSET,
+			"objects.0.last_modification_time": CHECKSET,
+		}
+	}
+
+	var fakeOssBucketObjectsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"objects.#": "0",
+		}
+	}
+
+	var ossBucketObjectsCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existOssBucketObjectsMapFunc,
+		fakeMapFunc:  fakeOssBucketObjectsMapFunc,
+	}
+
+	ossBucketObjectsCheckInfo.dataSourceTestCheck(t, rand, bucketNameConf, keyRegexConf, keyPrefixConf, allConf)
 }
 
 func TestAccAlicloudOssBucketObjectsDataSource_versioning(t *testing.T) {
-	randInt := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOssBucketObjectsDataSourceVersioning(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_oss_bucket_objects.objects"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.key", fmt.Sprintf("tf-sample/tf-testacc-bucket-object-ds-version-%d-object", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.acl", "default"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_type", "text/plain"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_length", "14"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.cache_control", "max-age=0"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_disposition", "attachment; filename=\"my-object\""),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_encoding", "gzip"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.content_md5", "1STMBJqp4X5QEQsYTbRmkQ=="),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.expires", "Wed, 06 May 2020 00:00:00 GMT"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_bucket_objects.objects", "objects.0.etag"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_bucket_objects.objects", "objects.0.storage_class", "Standard"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_bucket_objects.objects", "objects.0.last_modification_time"),
-				),
-			},
-		},
-	})
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_oss_bucket_objects.default"
+
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testacc-bucket-object-%d", rand),
+		dataSourceOssBucketObjectsConfigDependenceVersioning)
+
+	bucketNameConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+		}),
+	}
+
+	keyRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"key_regex":   "${alicloud_oss_bucket_object.default.key}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"key_regex":   "${alicloud_oss_bucket_object.default.key}-fake",
+		}),
+	}
+
+	keyPrefixConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"key_prefix":  "tf-sample/",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"key_prefix":  "tf-sample-fake/",
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"key_regex":   "${alicloud_oss_bucket_object.default.key}",
+			"key_prefix":  "tf-sample/",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"key_regex":   "${alicloud_oss_bucket_object.default.key}",
+			"key_prefix":  "tf-sample-fake/",
+		}),
+	}
+
+	var existOssBucketObjectsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"objects.#":                        "1",
+			"objects.0.key":                    fmt.Sprintf("tf-sample/%s-object", fmt.Sprintf("tf-testacc-bucket-object-%d", rand)),
+			"objects.0.acl":                    "default",
+			"objects.0.content_type":           "text/plain",
+			"objects.0.content_length":         CHECKSET,
+			"objects.0.cache_control":          "max-age=0",
+			"objects.0.content_disposition":    "attachment; filename=\"my-object\"",
+			"objects.0.content_encoding":       "gzip",
+			"objects.0.expires":                "Wed, 06 May 2020 00:00:00 GMT",
+			"objects.0.content_md5":            "1STMBJqp4X5QEQsYTbRmkQ==",
+			"objects.0.etag":                   CHECKSET,
+			"objects.0.storage_class":          CHECKSET,
+			"objects.0.last_modification_time": CHECKSET,
+		}
+	}
+
+	var fakeOssBucketObjectsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"objects.#": "0",
+		}
+	}
+
+	var ossBucketObjectsCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existOssBucketObjectsMapFunc,
+		fakeMapFunc:  fakeOssBucketObjectsMapFunc,
+	}
+
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
+	}
+
+	ossBucketObjectsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, bucketNameConf, keyRegexConf, keyPrefixConf, allConf)
 }
 
-func testAccCheckAlicloudOssBucketObjectsDataSourceBasic(randInt int) string {
+func dataSourceOssBucketObjectsConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testacc-bucket-object-ds-basic-%d"
+	default = "%s"
 }
 
-resource "alicloud_oss_bucket" "sample_bucket" {
+resource "alicloud_oss_bucket" "default" {
 	bucket = "${var.name}"
 	acl = "private"
 }
 
-resource "alicloud_oss_bucket_object" "sample_object" {
-	bucket = "${alicloud_oss_bucket.sample_bucket.bucket}"
+resource "alicloud_oss_bucket_object" "default" {
+	bucket = "${alicloud_oss_bucket.default.bucket}"
 	key = "tf-sample/${var.name}-object"
 	content = "sample content"
 	content_type = "text/plain"
@@ -139,71 +198,15 @@ resource "alicloud_oss_bucket_object" "sample_object" {
 	expires = "Wed, 06 May 2020 00:00:00 GMT"
 }
 
-data "alicloud_oss_bucket_objects" "objects" {
-	bucket_name = "${var.name}"
-    key_regex = "${alicloud_oss_bucket_object.sample_object.key}"
+`, name)
 }
-`, randInt)
-}
-
-func testAccCheckAlicloudOssBucketObjectsDataSourceFilterByPrefix(randInt int) string {
+func dataSourceOssBucketObjectsConfigDependenceVersioning(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testacc-bucket-object-ds-prefix-%d"
+	default = "%s"
 }
 
-resource "alicloud_oss_bucket" "sample_bucket" {
-	bucket = "${var.name}"
-	acl = "private"
-}
-
-resource "alicloud_oss_bucket_object" "sample_prefix1_object" {
-	bucket = "${alicloud_oss_bucket.sample_bucket.bucket}"
-	key = "tf-prefix1/${var.name}-object"
-	content = "sample content"
-	content_type = "text/plain"
-}
-
-resource "alicloud_oss_bucket_object" "sample_prefix2_object" {
-	bucket = "${alicloud_oss_bucket.sample_bucket.bucket}"
-	key = "tf-prefix2/${var.name}-object"
-	content = "sample content"
-	content_type = "text/plain"
-}
-
-data "alicloud_oss_bucket_objects" "objects" {
-	bucket_name = "${var.name}"
-    key_regex = "(${alicloud_oss_bucket_object.sample_prefix1_object.key}|${alicloud_oss_bucket_object.sample_prefix2_object.key})"
-    key_prefix = "tf-prefix1/"
-}
-`, randInt)
-}
-
-func testAccCheckAlicloudOssBucketObjectsDataSourceEmpty(randInt int) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "tf-testacc-bucket-object-empty-%d"
-}
-
-resource "alicloud_oss_bucket" "sample_bucket" {
-	bucket = "${var.name}"
-	acl = "private"
-}
-
-data "alicloud_oss_bucket_objects" "objects" {
-	bucket_name = "${alicloud_oss_bucket.sample_bucket.id}"
-    	key_regex = "^tf-testacc-fake-name"
-}
-`, randInt)
-}
-
-func testAccCheckAlicloudOssBucketObjectsDataSourceVersioning(randInt int) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "tf-testacc-bucket-object-ds-version-%d"
-}
-
-resource "alicloud_oss_bucket" "sample_bucket" {
+resource "alicloud_oss_bucket" "default" {
 	bucket = "${var.name}"
 	acl = "private"
 	force_destroy = true
@@ -212,8 +215,8 @@ resource "alicloud_oss_bucket" "sample_bucket" {
 	}
 }
 
-resource "alicloud_oss_bucket_object" "sample_object" {
-	bucket = "${alicloud_oss_bucket.sample_bucket.bucket}"
+resource "alicloud_oss_bucket_object" "default" {
+	bucket = "${alicloud_oss_bucket.default.bucket}"
 	key = "tf-sample/${var.name}-object"
 	content = "sample content"
 	content_type = "text/plain"
@@ -223,20 +226,5 @@ resource "alicloud_oss_bucket_object" "sample_object" {
 	expires = "Wed, 06 May 2020 00:00:00 GMT"
 }
 
-resource "alicloud_oss_bucket_object" "sample_object2" {
-	bucket = "${alicloud_oss_bucket.sample_bucket.bucket}"
-	key = "tf-sample/${var.name}-object"
-	content = "sample content"
-	content_type = "text/plain"
-	cache_control = "max-age=0"
-	content_disposition = "attachment; filename=\"my-object\""
-	content_encoding = "gzip"
-	expires = "Wed, 06 May 2020 00:00:00 GMT"
-}
-
-data "alicloud_oss_bucket_objects" "objects" {
-	bucket_name = "${var.name}"
-    key_regex = "${alicloud_oss_bucket_object.sample_object.key}"
-}
-`, randInt)
+`, name)
 }

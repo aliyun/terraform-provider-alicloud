@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/mitchellh/go-homedir"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -116,8 +115,9 @@ func resourceAlicloudOssBucketObjectPut(d *schema.ResourceData, meta interface{}
 		return ossClient.Bucket(d.Get("bucket").(string))
 	})
 	if err != nil {
-		return fmt.Errorf("Error getting bucket: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket_object", "Bucket", AliyunOssGoSdk)
 	}
+	addDebug("Bucket", raw)
 	bucket, _ := raw.(*oss.Bucket)
 	var filePath string
 	var body io.Reader
@@ -126,7 +126,7 @@ func resourceAlicloudOssBucketObjectPut(d *schema.ResourceData, meta interface{}
 		source := v.(string)
 		path, err := homedir.Expand(source)
 		if err != nil {
-			return fmt.Errorf("Error expanding homedir in source (%s): %s", source, err)
+			return WrapError(err)
 		}
 
 		filePath = path
@@ -134,13 +134,13 @@ func resourceAlicloudOssBucketObjectPut(d *schema.ResourceData, meta interface{}
 		content := v.(string)
 		body = bytes.NewReader([]byte(content))
 	} else {
-		return fmt.Errorf("[ERROR] Must specify \"source\" or \"content\" field")
+		return WrapError(Error("[ERROR] Must specify \"source\" or \"content\" field"))
 	}
 
 	key := d.Get("key").(string)
 	options, err := buildObjectHeaderOptions(d)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 	if filePath != "" {
 		err = bucket.PutObjectFromFile(key, filePath, options...)
@@ -151,7 +151,7 @@ func resourceAlicloudOssBucketObjectPut(d *schema.ResourceData, meta interface{}
 	}
 
 	if err != nil {
-		return fmt.Errorf("Error putting object in Oss bucket (%#v): %s", bucket, err)
+		return WrapError(Error("Error putting object in Oss bucket (%#v): %s", bucket, err))
 	}
 
 	d.SetId(key)
@@ -164,25 +164,24 @@ func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{
 		return ossClient.Bucket(d.Get("bucket").(string))
 	})
 	if err != nil {
-		return fmt.Errorf("Error getting bucket: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "Bucket", AliyunOssGoSdk)
 	}
+	addDebug("Bucket", raw)
 	bucket, _ := raw.(*oss.Bucket)
 	options, err := buildObjectHeaderOptions(d)
 	if err != nil {
-		return fmt.Errorf("Error building object header options: %#v", err)
+		return WrapError(err)
 	}
 
 	object, err := bucket.GetObjectDetailedMeta(d.Get("key").(string), options...)
 	if err != nil {
-		if strings.Contains(string(err.Error()), OssBodyNotFound) {
+		if IsExceptedError(err, OssBodyNotFound) {
 			d.SetId("")
-			return fmt.Errorf("To get the Object: %#v but it is not exist in the specified bucket %s.", d.Get("key").(string), d.Get("bucket").(string))
+			return WrapError(Error("To get the Object: %#v but it is not exist in the specified bucket %s.", d.Get("key").(string), d.Get("bucket").(string)))
 		}
-
-		return fmt.Errorf("Error Reading Object: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetObjectDetailedMeta", AliyunOssGoSdk)
 	}
-
-	log.Printf("[DEBUG] Reading Oss Bucket Object meta: %s", object)
+	addDebug("GetObjectDetailedMeta", object)
 
 	d.Set("content_type", object.Get("Content-Type"))
 	d.Set("content_length", object.Get("Content-Length"))
@@ -199,29 +198,24 @@ func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{
 
 func resourceAlicloudOssBucketObjectDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ossService := OssService{client}
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return ossClient.Bucket(d.Get("bucket").(string))
 	})
 	if err != nil {
-		return fmt.Errorf("Error getting bucket: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "Bucket", AliyunOssGoSdk)
 	}
 	bucket, _ := raw.(*oss.Bucket)
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		exist, err := bucket.IsObjectExist(d.Id())
-		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("OSS delete object got an error: %#v", err))
-		}
 
-		if !exist {
+	err = bucket.DeleteObject(d.Id())
+	if err != nil {
+		if IsExceptedErrors(err, []string{"No Content", "Not Found"}) {
 			return nil
 		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteObject", AliyunOssGoSdk)
+	}
 
-		if err := bucket.DeleteObject(d.Id()); err != nil {
-			return resource.RetryableError(fmt.Errorf("OSS object %#v is in use - trying again while it is deleted.", d.Id()))
-		}
-
-		return nil
-	})
+	return WrapError(ossService.WaitForOssBucket(bucket, d.Id(), Deleted, DefaultTimeoutMedium))
 
 }
 

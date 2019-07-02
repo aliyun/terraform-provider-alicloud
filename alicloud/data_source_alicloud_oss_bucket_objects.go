@@ -133,17 +133,21 @@ func dataSourceAlicloudOssBucketObjectsRead(d *schema.ResourceData, meta interfa
 			return bucket.ListObjects(options...)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_oss_bucket_object", "ListObjects", AliyunOssGoSdk)
 		}
-		resp, _ := raw.(oss.ListObjectsResult)
+		response, _ := raw.(oss.ListObjectsResult)
 
-		if resp.Objects == nil || len(resp.Objects) < 1 {
+		if response.Objects == nil || len(response.Objects) < 1 {
 			break
 		}
 
-		allObjects = append(allObjects, resp.Objects...)
+		if len(response.Objects) < 1 {
+			break
+		}
 
-		nextMarker = resp.NextMarker
+		allObjects = append(allObjects, response.Objects...)
+
+		nextMarker = response.NextMarker
 		if nextMarker == "" {
 			break
 		}
@@ -199,6 +203,7 @@ func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucketName strin
 			mapping["server_side_encryption"] = objectHeader.Get(oss.HTTPHeaderOssServerSideEncryption)
 			mapping["sse_kms_key_id"] = objectHeader.Get(oss.HTTPHeaderOssServerSideEncryptionKeyID)
 		}
+		addDebug("GetObjectDetailedMeta", raw)
 		// Add ACL information
 		raw, err = client.WithOssBucketByName(bucketName, func(bucket *oss.Bucket) (interface{}, error) {
 			return bucket.GetObjectACL(object.Key)
@@ -209,6 +214,7 @@ func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucketName strin
 			objectACL, _ := raw.(oss.GetObjectACLResult)
 			mapping["acl"] = objectACL.ACL
 		}
+		addDebug("GetObjectACL", raw)
 
 		ids = append(ids, object.Key)
 		s = append(s, mapping)
@@ -216,7 +222,7 @@ func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucketName strin
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("objects", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
