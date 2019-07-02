@@ -247,6 +247,14 @@ func resourceAliyunSlb() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+
+			"delete_protection": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				DiffSuppressFunc: slbDeleteProtectionSuppressFunc,
+				Default:          string(OffFlag),
+			},
 		},
 	}
 }
@@ -295,6 +303,9 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 		} else {
 			request.PayType = "PayOnDemand"
 		}
+	}
+	if v, ok := d.GetOk("delete_protection"); ok && v.(string) != "" {
+		request.DeleteProtection = d.Get("delete_protection").(string)
 	}
 	if request.PayType == string("PrePay") {
 		period := d.Get("period").(int)
@@ -370,7 +381,7 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	} else {
 		d.Set("instance_charge_type", PostPaid)
 	}
-
+	d.Set("delete_protection", object.DeleteProtection)
 	tags, _ := slbService.describeTags(d.Id())
 	if len(tags) > 0 {
 		if err := d.Set("tags", slbService.slbTagsToMap(tags)); err != nil {
@@ -428,6 +439,19 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		d.SetPartial("specification")
 	}
 
+	if d.HasChange("delete_protection") {
+		request := slb.CreateSetLoadBalancerDeleteProtectionRequest()
+		request.LoadBalancerId = d.Id()
+		request.DeleteProtection = d.Get("delete_protection").(string)
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.SetLoadBalancerDeleteProtection(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw)
+		d.SetPartial("delete_protection")
+	}
 	update := false
 	modifyLoadBalancerInternetSpecRequest := slb.CreateModifyLoadBalancerInternetSpecRequest()
 	modifyLoadBalancerInternetSpecRequest.LoadBalancerId = d.Id()

@@ -372,3 +372,10 @@ func mongoDBPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceData) b
 	}
 	return true
 }
+
+func slbDeleteProtectionSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if PayType(d.Get("instance_charge_type").(string)) == PrePaid {
+		return true
+	}
+	return false
+}
