@@ -60,6 +60,11 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 			"category": `"fake"`,
 		}),
 	}
+	DBInstanceClassConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"db_instance_class": `"mssql.x8.8xlarge.e2"`,
+		}),
+	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
@@ -100,7 +105,7 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 		fakeMapFunc:  fakeDBInstanceMapFunc,
 	}
 
-	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConf, ChargeTypeConf_Prepaid, ChargeTypeConf_Postpaid, CategoryConf, multiZoneConf, falseMultiZoneConf, StorageTypeConf_local_ssd, StorageTypeConf_cloud_ssd, allConf)
+	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConf, ChargeTypeConf_Prepaid, ChargeTypeConf_Postpaid, CategoryConf, DBInstanceClassConf, multiZoneConf, falseMultiZoneConf, StorageTypeConf_local_ssd, StorageTypeConf_cloud_ssd, allConf)
 }
 
 func testAccCheckAlicloudDBInstanceClassesDataSourceConfig(attrMap map[string]string) string {
