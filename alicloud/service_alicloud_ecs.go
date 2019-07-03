@@ -81,47 +81,48 @@ func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err err
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*ecs.DescribeInstancesResponse)
 	if len(response.Instances.Instance) < 1 {
-		return instance, WrapErrorf(Error(GetNotFoundMessage("Security Group", id)), NotFoundMsg, ProviderERROR)
+		return instance, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR)
 	}
 
 	return response.Instances.Instance[0], nil
 }
 
 func (s *EcsService) DescribeInstanceAttribute(id string) (instance ecs.DescribeInstanceAttributeResponse, err error) {
-	req := ecs.CreateDescribeInstanceAttributeRequest()
-	req.InstanceId = id
+	request := ecs.CreateDescribeInstanceAttributeRequest()
+	request.InstanceId = id
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeInstanceAttribute(req)
+		return ecsClient.DescribeInstanceAttribute(request)
 	})
 	if err != nil {
-		return
+		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*ecs.DescribeInstanceAttributeResponse)
-	if resp == nil {
-		return instance, GetNotFoundErrorFromString(GetNotFoundMessage("Instance", id))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ecs.DescribeInstanceAttributeResponse)
+	if response.InstanceId != id {
+		return instance, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR)
 	}
 
-	return *resp, nil
+	return *response, nil
 }
 
 func (s *EcsService) QueryInstanceSystemDisk(id string) (disk ecs.Disk, err error) {
-	args := ecs.CreateDescribeDisksRequest()
-	args.InstanceId = id
-	args.DiskType = string(DiskTypeSystem)
+	request := ecs.CreateDescribeDisksRequest()
+	request.InstanceId = id
+	request.DiskType = string(DiskTypeSystem)
 
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeDisks(args)
+		return ecsClient.DescribeDisks(request)
 	})
 	if err != nil {
-		return
+		return disk, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*ecs.DescribeDisksResponse)
-	if resp != nil && len(resp.Disks.Disk) < 1 {
-		return disk, GetNotFoundErrorFromString(fmt.Sprintf("The specified system disk is not found by instance id %s.", id))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ecs.DescribeDisksResponse)
+	if len(response.Disks.Disk) < 1 || response.Disks.Disk[0].InstanceId != id {
+		return disk, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR)
 	}
-
-	return resp.Disks.Disk[0], nil
+	return response.Disks.Disk[0], nil
 }
 
 // ResourceAvailable check resource available for zone
