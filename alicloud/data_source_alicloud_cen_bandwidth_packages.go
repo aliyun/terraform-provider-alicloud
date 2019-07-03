@@ -147,12 +147,16 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 
 	var allCenBwps []cbn.CenBandwidthPackage
 
+	deadline := time.Now().Add(10 * time.Minute)
 	for {
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCenBandwidthPackages(request)
 		})
 		if err != nil {
 			if IsExceptedError(err, CenThrottlingUser) {
+				if time.Now().After(deadline) {
+					return nil, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_bandwidth_packages", request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
 				time.Sleep(10 * time.Second)
 				continue
 			}
