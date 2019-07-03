@@ -1,12 +1,11 @@
 data "alicloud_zones" "default" {
-  available_disk_category      = "cloud_efficiency"
+  available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
 }
 
 data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  cpu_core_count    = 1
-  memory_size       = 2
+  eni_amount        = 2
 }
 
 data "alicloud_images" "image" {
@@ -17,6 +16,10 @@ data "alicloud_images" "image" {
 
 variable "name" {
   default = "tf-testAccSlbServerGroupVpc"
+}
+
+variable "number" {
+  default = "1"
 }
 
 resource "alicloud_vpc" "main" {
@@ -40,7 +43,7 @@ resource "alicloud_instance" "instance" {
   image_id                   = "${data.alicloud_images.image.images.0.id}"
   instance_type              = "${data.alicloud_instance_types.default.instance_types.0.id}"
   instance_name              = "${var.name}"
-  count                      = "2"
+  count                      = "3"
   security_groups            = ["${alicloud_security_group.group.*.id}"]
   internet_charge_type       = "PayByTraffic"
   internet_max_bandwidth_out = "10"
@@ -51,8 +54,22 @@ resource "alicloud_instance" "instance" {
 }
 
 resource "alicloud_slb" "instance" {
-  name       = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.main.id}"
+  name          = "${var.name}"
+  vswitch_id    = "${alicloud_vswitch.main.id}"
+  specification = "slb.s2.small"
+}
+
+resource "alicloud_network_interface" "default" {
+  count           = "${var.number}"
+  name            = "${var.name}"
+  vswitch_id      = "${alicloud_vswitch.main.id}"
+  security_groups = ["${alicloud_security_group.group.id}"]
+}
+
+resource "alicloud_network_interface_attachment" "default" {
+  count                = "${var.number}"
+  instance_id          = "${alicloud_instance.instance.0.id}"
+  network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
 }
 
 resource "alicloud_slb_server_group" "group" {
@@ -60,15 +77,17 @@ resource "alicloud_slb_server_group" "group" {
   name             = "${var.name}"
 
   servers {
-      server_ids = ["${alicloud_instance.instance.0.id}", "${alicloud_instance.instance.1.id}"]
-      port       = 100
-      weight     = 10
-    }
+    server_ids = ["${alicloud_instance.instance.0.id}", "${alicloud_instance.instance.1.id}"]
+    port       = 100
+    weight     = 10
+  }
+
   servers {
-      server_ids = ["${alicloud_instance.instance.*.id}"]
-      port       = 80
-      weight     = 100
-    }
+    server_ids = ["${alicloud_network_interface.default.0.id}"]
+    port       = 100
+    weight     = 10
+    type       = "eni"
+  }
 }
 
 resource "alicloud_slb_listener" "tcp" {

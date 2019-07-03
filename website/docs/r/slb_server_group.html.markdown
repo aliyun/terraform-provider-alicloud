@@ -103,7 +103,7 @@ The servers mapping supports the following:
 * `server_ids` - (Required) A list backend server ID (ECS instance ID).
 * `port` - (Required) The port used by the backend server. Valid value range: [1-65535].
 * `weight` - (Optional) Weight of the backend server. Valid value range: [0-100]. Default to 100.
-
+* `type` - (Optional, Available in 1.51.0+) Type of the backend server. Valid value ecs, eni. Default to eni.
 
 ## Attributes Reference
 

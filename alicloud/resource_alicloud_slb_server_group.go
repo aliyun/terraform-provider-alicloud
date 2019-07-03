@@ -58,6 +58,12 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 							Default:      100,
 							ValidateFunc: validateIntegerInRange(0, 100),
 						},
+						"type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      string(ECS),
+							ValidateFunc: validateAllowedStringValue([]string{string(ENI), string(ECS)}),
+						},
 					},
 				},
 				MaxItems: 20,
@@ -109,7 +115,7 @@ func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) 
 	servers := make([]map[string]interface{}, 0)
 	portAndWeight := make(map[string][]string)
 	for _, server := range object.BackendServers.BackendServer {
-		key := fmt.Sprintf("%d%s%d", server.Port, COLON_SEPARATED, server.Weight)
+		key := fmt.Sprintf("%d%s%d%s%s", server.Port, COLON_SEPARATED, server.Weight, COLON_SEPARATED, server.Type)
 		if v, ok := portAndWeight[key]; !ok {
 			portAndWeight[key] = []string{server.ServerId}
 		} else {
@@ -127,10 +133,12 @@ func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) 
 		if e != nil {
 			return WrapError(e)
 		}
+		t := k[2]
 		s := map[string]interface{}{
 			"server_ids": value,
 			"port":       p,
 			"weight":     w,
+			"type":       t,
 		}
 		servers = append(servers, s)
 	}
