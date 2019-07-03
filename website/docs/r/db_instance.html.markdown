@@ -131,6 +131,16 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 
 -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
+### Timeouts
+
+-> **NOTE:** Available in 1.51.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 20 mins) Used when creating the DB instance (until it reaches the initial `Running` status). 
+* `update` - (Defaults to 40 mins) Used when modifying the DB instance. 
+* `delete` - (Defaults to 20 mins) Used when terminating the DB instance. 
+
 ## Attributes Reference
 
 The following attributes are exported:
