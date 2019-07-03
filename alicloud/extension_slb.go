@@ -29,6 +29,13 @@ const (
 	TlsCipherPolicy_1_2_STRICT = TlsCipherPolicy("tls_cipher_policy_1_2_strict")
 )
 
+type RsType string
+
+const (
+	ENI = FlagType("eni")
+	ECS = FlagType("ecs")
+)
+
 type AclType string
 
 const (
@@ -111,6 +118,7 @@ func expandBackendServersWithPortToString(items []interface{}) string {
 
 		var server_ids []interface{}
 		var port, weight int
+		var server_type string
 		if v, ok := s["server_ids"]; ok {
 			server_ids = v.([]interface{})
 		}
@@ -120,10 +128,11 @@ func expandBackendServersWithPortToString(items []interface{}) string {
 		if v, ok := s["weight"]; ok {
 			weight = v.(int)
 		}
-
+		if v, ok := s["type"]; ok {
+			server_type = v.(string)
+		}
 		for _, id := range server_ids {
-			str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d'}", strings.Trim(id.(string), " "), port, weight)
-
+			str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d', 'Type': '%s'}", strings.Trim(id.(string), " "), port, weight, strings.Trim(server_type, " "))
 			servers = append(servers, str)
 		}
 
