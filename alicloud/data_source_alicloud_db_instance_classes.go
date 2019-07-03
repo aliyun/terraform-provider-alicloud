@@ -39,6 +39,10 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 				Default:      PostPaid,
 				ValidateFunc: validateAllowedStringValue([]string{string(PostPaid), string(PrePaid)}),
 			},
+			"db_instance_class": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"category": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -158,6 +162,7 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 
 	engine, engineGot := d.GetOk("engine")
 	engineVersion, engineVersionGot := d.GetOk("engine_version")
+	dbInstanceClass, dbInstanceClassGot := d.GetOk("db_instance_class")
 	storageType, storageTypeGot := d.GetOk("storage_type")
 	category, categoryGot := d.GetOk("category")
 
@@ -202,6 +207,9 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 							continue
 						}
 						for _, AvailableResource := range SupportedStorageType.AvailableResources.AvailableResource {
+							if dbInstanceClassGot && dbInstanceClass.(string) != AvailableResource.DBInstanceClass {
+								continue
+							}
 							zoneIds := []map[string]interface{}{}
 							if _, ok := classInfos[AvailableResource.DBInstanceClass]; ok {
 								zoneIds = append(classInfos[AvailableResource.DBInstanceClass].ZoneIds, zoneId)
