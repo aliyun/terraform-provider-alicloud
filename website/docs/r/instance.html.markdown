@@ -21,6 +21,8 @@ Provides a ECS instance resource.
 -> **NOTE:** The resource supports modifying instance charge type from 'PrePaid' to 'PostPaid' from version 1.9.6.
  However, at present, this modification has some limitation about CPU core count in one month, so strongly recommand that `Don't modify instance charge type frequentlly in one month`.
 
+-> **NOTE:**  There is unsupported 'deletion_protection' attribute when the instance is spot
+
 ## Example Usage
 
 ```
