@@ -215,7 +215,7 @@ func resourceAlicloudOssBucketObjectDelete(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteObject", AliyunOssGoSdk)
 	}
 
-	return WrapError(ossService.WaitForOssBucket(bucket, d.Id(), Deleted, DefaultTimeoutMedium))
+	return WrapError(ossService.WaitForOssBucketObject(bucket, d.Id(), Deleted, DefaultTimeoutMedium))
 
 }
 

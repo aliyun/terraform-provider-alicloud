@@ -269,21 +269,23 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 		return ossClient.IsBucketExist(bucket)
 	})
 	if err != nil {
-		return err
-	}
-	isExist, _ := raw.(bool)
-	if isExist {
-		return fmt.Errorf("[ERROR] The specified bucket name: %#v is not available. The bucket namespace is shared by all users of the OSS system. Please select a different name and try again.", bucket)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "IsBucketExist", AliyunOssGoSdk)
 	}
 
-	_, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+	isExist, _ := raw.(bool)
+	if isExist {
+		return WrapError(Error("[ERROR] The specified bucket name: %#v is not available. The bucket namespace is shared by all users of the OSS system. Please select a different name and try again.", bucket))
+	}
+	addDebug("IsBucketExist", raw)
+	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return nil, ossClient.CreateBucket(bucket, oss.StorageClass(oss.StorageClassType(d.Get("storage_class").(string))))
 	})
 	if err != nil {
-		return fmt.Errorf("Error creating OSS bucket: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "CreateBucket", AliyunOssGoSdk)
 	}
+	addDebug("CreateBucket", raw)
 
-	retryErr := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return ossClient.IsBucketExist(bucket)
 		})
@@ -293,14 +295,14 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 		}
 		isExist, _ := raw.(bool)
 		if !isExist {
-			return resource.RetryableError(fmt.Errorf("Trying to ensure new OSS bucket %#v has been created successfully.", bucket))
+			return resource.RetryableError(Error("Trying to ensure new OSS bucket %#v has been created successfully.", bucket))
 		}
-
+		addDebug("IsBucketExist", raw)
 		return nil
 	})
 
-	if retryErr != nil {
-		return fmt.Errorf("Error creating OSS bucket: %#v", retryErr)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "IsBucketExist", AliyunOssGoSdk)
 	}
 
 	// Assign the bucket name as the resource ID
@@ -311,41 +313,39 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 
 func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return ossClient.GetBucketInfo(d.Id())
-	})
+	ossService := OssService{client}
+	object, err := ossService.DescribeOssBucket(d.Id())
 	if err != nil {
-		if ossNotFoundError(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return err
+		return WrapError(err)
 	}
-	info, _ := raw.(oss.GetBucketInfoResult)
+
 	d.Set("bucket", d.Id())
 
-	d.Set("acl", info.BucketInfo.ACL)
-	d.Set("creation_date", info.BucketInfo.CreationDate.Format("2016-01-01"))
-	d.Set("extranet_endpoint", info.BucketInfo.ExtranetEndpoint)
-	d.Set("intranet_endpoint", info.BucketInfo.IntranetEndpoint)
-	d.Set("location", info.BucketInfo.Location)
-	d.Set("owner", info.BucketInfo.Owner.ID)
-	d.Set("storage_class", info.BucketInfo.StorageClass)
+	d.Set("acl", object.BucketInfo.ACL)
+	d.Set("creation_date", object.BucketInfo.CreationDate.Format("2016-01-01"))
+	d.Set("extranet_endpoint", object.BucketInfo.ExtranetEndpoint)
+	d.Set("intranet_endpoint", object.BucketInfo.IntranetEndpoint)
+	d.Set("location", object.BucketInfo.Location)
+	d.Set("owner", object.BucketInfo.Owner.ID)
+	d.Set("storage_class", object.BucketInfo.StorageClass)
 
-	if &info.BucketInfo.SseRule != nil {
-		if len(info.BucketInfo.SseRule.SSEAlgorithm) > 0 && info.BucketInfo.SseRule.SSEAlgorithm != "None" {
+	if &object.BucketInfo.SseRule != nil {
+		if len(object.BucketInfo.SseRule.SSEAlgorithm) > 0 && object.BucketInfo.SseRule.SSEAlgorithm != "None" {
 			rule := make(map[string]interface{})
-			rule["sse_algorithm"] = info.BucketInfo.SseRule.SSEAlgorithm
+			rule["sse_algorithm"] = object.BucketInfo.SseRule.SSEAlgorithm
 			data := make([]map[string]interface{}, 0)
 			data = append(data, rule)
 			d.Set("server_side_encryption_rule", data)
 		}
 	}
 
-	if info.BucketInfo.Versioning != "" {
+	if object.BucketInfo.Versioning != "" {
 		data := map[string]interface{}{
-			"status": info.BucketInfo.Versioning,
+			"status": object.BucketInfo.Versioning,
 		}
 		versioning := make([]map[string]interface{}, 0)
 		versioning = append(versioning, data)
@@ -353,12 +353,13 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	}
 
 	// Read the CORS
-	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return ossClient.GetBucketCORS(d.Id())
 	})
 	if err != nil && !IsExceptedErrors(err, []string{NoSuchCORSConfiguration}) {
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketCORS", AliyunOssGoSdk)
 	}
+	addDebug("GetBucketCORS", raw)
 	cors, _ := raw.(oss.GetBucketCORSResult)
 	rules := make([]map[string]interface{}, 0, len(cors.CORSRules))
 	for _, r := range cors.CORSRules {
@@ -372,7 +373,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		rules = append(rules, rule)
 	}
 	if err := d.Set("cors_rule", rules); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// Read the website configuration
@@ -380,8 +381,9 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		return ossClient.GetBucketWebsite(d.Id())
 	})
 	if err != nil && !IsExceptedErrors(err, []string{NoSuchWebsiteConfiguration}) {
-		return fmt.Errorf("Error getting bucket website: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketWebsite", AliyunOssGoSdk)
 	}
+	addDebug("GetBucketWebsite", raw)
 	ws, _ := raw.(oss.GetBucketWebsiteResult)
 	websites := make([]map[string]interface{}, 0)
 	if err == nil && &ws != nil {
@@ -397,7 +399,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		websites = append(websites, w)
 	}
 	if err := d.Set("website", websites); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// Read the logging configuration
@@ -405,9 +407,11 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		return ossClient.GetBucketLogging(d.Id())
 	})
 	if err != nil {
-		return fmt.Errorf("Error getting bucket logging: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketLogging", AliyunOssGoSdk)
 	}
+	addDebug("GetBucketLogging", raw)
 	logging, _ := raw.(oss.GetBucketLoggingResult)
+
 	if &logging != nil {
 		enable := logging.LoggingEnabled
 		if &enable != nil {
@@ -421,7 +425,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 				})
 			}
 			if err := d.Set("logging", lgs); err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 	}
@@ -430,10 +434,11 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return ossClient.GetBucketReferer(d.Id())
 	})
-	referers := make([]map[string]interface{}, 0)
 	if err != nil {
-		return fmt.Errorf("Error getting bucket referer: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketReferer", AliyunOssGoSdk)
 	}
+	addDebug("GetBucketReferer", raw)
+	referers := make([]map[string]interface{}, 0)
 	referer, _ := raw.(oss.GetBucketRefererResult)
 	if len(referer.RefererList) > 0 {
 		referers = append(referers, map[string]interface{}{
@@ -441,7 +446,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 			"referers":    referer.RefererList,
 		})
 		if err := d.Set("referer_config", referers); err != nil {
-			return err
+			return WrapError(err)
 		}
 	}
 
@@ -450,9 +455,9 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		return ossClient.GetBucketLifecycle(d.Id())
 	})
 	if err != nil && !ossNotFoundError(err) {
-		return fmt.Errorf("Error getting bucket lifecycle: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketLifecycle", AliyunOssGoSdk)
 	}
-
+	addDebug("GetBucketLifecycle", raw)
 	lrules := make([]map[string]interface{}, 0)
 	lifecycle, _ := raw.(oss.GetBucketLifecycleResult)
 	for _, lifecycleRule := range lifecycle.Rules {
@@ -470,7 +475,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 			if lifecycleRule.Expiration.Date != "" {
 				t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.Expiration.Date)
 				if err != nil {
-					return err
+					return WrapError(err)
 				}
 				e["date"] = t.Format("2006-01-02")
 			}
@@ -481,7 +486,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if err := d.Set("lifecycle_rule", lrules); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// Read Policy
@@ -492,22 +497,22 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	})
 
 	if err != nil && !ossNotFoundError(err) {
-		return fmt.Errorf("Error getting bucket policy: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetPolicyByConn", AliyunOssGoSdk)
 	}
-
+	addDebug("GetPolicyByConn", raw)
 	policy := ""
 	if err == nil {
 		rawResp := raw.(*oss.Response)
 		defer rawResp.Body.Close()
 		rawData, err := ioutil.ReadAll(rawResp.Body)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 		policy = string(rawData)
 	}
 
 	if err := d.Set("policy", policy); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// Read tags
@@ -516,9 +521,9 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	})
 
 	if err != nil {
-		return fmt.Errorf("Error getting bucket tagging: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketTagging", AliyunOssGoSdk)
 	}
-
+	addDebug("GetBucketTagging", raw)
 	tagging, _ := raw.(oss.GetBucketTaggingResult)
 	tagsMap := make(map[string]string)
 	if len(tagging.Tags) > 0 {
@@ -527,7 +532,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 	if err := d.Set("tags", tagsMap); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	return nil
@@ -539,74 +544,75 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 	d.Partial(true)
 
 	if d.HasChange("acl") {
-		_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return nil, ossClient.SetBucketACL(d.Id(), oss.ACLType(d.Get("acl").(string)))
 		})
 		if err != nil {
-			return fmt.Errorf("Error setting OSS bucket ACL: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketACL", AliyunOssGoSdk)
 		}
+		addDebug("SetBucketACL", raw)
 		d.SetPartial("acl")
 	}
 
 	if d.HasChange("cors_rule") {
 		if err := resourceAlicloudOssBucketCorsUpdate(client, d); err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("cors_rule")
 	}
 
 	if d.HasChange("website") {
 		if err := resourceAlicloudOssBucketWebsiteUpdate(client, d); err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("website")
 	}
 
 	if d.HasChange("logging") {
 		if err := resourceAlicloudOssBucketLoggingUpdate(client, d); err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("logging")
 	}
 
 	if d.HasChange("referer_config") {
 		if err := resourceAlicloudOssBucketRefererUpdate(client, d); err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("referer_config")
 	}
 
 	if d.HasChange("lifecycle_rule") {
 		if err := resourceAlicloudOssBucketLifecycleRuleUpdate(client, d); err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("lifecycle_rule")
 	}
 
 	if d.HasChange("policy") {
 		if err := resourceAlicloudOssBucketPolicyUpdate(client, d); err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("policy")
 	}
 
 	if d.HasChange("server_side_encryption_rule") {
 		if err := resourceAlicloudOssBucketEncryptionUpdate(client, d); err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("server_side_encryption_rule")
 	}
 
 	if d.HasChange("tags") {
 		if err := resourceAlicloudOssBucketTaggingUpdate(client, d); err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("tags")
 	}
 
 	if d.HasChange("versioning") {
 		if err := resourceAlicloudOssBucketVersioningUpdate(client, d); err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("versioning")
 	}
@@ -619,16 +625,17 @@ func resourceAlicloudOssBucketCorsUpdate(client *connectivity.AliyunClient, d *s
 	cors := d.Get("cors_rule").([]interface{})
 	if cors == nil || len(cors) == 0 {
 		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-			_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 				return nil, ossClient.DeleteBucketCORS(d.Id())
 			})
 			if err != nil {
 				return resource.NonRetryableError(err)
 			}
+			addDebug("DeleteBucketCORS", raw)
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("Error removing OSS bucket cors_rule: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteBucketCORS", AliyunOssGoSdk)
 		}
 		return nil
 	}
@@ -662,30 +669,25 @@ func resourceAlicloudOssBucketCorsUpdate(client *connectivity.AliyunClient, d *s
 	}
 
 	log.Printf("[DEBUG] Oss bucket: %s, put CORS: %#v", d.Id(), cors)
-	_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return nil, ossClient.SetBucketCORS(d.Id(), rules)
 	})
 	if err != nil {
-		return fmt.Errorf("Error putting oss CORS: %s", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketCORS", AliyunOssGoSdk)
 	}
-
+	addDebug("SetBucketCORS", raw)
 	return nil
 }
 func resourceAlicloudOssBucketWebsiteUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	ws := d.Get("website").([]interface{})
 	if ws == nil || len(ws) == 0 {
-		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-			_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-				return nil, ossClient.DeleteBucketWebsite(d.Id())
-			})
-			if err != nil {
-				return resource.NonRetryableError(err)
-			}
-			return nil
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return nil, ossClient.DeleteBucketWebsite(d.Id())
 		})
 		if err != nil {
-			return fmt.Errorf("Error removing OSS bucket logging: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteBucketWebsite", AliyunOssGoSdk)
 		}
+		addDebug("DeleteBucketWebsite", raw)
 		return nil
 	}
 
@@ -698,31 +700,26 @@ func resourceAlicloudOssBucketWebsiteUpdate(client *connectivity.AliyunClient, d
 	if v, ok := w["error_document"]; ok {
 		error_document = v.(string)
 	}
-	_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return nil, ossClient.SetBucketWebsite(d.Id(), index_document, error_document)
 	})
 	if err != nil {
-		return fmt.Errorf("Error putting OSS bucket website: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketWebsite", AliyunOssGoSdk)
 	}
-
+	addDebug("SetBucketWebsite", raw)
 	return nil
 }
 
 func resourceAlicloudOssBucketLoggingUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	logging := d.Get("logging").([]interface{})
 	if logging == nil || len(logging) == 0 {
-		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-			_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-				return nil, ossClient.DeleteBucketLogging(d.Id())
-			})
-			if err != nil {
-				return resource.NonRetryableError(err)
-			}
-			return nil
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return nil, ossClient.DeleteBucketLogging(d.Id())
 		})
 		if err != nil {
-			return fmt.Errorf("Error removing OSS bucket logging: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteBucketLogging", AliyunOssGoSdk)
 		}
+		addDebug("DeleteBucketLogging", raw)
 		return nil
 	}
 
@@ -734,13 +731,13 @@ func resourceAlicloudOssBucketLoggingUpdate(client *connectivity.AliyunClient, d
 	if v, ok := c["target_prefix"]; ok {
 		target_prefix = v.(string)
 	}
-	_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return nil, ossClient.SetBucketLogging(d.Id(), target_bucket, target_prefix, target_bucket != "" || target_prefix != "")
 	})
 	if err != nil {
-		return fmt.Errorf("Error putting OSS bucket logging: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketLogging", AliyunOssGoSdk)
 	}
-
+	addDebug("SetBucketLogging", raw)
 	return nil
 }
 
@@ -748,12 +745,13 @@ func resourceAlicloudOssBucketRefererUpdate(client *connectivity.AliyunClient, d
 	config := d.Get("referer_config").([]interface{})
 	if config == nil || len(config) < 1 {
 		log.Printf("[DEBUG] OSS set bucket referer as nil")
-		_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return nil, ossClient.SetBucketReferer(d.Id(), nil, true)
 		})
 		if err != nil {
-			return fmt.Errorf("Error deleting OSS website: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketReferer", AliyunOssGoSdk)
 		}
+		addDebug("SetBucketReferer", raw)
 		return nil
 	}
 
@@ -769,13 +767,13 @@ func resourceAlicloudOssBucketRefererUpdate(client *connectivity.AliyunClient, d
 			referers = append(referers, referer.(string))
 		}
 	}
-	_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return nil, ossClient.SetBucketReferer(d.Id(), referers, allow)
 	})
 	if err != nil {
-		return fmt.Errorf("Error putting OSS bucket referer configuration: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketReferer", AliyunOssGoSdk)
 	}
-
+	addDebug("SetBucketReferer", raw)
 	return nil
 }
 
@@ -784,18 +782,14 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 	lifecycleRules := d.Get("lifecycle_rule").([]interface{})
 
 	if lifecycleRules == nil || len(lifecycleRules) == 0 {
-		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-			_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-				return nil, ossClient.DeleteBucketLifecycle(bucket)
-			})
-			if err != nil {
-				return resource.NonRetryableError(err)
-			}
-			return nil
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return nil, ossClient.DeleteBucketLifecycle(bucket)
 		})
 		if err != nil {
-			return fmt.Errorf("Error removing OSS bucket lifecycle: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteBucketLifecycle", AliyunOssGoSdk)
+
 		}
+		addDebug("DeleteBucketLifecycle", raw)
 		return nil
 	}
 
@@ -829,7 +823,7 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 			valDays, _ := e["days"].(int)
 
 			if (valDate != "" && valDays > 0) || (valDate == "" && valDays <= 0) {
-				return fmt.Errorf("'date' conflicts with 'days'. One and only one of them can be specified in one expiration configuration.")
+				return WrapError(Error("'date' conflicts with 'days'. One and only one of them can be specified in one expiration configuration."))
 			}
 
 			if valDate != "" {
@@ -843,19 +837,13 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 		rules = append(rules, rule)
 	}
 
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-			return nil, ossClient.SetBucketLifecycle(bucket, rules)
-		})
-		if err != nil {
-			return resource.NonRetryableError(err)
-		}
-		return nil
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return nil, ossClient.SetBucketLifecycle(bucket, rules)
 	})
 	if err != nil {
-		return fmt.Errorf("Error putting OSS lifecycle rule: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketLifecycle", AliyunOssGoSdk)
 	}
-
+	addDebug("SetBucketLifecycle", raw)
 	return nil
 }
 
@@ -864,60 +852,43 @@ func resourceAlicloudOssBucketPolicyUpdate(client *connectivity.AliyunClient, d 
 	policy := d.Get("policy").(string)
 
 	if len(policy) == 0 {
-		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-			_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-				params := map[string]interface{}{}
-				params["policy"] = nil
-				return ossClient.Conn.Do("DELETE", bucket, "", params, nil, nil, 0, nil)
-			})
-			if err != nil {
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("Error removing OSS bucket policy: %#v", err)
-		}
-		return nil
-	}
-
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			params := map[string]interface{}{}
 			params["policy"] = nil
-
-			buffer := new(bytes.Buffer)
-			buffer.Write([]byte(policy))
-			return ossClient.Conn.Do("PUT", bucket, "", params, nil, buffer, 0, nil)
+			return ossClient.Conn.Do("DELETE", bucket, "", params, nil, nil, 0, nil)
 		})
 		if err != nil {
-			return resource.NonRetryableError(err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeletePolicyByConn", AliyunOssGoSdk)
 		}
+		addDebug("DeletePolicyByConn", raw)
 		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("Error putting OSS lifecycle rule: %#v", err)
 	}
 
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		params := map[string]interface{}{}
+		params["policy"] = nil
+
+		buffer := new(bytes.Buffer)
+		buffer.Write([]byte(policy))
+		return ossClient.Conn.Do("PUT", bucket, "", params, nil, buffer, 0, nil)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PutPolicyByConn", AliyunOssGoSdk)
+	}
+	addDebug("PutPolicyByConn", raw)
 	return nil
 }
 
 func resourceAlicloudOssBucketEncryptionUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	encryption_rule := d.Get("server_side_encryption_rule").([]interface{})
 	if encryption_rule == nil || len(encryption_rule) == 0 {
-		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-			_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-				return nil, ossClient.DeleteBucketEncryption(d.Id())
-				return nil, nil
-			})
-			if err != nil {
-				return resource.NonRetryableError(err)
-			}
-			return nil
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return nil, ossClient.DeleteBucketEncryption(d.Id())
 		})
 		if err != nil {
-			return fmt.Errorf("Error removing OSS bucket encryption: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteBucketEncryption", AliyunOssGoSdk)
 		}
+		addDebug("DeleteBucketEncryption", raw)
 		return nil
 	}
 
@@ -927,31 +898,26 @@ func resourceAlicloudOssBucketEncryptionUpdate(client *connectivity.AliyunClient
 		sseRule.SSEDefault.SSEAlgorithm = v.(string)
 	}
 
-	_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return nil, ossClient.SetBucketEncryption(d.Id(), sseRule)
 	})
 	if err != nil {
-		return fmt.Errorf("Error putting OSS bucket encryption: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketEncryption", AliyunOssGoSdk)
 	}
-
+	addDebug("SetBucketEncryption", raw)
 	return nil
 }
 
 func resourceAlicloudOssBucketTaggingUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	tagsMap := d.Get("tags").(map[string]interface{})
 	if tagsMap == nil || len(tagsMap) == 0 {
-		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-			_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-				return nil, ossClient.DeleteBucketTagging(d.Id())
-			})
-			if err != nil {
-				return resource.NonRetryableError(err)
-			}
-			return nil
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return nil, ossClient.DeleteBucketTagging(d.Id())
 		})
 		if err != nil {
-			return fmt.Errorf("Error removing OSS bucket tagging: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteBucketTagging", AliyunOssGoSdk)
 		}
+		addDebug("DeleteBucketTagging", raw)
 		return nil
 	}
 
@@ -963,13 +929,13 @@ func resourceAlicloudOssBucketTaggingUpdate(client *connectivity.AliyunClient, d
 			Value: v.(string),
 		})
 	}
-	_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return nil, ossClient.SetBucketTagging(d.Id(), bTagging)
 	})
 	if err != nil {
-		return fmt.Errorf("Error putting oss tagging: %s", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketTagging", AliyunOssGoSdk)
 	}
-
+	addDebug("SetBucketTagging", raw)
 	return nil
 }
 
@@ -984,13 +950,14 @@ func resourceAlicloudOssBucketVersioningUpdate(client *connectivity.AliyunClient
 
 		versioningCfg := oss.VersioningConfig{}
 		versioningCfg.Status = status
-		_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return nil, ossClient.SetBucketVersioning(d.Id(), versioningCfg)
 		})
 
 		if err != nil {
-			return fmt.Errorf("Error putting oss versioning: %s", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketVersioning", AliyunOssGoSdk)
 		}
+		addDebug("SetBucketVersioning", raw)
 	}
 
 	return nil
@@ -1000,70 +967,65 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	ossService := OssService{client}
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-			return ossClient.IsBucketExist(d.Id())
-		})
-		if err != nil {
-			return resource.NonRetryableError(fmt.Errorf("OSS delete bucket got an error: %#v", err))
-		}
-		exist, _ := raw.(bool)
-		if !exist {
-			return nil
-		}
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		return ossClient.IsBucketExist(d.Id())
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "IsBucketExist", AliyunOssGoSdk)
+	}
+	addDebug("IsBucketExist", raw)
 
-		_, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+	exist, _ := raw.(bool)
+	if !exist {
+		return nil
+	}
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return nil, ossClient.DeleteBucket(d.Id())
 		})
 		if err != nil {
-			if err.(oss.ServiceError).Code == "BucketNotEmpty" {
+			if IsExceptedError(err, "BucketNotEmpty") {
 				if d.Get("force_destroy").(bool) {
-					log.Printf("[DEBUG] oss Bucket attempting to forceDestroy %+v", err)
-					_, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+					raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 						bucket, _ := ossClient.Bucket(d.Get("bucket").(string))
 						lor, err := bucket.ListObjectVersions()
-						if err == nil {
-							objectsToDelete := make([]oss.DeleteObject, 0)
-							for _, object := range lor.ObjectDeleteMarkers {
-								objectsToDelete = append(objectsToDelete, oss.DeleteObject{
-									Key:       object.Key,
-									VersionId: object.VersionId,
-								})
-							}
-
-							for _, object := range lor.ObjectVersions {
-								objectsToDelete = append(objectsToDelete, oss.DeleteObject{
-									Key:       object.Key,
-									VersionId: object.VersionId,
-								})
-							}
-
-							_, err = bucket.DeleteObjectVersions(objectsToDelete)
+						if err != nil {
+							return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "ListObjectVersions", AliyunOssGoSdk)
 						}
-						return nil, err
-					})
+						addDebug("ListObjectVersions", lor)
+						objectsToDelete := make([]oss.DeleteObject, 0)
+						for _, object := range lor.ObjectDeleteMarkers {
+							objectsToDelete = append(objectsToDelete, oss.DeleteObject{
+								Key:       object.Key,
+								VersionId: object.VersionId,
+							})
+						}
 
+						for _, object := range lor.ObjectVersions {
+							objectsToDelete = append(objectsToDelete, oss.DeleteObject{
+								Key:       object.Key,
+								VersionId: object.VersionId,
+							})
+						}
+						return bucket.DeleteObjectVersions(objectsToDelete)
+					})
 					if err != nil {
-						return resource.NonRetryableError(fmt.Errorf("When force_destroy OSS bucket, got an error: %#v", err))
+						return resource.NonRetryableError(err)
 					}
+					addDebug("DeleteObjectVersions", raw)
+					return resource.RetryableError(err)
 				}
 			}
-			return resource.RetryableError(fmt.Errorf("OSS Bucket %s is in use - trying again while it is deleted.", d.Id()))
+			return resource.NonRetryableError(err)
 		}
-		bucket, err := ossService.QueryOssBucketById(d.Id())
-		if err != nil {
-			// Verify the error is what we want
-			if IsExceptedErrors(err, []string{OssBucketNotFound}) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("When deleting OSS bucket, describing it got an error: %#v", err))
-		}
-		if bucket.Name != "" {
-			return resource.RetryableError(fmt.Errorf("Deleting OSS Bucket %s timeout.", d.Id()))
-		}
-
+		addDebug("DeleteBucket", raw)
 		return nil
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteBucket", AliyunOssGoSdk)
+	}
+	return WrapError(ossService.WaitForOssBucket(d.Id(), Deleted, DefaultTimeoutMedium))
 }
 
 func expirationHash(v interface{}) int {
