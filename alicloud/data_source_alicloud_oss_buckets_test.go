@@ -5,242 +5,220 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudOssBucketsDataSource_basic(t *testing.T) {
-	randInt := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOssBucketsDataSourceBasic(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_oss_buckets.buckets"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name", fmt.Sprintf("tf-testacc-bucket-ds-basic-%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_buckets.buckets", "buckets.0.extranet_endpoint"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_buckets.buckets", "buckets.0.intranet_endpoint"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_buckets.buckets", "buckets.0.location"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_buckets.buckets", "buckets.0.owner"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.storage_class", "Standard"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_buckets.buckets", "buckets.0.creation_date"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.website.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.logging.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.0.allow_empty", "true"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.0.referers.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.policy", ""),
-				),
-			},
-		},
-	})
-}
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_oss_buckets.default"
 
-func TestAccAlicloudOssBucketsDataSource_full(t *testing.T) {
-	randInt := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOssBucketsDataSourceFull(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_oss_buckets.buckets"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name", fmt.Sprintf("tf-testacc-bucket-ds-full-%d-sample", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_buckets.buckets", "buckets.0.extranet_endpoint"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_buckets.buckets", "buckets.0.intranet_endpoint"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_buckets.buckets", "buckets.0.location"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_buckets.buckets", "buckets.0.owner"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.storage_class", "Standard"),
-					resource.TestCheckResourceAttrSet("data.alicloud_oss_buckets.buckets", "buckets.0.creation_date"),
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testacc-bucket-%d", rand),
+		dataSourceOssBucketsConfigDependence_basic)
 
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.#", "2"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.0.allowed_headers.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.0.allowed_headers.0", "authorization"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.0.allowed_methods.#", "2"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.0.allowed_methods.0", "PUT"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.0.allowed_methods.1", "GET"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.0.allowed_origins.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.0.allowed_origins.0", "*"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.0.expose_headers.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.0.max_age_seconds", "0"),
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_oss_bucket.default.bucket}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_oss_bucket.default.bucket}-fake",
+		}),
+	}
+	var existOssBucketsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"buckets.#":                   "1",
+			"names.#":                     "1",
+			"buckets.0.name":              fmt.Sprintf("tf-testacc-bucket-%d-default", rand),
+			"buckets.0.acl":               "public-read",
+			"buckets.0.extranet_endpoint": CHECKSET,
+			"buckets.0.intranet_endpoint": CHECKSET,
+			"buckets.0.location":          CHECKSET,
+			"buckets.0.owner":             CHECKSET,
+			"buckets.0.storage_class":     "Standard",
+			"buckets.0.creation_date":     CHECKSET,
 
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.1.allowed_headers.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.1.allowed_headers.0", "authorization"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.1.allowed_methods.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.1.allowed_methods.0", "GET"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.1.allowed_origins.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.1.allowed_origins.0", "http://www.a.com"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.1.expose_headers.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.1.expose_headers.0", "x-oss-test"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.1.max_age_seconds", "100"),
+			"buckets.0.cors_rules.#":                   "2",
+			"buckets.0.cors_rules.0.allowed_headers.#": "1",
+			"buckets.0.cors_rules.0.allowed_headers.0": "authorization",
+			"buckets.0.cors_rules.0.allowed_methods.#": "2",
+			"buckets.0.cors_rules.0.allowed_methods.0": "PUT",
+			"buckets.0.cors_rules.0.allowed_methods.1": "GET",
+			"buckets.0.cors_rules.0.allowed_origins.#": "1",
+			"buckets.0.cors_rules.0.allowed_origins.0": "*",
+			"buckets.0.cors_rules.0.expose_headers.#":  "0",
+			"buckets.0.cors_rules.0.max_age_seconds":   "0",
+			"buckets.0.cors_rules.1.allowed_headers.#": "1",
+			"buckets.0.cors_rules.1.allowed_headers.0": "authorization",
+			"buckets.0.cors_rules.1.allowed_methods.#": "1",
+			"buckets.0.cors_rules.1.allowed_methods.0": "GET",
+			"buckets.0.cors_rules.1.allowed_origins.#": "1",
+			"buckets.0.cors_rules.1.allowed_origins.0": "http://www.a.com",
+			"buckets.0.cors_rules.1.expose_headers.#":  "1",
+			"buckets.0.cors_rules.1.expose_headers.0":  "x-oss-test",
+			"buckets.0.cors_rules.1.max_age_seconds":   "100",
 
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.website.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.website.0.index_document", "index.html"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.website.0.error_document", "error.html"),
+			"buckets.0.website.#":                "1",
+			"buckets.0.website.0.index_document": "index.html",
+			"buckets.0.website.0.error_document": "error.html",
 
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.logging.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.logging.0.target_bucket", fmt.Sprintf("tf-testacc-bucket-ds-full-%d-log", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.logging.0.target_prefix", "log/"),
+			"buckets.0.logging.#":               "1",
+			"buckets.0.logging.0.target_bucket": fmt.Sprintf("tf-testacc-bucket-%d-target", rand),
+			"buckets.0.logging.0.target_prefix": "log/",
 
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.0.allow_empty", "false"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.0.referers.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.0.referers.0", "http://www.aliyun.com"),
+			"buckets.0.referer_config.#":             "1",
+			"buckets.0.referer_config.0.allow_empty": "false",
+			"buckets.0.referer_config.0.referers.#":  "1",
+			"buckets.0.referer_config.0.referers.0":  "http://www.aliyun.com",
 
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.#", "2"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.0.id", "rule1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.0.prefix", "path1/"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.0.enabled", "true"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.0.expiration.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.0.expiration.0.days", "365"),
+			"buckets.0.lifecycle_rule.#":                   "2",
+			"buckets.0.lifecycle_rule.0.id":                "rule1",
+			"buckets.0.lifecycle_rule.0.prefix":            "path1/",
+			"buckets.0.lifecycle_rule.0.enabled":           "true",
+			"buckets.0.lifecycle_rule.0.expiration.#":      "1",
+			"buckets.0.lifecycle_rule.0.expiration.0.days": "365",
+			"buckets.0.lifecycle_rule.1.id":                "rule2",
+			"buckets.0.lifecycle_rule.1.prefix":            "path2/",
+			"buckets.0.lifecycle_rule.1.enabled":           "true",
+			"buckets.0.lifecycle_rule.1.expiration.#":      "1",
+			"buckets.0.lifecycle_rule.1.expiration.0.date": "2018-01-12",
 
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.1.id", "rule2"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.1.prefix", "path2/"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.1.enabled", "true"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.1.expiration.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.1.expiration.0.date", "2018-01-12"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.policy", "{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}"),
-				),
-			},
-		},
-	})
-}
+			"buckets.0.policy": "{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}",
 
-func TestAccAlicloudOssBucketsDataSource_empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOssBucketsDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_oss_buckets.buckets"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.extranet_endpoint"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.intranet_endpoint"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.location"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.owner"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.storage_class"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.creation_date"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.cors_rules.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.website.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.logging.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.referer_config.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.lifecycle_rule.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.policy"),
-				),
-			},
-		},
-	})
+			"buckets.0.tags.key1": "value1",
+			"buckets.0.tags.key2": "value2",
+		}
+	}
+
+	var fakeOssBucketsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"buckets.#": "0",
+			"names.#":   "0",
+		}
+	}
+
+	var ossBucketsCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existOssBucketsMapFunc,
+		fakeMapFunc:  fakeOssBucketsMapFunc,
+	}
+
+	ossBucketsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf)
 }
 
 func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
-	randInt := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.OssSseSupportedRegions)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOssBucketsDataSourceSseRule(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_oss_buckets.buckets"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name", fmt.Sprintf("tf-testacc-bucket-ds-sserule-%d-sample", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.server_side_encryption_rule.0.sse_algorithm", "AES256"),
-				),
-			},
-		},
-	})
-}
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_oss_buckets.default"
 
-func TestAccAlicloudOssBucketsDataSource_tags(t *testing.T) {
-	randInt := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOssBucketsDataSourceTags(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_oss_buckets.buckets"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name", fmt.Sprintf("tf-testacc-bucket-ds-tags-%d-sample", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.tags.key1", "value1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.tags.key2", "value2"),
-				),
-			},
-		},
-	})
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testacc-bucket-%d", rand),
+		dataSourceOssBucketsConfigDependence_sserule)
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_oss_bucket.default.bucket}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_oss_bucket.default.bucket}-fake",
+		}),
+	}
+	var existOssBucketsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"buckets.#":                   "1",
+			"names.#":                     "1",
+			"buckets.0.name":              fmt.Sprintf("tf-testacc-bucket-%d-default", rand),
+			"buckets.0.acl":               "public-read",
+			"buckets.0.extranet_endpoint": CHECKSET,
+			"buckets.0.intranet_endpoint": CHECKSET,
+			"buckets.0.location":          CHECKSET,
+			"buckets.0.owner":             CHECKSET,
+			"buckets.0.storage_class":     "Standard",
+			"buckets.0.creation_date":     CHECKSET,
+
+			"buckets.0.server_side_encryption_rule.0.sse_algorithm": "AES256",
+		}
+	}
+
+	var fakeOssBucketsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"buckets.#": "0",
+			"names.#":   "0",
+		}
+	}
+
+	var ossBucketsCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existOssBucketsMapFunc,
+		fakeMapFunc:  fakeOssBucketsMapFunc,
+	}
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.OssSseSupportedRegions)
+	}
+	ossBucketsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
 
 func TestAccAlicloudOssBucketsDataSource_versioning(t *testing.T) {
-	randInt := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOssBucketsDataSourceVersioning(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_oss_buckets.buckets"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.name", fmt.Sprintf("tf-testacc-bucket-ds-version-%d-sample", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.acl", "public-read"),
-					resource.TestCheckResourceAttr("data.alicloud_oss_buckets.buckets", "buckets.0.versioning.0.status", "Enabled"),
-				),
-			},
-		},
-	})
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_oss_buckets.default"
+
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testacc-bucket-%d", rand),
+		dataSourceOssBucketsConfigDependence_versioning)
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_oss_bucket.default.bucket}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_oss_bucket.default.bucket}-fake",
+		}),
+	}
+	var existOssBucketsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"buckets.#":                   "1",
+			"names.#":                     "1",
+			"buckets.0.name":              fmt.Sprintf("tf-testacc-bucket-%d-default", rand),
+			"buckets.0.acl":               "public-read",
+			"buckets.0.extranet_endpoint": CHECKSET,
+			"buckets.0.intranet_endpoint": CHECKSET,
+			"buckets.0.location":          CHECKSET,
+			"buckets.0.owner":             CHECKSET,
+			"buckets.0.storage_class":     "Standard",
+			"buckets.0.creation_date":     CHECKSET,
+
+			"buckets.0.versioning.0.status": "Enabled",
+		}
+	}
+
+	var fakeOssBucketsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"buckets.#": "0",
+			"names.#":   "0",
+		}
+	}
+
+	var ossBucketsCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existOssBucketsMapFunc,
+		fakeMapFunc:  fakeOssBucketsMapFunc,
+	}
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
+	}
+	ossBucketsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
 
-func testAccCheckAlicloudOssBucketsDataSourceBasic(randInt int) string {
+func dataSourceOssBucketsConfigDependence_basic(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testacc-bucket-ds-basic-%d"
+	default = "%s"
 }
 
-resource "alicloud_oss_bucket" "sample_bucket" {
-	bucket = "${var.name}"
-	acl = "public-read"
+resource "alicloud_oss_bucket" "target"{
+	bucket = "${var.name}-target"
 }
 
-data "alicloud_oss_buckets" "buckets" {
-    name_regex = "${alicloud_oss_bucket.sample_bucket.bucket}"
-}
-`, randInt)
-}
-
-func testAccCheckAlicloudOssBucketsDataSourceFull(randInt int) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "tf-testacc-bucket-ds-full-%d"
-}
-
-resource "alicloud_oss_bucket" "log_bucket"{
-	bucket = "${var.name}-log"
-}
-
-resource "alicloud_oss_bucket" "sample_bucket" {
-	bucket = "${var.name}-sample"
+resource "alicloud_oss_bucket" "default" {
+	bucket = "${var.name}-default"
 	acl = "public-read"
 
     cors_rule {
@@ -262,7 +240,7 @@ resource "alicloud_oss_bucket" "sample_bucket" {
 	}
 
 	logging {
-		target_bucket = "${alicloud_oss_bucket.log_bucket.id}"
+		target_bucket = "${alicloud_oss_bucket.target.id}"
 		target_prefix = "log/"
 	}
 
@@ -288,80 +266,44 @@ resource "alicloud_oss_bucket" "sample_bucket" {
 			}
 		}
     policy = "{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}"
+	tags = {
+		key1 = "value1",
+		key2 = "value2",
+	}
 }
 
-data "alicloud_oss_buckets" "buckets" {
-    name_regex = "${alicloud_oss_bucket.sample_bucket.bucket}"
+`, name)
 }
-`, randInt)
-}
-
-const testAccCheckAlicloudOssBucketsDataSourceEmpty = `
-data "alicloud_oss_buckets" "buckets" {
-    name_regex = "^tf-testacc-fake-name"
-}
-`
-
-func testAccCheckAlicloudOssBucketsDataSourceSseRule(randInt int) string {
+func dataSourceOssBucketsConfigDependence_sserule(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testacc-bucket-ds-sserule-%d"
+	default = "%s"
 }
 
-resource "alicloud_oss_bucket" "sample_bucket" {
-	bucket = "${var.name}-sample"
+resource "alicloud_oss_bucket" "default" {
+	bucket = "${var.name}-default"
 	acl = "public-read"
 
  	server_side_encryption_rule {
 		sse_algorithm = "AES256"
 	}
 }
-
-data "alicloud_oss_buckets" "buckets" {
-    name_regex = "${alicloud_oss_bucket.sample_bucket.bucket}"
-}
-`, randInt)
+`, name)
 }
 
-func testAccCheckAlicloudOssBucketsDataSourceTags(randInt int) string {
+func dataSourceOssBucketsConfigDependence_versioning(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testacc-bucket-ds-tags-%d"
+	default = "%s"
 }
 
-resource "alicloud_oss_bucket" "sample_bucket" {
-	bucket = "${var.name}-sample"
-	acl = "public-read"
-
- 	tags = {
-		key1 = "value1",
-		key2 = "value2",
-	}
-}
-
-data "alicloud_oss_buckets" "buckets" {
-    name_regex = "${alicloud_oss_bucket.sample_bucket.bucket}"
-}
-`, randInt)
-}
-
-func testAccCheckAlicloudOssBucketsDataSourceVersioning(randInt int) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "tf-testacc-bucket-ds-version-%d"
-}
-
-resource "alicloud_oss_bucket" "sample_bucket" {
-	bucket = "${var.name}-sample"
+resource "alicloud_oss_bucket" "default" {
+	bucket = "${var.name}-default"
 	acl = "public-read"
 
 	versioning {
 		status = "Enabled"
 	}
 }
-
-data "alicloud_oss_buckets" "buckets" {
-    name_regex = "${alicloud_oss_bucket.sample_bucket.bucket}"
-}
-`, randInt)
+`, name)
 }
