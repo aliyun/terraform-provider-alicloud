@@ -578,11 +578,15 @@ data "alicloud_zones" "default" {
 data "alicloud_db_instance_engines" "default" {
 	engine               = "PPAS"
 	engine_version       = "10.0"
+    instance_charge_type = "PostPaid"
+    multi_zone           = true
 }
 
 data "alicloud_db_instance_classes" "default" {
-	engine = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-	engine_version = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
+	engine               = "PPAS"
+	engine_version       = "10.0"
+    instance_charge_type = "PostPaid"
+    multi_zone           = true
 }
 resource "alicloud_vpc" "default" {
   name       = "${var.name}"
@@ -591,7 +595,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}"
   name              = "${var.name}"
 }
 resource "alicloud_db_instance" "default" {
@@ -601,5 +605,6 @@ resource "alicloud_db_instance" "default" {
 	engine_version   = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
 	instance_type    = "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}"
   	instance_storage = "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}"
+	zone_id          = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id}"
 }`, name)
 }
