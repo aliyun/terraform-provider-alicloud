@@ -28,6 +28,11 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 			},
 
 			// Computed values
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"buckets": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -249,17 +254,18 @@ func dataSourceAlicloudOssBucketsRead(d *schema.ResourceData, meta interface{}) 
 			return ossClient.ListBuckets(options...)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_oss_bucket", "CreateBucket", AliyunOssGoSdk)
 		}
-		resp, _ := raw.(oss.ListBucketsResult)
+		addDebug("CreateBucket", raw)
+		response, _ := raw.(oss.ListBucketsResult)
 
-		if resp.Buckets == nil || len(resp.Buckets) < 1 {
+		if response.Buckets == nil || len(response.Buckets) < 1 {
 			break
 		}
 
-		allBuckets = append(allBuckets, resp.Buckets...)
+		allBuckets = append(allBuckets, response.Buckets...)
 
-		nextMarker = resp.NextMarker
+		nextMarker = response.NextMarker
 		if nextMarker == "" {
 			break
 		}
@@ -281,7 +287,6 @@ func dataSourceAlicloudOssBucketsRead(d *schema.ResourceData, meta interface{}) 
 	} else {
 		filteredBucketsTemp = allBuckets
 	}
-
 	return bucketsDescriptionAttributes(d, filteredBucketsTemp, meta)
 }
 
@@ -290,6 +295,7 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 
 	var ids []string
 	var s []map[string]interface{}
+	var names []string
 	for _, bucket := range buckets {
 		mapping := map[string]interface{}{
 			"name":          bucket.Name,
@@ -303,18 +309,19 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			return ossClient.GetBucketInfo(bucket.Name)
 		})
 		if err == nil {
-			resp, _ := raw.(oss.GetBucketInfoResult)
-			mapping["acl"] = resp.BucketInfo.ACL
-			mapping["extranet_endpoint"] = resp.BucketInfo.ExtranetEndpoint
-			mapping["intranet_endpoint"] = resp.BucketInfo.IntranetEndpoint
-			mapping["owner"] = resp.BucketInfo.Owner.ID
+			addDebug("GetBucketInfo", raw)
+			response, _ := raw.(oss.GetBucketInfoResult)
+			mapping["acl"] = response.BucketInfo.ACL
+			mapping["extranet_endpoint"] = response.BucketInfo.ExtranetEndpoint
+			mapping["intranet_endpoint"] = response.BucketInfo.IntranetEndpoint
+			mapping["owner"] = response.BucketInfo.Owner.ID
 
 			//Add ServerSideEncryption information
 			var sseconfig []map[string]interface{}
-			if &resp.BucketInfo.SseRule != nil {
-				if len(resp.BucketInfo.SseRule.SSEAlgorithm) > 0 && resp.BucketInfo.SseRule.SSEAlgorithm != "None" {
+			if &response.BucketInfo.SseRule != nil {
+				if len(response.BucketInfo.SseRule.SSEAlgorithm) > 0 && response.BucketInfo.SseRule.SSEAlgorithm != "None" {
 					data := map[string]interface{}{
-						"sse_algorithm": resp.BucketInfo.SseRule.SSEAlgorithm,
+						"sse_algorithm": response.BucketInfo.SseRule.SSEAlgorithm,
 					}
 					sseconfig = make([]map[string]interface{}, 0)
 					sseconfig = append(sseconfig, data)
@@ -324,9 +331,9 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 
 			//Add versioning information
 			var versioning []map[string]interface{}
-			if resp.BucketInfo.Versioning != "" {
+			if response.BucketInfo.Versioning != "" {
 				data := map[string]interface{}{
-					"status": resp.BucketInfo.Versioning,
+					"status": response.BucketInfo.Versioning,
 				}
 				versioning = make([]map[string]interface{}, 0)
 				versioning = append(versioning, data)
@@ -342,9 +349,8 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return ossClient.GetBucketCORS(bucket.Name)
 		})
-		if err != nil && !IsExceptedErrors(err, []string{NoSuchCORSConfiguration}) {
-			log.Printf("[WARN] Unable to get CORS information for the bucket %s: %v", bucket.Name, err)
-		} else if err == nil {
+		if err == nil {
+			addDebug("GetBucketCORS", raw)
 			cors, _ := raw.(oss.GetBucketCORSResult)
 			if cors.CORSRules != nil {
 				for _, rule := range cors.CORSRules {
@@ -357,6 +363,8 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 					ruleMappings = append(ruleMappings, ruleMapping)
 				}
 			}
+		} else if !IsExceptedErrors(err, []string{NoSuchCORSConfiguration}) {
+			log.Printf("[WARN] Unable to get CORS information for the bucket %s: %v", bucket.Name, err)
 		}
 		mapping["cors_rules"] = ruleMappings
 
@@ -365,9 +373,8 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return ossClient.GetBucketWebsite(bucket.Name)
 		})
-		if err != nil && !IsExceptedErrors(err, []string{NoSuchWebsiteConfiguration}) {
-			log.Printf("[WARN] Unable to get website information for the bucket %s: %v", bucket.Name, err)
-		} else if err == nil {
+		if err == nil {
+			addDebug("GetBucketWebsite", raw)
 			ws, _ := raw.(oss.GetBucketWebsiteResult)
 			websiteMapping := make(map[string]interface{})
 			if v := &ws.IndexDocument; v != nil {
@@ -377,6 +384,8 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 				websiteMapping["error_document"] = v.Key
 			}
 			websiteMappings = append(websiteMappings, websiteMapping)
+		} else if !IsExceptedErrors(err, []string{NoSuchWebsiteConfiguration}) {
+			log.Printf("[WARN] Unable to get website information for the bucket %s: %v", bucket.Name, err)
 		}
 		mapping["website"] = websiteMappings
 
@@ -385,9 +394,8 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return ossClient.GetBucketLogging(bucket.Name)
 		})
-		if err != nil {
-			log.Printf("[WARN] Unable to get logging information for the bucket %s: %v", bucket.Name, err)
-		} else {
+		if err == nil {
+			addDebug("GetBucketLogging", raw)
 			logging, _ := raw.(oss.GetBucketLoggingResult)
 			if logging.LoggingEnabled.TargetBucket != "" || logging.LoggingEnabled.TargetPrefix != "" {
 				loggingMapping := map[string]interface{}{
@@ -396,6 +404,8 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 				}
 				loggingMappings = append(loggingMappings, loggingMapping)
 			}
+		} else {
+			log.Printf("[WARN] Unable to get logging information for the bucket %s: %v", bucket.Name, err)
 		}
 		mapping["logging"] = loggingMappings
 
@@ -404,15 +414,16 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return ossClient.GetBucketReferer(bucket.Name)
 		})
-		if err != nil {
-			log.Printf("[WARN] Unable to get referer information for the bucket %s: %v", bucket.Name, err)
-		} else {
+		if err == nil {
+			addDebug("GetBucketReferer", raw)
 			referer, _ := raw.(oss.GetBucketRefererResult)
 			refererMapping := map[string]interface{}{
 				"allow_empty": referer.AllowEmptyReferer,
 				"referers":    referer.RefererList,
 			}
 			refererMappings = append(refererMappings, refererMapping)
+		} else {
+			log.Printf("[WARN] Unable to get referer information for the bucket %s: %v", bucket.Name, err)
 		}
 		mapping["referer_config"] = refererMappings
 
@@ -421,9 +432,8 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return ossClient.GetBucketLifecycle(bucket.Name)
 		})
-		if err != nil {
-			log.Printf("[WARN] Unable to get lifecycle information for the bucket %s: %v", bucket.Name, err)
-		} else {
+		if err == nil {
+			addDebug("GetBucketLifecycle", raw)
 			lifecycle, _ := raw.(oss.GetBucketLifecycleResult)
 			if len(lifecycle.Rules) > 0 {
 				for _, lifecycleRule := range lifecycle.Rules {
@@ -441,7 +451,7 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 					if lifecycleRule.Expiration.Date != "" {
 						t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.Expiration.Date)
 						if err != nil {
-							return err
+							return WrapError(err)
 						}
 						expirationMapping["date"] = t.Format("2006-01-02")
 					}
@@ -452,6 +462,8 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 					lifecycleRuleMappings = append(lifecycleRuleMappings, ruleMapping)
 				}
 			}
+		} else {
+			log.Printf("[WARN] Unable to get lifecycle information for the bucket %s: %v", bucket.Name, err)
 		}
 		mapping["lifecycle_rule"] = lifecycleRuleMappings
 
@@ -463,15 +475,16 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			return ossClient.Conn.Do("GET", bucket.Name, "", params, nil, nil, 0, nil)
 		})
 
-		if err != nil {
-			log.Printf("[WARN] Unable to get policy information for the bucket %s: %v", bucket.Name, err)
-		} else {
+		if err == nil {
+			addDebug("GetPolicyByConn", raw)
 			rawResp := raw.(*oss.Response)
 			rawData, err := ioutil.ReadAll(rawResp.Body)
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 			policy = string(rawData)
+		} else {
+			log.Printf("[WARN] Unable to get policy information for the bucket %s: %v", bucket.Name, err)
 		}
 		mapping["policy"] = policy
 
@@ -480,25 +493,29 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return ossClient.GetBucketTagging(bucket.Name)
 		})
-		if err != nil {
-			log.Printf("[WARN] Unable to get tagging information for the bucket %s: %v", bucket.Name, err)
-		} else {
+		if err == nil {
+			addDebug("GetBucketTagging", raw)
 			tagging, _ := raw.(oss.GetBucketTaggingResult)
 			for _, t := range tagging.Tags {
 				tagsMap[t.Key] = t.Value
 			}
+		} else {
+			log.Printf("[WARN] Unable to get tagging information for the bucket %s: %v", bucket.Name, err)
 		}
 		mapping["tags"] = tagsMap
 
 		ids = append(ids, bucket.Name)
 		s = append(s, mapping)
+		names = append(names, bucket.Name)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("buckets", s); err != nil {
-		return err
+		return WrapError(err)
 	}
-
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)

@@ -33,6 +33,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `names` - A list of bucket names. 
 * `buckets` - A list of buckets. Each element contains the following attributes:
   * `name` - Bucket name.
   * `acl` - Bucket access control list. Possible values: `private`, `public-read` and `public-read-write`.
