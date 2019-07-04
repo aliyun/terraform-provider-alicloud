@@ -657,6 +657,7 @@ func TestAccAlicloudDBInstance_PPAS(t *testing.T) {
 					"engine_version":       "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
 					"instance_type":        "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":     "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
+					"zone_id":              "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id}",
 					"instance_charge_type": "Postpaid",
 					"instance_name":        "${var.name}",
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
