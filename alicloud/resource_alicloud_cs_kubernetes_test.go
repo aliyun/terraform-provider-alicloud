@@ -133,7 +133,8 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca", "force_update",
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types",
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
-					"worker_instance_charge_type", "worker_instance_types", "worker_numbers", "log_config"},
+					"worker_instance_charge_type", "worker_instance_types", "worker_numbers", "log_config",
+					"worker_data_disk_category", "worker_data_disk_size"},
 			},
 		},
 	})
@@ -188,7 +189,8 @@ func TestAccAlicloudCSKubernetes_userCa(t *testing.T) {
 					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca", "force_update",
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types",
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
-					"worker_instance_charge_type", "worker_instance_types", "worker_numbers", "log_config"},
+					"worker_instance_charge_type", "worker_instance_types", "worker_numbers", "log_config",
+					"worker_data_disk_category", "worker_data_disk_size"},
 			},
 		},
 	})
@@ -265,7 +267,8 @@ func TestAccAlicloudCSMultiAZKubernetes_basic(t *testing.T) {
 					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca", "force_update",
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types",
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
-					"worker_instance_charge_type", "worker_instance_types", "worker_numbers", "log_config"},
+					"worker_instance_charge_type", "worker_instance_types", "worker_numbers", "log_config",
+					"worker_data_disk_category", "worker_data_disk_size"},
 			},
 		},
 	})
