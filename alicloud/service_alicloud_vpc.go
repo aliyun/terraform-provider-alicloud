@@ -69,7 +69,7 @@ func (s *VpcService) DescribeNatGateway(id string) (nat vpc.NatGateway, err erro
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*vpc.DescribeNatGatewaysResponse)
 		if len(response.NatGateways.NatGateway) <= 0 || response.NatGateways.NatGateway[0].NatGatewayId != id {
-			return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(Error(GetNotFoundMessage("NatGateway", id)), NotFoundMsg, ProviderERROR)
 		}
 		nat = response.NatGateways.NatGateway[0]
 		return nil
@@ -121,7 +121,7 @@ func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributes
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*vpc.DescribeVSwitchAttributesResponse)
 		if response.VSwitchId != id {
-			return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(Error(GetNotFoundMessage("vswitch", id)), NotFoundMsg, ProviderERROR)
 		}
 		v = *response
 		return nil
@@ -917,7 +917,7 @@ func (s *VpcService) DescribeNetworkAcl(id string) (networkAcl vpc.NetworkAcl, e
 	response, _ := raw.(*vpc.DescribeNetworkAclsResponse)
 	addDebug(request.GetActionName(), raw)
 	if len(response.NetworkAcls.NetworkAcl) <= 0 || response.NetworkAcls.NetworkAcl[0].NetworkAclId != id {
-		return networkAcl, WrapErrorf(Error(GetNotFoundMessage("Network Acl", id)), NotFoundMsg, ProviderERROR)
+		return networkAcl, WrapErrorf(Error(GetNotFoundMessage("NetworkAcl", id)), NotFoundMsg, ProviderERROR)
 	}
 	return response.NetworkAcls.NetworkAcl[0], nil
 }
