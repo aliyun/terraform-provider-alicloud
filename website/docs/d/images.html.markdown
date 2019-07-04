@@ -46,7 +46,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `creation_time` - Time of creation.
   * `description` - Description of the image.
   * `image_owner_alias` - Alias of the image owner.
-  * `os_name` - Display name of the OS.
+  * `os_name` - Display Chinese name of the OS.
+  * `os_name_en` - Display English name of the OS.
   * `status` - Status of the image. Possible values: `UnAvailable`, `Available`, `Creating` and `CreateFailed`.
   * `size` - Size of the image.
   * `disk_device_mappings` - Description of the system with disks and snapshots under the image.
