@@ -316,6 +316,7 @@ data "alicloud_db_instance_engines" "default" {
 data "alicloud_db_instance_classes" "default" {
 	engine               = "PostgreSQL"
 	engine_version       = "10.0"
+	category             = "HighAvailability"
 }
 
 resource "alicloud_vpc" "default" {
