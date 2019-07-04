@@ -105,7 +105,7 @@ The following arguments are supported:
     Note: There is extra 5 GB storage for SQL Server Instance and it is not in specified `instance_storage`.
 
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
-* `instance_charge_type` - (ForceNew) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`.
+* `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`. Currently, the resource only supports PostPaid to PrePaid.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
 * `monitoring_period` - (Optional) The monitoring frequency in seconds. Valid values are 5, 60, 300. Defaults to 300. 
 * `auto_renew` - (Optional, Available in 1.34.0+) Whether to renewal a DB instance automatically or not. It is valid when instance_charge_type is `PrePaid`. Default to `false`.
