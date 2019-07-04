@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"log"
 	"regexp"
 	"sort"
@@ -80,6 +79,10 @@ func dataSourceAlicloudImages() *schema.Resource {
 							Computed: true,
 						},
 						"os_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"os_name_en": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -175,41 +178,41 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 	mostRecent, mostRecentOk := d.GetOk("most_recent")
 
 	if nameRegexOk == false && ownersOk == false && mostRecentOk == false {
-		return fmt.Errorf("One of name_regex, owners or most_recent must be assigned")
+		return WrapError(Error("One of name_regex, owners or most_recent must be assigned"))
 	}
 
-	params := ecs.CreateDescribeImagesRequest()
-	params.PageNumber = requests.NewInteger(1)
-	params.PageSize = requests.NewInteger(PageSizeLarge)
+	request := ecs.CreateDescribeImagesRequest()
+	request.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
 
 	if ownersOk {
-		params.ImageOwnerAlias = owners.(string)
+		request.ImageOwnerAlias = owners.(string)
 	}
 
 	var allImages []ecs.Image
 
 	for {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeImages(params)
+			return ecsClient.DescribeImages(request)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_images", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*ecs.DescribeImagesResponse)
-		if resp == nil || len(resp.Images.Image) < 1 {
+		response, _ := raw.(*ecs.DescribeImagesResponse)
+		if response == nil || len(response.Images.Image) < 1 {
 			break
 		}
 
-		allImages = append(allImages, resp.Images.Image...)
+		allImages = append(allImages, response.Images.Image...)
 
-		if len(resp.Images.Image) < PageSizeLarge {
+		if len(response.Images.Image) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(params.PageNumber); err != nil {
-			return err
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return WrapError(err)
 		} else {
-			params.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 
@@ -259,6 +262,7 @@ func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.Image, met
 			"image_id":                image.ImageId,
 			"image_owner_alias":       image.ImageOwnerAlias,
 			"os_name":                 image.OSName,
+			"os_name_en":              image.OSNameEn,
 			"os_type":                 image.OSType,
 			"name":                    image.ImageName,
 			"platform":                image.Platform,
@@ -285,10 +289,10 @@ func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.Image, met
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("images", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 	if err := d.Set("ids", ids); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

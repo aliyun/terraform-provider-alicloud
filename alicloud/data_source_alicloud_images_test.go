@@ -1,191 +1,323 @@
 package alicloud
 
 import (
-	"regexp"
+	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/helper/acctest"
 )
 
-func TestAccAlicloudImagesDataSource_images(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudImagesDataSourceImagesConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_images.multi_image"),
+func TestAccAlicloudImagesDataSource_basic(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_images.default"
 
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.0.architecture", "x86_64"),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.0.disk_device_mappings.#", "0"),
-					resource.TestMatchResourceAttr("data.alicloud_images.multi_image", "images.0.creation_time", regexp.MustCompile("^20[0-9]{2}-")),
-					resource.TestMatchResourceAttr("data.alicloud_images.multi_image", "images.0.image_id", regexp.MustCompile("^centos_6\\w{1,5}[64|32]{1}.")),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.0.image_owner_alias", "system"),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.0.os_type", "linux"),
-					resource.TestMatchResourceAttr("data.alicloud_images.multi_image", "images.0.name", regexp.MustCompile("^centos_6[a-zA-Z0-9_]{1,5}[64|32]{1}.")),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.0.progress", "100%"),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.0.state", "Available"),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.0.status", "Available"),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.0.usage", "instance"),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.0.tags.%", "0"),
-					resource.TestCheckResourceAttrSet("data.alicloud_images.multi_image", "ids.#"),
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testacc-%d", rand),
+		dataSourceImagesConfigDependence)
 
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.1.disk_device_mappings.#", "0"),
-					resource.TestMatchResourceAttr("data.alicloud_images.multi_image", "images.1.creation_time", regexp.MustCompile("^20[0-9]{2}-")),
-					resource.TestMatchResourceAttr("data.alicloud_images.multi_image", "images.1.image_id", regexp.MustCompile("^centos_6[a-zA-Z0-9_]{1,5}[64|32]{1}.")),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.1.image_owner_alias", "system"),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.1.os_type", "linux"),
-					resource.TestMatchResourceAttr("data.alicloud_images.multi_image", "images.1.name", regexp.MustCompile("^centos_6\\w{1,5}[64|32]{1}.")),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.1.progress", "100%"),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.1.state", "Available"),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.1.status", "Available"),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.1.usage", "instance"),
-					resource.TestCheckResourceAttr("data.alicloud_images.multi_image", "images.1.tags.%", "0"),
-				),
-			},
-		},
-	})
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^win.*",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^win.*-fake",
+		}),
+	}
+
+	mostRecentConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"most_recent": "true",
+		}),
+	}
+
+	ownerConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"owners": "system",
+		}),
+	}
+
+	recentNameRegexconf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex":  "^win.*",
+			"most_recent": "true",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex":  "^win.*-fake",
+			"most_recent": "true",
+		}),
+	}
+
+	ownerNameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^win.*",
+			"owners":     "system",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^win.*-fake",
+			"owners":     "system",
+		}),
+	}
+
+	ownerRecentConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"most_recent": "true",
+			"owners":      "system",
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex":  "^win.*",
+			"most_recent": "true",
+			"owners":      "system",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex":  "^win.*-fake",
+			"most_recent": "true",
+			"owners":      "system",
+		}),
+	}
+
+	var existImagesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                           CHECKSET,
+			"ids.0":                           CHECKSET,
+			"images.#":                        CHECKSET,
+			"images.0.architecture":           CHECKSET,
+			"images.0.disk_device_mappings.#": CHECKSET,
+			"images.0.creation_time":          CHECKSET,
+			"images.0.image_id":               CHECKSET,
+			"images.0.image_owner_alias":      CHECKSET,
+			"images.0.os_type":                CHECKSET,
+			"images.0.name":                   CHECKSET,
+			"images.0.os_name":                CHECKSET,
+			"images.0.os_name_en":             CHECKSET,
+			"images.0.progress":               "100%",
+			"images.0.state":                  "Available",
+			"images.0.status":                 "Available",
+			"images.0.usage":                  CHECKSET,
+			"images.0.tags.%":                 "0",
+		}
+	}
+
+	var fakeImagesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":    "0",
+			"images.#": "0",
+		}
+	}
+
+	var imagesCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existImagesMapFunc,
+		fakeMapFunc:  fakeImagesMapFunc,
+	}
+
+	imagesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, mostRecentConf, ownerConf, recentNameRegexconf, ownerNameRegexConf, ownerRecentConf, allConf)
 }
 
-func TestAccAlicloudImagesDataSource_owners(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudImagesDataSourceOwnersConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_images.owners_filtered_image"),
-					resource.TestCheckResourceAttrSet("data.alicloud_images.owners_filtered_image", "ids.#"),
-				),
-			},
-		},
-	})
+func TestAccAlicloudImagesDataSource_win(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_images.default"
+
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testacc-%d", rand),
+		dataSourceImagesConfigDependence)
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^win.*",
+			"owners":     "system",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^win.*fake",
+			"owners":     "system",
+		}),
+	}
+
+	var existImagesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                           CHECKSET,
+			"ids.0":                           CHECKSET,
+			"images.#":                        CHECKSET,
+			"images.0.architecture":           CHECKSET,
+			"images.0.disk_device_mappings.#": "0",
+			"images.0.creation_time":          CHECKSET,
+			"images.0.image_id":               CHECKSET,
+			"images.0.image_owner_alias":      CHECKSET,
+			"images.0.os_type":                "windows",
+			"images.0.name":                   CHECKSET,
+			"images.0.os_name":                REGEXMATCH + "^Windows Server.*版.*",
+			"images.0.os_name_en":             CHECKSET,
+			"images.0.progress":               "100%",
+			"images.0.state":                  "Available",
+			"images.0.status":                 "Available",
+			"images.0.usage":                  "instance",
+			"images.0.tags.%":                 "0",
+		}
+	}
+
+	var fakeImagesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":    "0",
+			"images.#": "0",
+		}
+	}
+
+	var imagesCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existImagesMapFunc,
+		fakeMapFunc:  fakeImagesMapFunc,
+	}
+
+	imagesCheckInfo.dataSourceTestCheck(t, rand, allConf)
 }
 
-func TestAccAlicloudImagesDataSource_ownersEmpty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudImagesDataSourceEmptyOwnersConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_images.empty_owners_filtered_image"),
-					resource.TestCheckResourceAttr("data.alicloud_images.empty_owners_filtered_image", "most_recent", "true"),
-					resource.TestCheckResourceAttrSet("data.alicloud_images.empty_owners_filtered_image", "ids.#"),
-				),
-			},
-		},
-	})
+func TestAccAlicloudImagesDataSource_linux(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_images.default"
+
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testacc-%d", rand),
+		dataSourceImagesConfigDependence)
+
+	ubuntuConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^ubuntu.*",
+			"owners":     "system",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^ubuntu.*fake",
+			"owners":     "system",
+		}),
+	}
+
+	slesConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^sles.*",
+			"owners":     "system",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^sles.*fake",
+			"owners":     "system",
+		}),
+	}
+
+	openSuseConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^opensuse.*",
+			"owners":     "system",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^opensuse.*fake",
+			"owners":     "system",
+		}),
+	}
+
+	freebsdConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^freebsd.*",
+			"owners":     "system",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^freebsd.*fake",
+			"owners":     "system",
+		}),
+	}
+
+	centOsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^centos.*",
+			"owners":     "system",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^centos.*fake",
+			"owners":     "system",
+		}),
+	}
+
+	debianConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^debian.*",
+			"owners":     "system",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^debian.*fake",
+			"owners":     "system",
+		}),
+	}
+
+	coreOsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^coreos.*",
+			"owners":     "system",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^coreos.*fake",
+			"owners":     "system",
+		}),
+	}
+
+	aliyunConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^aliyun.*",
+			"owners":     "system",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^aliyun.*fake",
+			"owners":     "system",
+		}),
+	}
+
+	alinuxConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^alinux.*",
+			"owners":     "system",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "^alinux.*fake",
+			"owners":     "system",
+		}),
+	}
+
+	var existImagesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                           CHECKSET,
+			"ids.0":                           CHECKSET,
+			"images.#":                        CHECKSET,
+			"images.0.architecture":           CHECKSET,
+			"images.0.disk_device_mappings.#": "0",
+			"images.0.creation_time":          CHECKSET,
+			"images.0.image_id":               CHECKSET,
+			"images.0.image_owner_alias":      CHECKSET,
+			"images.0.os_type":                "linux",
+			"images.0.name":                   CHECKSET,
+			"images.0.os_name":                REGEXMATCH + "^.*位.*",
+			"images.0.os_name_en":             REGEXMATCH + "^.*bit.*",
+			"images.0.progress":               "100%",
+			"images.0.state":                  "Available",
+			"images.0.status":                 "Available",
+			"images.0.usage":                  "instance",
+			"images.0.tags.%":                 "0",
+		}
+	}
+
+	var fakeImagesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":    "0",
+			"images.#": "0",
+		}
+	}
+
+	var imagesCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existImagesMapFunc,
+		fakeMapFunc:  fakeImagesMapFunc,
+	}
+
+	imagesCheckInfo.dataSourceTestCheck(t, rand, ubuntuConf, slesConf, openSuseConf, freebsdConf, centOsConf, debianConf, coreOsConf, aliyunConf, alinuxConf)
 }
 
-func TestAccAlicloudImagesDataSource_nameRegexFilter(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudImagesDataSourceNameRegexConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_images.name_regex_filtered_image"),
-					resource.TestMatchResourceAttr("data.alicloud_images.name_regex_filtered_image", "images.0.image_id", regexp.MustCompile("^centos_")),
-					resource.TestCheckResourceAttrSet("data.alicloud_images.name_regex_filtered_image", "ids.#"),
-				),
-			},
-		},
-	})
+func dataSourceImagesConfigDependence(name string) string {
+	return ""
 }
-
-func TestAccAlicloudImagesDataSource_imageNotInFirstPage(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudImagesDataSourceImageNotInFirstPageConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_images.name_regex_filtered_image"),
-					resource.TestMatchResourceAttr("data.alicloud_images.name_regex_filtered_image", "images.0.image_id", regexp.MustCompile("^ubuntu_14")),
-					resource.TestCheckResourceAttrSet("data.alicloud_images.name_regex_filtered_image", "ids.#"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudImagesDataSource_empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudImagesDataSourceImagesEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_images.empty"),
-					resource.TestCheckResourceAttr("data.alicloud_images.empty", "images.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.architecture"),
-					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.disk_device_mappings.#"),
-					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.creation_time"),
-					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.image_id"),
-					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.image_owner_alias"),
-					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.os_type"),
-					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.progress"),
-					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.state"),
-					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.status"),
-					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.usage"),
-					resource.TestCheckNoResourceAttr("data.alicloud_images.empty", "images.0.tags.%"),
-					resource.TestCheckResourceAttrSet("data.alicloud_images.empty", "ids.#"),
-				),
-			},
-		},
-	})
-}
-
-// Instance store test - using centos images
-const testAccCheckAlicloudImagesDataSourceImagesConfig = `
-data "alicloud_images" "multi_image" {
-	owners = "system"
-	name_regex = "^centos_6"
-}
-`
-
-// Testing owner parameter
-const testAccCheckAlicloudImagesDataSourceOwnersConfig = `
-data "alicloud_images" "owners_filtered_image" {
-	most_recent = true
-	owners = "system"
-}
-`
-
-const testAccCheckAlicloudImagesDataSourceEmptyOwnersConfig = `
-data "alicloud_images" "empty_owners_filtered_image" {
-	most_recent = true
-	owners = ""
-}
-`
-
-// Testing name_regex parameter
-const testAccCheckAlicloudImagesDataSourceNameRegexConfig = `
-data "alicloud_images" "name_regex_filtered_image" {
-	most_recent = true
-	owners = "system"
-	name_regex = "^centos_6\\w{1,5}[64]{1}.*"
-}
-`
-
-// Testing image not in first page response
-const testAccCheckAlicloudImagesDataSourceImageNotInFirstPageConfig = `
-data "alicloud_images" "name_regex_filtered_image" {
-	most_recent = true
-	owners = "system"
-	name_regex = "^ubuntu_14.*_64"
-}
-`
-const testAccCheckAlicloudImagesDataSourceImagesEmpty = `
-data "alicloud_images" "empty" {
-	name_regex = "^tf-testacc-fake-name"
-}
-`
