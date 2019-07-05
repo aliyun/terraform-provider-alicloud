@@ -141,7 +141,7 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
 
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceBasicConfigDependence)
@@ -419,7 +419,7 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
 
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAcc%sEcsInstanceConfigVpc%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcConfigDependence)
@@ -697,7 +697,7 @@ func TestAccAlicloudInstancePrepaid(t *testing.T) {
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
 
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAcc%sEcsInstanceConfigPrePaid%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstancePrePaidConfigDependence)
@@ -1071,7 +1071,7 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
 
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAcc%sEcsInstanceDataDisks%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstancePrePaidConfigDependence)
@@ -1168,7 +1168,7 @@ func TestAccAlicloudInstanceTypeUpdate(t *testing.T) {
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
 
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAccEcsInstanceConfigInstanceType%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceTypeConfigDependence)
@@ -1254,7 +1254,7 @@ func TestAccAlicloudInstanceSpotInstanceLimit(t *testing.T) {
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
 
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAccEcsInstanceConfigSpot%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccCheckSpotInstanceDependence)
@@ -1308,7 +1308,7 @@ func TestAccAlicloudInstanceMulti(t *testing.T) {
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
 
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAcc%sEcsInstanceConfigMulti%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcConfigDependence)
