@@ -27,6 +27,8 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix(oss_bucket): fix oss bucket deleting timeout error [GH-1399]
+- fix(route_entry):fix route_entry create bug [GH-1398]
 - fix(instance):fix testcase name too length bug [GH-1396]
 - fix(vswitch):fix vswitch describe method wrapErrorf bug [GH-1392]
 - fix(slb_rule): fix testcase bug [GH-1390]
