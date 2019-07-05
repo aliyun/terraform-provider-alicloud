@@ -987,7 +987,7 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			if IsExceptedError(err, "BucketNotEmpty") {
 				if d.Get("force_destroy").(bool) {
-					raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+					raw, er := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 						bucket, _ := ossClient.Bucket(d.Get("bucket").(string))
 						lor, err := bucket.ListObjectVersions()
 						if err != nil {
@@ -1010,8 +1010,8 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 						}
 						return bucket.DeleteObjectVersions(objectsToDelete)
 					})
-					if err != nil {
-						return resource.NonRetryableError(err)
+					if er != nil {
+						return resource.NonRetryableError(er)
 					}
 					addDebug("DeleteObjectVersions", raw)
 					return resource.RetryableError(err)
