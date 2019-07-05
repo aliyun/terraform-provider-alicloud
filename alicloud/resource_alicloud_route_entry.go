@@ -82,8 +82,8 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			// Route Entry does not support concurrence when creating or deleting it;
 			// Route Entry does not support creating or deleting within 5 seconds frequently
-			// It must ensure all the route entries and vswitches' status must be available before creating or deleting route entry.
-			if IsExceptedErrors(err, []string{TaskConflict, IncorrectRouteEntryStatus, Throttling}) {
+			// It must ensure all the route entries, vpc, vswitches' status must be available before creating or deleting route entry.
+			if IsExceptedErrors(err, []string{TaskConflict, IncorrectRouteEntryStatus, Throttling, IncorrectVpcStatus}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
