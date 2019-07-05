@@ -1014,7 +1014,7 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 						return resource.NonRetryableError(err)
 					}
 					addDebug("DeleteObjectVersions", raw)
-					return resource.RetryableError(err)
+					return resource.RetryableError(Error("Need retry here to call DeleteBucket again"))
 				}
 			}
 			return resource.NonRetryableError(err)
