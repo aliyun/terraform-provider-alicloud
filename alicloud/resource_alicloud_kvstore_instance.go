@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 
 	"strconv"
 

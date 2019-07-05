@@ -864,7 +864,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		value := v.(string)
 		request.SecurityEnhancementStrategy = value
 	}
-
+	request.DryRun = requests.NewBoolean(d.Get("dry_run").(bool))
 	request.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))
 	request.ClientToken = buildClientToken(request.GetActionName())
 
@@ -942,7 +942,7 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		// Wait for instance charge type has been changed
-		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			if instance, err := ecsService.DescribeInstance(d.Id()); err != nil {
 				return resource.NonRetryableError(err)
 			} else if instance.InstanceChargeType == chargeType {
