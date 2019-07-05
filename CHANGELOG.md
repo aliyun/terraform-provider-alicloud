@@ -1,4 +1,40 @@
 ## 1.51.0 (Unreleased)
+
+- **New Date Source:** `alicloud_kvstore_instance_engines` [GH-1371]
+- **New Resource:** `alicloud_ons_instance` [GH-1333]
+
+IMPROVEMENTS:
+
+- improve(db_instance): improve db_instance MAZ testcase [GH-1391]
+- improve(cs_kubernetes): add importIgnore parameters in the importer testcase [GH-1387]
+- Remove govendor commands in CI [GH-1386]
+- improve(slb_vserver_group): support attaching eni [GH-1384]
+- improve(db_instance_classes): add new parameter db_instance_class [GH-1383]
+- improve(images): Add os_name_en to the attributes of images datasource [GH-1380]
+- improve(disk): the snapshot_id conflicts with encrypted [GH-1378]
+- Improve(cs_kubernetes): add some importState ignore fields in the importer testcase [GH-1377]
+- Improve(oss_bucket): Add names for its attributes of datasource [GH-1374]
+- improve(common_test):update common_test for terraform 0.12 [GH-1372]
+- Improve(cs_kubernetes): add import ignore parameter `log_config` [GH-1370]
+- improve(slb):support slb instance delete protection [GH-1369]
+- improve(slb_rule): support health check config [GH-1367]
+- Improve(oss_bucket_object): Improve its use common method [GH-1366]
+- improve(drds_instance): Added precheck to its testcases [GH-1364]
+- Improve(oss_bucket): Improve its resource use common method [GH-1353]
+- improve(launch_template): support update method [GH-1327]
+- improve(snapshot): support setting timeouts [GH-1304]
+- improve(instance):update testcase [GH-1199]
+
+BUG FIXES:
+
+- fix(instance):fix testcase name too length bug [GH-1396]
+- fix(vswitch):fix vswitch describe method wrapErrorf bug [GH-1392]
+- fix(slb_rule): fix testcase bug [GH-1390]
+- fix(db_backup_policy): pg10 of category 'basic' modify log_backup error [GH-1388]
+- fix(cen):Add deadline to cen datasources and modify timeout for DescribeCenBandwidthPackages [GH-1381]
+- fix(kvstore): kvstore_instance PostPaid to PrePaid error [GH-1375]
+- fix(cen): fixed its not display error message, added CenThrottlingUser retry [GH-1373]
+
 ## 1.50.0 (July 01, 2019)
 
 IMPROVEMENTS:
