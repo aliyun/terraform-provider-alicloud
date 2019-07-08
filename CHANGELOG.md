@@ -1,42 +1,42 @@
-## 1.51.0 (Unreleased)
+## 1.51.0 (July 08, 2019)
 
-- **New Date Source:** `alicloud_kvstore_instance_engines` [GH-1371]
-- **New Resource:** `alicloud_ons_instance` [GH-1333]
+- **New Date Source:** `alicloud_kvstore_instance_engines` ([#1371](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1371))
+- **New Resource:** `alicloud_ons_instance` ([#1333](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1333))
 
 IMPROVEMENTS:
 
-- improve(db_instance): improve db_instance MAZ testcase [GH-1391]
-- improve(cs_kubernetes): add importIgnore parameters in the importer testcase [GH-1387]
-- Remove govendor commands in CI [GH-1386]
-- improve(slb_vserver_group): support attaching eni [GH-1384]
-- improve(db_instance_classes): add new parameter db_instance_class [GH-1383]
-- improve(images): Add os_name_en to the attributes of images datasource [GH-1380]
-- improve(disk): the snapshot_id conflicts with encrypted [GH-1378]
-- Improve(cs_kubernetes): add some importState ignore fields in the importer testcase [GH-1377]
-- Improve(oss_bucket): Add names for its attributes of datasource [GH-1374]
-- improve(common_test):update common_test for terraform 0.12 [GH-1372]
-- Improve(cs_kubernetes): add import ignore parameter `log_config` [GH-1370]
-- improve(slb):support slb instance delete protection [GH-1369]
-- improve(slb_rule): support health check config [GH-1367]
-- Improve(oss_bucket_object): Improve its use common method [GH-1366]
-- improve(drds_instance): Added precheck to its testcases [GH-1364]
-- Improve(oss_bucket): Improve its resource use common method [GH-1353]
-- improve(launch_template): support update method [GH-1327]
-- improve(snapshot): support setting timeouts [GH-1304]
-- improve(instance):update testcase [GH-1199]
+- improve(db_instance): improve db_instance MAZ testcase ([#1391](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1391))
+- improve(cs_kubernetes): add importIgnore parameters in the importer testcase ([#1387](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1387))
+- Remove govendor commands in CI ([#1386](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1386))
+- improve(slb_vserver_group): support attaching eni ([#1384](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1384))
+- improve(db_instance_classes): add new parameter db_instance_class ([#1383](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1383))
+- improve(images): Add os_name_en to the attributes of images datasource ([#1380](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1380))
+- improve(disk): the snapshot_id conflicts with encrypted ([#1378](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1378))
+- Improve(cs_kubernetes): add some importState ignore fields in the importer testcase ([#1377](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1377))
+- Improve(oss_bucket): Add names for its attributes of datasource ([#1374](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1374))
+- improve(common_test):update common_test for terraform 0.12 ([#1372](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1372))
+- Improve(cs_kubernetes): add import ignore parameter `log_config` ([#1370](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1370))
+- improve(slb):support slb instance delete protection ([#1369](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1369))
+- improve(slb_rule): support health check config ([#1367](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1367))
+- Improve(oss_bucket_object): Improve its use common method ([#1366](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1366))
+- improve(drds_instance): Added precheck to its testcases ([#1364](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1364))
+- Improve(oss_bucket): Improve its resource use common method ([#1353](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1353))
+- improve(launch_template): support update method ([#1327](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1327))
+- improve(snapshot): support setting timeouts ([#1304](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1304))
+- improve(instance):update testcase ([#1199](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1199))
 
 BUG FIXES:
 
-- fix(instnace): fix missing dry_run when creating instance [GH-1401]
-- fix(oss_bucket): fix oss bucket deleting timeout error [GH-1400]
-- fix(route_entry):fix route_entry create bug [GH-1398]
-- fix(instance):fix testcase name too length bug [GH-1396]
-- fix(vswitch):fix vswitch describe method wrapErrorf bug [GH-1392]
-- fix(slb_rule): fix testcase bug [GH-1390]
-- fix(db_backup_policy): pg10 of category 'basic' modify log_backup error [GH-1388]
-- fix(cen):Add deadline to cen datasources and modify timeout for DescribeCenBandwidthPackages [GH-1381]
-- fix(kvstore): kvstore_instance PostPaid to PrePaid error [GH-1375]
-- fix(cen): fixed its not display error message, added CenThrottlingUser retry [GH-1373]
+- fix(instnace): fix missing dry_run when creating instance ([#1401](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1401))
+- fix(oss_bucket): fix oss bucket deleting timeout error ([#1400](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1400))
+- fix(route_entry):fix route_entry create bug ([#1398](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1398))
+- fix(instance):fix testcase name too length bug ([#1396](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1396))
+- fix(vswitch):fix vswitch describe method wrapErrorf bug ([#1392](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1392))
+- fix(slb_rule): fix testcase bug ([#1390](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1390))
+- fix(db_backup_policy): pg10 of category 'basic' modify log_backup error ([#1388](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1388))
+- fix(cen):Add deadline to cen datasources and modify timeout for DescribeCenBandwidthPackages ([#1381](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1381))
+- fix(kvstore): kvstore_instance PostPaid to PrePaid error ([#1375](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1375))
+- fix(cen): fixed its not display error message, added CenThrottlingUser retry ([#1373](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1373))
 
 ## 1.50.0 (July 01, 2019)
 
