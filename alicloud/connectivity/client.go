@@ -124,9 +124,13 @@ var version = strings.TrimSuffix(terraform.VersionString(), "-dev")
 
 // Client for AliyunClient
 func (c *Config) Client() (*AliyunClient, error) {
-	err := c.loadAndValidate()
-	if err != nil {
-		return nil, err
+	// Get the auth and region. This can fail if keys/regions were not
+	// specified and we're attempting to use the environment.
+	if !c.SkipRegionValidation {
+		err := c.loadAndValidate()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &AliyunClient{

@@ -1,4 +1,9 @@
 ## 1.52.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve(provider): add a new parameter `skip_region_validation` in the provider config [GH-1404]
+
 ## 1.51.0 (July 08, 2019)
 
 - **New Date Source:** `alicloud_kvstore_instance_engines` ([#1371](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1371))
