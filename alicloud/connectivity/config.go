@@ -66,6 +66,8 @@ type Config struct {
 	ActionTrailEndpoint   string
 	BssOpenApiEndpoint    string
 	DdoscooEndpoint       string
+
+	SkipRegionValidation bool
 }
 
 func (c *Config) loadAndValidate() error {
@@ -85,7 +87,7 @@ func (c *Config) validateRegion() error {
 		}
 	}
 
-	return fmt.Errorf("Not a valid region: %s", c.Region)
+	return fmt.Errorf("Invalid Alibaba Cloud region: %s", c.RegionId)
 }
 
 func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {

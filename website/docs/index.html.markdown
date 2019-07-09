@@ -183,6 +183,8 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 
 * `endpoints` - (Optional) An `endpoints` block (documented below) to support custom endpoints.
 
+* `skip_region_validation` - (Optional, Available in 1.52.0+) Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).
+
 The nested `assume_role` block supports the following:
 
 * `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching.

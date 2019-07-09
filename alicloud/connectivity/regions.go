@@ -13,6 +13,7 @@ const (
 	Shanghai    = Region("cn-shanghai")
 	Zhangjiakou = Region("cn-zhangjiakou")
 	Huhehaote   = Region("cn-huhehaote")
+	ChengDu     = Region("cn-chengdu")
 
 	APSouthEast1 = Region("ap-southeast-1")
 	APNorthEast1 = Region("ap-northeast-1")
@@ -35,13 +36,12 @@ const (
 )
 
 var ValidRegions = []Region{
-	Hangzhou, Qingdao, Beijing, Shenzhen, Hongkong, Shanghai, Zhangjiakou, Huhehaote,
+	Hangzhou, Qingdao, Beijing, Shenzhen, Hongkong, Shanghai, Zhangjiakou, Huhehaote, ChengDu,
 	USWest1, USEast1,
 	APNorthEast1, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5,
 	APSouth1,
 	MEEast1,
 	EUCentral1, EUWest1,
-	ShenZhenFinance, ShanghaiFinance,
 }
 
 var EcsClassicSupportedRegions = []Region{Shenzhen, Shanghai, Beijing, Qingdao, Hangzhou, Hongkong, USWest1, APSouthEast1}
