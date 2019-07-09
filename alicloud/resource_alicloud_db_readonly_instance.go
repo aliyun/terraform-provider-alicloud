@@ -197,7 +197,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 				return rdsClient.ModifyDBInstanceSpec(request)
 			})
 			if err != nil {
-				if IsExceptedError(err, "InvalidOrderTask.NotSupport") {
+				if IsExceptedErrors(err, []string{"InvalidOrderTask.NotSupport", OperationDeniedDBInstanceStatus}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -278,7 +278,7 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 		})
 
 		if err != nil && !rdsService.NotFoundDBInstance(err) {
-			if IsExceptedError(err, "RwSplitNetType.Exist") {
+			if IsExceptedErrors(err, []string{"RwSplitNetType.Exist", OperationDeniedDBInstanceStatus}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
