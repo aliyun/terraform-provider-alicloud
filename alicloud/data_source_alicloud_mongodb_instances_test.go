@@ -46,7 +46,7 @@ func TestAccAlicloudMongoDBInstancesDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${alicloud_mongodb_instance.default.name}"`,
-			"availability_zone": `"${data.alicloud_zones.default.zones.1.id}"`,
+			"availability_zone": `"test_zone"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
