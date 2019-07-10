@@ -27,6 +27,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(20 * time.Minute),
+			Update: schema.DefaultTimeout(20 * time.Minute),
+			Delete: schema.DefaultTimeout(20 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"engine": {
 				Type:         schema.TypeString,
@@ -293,7 +299,8 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	d.SetId(response.DBInstanceId)
 
 	// wait instance status change from Creating to running
-	if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
+	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
 
@@ -304,6 +311,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	d.Partial(true)
+	stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 
 	if d.HasChange("parameters") {
 		if err := rdsService.ModifyParameters(d, "parameters"); err != nil {
@@ -338,7 +346,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		addDebug(prePaidRequest.GetActionName(), raw)
 		// wait instance status is Normal after modifying
-		if err := rdsService.WaitForDBInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("instance_charge_type")
@@ -445,7 +453,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if update {
 		// wait instance status is running before modifying
-		if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -469,7 +477,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 
 		// wait instance status is running after modifying
-		if err := rdsService.WaitForDBInstance(d.Id(), Running, 2*DefaultLongTimeout); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -597,7 +605,9 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	return WrapError(rdsService.WaitForDBInstance(d.Id(), Deleted, DefaultTimeoutMedium))
+	stateConf := BuildStateConf([]string{"Creating", "Running", "Deleting"}, []string{"Deleted"}, d.Timeout(schema.TimeoutDelete), 3*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{}))
+	_, err = stateConf.WaitForState()
+	return WrapError(err)
 }
 
 func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.CreateDBInstanceRequest, error) {
