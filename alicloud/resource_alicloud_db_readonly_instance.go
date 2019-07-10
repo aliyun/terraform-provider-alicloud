@@ -213,7 +213,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		}
 
 		// wait instance status is running after modifying
-		if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
+		if err := rdsService.WaitForDBInstance(d.Id(), Running, 2*DefaultLongTimeout); err != nil {
 			return WrapError(err)
 		}
 	}
