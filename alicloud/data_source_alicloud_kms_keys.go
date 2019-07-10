@@ -105,11 +105,11 @@ func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) err
 			return kmsClient.ListKeys(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "kms_keys", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_keys", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
-		results, _ := raw.(*kms.ListKeysResponse)
-		for _, key := range results.Keys.Key {
+		response, _ := raw.(*kms.ListKeysResponse)
+		for _, key := range response.Keys.Key {
 			if len(idsMap) > 0 {
 				if _, ok := idsMap[key.KeyId]; ok {
 					keyIds = append(keyIds, key.KeyId)
@@ -120,7 +120,7 @@ func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) err
 				continue
 			}
 		}
-		if len(results.Keys.Key) < PageSizeLarge {
+		if len(response.Keys.Key) < PageSizeLarge {
 			break
 		}
 		if page, err := getNextpageNumber(request.PageNumber); err != nil {
@@ -170,6 +170,9 @@ func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) err
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("keys", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
 
