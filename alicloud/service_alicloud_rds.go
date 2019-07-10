@@ -677,6 +677,26 @@ func (s *RdsService) WaitForDBInstance(id string, status Status, timeout int) er
 	return nil
 }
 
+func (s *RdsService) RdsDBInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeDBInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.DBInstanceStatus == failState {
+				return object, object.DBInstanceStatus, WrapError(Error(FailedToReachTargetStatus, object.DBInstanceStatus))
+			}
+		}
+		return object, object.DBInstanceStatus, nil
+	}
+}
+
 // WaitForDBParameter waits for instance parameter to given value.
 // Status of DB instance is Running after ModifyParameters API was
 // call, so we can not just wait for instance status become
