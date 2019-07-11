@@ -320,13 +320,24 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		request.InstanceId = d.Id()
 		request.InstanceClass = d.Get("instance_class").(string)
 		request.EffectiveTime = "Immediately"
-		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.ModifyInstanceSpec(request)
+
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+				return rkvClient.ModifyInstanceSpec(request)
+			})
+			if err != nil {
+				if IsExceptedError(err, "MissingRedisUsedmemoryUnsupportPerfItem") {
+					time.Sleep(time.Duration(5) * time.Second)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw)
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
 		// wait instance status is Normal after modifying
 		if err := kvstoreService.WaitForKVstoreInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
 			return WrapError(err)
