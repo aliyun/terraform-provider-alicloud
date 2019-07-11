@@ -1224,8 +1224,9 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 			request.ClientToken = buildClientToken(request.GetActionName())
 
 			err = resource.Retry(6*time.Minute, func() *resource.RetryError {
+				args := *request
 				raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-					return ecsClient.ModifyInstanceSpec(request)
+					return ecsClient.ModifyInstanceSpec(&args)
 				})
 				if err != nil {
 					if IsExceptedError(err, EcsThrottling) {
