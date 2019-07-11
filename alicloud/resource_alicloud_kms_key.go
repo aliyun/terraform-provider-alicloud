@@ -2,11 +2,8 @@ package alicloud
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -27,6 +24,7 @@ func resourceAlicloudKmsKey() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "From Terraform",
+				ForceNew:     true,
 				ValidateFunc: validateStringLengthInRange(0, 8192),
 			},
 			"key_usage": {
@@ -75,10 +73,11 @@ func resourceAlicloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) erro
 		return kmsClient.CreateKey(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "kms_key", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_key", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*kms.CreateKeyResponse)
-	d.SetId(resp.KeyMetadata.KeyId)
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*kms.CreateKeyResponse)
+	d.SetId(response.KeyMetadata.KeyId)
 
 	return resourceAlicloudKmsKeyUpdate(d, meta)
 }
@@ -87,7 +86,7 @@ func resourceAlicloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*connectivity.AliyunClient)
 
 	kmsService := &KmsService{client: client}
-	key, err := kmsService.DescribeKmsKey(d.Id())
+	object, err := kmsService.DescribeKmsKey(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -96,11 +95,11 @@ func resourceAlicloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error 
 		return WrapError(err)
 	}
 
-	d.Set("description", key.KeyMetadata.Description)
-	d.Set("key_usage", key.KeyMetadata.KeyUsage)
-	d.Set("is_enabled", KeyState(key.KeyMetadata.KeyState) == Enabled)
+	d.Set("description", object.KeyMetadata.Description)
+	d.Set("key_usage", object.KeyMetadata.KeyUsage)
+	d.Set("is_enabled", KeyState(object.KeyMetadata.KeyState) == Enabled)
 	d.Set("deletion_window_in_days", d.Get("deletion_window_in_days").(int))
-	d.Set("arn", key.KeyMetadata.Arn)
+	d.Set("arn", object.KeyMetadata.Arn)
 
 	return nil
 }
@@ -149,7 +148,7 @@ func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 
 func resourceAlicloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	kmsService := KmsService{client}
 	request := kms.CreateScheduleKeyDeletionRequest()
 	request.KeyId = d.Id()
 	request.PendingWindowInDays = requests.NewInteger((d.Get("deletion_window_in_days").(int)))
@@ -161,17 +160,5 @@ func resourceAlicloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) erro
 	}
 	addDebug(request.GetActionName(), raw)
 
-	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		kmsService := &KmsService{client: client}
-		_, err := kmsService.DescribeKmsKey(d.Id())
-		if err != nil {
-			if NotFoundError(err) {
-				d.SetId("")
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR))
-	})
+	return WrapError(kmsService.WaitForKmsKey(d.Id(), Deleted, DefaultTimeoutMedium))
 }
