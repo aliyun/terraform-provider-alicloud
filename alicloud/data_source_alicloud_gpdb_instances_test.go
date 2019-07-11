@@ -109,14 +109,14 @@ func dataSourceGpdbConfigDependence(name string) string {
             available_resource_creation = "Gpdb"
         }
         resource "alicloud_vpc" "default" {
-            description = "${var.name}"
+            name = "${var.name}"
             cidr_block  = "172.16.0.0/16"
         }
         resource "alicloud_vswitch" "default" {
             availability_zone = "${data.alicloud_zones.default.zones.0.id}"
             vpc_id            = "${alicloud_vpc.default.id}"
             cidr_block        = "172.16.0.0/24"
-            description       = "${var.name}"
+            name       = "${var.name}"
         }
         variable "name" {
             default = "%s"
