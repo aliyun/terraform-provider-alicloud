@@ -47,7 +47,7 @@ func dataSourceAlicloudVSwitches() *schema.Resource {
 			},
 			"ids": {
 				Type:     schema.TypeList,
-				Computed: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"names": {
@@ -127,6 +127,15 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 			nameRegex = r
 		}
 	}
+
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[Trim(vv.(string))] = Trim(vv.(string))
+		}
+	}
+
 	invoker := NewInvoker()
 	for {
 		var raw interface{}
@@ -152,6 +161,12 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 
 			if v, ok := d.GetOk("is_default"); ok && vsw.IsDefault != v.(bool) {
 				continue
+			}
+
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[vsw.VSwitchId]; !ok {
+					continue
+				}
 			}
 
 			if nameRegex != nil {

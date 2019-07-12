@@ -37,7 +37,7 @@ func dataSourceAlicloudSecurityGroups() *schema.Resource {
 			"tags": tagsSchema(),
 			"ids": {
 				Type:     schema.TypeList,
-				Computed: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"names": {
@@ -110,6 +110,15 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 		}
 		request.Tag = &tags
 	}
+
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[Trim(vv.(string))] = Trim(vv.(string))
+		}
+	}
+
 	for {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DescribeSecurityGroups(request)
@@ -126,6 +135,12 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 		for _, item := range response.SecurityGroups.SecurityGroup {
 			if nameRegex != nil {
 				if !nameRegex.MatchString(item.SecurityGroupName) {
+					continue
+				}
+			}
+
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[item.SecurityGroupId]; !ok {
 					continue
 				}
 			}
