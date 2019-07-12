@@ -42,6 +42,7 @@ The following arguments are supported:
 * `cdn_type` - (Required, ForceNew) Cdn type of the accelerated domain. Valid values are `web`, `download`, `video`.
 * `scope` - (Optional) Scope of the accelerated domain. Valid values are `domestic`, `overseas`, `global`. Default value is `domestic`. This parameter's setting is valid Only for the international users and domestic L3 and above users .
 * `sources` - (Optional, Type: list) The source address list of the accelerated domain. Defaults to null. See Block Sources.
+* `certificate_config` - (Optional, Type: list, Available in 1.52.0+)  Certificate config of the accelerated domain. It's a list and consist of at most 1 item.
 
 ### Block sources
 
@@ -52,6 +53,17 @@ The `sources` block supports the following:
 * `port` - (Optional, Type: int) The port of source. Valid values are `443` and `80`. Default value is `80`.
 * `priority` - (Optional, Type: int) Priority of the source. Valid values are `0` and `100`. Default value is `20`.
 * `weight` - (Optional, Type: int) Weight of the source. Valid values are from `0` to `100`. Default value is `10`, but if type is `ipaddr`, the value can only be `10`. 
+
+### Block certificate_config
+
+The `certificate_config` block supports the following:
+
+* `server_certificate_status` - (Optional) This parameter indicates whether or not enable https. Valid values are `on` and `off`. Default value is `on`.
+* `server_certificate` - (Optional) The SSL server certificate string. This is required if `server_certificate_status` is `on`
+* `private_key` - (Optional) The SSL private key. This is required if `server_certificate_status` is `on`
+* `force_set` - (Optional) Set `1` to ignore the repeated verification for certificate name, and cover the information of the origin certificate (with the same name). Set `0` to work the verification.
+* `cert_name` - (Optional) The SSL certificate name.
+* `cert_type` - (Optional) The SSL certificate type, can be "upload", "cas" and "free".
 
 ## Attributes Reference
 
