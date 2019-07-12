@@ -28,13 +28,15 @@ output "cert" {
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to filter results by the certificate name.
-
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `ids` - (Optional, Available in 1.52.0+) A list of cert IDs.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of cert IDs.
+* `names` - A list of cert names. 
 * `certificates` - A list of apis. Each element contains the following attributes:
   * `id` - The cert's id.
   * `name` - The cert's name.
