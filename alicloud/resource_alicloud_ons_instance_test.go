@@ -17,6 +17,10 @@ func init() {
 	resource.AddTestSweepers("alicloud_ons_instance", &resource.Sweeper{
 		Name: "alicloud_ons_instance",
 		F:    testSweepOnsInstance,
+		Dependencies: []string{
+			"alicloud_ons_topic",
+			"alicloud_ons_group",
+		},
 	})
 }
 
