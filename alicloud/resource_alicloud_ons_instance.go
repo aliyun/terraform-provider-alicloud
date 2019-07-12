@@ -3,6 +3,8 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform/helper/resource"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -148,16 +150,25 @@ func resourceAlicloudOnsInstanceDelete(d *schema.ResourceData, meta interface{})
 	request.InstanceId = d.Id()
 	request.PreventCache = onsService.GetPreventCache()
 
-	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsInstanceDelete(request)
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
+			return onsClient.OnsInstanceDelete(request)
+		})
+		if err != nil {
+			if IsExceptedError(err, OnsInstanceNotEmpty) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{OnsInstanceNotExist}) {
+		if IsExceptedError(err, OnsInstanceNotExist) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
 
 	return WrapError(onsService.WaitForOnsInstance(d.Id(), Deleted, DefaultTimeoutMedium))
 }
