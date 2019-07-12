@@ -35,6 +35,7 @@ output "first_db_instance_id" {
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to filter results by instance name.
+* `ids` - (Optional, Available 1.52.0+) A list of RDS instance IDs. 
 * `engine` - (Optional) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL` and `PPAS`. If no value is specified, all types are returned.
 * `status` - (Optional) Status of the instance.
 * `db_type` - (Optional) `Primary` for primary instance, `ReadOnly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
@@ -48,6 +49,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - A list of RDS instance IDs. 
+* `names` - A list of RDS instance names. 
 * `instances` - A list of RDS instances. Each element contains the following attributes:
   * `id` - The ID of the RDS instance.
   * `name` - The name of the RDS instance.

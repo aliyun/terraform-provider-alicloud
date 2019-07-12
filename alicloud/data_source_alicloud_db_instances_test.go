@@ -18,6 +18,14 @@ func TestAccAlicloudDBInstancesDataSource(t *testing.T) {
 			"name_regex": `"^test1234"`,
 		}),
 	}
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+			"ids": `[ "${alicloud_db_instance.default.id}" ]`,
+		}),
+		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
+			"ids": `[ "${alicloud_db_instance.default.id}-fake" ]`,
+		}),
+	}
 
 	engineConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
@@ -70,17 +78,21 @@ func TestAccAlicloudDBInstancesDataSource(t *testing.T) {
 			"vswitch_id": `"${alicloud_db_instance.default.vswitch_id}"`,
 			"engine":     `"${alicloud_db_instance.default.engine}"`,
 			"vpc_id":     `"${alicloud_vswitch.default.vpc_id}"`,
+			"ids":        `[ "${alicloud_db_instance.default.id}" ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand, map[string]string{
 			"name_regex": `"${alicloud_db_instance.default.instance_name}"`,
 			"vswitch_id": `"${alicloud_db_instance.default.vswitch_id}"`,
 			"vpc_id":     `"${alicloud_vswitch.default.vpc_id}"`,
 			"engine":     `"SQLServer"`,
+			"ids":        `[ "${alicloud_db_instance.default.id}" ]`,
 		}),
 	}
 
 	var existDBInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
+			"ids.#":                         "1",
+			"names.#":                       "1",
 			"instances.#":                   "1",
 			"instances.0.id":                CHECKSET,
 			"instances.0.name":              fmt.Sprintf("tf-testAccDBInstanceConfig_%d", rand),
@@ -103,6 +115,8 @@ func TestAccAlicloudDBInstancesDataSource(t *testing.T) {
 	var fakeDBInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"instances.#": "0",
+			"ids.#":       "0",
+			"names.#":     "0",
 		}
 	}
 
@@ -112,7 +126,7 @@ func TestAccAlicloudDBInstancesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeDBInstanceMapFunc,
 	}
 
-	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, nameConf, engineConf, vpc_idConf, vswitch_idConf, allConf)
+	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, nameConf, idsConf, engineConf, vpc_idConf, vswitch_idConf, allConf)
 }
 
 func testAccCheckAlicloudDBInstanceDataSourceConfig_mysql(rand int, attrMap map[string]string) string {
