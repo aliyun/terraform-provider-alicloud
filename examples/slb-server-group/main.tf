@@ -88,6 +88,7 @@ resource "alicloud_slb_server_group" "group" {
     weight     = 10
     type       = "eni"
   }
+  depends_on = ["alicloud_network_interface_attachment.default"]
 }
 
 resource "alicloud_slb_listener" "tcp" {
