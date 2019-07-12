@@ -45,6 +45,7 @@ The following arguments are supported:
 * `is_default` - (Optional, type: bool) Indicate whether the VSwitch is created by the system.
 * `vpc_id` - (Optional) ID of the VPC that owns the VSwitch.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `ids` - (Optional, Available in 1.52.0+) A list of VSwitch IDs.
 
 ## Attributes Reference
 

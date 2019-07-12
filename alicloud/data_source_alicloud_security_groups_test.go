@@ -20,6 +20,15 @@ func TestAccAlicloudSecurityGroupsDataSourceBasic(t *testing.T) {
 		}),
 	}
 
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
+			"ids": `[ "${alicloud_security_group.default.id}" ]`,
+		}),
+		fakeConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
+			"ids": `[ "${alicloud_security_group.default.id}_fake" ]`,
+		}),
+	}
+
 	vpcIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_security_group.default.name}"`,
@@ -53,6 +62,7 @@ func TestAccAlicloudSecurityGroupsDataSourceBasic(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_security_group.default.name}"`,
+			"ids":        `[ "${alicloud_security_group.default.id}" ]`,
 			"vpc_id":     `"${alicloud_security_group.default.vpc_id}"`,
 			"tags": `{
                          from = "datasource"
@@ -62,6 +72,7 @@ func TestAccAlicloudSecurityGroupsDataSourceBasic(t *testing.T) {
 		}),
 		fakeConfig: testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_security_group.default.name}_fake"`,
+			"ids":        `[ "${alicloud_security_group.default.id}" ]`,
 			"vpc_id":     `"${alicloud_security_group.default.vpc_id}"`,
 			"tags": `{
                          from = "datasource"
@@ -71,7 +82,7 @@ func TestAccAlicloudSecurityGroupsDataSourceBasic(t *testing.T) {
 		}),
 	}
 
-	securityGroupsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, vpcIdConf, tagsConf, allConf)
+	securityGroupsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, vpcIdConf, tagsConf, allConf)
 }
 
 func testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand int, attrMap map[string]string) string {

@@ -23,6 +23,14 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 			"name_regex": fmt.Sprintf(`"tf-testAccVpcsdatasource%d_fake"`, rand),
 		}),
 	}
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
+			"ids": `[ "${alicloud_vpc.default.id}" ]`,
+		}),
+		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
+			"ids": `[ "${alicloud_vpc.default.id}_fake" ]`,
+		}),
+	}
 	cidrBlockConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${var.name}"`,
@@ -67,6 +75,7 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${var.name}"`,
+			"ids":        `[ "${alicloud_vpc.default.id}" ]`,
 			"cidr_block": `"172.16.0.0/12"`,
 			"status":     `"Available"`,
 			"is_default": `"false"`,
@@ -74,6 +83,7 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 		}),
 		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${var.name}"`,
+			"ids":        `[ "${alicloud_vpc.default.id}" ]`,
 			"cidr_block": `"172.16.0.0/16"`,
 			"status":     `"Available"`,
 			"is_default": `"false"`,
@@ -81,7 +91,7 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 		}),
 	}
 
-	vpcsCheckInfo.dataSourceTestCheck(t, rand, initVswitchConf, nameRegexConf, cidrBlockConf, statusConf, idDefaultConf, vswitchIdConf, allConf)
+	vpcsCheckInfo.dataSourceTestCheck(t, rand, initVswitchConf, nameRegexConf, idsConf, cidrBlockConf, statusConf, idDefaultConf, vswitchIdConf, allConf)
 }
 
 func testAccCheckAlicloudVpcsDataSourceConfig(rand int, attrMap map[string]string) string {

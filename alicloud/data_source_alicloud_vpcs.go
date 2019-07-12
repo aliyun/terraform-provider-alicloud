@@ -1,12 +1,11 @@
 package alicloud
 
 import (
-	"regexp"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"regexp"
 )
 
 func dataSourceAlicloudVpcs() *schema.Resource {
@@ -46,7 +45,7 @@ func dataSourceAlicloudVpcs() *schema.Resource {
 			},
 			"ids": {
 				Type:     schema.TypeList,
-				Computed: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"names": {
@@ -158,10 +157,25 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 		r = regexp.MustCompile(nameRegex.(string))
 	}
 
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[Trim(vv.(string))] = Trim(vv.(string))
+		}
+	}
+
 	for _, v := range allVpcs {
 		if r != nil && !r.MatchString(v.VpcName) {
 			continue
 		}
+
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[v.VpcId]; !ok {
+				continue
+			}
+		}
+
 		if cidrBlock, ok := d.GetOk("cidr_block"); ok && v.CidrBlock != cidrBlock.(string) {
 			continue
 		}
