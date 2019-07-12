@@ -12,7 +12,7 @@ type CdnService struct {
 	client *connectivity.AliyunClient
 }
 
-func (c *CdnService) DescribeCdnDomain(id string) (*cdn.GetDomainDetailModel, error) {
+func (c *CdnService) DescribeCdnDomainNew(id string) (*cdn.GetDomainDetailModel, error) {
 	request := cdn.CreateDescribeCdnDomainDetailRequest()
 	request.DomainName = id
 
@@ -21,31 +21,40 @@ func (c *CdnService) DescribeCdnDomain(id string) (*cdn.GetDomainDetailModel, er
 	})
 
 	if err != nil {
+		if IsExceptedError(err, InvalidDomainNotFound) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	domain, _ := raw.(*cdn.DescribeCdnDomainDetailResponse)
 	addDebug(request.GetActionName(), raw)
+	domain, _ := raw.(*cdn.DescribeCdnDomainDetailResponse)
 	if domain.GetDomainDetailModel.DomainName != id {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("cdn_domain", id)), NotFoundMsg, ProviderERROR)
 	}
 	return &domain.GetDomainDetailModel, nil
 }
 
-func (c *CdnService) DescribeDomainConfig(id string) (*cdn.DomainConfig, error) {
-	strs := strings.Split(id, ":")
+func (c *CdnService) DescribeCdnDomainConfig(id string) (*cdn.DomainConfig, error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != err {
+		return nil, WrapError(err)
+	}
 	request := cdn.CreateDescribeCdnDomainConfigsRequest()
-	request.DomainName = strs[0]
+	request.DomainName = parts[0]
 
 	raw, err := c.client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
 		return cdnClient.DescribeCdnDomainConfigs(request)
 	})
 	if err != nil {
+		if IsExceptedError(err, InvalidDomainNotFound) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	configs, _ := raw.(*cdn.DescribeCdnDomainConfigsResponse)
 	addDebug(request.GetActionName(), raw)
-	for _, value := range configs.DomainConfigs.DomainConfig {
-		if value.FunctionName == strs[1] {
+	response, _ := raw.(*cdn.DescribeCdnDomainConfigsResponse)
+	for _, value := range response.DomainConfigs.DomainConfig {
+		if value.FunctionName == parts[1] {
 			return &value, nil
 		}
 	}
@@ -54,23 +63,61 @@ func (c *CdnService) DescribeDomainConfig(id string) (*cdn.DomainConfig, error) 
 }
 
 func (c *CdnService) WaitForCdnDomain(id string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	time.Sleep(DefaultIntervalShort * time.Second)
 
 	for {
-		domain, err := c.DescribeCdnDomain(id)
-		if err != nil && !IsExceptedError(err, InvalidDomainNotFound) {
+		domain, err := c.DescribeCdnDomainNew(id)
+		if err != nil {
+			if NotFoundError(err) && status == Deleted {
+				break
+			}
 			return WrapError(err)
 		}
-		if domain != nil && domain.DomainStatus == string(status) {
+		if domain.DomainStatus == string(status) {
 			break
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return WrapError(GetTimeErrorFromString(GetTimeoutMessage("Domain", string(status))))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, domain.DomainStatus, status, ProviderERROR)
 		}
+	}
+	return nil
+}
+
+func (c *CdnService) DescribeDomainCertificateInfo(id string) (certInfo cdn.CertInfo, err error) {
+	request := cdn.CreateDescribeDomainCertificateInfoRequest()
+	request.DomainName = id
+	raw, err := c.client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
+		return cdnClient.DescribeDomainCertificateInfo(request)
+	})
+	if err != nil {
+		return certInfo, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*cdn.DescribeDomainCertificateInfoResponse)
+	if len(response.CertInfos.CertInfo) <= 0 {
+		return certInfo, WrapErrorf(Error(GetNotFoundMessage("DomainCertificateInfo", id)), NotFoundMsg, ProviderERROR)
+	}
+	certInfo = response.CertInfos.CertInfo[0]
+	return
+}
+
+func (c *CdnService) WaitForServerCertificateNew(id string, serverCertificate string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		certInfo, err := c.DescribeDomainCertificateInfo(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		if strings.TrimSpace(certInfo.ServerCertificate) == strings.TrimSpace(serverCertificate) {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, strings.TrimSpace(certInfo.ServerCertificate), strings.TrimSpace(serverCertificate), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 	return nil
 }

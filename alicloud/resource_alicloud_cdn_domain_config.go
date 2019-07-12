@@ -3,7 +3,6 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -52,6 +51,7 @@ func resourceAlicloudCdnDomainConfig() *schema.Resource {
 
 func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	cdnService := &CdnService{client: client}
 
 	config := make([]map[string]interface{}, 1)
 	functionArgs := d.Get("function_args").([]interface{})
@@ -82,8 +82,7 @@ func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 
 	d.SetId(fmt.Sprintf("%s:%s", request.DomainNames, d.Get("function_name").(string)))
 
-	cdnservice := &CdnService{client: client}
-	err = cdnservice.WaitForCdnDomain(d.Get("domain_name").(string), Online, DefaultTimeoutMedium)
+	err = cdnService.WaitForCdnDomain(d.Get("domain_name").(string), Online, DefaultTimeoutMedium)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -92,11 +91,12 @@ func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 
 func resourceAlicloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	cdnService := &CdnService{client: client}
 
-	cdnservice := &CdnService{client: client}
-	config, err := cdnservice.DescribeDomainConfig(d.Id())
+	config, err := cdnService.DescribeCdnDomainConfig(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
@@ -118,9 +118,9 @@ func resourceAlicloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{
 func resourceAlicloudCdnDomainConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	cdnservice := &CdnService{client: client}
+	cdnService := &CdnService{client: client}
 	request := cdn.CreateDeleteSpecificConfigRequest()
-	config, err := cdnservice.DescribeDomainConfig(d.Id())
+	config, err := cdnService.DescribeCdnDomainConfig(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
@@ -134,8 +134,11 @@ func resourceAlicloudCdnDomainConfigDelete(d *schema.ResourceData, meta interfac
 		return cdnClient.DeleteSpecificConfig(request)
 	})
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
-	return nil
+	return WrapError(cdnService.WaitForCdnDomain(d.Id(), Deleted, DefaultTimeout))
 }
