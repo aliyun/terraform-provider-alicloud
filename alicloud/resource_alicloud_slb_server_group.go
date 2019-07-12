@@ -44,7 +44,6 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 							Type:     schema.TypeList,
 							Required: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
-							MaxItems: 20,
 							MinItems: 1,
 						},
 						"port": {
@@ -66,8 +65,6 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 						},
 					},
 				},
-				MaxItems: 20,
-				MinItems: 0,
 			},
 		},
 	}
@@ -80,9 +77,6 @@ func resourceAliyunSlbServerGroupCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("name"); ok {
 		request.VServerGroupName = v.(string)
 	}
-	if v, ok := d.GetOk("servers"); ok {
-		request.BackendServers = expandBackendServersWithPortToString(v.(*schema.Set).List())
-	}
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.CreateVServerGroup(request)
 	})
@@ -93,7 +87,7 @@ func resourceAliyunSlbServerGroupCreate(d *schema.ResourceData, meta interface{}
 	response, _ := raw.(*slb.CreateVServerGroupResponse)
 	d.SetId(response.VServerGroupId)
 
-	return resourceAliyunSlbServerGroupRead(d, meta)
+	return resourceAliyunSlbServerGroupUpdate(d, meta)
 }
 
 func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) error {
@@ -154,67 +148,163 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
-
-	name := d.Get("name").(string)
-	update := false
-
-	if d.HasChange("name") {
-		d.SetPartial("name")
-		update = true
-	}
-
+	var removeserverSet, addServerSet, updateServerSet *schema.Set
+	serverUpdate := false
+	step := 20
 	if d.HasChange("servers") {
 		o, n := d.GetChange("servers")
 		os := o.(*schema.Set)
 		ns := n.(*schema.Set)
 		remove := os.Difference(ns).List()
 		add := ns.Difference(os).List()
-
-		if len(remove) > 0 {
+		oldIdPort := getIdPortSetFromServers(remove)
+		newIdPort := getIdPortSetFromServers(add)
+		updateServerSet = oldIdPort.Intersection(newIdPort)
+		removeserverSet = oldIdPort.Difference(newIdPort)
+		addServerSet = newIdPort.Difference(oldIdPort)
+		if removeserverSet.Len() > 0 {
+			rmservers := make([]interface{}, 0)
+			for _, rmserver := range remove {
+				rms := rmserver.(map[string]interface{})
+				if v, ok := rms["server_ids"]; ok {
+					server_ids := v.([]interface{})
+					for _, id := range server_ids {
+						idPort := fmt.Sprintf("%s:%d", id, rms["port"])
+						if removeserverSet.Contains(idPort) {
+							rmsm := map[string]interface{}{
+								"server_id": id,
+								"port":      rms["port"],
+								"type":      rms["type"],
+								"weight":    rms["weight"],
+							}
+							rmservers = append(rmservers, rmsm)
+						}
+					}
+				}
+			}
 			request := slb.CreateRemoveVServerGroupBackendServersRequest()
 			request.VServerGroupId = d.Id()
-			request.BackendServers = expandBackendServersWithPortToString(remove)
-			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-				return slbClient.RemoveVServerGroupBackendServers(request)
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			segs := len(rmservers)/step + 1
+			for i := 0; i < segs; i++ {
+				start := i * step
+				end := (i + 1) * step
+				if end >= len(rmservers) {
+					end = len(rmservers)
+				}
+				request.BackendServers = expandBackendServersWithPortToString(rmservers[start:end])
+				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+					return slbClient.RemoveVServerGroupBackendServers(request)
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+				addDebug(request.GetActionName(), raw)
+				d.SetPartial("servers")
 			}
-			addDebug(request.GetActionName(), raw)
 		}
-		if len(add) > 0 {
+		if addServerSet.Len() > 0 {
+			addservers := make([]interface{}, 0)
+			for _, addserver := range add {
+				adds := addserver.(map[string]interface{})
+				if v, ok := adds["server_ids"]; ok {
+					server_ids := v.([]interface{})
+					for _, id := range server_ids {
+						idPort := fmt.Sprintf("%s:%d", id, adds["port"])
+						if addServerSet.Contains(idPort) {
+							addsm := map[string]interface{}{
+								"server_id": id,
+								"port":      adds["port"],
+								"type":      adds["type"],
+								"weight":    adds["weight"],
+							}
+							addservers = append(addservers, addsm)
+						}
+					}
+				}
+			}
 			request := slb.CreateAddVServerGroupBackendServersRequest()
 			request.VServerGroupId = d.Id()
-			request.BackendServers = expandBackendServersWithPortToString(add)
-			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-				return slbClient.AddVServerGroupBackendServers(request)
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			segs := len(addservers)/step + 1
+			for i := 0; i < segs; i++ {
+				start := i * step
+				end := (i + 1) * step
+				if end >= len(addservers) {
+					end = len(addservers)
+				}
+
+				request.BackendServers = expandBackendServersWithPortToString(addservers[start:end])
+				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+					return slbClient.AddVServerGroupBackendServers(request)
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+				addDebug(request.GetActionName(), raw)
+				d.SetPartial("servers")
 			}
-			addDebug(request.GetActionName(), raw)
 		}
-		if len(add) < 1 && len(remove) < 1 {
-			update = true
-		}
-
-		d.SetPartial("servers")
 	}
-
-	if update {
+	name := d.Get("name").(string)
+	nameUpdate := false
+	if d.HasChange("name") {
+		nameUpdate = true
+	}
+	if d.HasChange("servers") {
+		serverUpdate = true
+	}
+	if serverUpdate || nameUpdate {
 		request := slb.CreateSetVServerGroupAttributeRequest()
 		request.VServerGroupId = d.Id()
 		request.VServerGroupName = name
-		request.BackendServers = expandBackendServersWithPortToString(d.Get("servers").(*schema.Set).List())
-		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.SetVServerGroupAttribute(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		if serverUpdate {
+			servers := make([]interface{}, 0)
+			for _, server := range d.Get("servers").(*schema.Set).List() {
+				s := server.(map[string]interface{})
+				if v, ok := s["server_ids"]; ok {
+					server_ids := v.([]interface{})
+					for _, id := range server_ids {
+						idPort := fmt.Sprintf("%s:%d", id, s["port"])
+						if updateServerSet.Contains(idPort) {
+							sm := map[string]interface{}{
+								"server_id": id,
+								"port":      s["port"],
+								"type":      s["type"],
+								"weight":    s["weight"],
+							}
+							servers = append(servers, sm)
+						}
+					}
+				}
+			}
+			segs := len(servers)/step + 1
+			for i := 0; i < segs; i++ {
+				start := i * step
+				end := (i + 1) * step
+				if end >= len(servers) {
+					end = len(servers)
+				}
+				request.BackendServers = expandBackendServersWithPortToString(servers[start:end])
+				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+					return slbClient.SetVServerGroupAttribute(request)
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+				addDebug(request.GetActionName(), raw)
+				d.SetPartial("servers")
+				d.SetPartial("name")
+			}
+		} else {
+			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+				return slbClient.SetVServerGroupAttribute(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw)
+			d.SetPartial("name")
 		}
-		addDebug(request.GetActionName(), raw)
 	}
-
 	d.Partial(false)
 
 	return resourceAliyunSlbServerGroupRead(d, meta)

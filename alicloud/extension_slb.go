@@ -3,6 +3,8 @@ package alicloud
 import (
 	"fmt"
 	"strings"
+
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 type SchedulerType string
@@ -118,10 +120,7 @@ func expandBackendServersWithPortToString(items []interface{}) string {
 
 		var server_ids []interface{}
 		var port, weight int
-		var server_type string
-		if v, ok := s["server_ids"]; ok {
-			server_ids = v.([]interface{})
-		}
+		var server_type, server_id string
 		if v, ok := s["port"]; ok {
 			port = v.(int)
 		}
@@ -131,13 +130,35 @@ func expandBackendServersWithPortToString(items []interface{}) string {
 		if v, ok := s["type"]; ok {
 			server_type = v.(string)
 		}
-		for _, id := range server_ids {
-			str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d', 'Type': '%s'}", strings.Trim(id.(string), " "), port, weight, strings.Trim(server_type, " "))
+		if v, ok := s["server_id"]; ok {
+			server_id = v.(string)
+			str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d', 'Type': '%s'}", strings.Trim(server_id, " "), port, weight, strings.Trim(server_type, " "))
 			servers = append(servers, str)
+		}
+		if v, ok := s["server_ids"]; ok {
+			server_ids = v.([]interface{})
+			for _, id := range server_ids {
+				str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d', 'Type': '%s'}", strings.Trim(id.(string), " "), port, weight, strings.Trim(server_type, " "))
+				servers = append(servers, str)
+			}
 		}
 
 	}
 	return fmt.Sprintf("[%s]", strings.Join(servers, COMMA_SEPARATED))
+}
+
+func getIdPortSetFromServers(items []interface{}) *schema.Set {
+	rmIdPort := make([]interface{}, 0)
+	for _, item := range items {
+		server := item.(map[string]interface{})
+		if v, ok := server["server_ids"]; ok {
+			server_ids := v.([]interface{})
+			for _, id := range server_ids {
+				rmIdPort = append(rmIdPort, fmt.Sprintf("%s:%d", id, server["port"]))
+			}
+		}
+	}
+	return schema.NewSet(schema.HashString, rmIdPort)
 }
 
 func getLoadBalancerSpecOrder(spec string) int {
