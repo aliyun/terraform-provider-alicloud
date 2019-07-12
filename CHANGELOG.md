@@ -2,7 +2,17 @@
 
 IMPROVEMENTS:
 
+- improve(vpc):add ids filter [GH-1420]
+- docs(format): Convert inline HCL configs to canonical format [GH-1415]
+- improve(gpdb_instance):add vpc name [GH-1413]
 - improve(provider): add a new parameter `skip_region_validation` in the provider config [GH-1404]
+- improve(rds): resource db_instance support update for instance_charge_type [GH-1389]
+
+BUG FIXES:
+
+- fix(api_gateway): modified the testcase to avoid errors [GH-1410]
+- fix(db_readonly_instance): extend the waiting time for spec modification [GH-1408]
+- fix(db_readonly_instance): add retryable error content in instance spec modification and deletion [GH-1403]
 
 ## 1.51.0 (July 08, 2019)
 
