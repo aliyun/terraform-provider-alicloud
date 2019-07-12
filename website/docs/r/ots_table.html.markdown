@@ -20,35 +20,35 @@ variable "name" {
   default = "terraformtest"
 }
 resource "alicloud_ots_instance" "foo" {
-  name = "${var.name}"
+  name        = "${var.name}"
   description = "${var.name}"
   accessed_by = "Any"
   tags = {
     Created = "TF"
-    For = "acceptance test"
+    For     = "acceptance test"
   }
 }
 
 resource "alicloud_ots_table" "basic" {
   instance_name = "${alicloud_ots_instance.foo.name}"
-  table_name = "${var.name}"
+  table_name    = "${var.name}"
   primary_key = [
-  {
-    name = "pk1"
-    type = "Integer"
-  },
-  {
-    name = "pk2"
-    type = "String"
-  },
-  {
-    name = "pk3"
-    type = "Binary"
-  },
+    {
+      name = "pk1"
+      type = "Integer"
+    },
+    {
+      name = "pk2"
+      type = "String"
+    },
+    {
+      name = "pk3"
+      type = "Binary"
+    },
   ]
-  
-  time_to_live = -1
-  max_version = 1
+
+  time_to_live                  = -1
+  max_version                   = 1
   deviation_cell_version_in_sec = 1
 }
 ```

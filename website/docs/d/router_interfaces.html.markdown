@@ -15,8 +15,8 @@ that connect VPCs together.
 
 ```
 data "alicloud_router_interfaces" "router_interfaces_ds" {
-	name_regex = "^testenv"
-	status = "Active"
+  name_regex = "^testenv"
+  status     = "Active"
 }
 
 output "first_router_interface_id" {

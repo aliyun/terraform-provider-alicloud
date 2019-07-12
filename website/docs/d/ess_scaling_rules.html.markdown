@@ -14,9 +14,9 @@ This data source provides available scaling rule resources.
 
 ```
 data "alicloud_ess_scaling_rules" "scalingrules_ds" {
-    scaling_group_id = "scaling_group_id"
-	ids = ["scaling_rule_id1","scaling_rule_id2"]
-	name_regex = "scaling_rule_name"
+  scaling_group_id = "scaling_group_id"
+  ids              = ["scaling_rule_id1", "scaling_rule_id2"]
+  name_regex       = "scaling_rule_name"
 }
 
 output "first_scaling_rule" {

@@ -20,63 +20,63 @@ Provides a CDN Accelerated Domain resource.
 # Add a CDN Accelerated Domain with configs.
 resource "alicloud_cdn_domain" "domain" {
   domain_name = "${your_cdn_domain_name}"
-  cdn_type = "web"
+  cdn_type    = "web"
   source_type = "domain"
-  sources = ["${your_cdn_domain_source1}", "${your_cdn_domain_source2}"]
+  sources     = ["${your_cdn_domain_source1}", "${your_cdn_domain_source2}"]
 
   // configs
-  optimize_enable = "off"
+  optimize_enable      = "off"
   page_compress_enable = "off"
-  range_enable = "off"
-  video_seek_enable = "off"
-  block_ips = ["1.2.3.4", "111.222.111.111"]
+  range_enable         = "off"
+  video_seek_enable    = "off"
+  block_ips            = ["1.2.3.4", "111.222.111.111"]
   parameter_filter_config = [
     {
-      enable = "on"
+      enable        = "on"
       hash_key_args = ["hello", "youyouyou"]
-    }]
+  }]
   page_404_config = [
     {
-      page_type = "other"
+      page_type       = "other"
       custom_page_url = "http://${your_cdn_domain_name}/notfound/"
-    }]
+  }]
   refer_config = [
     {
-      refer_type = "block"
-      refer_list = ["www.xxxx.com", "www.xxxx.cn"]
+      refer_type  = "block"
+      refer_list  = ["www.xxxx.com", "www.xxxx.cn"]
       allow_empty = "off"
-    }]
+  }]
   auth_config = [
     {
-      auth_type = "type_a"
+      auth_type  = "type_a"
       master_key = "helloworld1"
-      slave_key = "helloworld2"
-    }]
+      slave_key  = "helloworld2"
+  }]
   http_header_config = [
     {
-      header_key = "Content-Type",
+      header_key   = "Content-Type",
       header_value = "text/plain"
     },
     {
-      header_key = "Access-Control-Allow-Origin",
+      header_key   = "Access-Control-Allow-Origin",
       header_value = "*"
-    }]
+  }]
   cache_config = [
     {
       cache_content = "/hello/world",
-      ttl = 1000
-      cache_type = "path"
+      ttl           = 1000
+      cache_type    = "path"
     },
     {
       cache_content = "/hello/world/youyou",
-      ttl = 1000
-      cache_type = "path"
+      ttl           = 1000
+      cache_type    = "path"
     },
     {
       cache_content = "txt,jpg,png",
-      ttl = 2000
-      cache_type = "suffix"
-    }]
+      ttl           = 2000
+      cache_type    = "suffix"
+  }]
 }
 ```
 ## Argument Reference

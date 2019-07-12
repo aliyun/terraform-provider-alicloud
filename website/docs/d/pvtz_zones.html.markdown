@@ -14,7 +14,7 @@ This data source lists a number of Private Zones resource information owned by a
 
 ```
 data "alicloud_pvtz_zones" "pvtz_zones_ds" {
-	keyword = "${alicloud_pvtz_zone.basic.zone_name}"
+  keyword = "${alicloud_pvtz_zone.basic.zone_name}"
 }
 
 output "first_zone_id" {

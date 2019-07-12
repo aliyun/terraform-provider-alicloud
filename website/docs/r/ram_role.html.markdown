@@ -17,7 +17,7 @@ Provides a RAM Role resource.
 ```
 # Create a new RAM Role.
 resource "alicloud_ram_role" "role" {
-  name = "testrole"
+  name     = "testrole"
   document = <<EOF
   {
     "Statement": [

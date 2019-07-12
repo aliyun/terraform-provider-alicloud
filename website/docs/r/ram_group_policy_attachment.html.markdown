@@ -15,13 +15,13 @@ Provides a RAM Group Policy attachment resource.
 ```
 # Create a RAM Group Policy attachment.
 resource "alicloud_ram_group" "group" {
-  name = "groupName"
+  name     = "groupName"
   comments = "this is a group comments."
-  force = true
+  force    = true
 }
 
 resource "alicloud_ram_policy" "policy" {
-  name = "policyName"
+  name     = "policyName"
   document = <<EOF
     {
       "Statement": [

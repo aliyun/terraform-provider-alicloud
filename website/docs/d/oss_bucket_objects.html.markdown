@@ -15,7 +15,7 @@ This data source provides the objects of an OSS bucket.
 ```
 data "alicloud_oss_bucket_objects" "bucket_objects_ds" {
   bucket_name = "sample_bucket"
-  key_regex = "sample/sample_object.txt"
+  key_regex   = "sample/sample_object.txt"
 }
 
 output "first_object_key" {

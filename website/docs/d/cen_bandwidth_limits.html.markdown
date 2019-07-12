@@ -13,8 +13,8 @@ This data source provides CEN Bandwidth Limits available to the user.
 ## Example Usage
 
 ```
-data "alicloud_cen_bandwidth_limits" "bwl"{
-	instance_ids = ["cen-id1"]
+data "alicloud_cen_bandwidth_limits" "bwl" {
+  instance_ids = ["cen-id1"]
 }
 
 output "first_cen_bandwidth_limits_local_region_id" {

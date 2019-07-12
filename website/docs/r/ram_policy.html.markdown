@@ -18,7 +18,7 @@ Provides a RAM Policy resource.
 ```
 # Create a new RAM Policy.
 resource "alicloud_ram_policy" "policy" {
-  name = "policyName"
+  name     = "policyName"
   document = <<EOF
   {
     "Statement": [

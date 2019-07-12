@@ -15,9 +15,9 @@ This data source provides a list of RAM policies in an Alibaba Cloud account acc
 ```
 data "alicloud_ram_policies" "policies_ds" {
   output_file = "policies.txt"
-  user_name = "user1"
-  group_name = "group1"
-  type = "System"
+  user_name   = "user1"
+  group_name  = "group1"
+  type        = "System"
 }
 
 output "first_policy_name" {

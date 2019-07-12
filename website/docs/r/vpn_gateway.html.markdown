@@ -20,12 +20,12 @@ Basic Usage
 
 ```
 resource "alicloud_vpn_gateway" "foo" {
-    name = "vpnGatewayConfig"
-    vpc_id = "vpc-fakeid"
-    bandwidth = "10"
-    enable_ssl = true
-    instance_charge_type = "PostPaid"
-    description = "test_create_description"
+  name                 = "vpnGatewayConfig"
+  vpc_id               = "vpc-fakeid"
+  bandwidth            = "10"
+  enable_ssl           = true
+  instance_charge_type = "PostPaid"
+  description          = "test_create_description"
 }
 ```
 ## Argument Reference

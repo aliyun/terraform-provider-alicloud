@@ -27,52 +27,52 @@ variable "name" {
 }
 variable "ip_version" {
   default = "ipv4"
-}	
+}
 resource "alicloud_slb" "default" {
-  name = "tf-testAccSlbListenerHttp"
+  name                 = "tf-testAccSlbListenerHttp"
   internet_charge_type = "PayByTraffic"
-  internet = true
+  internet             = true
 }
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 80
-  frontend_port = 80
-  protocol = "http"
-  bandwidth = 10
-  sticky_session = "on"
-  sticky_session_type = "insert"
-  cookie_timeout = 86400
-  cookie = "testslblistenercookie"
-  health_check = "on"
-  health_check_domain = "ali.com"
-  health_check_uri = "/cons"
+  load_balancer_id          = "${alicloud_slb.default.id}"
+  backend_port              = 80
+  frontend_port             = 80
+  protocol                  = "http"
+  bandwidth                 = 10
+  sticky_session            = "on"
+  sticky_session_type       = "insert"
+  cookie_timeout            = 86400
+  cookie                    = "testslblistenercookie"
+  health_check              = "on"
+  health_check_domain       = "ali.com"
+  health_check_uri          = "/cons"
   health_check_connect_port = 20
-  healthy_threshold = 8
-  unhealthy_threshold = 8
-  health_check_timeout = 8
-  health_check_interval = 5
-  health_check_http_code = "http_2xx,http_3xx"
+  healthy_threshold         = 8
+  unhealthy_threshold       = 8
+  health_check_timeout      = 8
+  health_check_interval     = 5
+  health_check_http_code    = "http_2xx,http_3xx"
   x_forwarded_for {
     retrive_slb_ip = true
     retrive_slb_id = true
   }
-  acl_status = "on"
-  acl_type   = "white"
-  acl_id     = "${alicloud_slb_acl.default.id}"
-  request_timeout           = 80
-  idle_timeout              = 30
+  acl_status      = "on"
+  acl_type        = "white"
+  acl_id          = "${alicloud_slb_acl.default.id}"
+  request_timeout = 80
+  idle_timeout    = 30
 }
 resource "alicloud_slb_acl" "default" {
-  name = "${var.name}"
+  name       = "${var.name}"
   ip_version = "${var.ip_version}"
   entry_list {
-      entry="10.10.10.0/24"
-      comment="first"
+    entry   = "10.10.10.0/24"
+    comment = "first"
   }
-   entry_list {
-      entry="168.10.10.0/24"
-      comment="second"
-   }
+  entry_list {
+    entry   = "168.10.10.0/24"
+    comment = "second"
+  }
 }
 ```
 

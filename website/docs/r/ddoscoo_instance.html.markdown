@@ -28,13 +28,13 @@ provider "alicloud" {
 }
 
 resource "alicloud_ddoscoo_instance" "newInstance" {
-    name                   = "yourDdoscooInstanceName"
-    bandwidth              = "30"
-    base_bandwidth         = "30"
-    service_bandwidth      = "100"
-    port_count             = "50"
-    domain_count           = "50"
-    period                 = "1"
+  name              = "yourDdoscooInstanceName"
+  bandwidth         = "30"
+  base_bandwidth    = "30"
+  service_bandwidth = "100"
+  port_count        = "50"
+  domain_count      = "50"
+  period            = "1"
 }
 ```
 ## Argument Reference

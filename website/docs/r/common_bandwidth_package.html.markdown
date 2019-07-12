@@ -22,10 +22,10 @@ Basic Usage
 
 ```
 resource "alicloud_common_bandwidth_package" "foo" {
-  bandwidth = "200"
+  bandwidth            = "200"
   internet_charge_type = "PayByBandwidth"
-  name = "test-common-bandwidth-package"
-  description = "test-common-bandwidth-package"
+  name                 = "test-common-bandwidth-package"
+  description          = "test-common-bandwidth-package"
 }
 ```
 ## Argument Reference

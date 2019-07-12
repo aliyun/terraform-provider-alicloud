@@ -14,7 +14,7 @@ This data source provides a list of DNS Domain Groups in an Alibaba Cloud accoun
 
 ```
 data "alicloud_dns_groups" "groups_ds" {
-  name_regex = "^y[A-Za-z]+"
+  name_regex  = "^y[A-Za-z]+"
   output_file = "groups.txt"
 }
 

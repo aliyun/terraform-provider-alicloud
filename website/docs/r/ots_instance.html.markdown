@@ -16,12 +16,12 @@ It is foundation of creating data table.
 ```
 # Create an OTS instance
 resource "alicloud_ots_instance" "foo" {
-  name = "my-ots-instance"
+  name        = "my-ots-instance"
   description = "for table"
   accessed_by = "Vpc"
   tags = {
     Created = "TF"
-    For = "Building table"
+    For     = "Building table"
   }
 }
 ```

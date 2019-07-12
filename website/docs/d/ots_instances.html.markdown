@@ -14,7 +14,7 @@ This data source provides the ots instances of the current Alibaba Cloud user.
 
 ```
 data "alicloud_ots_instances" "instances_ds" {
-  name_regex = "sample-instance"
+  name_regex  = "sample-instance"
   output_file = "instances.txt"
 }
 

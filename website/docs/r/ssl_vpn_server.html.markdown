@@ -18,23 +18,23 @@ Basic Usage
 
 ```
 resource "alicloud_vpn_gateway" "foo" {
-	name = "testAccVpnConfig_create"
-	vpc_id = "vpc-fake-id"
-	bandwidth = "10"
-	enable_ssl = true
-	instance_charge_type = "PostPaid"
-	description = "test_create_description"
+  name                 = "testAccVpnConfig_create"
+  vpc_id               = "vpc-fake-id"
+  bandwidth            = "10"
+  enable_ssl           = true
+  instance_charge_type = "PostPaid"
+  description          = "test_create_description"
 }
 
 resource "alicloud_ssl_vpn_server" "foo" {
-	name = "sslVpnServerNameExample"
-	vpn_gateway_id = "${alicloud_vpn_gateway.foo.id}"
-	client_ip_pool = "192.168.0.0/16"
-	local_subnet = "172.16.0.0/21"
-	protocol = "UDP"
-	cipher = "AES-128-CBC"
-	port = 1194
-	compress = "false"
+  name           = "sslVpnServerNameExample"
+  vpn_gateway_id = "${alicloud_vpn_gateway.foo.id}"
+  client_ip_pool = "192.168.0.0/16"
+  local_subnet   = "172.16.0.0/21"
+  protocol       = "UDP"
+  cipher         = "AES-128-CBC"
+  port           = 1194
+  compress       = "false"
 }
 ```
 ## Argument Reference

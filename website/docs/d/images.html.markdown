@@ -15,7 +15,7 @@ other public images and the ones available on the image market.
 
 ```
 data "alicloud_images" "images_ds" {
-  owners = "system"
+  owners     = "system"
   name_regex = "^centos_6"
 }
 

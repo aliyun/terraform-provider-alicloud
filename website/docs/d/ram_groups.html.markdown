@@ -15,8 +15,8 @@ This data source provides a list of RAM Groups in an Alibaba Cloud account accor
 ```
 data "alicloud_ram_groups" "groups_ds" {
   output_file = "groups.txt"
-  user_name = "user1"
-  name_regex = "^group[0-9]*"
+  user_name   = "user1"
+  name_regex  = "^group[0-9]*"
 }
 
 output "first_group_name" {

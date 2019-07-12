@@ -14,9 +14,9 @@ This data source provides available scaling configuration resources.
 
 ```
 data "alicloud_ess_scaling_configurations" "scalingconfigurations_ds" {
-    scaling_group_id = "scaling_group_id"
-    ids = ["scaling_configuration_id1","scaling_configuration_id2"]
-    name_regex = "scaling_configuration_name"
+  scaling_group_id = "scaling_group_id"
+  ids              = ["scaling_configuration_id1", "scaling_configuration_id2"]
+  name_regex       = "scaling_configuration_name"
 }
 
 output "first_scaling_rule" {

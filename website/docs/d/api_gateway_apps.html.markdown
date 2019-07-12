@@ -13,7 +13,7 @@ This data source provides the apps of the current Alibaba Cloud user.
 ## Example Usage
 
 ```
-data "alicloud_api_gateway_apps" "data_apigatway"{
+data "alicloud_api_gateway_apps" "data_apigatway" {
   output_file = "outapps"
 }
 

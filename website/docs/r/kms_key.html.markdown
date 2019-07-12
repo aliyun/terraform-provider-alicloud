@@ -16,9 +16,9 @@ Basic Usage
 
 ```
 resource "alicloud_kms_key" "key" {
-  description = "Hello KMS"
+  description             = "Hello KMS"
   deletion_window_in_days = "7"
-  is_enabled = true
+  is_enabled              = true
 }
 ```
 ## Argument Reference

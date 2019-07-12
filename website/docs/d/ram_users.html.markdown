@@ -15,10 +15,10 @@ This data source provides a list of RAM users in an Alibaba Cloud account accord
 ```
 data "alicloud_ram_users" "users_ds" {
   output_file = "users.txt"
-  group_name = "group1"
+  group_name  = "group1"
   policy_name = "AliyunACSDefaultAccess"
   policy_type = "Custom"
-  name_regex = "^user"
+  name_regex  = "^user"
 }
 
 output "first_user_id" {

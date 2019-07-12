@@ -18,7 +18,7 @@ Basic Usage
 
 ```
 resource "alicloud_pvtz_zone" "foo" {
-	name = "foo.test.com"
+  name = "foo.test.com"
 }
 ```
 ## Argument Reference

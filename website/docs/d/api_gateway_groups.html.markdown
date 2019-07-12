@@ -13,7 +13,7 @@ This data source provides the api groups of the current Alibaba Cloud user.
 ## Example Usage
 
 ```
-data "alicloud_api_gateway_groups" "data_apigatway"{
+data "alicloud_api_gateway_groups" "data_apigatway" {
   output_file = "outgroups"
 }
 

@@ -20,7 +20,7 @@ Basic Usage
 
 ```
 resource "alicloud_api_gateway_app" "apiTest" {
-  name = "ApiGatewayAPp"
+  name        = "ApiGatewayAPp"
   description = "description of the app"
 }
 ```

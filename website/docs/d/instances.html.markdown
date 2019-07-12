@@ -14,8 +14,8 @@ The Instances data source list ECS instance resources according to their ID, nam
 
 ```
 data "alicloud_instances" "instances_ds" {
-	name_regex = "web_server"
-	status = "Running"
+  name_regex = "web_server"
+  status     = "Running"
 }
 
 output "first_instance_id" {

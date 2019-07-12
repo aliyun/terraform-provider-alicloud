@@ -18,49 +18,49 @@ Basic Usage
 
 ```
 # Create a new instance-grant and use it to grant one child instance of account1 to a new CEN of account 2.
-	provider "alicloud" {
-		access_key = "access123"
-		secret_key = "secret123"
-		alias = "account1"
-	}
+provider "alicloud" {
+  access_key = "access123"
+  secret_key = "secret123"
+  alias      = "account1"
+}
 
-	provider "alicloud" {
-		access_key = "access456"
-		secret_key = "secret456"
-		alias = "account2"
-	}
+provider "alicloud" {
+  access_key = "access456"
+  secret_key = "secret456"
+  alias      = "account2"
+}
 
-	variable "name" {
-		default = "tf-testAccCenInstanceGrantBasic"
-	}
+variable "name" {
+  default = "tf-testAccCenInstanceGrantBasic"
+}
 
-	resource "alicloud_cen_instance" "cen" {
-		provider = "alicloud.account2"
-		name = "${var.name}"
-	}
+resource "alicloud_cen_instance" "cen" {
+  provider = "alicloud.account2"
+  name     = "${var.name}"
+}
 
-	resource "alicloud_vpc" "vpc" {
-		provider = "alicloud.account1"
-		name = "${var.name}"
-		cidr_block = "192.168.0.0/16"
-	}
-	
-	resource "alicloud_cen_instance_grant" "example" {
-		provider = "alicloud.account1"
-		cen_id = "${alicloud_cen_instance.cen.id}"
-		child_instance_id = "${alicloud_vpc.vpc.id}"
-		cen_owner_id = "uid2"
-	}
-	
-  resource "alicloud_cen_instance_attachment" "foo" {
-  	provider = "alicloud.account2"
-  	instance_id = "${alicloud_cen_instance.cen.id}"
-  	child_instance_id = "${alicloud_vpc.vpc.id}"
-  	child_instance_region_id = "cn-qingdao"
-  	child_instance_owner_id = "uid1"
-  	depends_on = [
-  		"alicloud_cen_instance_grant.foo"]
-  }
+resource "alicloud_vpc" "vpc" {
+  provider   = "alicloud.account1"
+  name       = "${var.name}"
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_cen_instance_grant" "example" {
+  provider          = "alicloud.account1"
+  cen_id            = "${alicloud_cen_instance.cen.id}"
+  child_instance_id = "${alicloud_vpc.vpc.id}"
+  cen_owner_id      = "uid2"
+}
+
+resource "alicloud_cen_instance_attachment" "foo" {
+  provider                 = "alicloud.account2"
+  instance_id              = "${alicloud_cen_instance.cen.id}"
+  child_instance_id        = "${alicloud_vpc.vpc.id}"
+  child_instance_region_id = "cn-qingdao"
+  child_instance_owner_id  = "uid1"
+  depends_on = [
+  "alicloud_cen_instance_grant.foo"]
+}
 ```
 ## Argument Reference
 

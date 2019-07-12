@@ -15,7 +15,7 @@ This data source provides the rules associated with a server load balancer liste
 ```
 data "alicloud_slb_rules" "sample_ds" {
   load_balancer_id = "${alicloud_slb.sample_slb.id}"
-  frontend_port = 80
+  frontend_port    = 80
 }
 
 output "first_slb_rule_id" {

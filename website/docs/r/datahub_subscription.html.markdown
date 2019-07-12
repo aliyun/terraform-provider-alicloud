@@ -17,8 +17,8 @@ Basic Usage
 ```
 resource "alicloud_datahub_subscription" "example" {
   project_name = "tf_datahub_project"
-  topic_name = "tf_datahub_topic"
-  comment = "created by terraform"
+  topic_name   = "tf_datahub_topic"
+  comment      = "created by terraform"
 }
 ```
 

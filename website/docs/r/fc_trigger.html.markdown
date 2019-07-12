@@ -27,17 +27,17 @@ variable "account" {
 
 provider "alicloud" {
   account_id = "${var.account}"
-  region = "${var.region}"
+  region     = "${var.region}"
 }
 
 resource "alicloud_fc_trigger" "foo" {
-  service = "my-fc-service"
-  function = "hello-world"
-  name = "hello-trigger"
-  role = "${alicloud_ram_role.foo.arn}"
+  service    = "my-fc-service"
+  function   = "hello-world"
+  name       = "hello-trigger"
+  role       = "${alicloud_ram_role.foo.arn}"
   source_arn = "acs:log:${var.region}:${var.account}:project/${alicloud_log_project.foo.name}"
-  type = "log"
-  config = <<EOF
+  type       = "log"
+  config     = <<EOF
     {
         "sourceConfig": {
             "project": "project-for-fc",
@@ -80,11 +80,11 @@ resource "alicloud_ram_role" "foo" {
   }
   EOF
   description = "this is a test"
-  force = true
+  force       = true
 }
 
 resource "alicloud_ram_role_policy_attachment" "foo" {
-  role_name = "${alicloud_ram_role.foo.name}"
+  role_name   = "${alicloud_ram_role.foo.name}"
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }
@@ -102,34 +102,34 @@ data "alicloud_regions" "current_region" {
 data "alicloud_account" "current" {
 }
 resource "alicloud_log_project" "foo" {
-  name = "${var.name}"
+  name        = "${var.name}"
   description = "tf unit test"
 }
 resource "alicloud_log_store" "bar" {
-  project = "${alicloud_log_project.foo.name}"
-  name = "${var.name}-source"
+  project          = "${alicloud_log_project.foo.name}"
+  name             = "${var.name}-source"
   retention_period = "3000"
-  shard_count = 1
+  shard_count      = 1
 }
 resource "alicloud_log_store" "foo" {
-  project = "${alicloud_log_project.foo.name}"
-  name = "${var.name}"
+  project          = "${alicloud_log_project.foo.name}"
+  name             = "${var.name}"
   retention_period = "3000"
-  shard_count = 1
+  shard_count      = 1
 }
 resource "alicloud_mns_topic" "foo" {
   name = "${var.name}"
 }
 resource "alicloud_fc_service" "foo" {
-  name = "${var.name}"
+  name            = "${var.name}"
   internet_access = false
 }
 resource "alicloud_oss_bucket" "foo" {
   bucket = "${var.name}"
 }
 resource "alicloud_oss_bucket_object" "foo" {
-  bucket = "${alicloud_oss_bucket.foo.id}"
-  key = "fc/hello.zip"
+  bucket  = "${alicloud_oss_bucket.foo.id}"
+  key     = "fc/hello.zip"
   content = <<EOF
   	# -*- coding: utf-8 -*-
 	def handler(event, context):
@@ -165,10 +165,10 @@ resource "alicloud_ram_role" "foo" {
   }
   EOF
   description = "this is a test"
-  force = true
+  force       = true
 }
 resource "alicloud_ram_policy" "foo" {
-  name = "${var.name}-trigger"
+  name     = "${var.name}-trigger"
   document = <<EOF
   {
     "Version": "1",

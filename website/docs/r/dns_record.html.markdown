@@ -17,10 +17,10 @@ Provides a DNS Record resource.
 ```
 # Create a new Domain record
 resource "alicloud_dns_record" "record" {
-  name = "domainname"
+  name        = "domainname"
   host_record = "@"
-  type = "A"
-  value = "192.168.99.99"
+  type        = "A"
+  value       = "192.168.99.99"
 }
 ```
 

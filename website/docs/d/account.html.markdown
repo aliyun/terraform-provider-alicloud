@@ -13,7 +13,7 @@ This data source provides information about the current account.
 ## Example Usage
 
 ```
-data "alicloud_account" "current"{
+data "alicloud_account" "current" {
 }
 
 output "current_account_id" {

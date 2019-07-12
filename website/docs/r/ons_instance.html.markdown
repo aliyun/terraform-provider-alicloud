@@ -21,9 +21,9 @@ For more information about how to use it, see [RocketMQ Instance Management API]
 Basic Usage
 
 ```
-resource "alicloud_ons_instance" "example"{
-    name="tf-example-ons-instance"
-    remark="tf-example-ons-instance-remark"
+resource "alicloud_ons_instance" "example" {
+  name   = "tf-example-ons-instance"
+  remark = "tf-example-ons-instance-remark"
 }
 ```
 

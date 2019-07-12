@@ -17,10 +17,10 @@ Provides a MNS topic resource.
 Basic Usage
 
 ```
-resource "alicloud_mns_topic" "topic"{
-    name="tf-example-mnstopic"
-    maximum_message_size=65536
-    logging_enabled=false
+resource "alicloud_mns_topic" "topic" {
+  name                 = "tf-example-mnstopic"
+  maximum_message_size = 65536
+  logging_enabled      = false
 }
 
 ```

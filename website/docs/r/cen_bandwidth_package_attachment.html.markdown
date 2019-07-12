@@ -17,20 +17,20 @@ Basic Usage
 ```
 # Create a new bandwidth package attachment and use it to attach a bandwidth package to a new CEN
 resource "alicloud_cen_instance" "cen" {
-     name = "tf-testAccCenBandwidthPackageAttachmentConfig"
-     description = "tf-testAccCenBandwidthPackageAttachmentDescription"
+  name        = "tf-testAccCenBandwidthPackageAttachmentConfig"
+  description = "tf-testAccCenBandwidthPackageAttachmentDescription"
 }
 
 resource "alicloud_cen_bandwidth_package" "bwp" {
-    bandwidth = 20
-    geographic_region_ids = [
-		"China",
-		"Asia-Pacific"]
+  bandwidth = 20
+  geographic_region_ids = [
+    "China",
+  "Asia-Pacific"]
 }
 
 resource "alicloud_cen_bandwidth_package_attachment" "foo" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    bandwidth_package_id = "${alicloud_cen_bandwidth_package.bwp.id}"
+  instance_id          = "${alicloud_cen_instance.cen.id}"
+  bandwidth_package_id = "${alicloud_cen_bandwidth_package.bwp.id}"
 }
 ```
 ## Argument Reference

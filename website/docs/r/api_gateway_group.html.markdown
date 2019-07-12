@@ -20,7 +20,7 @@ Basic Usage
 
 ```
 resource "alicloud_api_gateway_group" "apiGroup" {
-  name = "ApiGatewayGroup"
+  name        = "ApiGatewayGroup"
   description = "description of the api group"
 }
 ```

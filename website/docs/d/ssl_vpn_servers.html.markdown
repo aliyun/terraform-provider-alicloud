@@ -14,10 +14,10 @@ The SSL-VPN servers data source lists lots of SSL-VPN servers resource informati
 
 ```
 data "alicloud_ssl_vpn_servers" "foo" {
-	ids = ["fake-server-id"]
-	vpn_gateway_id = "fake-vpn-id"
-	output_file = "/tmp/sslserver"
-	name_regex = "^foo"
+  ids            = ["fake-server-id"]
+  vpn_gateway_id = "fake-vpn-id"
+  output_file    = "/tmp/sslserver"
+  name_regex     = "^foo"
 }
 ```
 

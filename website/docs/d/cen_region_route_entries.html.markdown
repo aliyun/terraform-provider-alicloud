@@ -13,9 +13,9 @@ This data source provides CEN Regional Route Entries available to the user.
 ## Example Usage
 
 ```
-data "alicloud_cen_region_route_entries" "entry"{
-	instance_id = "cen-id1"
-	region_id = "cn-beijing"
+data "alicloud_cen_region_route_entries" "entry" {
+  instance_id = "cen-id1"
+  region_id   = "cn-beijing"
 }
 
 output "first_region_route_entries_route_entry_cidr_block" {

@@ -124,7 +124,7 @@ Usage:
 ```hcl
 provider "alicloud" {
   ecs_role_name = "terraform-provider-alicloud"
-  region     = "${var.region}"
+  region        = "${var.region}"
 }
 ```
 

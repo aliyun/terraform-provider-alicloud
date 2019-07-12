@@ -18,8 +18,8 @@ Basic Usage
 
 ```
 resource "alicloud_cen_instance" "cen" {
-	name = "tf_test_foo"
-	description = "an example for cen"
+  name        = "tf_test_foo"
+  description = "an example for cen"
 }
 ```
 ## Argument Reference

@@ -13,9 +13,9 @@ This data source provides VPCs available to the user.
 ## Example Usage
 
 ```
-data "alicloud_vpcs" "vpcs_ds"{
+data "alicloud_vpcs" "vpcs_ds" {
   cidr_block = "172.16.0.0/12"
-  status = "Available"
+  status     = "Available"
   name_regex = "^foo"
 }
 

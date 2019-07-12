@@ -16,7 +16,7 @@ This data source provides the KVStore instance engines resource available info o
 
 ```tf
 data "alicloud_zones" "resources" {
-	available_resource_creation= "KVStore"
+  available_resource_creation = "KVStore"
 }
 
 data "alicloud_kvstore_instance_engines" "resources" {

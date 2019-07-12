@@ -20,17 +20,17 @@ Basic Usage
 
 ```
 resource "alicloud_cr_namespace" "my-namespace" {
-    name = "my-namespace"
-    auto_create = false
-    default_visibility = "PUBLIC"
+  name               = "my-namespace"
+  auto_create        = false
+  default_visibility = "PUBLIC"
 }
 
 resource "alicloud_cr_repo" "my-repo" {
-    namespace = "${alicloud_cr_namespace.my-namespace.name}"
-    name = "my-repo"
-    summary = "this is summary of my new repo"
-    repo_type = "PUBLIC"
-    detail  = "this is a public repo"
+  namespace = "${alicloud_cr_namespace.my-namespace.name}"
+  name      = "my-repo"
+  summary   = "this is summary of my new repo"
+  repo_type = "PUBLIC"
+  detail    = "this is a public repo"
 }
 ```
 

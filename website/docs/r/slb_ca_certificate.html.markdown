@@ -20,18 +20,18 @@ For information about CA Certificate and how to use it, see [Configure CA Certif
 * using CA certificate content
 
 ```
-  # create a CA certificate
-  resource "alicloud_slb_ca_certificate" "foo" {
-    name = "tf-testAccSlbCACertificate"
-    ca_certificate = "-----BEGIN CERTIFICATE-----\nMIIDRjCCAq+gAwIBAgIJAJnI******90EAxEG/bJJyOm5LqoiA=\n-----END CERTIFICATE-----"
-  }
+# create a CA certificate
+resource "alicloud_slb_ca_certificate" "foo" {
+  name           = "tf-testAccSlbCACertificate"
+  ca_certificate = "-----BEGIN CERTIFICATE-----\nMIIDRjCCAq+gAwIBAgIJAJnI******90EAxEG/bJJyOm5LqoiA=\n-----END CERTIFICATE-----"
+}
 ```
 
 * using CA certificate file
 
 ```
 resource "alicloud_slb_ca_certificate" "foo-file" {
-  name = "tf-testAccSlbCACertificate"
+  name           = "tf-testAccSlbCACertificate"
   ca_certificate = "${file("${path.module}/ca_certificate.pem")}"
 }
 ```

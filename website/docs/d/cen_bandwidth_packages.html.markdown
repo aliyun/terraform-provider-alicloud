@@ -14,8 +14,8 @@ This data source provides CEN Bandwidth Packages available to the user.
 
 ```
 data "alicloud_cen_bandwidth_packages" "bwp" {
-	instance_id = "cen-id1"
-	name_regex="^foo"
+  instance_id = "cen-id1"
+  name_regex  = "^foo"
 }
 
 output "first_cen_bandwidth_package_id" {

@@ -16,8 +16,8 @@ Provide  a data source to retrieve the type of protocol used to create NAS file 
 
 ```
 data "alicloud_nas_protocols" "default" {
-  type = "Performance"
-  zone_id = "cn-beijing-e"
+  type        = "Performance"
+  zone_id     = "cn-beijing-e"
   output_file = "protocols.txt"
 }
 

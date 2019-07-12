@@ -20,9 +20,9 @@ Basic Usage
 
 ```
 resource "alicloud_cr_namespace" "my-namespace" {
-    name = "my-namespace"
-    auto_create = false
-    default_visibility = "PUBLIC"
+  name               = "my-namespace"
+  auto_create        = false
+  default_visibility = "PUBLIC"
 }
 ```
 

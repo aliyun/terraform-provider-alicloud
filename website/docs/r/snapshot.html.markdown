@@ -16,8 +16,8 @@ For information about snapshot and how to use it, see [Snapshot](https://www.ali
 
 ```
 resource "alicloud_snapshot" "snapshot" {
-  disk_id = "${alicloud_disk_attachment.instance-attachment.disk_id}"
-  name = "test-snapshot"
+  disk_id     = "${alicloud_disk_attachment.instance-attachment.disk_id}"
+  name        = "test-snapshot"
   description = "this snapshot is created for testing"
   tags = {
     version = "1.2"

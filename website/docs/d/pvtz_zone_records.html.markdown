@@ -14,8 +14,8 @@ This data source provides Private Zone Records resource information owned by an 
 
 ```
 data "alicloud_pvtz_zone_records" "records_ds" {
-	zone_id = "${alicloud_pvtz_zone.basic.id}"
-	keyword = "${alicloud_pvtz_zone_record.foo.value}"
+  zone_id = "${alicloud_pvtz_zone.basic.id}"
+  keyword = "${alicloud_pvtz_zone_record.foo.value}"
 }
 
 output "first_record_id" {

@@ -14,11 +14,11 @@ This data source provides a list of DNS Domain Records in an Alibaba Cloud accou
 
 ```
 data "alicloud_dns_records" "records_ds" {
-  domain_name = "xiaozhu.top"
-  is_locked = false
-  type = "A"
+  domain_name       = "xiaozhu.top"
+  is_locked         = false
+  type              = "A"
   host_record_regex = "^@"
-  output_file = "records.txt"
+  output_file       = "records.txt"
 }
 
 output "first_record_id" {

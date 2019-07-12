@@ -13,8 +13,8 @@ This data source provides CEN instances available to the user.
 ## Example Usage
 
 ```
-data "alicloud_cen_instances" "cen_instances_ds"{
-  ids = ["cen-id1"]
+data "alicloud_cen_instances" "cen_instances_ds" {
+  ids        = ["cen-id1"]
   name_regex = "^foo"
 }
 
