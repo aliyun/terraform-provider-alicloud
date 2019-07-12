@@ -1,12 +1,11 @@
 package alicloud
 
 import (
-	"regexp"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"regexp"
 )
 
 func dataSourceAlicloudDBInstances() *schema.Resource {
@@ -18,6 +17,11 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateNameRegex,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"engine": {
 				Type:     schema.TypeString,
@@ -72,6 +76,11 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 			},
 
 			// Computed values
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"instances": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -192,6 +201,14 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 		nameRegex = r
 	}
 
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
 	for {
 		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.DescribeDBInstances(request)
@@ -212,6 +229,13 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 					continue
 				}
 			}
+
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[item.DBInstanceId]; !ok {
+					continue
+				}
+			}
+
 			dbi = append(dbi, item)
 		}
 
@@ -230,6 +254,7 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 
 func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, item := range dbi {
@@ -261,11 +286,18 @@ func rdsInstancesDescription(d *schema.ResourceData, dbi []rds.DBInstance) error
 		}
 
 		ids = append(ids, item.DBInstanceId)
+		names = append(names, item.DBInstanceDescription)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("instances", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 
