@@ -1,23 +1,23 @@
-## 1.52.0 (Unreleased)
+## 1.52.0 (July 12, 2019)
 
-- **New Datasource:** `alicloud_ons_instances` [GH-1411]
+- **New Datasource:** `alicloud_ons_instances` ([#1411](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1411))
 
 IMPROVEMENTS:
 
-- improve(vpc):add ids filter [GH-1420]
-- improve(db_instances): Added ids filter and added names to datasource attributes [GH-1419]
-- improve(cas): Added ids filter and added names to datasource attributes [GH-1417]
-- docs(format): Convert inline HCL configs to canonical format [GH-1415]
-- improve(gpdb_instance):add vpc name [GH-1413]
-- improve(provider): add a new parameter `skip_region_validation` in the provider config [GH-1404]
-- improve(rds): resource db_instance support update for instance_charge_type [GH-1389]
+- improve(vpc):add ids filter ([#1420](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1420))
+- improve(db_instances): Added ids filter and added names to datasource attributes ([#1419](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1419))
+- improve(cas): Added ids filter and added names to datasource attributes ([#1417](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1417))
+- docs(format): Convert inline HCL configs to canonical format ([#1415](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1415))
+- improve(gpdb_instance):add vpc name ([#1413](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1413))
+- improve(provider): add a new parameter `skip_region_validation` in the provider config ([#1404](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1404))
+- improve(rds): resource db_instance support update for instance_charge_type ([#1389](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1389))
 
 BUG FIXES:
 
-- fix(db_instance):fix db_instance testcase vsw availability_zone [GH-1418]
-- fix(api_gateway): modified the testcase to avoid errors [GH-1410]
-- fix(db_readonly_instance): extend the waiting time for spec modification [GH-1408]
-- fix(db_readonly_instance): add retryable error content in instance spec modification and deletion [GH-1403]
+- fix(db_instance):fix db_instance testcase vsw availability_zone ([#1418](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1418))
+- fix(api_gateway): modified the testcase to avoid errors ([#1410](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1410))
+- fix(db_readonly_instance): extend the waiting time for spec modification ([#1408](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1408))
+- fix(db_readonly_instance): add retryable error content in instance spec modification and deletion ([#1403](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1403))
 
 ## 1.51.0 (July 08, 2019)
 
