@@ -52,6 +52,14 @@ func resourceAliyunDisk() *schema.Resource {
 				Required: true,
 			},
 
+			"type": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          ResizeTypeOffline,
+				ValidateFunc:     validateDiskResizeType,
+				DiffSuppressFunc: ecsDiskResizeTypeDiffSuppressFunc,
+			},
+
 			"snapshot_id": {
 				Type:          schema.TypeString,
 				Optional:      true,
@@ -145,6 +153,7 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("availability_zone", object.ZoneId)
 	d.Set("category", object.Category)
 	d.Set("size", object.Size)
+	d.Set("type", ResizeTypeOffline)
 	d.Set("status", object.Status)
 	d.Set("name", object.DiskName)
 	d.Set("description", object.Description)
@@ -180,9 +189,11 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if d.HasChange("size") {
 		size := d.Get("size").(int)
+		resizeType := d.Get("type").(string)
 		request := ecs.CreateResizeDiskRequest()
 		request.DiskId = d.Id()
 		request.NewSize = requests.NewInteger(size)
+		request.Type = resizeType
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ResizeDisk(request)
 		})

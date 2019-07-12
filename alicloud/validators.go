@@ -55,6 +55,15 @@ func validateDiskCategory(v interface{}, k string) (ws []string, errors []error)
 	return
 }
 
+func validateDiskResizeType(v interface{}, k string) (ws []string, errors []error) {
+	resizeType := ResizeType(v.(string))
+	if resizeType != ResizeTypeOffline && resizeType != ResizeTypeOnline {
+		errors = append(errors, fmt.Errorf("%s must be one of %s and %s", k, string(ResizeTypeOffline), string(ResizeTypeOnline)))
+	}
+
+	return
+}
+
 func validateInstanceName(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) < 2 || len(value) > 128 {

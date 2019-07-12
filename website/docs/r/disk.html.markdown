@@ -38,7 +38,10 @@ The following arguments are supported:
 * `description` - (Optional) Description of the disk. This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `category` - (Optional, ForceNew) Category of the disk. Valid values are `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`. Default is `cloud_efficiency`.
 * `size` - (Required) The size of the disk in GiBs. When resize the disk, the new size must be greater than the former value, or you would get an error `InvalidDiskSize.TooSmall`.
-* `snapshot_id` - (Optional) A snapshot to base the disk off of. If the disk size required by snapshot is greater than `size`, the `size` will be ignored, conflict with `encrypted`.
+* `type` - (Optional) The method to resize cloud disk. Valid values are `offline` and `online`.
+  - `offline` resize the disk after instance rebooting.
+  - `online` resize the disk without instance rebooting, only for `cloud_efficiency` and `cloud_ssd`. 
+* `snapshot_id` - (Optional) A snapshot to base the disk off of. If the disk size required by snapshot is greater than `size`, the `size` will be ignored.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `encrypted` - (Optional) If true, the disk will be encrypted, conflict with `snapshot_id`.
 

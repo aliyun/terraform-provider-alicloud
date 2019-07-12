@@ -182,6 +182,10 @@ func ecsInternetDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 	return true
 }
 
+func ecsDiskResizeTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return false
+}
+
 func ecsPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return common.InstanceChargeType(d.Get("instance_charge_type").(string)) == common.PostPaid
 }
