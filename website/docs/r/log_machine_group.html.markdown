@@ -17,15 +17,15 @@ Basic Usage
 
 ```
 resource "alicloud_log_project" "example" {
-  name       = "tf-log"
+  name        = "tf-log"
   description = "created by terraform"
 }
 resource "alicloud_log_machine_group" "example" {
-    project = "${alicloud_log_project.example.name}"
-    name = "tf-machine-group"
-    identify_type = "ip"
-    topic = "terraform"
-    identify_list = ["10.0.0.1", "10.0.0.2"]
+  project       = "${alicloud_log_project.example.name}"
+  name          = "tf-machine-group"
+  identify_type = "ip"
+  topic         = "terraform"
+  identify_list = ["10.0.0.1", "10.0.0.2"]
 }
 ```
 ## Argument Reference

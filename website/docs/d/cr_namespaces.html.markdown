@@ -17,8 +17,8 @@ This data source provides a list Container Registry namespaces on Alibaba Cloud.
 ```
 # Declare the data source
 data "alicloud_cr_namespaces" "my_namespaces" {
-    name_regex = "my-namespace"
-    output_file = "my-namespace-json"
+  name_regex  = "my-namespace"
+  output_file = "my-namespace-json"
 }
 
 output "output" {

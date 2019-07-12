@@ -22,7 +22,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "vpc" {
-  name = "${var.name}"
+  name       = "${var.name}"
   cidr_block = "192.168.0.0/24"
 }
 
@@ -31,22 +31,22 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  name = "${var.name}"
-  cidr_block = "192.168.0.0/24"
+  name              = "${var.name}"
+  cidr_block        = "192.168.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  vpc_id = "${alicloud_vpc.vpc.id}"
+  vpc_id            = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_security_group" "group" {
-  name = "${var.name}"
+  name   = "${var.name}"
   vpc_id = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_network_interface" "default" {
-  name = "${var.name}%d"
-  vswitch_id = "${alicloud_vswitch.vswitch.id}"
-  security_groups = [ "${alicloud_security_group.group.id}" ]
-  private_ip = "192.168.0.2"
+  name              = "${var.name}%d"
+  vswitch_id        = "${alicloud_vswitch.vswitch.id}"
+  security_groups   = ["${alicloud_security_group.group.id}"]
+  private_ip        = "192.168.0.2"
   private_ips_count = 3
 }
 ```

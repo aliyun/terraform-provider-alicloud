@@ -17,8 +17,8 @@ This data source provides the ots tables of the current Alibaba Cloud user.
 ```
 data "alicloud_ots_tables" "tables_ds" {
   instance_name = "sample-instance"
-  name_regex = "sample-table"
-  output_file = "tables.txt"
+  name_regex    = "sample-table"
+  output_file   = "tables.txt"
 }
 
 output "first_table_id" {

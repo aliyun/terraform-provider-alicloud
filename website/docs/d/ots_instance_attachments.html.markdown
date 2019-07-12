@@ -15,8 +15,8 @@ This data source provides the ots instance attachments of the current Alibaba Cl
 ```
 data "alicloud_ots_instance_attachments" "attachments_ds" {
   instance_name = "sample-instance"
-  name_regex = "testvpc"
-  output_file = "attachments.txt"
+  name_regex    = "testvpc"
+  output_file   = "attachments.txt"
 }
 
 output "first_ots_attachment_id" {

@@ -20,7 +20,7 @@ This data source provides the ECS instance types of Alibaba Cloud.
 # Declare the data source
 data "alicloud_instance_types" "types_ds" {
   cpu_core_count = 1
-  memory_size = 2
+  memory_size    = 2
 }
 
 # Create ECS instance with the first matched instance_type

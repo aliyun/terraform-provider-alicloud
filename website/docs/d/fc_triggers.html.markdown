@@ -14,9 +14,9 @@ This data source provides the Function Compute triggers of the current Alibaba C
 
 ```
 data "alicloud_fc_triggers" "fc_triggers_ds" {
-  service_name = "sample_service"
+  service_name  = "sample_service"
   function_name = "sample_function"
-  name_regex = "sample_fc_trigger"
+  name_regex    = "sample_fc_trigger"
 }
 
 output "first_fc_trigger_name" {

@@ -16,8 +16,8 @@ This data source provides FileSystems available to the user.
 
 ```
 data "alicloud_nas_file_systems" "fs" {
-   protocol_type = "NFS"
-   description = "${alicloud_nas_file_system.foo.description}"
+  protocol_type = "NFS"
+  description   = "${alicloud_nas_file_system.foo.description}"
 }
 
 output "alicloud_nas_file_systems_id" {

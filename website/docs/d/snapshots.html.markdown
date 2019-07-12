@@ -18,7 +18,7 @@ For information about snapshot and how to use it, see [Snapshot](https://www.ali
 
 ```
 data "alicloud_snapshots" "snapshots" {
-  ids = ["s-123456890abcdef"]
+  ids        = ["s-123456890abcdef"]
   name_regex = "tf-testAcc-snapshot"
 }
 ```

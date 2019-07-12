@@ -17,7 +17,7 @@ Basic Usage
 
 ```
 resource "alicloud_log_project" "example" {
-  name       = "tf-log"
+  name        = "tf-log"
   description = "created by terraform"
 }
 ```

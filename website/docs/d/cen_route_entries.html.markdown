@@ -13,9 +13,9 @@ This data source provides CEN Route Entries available to the user.
 ## Example Usage
 
 ```
-data "alicloud_cen_route_entries" "entry"{
-	instance_id = "cen-id1"
-	route_table_id = "vtb-id1"
+data "alicloud_cen_route_entries" "entry" {
+  instance_id    = "cen-id1"
+  route_table_id = "vtb-id1"
 }
 
 output "first_route_entries_route_entry_cidr_block" {

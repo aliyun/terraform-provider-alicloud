@@ -14,10 +14,10 @@ The VPN connections data source lists lots of VPN connections resource informati
 
 ```
 data "alicloud_vpn_connections" "foo" {
-	ids = ["fake-conn-id"]
-	vpn_gateway_id = "fake-vpn-id"
-	customer_gateway_id = "fake-cgw-id"
-	output_file = "/tmp/vpnconn"
+  ids                 = ["fake-conn-id"]
+  vpn_gateway_id      = "fake-vpn-id"
+  customer_gateway_id = "fake-cgw-id"
+  output_file         = "/tmp/vpnconn"
 }
 
 ```

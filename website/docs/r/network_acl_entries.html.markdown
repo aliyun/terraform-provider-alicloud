@@ -30,28 +30,28 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name       = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_network_acl" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
+  name   = "${var.name}"
 }
 
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/21"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+  name              = "${var.name}"
 }
 
 resource "alicloud_network_acl_attachment" "default" {
   network_acl_id = "${alicloud_network_acl.default.id}"
   resources = [
     {
-      resource_id = "${alicloud_vswitch.default.id}"
+      resource_id   = "${alicloud_vswitch.default.id}"
       resource_type = "VSwitch"
     }
   ]
@@ -61,24 +61,24 @@ resource "alicloud_network_acl_entries" "default" {
   network_acl_id = "${alicloud_network_acl.default.id}"
   ingress = [
     {
-      protocol = "all"
-      port = "-1/-1"
+      protocol       = "all"
+      port           = "-1/-1"
       source_cidr_ip = "0.0.0.0/32"
-      name = "${var.name}"
-      entry_type = "custom"
-      policy = "accept"
-      description = "${var.name}"
+      name           = "${var.name}"
+      entry_type     = "custom"
+      policy         = "accept"
+      description    = "${var.name}"
     }
   ]
   egress = [
     {
-      protocol = "all"
-      port = "-1/-1"
+      protocol            = "all"
+      port                = "-1/-1"
       destination_cidr_ip = "0.0.0.0/32"
-      name = "${var.name}"
-      entry_type = "custom"
-      policy = "accept"
-      description = "${var.name}"
+      name                = "${var.name}"
+      entry_type          = "custom"
+      policy              = "accept"
+      description         = "${var.name}"
     }
   ]
 }

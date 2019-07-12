@@ -28,9 +28,9 @@ data "alicloud_security_groups" "groups_ds" {
 
 # Filter the security group rule by group
 data "alicloud_security_group_rules" "ingress_rules_ds" {
-  group_id = "${data.alicloud_security_groups.groups_ds.groups.0.id}" # or ${var.security_group_id}
-  nic_type = "internet"
-  direction = "ingress"
+  group_id    = "${data.alicloud_security_groups.groups_ds.groups.0.id}" # or ${var.security_group_id}
+  nic_type    = "internet"
+  direction   = "ingress"
   ip_protocol = "TCP"
 }
 

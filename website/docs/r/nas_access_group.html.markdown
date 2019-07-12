@@ -20,10 +20,10 @@ Basic Usage
 
 ```
 resource "alicloud_nas_access_group" "foo" {
-    name = "CreateAccessGroup"
- 	type = "Classic"
- 	description = "test_AccessG"
-  
+  name        = "CreateAccessGroup"
+  type        = "Classic"
+  description = "test_AccessG"
+
 }
 ```
 ## Argument Reference

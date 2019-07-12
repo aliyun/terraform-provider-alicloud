@@ -20,9 +20,9 @@ Basic Usage
 
 ```
 resource "alicloud_api_gateway_app_attachment" "foo" {
-  api_id = "d29d25b9cfdf4742b1a3f6537299a749"
-  group_id = "aaef8cdbb404420f9398a74ed1db7fff"
-  app_id = "20898181"
+  api_id     = "d29d25b9cfdf4742b1a3f6537299a749"
+  group_id   = "aaef8cdbb404420f9398a74ed1db7fff"
+  app_id     = "20898181"
   stage_name = "PRE"
 }
 ```

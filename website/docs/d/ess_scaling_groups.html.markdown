@@ -14,8 +14,8 @@ This data source provides available scaling group resources.
 
 ```
 data "alicloud_ess_scaling_groups" "scalinggroups_ds" {
-	ids = ["scaling_group_id1","scaling_group_id2"]
-	name_regex = "scaling_group_name"
+  ids        = ["scaling_group_id1", "scaling_group_id2"]
+  name_regex = "scaling_group_name"
 }
 
 output "first_scaling_group" {

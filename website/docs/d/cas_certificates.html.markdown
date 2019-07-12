@@ -14,7 +14,7 @@ This data source provides a list of CAS Certificates in an Alibaba Cloud account
 
 ```
 data "alicloud_cas_certificates" "certs" {
-  name_regex = "^cas"
+  name_regex  = "^cas"
   output_file = "${path.module}/cas_certificates.json"
 }
 

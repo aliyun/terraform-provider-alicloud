@@ -20,15 +20,15 @@ Basic Usage
 
 ```
 resource "alicloud_cs_swarm" "my_cluster" {
-  password = "Yourpassword1234"
+  password      = "Yourpassword1234"
   instance_type = "ecs.n4.small"
-  name = "ClusterFromAlicloud"
-  node_number = 2
+  name          = "ClusterFromAlicloud"
+  node_number   = 2
   disk_category = "cloud_efficiency"
-  disk_size = 20
-  cidr_block = "172.18.0.0/24"
-  image_id = "${var.image_id}"
-  vswitch_id = "${var.vswitch_id}"
+  disk_size     = 20
+  cidr_block    = "172.18.0.0/24"
+  image_id      = "${var.image_id}"
+  vswitch_id    = "${var.vswitch_id}"
 }
 ```
 ## Argument Reference

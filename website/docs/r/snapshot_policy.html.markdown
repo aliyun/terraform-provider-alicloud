@@ -18,10 +18,10 @@ For information about snapshot policy and how to use it, see [Snapshot](https://
 
 ```
 resource "alicloud_snapshot_policy" "sp" {
-    name = "tf-testAcc-sp"
-    repeat_weekdays = [ "1", "2", "3" ]
-    retention_days = -1
-    time_points = ["1", "22", "23"]
+  name            = "tf-testAcc-sp"
+  repeat_weekdays = ["1", "2", "3"]
+  retention_days  = -1
+  time_points     = ["1", "22", "23"]
 }
 ```
 

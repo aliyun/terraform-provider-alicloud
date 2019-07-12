@@ -21,16 +21,16 @@ Basic Usage
 ```
 # Create a new Domain.
 resource "alicloud_cdn_domain_new" "domain" {
-	  domain_name = "terraform.test.com"
-	  cdn_type = "web"
-	  scope="overseas"
-	  sources {
-         content = "1.1.1.1"
-         type = "ipaddr"
-         priority = 20
-         port = 80
-         weight = 10
-      }
+  domain_name = "terraform.test.com"
+  cdn_type    = "web"
+  scope       = "overseas"
+  sources {
+    content  = "1.1.1.1"
+    type     = "ipaddr"
+    priority = 20
+    port     = 80
+    weight   = 10
+  }
 }
 
 ```

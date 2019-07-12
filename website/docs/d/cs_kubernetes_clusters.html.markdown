@@ -17,7 +17,7 @@ This data source provides a list Container Service Kubernetes Clusters on Alibab
 ```
 # Declare the data source
 data "alicloud_cs_kubernetes_clusters" "k8s_clusters" {
-  name_regex = "my-first-k8s"
+  name_regex  = "my-first-k8s"
   output_file = "my-first-k8s-json"
 }
 

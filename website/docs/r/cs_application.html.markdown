@@ -24,9 +24,9 @@ Basic Usage
 ```
 resource "alicloud_cs_application" "app" {
   cluster_name = "my-first-swarm"
-  name = "wordpress"
-  version = "1.2"
-  template = "${file("wordpress.yml")}"
+  name         = "wordpress"
+  version      = "1.2"
+  template     = "${file("wordpress.yml")}"
   latest_image = true
   environment = {
     EXTERNAL_URL = "123.123.123.123:8080"

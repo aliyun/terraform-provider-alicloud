@@ -17,23 +17,23 @@ Basic Usage
 
 ```
 resource "alicloud_cms_alarm" "basic" {
-  name = "tf-testAccCmsAlarm_basic"
+  name    = "tf-testAccCmsAlarm_basic"
   project = "acs_ecs_dashboard"
-  metric = "disk_writebytes"
+  metric  = "disk_writebytes"
   dimensions = {
     instanceId = "i-bp1247,i-bp11gd"
-    device = "/dev/vda1,/dev/vdb1"
+    device     = "/dev/vda1,/dev/vdb1"
   }
-  statistics ="Average"
-  period = 900
-  operator = "<="
-  threshold = 35
+  statistics      = "Average"
+  period          = 900
+  operator        = "<="
+  threshold       = 35
   triggered_count = 2
-  contact_groups = ["test-group"]
-  end_time = 20
-  start_time = 6
-  notify_type = 1
-  webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
+  contact_groups  = ["test-group"]
+  end_time        = 20
+  start_time      = 6
+  notify_type     = 1
+  webhook         = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
 }
 ```
 

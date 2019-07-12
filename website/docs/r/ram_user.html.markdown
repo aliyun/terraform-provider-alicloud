@@ -17,12 +17,12 @@ Provides a RAM User resource.
 ```
 # Create a new RAM user.
 resource "alicloud_ram_user" "user" {
-  name = "user_test"
+  name         = "user_test"
   display_name = "user_display_name"
-  mobile = "86-18688888888"
-  email = "hello.uuu@aaa.com"
-  comments = "yoyoyo"
-  force = true
+  mobile       = "86-18688888888"
+  email        = "hello.uuu@aaa.com"
+  comments     = "yoyoyo"
+  force        = true
 }
 ```
 ## Argument Reference

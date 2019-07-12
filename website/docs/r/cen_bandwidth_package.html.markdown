@@ -18,11 +18,11 @@ Basic Usage
 
 ```
 resource "alicloud_cen_bandwidth_package" "foo" {
-    name = "tf-testAccCenBandwidthPackageConfig"
-    bandwidth = 5
-    geographic_region_ids = [
-		"China",
-		"Asia-Pacific"]
+  name      = "tf-testAccCenBandwidthPackageConfig"
+  bandwidth = 5
+  geographic_region_ids = [
+    "China",
+  "Asia-Pacific"]
 }
 ```
 ## Argument Reference

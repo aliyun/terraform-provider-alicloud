@@ -13,8 +13,8 @@ This data source provides a list of action trail of the current Alibaba Cloud us
 ## Example Usage
 
 ```
-data "alicloud_actiontrails" "trails"{
-   name_regex = "tf-testacc-actiontrail"
+data "alicloud_actiontrails" "trails" {
+  name_regex = "tf-testacc-actiontrail"
 }
 
 output "first_trail_name" {

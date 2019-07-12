@@ -21,14 +21,14 @@ Basic Usage
 
 ```
 resource "alicloud_vpc" "foo" {
-    cidr_block = "172.16.0.0/12"
-    name = "vpc-example-name"
+  cidr_block = "172.16.0.0/12"
+  name       = "vpc-example-name"
 }
 
 resource "alicloud_route_table" "foo" {
-    vpc_id = "${alicloud_vpc.foo.id}"
-    name = "route-table-example-name"
-    description = "route-table-example-description"
+  vpc_id      = "${alicloud_vpc.foo.id}"
+  name        = "route-table-example-name"
+  description = "route-table-example-description"
 }
 ```
 

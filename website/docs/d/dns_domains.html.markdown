@@ -15,7 +15,7 @@ This data source provides a list of DNS Domains in an Alibaba Cloud account acco
 ```
 data "alicloud_dns_domains" "domains_ds" {
   domain_name_regex = "^hegu"
-  output_file = "domains.txt"
+  output_file       = "domains.txt"
 }
 
 output "first_domain_id" {

@@ -15,7 +15,7 @@ This data source provides a list of RAM Roles in an Alibaba Cloud account accord
 ```
 data "alicloud_ram_roles" "roles_ds" {
   output_file = "roles.txt"
-  name_regex = ".*test.*"
+  name_regex  = ".*test.*"
   policy_name = "AliyunACSDefaultAccess"
   policy_type = "Custom"
 }

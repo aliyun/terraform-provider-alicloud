@@ -20,23 +20,23 @@ For information about Server Certificate and how to use it, see [Configure Serve
 * using server_certificate/private content as string example
 
 ```
-  # create a server certificate
-  resource "alicloud_slb_server_certificate" "foo" {
-    name = "slbservercertificate"
-    server_certificate = "-----BEGIN CERTIFICATE-----\nMIIDRjCCAq+gAwIBAgI+OuMs******XTtI90EAxEG/bJJyOm5LqoiA=\n-----END CERTIFICATE-----"
-    private_key = "-----BEGIN RSA PRIVATE KEY-----\nMIICXAIBAAKBgQDO0knDrlNdiys******ErVpjsckAaOW/JDG5PCSwkaMxk=\n-----END RSA PRIVATE KEY-----"
-  }
+# create a server certificate
+resource "alicloud_slb_server_certificate" "foo" {
+  name               = "slbservercertificate"
+  server_certificate = "-----BEGIN CERTIFICATE-----\nMIIDRjCCAq+gAwIBAgI+OuMs******XTtI90EAxEG/bJJyOm5LqoiA=\n-----END CERTIFICATE-----"
+  private_key        = "-----BEGIN RSA PRIVATE KEY-----\nMIICXAIBAAKBgQDO0knDrlNdiys******ErVpjsckAaOW/JDG5PCSwkaMxk=\n-----END RSA PRIVATE KEY-----"
+}
 ```
 
 * using server_certificate/private file example
 
 ```
-  # create a server certificate
-  resource "alicloud_slb_server_certificate" "foo" {
-    name = "slbservercertificate"
-    server_certificate = "${file("${path.module}/server_certificate.pem")}"
-    private_key = "${file("${path.module}/private_key.pem")}"
-  }
+# create a server certificate
+resource "alicloud_slb_server_certificate" "foo" {
+  name               = "slbservercertificate"
+  server_certificate = "${file("${path.module}/server_certificate.pem")}"
+  private_key        = "${file("${path.module}/private_key.pem")}"
+}
 ```
 
 ## Argument Reference

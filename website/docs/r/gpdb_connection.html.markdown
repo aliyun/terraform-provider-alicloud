@@ -18,43 +18,43 @@ Provides a connection resource to allocate an Internet connection string for ins
 ## Example Usage
 
 ```
-    variable "creation" {
-        default = "Gpdb"
-    }
+variable "creation" {
+  default = "Gpdb"
+}
 
-    variable "name" {
-        default = "gpdbConnectionBasic"
-    }
+variable "name" {
+  default = "gpdbConnectionBasic"
+}
 
-    data "alicloud_zones" "default" {
-        available_resource_creation = "${var.creation}"
-    }
+data "alicloud_zones" "default" {
+  available_resource_creation = "${var.creation}"
+}
 
-    resource "alicloud_vpc" "default" {
-        name       = "${var.name}"
-        cidr_block = "172.16.0.0/16"
-    }
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
 
-    resource "alicloud_vswitch" "default" {
-        vpc_id            = "${alicloud_vpc.default.id}"
-        cidr_block        = "172.16.0.0/24"
-        availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-        name              = "${var.name}"
-    }
-    
-    resource "alicloud_gpdb_instance" "default" {
-        vswitch_id = "${alicloud_vswitch.default.id}"
-        engine = "gpdb"
-        engine_version = "4.3"
-        instance_class = "gpdb.group.segsdx2"
-        instance_group_count = "2"
-        description = "${var.name}"
-    }
-    
-    resource "alicloud_gpdb_connection" "default" {
-        instance_id = "${alicloud_gpdb_instance.default.id}"
-        connection_prefix = "testAbc"
-    }
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name              = "${var.name}"
+}
+
+resource "alicloud_gpdb_instance" "default" {
+  vswitch_id           = "${alicloud_vswitch.default.id}"
+  engine               = "gpdb"
+  engine_version       = "4.3"
+  instance_class       = "gpdb.group.segsdx2"
+  instance_group_count = "2"
+  description          = "${var.name}"
+}
+
+resource "alicloud_gpdb_connection" "default" {
+  instance_id       = "${alicloud_gpdb_instance.default.id}"
+  connection_prefix = "testAbc"
+}
 ```
 
 ## Argument Reference

@@ -21,9 +21,9 @@ Provides a CAS Certificate resource.
 ```
 # Add a new Certificate.
 resource "alicloud_cas_certificate" "cert" {
-   name = "test"
-   cert = "${file("${path.module}/test.crt")}"
-   key = "${file("${path.module}/test.key")}"
+  name = "test"
+  cert = "${file("${path.module}/test.crt")}"
+  key  = "${file("${path.module}/test.key")}"
 }
 ```
 ## Argument Reference

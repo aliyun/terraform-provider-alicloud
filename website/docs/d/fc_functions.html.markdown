@@ -15,7 +15,7 @@ This data source provides the Function Compute functions of the current Alibaba 
 ```
 data "alicloud_fc_functions" "functions_ds" {
   service_name = "sample_service"
-  name_regex = "sample_fc_function"
+  name_regex   = "sample_fc_function"
 }
 
 output "first_fc_function_name" {

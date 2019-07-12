@@ -17,13 +17,13 @@ Provides a MNS queue resource.
 Basic Usage
 
 ```
-resource "alicloud_mns_queue" "queue"{
-    name="tf-example-mnsqueue"
-    delay_seconds=0
-    maximum_message_size=65536
-    message_retention_period=345600
-    visibility_timeout=30
-    polling_wait_seconds=0
+resource "alicloud_mns_queue" "queue" {
+  name                     = "tf-example-mnsqueue"
+  delay_seconds            = 0
+  maximum_message_size     = 65536
+  message_retention_period = 345600
+  visibility_timeout       = 30
+  polling_wait_seconds     = 0
 }
 ```
 

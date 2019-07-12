@@ -16,26 +16,26 @@ This data source provides a list of Route Tables owned by an Alibaba Cloud accou
 
 ```
 variable "name" {
-    default = "route-tables-datasource-example-name"
+  default = "route-tables-datasource-example-name"
 }
 
 resource "alicloud_vpc" "foo" {
-    cidr_block = "172.16.0.0/12"
-    name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+  name       = "${var.name}"
 }
 
 resource "alicloud_route_table" "foo" {
-    vpc_id = "${alicloud_vpc.foo.id}"
-    name = "${var.name}"
-    description = "${var.name}"
+  vpc_id      = "${alicloud_vpc.foo.id}"
+  name        = "${var.name}"
+  description = "${var.name}"
 }
 
 data "alicloud_route_tables" "foo" {
-    ids = ["${alicloud_route_table.foo.id}"]
+  ids = ["${alicloud_route_table.foo.id}"]
 }
 
 output "route_table_ids" {
-    value = "${data.alicloud_route_tables.foo.ids}"
+  value = "${data.alicloud_route_tables.foo.ids}"
 }
 ```
 

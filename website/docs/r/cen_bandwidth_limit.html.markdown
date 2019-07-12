@@ -19,71 +19,71 @@ For information about CEN and how to use it, see [Cross-region interconnection b
 Basic Usage
 
 ```
-variable "name"{
-    default = "tf-testAccCenBandwidthLimitConfig"
+variable "name" {
+  default = "tf-testAccCenBandwidthLimitConfig"
 }
 
 provider "alicloud" {
-    alias = "fra"
-    region = "eu-central-1"
+  alias  = "fra"
+  region = "eu-central-1"
 }
 
 provider "alicloud" {
-    alias = "sh"
-    region = "cn-shanghai"
+  alias  = "sh"
+  region = "cn-shanghai"
 }
 
 resource "alicloud_vpc" "vpc1" {
-  provider = "alicloud.fra"
-  name = "${var.name}"
+  provider   = "alicloud.fra"
+  name       = "${var.name}"
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_vpc" "vpc2" {
-  provider = "alicloud.sh"
-  name = "${var.name}"
+  provider   = "alicloud.sh"
+  name       = "${var.name}"
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_cen_instance" "cen" {
-     name = "${var.name}"
-     description = "tf-testAccCenBandwidthLimitConfigDescription"
+  name        = "${var.name}"
+  description = "tf-testAccCenBandwidthLimitConfigDescription"
 }
 
 resource "alicloud_cen_bandwidth_package" "bwp" {
-    bandwidth = 5
-    geographic_region_ids = [
-		"Europe",
-		"China"]
+  bandwidth = 5
+  geographic_region_ids = [
+    "Europe",
+  "China"]
 }
 
 resource "alicloud_cen_bandwidth_package_attachment" "bwp_attach" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    bandwidth_package_id = "${alicloud_cen_bandwidth_package.bwp.id}"
+  instance_id          = "${alicloud_cen_instance.cen.id}"
+  bandwidth_package_id = "${alicloud_cen_bandwidth_package.bwp.id}"
 }
 
 resource "alicloud_cen_instance_attachment" "vpc_attach_1" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    child_instance_id = "${alicloud_vpc.vpc1.id}"
-    child_instance_region_id = "eu-central-1"
+  instance_id              = "${alicloud_cen_instance.cen.id}"
+  child_instance_id        = "${alicloud_vpc.vpc1.id}"
+  child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "vpc_attach_2" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    child_instance_id = "${alicloud_vpc.vpc2.id}"
-    child_instance_region_id = "cn-shanghai"
+  instance_id              = "${alicloud_cen_instance.cen.id}"
+  child_instance_id        = "${alicloud_vpc.vpc2.id}"
+  child_instance_region_id = "cn-shanghai"
 }
 
 resource "alicloud_cen_bandwidth_limit" "foo" {
-    instance_id = "${alicloud_cen_instance.cen.id}"
-    region_ids = [
-        "eu-central-1",
-        "cn-shanghai"]
-     bandwidth_limit = 4
-     depends_on = [
-        "alicloud_cen_bandwidth_package_attachment.bwp_attach",
-        "alicloud_cen_instance_attachment.vpc_attach_1",
-        "alicloud_cen_instance_attachment.vpc_attach_2"]
+  instance_id = "${alicloud_cen_instance.cen.id}"
+  region_ids = [
+    "eu-central-1",
+  "cn-shanghai"]
+  bandwidth_limit = 4
+  depends_on = [
+    "alicloud_cen_bandwidth_package_attachment.bwp_attach",
+    "alicloud_cen_instance_attachment.vpc_attach_1",
+  "alicloud_cen_instance_attachment.vpc_attach_2"]
 }
 ```
 ## Argument Reference

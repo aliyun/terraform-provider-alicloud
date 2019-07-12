@@ -24,23 +24,23 @@ Basic Usage
 
 ```
 resource "alicloud_nas_file_system" "foo" {
-	protocol_type = "NFS"
-        storage_type = "Performance"
-        description = "tf-testAccNasConfigFs"
+  protocol_type = "NFS"
+  storage_type  = "Performance"
+  description   = "tf-testAccNasConfigFs"
 }
 resource "alicloud_nas_access_group" "foo" {
-        name = "tf-NasConfig-%d"
-        type = "Classic"
-        description = "tf-testAccNasConfig"
+  name        = "tf-NasConfig-%d"
+  type        = "Classic"
+  description = "tf-testAccNasConfig"
 }
 resource "alicloud_nas_access_group" "bar" {
-        name = "tf-cNasConfig-2-%d"
-        type = "Classic"
-        description = "tf-testAccNasConfig-2"
+  name        = "tf-cNasConfig-2-%d"
+  type        = "Classic"
+  description = "tf-testAccNasConfig-2"
 }
 resource "alicloud_nas_mount_target" "foo" {
-        file_system_id = "${alicloud_nas_file_system.foo.id}"
-        access_group_name = "${alicloud_nas_access_group.foo.id}"
+  file_system_id    = "${alicloud_nas_file_system.foo.id}"
+  access_group_name = "${alicloud_nas_access_group.foo.id}"
 }
 ```
 

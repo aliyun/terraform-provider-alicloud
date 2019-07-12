@@ -19,12 +19,12 @@ Basic Usage
 ```
 resource "alicloud_vpc" "default" {
   cidr_block = "172.16.0.0/12"
-  name = "VpcConfig"
-}	
+  name       = "VpcConfig"
+}
 
 resource "alicloud_network_acl" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "network_acl"
+  vpc_id      = "${alicloud_vpc.default.id}"
+  name        = "network_acl"
   description = "network_acl"
 }
 ```

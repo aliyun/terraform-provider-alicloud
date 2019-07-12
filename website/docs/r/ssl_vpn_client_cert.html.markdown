@@ -18,8 +18,8 @@ Basic Usage
 
 ```
 resource "alicloud_ssl_vpn_client_cert" "foo" {
-	ssl_vpn_server_id = "ssl_vpn_server_fake_id"
-	name = "sslVpnClientCertExample"
+  ssl_vpn_server_id = "ssl_vpn_server_fake_id"
+  name              = "sslVpnClientCertExample"
 }
 ```
 ## Argument Reference

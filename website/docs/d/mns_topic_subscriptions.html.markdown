@@ -14,7 +14,7 @@ This data source provides a list of MNS topic subscriptions in an Alibaba Cloud 
 
 ```
 data "alicloud_mns_topic_subscriptions" "subscriptions" {
-  topic_name="topic_name"
+  topic_name  = "topic_name"
   name_prefix = "tf-"
 }
 

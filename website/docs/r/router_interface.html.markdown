@@ -19,18 +19,18 @@ Provides a VPC router interface resource aim to build a connection between two V
 
 ```
 resource "alicloud_vpc" "foo" {
-  name = "tf_test_foo12345"
+  name       = "tf_test_foo12345"
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_router_interface" "interface" {
   opposite_region = "cn-beijing"
-  router_type = "VRouter"
-  router_id = "${alicloud_vpc.foo.router_id}"
-  role = "InitiatingSide"
-  specification = "Large.2"
-  name = "test1"
-  description = "test1"
+  router_type     = "VRouter"
+  router_id       = "${alicloud_vpc.foo.router_id}"
+  role            = "InitiatingSide"
+  specification   = "Large.2"
+  name            = "test1"
+  description     = "test1"
 }
 ```
 ## Argument Reference

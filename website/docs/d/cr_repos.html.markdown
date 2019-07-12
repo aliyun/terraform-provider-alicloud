@@ -17,8 +17,8 @@ This data source provides a list Container Registry repositories on Alibaba Clou
 ```
 # Declare the data source
 data "alicloud_cr_repos" "my_repos" {
-    name_regex = "my-repos"
-    output_file = "my-repo-json"
+  name_regex  = "my-repos"
+  output_file = "my-repo-json"
 }
 
 output "output" {

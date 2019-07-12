@@ -30,20 +30,20 @@ Provides a ECS instance resource.
 resource "alicloud_security_group" "group" {
   name        = "tf_test_foo"
   description = "foo"
-  vpc_id = "${alicloud_vpc.vpc.id}"
+  vpc_id      = "${alicloud_vpc.vpc.id}"
 }
 
 resource "alicloud_instance" "instance" {
   # cn-beijing
   availability_zone = "cn-beijing-b"
-  security_groups = "${alicloud_security_group.group.*.id}"
+  security_groups   = "${alicloud_security_group.group.*.id}"
 
   # series III
-  instance_type        = "ecs.n4.large"
-  system_disk_category = "cloud_efficiency"
-  image_id             = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
-  instance_name        = "test_foo"
-  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  instance_type              = "ecs.n4.large"
+  system_disk_category       = "cloud_efficiency"
+  image_id                   = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
+  instance_name              = "test_foo"
+  vswitch_id                 = "${alicloud_vswitch.vswitch.id}"
   internet_max_bandwidth_out = 10
 }
 

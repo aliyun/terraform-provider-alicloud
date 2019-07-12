@@ -16,8 +16,8 @@ This data source provides user-available access groups. Use when you can create 
 
 ```
 data "alicloud_nas_access_groups" "ag" {
-  name_regex = "^foo"
-  type = "Classic"
+  name_regex  = "^foo"
+  type        = "Classic"
   description = "tf-testAccAccessGroupsdatasource"
 }
 

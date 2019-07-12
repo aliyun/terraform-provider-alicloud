@@ -20,8 +20,8 @@ Basic Usage
 
 ```
 resource "alicloud_common_bandwidth_package" "foo" {
-  bandwidth = "2"
-  name = "test_common_bandwidth_package"
+  bandwidth   = "2"
+  name        = "test_common_bandwidth_package"
   description = "test_common_bandwidth_package"
 }
 
@@ -32,7 +32,7 @@ resource "alicloud_eip" "foo" {
 
 resource "alicloud_common_bandwidth_package_attachment" "foo" {
   bandwidth_package_id = "${alicloud_common_bandwidth_package.foo.id}"
-  instance_id = "${alicloud_eip.foo.id}"
+  instance_id          = "${alicloud_eip.foo.id}"
 }
 
 ```
