@@ -5,46 +5,89 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudCasCertificatesDataSource_certificates(t *testing.T) {
-	randInt := acctest.RandInt()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.CasClassicSupportedRegions)
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudCasDataSourceCertificates(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.alicloud_cas_certificates.certs", "certificates.0.id"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cas_certificates.certs", "certificates.0.name"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cas_certificates.certs", "certificates.0.common"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cas_certificates.certs", "certificates.0.finger_print"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cas_certificates.certs", "certificates.0.issuer"),
-					resource.TestCheckResourceAttr("data.alicloud_cas_certificates.certs", "certificates.0.org_name", ""),
-					resource.TestCheckResourceAttr("data.alicloud_cas_certificates.certs", "certificates.0.province", ""),
-					resource.TestCheckResourceAttr("data.alicloud_cas_certificates.certs", "certificates.0.city", ""),
-					resource.TestCheckResourceAttr("data.alicloud_cas_certificates.certs", "certificates.0.country", ""),
-					resource.TestCheckResourceAttrSet("data.alicloud_cas_certificates.certs", "certificates.0.start_date"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cas_certificates.certs", "certificates.0.end_date"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cas_certificates.certs", "certificates.0.sans"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cas_certificates.certs", "certificates.0.expired"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cas_certificates.certs", "certificates.0.buy_in_aliyun"),
-				),
-			},
-		},
-	})
+func TestAccAlicloudCasCertificatesDataSource_basic(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_cas_certificates.default"
+
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf_testAccCasDataSource_%d", rand),
+		dataSourceCasCertificatesConfigDependence)
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_cas_certificate.default.id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_cas_certificate.default.id}_fake"},
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_cas_certificate.default.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_cas_certificate.default.name}_fake",
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":        []string{"${alicloud_cas_certificate.default.id}"},
+			"name_regex": "${alicloud_cas_certificate.default.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":        []string{"${alicloud_cas_certificate.default.id}"},
+			"name_regex": "${alicloud_cas_certificate.default.name}_fake",
+		}),
+	}
+
+	var existCasCertificatesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                        "1",
+			"ids.0":                        CHECKSET,
+			"names.#":                      "1",
+			"names.0":                      fmt.Sprintf("tf_testAccCasDataSource_%d", rand),
+			"certificates.#":               "1",
+			"certificates.0.name":          fmt.Sprintf("tf_testAccCasDataSource_%d", rand),
+			"certificates.0.org_name":      "",
+			"certificates.0.province":      "",
+			"certificates.0.city":          "",
+			"certificates.0.country":       "",
+			"certificates.0.common":        CHECKSET,
+			"certificates.0.finger_print":  CHECKSET,
+			"certificates.0.issuer":        CHECKSET,
+			"certificates.0.start_date":    CHECKSET,
+			"certificates.0.end_date":      CHECKSET,
+			"certificates.0.sans":          CHECKSET,
+			"certificates.0.expired":       CHECKSET,
+			"certificates.0.buy_in_aliyun": CHECKSET,
+		}
+	}
+
+	var fakeCasCertificatesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":          "0",
+			"names.#":        "0",
+			"certificates.#": "0",
+		}
+	}
+
+	var casCertificatesCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existCasCertificatesMapFunc,
+		fakeMapFunc:  fakeCasCertificatesMapFunc,
+	}
+
+	casCertificatesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
 }
 
-func testAccCheckAlicloudCasDataSourceCertificates(randInt int) string {
+func dataSourceCasCertificatesConfigDependence(name string) string {
 	return fmt.Sprintf(`
-resource "alicloud_cas_certificate" "cert" {
-  name = "tf_testAcc%d"
+resource "alicloud_cas_certificate" "default" {
+  name = "%s"
   cert = <<EOF
 -----BEGIN CERTIFICATE-----
 MIIFoTCCBImgAwIBAgIQA06FWjWYxa0rnA/tSO0JUTANBgkqhkiG9w0BAQsFADBu
@@ -137,9 +180,5 @@ ENPkagd6EvjAMsbne1dTgIe7R2yh3pdRNOiLVy2uyVJaz8Qn8at/8Q==
 -----END RSA PRIVATE KEY-----
 EOF
 }
-data "alicloud_cas_certificates" "certs" {
-  name_regex = "${alicloud_cas_certificate.cert.name}"
-  output_file = "${path.module}/cas_certificates.json"
-}
-`, randInt)
+`, name)
 }

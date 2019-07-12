@@ -1,13 +1,12 @@
 package alicloud
 
 import (
-	"regexp"
-	"strconv"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"regexp"
+	"strconv"
 )
 
 func dataSourceAlicloudCasCertificates() *schema.Resource {
@@ -20,9 +19,19 @@ func dataSourceAlicloudCasCertificates() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"certificates": {
 				Type:     schema.TypeList,
@@ -96,33 +105,49 @@ func dataSourceAlicloudCascertsRead(d *schema.ResourceData, meta interface{}) er
 	var allcerts []cas.Certificate
 	client := meta.(*connectivity.AliyunClient)
 
-	args := cas.CreateDescribeUserCertificateListRequest()
-	args.ShowSize = requests.NewInteger(PageSizeLarge)
+	request := cas.CreateDescribeUserCertificateListRequest()
+	request.ShowSize = requests.NewInteger(PageSizeLarge)
 
 	for i := 1; ; i++ {
-		args.CurrentPage = requests.NewInteger(i)
+		request.CurrentPage = requests.NewInteger(i)
 
 		raw, err := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
-			return casClient.DescribeUserCertificateList(args)
+			return casClient.DescribeUserCertificateList(request)
 		})
 		if err != nil {
 			return WrapError(err)
 		}
 
-		res, _ := raw.(*cas.DescribeUserCertificateListResponse)
-		allcerts = append(allcerts, res.CertificateList...)
+		response, _ := raw.(*cas.DescribeUserCertificateListResponse)
+		allcerts = append(allcerts, response.CertificateList...)
 
-		if len(res.CertificateList) < PageSizeLarge {
+		if len(response.CertificateList) < PageSizeLarge {
 			break
 		}
 	}
 
 	var s []map[string]interface{}
 	var ids []string
+	var names []string
+
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
 	for _, cert := range allcerts {
 		if v, ok := d.GetOk("name_regex"); ok && v.(string) != "" {
 			r := regexp.MustCompile(v.(string))
 			if !r.MatchString(cert.Name) {
+				continue
+			}
+		}
+
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[strconv.Itoa(cert.Id)]; !ok {
 				continue
 			}
 		}
@@ -145,11 +170,18 @@ func dataSourceAlicloudCascertsRead(d *schema.ResourceData, meta interface{}) er
 		}
 		s = append(s, mapping)
 		ids = append(ids, strconv.Itoa(cert.Id))
+		names = append(names, cert.Name)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 
 	if err := d.Set("certificates", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 
