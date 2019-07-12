@@ -1,8 +1,12 @@
 ## 1.52.0 (Unreleased)
 
+- **New Datasource:** `alicloud_ons_instances` [GH-1411]
+
 IMPROVEMENTS:
 
 - improve(vpc):add ids filter [GH-1420]
+- improve(db_instances): Added ids filter and added names to datasource attributes [GH-1419]
+- improve(cas): Added ids filter and added names to datasource attributes [GH-1417]
 - docs(format): Convert inline HCL configs to canonical format [GH-1415]
 - improve(gpdb_instance):add vpc name [GH-1413]
 - improve(provider): add a new parameter `skip_region_validation` in the provider config [GH-1404]
@@ -10,6 +14,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix(db_instance):fix db_instance testcase vsw availability_zone [GH-1418]
 - fix(api_gateway): modified the testcase to avoid errors [GH-1410]
 - fix(db_readonly_instance): extend the waiting time for spec modification [GH-1408]
 - fix(db_readonly_instance): add retryable error content in instance spec modification and deletion [GH-1403]
