@@ -18,9 +18,9 @@ Provides a resource to create a oss bucket and set its attribution.
 Private Bucket
 
 ```
-resource "alicloud_oss_bucket" "bucket-acl"{
+resource "alicloud_oss_bucket" "bucket-acl" {
   bucket = "bucket-170309-acl"
-  acl = "private"
+  acl    = "private"
 }
 ```
 
@@ -40,9 +40,9 @@ resource "alicloud_oss_bucket" "bucket-website" {
 Enable Logging
 
 ```
-resource "alicloud_oss_bucket" "bucket-target"{
+resource "alicloud_oss_bucket" "bucket-target" {
   bucket = "bucket-170309-acl"
-  acl = "public-read"
+  acl    = "public-read"
 }
 
 resource "alicloud_oss_bucket" "bucket-logging" {
@@ -60,11 +60,11 @@ Referer configuration
 ```
 resource "alicloud_oss_bucket" "bucket-referer" {
   bucket = "bucket-170309-referer"
-  acl = "private"
+  acl    = "private"
 
   referer_config {
-      allow_empty = false
-      referers = ["http://www.aliyun.com", "https://www.aliyun.com"]
+    allow_empty = false
+    referers    = ["http://www.aliyun.com", "https://www.aliyun.com"]
   }
 }
 ```
@@ -74,11 +74,11 @@ Set lifecycle rule
 ```
 resource "alicloud_oss_bucket" "bucket-lifecycle" {
   bucket = "bucket-170309-lifecycle"
-  acl = "public-read"
+  acl    = "public-read"
 
   lifecycle_rule {
-    id = "rule-days"
-    prefix = "path1/"
+    id      = "rule-days"
+    prefix  = "path1/"
     enabled = true
 
     expiration {
@@ -86,8 +86,8 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
     }
   }
   lifecycle_rule {
-    id = "rule-date"
-    prefix = "path2/"
+    id      = "rule-date"
+    prefix  = "path2/"
     enabled = true
 
     expiration {
@@ -102,8 +102,8 @@ Set bucket policy
 ```
 resource "alicloud_oss_bucket" "bucket-policy" {
   bucket = "bucket-170309-policy"
-  acl = "private"
-  
+  acl    = "private"
+
   policy = <<POLICY
   {"Statement":
       [{"Action":
@@ -119,8 +119,8 @@ resource "alicloud_oss_bucket" "bucket-policy" {
 IA Bucket
 
 ```
-resource "alicloud_oss_bucket" "bucket-storageclass"{
-  bucket = "bucket-170309-storageclass"
+resource "alicloud_oss_bucket" "bucket-storageclass" {
+  bucket        = "bucket-170309-storageclass"
   storage_class = "IA"
 }
 ```
@@ -128,9 +128,9 @@ resource "alicloud_oss_bucket" "bucket-storageclass"{
 Set bucket server-side encryption rule 
 
 ```
-resource "alicloud_oss_bucket" "bucket-sserule"{
+resource "alicloud_oss_bucket" "bucket-sserule" {
   bucket = "bucket-170309-sserule"
-  acl = "private"
+  acl    = "private"
 
   server_side_encryption_rule {
     sse_algorithm = "AES256"
@@ -141,9 +141,9 @@ resource "alicloud_oss_bucket" "bucket-sserule"{
 Set bucket tags 
 
 ```
-resource "alicloud_oss_bucket" "bucket-tags"{
+resource "alicloud_oss_bucket" "bucket-tags" {
   bucket = "bucket-170309-tags"
-  acl = "private"
+  acl    = "private"
 
   tags = {
     key1 = "value1"
@@ -155,9 +155,9 @@ resource "alicloud_oss_bucket" "bucket-tags"{
 Enable bucket versioning 
 
 ```
-resource "alicloud_oss_bucket" "bucket-versioning"{
+resource "alicloud_oss_bucket" "bucket-versioning" {
   bucket = "bucket-170309-versioning"
-  acl = "private"
+  acl    = "private"
 
   versioning {
     status = "Enabled"
