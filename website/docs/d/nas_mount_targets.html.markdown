@@ -16,7 +16,7 @@ This data source provides MountTargets available to the user.
 
 ```
 data "alicloud_nas_mount_targets" "mt" {
-  file_system_id = "1a2sc4d"
+  file_system_id    = "1a2sc4d"
   access_group_name = "tf-testAccNasConfig"
 }
 
