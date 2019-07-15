@@ -68,6 +68,7 @@ func resourceAlicloudOtsTable() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateStringConvertInt64(),
+				Default:      "86400",
 			},
 		},
 	}
@@ -102,7 +103,6 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	if deviation, ok := d.GetOk("deviation_cell_version_in_sec"); ok {
 		tableOption.DeviationCellVersionInSec, _ = strconv.ParseInt(deviation.(string), 10, 64)
 	}
-
 	reservedThroughput := new(tablestore.ReservedThroughput)
 
 	createTableRequest := new(tablestore.CreateTableRequest)
@@ -161,7 +161,7 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 
 	d.Set("time_to_live", describe.TableOption.TimeToAlive)
 	d.Set("max_version", describe.TableOption.MaxVersion)
-	d.Set("deviation_cell_version_in_sec", describe.TableOption.DeviationCellVersionInSec)
+	d.Set("deviation_cell_version_in_sec", strconv.FormatInt(describe.TableOption.DeviationCellVersionInSec, 10))
 
 	return nil
 }
