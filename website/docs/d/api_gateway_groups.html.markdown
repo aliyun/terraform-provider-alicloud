@@ -27,6 +27,7 @@ output "first_group_id" {
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to filter api gateway groups by name.
+* `ids` - (Optional, Available 1.53.0+) A list of api group IDs. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
