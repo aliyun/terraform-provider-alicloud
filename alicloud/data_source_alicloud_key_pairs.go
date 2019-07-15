@@ -20,7 +20,11 @@ func dataSourceAlicloudKeyPairs() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateNameRegex,
 			},
-
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"finger_print": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -30,12 +34,12 @@ func dataSourceAlicloudKeyPairs() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			//Computed value
 			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			//Computed value
 			"key_pairs": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -72,7 +76,13 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 	if name, ok := d.GetOk("name_regex"); ok {
 		regex = regexp.MustCompile(name.(string))
 	}
-
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 	request := ecs.CreateDescribeKeyPairsRequest()
 	if fingerPrint, ok := d.GetOk("finger_print"); ok {
 		request.KeyPairFingerPrint = fingerPrint.(string)
@@ -90,17 +100,23 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_key_pairs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request, raw)
-		results, _ := raw.(*ecs.DescribeKeyPairsResponse)
-		if len(results.KeyPairs.KeyPair) < 1 {
+		response, _ := raw.(*ecs.DescribeKeyPairsResponse)
+		if len(response.KeyPairs.KeyPair) < 1 {
 			break
 		}
-		for _, key := range results.KeyPairs.KeyPair {
-			if regex == nil || (regex != nil && regex.MatchString(key.KeyPairName)) {
-				keyPairs = append(keyPairs, key)
-				keyPairsAttach[key.KeyPairName] = make([]map[string]interface{}, 0)
+		for _, key := range response.KeyPairs.KeyPair {
+			if regex != nil && !regex.MatchString(key.KeyPairName) {
+				continue
 			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[key.KeyPairName]; !ok {
+					continue
+				}
+			}
+			keyPairs = append(keyPairs, key)
+			keyPairsAttach[key.KeyPairName] = make([]map[string]interface{}, 0)
 		}
-		if len(results.KeyPairs.KeyPair) < PageSizeLarge {
+		if len(response.KeyPairs.KeyPair) < PageSizeLarge {
 			break
 		}
 		if page, err := getNextpageNumber(request.PageNumber); err != nil {
@@ -170,6 +186,7 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 
 func keyPairsDescriptionAttributes(d *schema.ResourceData, keyPairs []ecs.KeyPair, keyPairsAttach map[string][]map[string]interface{}) error {
 	var names []string
+	var ids []string
 	var s []map[string]interface{}
 	for _, key := range keyPairs {
 		mapping := map[string]interface{}{
@@ -180,6 +197,7 @@ func keyPairsDescriptionAttributes(d *schema.ResourceData, keyPairs []ecs.KeyPai
 		}
 
 		names = append(names, string(key.KeyPairName))
+		ids = append(ids, string(key.KeyPairName))
 		s = append(s, mapping)
 	}
 
@@ -187,8 +205,10 @@ func keyPairsDescriptionAttributes(d *schema.ResourceData, keyPairs []ecs.KeyPai
 	if err := d.Set("key_pairs", s); err != nil {
 		return WrapError(err)
 	}
-
 	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.

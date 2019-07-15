@@ -28,6 +28,7 @@ data "alicloud_key_pairs" "default" {
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to apply to the resulting key pairs.
+* `ids` - (Optional, Available 1.53.0+) A list of key pair IDs.
 * `finger_print` - (Optional) A finger print used to retrieve specified key pair.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -35,6 +36,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `names` - A list of key pair names.
 * `key_pairs` - A list of key pairs. Each element contains the following attributes:
   * `id` - ID of the key pair.
   * `key_name` - Name of the key pair.
