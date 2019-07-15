@@ -35,7 +35,10 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
  * `ids` - A list of DRDS instance IDs.
+ * `descriptions` - A list of DRDS descriptions. 
+ * `instances` - A list of DRDS instances.
    * `id` - The ID of the DRDS instance.
    * `description` - The DRDS instance description.
    * `name` - The name of the RDS instance.

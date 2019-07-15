@@ -49,7 +49,9 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 	var existDRDSInstancesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                    "1",
+			"descriptions.#":           "1",
 			"ids.0":                    CHECKSET,
+			"descriptions.0":           fmt.Sprintf("tf-testAcc%sDRDSInstancesDataSource-%d", defaultRegionToTest, rand),
 			"instances.#":              "1",
 			"instances.0.description":  fmt.Sprintf("tf-testAcc%sDRDSInstancesDataSource-%d", defaultRegionToTest, rand),
 			"instances.0.type":         "1",
@@ -62,8 +64,9 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 
 	var fakeDRDSInstancesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":       "0",
-			"instances.#": "0",
+			"ids.#":          "0",
+			"descriptions.#": "0",
+			"instances.#":    "0",
 		}
 	}
 
