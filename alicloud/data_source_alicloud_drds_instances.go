@@ -26,9 +26,13 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				ForceNew: true,
-				MinItems: 1,
 			},
 			// Computed values
+			"descriptions": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"instances": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -118,6 +122,7 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 }
 func drdsInstancesDescription(d *schema.ResourceData, dbi []drds.Instance) error {
 	var ids []string
+	var descriptions []string
 	var s []map[string]interface{}
 	for _, item := range dbi {
 		mapping := map[string]interface{}{
@@ -131,6 +136,7 @@ func drdsInstancesDescription(d *schema.ResourceData, dbi []drds.Instance) error
 			"version":      item.Version,
 		}
 		ids = append(ids, item.DrdsInstanceId)
+		descriptions = append(descriptions, item.Description)
 		s = append(s, mapping)
 	}
 	d.SetId(dataResourceIdHash(ids))
@@ -138,6 +144,9 @@ func drdsInstancesDescription(d *schema.ResourceData, dbi []drds.Instance) error
 		return WrapError(err)
 	}
 	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("descriptions", descriptions); err != nil {
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it
