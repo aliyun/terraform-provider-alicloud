@@ -62,7 +62,7 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 	}
 	DBInstanceClassConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
-			"db_instance_class": `"mssql.x8.8xlarge.e2"`,
+			"db_instance_class": `"mysql.n2.large.1"`,
 		}),
 		fakeConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
 			"db_instance_class": `"fake"`,

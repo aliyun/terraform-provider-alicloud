@@ -477,6 +477,7 @@ func TestAccAlicloudDBBackupPolicy_PPAS(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.RdsPPASNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
