@@ -190,7 +190,7 @@ func resourceAlicloudGpdbConnectionDelete(d *schema.ResourceData, meta interface
 			return gpdbClient.ReleaseInstancePublicConnection(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{OperationDeniedDBInstanceStatus}) {
+			if IsExceptedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

@@ -1,12 +1,13 @@
 package alicloud
 
 import (
+	"regexp"
+	"strconv"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"regexp"
-	"strconv"
 )
 
 func dataSourceAlicloudCasCertificates() *schema.Resource {

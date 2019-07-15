@@ -209,7 +209,7 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 		})
 
 		if err != nil {
-			if IsExceptedErrors(err, []string{OperationDeniedDBInstanceStatus}) {
+			if IsExceptedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

@@ -153,7 +153,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 				return rdsClient.ModifyDBInstanceDescription(request)
 			})
 			if err != nil {
-				if IsExceptedError(err, OperationDeniedDBInstanceStatus) {
+				if IsExceptedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -197,7 +197,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 				return rdsClient.ModifyDBInstanceSpec(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, []string{"InvalidOrderTask.NotSupport", OperationDeniedDBInstanceStatus}) {
+				if IsExceptedErrors(err, []string{"InvalidOrderTask.NotSupport", "OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -277,8 +277,8 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 			return rdsClient.DeleteDBInstance(request)
 		})
 
-		if err != nil && !rdsService.NotFoundDBInstance(err) {
-			if IsExceptedErrors(err, []string{"RwSplitNetType.Exist", OperationDeniedDBInstanceStatus}) {
+		if err != nil {
+			if IsExceptedErrors(err, []string{"RwSplitNetType.Exist", "OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -290,6 +290,9 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 	})
 
 	if err != nil {
+		if rdsService.NotFoundDBInstance(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 

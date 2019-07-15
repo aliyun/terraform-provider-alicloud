@@ -33,7 +33,7 @@ type RdsService struct {
 // The API return 200 for resource not found.
 // When getInstance is empty, then throw InstanceNotfound error.
 // That the business layer only need to check error.
-var DBInstanceStatusCatcher = Catcher{OperationDeniedDBInstanceStatus, 60, 5}
+var DBInstanceStatusCatcher = Catcher{"OperationDenied.DBInstanceStatus", 60, 5}
 
 func (s *RdsService) DescribeDBInstance(id string) (instance *rds.DBInstanceAttribute, err error) {
 
@@ -166,7 +166,7 @@ func (s *RdsService) DescribeDBDatabase(id string) (ds *rds.Database, err error)
 			return rdsClient.DescribeDatabases(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{DBInternalError, OperationDeniedDBInstanceStatus}) {
+			if IsExceptedErrors(err, []string{DBInternalError, "OperationDenied.DBInstanceStatus"}) {
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			if s.NotFoundDBInstance(err) || IsExceptedErrors(err, []string{InvalidDBNameNotFound}) {
