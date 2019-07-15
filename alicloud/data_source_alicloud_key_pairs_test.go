@@ -15,7 +15,25 @@ func TestAccAlicloudKeyPairsDataSourceBasic(t *testing.T) {
 			"name_regex": `"${alicloud_key_pair.default.key_name}_fake"`,
 		}),
 	}
-	keyPairsCheckInfo.dataSourceTestCheck(t, 0, nameRegexConf)
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
+			"ids": `["${alicloud_key_pair.default.key_name}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
+			"ids": `["${alicloud_key_pair.default.key_name}_fake"]`,
+		}),
+	}
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
+			"name_regex": `"${alicloud_key_pair.default.key_name}"`,
+			"ids":        `["${alicloud_key_pair.default.key_name}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
+			"name_regex": `"${alicloud_key_pair.default.key_name}"`,
+			"ids":        `["${alicloud_key_pair.default.key_name}_fake"]`,
+		}),
+	}
+	keyPairsCheckInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, allConf)
 }
 
 func testAccCheckAlicloudKeyPairsDataSourceConfig(attrMap map[string]string) string {
@@ -37,6 +55,7 @@ data "alicloud_key_pairs" "default" {
 var existKeyPairsMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"names.#":                 "1",
+		"ids.#":                   "1",
 		"key_pairs.#":             "1",
 		"key_pairs.0.id":          CHECKSET,
 		"key_pairs.0.key_name":    "tf-testAcc-key-pair-datasource",
@@ -47,6 +66,7 @@ var existKeyPairsMapFunc = func(rand int) map[string]string {
 var fakeKeyPairsMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"names.#":     "0",
+		"ids.#":       "0",
 		"key_pairs.#": "0",
 	}
 }
