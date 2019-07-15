@@ -1,11 +1,12 @@
 package alicloud
 
 import (
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"regexp"
 )
 
 func dataSourceAlicloudVpcs() *schema.Resource {

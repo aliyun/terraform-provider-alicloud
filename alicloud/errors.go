@@ -160,7 +160,6 @@ const (
 	ConnectionOperationDenied              = "OperationDenied"
 	ConnectionConflictMessage              = "The requested resource is sold out in the specified zone; try other types of resources or other regions and zones"
 	DBInternalError                        = "InternalError"
-	OperationDeniedDBInstanceStatus        = "OperationDenied.DBInstanceStatus"
 	DBOperationDeniedOutofUsage            = "OperationDenied.OutofUsage"
 
 	// oss
@@ -359,7 +358,7 @@ var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "Ba
 var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotFound"}
 var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", InternalError, "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
-var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", OperationDeniedDBInstanceStatus, DBInternalError, DBOperationDeniedOutofUsage}
+var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", "OperationDenied.DBInstanceStatus", DBInternalError, DBOperationDeniedOutofUsage}
 var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatus", "OperationDenied.MasterDBInstanceState", "ReadDBInstance.Mismatch"}
 var NasNotFound = []string{InvalidMountTargetNotFound, InvalidFileSystemIDNotFound, ForbiddenNasNotFound, InvalidLBidNotFound, VolumeUnavailable}
 var SnapshotInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
