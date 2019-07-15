@@ -19,6 +19,11 @@ func dataSourceAlicloudElasticsearch() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validateNameRegex,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"version": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -32,12 +37,12 @@ func dataSourceAlicloudElasticsearch() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"ids": {
+			// Computed values
+			"descriptions": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			// Computed values
 			"instances": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -141,20 +146,31 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 
 	var descriptionRegex *regexp.Regexp
 	if v, ok := d.GetOk("description_regex"); ok {
-		if r, err := regexp.Compile(v.(string)); err == nil {
-			descriptionRegex = r
-		} else {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
 			return WrapError(err)
 		}
-		for _, instance := range instances {
-			if descriptionRegex != nil && !descriptionRegex.MatchString(instance.Description) {
+		descriptionRegex = r
+	}
+
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
+	for _, instance := range instances {
+		if descriptionRegex != nil && !descriptionRegex.MatchString(instance.Description) {
+			continue
+		}
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[instance.InstanceId]; !ok {
 				continue
 			}
-
-			filteredInstances = append(filteredInstances, instance)
 		}
-	} else {
-		filteredInstances = instances
+		filteredInstances = append(filteredInstances, instance)
 	}
 
 	return WrapError(extractInstance(d, filteredInstances))
@@ -162,6 +178,7 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 
 func extractInstance(d *schema.ResourceData, instances []elasticsearch.Instance) error {
 	var ids []string
+	var descriptions []string
 	var s []map[string]interface{}
 
 	for _, item := range instances {
@@ -181,6 +198,7 @@ func extractInstance(d *schema.ResourceData, instances []elasticsearch.Instance)
 		}
 
 		ids = append(ids, item.InstanceId)
+		descriptions = append(descriptions, item.Description)
 		s = append(s, mapping)
 	}
 
@@ -190,6 +208,10 @@ func extractInstance(d *schema.ResourceData, instances []elasticsearch.Instance)
 	}
 
 	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("descriptions", descriptions); err != nil {
 		return WrapError(err)
 	}
 

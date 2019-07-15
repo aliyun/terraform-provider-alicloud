@@ -24,13 +24,24 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 		}),
 	}
 
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_elasticsearch_instance.default.id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_elasticsearch_instance.default.id}-F"},
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_elasticsearch_instance.default.description}",
+			"ids":               []string{"${alicloud_elasticsearch_instance.default.id}"},
 			"version":           "5.5.3_with_X-Pack",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_elasticsearch_instance.default.description}-F",
+			"ids":               []string{"${alicloud_elasticsearch_instance.default.id}"},
 			"version":           "6.7.0_with_X-Pack",
 		}),
 	}
@@ -41,11 +52,15 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 		fakeMapFunc:  fakeElasticsearchMapFunc,
 	}
 
-	elasticsearchCheckInfo.dataSourceTestCheck(t, rand, descriptionRegexConf, allConf)
+	elasticsearchCheckInfo.dataSourceTestCheck(t, rand, descriptionRegexConf, idsConf, allConf)
 }
 
 var existElasticsearchMapFunc = func(rand int) map[string]string {
 	return map[string]string{
+		"ids.#":                            "1",
+		"ids.0":                            CHECKSET,
+		"descriptions.#":                   "1",
+		"descriptions.0":                   fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand),
 		"instances.#":                      "1",
 		"instances.0.id":                   CHECKSET,
 		"instances.0.instance_charge_type": string(PostPaid),
@@ -57,14 +72,14 @@ var existElasticsearchMapFunc = func(rand int) map[string]string {
 		"instances.0.created_at":           CHECKSET,
 		"instances.0.updated_at":           CHECKSET,
 		"instances.0.vswitch_id":           CHECKSET,
-		"ids.#":                            "1",
 	}
 }
 
 var fakeElasticsearchMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"instances.#": "0",
-		"ids.#":       "0",
+		"instances.#":    "0",
+		"ids.#":          "0",
+		"descriptions.#": "0",
 	}
 }
 
