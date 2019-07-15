@@ -503,6 +503,7 @@ func TestAccAlicloudDBInstance_PostgreSQL(t *testing.T) {
 					"engine_version":       "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
 					"instance_type":        "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":     "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
+					"zone_id":              "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id}",
 					"instance_charge_type": "Postpaid",
 					"instance_name":        "${var.name}",
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
@@ -607,15 +608,17 @@ variable "creation" {
 }
 
 data "alicloud_db_instance_engines" "default" {
-  instance_charge_type = "PostPaid"
-  engine               = "PostgreSQL"
-  engine_version       = "9.4"
+  	instance_charge_type = "PostPaid"
+  	engine               = "PostgreSQL"
+  	engine_version       = "9.4"
+	multi_zone           = true
 }
 
 data "alicloud_db_instance_classes" "default" {
-  instance_charge_type = "PostPaid"
-  engine               = "PostgreSQL"
-  engine_version       = "9.4"
+  	instance_charge_type = "PostPaid"
+  	engine               = "PostgreSQL"
+  	engine_version       = "9.4"
+  	multi_zone           = true
 }
 
 resource "alicloud_security_group" "default" {
@@ -756,9 +759,7 @@ func resourceDBInstanceAZConfigDependence(name string) string {
 variable "name" {
 	default = "%s"
 }
-variable "creation" {
-		default = "Rds"
-}
+
 data "alicloud_db_instance_engines" "default" {
   instance_charge_type = "PostPaid"
   engine               = "PPAS"
@@ -821,7 +822,7 @@ func TestAccAlicloudDBInstance_multiAZ(t *testing.T) {
 					"engine_version":    "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
 					"instance_type":     "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":  "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
-					"zone_id":           "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":           "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id}",
 					"instance_name":     "${var.name}",
 					"vswitch_id":        "${alicloud_vswitch.default.id}",
 					"monitoring_period": "60",
@@ -848,19 +849,21 @@ variable "creation" {
 		default = "Rds"
 }
 data "alicloud_db_instance_engines" "default" {
-  engine               = "MySQL"
-  engine_version       = "5.6"
+  	engine               = "MySQL"
+  	engine_version       = "5.6"
+	multi_zone           = true
 }
 
 data "alicloud_db_instance_classes" "default" {
-  engine               = "MySQL"
-  engine_version       = "5.6"
+  	engine               = "MySQL"
+  	engine_version       = "5.6"
+	multi_zone           = true
 }
 resource "alicloud_security_group" "default" {
 	name   = "${var.name}"
 	vpc_id = "${alicloud_vpc.default.id}"
 }
-`, DBMultiAZCommonTestCase, name)
+`, RdsCommonTestCase, name)
 }
 
 func TestAccAlicloudDBInstance_classic(t *testing.T) {
