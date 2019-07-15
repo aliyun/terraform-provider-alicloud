@@ -117,7 +117,7 @@ func TestAccAlicloudDBReadonlyInstance_update(t *testing.T) {
 
 func TestAccAlicloudDBReadonlyInstance_multi(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
-	resourceId := "alicloud_db_readonly_instance.default.4"
+	resourceId := "alicloud_db_readonly_instance.default.1"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccDBInstance_vpc_%d", rand)
 	var DBReadonlyMap = map[string]string{
@@ -154,7 +154,7 @@ func TestAccAlicloudDBReadonlyInstance_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"count":                 "5",
+					"count":                 "2",
 					"master_db_instance_id": "${alicloud_db_instance.default.id}",
 					"zone_id":               "${alicloud_db_instance.default.zone_id}",
 					"engine_version":        "${alicloud_db_instance.default.engine_version}",
