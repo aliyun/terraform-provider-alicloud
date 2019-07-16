@@ -26,8 +26,9 @@ func dataSourceAlicloudMountTargets() *schema.Resource {
 				Optional: true,
 			},
 			"mount_target_domain": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'mount_target_domain' has been deprecated from provider version 1.53.0. New field 'ids' replaces it.",
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -39,7 +40,7 @@ func dataSourceAlicloudMountTargets() *schema.Resource {
 			},
 			"ids": {
 				Type:     schema.TypeList,
-				Computed: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"output_file": {
@@ -94,6 +95,12 @@ func dataSourceAlicloudMountTargetRead(d *schema.ResourceData, meta interface{})
 
 	var allMt []nas.DescribeMountTargetsMountTarget1
 
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 	invoker := NewInvoker()
 	for {
 		var raw interface{}
@@ -126,6 +133,11 @@ func dataSourceAlicloudMountTargetRead(d *schema.ResourceData, meta interface{})
 			}
 			if v, ok := d.GetOk("mount_target_domain"); ok && mt.MountTargetDomain != v.(string) {
 				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[mt.MountTargetDomain]; !ok {
+					continue
+				}
 			}
 			allMt = append(allMt, mt)
 		}

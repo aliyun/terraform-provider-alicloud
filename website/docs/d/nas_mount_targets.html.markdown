@@ -32,9 +32,10 @@ The following arguments are supported:
 * `file_system_id` - (Required ForceNew) The ID of the FileSystem that owns the MountTarget.
 * `access_group_name` - (Optional) Filter results by a specific AccessGroupName.
 * `type` - (Optional) Filter results by a specific NetworkType.
-* `mount_target_domain` - (Optional) Filter results by a specific MountTargetDomain.
+* `mount_target_domain` - (Deprecated, Optional) Filter results by a specific MountTargetDomain.
 * `vpc_id` - (Optional) Filter results by a specific VpcId.
 * `vswitch_id` - (Optional) Filter results by a specific VSwitchId.
+* `ids` - (Optional, Available 1.53.0+) A list of MountTargetDomain.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

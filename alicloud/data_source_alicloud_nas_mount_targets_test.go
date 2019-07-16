@@ -65,6 +65,16 @@ func TestAccAlicloudNasMountTargetDataSource(t *testing.T) {
 			"vswitch_id":     `"${alicloud_nas_mount_target.default.vswitch_id}_fake"`,
 		}),
 	}
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
+			"file_system_id": `"${alicloud_nas_mount_target.default.file_system_id}"`,
+			"ids":            `["${alicloud_nas_mount_target.default.id}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
+			"file_system_id": `"${alicloud_nas_mount_target.default.file_system_id}"`,
+			"ids":            `["${alicloud_nas_mount_target.default.id}_fake"]`,
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
 			"file_system_id":      `"${alicloud_nas_mount_target.default.file_system_id}"`,
@@ -83,7 +93,7 @@ func TestAccAlicloudNasMountTargetDataSource(t *testing.T) {
 			"mount_target_domain": `"${alicloud_nas_mount_target.default.id}_fake"`,
 		}),
 	}
-	mountTargetCheckInfo.dataSourceTestCheck(t, rand, fileSystemIdConf, accessGroupNameConf, typeConf, mountTargetDomainConf, vpcIdConf, vswitchIdConf, allConf)
+	mountTargetCheckInfo.dataSourceTestCheck(t, rand, fileSystemIdConf, accessGroupNameConf, typeConf, mountTargetDomainConf, vpcIdConf, vswitchIdConf, idsConf, allConf)
 }
 
 func testAccCheckAlicloudMountTargetDataSourceConfig(rand int, attrMap map[string]string) string {
