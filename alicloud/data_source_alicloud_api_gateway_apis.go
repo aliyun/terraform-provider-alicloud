@@ -1,13 +1,11 @@
 package alicloud
 
 import (
-	"regexp"
-
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"regexp"
 )
 
 func dataSourceAlicloudApiGatewayApis() *schema.Resource {
@@ -21,9 +19,15 @@ func dataSourceAlicloudApiGatewayApis() *schema.Resource {
 				ForceNew: true,
 			},
 			"api_id": {
-				Type:     schema.TypeString,
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Deprecated: "Field 'api_id' has been deprecated from provider version 1.53.0. New field 'ids' replaces it.",
+			},
+			"ids": {
+				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -36,11 +40,6 @@ func dataSourceAlicloudApiGatewayApis() *schema.Resource {
 				Optional: true,
 			},
 			// Computed values
-			"ids": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
 			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -89,7 +88,7 @@ func dataSourceAlicloudApigatewayApisRead(d *schema.ResourceData, meta interface
 	if groupId, ok := d.GetOk("group_id"); ok {
 		request.GroupId = groupId.(string)
 	}
-	if apiId, ok := d.GetOk("id"); ok {
+	if apiId, ok := d.GetOk("api_id"); ok {
 		request.ApiId = apiId.(string)
 	}
 
@@ -122,21 +121,27 @@ func dataSourceAlicloudApigatewayApisRead(d *schema.ResourceData, meta interface
 	}
 
 	var filteredApisTemp []cloudapi.ApiSummary
-	nameRegex, ok := d.GetOk("name_regex")
-	if ok && nameRegex.(string) != "" {
-		var r *regexp.Regexp
-		if nameRegex != "" {
-			r = regexp.MustCompile(nameRegex.(string))
+
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
 		}
-		for _, api := range allapis {
-			if r != nil && !r.MatchString(api.ApiName) {
+	}
+	for _, api := range allapis {
+		if v, ok := d.GetOk("name_regex"); ok && v.(string) != "" {
+			r := regexp.MustCompile(v.(string))
+			if !r.MatchString(api.ApiName) {
 				continue
 			}
-
-			filteredApisTemp = append(filteredApisTemp, api)
 		}
-	} else {
-		filteredApisTemp = allapis
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[api.ApiId]; !ok {
+				continue
+			}
+		}
+		filteredApisTemp = append(filteredApisTemp, api)
 	}
 
 	return apiGatewayApisDescribeSummarys(d, filteredApisTemp, meta)
