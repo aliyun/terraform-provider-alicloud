@@ -183,9 +183,16 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		request := ecs.CreateResizeDiskRequest()
 		request.DiskId = d.Id()
 		request.NewSize = requests.NewInteger(size)
+		request.Type = string(DiskResizeTypeOnline)
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ResizeDisk(request)
 		})
+		if IsExceptedErrors(err, DiskNotSupportOnlineChangeErrors) {
+			request.Type = string(DiskResizeTypeOffline)
+			raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.ResizeDisk(request)
+			})
+		}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}

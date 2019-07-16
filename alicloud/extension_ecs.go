@@ -103,6 +103,13 @@ const (
 	DiskCloudSSD        = DiskCategory("cloud_ssd")
 )
 
+type DiskResizeType string
+
+const (
+	DiskResizeTypeOffline = DiskResizeType("offline")
+	DiskResizeTypeOnline  = DiskResizeType("online")
+)
+
 type ImageOwnerAlias string
 
 const (
