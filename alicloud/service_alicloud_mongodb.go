@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/resource"
 	"strings"
 	"time"
 
@@ -72,6 +73,26 @@ func (s *MongoDBService) WaitForMongoDBInstance(instanceId string, status Status
 			return WrapErrorf(err, WaitTimeoutMsg, instanceId, GetFunc(1), timeout, instance.DBInstanceStatus, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *MongoDBService) RdsMongodbDBInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeMongoDBInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.DBInstanceStatus == failState {
+				return object, object.DBInstanceStatus, WrapError(Error(FailedToReachTargetStatus, object.DBInstanceStatus))
+			}
+		}
+		return object, object.DBInstanceStatus, nil
 	}
 }
 
