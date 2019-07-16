@@ -605,7 +605,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{"Creating", "Running", "Deleting"}, []string{"Deleted"}, d.Timeout(schema.TimeoutDelete), 3*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{"Creating", "Running", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{}))
 	_, err = stateConf.WaitForState()
 	return WrapError(err)
 }
