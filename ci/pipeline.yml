@@ -1,0 +1,1323 @@
+groups:
+  - name: All
+    jobs:
+      # ECS
+      - Regions
+      - Zones
+      - Images
+      - Instance
+      - Disk
+      - SecurityGroup
+      - KeyPair
+      - NetworkInterface
+      - Snapshot
+      - LaunchTemplate
+      # ESS
+      - Ess
+      # Container Service
+      - CS
+      # Container Registry
+      - CR
+      # Function Compute
+      - FC
+      # OSS
+      - Oss
+      # VPC
+      - Vpc
+      - VSwitch
+      - EIP
+      - Elasticsearch
+      - RouteTable
+      - RouteEntry
+      - RouterInterface
+      - NatGateway
+      - Snat
+      - Forward
+      - CommonBandwidth
+      - Cen
+      - Vpn
+      - SslVpn
+      # SLB
+      - Slb
+      # Database
+      # Rds
+      - DB
+      # Redis and Memcache
+      - KVStore
+      - DRDS
+      - Gpdb
+      # RAM
+      - Ram
+      # Dns and Pvtz
+      - Dns
+      # PrivateZone
+      - Pvtz
+      # Datahub
+      - Datahub
+      # Cdn
+      - Cdn
+      # Api Gateway
+      - ApiGateway
+      # Mns
+      - Mns
+      # Rocket MQ
+      - Ons
+      # Nas
+      - Nas
+      # Ots
+      - Ots
+      # Kms
+      - Kms
+      # Sls
+      - Log
+      # ActionTrail
+      - ActionTrail
+      # SSL Certificate
+      - Cas
+      # MongoDB
+      - MongoDB
+      # Ddoscoo
+      - Ddoscoo
+      # Cms
+      - Sweeper-1
+      - Sweeper-2
+      - Sweeper-3
+      - Sweeper-4
+      - Sweeper-5
+      - SweeperAfter
+
+  - name: Elastic Computing
+    jobs:
+      # ECS
+      - Regions
+      - Zones
+      - Images
+      - Instance
+      - Disk
+      - SecurityGroup
+      - KeyPair
+      - NetworkInterface
+      - Snapshot
+      - LaunchTemplate
+      # ESS
+      - Ess
+      # Container Service
+      - CS
+      # Container Registry
+      - CR
+      # Function Compute
+      - FC
+      - Sweeper-1
+      - Sweeper-2
+      - Sweeper-3
+      - Sweeper-4
+      - Sweeper-5
+      - SweeperAfter
+
+  - name: Storage and CDN
+    jobs:
+      # Nas
+      - Nas
+      # OSS
+      - Oss
+      # Cdn
+      - Cdn
+      # Ots
+      - Ots
+      - Sweeper-1
+      - Sweeper-2
+      - Sweeper-3
+      - Sweeper-4
+      - Sweeper-5
+      - SweeperAfter
+
+  - name: Databases
+    jobs:
+      # Database
+      - DB
+      - KVStore
+      - DRDS
+      # MongoDB
+      - MongoDB
+      - Gpdb
+      - Sweeper-1
+      - Sweeper-2
+      - Sweeper-3
+      - Sweeper-4
+      - Sweeper-5
+      - SweeperAfter
+
+  - name: Networking
+    jobs:
+      # VPC
+      - Vpc
+      - VSwitch
+      - EIP
+      - RouteTable
+      - RouteEntry
+      - RouterInterface
+      - NatGateway
+      - Snat
+      - Forward
+      - CommonBandwidth
+      - Cen
+      - Vpn
+      - SslVpn
+      # SLB
+      - Slb
+      # Pvtz
+      - Pvtz
+      - Sweeper-1
+      - Sweeper-2
+      - Sweeper-3
+      - Sweeper-4
+      - Sweeper-5
+      - SweeperAfter
+
+  - name: Domain & Hosting
+    jobs:
+      # Dns and Pvtz
+      - Dns
+      - Pvtz
+      - Sweeper-1
+      - Sweeper-2
+      - Sweeper-3
+      - Sweeper-4
+      - Sweeper-5
+
+  - name: Application Service
+    jobs:
+      # Api Gateway
+      - ApiGateway
+      # Sls
+      - Log
+      - Sweeper-1
+      - Sweeper-2
+      - Sweeper-3
+      - Sweeper-4
+      - Sweeper-5
+      - SweeperAfter
+
+  - name: Management and Monitoring
+    jobs:
+      # RAM
+      - Ram
+      # Kms
+      - Kms
+      # ActionTrail
+      - ActionTrail
+      # Cms
+      - Cms
+      - Sweeper-1
+      - Sweeper-2
+      - Sweeper-3
+      - Sweeper-4
+      - Sweeper-5
+
+  - name: Middleware
+    jobs:
+      # Mns
+      - Mns
+      # Rocket MQ
+      - Ons
+      - Sweeper-1
+      - Sweeper-2
+      - Sweeper-3
+      - Sweeper-4
+      - Sweeper-5
+
+  - name: DTplus Basic Service
+    jobs:
+      # Datahub
+      - Datahub
+      - Elasticsearch
+      - Sweeper-1
+      - Sweeper-2
+      - Sweeper-3
+      - Sweeper-4
+      - Sweeper-5
+
+  - name: Security
+    jobs:
+      # SSL Certificate
+      - Cas
+      # Ddoscoo
+      - Ddoscoo
+      - Sweeper-1
+      - Sweeper-2
+      - Sweeper-3
+      - Sweeper-4
+      - Sweeper-5
+      - SweeperAfter
+
+shared:
+  - &clone-provider
+    get: terraform-provider-alicloud
+    resource: terraform-provider-alicloud
+    trigger: false
+
+  - &run
+    task: terraform ci
+    file: terraform-provider-alicloud/ci/tasks/run.yml
+    params: &run-params
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
+      ALICLOUD_REGION: {{alicloud_region}}
+      ALICLOUD_ACCOUNT_SITE: {{alicloud_account_site}}
+      TEST_CASE_CODE: ""
+      SWEEPER: false
+      ACCESS_URL: {{access_ci_url}}
+      ACCESS_USER_NAME: {{access_ci_user_name}}
+      ACCESS_PASSWORD: {{access_ci_password}}
+      DING_TALK_TOKEN: {{ding_talk_token}}
+
+jobs:
+- name: Sweeper-1
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 1645
+  - <<: *run
+    params:
+      <<: *run-params
+      SWEEPER: true
+      TEST_CASE_CODE: "-"
+
+- name: Sweeper-2
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 22
+  - <<: *run
+    params:
+      <<: *run-params
+      SWEEPER: true
+      TEST_CASE_CODE: "-"
+
+- name: Sweeper-3
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 2230
+  - <<: *run
+    params:
+      <<: *run-params
+      SWEEPER: true
+      TEST_CASE_CODE: "-"
+
+- name: Sweeper-4
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 23
+  - <<: *run
+    params:
+      <<: *run-params
+      SWEEPER: true
+      TEST_CASE_CODE: "-"
+
+- name: Sweeper-5
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 1715
+  - <<: *run
+    params:
+      <<: *run-params
+      SWEEPER: true
+      TEST_CASE_CODE: "-"
+
+- name: ApiGateway
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 00
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Apigateway"
+      SWEEPER_CODE: "alicloud_api_gateway"
+
+- name: Cdn
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 01
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "CdnDomain"
+
+- name: Cen
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 02
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Cen"
+      SWEEPER_CODE: "alicloud_cen_instance"
+
+- name: CommonBandwidth
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 03
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "CommonBandwidth"
+      SWEEPER_CODE: "alicloud_common_bandwidth_package"
+
+- name: CS
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 04
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "CS"
+      SWEEPER_CODE: "alicloud_cs_swarm"
+
+- name: Datahub
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 05
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Datahub"
+      SWEEPER_CODE: "alicloud_datahub_project"
+
+- name: DB
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 06
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "DB"
+      SWEEPER_CODE: "alicloud_db_instance"
+
+- name: Disk
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 07
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Disk"
+      SWEEPER_CODE: "alicloud_disk"
+
+- name: Forward
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 08
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Forward"
+
+- name: Dns
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 09
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Dns"
+
+- name: DRDS
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 10
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "DRDS"
+
+- name: EIP
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 11
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Eip"
+      SWEEPER_CODE: "alicloud_eip"
+
+- name: Ess
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 12
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Ess"
+      SWEEPER_CODE: "alicloud_ess_scalinggroup"
+#
+- name: FC
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 13
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "FC"
+      SWEEPER_CODE: "alicloud_fc_service"
+
+- name: Images
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 14
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Images"
+
+- name: Instance
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 15
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Instance"
+      SWEEPER_CODE: "alicloud_instance"
+
+- name: KeyPair
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 16
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "KeyPair"
+      SWEEPER_CODE: "alicloud_key_pair"
+
+- name: Kms
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 17
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Kms"
+
+- name: Log
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 18
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Log"
+      SWEEPER_CODE: "alicloud_log_project"
+
+- name: VSwitch
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 19
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "VSwitch"
+      SWEEPER_CODE: "alicloud_vswitch"
+
+- name: Zones
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 20
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Zones"
+
+- name: KVStore
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 0030
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "KVStore"
+      SWEEPER_CODE: "alicloud_kvstore_instance"
+
+- name: Elasticsearch
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 0130
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Elasticsearch"
+
+- name: NatGateway
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 0230
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "NatGateway"
+      SWEEPER_CODE: "alicloud_nat_gateway"
+
+- name: CR
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 0330
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "CR"
+
+- name: NetworkInterface
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 0430
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "NetworkInterface"
+      SWEEPER_CODE: "alicloud_network_interface"
+
+- name: Oss
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 0530
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Oss"
+      SWEEPER_CODE: "alicloud_oss_bucket"
+
+- name: Ots
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 0630
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Ots"
+      SWEEPER_CODE: "alicloud_ots_instance"
+
+- name: Pvtz
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 0730
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Pvtz"
+      SWEEPER_CODE: "alicloud_pvtz_zone"
+
+- name: Ram
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 0830
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Ram"
+      SWEEPER_CODE: "alicloud_ram"
+
+- name: Regions
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 0930
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Regions"
+
+- name: RouteEntry
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 1030
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "RouteEntry"
+      SWEEPER_CODE: "alicloud_route_entry"
+
+- name: RouteTable
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 1130
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "RouteTable"
+      SWEEPER_CODE: "alicloud_route_table"
+
+- name: RouterInterface
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 1230
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "RouterInterface"
+      SWEEPER_CODE: "alicloud_router_interface"
+
+- name: SecurityGroup
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 1330
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "SecurityGroup"
+      SWEEPER_CODE: "alicloud_security_group"
+
+- name: Slb
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 1430
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Slb"
+      SWEEPER_CODE: "alicloud_slb"
+
+- name: Snat
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 1530
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Snat"
+
+- name: SslVpn
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 1630
+  - <<: *run
+    trigger: false
+    params:
+      TEST_CASE_CODE: "SslVpn"
+
+- name: Vpc
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 1730
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Vpc"
+      SWEEPER_CODE: "alicloud_vpc"
+
+- name: Vpn
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 1830
+  - <<: *run
+    trigger: false
+    params:
+      TEST_CASE_CODE: "Vpn"
+
+- name: Mns
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 1930
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Mns"
+
+- name: Nas
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 2030
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Nas"
+
+- name: ActionTrail
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 00
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "ActionTrail"
+
+- name: Cas
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 01
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Cas"
+
+- name: MongoDB
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 02
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "MongoDB"
+
+- name: Ddoscoo
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 03
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Ddoscoo"
+
+- name: Snapshot
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 04
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Snapshot"
+
+- name: LaunchTemplate
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 05
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "LaunchTemplate"
+
+- name: Cms
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 06
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Cms"
+
+- name: Gpdb
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 07
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Gpdb"
+
+- name: Ons
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 08
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Ons"
+
+
+- name: SweeperAfter
+  plan:
+  - get: terraform-provider-alicloud
+    resource: terraform-provider-alicloud
+    trigger: true
+    passed: [
+          Instance, Disk, SecurityGroup, NetworkInterface, Ess, CS, FC,
+          Vpc, VSwitch, EIP, RouteTable, RouteEntry, RouterInterface, NatGateway, Snat, Forward, CommonBandwidth,
+          Slb, DB, KVStore, DRDS, ApiGateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, Snapshot, LaunchTemplate
+          ]
+  - <<: *run
+    params:
+      <<: *run-params
+      SWEEPER: true
+      TEST_CASE_CODE: "-"
+      TEST_SWEEPER_CASE_CODE: "alicloud_vpc"
+
+resources:
+- name: terraform-provider-alicloud
+  type: git
+  source:
+    uri: https://github.com/terraform-providers/terraform-provider-alicloud.git
+    branch: master
+
+- name: 00
+  type: time
+  source:
+    start: 00:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 0030
+  type: time
+  source:
+    start: 00:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 01
+  type: time
+  source:
+    start: 01:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 0130
+  type: time
+  source:
+    start: 01:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 02
+  type: time
+  source:
+    start: 02:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 0230
+  type: time
+  source:
+    start: 02:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 03
+  type: time
+  source:
+    start: 03:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 0330
+  type: time
+  source:
+    start: 03:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 04
+  type: time
+  source:
+    start: 04:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 0430
+  type: time
+  source:
+    start: 04:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 05
+  type: time
+  source:
+    start: 05:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 0530
+  type: time
+  source:
+    start: 05:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 06
+  type: time
+  source:
+    start: 06:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 0630
+  type: time
+  source:
+    start: 06:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 07
+  type: time
+  source:
+    start: 07:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 0730
+  type: time
+  source:
+    start: 07:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 08
+  type: time
+  source:
+    start: 08:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 0830
+  type: time
+  source:
+    start: 08:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 09
+  type: time
+  source:
+    start: 09:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 0930
+  type: time
+  source:
+    start: 09:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 10
+  type: time
+  source:
+    start: 10:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 1030
+  type: time
+  source:
+    start: 10:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 11
+  type: time
+  source:
+    start: 11:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 1130
+  type: time
+  source:
+    start: 11:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 12
+  type: time
+  source:
+    start: 12:00 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 1230
+  type: time
+  source:
+    start: 12:30 AM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 13
+  type: time
+  source:
+    start: 01:00 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 1330
+  type: time
+  source:
+    start: 01:30 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 14
+  type: time
+  source:
+    start: 02:00 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 1430
+  type: time
+  source:
+    start: 02:30 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 15
+  type: time
+  source:
+    start: 03:00 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 1530
+  type: time
+  source:
+    start: 03:30 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 16
+  type: time
+  source:
+    start: 04:00 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 1630
+  type: time
+  source:
+    start: 04:30 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 17
+  type: time
+  source:
+    start: 05:00 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 1730
+  type: time
+  source:
+    start: 05:30 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 18
+  type: time
+  source:
+    start: 06:00 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 1830
+  type: time
+  source:
+    start: 06:30 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 19
+  type: time
+  source:
+    start: 07:00 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 1930
+  type: time
+  source:
+    start: 07:30 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 20
+  type: time
+  source:
+    start: 08:00 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+- name: 2030
+  type: time
+  source:
+    start: 08:30 PM
+    stop: 10:50 PM
+#    days: [Sunday]
+    location: {{time_location}}
+
+#apply to sweeper
+- name: 1645
+  type: time
+  source:
+    start: 4:45 PM
+    stop: 5:00 PM
+    days: [Sunday, Monday, Tuesday, Saturday]
+    location: {{time_location}}
+
+- name: 1715
+  type: time
+  source:
+    start: 5:15 PM
+    stop: 5:30 PM
+    days: [Sunday, Monday, Tuesday, Saturday]
+    location: {{time_location}}
+
+- name: 22
+  type: time
+  source:
+    start: 10:00 PM
+    stop: 11:50 PM
+    days: [Sunday, Monday, Tuesday, Saturday]
+    location: {{time_location}}
+
+- name: 2230
+  type: time
+  source:
+    start: 10:30 PM
+    stop: 11:50 PM
+    days: [Sunday, Monday, Tuesday, Saturday]
+    location: {{time_location}}
+
+- name: 23
+  type: time
+  source:
+    start: 11:00 PM
+    stop: 11:50 PM
+    days: [Sunday, Monday, Tuesday, Saturday]
+    location: {{time_location}}
