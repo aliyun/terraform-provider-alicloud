@@ -16,14 +16,12 @@ func TestAccAlicloudApigatewayApisDataSource(t *testing.T) {
 		fmt.Sprintf("tf_testAccApisDataSource_%d", rand),
 		dataSourceApigatewayApisConfigDependence)
 
-	groupAndApiIdConf := dataSourceTestAccConfig{
+	groupAndIdsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"group_id": "${alicloud_api_gateway_group.default.id}",
-			"api_id":   "${alicloud_api_gateway_api.default.id}",
+			"ids": []string{"${alicloud_api_gateway_api.default.api_id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"group_id": "${alicloud_api_gateway_group.default.id}_fake",
-			"api_id":   "${alicloud_api_gateway_api.default.id}_fake",
+			"ids": []string{"${alicloud_api_gateway_api.default.api_id}_fake"},
 		}),
 	}
 
@@ -39,12 +37,12 @@ func TestAccAlicloudApigatewayApisDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"group_id":   "${alicloud_api_gateway_group.default.id}",
-			"api_id":     "${alicloud_api_gateway_api.default.id}",
+			"ids":        []string{"${alicloud_api_gateway_api.default.api_id}"},
 			"name_regex": "${alicloud_api_gateway_api.default.name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"group_id":   "${alicloud_api_gateway_group.default.id}_fake",
-			"api_id":     "${alicloud_api_gateway_api.default.id}",
+			"ids":        []string{"${alicloud_api_gateway_api.default.api_id}"},
 			"name_regex": "${alicloud_api_gateway_api.default.name}",
 		}),
 	}
@@ -76,7 +74,7 @@ func TestAccAlicloudApigatewayApisDataSource(t *testing.T) {
 		fakeMapFunc:  fakeApigatewayApisMapFunc,
 	}
 
-	apigatewayApisCheckInfo.dataSourceTestCheck(t, rand, groupAndApiIdConf, nameRegexConf, allConf)
+	apigatewayApisCheckInfo.dataSourceTestCheck(t, rand, groupAndIdsConf, nameRegexConf, allConf)
 }
 
 func dataSourceApigatewayApisConfigDependence(name string) string {
