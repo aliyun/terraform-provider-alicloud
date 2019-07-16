@@ -103,13 +103,16 @@ var existFileSystemMapCheck = func(rand int) map[string]string {
 		"systems.0.create_time":   CHECKSET,
 		"ids.#":                   "1",
 		"ids.0":                   CHECKSET,
+		"descriptions.#":          "1",
+		"descriptions.0":          "tf-testAccCheckAlicloudFileSystemsDataSource",
 	}
 }
 
 var fakeFileSystemMapCheck = func(rand int) map[string]string {
 	return map[string]string{
-		"systems.#": "0",
-		"ids.#":     "0",
+		"systems.#":      "0",
+		"ids.#":          "0",
+		"descriptions.#": "0",
 	}
 }
 

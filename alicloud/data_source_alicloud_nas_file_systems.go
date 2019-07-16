@@ -41,6 +41,11 @@ func dataSourceAlicloudFileSystems() *schema.Resource {
 				Optional: true,
 			},
 			// Computed values
+			"descriptions": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"systems": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -150,6 +155,7 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 
 func fileSystemsDecriptionAttributes(d *schema.ResourceData, fssSetTypes []nas.DescribeFileSystemsFileSystem1, meta interface{}) error {
 	var ids []string
+	var descriptions []string
 	var s []map[string]interface{}
 	for _, fs := range fssSetTypes {
 		mapping := map[string]interface{}{
@@ -162,6 +168,7 @@ func fileSystemsDecriptionAttributes(d *schema.ResourceData, fssSetTypes []nas.D
 			"metered_size":  fs.MeteredSize,
 		}
 		ids = append(ids, fs.FileSystemId)
+		descriptions = append(descriptions, fs.Destription)
 		s = append(s, mapping)
 	}
 	d.SetId(dataResourceIdHash(ids))
@@ -169,6 +176,9 @@ func fileSystemsDecriptionAttributes(d *schema.ResourceData, fssSetTypes []nas.D
 		return WrapError(err)
 	}
 	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("descriptions", descriptions); err != nil {
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.
