@@ -1,10 +1,12 @@
 package alicloud
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -30,7 +32,8 @@ func resourceAlicloudCdnDomainConfig() *schema.Resource {
 				ForceNew: true,
 			},
 			"function_args": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
+				Set:      expirationCdnDomainConfigHash,
 				Required: true,
 				ForceNew: true,
 				Elem: &schema.Resource{
@@ -55,7 +58,7 @@ func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 	cdnService := &CdnService{client: client}
 
 	config := make([]map[string]interface{}, 1)
-	functionArgs := d.Get("function_args").([]interface{})
+	functionArgs := d.Get("function_args").(*schema.Set).List()
 	args := make([]map[string]interface{}, len(functionArgs))
 	for key, value := range functionArgs {
 		arg := value.(map[string]interface{})
@@ -103,12 +106,17 @@ func resourceAlicloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	funArgs := make([]map[string]string, len(config.FunctionArgs.FunctionArg))
-	for key, args := range config.FunctionArgs.FunctionArg {
-		funArgs[key] = map[string]string{
+	var funArgs []map[string]string
+
+	for _, args := range config.FunctionArgs.FunctionArg {
+		// This two function args is extra, filter them to pass test check.
+		if args.ArgName == "aliyun_id" || args.ArgName == "scheme_origin_port" {
+			continue
+		}
+		funArgs = append(funArgs, map[string]string{
 			"arg_name":  args.ArgName,
 			"arg_value": args.ArgValue,
-		}
+		})
 	}
 	d.Set("function_name", config.FunctionName)
 	d.Set("function_args", funArgs)
@@ -142,4 +150,16 @@ func resourceAlicloudCdnDomainConfigDelete(d *schema.ResourceData, meta interfac
 	}
 	addDebug(request.GetActionName(), raw)
 	return WrapError(cdnService.WaitForCdnDomain(d.Id(), Deleted, DefaultTimeout))
+}
+
+func expirationCdnDomainConfigHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	if v, ok := m["arg_name"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+	if v, ok := m["arg_value"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+	return hashcode.String(buf.String())
 }
