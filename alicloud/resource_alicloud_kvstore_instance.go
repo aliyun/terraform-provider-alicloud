@@ -26,6 +26,12 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(20 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(20 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"instance_name": {
 				Type:         schema.TypeString,
@@ -170,7 +176,8 @@ func resourceAlicloudKVStoreInstanceCreate(d *schema.ResourceData, meta interfac
 	d.SetId(response.InstanceId)
 
 	// wait instance status change from Creating to Normal
-	if err := kvstoreService.WaitForKVstoreInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+	stateConf := BuildStateConf([]string{"Creating"}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, kvstoreService.RdsKvstoreInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
 
@@ -181,6 +188,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	kvstoreService := KvstoreService{client}
 	d.Partial(true)
+	stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging"}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, kvstoreService.RdsKvstoreInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 
 	if d.HasChange("parameters") {
 		config := make(map[string]interface{})
@@ -202,7 +210,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if d.HasChange("security_ips") {
 		// wait instance status is Normal before modifying
-		if err := kvstoreService.WaitForKVstoreInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 		request := r_kvstore.CreateModifySecurityIpsRequest()
@@ -222,7 +230,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		addDebug(request.GetActionName(), raw)
 		d.SetPartial("security_ips")
 		// wait instance status is Normal after modifying
-		if err := kvstoreService.WaitForKVstoreInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -233,7 +241,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			instanceType := d.Get("instance_type").(string)
 			if string(KVStoreRedis) == instanceType {
 				// wait instance status is Normal before modifying
-				if err := kvstoreService.WaitForKVstoreInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapError(err)
 				}
 
@@ -251,7 +259,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				d.SetPartial("vpc_auth_mode")
 
 				// The auth mode take some time to be effective, so wait to ensure the state !
-				if err := kvstoreService.WaitForKVstoreInstanceVpcAuthMode(d.Id(), d.Get("vpc_auth_mode").(string), DefaultLongTimeout); err != nil {
+				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapError(err)
 				}
 			}
@@ -274,7 +282,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 			addDebug(prePaidRequest.GetActionName(), raw)
 			// wait instance status is Normal after modifying
-			if err := kvstoreService.WaitForKVstoreInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapError(err)
 			}
 			d.SetPartial("instance_charge_type")
@@ -312,7 +320,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if d.HasChange("instance_class") {
 		// wait instance status is Normal before modifying
-		if err := kvstoreService.WaitForKVstoreInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 
@@ -328,7 +336,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		addDebug(request.GetActionName(), raw)
 		// wait instance status is Normal after modifying
-		if err := kvstoreService.WaitForKVstoreInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 		// There needs more time to sync instance class update
@@ -364,7 +372,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if update {
 		// wait instance status is Normal before modifying
-		if err := kvstoreService.WaitForKVstoreInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
@@ -375,7 +383,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		addDebug(request.GetActionName(), raw)
 		// wait instance status is Normal after modifying
-		if err := kvstoreService.WaitForKVstoreInstance(d.Id(), Normal, DefaultLongTimeout); err != nil {
+		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("instance_name")
@@ -466,7 +474,9 @@ func resourceAlicloudKVStoreInstanceDelete(d *schema.ResourceData, meta interfac
 
 	addDebug(request.GetActionName(), raw)
 
-	return WrapError(kvstoreService.WaitForKVstoreInstance(d.Id(), Deleted, DefaultTimeoutMedium))
+	stateConf := BuildStateConf([]string{"Creating", "Active", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, kvstoreService.RdsKvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+	_, err = stateConf.WaitForState()
+	return WrapError(err)
 }
 
 func buildKVStoreCreateRequest(d *schema.ResourceData, meta interface{}) (*r_kvstore.CreateInstanceRequest, error) {
