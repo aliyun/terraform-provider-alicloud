@@ -15,7 +15,6 @@ IMPROVEMENTS:
 - improve(rds): db_instance resource supports timeouts setting [GH-1409]
 - improve(kms): modified the args of kms_keys datasource [GH-1407]
 - improve(kms_key): modify the param `description` to forcenew [GH-1406]
-- improve(cdn): cdn_domain support certificate config [GH-1393]
 
 BUG FIXES:
 
@@ -36,6 +35,7 @@ IMPROVEMENTS:
 - docs(format): Convert inline HCL configs to canonical format ([#1415](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1415))
 - improve(gpdb_instance):add vpc name ([#1413](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1413))
 - improve(provider): add a new parameter `skip_region_validation` in the provider config ([#1404](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1404))
+- improve(cdn): cdn_domain support certificate config ([#1393](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1393))
 - improve(rds): resource db_instance support update for instance_charge_type ([#1389](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1389))
 
 BUG FIXES:
