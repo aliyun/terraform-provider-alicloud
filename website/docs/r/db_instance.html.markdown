@@ -141,7 +141,7 @@ The following attributes are exported:
 
 ### Timeouts
 
--> **NOTE:** Available in 1.53.0+.
+-> **NOTE:** Available in 1.52.1+.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

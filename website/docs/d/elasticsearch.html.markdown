@@ -25,7 +25,7 @@ data "alicloud_elasticsearch_instances" "instances" {
 The following arguments are supported:
 
 * `description_regex` - (Optional) A regex string to apply to the instance description.
-* `ids` - (Optional, Available 1.53.0+) A list of Elasticsearch instance IDs.
+* `ids` - (Optional, Available 1.52.1+) A list of Elasticsearch instance IDs.
 * `version` - (Optional) Elasticsearch version. Options are `5.5.3_with_X-Pack`, `6.3.2_with_X-Pack` and `6.7.0_with_X-Pack`. If no value is specified, all versions are returned.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

@@ -1,4 +1,29 @@
 ## 1.52.1 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve(disk): support online resize [GH-1447]
+- improve(rds): db_readonly_instance resource supports timeouts setting [GH-1438]
+- improve(rds):improve db_readonly_instance TestAccAlicloudDBReadonlyInstance_multi testcase [GH-1432]
+- improve(key_pairs): Added ids filter to datasource [GH-1431]
+- improve(elasticsearch): Added ids filter and added descriptions to datasource attributes [GH-1430]
+- improve(drds): Added descriptions to attributes of datasource [GH-1429]
+- improve(rds):update ppas not support regions [GH-1428]
+- improve(api_gateway_groups): Added ids filter to datasource [GH-1427]
+- improve(docs): Reformat abnormal inline HCL code in docs [GH-1423]
+- improve(mns):modified mns_queues.html [GH-1422]
+- improve(rds): db_instance resource supports timeouts setting [GH-1409]
+- improve(kms): modified the args of kms_keys datasource [GH-1407]
+- improve(kms_key): modify the param `description` to forcenew [GH-1406]
+- improve(cdn): cdn_domain support certificate config [GH-1393]
+
+BUG FIXES:
+
+- fix(db_instance): modified the target state of state config [GH-1437]
+- fix(db_readonly_instance): fix invalid status error when updating and deleting [GH-1435]
+- fix(ots_table): fix setting deviation_cell_version_in_sec error [GH-1434]
+- fix(db_backup_policy): resource db_backup_policy testcase use datasource db_instance_classes [GH-1424]
+
 ## 1.52.0 (July 12, 2019)
 
 - **New Datasource:** `alicloud_ons_instances` ([#1411](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1411))
