@@ -43,6 +43,18 @@ func TestAccAlicloudDiskAttachment(t *testing.T) {
 						"alicloud_disk_attachment.default", "device_name"),
 				),
 			},
+			{
+				Config: testAccDiskAttachmentConfigResize(),
+				Check: resource.ComposeTestCheckFunc(
+					diskRc.checkResourceExists(),
+					instanceRc.checkResourceExists(),
+					attachmentRc.checkResourceExists(),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_disk_attachment.default", "device_name"),
+					resource.TestCheckResourceAttr(
+						"alicloud_disk.default", "size", "70"),
+				),
+			},
 		},
 	})
 
@@ -159,6 +171,82 @@ func testAccDiskAttachmentConfig() string {
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	  size = "50"
 	  name = "${var.name}"
+	  category = "cloud_efficiency"
+
+	  tags = {
+	    Name = "TerraformTest-disk"
+	  }
+	}
+
+	resource "alicloud_instance" "default" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		system_disk_category = "cloud_ssd"
+		system_disk_size = 40
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_groups = ["${alicloud_security_group.default.id}"]
+		instance_name = "${var.name}"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_disk_attachment" "default" {
+	  disk_id = "${alicloud_disk.default.id}"
+	  instance_id = "${alicloud_instance.default.id}"
+	}
+	`)
+}
+func testAccDiskAttachmentConfigResize() string {
+	return fmt.Sprintf(`
+    data "alicloud_zones" "default" {
+      available_disk_category     = "cloud_efficiency"
+      available_resource_creation = "VSwitch"
+    }
+    data "alicloud_instance_types" "default" {
+      availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+      cpu_core_count    = 2
+      memory_size       = 4
+    }
+    data "alicloud_images" "default" {
+	  # test for windows service
+      name_regex  = "^win*"
+
+      most_recent = true
+      owners      = "system"
+    }
+    resource "alicloud_vpc" "default" {
+      name       = "${var.name}"
+      cidr_block = "172.16.0.0/16"
+    }
+    resource "alicloud_vswitch" "default" {
+      vpc_id            = "${alicloud_vpc.default.id}"
+      cidr_block        = "172.16.0.0/24"
+      availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+      name              = "${var.name}"
+    }
+    resource "alicloud_security_group" "default" {
+      name   = "${var.name}"
+      vpc_id = "${alicloud_vpc.default.id}"
+    }
+    resource "alicloud_security_group_rule" "default" {
+      	type = "ingress"
+      	ip_protocol = "tcp"
+      	nic_type = "intranet"
+      	policy = "accept"
+      	port_range = "22/22"
+      	priority = 1
+      	security_group_id = "${alicloud_security_group.default.id}"
+      	cidr_ip = "172.16.0.0/24"
+    }	
+
+	variable "name" {
+		default = "tf-testAccEcsDiskAttachmentConfig"
+	}
+
+	resource "alicloud_disk" "default" {
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  size = "70"
+	  name = "${var.name}"
+	  category = "cloud_efficiency"
 
 	  tags = {
 	    Name = "TerraformTest-disk"
