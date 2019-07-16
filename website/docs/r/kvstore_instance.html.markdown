@@ -74,6 +74,16 @@ The following attributes are exported:
 * `id` - The KVStore instance ID.
 * `connection_domain` - Instance connection domain (only Intranet access supported).
 
+### Timeouts
+
+-> **NOTE:** Available in 1.54.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 20 mins) Used when creating the KVStore instance (until it reaches the initial `Normal` status). 
+* `update` - (Defaults to 30 mins) Used when updating the KVStore instance (until it reaches the initial `Normal` status). 
+* `delete` - (Defaults to 20 mins) Used when terminating the KVStore instance. 
+
 ## Import
 
 KVStore instance can be imported using the id, e.g.

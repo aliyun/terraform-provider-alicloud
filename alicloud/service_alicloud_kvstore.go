@@ -3,6 +3,8 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform/helper/resource"
+
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -70,6 +72,26 @@ func (s *KvstoreService) WaitForKVstoreInstance(id string, status Status, timeou
 		}
 	}
 	return nil
+}
+
+func (s *KvstoreService) RdsKvstoreInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeKVstoreInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.InstanceStatus == failState {
+				return object, object.InstanceStatus, WrapError(Error(FailedToReachTargetStatus, object.InstanceStatus))
+			}
+		}
+		return object, object.InstanceStatus, nil
+	}
 }
 
 func (s *KvstoreService) WaitForKVstoreInstanceVpcAuthMode(id string, status string, timeout int) error {
