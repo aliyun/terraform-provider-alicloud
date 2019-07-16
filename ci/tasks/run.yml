@@ -1,0 +1,24 @@
+---
+platform: linux
+
+image_resource:
+  type: registry-image
+  source: {repository: golang, tag: 1.11.10}
+
+inputs:
+  - name: terraform-provider-alicloud
+
+run:
+  path: terraform-provider-alicloud/ci/tasks/run.sh
+params:
+  ALICLOUD_ACCESS_KEY:   ""
+  ALICLOUD_SECRET_KEY:   ""
+  ALICLOUD_REGION:       ""
+  ALICLOUD_ACCOUNT_SITE: "Domestic"
+  TEST_CASE_CODE:        ""
+  SWEEPER:               ""
+  ACCESS_URL:            ""
+  ACCESS_USER_NAME:      ""
+  ACCESS_PASSWORD:       ""
+  DING_TALK_TOKEN:       ""
+

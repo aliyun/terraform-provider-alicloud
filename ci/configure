@@ -1,0 +1,15 @@
+# build a new file named var-pipeline.yaml
+# set the values for the following parameters
+# alicloud_access_key=
+# alicloud_secret_key=
+# alicloud_region=
+# alicloud_account_site=
+# time_location=
+# access_ci_url=
+# access_ci_user_name=
+# access_ci_password=
+# ding_talk_token=
+
+fly -t terraform sp -p alicloud-provider \
+  -c pipeline.yml \
+  --load-vars-from=vars-pipeline.yaml

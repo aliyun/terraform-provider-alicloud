@@ -25,6 +25,8 @@ website/node_modules
 *.test
 *.iml
 *.pem
+vars-pipeline*
+develop*
 !vendor/github.com/valyala/**/*.pem
 
 website/vendor
