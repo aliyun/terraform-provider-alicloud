@@ -84,6 +84,16 @@ The following attributes are exported:
 * `port` - RDS database connection port.
 * `connection_string` - RDS database connection string.
 
+### Timeouts
+
+-> **NOTE:** Available in 1.53.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 20 mins) Used when creating the db instance (until it reaches the initial `Running` status). 
+* `update` - (Defaults to 20 mins) Used when updating the db instance (until it reaches the initial `Running` status). 
+* `delete` - (Defaults to 20 mins) Used when terminating the db instance. 
+
 ## Import
 
 RDS readonly instance can be imported using the id, e.g.
