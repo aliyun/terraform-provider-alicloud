@@ -87,6 +87,17 @@ func TestAccAlicloudDnsRecordsDataSource(t *testing.T) {
 		}),
 	}
 
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"domain_name": "${alicloud_dns_record.default.name}",
+			"ids":         []string{"${alicloud_dns_record.default.id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"domain_name": "${alicloud_dns_record.default.name}",
+			"ids":         []string{"${alicloud_dns_record.default.id}-fake"},
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"domain_name":       "${alicloud_dns_record.default.name}",
@@ -96,6 +107,7 @@ func TestAccAlicloudDnsRecordsDataSource(t *testing.T) {
 			"line":              "default",
 			"status":            "enable",
 			"is_locked":         "false",
+			"ids":               []string{"${alicloud_dns_record.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"domain_name":       "${alicloud_dns_record.default.name}",
@@ -105,11 +117,14 @@ func TestAccAlicloudDnsRecordsDataSource(t *testing.T) {
 			"line":              "default",
 			"status":            "enable",
 			"is_locked":         "true",
+			"ids":               []string{"${alicloud_dns_record.default.id}"},
 		}),
 	}
 
 	var existDnsRecordsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
+			"ids.#":                 "1",
+			"ids.0":                 CHECKSET,
 			"urls.#":                "1",
 			"urls.0":                fmt.Sprintf("alimail.tf-testacc%sdns%d.abc", defaultRegionToTest, rand),
 			"records.#":             "1",
@@ -128,6 +143,7 @@ func TestAccAlicloudDnsRecordsDataSource(t *testing.T) {
 
 	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
+			"ids.#":     "0",
 			"urls.#":    "0",
 			"records.#": "0",
 		}
@@ -140,7 +156,7 @@ func TestAccAlicloudDnsRecordsDataSource(t *testing.T) {
 	}
 
 	dnsRecordsCheckInfo.dataSourceTestCheck(t, rand, domainNameConf, hostRecordRegexConf, typeConf, valueRegexConf, valueRegexConf,
-		lineConf, statusConf, isLockConf, allConf)
+		lineConf, statusConf, isLockConf, idsConf, allConf)
 }
 
 func dataSourceDnsRecordsConfigDependence(name string) string {
