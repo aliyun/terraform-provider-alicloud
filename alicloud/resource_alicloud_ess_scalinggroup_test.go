@@ -413,6 +413,32 @@ func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccEssScalingGroupSlbUpdateMinSize(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					rcSlb0.checkResourceExists(),
+					rcSlb1.checkResourceExists(),
+					testAccCheck(map[string]string{
+						"min_size": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupVserverGroup(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					rcSlb0.checkResourceExists(),
+					rcSlb1.checkResourceExists(),
+					resource.TestCheckResourceAttr("alicloud_ess_scaling_group.default", "vserver_groups.#", "2"),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupVserverGroupUpdate(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					rcSlb0.checkResourceExists(),
+					rcSlb1.checkResourceExists(),
+					resource.TestCheckResourceAttr("alicloud_ess_scaling_group.default", "vserver_groups.#", "1"),
+				),
+			},
+			{
 				Config: testAccEssScalingGroupSlbempty(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -994,6 +1020,131 @@ func testAccEssScalingGroupSlbUpdateMinSize(common string, rand int) string {
 	  count=2
 	  name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_slb_listener" "default" {
+	  count = 2
+	  load_balancer_id = "${element(alicloud_slb.default.*.id, count.index)}"
+	  backend_port = "22"
+	  frontend_port = "22"
+	  protocol = "tcp"
+	  bandwidth = "10"
+	  health_check_type = "tcp"
+	}
+	`, common, rand)
+}
+
+func testAccEssScalingGroupVserverGroup(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+	  min_size = "2"
+	  max_size = "2"
+      default_cooldown = 200
+	  scaling_group_name = "${var.name}"
+	  removal_policies = ["OldestInstance"]
+	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+      vserver_groups {
+				loadbalancer_id = "${alicloud_slb.default.0.id}"
+				vserver_attributes {
+					vserver_group_id = "${alicloud_slb_server_group.vserver0.0.id}"
+					port = "100"
+					weight = "60"
+				}
+			}
+      vserver_groups {
+				loadbalancer_id = "${alicloud_slb.default.1.id}"
+				vserver_attributes {
+					vserver_group_id = "${alicloud_slb_server_group.vserver1.0.id}"
+					port = "200"
+					weight = "60"
+				}
+				vserver_attributes {
+					vserver_group_id = "${alicloud_slb_server_group.vserver1.1.id}"
+					port = "210"
+					weight = "60"
+				}
+			}
+	  depends_on = ["alicloud_slb_listener.default"]
+	}
+
+	resource "alicloud_slb" "default" {
+	  count=2
+	  name = "${var.name}"
+	  vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_slb_server_group" "vserver0" {
+ 	  count = "2"
+	  load_balancer_id = "${alicloud_slb.default.0.id}"
+	  name = "test"
+	}
+
+	resource "alicloud_slb_server_group" "vserver1" {
+ 	  count = "2"
+	  load_balancer_id = "${alicloud_slb.default.1.id}"
+	  name = "test"
+	}
+
+	resource "alicloud_slb_listener" "default" {
+	  count = 2
+	  load_balancer_id = "${element(alicloud_slb.default.*.id, count.index)}"
+	  backend_port = "22"
+	  frontend_port = "22"
+	  protocol = "tcp"
+	  bandwidth = "10"
+	  health_check_type = "tcp"
+	}
+	`, common, rand)
+}
+
+func testAccEssScalingGroupVserverGroupUpdate(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroupUpdate-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+	  min_size = "2"
+	  max_size = "2"
+      default_cooldown = 200
+	  scaling_group_name = "${var.name}"
+	  removal_policies = ["OldestInstance"]
+	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+      vserver_groups {
+				loadbalancer_id = "${alicloud_slb.default.0.id}"
+				vserver_attributes {
+					vserver_group_id = "${alicloud_slb_server_group.vserver0.1.id}"
+					port = "110"
+					weight = "60"
+				}
+			}
+	  depends_on = ["alicloud_slb_listener.default"]
+	}
+
+	resource "alicloud_slb" "default" {
+	  count=2
+	  name = "${var.name}"
+	  vswitch_id = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_slb_server_group" "vserver0" {
+ 	  count = "2"
+	  load_balancer_id = "${alicloud_slb.default.0.id}"
+	  name = "test"
+	}
+
+	resource "alicloud_slb_server_group" "vserver1" {
+ 	  count = "2"
+	  load_balancer_id = "${alicloud_slb.default.1.id}"
+	  name = "test"
 	}
 
 	resource "alicloud_slb_listener" "default" {

@@ -15,6 +15,13 @@ type EssService struct {
 	client *connectivity.AliyunClient
 }
 
+type EssStruct struct {
+	loadbalancerId string
+	vserverGroupId string
+	port           int
+	weight         int
+}
+
 func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 	request := ess.CreateDescribeAlarmsRequest()
 	request.AlarmTaskId = id

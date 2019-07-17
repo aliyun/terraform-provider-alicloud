@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	"reflect"
@@ -76,6 +77,40 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Optional: true,
 				MinItems: 0,
 			},
+			"vserver_groups": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: 5,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"loadbalancer_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"vserver_attributes": {
+							Type:     schema.TypeSet,
+							Required: true,
+							MaxItems: 5,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"vserver_group_id": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"port": {
+										Type:     schema.TypeInt,
+										Required: true,
+									},
+									"weight": {
+										Type:     schema.TypeInt,
+										Required: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"multi_az_policy": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -118,7 +153,7 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	return resourceAliyunEssScalingGroupUpdate(d, meta)
+	return resourceAliyunEssScalingGroupRead(d, meta)
 }
 
 func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{}) error {
@@ -170,6 +205,8 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 		}
 	}
 	d.Set("vswitch_ids", vswitchIds)
+
+	d.Set("vserver_groups", object.VServerGroups.VServerGroup)
 
 	return nil
 }
@@ -241,6 +278,15 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		}
 		d.SetPartial("db_instance_ids")
 	}
+
+	if d.HasChange("vserver_groups") {
+		oldVserverGroups, newVserverGroups := d.GetChange("vserver_groups")
+		err = attachOrDetachVserverGroups(d, client, oldVserverGroups.(*schema.Set), newVserverGroups.(*schema.Set))
+		if err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("vserver_groups")
+	}
 	d.Partial(false)
 	return resourceAliyunEssScalingGroupRead(d, meta)
 }
@@ -297,6 +343,32 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 		request.LoadBalancerIds = convertListToJsonString(lbs.(*schema.Set).List())
+	}
+
+	if v, ok := d.GetOk("removal_policies"); ok {
+		policyies := v.(*schema.Set).List()
+		s := reflect.ValueOf(request).Elem()
+		for i, p := range policyies {
+			s.FieldByName(fmt.Sprintf("RemovalPolicy%d", i+1)).Set(reflect.ValueOf(p.(string)))
+		}
+	}
+
+	if v, ok := d.GetOk("vserver_groups"); ok {
+		vserverGroupMap, err := verifyVserverGroups(v.(*schema.Set))
+		if err != nil {
+			return nil, WrapError(err)
+		}
+		createScalingGroupVServerGroupMap := buildCreateScalingGroupVserverGroupMap(vserverGroupMap)
+		createScalingGroupVServerGroups := make([]ess.CreateScalingGroupVServerGroup, 0)
+		for k, vg := range createScalingGroupVServerGroupMap {
+			var tmp = vg
+			createScalingGroupVserverGroup := ess.CreateScalingGroupVServerGroup{
+				LoadBalancerId:        k,
+				VServerGroupAttribute: &tmp,
+			}
+			createScalingGroupVServerGroups = append(createScalingGroupVServerGroups, createScalingGroupVserverGroup)
+		}
+		request.VServerGroup = &createScalingGroupVServerGroups
 	}
 
 	if v, ok := d.GetOk("multi_az_policy"); ok && v.(string) != "" {
@@ -398,4 +470,179 @@ func partition(instanceIds *schema.Set, batchSize int) [][]string {
 		res = append(res, subList)
 	}
 	return res
+}
+
+func verifyVserverGroups(vserverGroups *schema.Set) (map[string]EssStruct, error) {
+	vserverGroupList := vserverGroups.List()
+	vserverGroupMap := make(map[string]EssStruct)
+
+	for _, v := range vserverGroupList {
+		vserverGroup := v.(map[string]interface{})
+		loadBalancerId := vserverGroup["loadbalancer_id"].(string)
+		vserverAttributes := vserverGroup["vserver_attributes"].(*schema.Set)
+		for _, e := range vserverAttributes.List() {
+			vserverAttribute := e.(map[string]interface{})
+			vserverGroupId := vserverAttribute["vserver_group_id"].(string)
+			port := vserverAttribute["port"].(int)
+			weight := vserverAttribute["weight"].(int)
+			key := fmt.Sprintf("%s_%s_%d", loadBalancerId, vserverGroupId, port)
+			if _, ok := vserverGroupMap[key]; ok {
+				err := WrapError(Error("instance_type or instance_types must be assigned"))
+				return nil, err
+			} else {
+				vGroup := EssStruct{
+					loadbalancerId: loadBalancerId,
+					vserverGroupId: vserverGroupId,
+					port:           port,
+					weight:         weight,
+				}
+				vserverGroupMap[key] = vGroup
+			}
+		}
+	}
+	return vserverGroupMap, nil
+}
+
+func attachAndDetachVServerGroupMap(newVserverGroupMap map[string]EssStruct, oldVserverGroupMap map[string]EssStruct) (map[string]EssStruct, map[string]EssStruct) {
+	attachVserverGroupMap := make(map[string]EssStruct)
+	detachVserverGroupMap := make(map[string]EssStruct)
+	// attach server group
+	for k, v := range newVserverGroupMap {
+		if _, ok := oldVserverGroupMap[k]; !ok {
+			attachVserverGroupMap[k] = v
+		}
+	}
+	// detach server group
+	for k, v := range oldVserverGroupMap {
+		if _, ok := newVserverGroupMap[k]; !ok {
+			detachVserverGroupMap[k] = v
+		}
+	}
+	return attachVserverGroupMap, detachVserverGroupMap
+}
+
+func attachOrDetachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClient, oldVserverGroups *schema.Set, newVserverGroups *schema.Set) error {
+	oldVserverGroupMap, err := verifyVserverGroups(oldVserverGroups)
+	if err != nil {
+		return WrapError(err)
+	}
+	newVserverGroupMap, err := verifyVserverGroups(newVserverGroups)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	attachVserverGroupMap, detachVserverGroupMap := attachAndDetachVServerGroupMap(newVserverGroupMap, oldVserverGroupMap)
+	if len(attachVserverGroupMap) > 0 {
+		attachScalingGroupVserverGroupMap := buildAttachScalingGroupVserverGroupMap(attachVserverGroupMap)
+		attachScalingGroupVserverGroups := make([]ess.AttachVServerGroupsVServerGroup, 0)
+		for k, v := range attachScalingGroupVserverGroupMap {
+			var tmp = v
+			attachScalingGroupVserverGroup := ess.AttachVServerGroupsVServerGroup{
+				LoadBalancerId:        k,
+				VServerGroupAttribute: &tmp,
+			}
+			attachScalingGroupVserverGroups = append(attachScalingGroupVserverGroups, attachScalingGroupVserverGroup)
+		}
+		attachVserverGroupsRequest := ess.CreateAttachVServerGroupsRequest()
+		attachVserverGroupsRequest.ScalingGroupId = d.Id()
+		attachVserverGroupsRequest.ForceAttach = requests.NewBoolean(true)
+		attachVserverGroupsRequest.VServerGroup = &attachScalingGroupVserverGroups
+		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.AttachVServerGroups(attachVserverGroupsRequest)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), attachVserverGroupsRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(attachVserverGroupsRequest.GetActionName(), raw)
+	}
+
+	if len(detachVserverGroupMap) > 0 {
+		detachScalingGroupVserverGroupMap := buildDetachScalingGroupVserverGroupMap(detachVserverGroupMap)
+		detachScalingGroupVserverGroups := make([]ess.DetachVServerGroupsVServerGroup, 0)
+		for k, v := range detachScalingGroupVserverGroupMap {
+			var tmp = v
+			detachScalingGroupVserverGroup := ess.DetachVServerGroupsVServerGroup{
+				LoadBalancerId:        k,
+				VServerGroupAttribute: &tmp,
+			}
+			detachScalingGroupVserverGroups = append(detachScalingGroupVserverGroups, detachScalingGroupVserverGroup)
+		}
+		detachVserverGroupsRequest := ess.CreateDetachVServerGroupsRequest()
+		detachVserverGroupsRequest.ScalingGroupId = d.Id()
+		detachVserverGroupsRequest.ForceDetach = requests.NewBoolean(true)
+		detachVserverGroupsRequest.VServerGroup = &detachScalingGroupVserverGroups
+		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DetachVServerGroups(detachVserverGroupsRequest)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), detachVserverGroupsRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(detachVserverGroupsRequest.GetActionName(), raw)
+	}
+	return nil
+}
+
+func buildCreateScalingGroupVserverGroupMap(vserverGroupMap map[string]EssStruct) map[string][]ess.CreateScalingGroupVServerGroupAttribute {
+	vserverGroupRequestMap := make(map[string][]ess.CreateScalingGroupVServerGroupAttribute, 0)
+	for _, v := range vserverGroupMap {
+		loadbalancerId := v.loadbalancerId
+		vserverGroupAttribute := ess.CreateScalingGroupVServerGroupAttribute{
+			VServerGroupId: v.vserverGroupId,
+			Port:           strconv.Itoa(v.port),
+			Weight:         strconv.Itoa(v.weight),
+		}
+		if _, ok := vserverGroupRequestMap[loadbalancerId]; !ok {
+			vserverGroupAttributes := make([]ess.CreateScalingGroupVServerGroupAttribute, 0)
+			vserverGroupAttributes = append(vserverGroupAttributes, vserverGroupAttribute)
+			vserverGroupRequestMap[loadbalancerId] = vserverGroupAttributes
+		} else {
+			vserverGroupAttributes := vserverGroupRequestMap[loadbalancerId]
+			vserverGroupAttributes = append(vserverGroupAttributes, vserverGroupAttribute)
+			vserverGroupRequestMap[loadbalancerId] = vserverGroupAttributes
+		}
+	}
+	return vserverGroupRequestMap
+}
+
+func buildAttachScalingGroupVserverGroupMap(vserverGroupMap map[string]EssStruct) map[string][]ess.AttachVServerGroupsVServerGroupAttribute {
+	vserverGroupRequestMap := make(map[string][]ess.AttachVServerGroupsVServerGroupAttribute, 0)
+	for _, v := range vserverGroupMap {
+		loadbalancerId := v.loadbalancerId
+		vserverGroupAttribute := ess.AttachVServerGroupsVServerGroupAttribute{
+			VServerGroupId: v.vserverGroupId,
+			Port:           strconv.Itoa(v.port),
+			Weight:         strconv.Itoa(v.weight),
+		}
+		if _, ok := vserverGroupRequestMap[loadbalancerId]; !ok {
+			vserverGroupAttributes := make([]ess.AttachVServerGroupsVServerGroupAttribute, 0)
+			vserverGroupAttributes = append(vserverGroupAttributes, vserverGroupAttribute)
+			vserverGroupRequestMap[loadbalancerId] = vserverGroupAttributes
+		} else {
+			vserverGroupAttributes := vserverGroupRequestMap[loadbalancerId]
+			vserverGroupAttributes = append(vserverGroupAttributes, vserverGroupAttribute)
+			vserverGroupRequestMap[loadbalancerId] = vserverGroupAttributes
+		}
+	}
+	return vserverGroupRequestMap
+}
+
+func buildDetachScalingGroupVserverGroupMap(vserverGroupMap map[string]EssStruct) map[string][]ess.DetachVServerGroupsVServerGroupAttribute {
+	vserverGroupRequestMap := make(map[string][]ess.DetachVServerGroupsVServerGroupAttribute, 0)
+	for _, v := range vserverGroupMap {
+		loadbalancerId := v.loadbalancerId
+		vserverGroupAttribute := ess.DetachVServerGroupsVServerGroupAttribute{
+			VServerGroupId: v.vserverGroupId,
+			Port:           strconv.Itoa(v.port),
+		}
+		if _, ok := vserverGroupRequestMap[loadbalancerId]; !ok {
+			vserverGroupAttributes := make([]ess.DetachVServerGroupsVServerGroupAttribute, 0)
+			vserverGroupAttributes = append(vserverGroupAttributes, vserverGroupAttribute)
+			vserverGroupRequestMap[loadbalancerId] = vserverGroupAttributes
+		} else {
+			vserverGroupAttributes := vserverGroupRequestMap[loadbalancerId]
+			vserverGroupAttributes = append(vserverGroupAttributes, vserverGroupAttribute)
+			vserverGroupRequestMap[loadbalancerId] = vserverGroupAttributes
+		}
+	}
+	return vserverGroupRequestMap
 }

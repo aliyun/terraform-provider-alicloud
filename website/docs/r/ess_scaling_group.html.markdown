@@ -107,12 +107,27 @@ The following arguments are supported:
       targeting your `alicloud_slb_listener` in order to make sure the listener with its HealthCheck configuration is ready before creating your scaling group).
     - The Server Load Balancer instance attached with VPC-type ECS instances cannot be attached to the scaling group.
     - The default weight of an ECS instance attached to the Server Load Balancer instance is 50.
+* `vserver_groups` - (Optional, Available in 1.52.3+) If a LoadBalancer VServer Group is specified in the scaling group, the scaling group automatically attaches its ECS instances to VServer Group. See [Block vserver_group](#block-vserver_group) below for details.
 * `multi_az_policy` - (Optional, ForceNew) Multi-AZ scaling group ECS instance expansion and contraction strategy. PRIORITY or BALANCE.
 
 -> **NOTE:** When detach loadbalancers, instances in group will be remove from loadbalancer's `Default Server Group`; On the contrary, When attach loadbalancers, instances in group will be added to loadbalancer's `Default Server Group`.
 
 -> **NOTE:** When detach dbInstances, private ip of instances in group will be remove from dbInstance's `WhiteList`; On the contrary, When attach dbInstances, private ip of instances in group will be added to dbInstance's `WhiteList`.
 
+-> **NOTE:** A VServer Group is exclusively defined by loadbalancer_id, vserver_group_id and port, therefore, if you want to update the weight attribute, you need first detach VServer Group and then, attch it with newly changed weigth.
+
+## Block vserver_group
+
+the vserver_group supports the following:
+
+* `loadbalancer_id` - (Required) Loadbalancer server ID of VServer Group.
+* `vserver_attributes` - (Required) A Set of VServer Group attributes. See [Block vserver_groups](#block-vserver_attribute) below for details.
+
+## Block vserver_attribute
+
+* `vserver_group_id` - (Required) ID of VServer Group.
+* `port` - (Required) - The port will be used for VServer Group backend server.
+* `weight` - (Required) The weight of an ECS instance attached to the VServer Group.
 
 ## Attributes Reference
 

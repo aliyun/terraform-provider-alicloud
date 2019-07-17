@@ -1,4 +1,9 @@
 ## 1.52.3 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve(autoscaling): support "vserver_groups" for resource alicloud_ess_scaling_group
+
 ## 1.52.2 (July 20, 2019)
 
 IMPROVEMENTS:
