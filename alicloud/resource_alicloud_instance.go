@@ -371,7 +371,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{"Stopping"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAliyunInstanceUpdate(d, meta)
@@ -615,7 +615,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		stateConf := BuildStateConf([]string{"Pending", "Running", "Stopping"}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
 
 		if _, err = stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
 		if _, err := modifyInstanceImage(d, meta, run); err != nil {
@@ -634,15 +634,26 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		startRequest := ecs.CreateStartInstanceRequest()
 		startRequest.InstanceId = d.Id()
 
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.StartInstance(startRequest)
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.StartInstance(startRequest)
+			})
+			if err != nil {
+				if IsExceptedErrors(err, []string{"IncorrectInstanceStatus"}) {
+					time.Sleep(time.Second)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(startRequest.GetActionName(), raw)
+			return nil
 		})
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), startRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(startRequest.GetActionName(), raw)
-		// Start instance sometimes costs more than 8 minutes when os type is centos.
 
+		// Start instance sometimes costs more than 8 minutes when os type is centos.
 		stateConf = &resource.StateChangeConf{
 			Pending:    []string{"Pending", "Starting", "Stopped"},
 			Target:     []string{"Running"},
@@ -653,7 +664,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 
 		if _, err = stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
@@ -739,8 +750,10 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 
 	stateConf := BuildStateConf([]string{"Pending", "Running", "Stopped", "Stopping"}, []string{}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
 
-	_, err = stateConf.WaitForState()
-	return WrapError(err)
+	if _, err = stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }
 
 func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.RunInstancesRequest, error) {

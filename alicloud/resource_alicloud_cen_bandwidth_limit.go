@@ -145,7 +145,7 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 			return nil
 		})
 		if err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 	return resourceAlicloudCenBandwidthLimitRead(d, meta)
@@ -187,6 +187,8 @@ func resourceAlicloudCenBandwidthLimitDelete(d *schema.ResourceData, meta interf
 		}
 		return resource.NonRetryableError(err)
 	})
-
-	return WrapError(err)
+	if err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }

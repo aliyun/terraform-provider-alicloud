@@ -75,7 +75,7 @@ func resourceAliyunSnapshotCreate(d *schema.ResourceData, meta interface{}) erro
 		ecsService.SnapshotStateRefreshFunc(d.Id(), []string{string(SnapshotCreatingFailed)}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAliyunSnapshotUpdate(d, meta)
@@ -149,7 +149,9 @@ func resourceAliyunSnapshotDelete(d *schema.ResourceData, meta interface{}) erro
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 0,
 		ecsService.SnapshotStateRefreshFunc(d.Id(), []string{string(SnapshotCreatingFailed)}))
 
-	_, err = stateConf.WaitForState()
-	return WrapError(err)
+	if _, err = stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 
 }

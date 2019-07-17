@@ -121,9 +121,9 @@ func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
 	stateConf.PollInterval = 5 * time.Second
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return WrapError(nil)
+	return nil
 }
 
 func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
@@ -153,9 +153,9 @@ func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 	stateConf.PollInterval = 5 * time.Second
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return WrapError(nil)
+	return nil
 }
 
 func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
@@ -187,7 +187,7 @@ func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	stateConf.PollInterval = 5 * time.Second
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return nil
@@ -225,10 +225,10 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 	stateConf.PollInterval = 5 * time.Second
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return WrapError(nil)
+	return nil
 }
 
 func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
@@ -269,7 +269,7 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 	stateConf.PollInterval = 5 * time.Second
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }
@@ -301,9 +301,9 @@ func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
 	stateConf.PollInterval = 5 * time.Second
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return WrapError(nil)
+	return nil
 }
 
 func updatePassword(d *schema.ResourceData, meta interface{}) error {
@@ -333,9 +333,9 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 	stateConf.PollInterval = 5 * time.Second
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return WrapError(nil)
+	return nil
 }
 
 func getChargeType(paymentType string) string {

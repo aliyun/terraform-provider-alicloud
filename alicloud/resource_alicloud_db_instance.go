@@ -301,7 +301,7 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	// wait instance status change from Creating to running
 	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAlicloudDBInstanceUpdate(d, meta)
@@ -347,7 +347,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		addDebug(prePaidRequest.GetActionName(), raw)
 		// wait instance status is Normal after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("instance_charge_type")
 		d.SetPartial("period")
@@ -454,7 +454,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		// wait instance status is running before modifying
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
@@ -478,7 +478,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 		// wait instance status is running after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
@@ -606,8 +606,10 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	}
 
 	stateConf := BuildStateConf([]string{"Creating", "Running", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{}))
-	_, err = stateConf.WaitForState()
-	return WrapError(err)
+	if _, err = stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }
 
 func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.CreateDBInstanceRequest, error) {

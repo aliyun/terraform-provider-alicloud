@@ -185,7 +185,7 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
 	stateConf.PollInterval = 5 * time.Second
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAlicloudElasticsearchUpdate(d, meta)
@@ -281,7 +281,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("data_node_amount") {
 
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
 		if err := updateDateNodeAmount(d, meta); err != nil {
@@ -294,7 +294,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_type") {
 
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
 		if err := updateDataNodeSpec(d, meta); err != nil {
@@ -309,7 +309,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("master_node_spec") {
 
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
 		if err := updateMasterNode(d, meta); err != nil {
@@ -322,7 +322,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("password") {
 
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
 		if err := updatePassword(d, meta); err != nil {
@@ -364,7 +364,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	stateConf.PollInterval = 5 * time.Second
 
 	if _, err = stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	// Instance will be completed deleted in 5 minutes, so deleting vswitch is available after the time.
 	time.Sleep(5 * time.Minute)
