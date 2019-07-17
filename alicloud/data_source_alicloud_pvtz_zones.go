@@ -16,11 +16,20 @@ func dataSourceAlicloudPvtzZones() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"zones": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -79,6 +88,14 @@ func dataSourceAlicloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) e
 
 	var pvtzZones []pvtz.Zone
 	pvtzZoneBindVpcs := make(map[string][]map[string]interface{})
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
 	invoker := PvtzInvoker()
 
 	for {
@@ -100,6 +117,11 @@ func dataSourceAlicloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) e
 		}
 
 		for _, key := range response.Zones.Zone {
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[key.ZoneId]; !ok {
+					continue
+				}
+			}
 			pvtzZones = append(pvtzZones, key)
 
 			object, err := pvtzService.DescribePvtzZone(key.ZoneId)
@@ -133,6 +155,7 @@ func dataSourceAlicloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) e
 
 func pvtzZoneDescriptionAttributes(d *schema.ResourceData, pvtzZones []pvtz.Zone, pvtzZoneBindVpcs map[string][]map[string]interface{}) error {
 	var names []string
+	var ids []string
 	var s []map[string]interface{}
 	for _, key := range pvtzZones {
 		mapping := map[string]interface{}{
@@ -146,13 +169,20 @@ func pvtzZoneDescriptionAttributes(d *schema.ResourceData, pvtzZones []pvtz.Zone
 			"bind_vpcs":     pvtzZoneBindVpcs[key.ZoneId],
 		}
 
-		names = append(names, string(key.ZoneName))
+		names = append(names, key.ZoneName)
+		ids = append(ids, key.ZoneId)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(names))
 	if err := d.Set("zones", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
