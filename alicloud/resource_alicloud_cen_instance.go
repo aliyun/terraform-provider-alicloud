@@ -96,7 +96,7 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 	stateConf := BuildStateConf([]string{"Creating"}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, cenService.CenInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAlicloudCenInstanceRead(d, meta)
@@ -167,6 +167,8 @@ func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 
 	stateConf := BuildStateConf([]string{"Creating", "Active", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Second, cenService.CenInstanceStateRefreshFunc(d.Id(), []string{}))
 
-	_, err = stateConf.WaitForState()
-	return WrapError(err)
+	if _, err = stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }

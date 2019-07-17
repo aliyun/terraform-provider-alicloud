@@ -128,7 +128,7 @@ func resourceAlicloudDBReadonlyInstanceCreate(d *schema.ResourceData, meta inter
 	// wait instance status change from Creating to running
 	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAlicloudDBReadonlyInstanceUpdate(d, meta)
@@ -197,7 +197,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		// wait instance status is running before modifying
 		stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -222,7 +222,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 
 		// wait instance status is running after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
@@ -305,9 +305,10 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 	}
 
 	stateConf := BuildStateConf([]string{"Creating", "Active", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{}))
-	_, err = stateConf.WaitForState()
-	return WrapError(err)
-
+	if _, err = stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }
 
 func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.CreateReadOnlyDBInstanceRequest, error) {
