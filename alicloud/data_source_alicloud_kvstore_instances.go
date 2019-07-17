@@ -56,7 +56,7 @@ func dataSourceAlicloudKVStoreInstances() *schema.Resource {
 			},
 			"ids": {
 				Type:     schema.TypeList,
-				Computed: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"names": {
@@ -173,7 +173,12 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 			nameRegex = r
 		}
 	}
-
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 	for {
 		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 			return rkvClient.DescribeInstances(request)
@@ -190,6 +195,11 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 		for _, item := range response.Instances.KVStoreInstance {
 			if nameRegex != nil {
 				if !nameRegex.MatchString(item.InstanceName) {
+					continue
+				}
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[item.InstanceId]; !ok {
 					continue
 				}
 			}
