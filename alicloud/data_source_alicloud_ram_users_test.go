@@ -33,22 +33,33 @@ func TestAccAlicloudRamUsersDataSource(t *testing.T) {
 		}),
 	}
 
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRamUsersDataSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_ram_user.default.id}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudRamUsersDataSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_ram_user.default.id}_fake"]`,
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamUsersDataSourceConfig(rand, map[string]string{
 			"group_name":  `"${alicloud_ram_group_membership.default.group_name}"`,
 			"policy_name": `"${alicloud_ram_user_policy_attachment.default.policy_name}"`,
 			"policy_type": `"Custom"`,
+			"ids":         `["${alicloud_ram_user.default.id}"]`,
 			"name_regex":  `"${alicloud_ram_user.default.name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRamUsersDataSourceConfig(rand, map[string]string{
 			"group_name":  `"${alicloud_ram_group_membership.default.group_name}"`,
 			"policy_name": `"${alicloud_ram_user_policy_attachment.default.policy_name}"`,
 			"policy_type": `"Custom"`,
+			"ids":         `["${alicloud_ram_user.default.id}"]`,
 			"name_regex":  `"${alicloud_ram_user.default.name}_fake"`,
 		}),
 	}
 
-	ramUsersCheckInfo.dataSourceTestCheck(t, rand, groupConf, policyConf, nameRegexConf, allConf)
+	ramUsersCheckInfo.dataSourceTestCheck(t, rand, groupConf, policyConf, nameRegexConf, idsConf, allConf)
 
 }
 func testAccCheckAlicloudRamUsersDataSourceConfig(rand int, attrMap map[string]string) string {
