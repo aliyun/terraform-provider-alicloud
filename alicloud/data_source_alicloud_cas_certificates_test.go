@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -80,8 +81,10 @@ func TestAccAlicloudCasCertificatesDataSource_basic(t *testing.T) {
 		existMapFunc: existCasCertificatesMapFunc,
 		fakeMapFunc:  fakeCasCertificatesMapFunc,
 	}
-
-	casCertificatesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.CasClassicSupportedRegions)
+	}
+	casCertificatesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 
 func dataSourceCasCertificatesConfigDependence(name string) string {
