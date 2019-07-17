@@ -20,7 +20,29 @@ func TestAccAlicloudDnsGroupsDataSource(t *testing.T) {
 			"name_regex": "${alicloud_dns_group.default.name}_fake",
 		}),
 	}
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_dns_group.default.id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_dns_group.default.id}_fake"},
+		}),
+	}
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_dns_group.default.name}",
+			"ids":        []string{"${alicloud_dns_group.default.id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_dns_group.default.name}_fake",
+			"ids":        []string{"${alicloud_dns_group.default.id}"},
+		}),
+	}
 	existChangeMap := map[string]string{
+		"ids.#":               "1",
+		"ids.0":               REMOVEKEY,
+		"names.#":             "1",
+		"names.0":             "ALL",
 		"groups.#":            "1",
 		"groups.0.group_id":   "",
 		"groups.0.group_name": "ALL",
@@ -30,7 +52,7 @@ func TestAccAlicloudDnsGroupsDataSource(t *testing.T) {
 		existChangMap: existChangeMap,
 	}
 
-	dnsGroupsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, nameAllConf)
+	dnsGroupsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf, nameAllConf)
 }
 
 func dataSourceDnsGroupsConfigDependence(name string) string {
@@ -48,7 +70,10 @@ data "alicloud_dns_groups" "default" {
 
 var existDnsGroupsMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"groups.#":            "1",
+		"ids.#":               "1",
+		"ids.0":               CHECKSET,
+		"names.#":             "1",
+		"names.0":             fmt.Sprintf("tf-testacc-%d", rand),
 		"groups.0.group_id":   CHECKSET,
 		"groups.0.group_name": fmt.Sprintf("tf-testacc-%d", rand),
 	}
@@ -56,6 +81,8 @@ var existDnsGroupsMapFunc = func(rand int) map[string]string {
 
 var fakeDnsGroupsMapFunc = func(rand int) map[string]string {
 	return map[string]string{
+		"ids.#":    "0",
+		"names.#":  "0",
 		"groups.#": "0",
 	}
 }
