@@ -27,6 +27,7 @@ Filters support regular expression for the instance name, searches by tags, and 
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to apply to the instance name.
+* `ids` - (Optional, Available 1.53.0+) A list of RKV instance IDs.
 * `instance_type` - (Optional) Database type. Options are `Memcache`, and `Redis`. If no value is specified, all types are returned.
 * `status` - (Optional) Status of the instance.
 * `instance_class`- (Optional) Type of the applied ApsaraDB for Redis instance.
@@ -40,9 +41,10 @@ For more information, see [Instance type table](https://www.alibabacloud.com/hel
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `instances` - A list of RDS instances. Its every element contains the following attributes:
+* `ids` - A list of RKV instance IDs.
+* `instances` - A list of RKV instances. Its every element contains the following attributes:
   * `id` - The ID of the RKV instance.
-  * `name` - The name of the RDS instance.
+  * `name` - The name of the RKV instance.
   * `charge_type` - Billing method. Value options: `PostPaid` for  Pay-As-You-Go and `PrePaid` for subscription.
   * `region_id` - Region ID the instance belongs to.
   * `create_time` - Creation time of the instance.

@@ -21,6 +21,15 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 		}),
 	}
 
+	KvstoreIdsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"ids": `["${alicloud_kvstore_instance.default.id}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
+			"ids": `["${alicloud_kvstore_instance.default.id}-fake"]`,
+		}),
+	}
+
 	KvstoreStatusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
 			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
@@ -68,6 +77,7 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
 			"name_regex":    `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"ids":           `["${alicloud_kvstore_instance.default.id}"]`,
 			"status":        `"Normal"`,
 			"instance_type": `"Redis"`,
 			"vpc_id":        `"${alicloud_vpc.default.id}"`,
@@ -75,6 +85,7 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
 			"name_regex":    `"${alicloud_kvstore_instance.default.instance_name}-fake"`,
+			"ids":           `["${alicloud_kvstore_instance.default.id}"]`,
 			"status":        `"Normal"`,
 			"instance_type": `"Redis"`,
 			"vpc_id":        `"${alicloud_vpc.default.id}"`,
@@ -82,7 +93,7 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 		}),
 	}
 
-	kvstoreInstanceCheckInfo.dataSourceTestCheck(t, rand, KvstoreNameConf, KvstoreStatusConf, KvstoreInstanceTypeConf, KvstoreVpcIdConf, KvstoreVswitchIdConf, allConf)
+	kvstoreInstanceCheckInfo.dataSourceTestCheck(t, rand, KvstoreNameConf, KvstoreIdsConf, KvstoreStatusConf, KvstoreInstanceTypeConf, KvstoreVpcIdConf, KvstoreVswitchIdConf, allConf)
 }
 
 func testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand int, instanceType, instanceClass, engineVersion string, attrMap map[string]string) string {
