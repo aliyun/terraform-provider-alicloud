@@ -44,7 +44,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the Private Zone Record.
+* `id` - This ID of this resource. The value is formate as `<record_id>:<zone_id>`.
+* `record_id` - The Private Zone Record ID.
 
 ## Import
 
