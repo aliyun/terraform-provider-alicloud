@@ -6,69 +6,59 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudMnsTopicDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 999999)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudMNSTopicDataSourceConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_mns_topics.topics"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_topics.topics", "topics.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_topics.topics", "topics.0.name", fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand)),
-					resource.TestCheckResourceAttr("data.alicloud_mns_topics.topics", "topics.0.maximum_message_size", "12357"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_topics.topics", "topics.0.logging_enabled", "true"),
-				),
-			},
-		},
-	})
-}
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_mns_topics.default"
 
-func TestAccAlicloudMnsTopicDataSourceEmpty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudMNSTopicDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_mns_topics.topics"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_topics.topics", "topics.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_mns_topics.topics", "topics.0.name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_mns_topics.topics", "topics.0.maximum_message_size"),
-					resource.TestCheckNoResourceAttr("data.alicloud_mns_topics.topics", "topics.0.logging_enabled"),
-				),
-			},
-		},
-	})
-}
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand),
+		dataSourceMnsTopicConfigDependence)
 
-func testAccCheckAlicloudMNSTopicDataSourceConfig(rand int) string {
-	return fmt.Sprintf(`
-	data "alicloud_mns_topics" "topics" {
-	  name_prefix = "${alicloud_mns_topic.topic.name}"
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_prefix": "${alicloud_mns_topic.default.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_prefix": "${alicloud_mns_topic.default.name}-fake",
+		}),
 	}
 
-	resource "alicloud_mns_topic" "topic"{
-		name="tf-testAccMNSTopicConfig-%d"
+	var existMnsTopicMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"names.#":                       "1",
+			"names.0":                       fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand),
+			"topics.#":                      "1",
+			"topics.0.name":                 fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand),
+			"topics.0.id":                   fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand),
+			"topics.0.maximum_message_size": "12357",
+			"topics.0.logging_enabled":      "true",
+		}
+	}
+
+	var fakeMnsTopicMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"names.#":  "0",
+			"topics.#": "0",
+		}
+	}
+
+	var mnsTopicCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existMnsTopicMapFunc,
+		fakeMapFunc:  fakeMnsTopicMapFunc,
+	}
+
+	mnsTopicCheckInfo.dataSourceTestCheck(t, rand, allConf)
+}
+
+func dataSourceMnsTopicConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	resource "alicloud_mns_topic" "default"{
+		name="%s"
 		maximum_message_size=12357
 		logging_enabled=true
 	}
-	`, rand)
+	`, name)
 }
-
-const testAccCheckAlicloudMNSTopicDataSourceEmpty = `
-data "alicloud_mns_topics" "topics" {
-  name_prefix = "tf-testacc-fake-name"
-}
-
-`

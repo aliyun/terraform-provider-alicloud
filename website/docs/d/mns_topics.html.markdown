@@ -33,8 +33,9 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `topics` - A list of users. Each element contains the following attributes:
-   * `id` - The id of the topic.
+* `names` - A list of topic names.
+* `topics` - A list of topics. Each element contains the following attributes:
+   * `id` - The id of the topic. The value is set to `name`.
    * `name` - The name of the topic.
    * `maximum_message_size` - This indicates the maximum length, in bytes, of any message body sent to the topic.
    * `logging_enabled` - Whether to enable logging.
