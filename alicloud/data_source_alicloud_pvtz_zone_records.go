@@ -22,6 +22,11 @@ func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -81,11 +86,18 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 
 	var pvtzZoneRecords []pvtz.Record
-	recordIds := []string{}
+	var ids []string
 
 	invoker := PvtzInvoker()
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 
-	for true {
+	for {
 		var raw interface{}
 		var err error
 		err = invoker.Run(func() error {
@@ -107,18 +119,23 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 		}
 
 		for _, key := range response.Records.Record {
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[strconv.Itoa(key.RecordId)]; !ok {
+					continue
+				}
+			}
 			pvtzZoneRecords = append(pvtzZoneRecords, key)
-			recordIds = append(recordIds, strconv.Itoa(key.RecordId))
+			ids = append(ids, strconv.Itoa(key.RecordId))
 		}
 
 		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return err
+			return WrapError(err)
 		} else {
 			request.PageNumber = page
 		}
 	}
 
-	d.SetId(dataResourceIdHash(recordIds))
+	d.SetId(dataResourceIdHash(ids))
 	var zoneRecords []map[string]interface{}
 
 	for _, r := range pvtzZoneRecords {
@@ -135,7 +152,10 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 		zoneRecords = append(zoneRecords, mapping)
 	}
 	if err := d.Set("records", zoneRecords); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

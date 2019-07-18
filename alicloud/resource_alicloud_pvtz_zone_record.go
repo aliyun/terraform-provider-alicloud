@@ -57,6 +57,10 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 				Optional: true,
 				Default:  60,
 			},
+			"record_id": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 		},
 	}
 }
