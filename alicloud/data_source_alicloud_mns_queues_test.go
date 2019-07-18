@@ -6,77 +6,65 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudMnsQueueDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 999999)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudMNSQueueDataSourceConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_mns_queues.queues"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.0.name", fmt.Sprintf("tf-testAccMNSQueueConfig1-%d", rand)),
-					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.0.delay_seconds", "60478"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.0.maximum_message_size", "12357"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.0.message_retention_period", "256000"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.0.visibility_timeouts", "30"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.0.polling_wait_seconds", "3"),
-				),
-			},
-		},
-	})
-}
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_mns_queues.default"
 
-func TestAccAlicloudMnsQueueDataSourceEmpty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudMNSQueueDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_mns_queues.queues"),
-					resource.TestCheckResourceAttr("data.alicloud_mns_queues.queues", "queues.#", "0"),
-					resource.TestCheckNoResourceAttr("data.alicloud_mns_queues.queues", "queues.0.name"),
-					resource.TestCheckNoResourceAttr("data.alicloud_mns_queues.queues", "queues.0.delay_seconds"),
-					resource.TestCheckNoResourceAttr("data.alicloud_mns_queues.queues", "queues.0.maximum_message_size"),
-					resource.TestCheckNoResourceAttr("data.alicloud_mns_queues.queues", "queues.0.message_retention_period"),
-					resource.TestCheckNoResourceAttr("data.alicloud_mns_queues.queues", "queues.0.visibility_timeouts"),
-					resource.TestCheckNoResourceAttr("data.alicloud_mns_queues.queues", "queues.0.polling_wait_seconds"),
-				),
-			},
-		},
-	})
-}
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testAccMNSQueue-%d", rand),
+		dataSourceMnsQueueConfigDependence)
 
-func testAccCheckAlicloudMNSQueueDataSourceConfig(rand int) string {
-	return fmt.Sprintf(`
-	data "alicloud_mns_queues" "queues" {
-	  name_prefix = "${alicloud_mns_queue.queue.name}"
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_prefix": "${alicloud_mns_queue.queue.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_prefix": "${alicloud_mns_queue.queue.name}-fake",
+		}),
 	}
 
+	var existMnsQueueMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"names.#":                           "1",
+			"names.0":                           fmt.Sprintf("tf-testAccMNSQueue-%d", rand),
+			"queues.#":                          "1",
+			"queues.0.id":                       fmt.Sprintf("tf-testAccMNSQueue-%d", rand),
+			"queues.0.name":                     fmt.Sprintf("tf-testAccMNSQueue-%d", rand),
+			"queues.0.delay_seconds":            "60478",
+			"queues.0.maximum_message_size":     "12357",
+			"queues.0.message_retention_period": "256000",
+			"queues.0.visibility_timeouts":      "30",
+			"queues.0.polling_wait_seconds":     "3",
+		}
+	}
+
+	var fakeMnsQueueMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"names.#":  "0",
+			"queues.#": "0",
+		}
+	}
+
+	var mnsQueueCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existMnsQueueMapFunc,
+		fakeMapFunc:  fakeMnsQueueMapFunc,
+	}
+
+	mnsQueueCheckInfo.dataSourceTestCheck(t, rand, allConf)
+}
+
+func dataSourceMnsQueueConfigDependence(name string) string {
+	return fmt.Sprintf(`
 	resource "alicloud_mns_queue" "queue"{
-		name="tf-testAccMNSQueueConfig1-%d"
+		name="%s"
 		delay_seconds=60478
 		maximum_message_size=12357
 		message_retention_period=256000
 		visibility_timeout=30
 		polling_wait_seconds=3
 	}
-	`, rand)
+	`, name)
 }
-
-const testAccCheckAlicloudMNSQueueDataSourceEmpty = `
-data "alicloud_mns_queues" "queues" {
-  name_prefix = "tf-testacc-fake-name"
-}
-`

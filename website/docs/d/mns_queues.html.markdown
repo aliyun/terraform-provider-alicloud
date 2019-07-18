@@ -33,8 +33,9 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `queues` - A list of users. Each element contains the following attributes:
-  * `id` - The id of the queue
+* `names` - A list of queue names. 
+* `queues` - A list of queues. Each element contains the following attributes:
+  * `id` - The id of the queue, The value is set to `name`.
   * `name` - The name of the queue
   * `delay_seconds` - This attribute defines the length of time, in seconds, after which every message sent to the queue is dequeued.
   * `maximum_message_size` - This indicates the maximum length, in bytes, of any message body sent to the queue.
