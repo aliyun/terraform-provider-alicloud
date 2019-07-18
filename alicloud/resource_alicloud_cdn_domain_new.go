@@ -329,13 +329,22 @@ func certificateConfigUpdateNew(client *connectivity.AliyunClient, d *schema.Res
 	v, ok := d.GetOk("certificate_config")
 	if !ok {
 		request.ServerCertificateStatus = "off"
-		raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
-			return cdnClient.SetDomainServerCertificate(request)
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
+				return cdnClient.SetDomainServerCertificate(request)
+			})
+			if err != nil {
+				if IsExceptedError(err, ServiceBusy) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw)
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
 		d.SetPartial("certificate_config")
 		return nil
 	}
@@ -360,13 +369,22 @@ func certificateConfigUpdateNew(client *connectivity.AliyunClient, d *schema.Res
 		request.CertType = v.(string)
 	}
 
-	raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
-		return cdnClient.SetDomainServerCertificate(request)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
+			return cdnClient.SetDomainServerCertificate(request)
+		})
+		if err != nil {
+			if IsExceptedError(err, ServiceBusy) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
 	d.SetPartial("certificate_config")
 	if okServerCertificate && request.ServerCertificateStatus != "off" {
 		err := cdnService.WaitForServerCertificateNew(d.Id(), request.ServerCertificate, DefaultTimeout)
