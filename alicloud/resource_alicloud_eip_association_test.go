@@ -136,7 +136,8 @@ func TestAccAlicloudEipAssociationEni(t *testing.T) {
 				Config: testAccEIPAssociationConfigEni(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type": "NetworkInterface",
+						"instance_type":      "NetworkInterface",
+						"private_ip_address": "192.168.0.2",
 					}),
 				),
 			},
@@ -305,7 +306,8 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_network_interface" "default" {
 	name = "${var.name}"
     vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+	security_groups = [ "${alicloud_security_group.default.id}" ]
+	private_ip = "192.168.0.2"
 }
 
 resource "alicloud_eip" "default" {
@@ -316,6 +318,7 @@ resource "alicloud_eip_association" "default" {
   allocation_id = "${alicloud_eip.default.id}"
   instance_id = "${alicloud_network_interface.default.id}"
   instance_type = "NetworkInterface"
+  private_ip_address = "192.168.0.2"
 }
 `, rand)
 }
