@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -22,6 +20,11 @@ func dataSourceAlicloudMNSQueues() *schema.Resource {
 			},
 
 			// Computed values
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"queues": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -77,8 +80,9 @@ func dataSourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) er
 			return queueManager.ListQueueDetail(nextMaker, 1000, namePrefix)
 		})
 		if err != nil {
-			return fmt.Errorf("Get queueDetails  error: %#v", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_mns_queues", "ListQueueDetail", AliMnsERROR)
 		}
+		addDebug("ListQueueDetail", raw)
 		queueDetails, _ := raw.(ali_mns.QueueDetails)
 		for _, attr := range queueDetails.Attrs {
 			queueAttr = append(queueAttr, attr)
@@ -94,6 +98,7 @@ func dataSourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) er
 
 func mnsQueueDescription(d *schema.ResourceData, queueAttr []ali_mns.QueueAttribute) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, item := range queueAttr {
@@ -107,14 +112,17 @@ func mnsQueueDescription(d *schema.ResourceData, queueAttr []ali_mns.QueueAttrib
 			"polling_wait_seconds":     item.PollingWaitSeconds,
 		}
 
-		ids = append(ids, item.QueueName)
+		names = append(names, item.QueueName)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 
 	if err := d.Set("queues", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
