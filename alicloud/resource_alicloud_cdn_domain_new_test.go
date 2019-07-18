@@ -28,8 +28,8 @@ func testSweepCdnDomains_new(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		"tf-testacc",
-		"tf_testacc",
+		fmt.Sprintf("tf-testacc%s", defaultRegionToTest),
+		fmt.Sprintf("tf_testacc%s", defaultRegionToTest),
 	}
 
 	var domains []cdn.PageData
@@ -101,7 +101,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc%d.xiaozhu.com", rand)
+	name := fmt.Sprintf("tf-testacc%s%d.xiaozhu.com", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -350,7 +350,7 @@ func TestAccAlicloudCdnDomainNew_scope(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc%d.xiaozhu.com", rand)
+	name := fmt.Sprintf("tf-testacc%s%d.xiaozhu.com", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainDependence)
 
 	resource.Test(t, resource.TestCase{
