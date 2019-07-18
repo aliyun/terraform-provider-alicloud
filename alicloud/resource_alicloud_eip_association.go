@@ -35,6 +35,13 @@ func resourceAliyunEipAssociation() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+
+			"private_ip_address": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -56,6 +63,9 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	}
 	if instanceType, ok := d.GetOk("instance_type"); ok {
 		request.InstanceType = instanceType.(string)
+	}
+	if privateIPAddress, ok := d.GetOk("private_ip_address"); ok {
+		request.PrivateIpAddress = privateIPAddress.(string)
 	}
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
