@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,6 +24,11 @@ func dataSourceAlicloudMNSTopicSubscriptions() *schema.Resource {
 			},
 
 			// Computed values
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"subscriptions": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -84,8 +87,10 @@ func dataSourceAlicloudMNSTopicSubscriptionRead(d *schema.ResourceData, meta int
 			return subscriptionManager.ListSubscriptionDetailByTopic(nextMaker, 1000, namePrefix)
 		})
 		if err != nil {
-			return fmt.Errorf("Getting alicoudMNSSubscription  error: %#v", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_topic_subscriptions", "ListSubscriptionDetailByTopic", AliMnsERROR)
 		}
+
+		addDebug("ListSubscriptionDetailByTopic", raw)
 		subscriptionDetails, _ := raw.(ali_mns.SubscriptionDetails)
 		for _, attr := range subscriptionDetails.Attrs {
 			subscriptionAttr = append(subscriptionAttr, attr)
@@ -100,11 +105,12 @@ func dataSourceAlicloudMNSTopicSubscriptionRead(d *schema.ResourceData, meta int
 
 func mnsTopicSubcriptionDescription(d *schema.ResourceData, topicAttr []ali_mns.SubscriptionAttribute) error {
 	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, item := range topicAttr {
 		mapping := map[string]interface{}{
-			"id":                    fmt.Sprintf("%s%s%s", item.TopicName, COLON_SEPARATED, item.SubscriptionName),
+			"id":                    item.SubscriptionName,
 			"name":                  item.SubscriptionName,
 			"topic_name":            item.TopicName,
 			"endpoint":              item.Endpoint,
@@ -113,14 +119,18 @@ func mnsTopicSubcriptionDescription(d *schema.ResourceData, topicAttr []ali_mns.
 			"notify_content_format": item.NotifyContentFormat,
 		}
 
-		ids = append(ids, fmt.Sprintf("%s%s%s", item.TopicName, COLON_SEPARATED, item.SubscriptionName))
+		ids = append(ids, item.SubscriptionName)
+		names = append(names, item.SubscriptionName)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 
 	if err := d.Set("subscriptions", s); err != nil {
-		return err
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
