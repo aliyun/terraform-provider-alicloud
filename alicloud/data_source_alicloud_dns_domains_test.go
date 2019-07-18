@@ -21,6 +21,14 @@ func TestAccAlicloudDnsDomainsDataSource(t *testing.T) {
 			"domain_name_regex": "${alicloud_dns.default.name}",
 		}),
 	}
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_dns.default.domain_id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_dns.default.domain_id}-fake"},
+		}),
+	}
 	groupNameConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ali_domain":        "false",
@@ -56,6 +64,7 @@ func TestAccAlicloudDnsDomainsDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"domain_name_regex": "${alicloud_dns.default.name}",
+			"ids":               []string{"${alicloud_dns.default.domain_id}"},
 			"version_code":      "mianfei",
 			"instance_id":       "",
 			"ali_domain":        "false",
@@ -63,13 +72,14 @@ func TestAccAlicloudDnsDomainsDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"domain_name_regex": "${alicloud_dns.default.name}",
+			"ids":               []string{"${alicloud_dns.default.domain_id}"},
 			"version_code":      "mianfei",
 			"instance_id":       "",
 			"ali_domain":        "true",
 			"group_name_regex":  "${alicloud_dns_group.default.name}",
 		}),
 	}
-	dnsDomainsCheckInfo.dataSourceTestCheck(t, rand, aliDomainConf, groupNameConf, instanceIdConf, versionCodeConf, allConf)
+	dnsDomainsCheckInfo.dataSourceTestCheck(t, rand, aliDomainConf, idsConf, groupNameConf, instanceIdConf, versionCodeConf, allConf)
 }
 
 func dataSourceDnsDomainsConfigDependence(name string) string {

@@ -33,7 +33,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The domain id.
+* `id` - This ID of this resource. The value is set to `domain_name`.
+* `domain_id` - The domain ID.
 * `name` - The domain name.
 * `group_id` - The group id of domain.
 * `dns_server` - A list of the dns server name.
