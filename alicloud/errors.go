@@ -563,6 +563,7 @@ const (
 	FcGoSdk                = ErrorSource("[SDK fc-go-sdk ERROR]")
 	DenverdinoAliyungo     = ErrorSource("[SDK denverdino/aliyungo ERROR]")
 	AliyunTablestoreGoSdk  = ErrorSource("[SDK aliyun-tablestore-go-sdk ERROR]")
+	AliMnsERROR            = ErrorSource("[SDK ali_mns ERROR]")
 	ProviderERROR          = ErrorSource("[Provider ERROR]")
 )
 
