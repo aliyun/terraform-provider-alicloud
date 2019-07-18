@@ -21,16 +21,16 @@ func dataSourceAlicloudApiGatewayApps() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateNameRegex,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 			// Computed values
-			"ids": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
 			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -105,9 +105,23 @@ func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface
 	if ok && nameRegex.(string) != "" {
 		r = regexp.MustCompile(nameRegex.(string))
 	}
+
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
 	for _, app := range apps {
 		if r != nil && !r.MatchString(app.AppName) {
 			continue
+		}
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[strconv.Itoa(app.AppId)]; !ok {
+				continue
+			}
 		}
 
 		filteredAppsTemp = append(filteredAppsTemp, app)
