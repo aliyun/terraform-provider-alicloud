@@ -24,6 +24,11 @@ func dataSourceAlicloudDnsDomains() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"ali_domain": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -42,11 +47,6 @@ func dataSourceAlicloudDnsDomains() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-			},
-			"ids": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -137,6 +137,13 @@ func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) 
 
 	var filteredDomains []alidns.Domain
 
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
 	for _, domain := range allDomains {
 		if v, ok := d.GetOk("ali_domain"); ok && domain.AliDomain != v.(bool) {
 			continue
@@ -160,6 +167,12 @@ func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) 
 		if v, ok := d.GetOk("group_name_regex"); ok && v.(string) != "" {
 			r := regexp.MustCompile(v.(string))
 			if !r.MatchString(domain.GroupName) {
+				continue
+			}
+		}
+
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[domain.DomainId]; !ok {
 				continue
 			}
 		}

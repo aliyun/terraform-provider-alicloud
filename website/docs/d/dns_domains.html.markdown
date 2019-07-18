@@ -32,6 +32,7 @@ The following arguments are supported:
 * `ali_domain` - (Optional, type: bool) Specifies whether the domain is from Alibaba Cloud or not.
 * `instance_id` - (Optional) Cloud analysis product ID.
 * `version_code` - (Optional) Cloud analysis version code.
+* `ids` (Optional, Available in 1.53.0+) - A list of domain IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

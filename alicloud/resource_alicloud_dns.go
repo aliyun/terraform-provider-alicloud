@@ -26,6 +26,10 @@ func resourceAlicloudDns() *schema.Resource {
 				ValidateFunc: validateDomainName,
 				ForceNew:     true,
 			},
+			"domain_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -91,6 +95,7 @@ func resourceAlicloudDnsRead(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	d.Set("group_id", object.GroupId)
+	d.Set("domain_id", object.DomainId)
 	d.Set("name", object.DomainName)
 	d.Set("dns_server", object.DnsServers.DnsServer)
 	return nil
