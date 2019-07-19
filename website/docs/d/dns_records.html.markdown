@@ -37,7 +37,7 @@ The following arguments are supported:
 * `line` - (Optional) ISP line. Valid items are `default`, `telecom`, `unicom`, `mobile`, `oversea`, `edu`.
 * `status` - (Optional) Record status. Valid items are `ENABLE` and `DISABLE`.
 * `is_locked` - (Optional, type: bool) Whether the record is locked or not.
-* `ids` - (Optional, Available 1.53.0+) A list of record IDs.
+* `ids` - (Optional, Available 1.52.2+) A list of record IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 

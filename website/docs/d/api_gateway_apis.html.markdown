@@ -26,10 +26,10 @@ output "first_api_id" {
 
 The following arguments are supported:
 
-* `api_id` - (Deprecated, Optional) (It has been deprecated from version 1.53.0, and use field 'ids' to replace.) ID of the specified API.
+* `api_id` - (Deprecated, Optional) (It has been deprecated from version 1.52.2, and use field 'ids' to replace.) ID of the specified API.
 * `group_id` - (Optional) ID of the specified group.
 * `name_regex` - (Optional) A regex string to filter api gateway apis by name.
-* `ids` - (Optional, Available 1.53.0+) A list of api IDs. 
+* `ids` - (Optional, Available 1.52.2+) A list of api IDs. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

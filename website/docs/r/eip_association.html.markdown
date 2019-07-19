@@ -82,7 +82,7 @@ The following arguments are supported:
 * `allocation_id` - (Required, ForcesNew) The allocation EIP ID.
 * `instance_id` - (Required, ForcesNew) The ID of the ECS or SLB instance or Nat Gateway.
 * `instance_type` - (Optional, ForceNew, Available in 1.46.0+) The type of cloud product that the eip instance to bind.
-* `private_ip_address` - (Optional, ForceNew, Available in 1.53.0+) The private IP address in the network segment of the vswitch which has been assigned.
+* `private_ip_address` - (Optional, ForceNew, Available in 1.52.2+) The private IP address in the network segment of the vswitch which has been assigned.
 
 
 ## Attributes Reference
