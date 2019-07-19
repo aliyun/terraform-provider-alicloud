@@ -102,6 +102,10 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"trigger_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -194,6 +198,7 @@ func resourceAlicloudFCTriggerRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("service", parts[0])
 	d.Set("function", parts[1])
 	d.Set("name", trigger.TriggerName)
+	d.Set("trigger_id", trigger.TriggerID)
 	d.Set("role", trigger.InvocationRole)
 	d.Set("source_arn", trigger.SourceARN)
 

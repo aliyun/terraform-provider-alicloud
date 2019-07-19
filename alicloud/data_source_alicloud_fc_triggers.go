@@ -33,7 +33,7 @@ func dataSourceAlicloudFcTriggers() *schema.Resource {
 			},
 			"ids": {
 				Type:     schema.TypeList,
-				Computed: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"names": {
@@ -96,6 +96,13 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 	var names []string
 	var triggerMappings []map[string]interface{}
 	nextToken := ""
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 	for {
 		request := fc.NewListTriggersInput(serviceName, functionName)
 		if nextToken != "" {
@@ -137,7 +144,11 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 					continue
 				}
 			}
-
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[*trigger.TriggerID]; !ok {
+					continue
+				}
+			}
 			triggerMappings = append(triggerMappings, mapping)
 			ids = append(ids, *trigger.TriggerID)
 			names = append(names, *trigger.TriggerName)

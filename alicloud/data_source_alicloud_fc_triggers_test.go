@@ -20,7 +20,20 @@ func TestAccAlicloudFCTriggersDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"service_name":  "${alicloud_fc_trigger.default.service}",
+			"function_name": "${alicloud_fc_trigger.default.function}",
+			"ids":           []string{"${alicloud_fc_trigger.default.trigger_id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"service_name":  "${alicloud_fc_trigger.default.service}",
+			"function_name": "${alicloud_fc_trigger.default.function}",
+			"ids":           []string{"${alicloud_fc_trigger.default.trigger_id}-fake"},
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"name_regex":    "${alicloud_fc_trigger.default.name}",
 			"service_name":  "${alicloud_fc_trigger.default.service}",
@@ -30,6 +43,21 @@ func TestAccAlicloudFCTriggersDataSource_basic(t *testing.T) {
 			"name_regex":    "${alicloud_fc_trigger.default.name}_fake",
 			"service_name":  "${alicloud_fc_trigger.default.service}",
 			"function_name": "${alicloud_fc_trigger.default.function}",
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex":    "${alicloud_fc_trigger.default.name}",
+			"service_name":  "${alicloud_fc_trigger.default.service}",
+			"function_name": "${alicloud_fc_trigger.default.function}",
+			"ids":           []string{"${alicloud_fc_trigger.default.trigger_id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex":    "${alicloud_fc_trigger.default.name}_fake",
+			"service_name":  "${alicloud_fc_trigger.default.service}",
+			"function_name": "${alicloud_fc_trigger.default.function}",
+			"ids":           []string{"${alicloud_fc_trigger.default.trigger_id}"},
 		}),
 	}
 
@@ -63,7 +91,7 @@ func TestAccAlicloudFCTriggersDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeFCtriggerMapFunc,
 	}
 
-	fcTriggerRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, allConf)
+	fcTriggerRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, idsConf, nameRegexConf, allConf)
 
 }
 
