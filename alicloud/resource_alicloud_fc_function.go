@@ -103,6 +103,10 @@ func resourceAlicloudFCFunction() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"function_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -195,6 +199,7 @@ func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("service", parts[0])
 	d.Set("name", object.FunctionName)
+	d.Set("function_id", object.FunctionID)
 	d.Set("description", object.Description)
 	d.Set("handler", object.Handler)
 	d.Set("memory_size", object.MemorySize)
