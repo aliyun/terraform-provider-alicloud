@@ -27,7 +27,7 @@ Filters support regular expression for the instance name, searches by tags, and 
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to apply to the instance name.
-* `ids` - (Optional, Available 1.53.0+) A list of RKV instance IDs.
+* `ids` - (Optional, Available 1.52.2+) A list of RKV instance IDs.
 * `instance_type` - (Optional) Database type. Options are `Memcache`, and `Redis`. If no value is specified, all types are returned.
 * `status` - (Optional) Status of the instance.
 * `instance_class`- (Optional) Type of the applied ApsaraDB for Redis instance.

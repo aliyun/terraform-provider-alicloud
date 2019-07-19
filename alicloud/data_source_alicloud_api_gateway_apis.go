@@ -22,7 +22,7 @@ func dataSourceAlicloudApiGatewayApis() *schema.Resource {
 				Type:       schema.TypeString,
 				Optional:   true,
 				ForceNew:   true,
-				Deprecated: "Field 'api_id' has been deprecated from provider version 1.53.0. New field 'ids' replaces it.",
+				Deprecated: "Field 'api_id' has been deprecated from provider version 1.52.2. New field 'ids' replaces it.",
 			},
 			"ids": {
 				Type:     schema.TypeList,

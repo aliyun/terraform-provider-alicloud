@@ -27,7 +27,7 @@ output "first_app_id" {
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to filter apps by name.
-* `ids` - (Optional, Available in 1.53.0+) A list of app IDs. 
+* `ids` - (Optional, Available in 1.52.2+) A list of app IDs. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

@@ -28,7 +28,7 @@ output "first_group_name" {
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to filter results by group name. 
-* `ids` - (Optional, Available 1.53.0+) A list of group IDs.
+* `ids` - (Optional, Available 1.52.2+) A list of group IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

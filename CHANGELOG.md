@@ -1,7 +1,10 @@
-## 1.53.0 (Unreleased)
+## 1.52.2 (Unreleased)
 
 IMPROVEMENTS:
 
+- improve(eip_association): supporting to set PrivateIPAddress  documentation [GH-1480]
+- improve(mongodb_instances): Added ids filter to datasource [GH-1478]
+- improve(dns_domain): Added ids filter to datasource [GH-1468]
 - improve(cdn): Added retry to avoid ServiceBusy error [GH-1467]
 - improve(dns_records): Added ids filter to datasource [GH-1464]
 - improve(dns_groups): Added ids filter and added names to datasource attributes [GH-1463]
@@ -12,6 +15,7 @@ IMPROVEMENTS:
 - add CI for the alicloud provider [GH-1449]
 - improve(api_gateway_apps): Deprecated api_id [GH-1426]
 - improve(api_gateway_apis): Added ids filter to datasource [GH-1425]
+- improve(slb_server_group): remove the maximum limitation of adding backend servers [GH-1416]
 - improve(cdn): cdn_domain_config added testcases [GH-1405]
 
 BUG FIXES:
