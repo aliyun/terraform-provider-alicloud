@@ -20,6 +20,11 @@ func dataSourceAlicloudMongoDBInstances() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validateNameRegex,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -41,11 +46,6 @@ func dataSourceAlicloudMongoDBInstances() *schema.Resource {
 				Optional: true,
 			},
 			// Computed values
-			"ids": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
 			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -203,15 +203,21 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 	}
 
 	var dbi []dds.DBInstance
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 	for {
 		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
 			return ddsClient.DescribeDBInstances(request)
 		})
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_mongodb_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_mongodb_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-
+		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*dds.DescribeDBInstancesResponse)
 		if len(response.DBInstances.DBInstance) < 1 {
 			break
@@ -228,6 +234,11 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 			}
 			if len(az) > 0 && az != strings.ToLower(string(item.ZoneId)) {
 				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[item.DBInstanceId]; !ok {
+					continue
+				}
 			}
 			dbi = append(dbi, item)
 		}

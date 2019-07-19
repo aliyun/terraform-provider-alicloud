@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 )
 
-func TestSourceAlicloudKVStoreInstanceEngines(t *testing.T) {
+func TestAccAlicloudKVStoreInstanceEngines(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_kvstore_instance_engines.default"
 
