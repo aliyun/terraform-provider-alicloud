@@ -27,6 +27,7 @@ data "alicloud_mongodb_instances" "mongo" {
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to apply to the instance name.
+* `ids` - (Optional, Available 1.53.0+) The ids list of MongoDB instances
 * `instance_type` - (Optional) Type of the instance to be queried. If it is set to `sharding`, the sharded cluster instances are listed. If it is set to `replicate`, replica set instances are listed. Default value `replicate`.
 * `instance_class` - (Optional) Sizing of the instance to be queried.
 * `availability_zone` - (Optional) Instance availability zone.
