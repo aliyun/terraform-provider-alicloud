@@ -1,4 +1,24 @@
 ## 1.53.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve(cdn): Added retry to avoid ServiceBusy error [GH-1467]
+- improve(dns_records): Added ids filter to datasource [GH-1464]
+- improve(dns_groups): Added ids filter and added names to datasource attributes [GH-1463]
+- improve(stateConfig):update stateConfig error [GH-1462]
+- improve(kvstore): Added ids filter to datasource [GH-1457]
+- improve(cas): Added precheck to testcases [GH-1456]
+- improve(rds): db_instance and db_readonly_instance resource modify timeouts 20mins to 30mins [GH-1455]
+- add CI for the alicloud provider [GH-1449]
+- improve(api_gateway_apps): Deprecated api_id [GH-1426]
+- improve(api_gateway_apis): Added ids filter to datasource [GH-1425]
+- improve(cdn): cdn_domain_config added testcases [GH-1405]
+
+BUG FIXES:
+
+- fix(kvstore_instance): resource kvstore_instance add Retry while ModifyInstanceSpec err [GH-1465]
+- fix(slb): fix slb testcase can not find instance types' bug [GH-1454]
+
 ## 1.52.1 (July 16, 2019)
 
 IMPROVEMENTS:
