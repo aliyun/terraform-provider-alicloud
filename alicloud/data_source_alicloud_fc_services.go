@@ -25,7 +25,7 @@ func dataSourceAlicloudFcServices() *schema.Resource {
 			},
 			"ids": {
 				Type:     schema.TypeList,
-				Computed: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"names": {
@@ -140,7 +140,13 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 		if response.Services == nil || len(response.Services) < 1 {
 			break
 		}
-
+		// ids
+		idsMap := make(map[string]string)
+		if v, ok := d.GetOk("ids"); ok {
+			for _, vv := range v.([]interface{}) {
+				idsMap[vv.(string)] = vv.(string)
+			}
+		}
 		for _, service := range response.Services {
 			mapping := map[string]interface{}{
 				"id":                     *service.ServiceID,
@@ -182,7 +188,11 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 					continue
 				}
 			}
-
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[*service.ServiceID]; !ok {
+					continue
+				}
+			}
 			serviceMappings = append(serviceMappings, mapping)
 			ids = append(ids, *service.ServiceID)
 			names = append(names, *service.ServiceName)

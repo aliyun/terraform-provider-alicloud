@@ -104,6 +104,10 @@ func resourceAlicloudFCService() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"service_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -177,6 +181,7 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 	}
 
 	d.Set("name", object.ServiceName)
+	d.Set("service_id", object.ServiceID)
 	d.Set("description", object.Description)
 	d.Set("internet_access", object.InternetAccess)
 	d.Set("role", object.Role)

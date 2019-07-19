@@ -21,6 +21,24 @@ func TestAccAlicloudFCServicesDataSource(t *testing.T) {
 			"name_regex": "${alicloud_fc_service.default.name}_fake",
 		}),
 	}
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_fc_service.default.service_id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_fc_service.default.service_id}_fake"},
+		}),
+	}
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_fc_service.default.name}",
+			"ids":        []string{"${alicloud_fc_service.default.service_id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_fc_service.default.name}_fake",
+			"ids":        []string{"${alicloud_fc_service.default.service_id}"},
+		}),
+	}
 
 	var existFCServicesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
@@ -54,7 +72,7 @@ func TestAccAlicloudFCServicesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeFCServicesMapFunc,
 	}
 
-	fcServicesRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf)
+	fcServicesRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceFCServicesConfigDependence(name string) string {
