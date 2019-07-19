@@ -1,11 +1,10 @@
 package alicloud
 
 import (
-	"regexp"
-
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"regexp"
 )
 
 func dataSourceAlicloudFcFunctions() *schema.Resource {
@@ -30,7 +29,7 @@ func dataSourceAlicloudFcFunctions() *schema.Resource {
 			},
 			"ids": {
 				Type:     schema.TypeList,
-				Computed: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"names": {
@@ -108,6 +107,13 @@ func dataSourceAlicloudFcFunctionsRead(d *schema.ResourceData, meta interface{})
 	var names []string
 	var functionMappings []map[string]interface{}
 	nextToken := ""
+	// ids
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 	for {
 		request := fc.NewListFunctionsInput(serviceName)
 		if nextToken != "" {
@@ -150,6 +156,11 @@ func dataSourceAlicloudFcFunctionsRead(d *schema.ResourceData, meta interface{})
 					r = regexp.MustCompile(nameRegex.(string))
 				}
 				if r != nil && !r.MatchString(mapping["name"].(string)) {
+					continue
+				}
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[*function.FunctionID]; !ok {
 					continue
 				}
 			}

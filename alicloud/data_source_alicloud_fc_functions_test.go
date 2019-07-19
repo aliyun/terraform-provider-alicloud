@@ -20,13 +20,37 @@ func TestAccAlicloudFCFunctionsDataSourceUpdate(t *testing.T) {
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"service_name": "${alicloud_fc_function.default.service}",
+			"ids":          []string{"${alicloud_fc_function.default.function_id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"service_name": "${alicloud_fc_function.default.service}",
+			"ids":          []string{"${alicloud_fc_function.default.function_id}_fake"},
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"name_regex":   "${alicloud_fc_function.default.name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
+			"name_regex":   "${alicloud_fc_function.default.name}_fake",
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"service_name": "${alicloud_fc_function.default.service}",
+			"ids":          []string{"${alicloud_fc_function.default.function_id}"},
+			"name_regex":   "${alicloud_fc_function.default.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"service_name": "${alicloud_fc_function.default.service}",
+			"ids":          []string{"${alicloud_fc_function.default.function_id}"},
 			"name_regex":   "${alicloud_fc_function.default.name}_fake",
 		}),
 	}
@@ -65,7 +89,7 @@ func TestAccAlicloudFCFunctionsDataSourceUpdate(t *testing.T) {
 		fakeMapFunc:  fakeFCFunctionsMapFunc,
 	}
 
-	fcFunctionsCheckInfo.dataSourceTestCheck(t, rand, serviceNameConf, allConf)
+	fcFunctionsCheckInfo.dataSourceTestCheck(t, rand, serviceNameConf, idsConf, nameRegexConf, allConf)
 }
 
 func testAccCheckAlicloudFCFunctionsDataSourceConfig(name string) string {
