@@ -27,6 +27,7 @@ output "first_fc_service_name" {
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to filter results by FC service name.
+* `ids` (Optional, Available in 1.53.0+) - A list of FC services ids.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

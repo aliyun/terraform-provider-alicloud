@@ -103,6 +103,7 @@ The following arguments are supported:
 The following arguments are exported:
 
 * `id` - The ID of the FC service. The value is same as name.
+* `service_id` - The Function Compute service ID.
 * `last_modified` - The date this resource was last modified.
 
 ## Import
