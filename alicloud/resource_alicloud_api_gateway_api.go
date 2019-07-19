@@ -309,7 +309,7 @@ func resourceAliyunApigatewayApiCreate(d *schema.ResourceData, meta interface{})
 	d.SetId(fmt.Sprintf("%s%s%s", request.GroupId, COLON_SEPARATED, response.ApiId))
 
 	if l, ok := d.GetOk("stage_names"); ok {
-		err = updateApiStages(d, l.(*schema.Set), meta)
+		err = deployApiStages(d, l.(*schema.Set), meta)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -956,36 +956,65 @@ func getStageNameList(d *schema.ResourceData, cloudApiService CloudApiService) (
 	return stageNames, nil
 }
 
-func updateApiStages(d *schema.ResourceData, stageNames *schema.Set, meta interface{}) error {
-
+func deployApiStages(d *schema.ResourceData, stageNames *schema.Set, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
 
-	for _, stageName := range ApiGatewayStageNames {
-		if stageNames.Contains(stageName) {
-			err := cloudApiService.DeployedApi(d.Id(), stageName)
+	for _, stageName := range stageNames.List() {
+		err := cloudApiService.DeployedApi(d.Id(), fmt.Sprintf("%s", stageName))
 
-			if err != nil {
-				return WrapError(err)
-			}
+		if err != nil {
+			return WrapError(err)
+		}
 
-			_, err = cloudApiService.DescribeDeployedApi(d.Id(), stageName)
-			if err != nil {
-				return WrapError(err)
-			}
+		_, err = cloudApiService.DescribeDeployedApi(d.Id(), fmt.Sprintf("%s", stageName))
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+	return nil
+}
 
-		} else {
-			err := cloudApiService.AbolishApi(d.Id(), stageName)
-			if err != nil {
+func abolishApiStages(d *schema.ResourceData, stageNames *schema.Set, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	cloudApiService := CloudApiService{client}
+
+	for _, stageName := range stageNames.List() {
+		err := cloudApiService.AbolishApi(d.Id(), fmt.Sprintf("%s", stageName))
+
+		if err != nil {
+			return WrapError(err)
+		}
+
+		_, err = cloudApiService.DescribeDeployedApi(d.Id(), fmt.Sprintf("%s", stageName))
+
+		if err != nil {
+			if !NotFoundError(err) {
 				return WrapError(err)
-			}
-			_, err = cloudApiService.DescribeDeployedApi(d.Id(), stageName)
-			if err != nil {
-				if !NotFoundError(err) {
-					return WrapError(err)
-				}
 			}
 		}
 	}
+	return nil
+}
+
+func updateApiStages(d *schema.ResourceData, stageNames *schema.Set, meta interface{}) error {
+	allStages := schema.NewSet(schema.HashString, []interface{}{})
+	for _, stageName := range ApiGatewayStageNames {
+		allStages.Add(stageName)
+	}
+
+	toDeploy := allStages.Union(stageNames)
+	toAbolish := allStages.Difference(stageNames)
+
+	err := deployApiStages(d, toDeploy, meta)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	err = abolishApiStages(d, toAbolish, meta)
+	if err != nil {
+		return WrapError(err)
+	}
+
 	return nil
 }
