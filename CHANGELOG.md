@@ -1,27 +1,27 @@
-## 1.52.2 (Unreleased)
+## 1.52.2 (July 20, 2019)
 
 IMPROVEMENTS:
 
-- improve(eip_association): supporting to set PrivateIPAddress  documentation [GH-1480]
-- improve(mongodb_instances): Added ids filter to datasource [GH-1478]
-- improve(dns_domain): Added ids filter to datasource [GH-1468]
-- improve(cdn): Added retry to avoid ServiceBusy error [GH-1467]
-- improve(dns_records): Added ids filter to datasource [GH-1464]
-- improve(dns_groups): Added ids filter and added names to datasource attributes [GH-1463]
-- improve(stateConfig):update stateConfig error [GH-1462]
-- improve(kvstore): Added ids filter to datasource [GH-1457]
-- improve(cas): Added precheck to testcases [GH-1456]
-- improve(rds): db_instance and db_readonly_instance resource modify timeouts 20mins to 30mins [GH-1455]
-- add CI for the alicloud provider [GH-1449]
-- improve(api_gateway_apps): Deprecated api_id [GH-1426]
-- improve(api_gateway_apis): Added ids filter to datasource [GH-1425]
-- improve(slb_server_group): remove the maximum limitation of adding backend servers [GH-1416]
-- improve(cdn): cdn_domain_config added testcases [GH-1405]
+- improve(eip_association): supporting to set PrivateIPAddress  documentation ([#1480](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1480))
+- improve(mongodb_instances): Added ids filter to datasource ([#1478](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1478))
+- improve(dns_domain): Added ids filter to datasource ([#1468](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1468))
+- improve(cdn): Added retry to avoid ServiceBusy error ([#1467](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1467))
+- improve(dns_records): Added ids filter to datasource ([#1464](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1464))
+- improve(dns_groups): Added ids filter and added names to datasource attributes ([#1463](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1463))
+- improve(stateConfig):update stateConfig error ([#1462](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1462))
+- improve(kvstore): Added ids filter to datasource ([#1457](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1457))
+- improve(cas): Added precheck to testcases ([#1456](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1456))
+- improve(rds): db_instance and db_readonly_instance resource modify timeouts 20mins to 30mins ([#1455](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1455))
+- add CI for the alicloud provider ([#1449](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1449))
+- improve(api_gateway_apps): Deprecated api_id ([#1426](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1426))
+- improve(api_gateway_apis): Added ids filter to datasource ([#1425](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1425))
+- improve(slb_server_group): remove the maximum limitation of adding backend servers ([#1416](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1416))
+- improve(cdn): cdn_domain_config added testcases ([#1405](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1405))
 
 BUG FIXES:
 
-- fix(kvstore_instance): resource kvstore_instance add Retry while ModifyInstanceSpec err [GH-1465]
-- fix(slb): fix slb testcase can not find instance types' bug [GH-1454]
+- fix(kvstore_instance): resource kvstore_instance add Retry while ModifyInstanceSpec err ([#1465](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1465))
+- fix(slb): fix slb testcase can not find instance types' bug ([#1454](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1454))
 
 ## 1.52.1 (July 16, 2019)
 
