@@ -9,7 +9,6 @@ import (
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -78,22 +77,35 @@ func testSweepMnsQueues(region string) error {
 }
 
 func TestAccAlicloudMnsQueue_basic(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 999999)
-	var attr ali_mns.QueueAttribute
-	resourceId := "alicloud_mns_queue.queue"
+	var v ali_mns.QueueAttribute
+	resourceId := "alicloud_mns_queue.default"
+	ra := resourceAttrInit(resourceId, mnsQueueMap)
+	serviceFunc := func() interface{} {
+		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccMNSQueueConfig-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMnsQueueConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:      func() { testAccPreCheck(t) },
-		Providers:     testAccProviders,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
 		IDRefreshName: resourceId,
-		CheckDestroy:  testAccCheckMNSQueueDestroy,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-
-				Config: testAccMNSQueueConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccMNSQueueExist("alicloud_mns_queue.queue", &attr),
-					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "name", fmt.Sprintf("tf-testAccMNSQueueConfig-%d", rand)),
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
 				),
 			},
 			{
@@ -102,97 +114,121 @@ func TestAccAlicloudMnsQueue_basic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-
-				Config: testAccMNSQueueConfigUpdate(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"delay_seconds": "60478",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccMNSQueueExist("alicloud_mns_queue.queue", &attr),
-					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "name", fmt.Sprintf("tf-testAccMNSQueueConfig-%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "delay_seconds", "60478"),
-					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "maximum_message_size", "12357"),
-					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "message_retention_period", "256000"),
-					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "visibility_timeout", "30"),
-					resource.TestCheckResourceAttr("alicloud_mns_queue.queue", "polling_wait_seconds", "3"),
+					testAccCheck(map[string]string{
+						"delay_seconds": "60478",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maximum_message_size": "12357",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maximum_message_size": "12357",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"message_retention_period": "256000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"message_retention_period": "256000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"visibility_timeout": "40",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"visibility_timeout": "40",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"polling_wait_seconds": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"polling_wait_seconds": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delay_seconds":            "0",
+					"maximum_message_size":     "65536",
+					"message_retention_period": "345600",
+					"visibility_timeout":       "30",
+					"polling_wait_seconds":     "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delay_seconds":            "0",
+						"maximum_message_size":     "65536",
+						"message_retention_period": "345600",
+						"visibility_timeout":       "30",
+						"polling_wait_seconds":     "0",
+					}),
 				),
 			},
 		},
 	})
 }
 
-func testAccMNSQueueExist(n string, attr *ali_mns.QueueAttribute) resource.TestCheckFunc {
-
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No MNSQueue ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
-			return queueManager.GetQueueAttributes(rs.Primary.ID)
-		})
-
-		if err != nil {
-			return err
-		}
-		instance, _ := raw.(ali_mns.QueueAttribute)
-		if instance.QueueName != rs.Primary.ID {
-			return fmt.Errorf("mns queue:%s not found", n)
-		}
-
-		*attr = instance
-		return nil
+func TestAccAlicloudMnsQueue_multi(t *testing.T) {
+	var v ali_mns.QueueAttribute
+	resourceId := "alicloud_mns_queue.default.4"
+	ra := resourceAttrInit(resourceId, mnsQueueMap)
+	serviceFunc := func() interface{} {
+		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccMNSQueueConfig-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMnsQueueConfigDependence)
 
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":  name + "${count.index}",
+					"count": "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
 }
 
-func testAccCheckMNSQueueDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	mnsService := MnsService{}
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_mns_queue" {
-			continue
-		}
-		_, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
-			return queueManager.GetQueueAttributes(rs.Primary.ID)
-		})
-		if err != nil {
-			if mnsService.QueueNotExistFunc(err) {
-				continue
-			}
-			return err
-		}
-		return fmt.Errorf("MNS Queue %s still exist", rs.Primary.ID)
-	}
-
-	return nil
+func resourceMnsQueueConfigDependence(name string) string {
+	return ""
 }
 
-func testAccMNSQueueConfig(rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-		default = "tf-testAccMNSQueueConfig-%d"
-	}
-	resource "alicloud_mns_queue" "queue"{
-		name="${var.name}"
-	}`, rand)
-}
-
-func testAccMNSQueueConfigUpdate(rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-		default = "tf-testAccMNSQueueConfig-%d"
-	}
-	resource "alicloud_mns_queue" "queue"{
-		name="${var.name}"
-		delay_seconds=60478
-		maximum_message_size=12357
-		message_retention_period=256000
-		visibility_timeout=30
-		polling_wait_seconds=3
-	}`, rand)
+var mnsQueueMap = map[string]string{
+	"name":                     CHECKSET,
+	"delay_seconds":            "0",
+	"maximum_message_size":     "65536",
+	"message_retention_period": "345600",
+	"visibility_timeout":       "30",
+	"polling_wait_seconds":     "0",
 }
