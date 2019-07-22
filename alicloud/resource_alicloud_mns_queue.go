@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -79,36 +77,36 @@ func resourceAlicloudMNSQueueCreate(d *schema.ResourceData, meta interface{}) er
 		pollingWaitSeconds = v.(int)
 	}
 
-	_, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+	raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
 		return nil, queueManager.CreateQueue(name, int32(delaySeconds), int32(maximumMessageSize), int32(messageRetentionPeriod), int32(visibilityTimeout), int32(pollingWaitSeconds), 3)
 	})
 	if err != nil {
-		return fmt.Errorf("Create queue got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mns_queue", "CreateQueue", AliMnsERROR)
 	}
+	addDebug("CreateQueue", raw)
 	d.SetId(name)
 	return resourceAlicloudMNSQueueRead(d, meta)
 }
 
 func resourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
-		return queueManager.GetQueueAttributes(d.Id())
-	})
-	mnsService := MnsService{}
+	mnsService := MnsService{client}
+
+	object, err := mnsService.DescribeMnsQueue(d.Id())
 	if err != nil {
-		if mnsService.QueueNotExistFunc(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Read mns queue error: %#v", err)
+		return WrapError(err)
 	}
-	attr, _ := raw.(ali_mns.QueueAttribute)
-	d.Set("name", attr.QueueName)
-	d.Set("delay_seconds", attr.DelaySeconds)
-	d.Set("maximum_message_size", attr.MaxMessageSize)
-	d.Set("message_retention_period", attr.MessageRetentionPeriod)
-	d.Set("visibility_timeout", attr.VisibilityTimeout)
-	d.Set("polling_wait_seconds", attr.PollingWaitSeconds)
+
+	d.Set("name", object.QueueName)
+	d.Set("delay_seconds", object.DelaySeconds)
+	d.Set("maximum_message_size", object.MaxMessageSize)
+	d.Set("message_retention_period", object.MessageRetentionPeriod)
+	d.Set("visibility_timeout", object.VisibilityTimeout)
+	d.Set("polling_wait_seconds", object.PollingWaitSeconds)
 
 	return nil
 }
@@ -142,38 +140,30 @@ func resourceAlicloudMNSQueueUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if attributeUpdate {
-		_, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+		raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
 			return nil, queueManager.SetQueueAttributes(name, int32(delaySeconds), int32(maximumMessageSize), int32(messageRetentionPeriod), int32(visibilityTimeouts), int32(pollingWaitSeconds), 3)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetQueueAttributes", AliMnsERROR)
 		}
+		addDebug("SetQueueAttributes", raw)
 	}
 	return resourceAlicloudMNSQueueRead(d, meta)
 }
 
 func resourceAlicloudMNSQueueDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mnsService := MnsService{}
+	mnsService := MnsService{client}
 	name := d.Id()
-	_, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
+	raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
 		return nil, queueManager.DeleteQueue(name)
 	})
 	if err != nil {
 		if mnsService.QueueNotExistFunc(err) {
 			return nil
 		}
-		return err
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteQueue", AliMnsERROR)
 	}
-	raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
-		return queueManager.GetQueueAttributes(name)
-	})
-	if mnsService.QueueNotExistFunc(err) {
-		return nil
-	}
-	attr, _ := raw.(ali_mns.QueueAttribute)
-	if attr.QueueName == name {
-		return fmt.Errorf("delete queue  %s error.", name)
-	}
-	return err
+	addDebug("DeleteQueue", raw)
+	return WrapError(mnsService.WaitForMnsQueue(d.Id(), Deleted, DefaultTimeout))
 }
