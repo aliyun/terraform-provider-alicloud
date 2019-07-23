@@ -306,6 +306,8 @@ func resourceAliyunApigatewayApiCreate(d *schema.ResourceData, meta interface{})
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*cloudapi.CreateApiResponse)
 
+	d.SetId(fmt.Sprintf("%s%s%s", request.GroupId, COLON_SEPARATED, response.ApiId))
+
 	if l, ok := d.GetOk("stage_names"); ok {
 		err = updateApiStages(d, l.(*schema.Set), meta)
 		if err != nil {
@@ -313,7 +315,6 @@ func resourceAliyunApigatewayApiCreate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
-	d.SetId(fmt.Sprintf("%s%s%s", request.GroupId, COLON_SEPARATED, response.ApiId))
 	return resourceAliyunApigatewayApiRead(d, meta)
 }
 
