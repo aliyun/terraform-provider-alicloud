@@ -74,8 +74,9 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 			},
 
 			"service_type": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validateAllowedStringValue([]string{"MOCK", "HTTP-VPC", "FunctionCompute", "HTTP"}),
 			},
 
 			"http_service_config": {
@@ -374,7 +375,7 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 			return WrapError(err)
 		}
 	} else if object.ServiceConfig.ServiceVpcEnable == "TRUE" {
-		d.Set("service_type", "VPC")
+		d.Set("service_type", "HTTP-VPC")
 		vpcServiceConfig := map[string]interface{}{}
 		vpcServiceConfig["name"] = object.ServiceConfig.VpcConfig.Name
 		vpcServiceConfig["path"] = object.ServiceConfig.ServicePath
@@ -781,8 +782,6 @@ func serviceConfigToJsonStr(d *schema.ResourceData) (string, error) {
 	case "MOCK":
 		configStr, err = getMockServiceConfig(d)
 		break
-	default:
-		return "", WrapError(Error("Creating apigatway api error: unsupport service_type"))
 	}
 	if err != nil {
 		return "", WrapError(err)

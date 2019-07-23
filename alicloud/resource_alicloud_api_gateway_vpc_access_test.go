@@ -18,11 +18,11 @@ import (
 func init() {
 	resource.AddTestSweepers("alicloud_api_gateway_vpc_access", &resource.Sweeper{
 		Name: "alicloud_api_gateway_vpc_access",
-		F:    testSweepApiGatewayVpc,
+		F:    testSweepApiGatewayVpcAccess,
 	})
 }
 
-func testSweepApiGatewayVpc(region string) error {
+func testSweepApiGatewayVpcAccess(region string) error {
 	if testSweepPreCheckWithRegions(region, false, connectivity.ApiGatewayNoSupportedRegions) {
 		log.Printf("[INFO] Skipping API Gateway unsupported region: %s", region)
 		return nil
@@ -82,10 +82,10 @@ func testSweepApiGatewayVpc(region string) error {
 	return nil
 }
 
-func TestAccAlicloudApigatewayVpc_basic(t *testing.T) {
+func TestAccAlicloudApigatewayVpcAccess_basic(t *testing.T) {
 	var v *cloudapi.VpcAccessAttribute
 	resourceId := "alicloud_api_gateway_vpc_access.default"
-	ra := resourceAttrInit(resourceId, apiGatewayVpcMap)
+	ra := resourceAttrInit(resourceId, apiGatewayVpcAccessMap)
 	serviceFunc := func() interface{} {
 		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
@@ -93,8 +93,8 @@ func TestAccAlicloudApigatewayVpc_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAcc%sApiGatewayVpc-%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayVpcConfigDependence)
+	name := fmt.Sprintf("tf-testAcc%sApiGatewayVpcAccess-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayVpcAccessConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -126,9 +126,23 @@ func TestAccAlicloudApigatewayVpc_basic(t *testing.T) {
 	})
 }
 
-func resourceApigatewayVpcConfigDependence(name string) string {
+func resourceApigatewayVpcAccessConfigDependence(name string) string {
 	return fmt.Sprintf(`
+	variable "name" {
+	  default = "%s"
+	}
+	%s
+	`, name, ApigatewayVpcAccessConfigDependence)
+}
 
+var apiGatewayVpcAccessMap = map[string]string{
+	"name":        CHECKSET,
+	"vpc_id":      CHECKSET,
+	"instance_id": CHECKSET,
+	"port":        "8080",
+}
+
+const ApigatewayVpcAccessConfigDependence = `
 	data "alicloud_zones" "default" {
 	  available_disk_category = "cloud_efficiency"
 	  available_resource_creation= "VSwitch"
@@ -142,10 +156,6 @@ func resourceApigatewayVpcConfigDependence(name string) string {
 	  name_regex = "^ubuntu_14.*_64"
 	  most_recent = true
 	  owners = "system"
-	}
-
-	variable "name" {
-	  default = "%s"
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -178,13 +188,4 @@ func resourceApigatewayVpcConfigDependence(name string) string {
 	  internet_max_bandwidth_out = 5
 	  security_groups = ["${alicloud_security_group.default.id}"]
 	  instance_name = "${var.name}"
-	}
-	`, name)
-}
-
-var apiGatewayVpcMap = map[string]string{
-	"name":        CHECKSET,
-	"vpc_id":      CHECKSET,
-	"instance_id": CHECKSET,
-	"port":        "8080",
-}
+	}`
