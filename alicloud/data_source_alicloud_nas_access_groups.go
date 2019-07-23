@@ -33,6 +33,11 @@ func dataSourceAlicloudAccessGroups() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -74,10 +79,10 @@ func dataSourceAlicloudAccessGroups() *schema.Resource {
 func dataSourceAlicloudAccessGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	args := nas.CreateDescribeAccessGroupsRequest()
-	args.RegionId = string(client.Region)
-	args.PageSize = requests.NewInteger(PageSizeLarge)
-	args.PageNumber = requests.NewInteger(1)
+	request := nas.CreateDescribeAccessGroupsRequest()
+	request.RegionId = string(client.Region)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 
 	var allAgs []nas.DescribeAccessGroupsAccessGroup1
 	var nameRegex *regexp.Regexp
@@ -91,18 +96,19 @@ func dataSourceAlicloudAccessGroupsRead(d *schema.ResourceData, meta interface{}
 		var raw interface{}
 		if err := invoker.Run(func() error {
 			rsp, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
-				return nasClient.DescribeAccessGroups(args)
+				return nasClient.DescribeAccessGroups(request)
 			})
 			raw = rsp
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_access_groups", args.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_access_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*nas.DescribeAccessGroupsResponse)
-		if resp == nil || len(resp.AccessGroups.AccessGroup) < 1 {
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*nas.DescribeAccessGroupsResponse)
+		if len(response.AccessGroups.AccessGroup) < 1 {
 			break
 		}
-		for _, ag := range resp.AccessGroups.AccessGroup {
+		for _, ag := range response.AccessGroups.AccessGroup {
 			if v, ok := d.GetOk("type"); ok && ag.AccessGroupType != Trim(v.(string)) {
 				continue
 			}
@@ -117,14 +123,14 @@ func dataSourceAlicloudAccessGroupsRead(d *schema.ResourceData, meta interface{}
 			}
 			allAgs = append(allAgs, ag)
 		}
-		if len(resp.AccessGroups.AccessGroup) < PageSizeLarge {
+		if len(response.AccessGroups.AccessGroup) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
 			return WrapError(err)
 		} else {
-			args.PageNumber = page
+			request.PageNumber = page
 		}
 	}
 	return AccessGroupsDecriptionAttributes(d, allAgs, meta)
@@ -147,6 +153,9 @@ func AccessGroupsDecriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("groups", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", ids); err != nil {
 		return WrapError(err)
 	}
 	if err := d.Set("ids", ids); err != nil {

@@ -146,8 +146,8 @@ var existAccessGroupMapCheck = func(rand int) map[string]string {
 		"groups.0.description":        "tf-testAccAccessGroupsdatasource",
 		"groups.0.id":                 fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d", rand),
 		"groups.0.mount_target_count": CHECKSET,
-		"ids.#":                       "1",
-		"ids.0":                       fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d", rand),
+		"names.#":                     "1",
+		"names.0":                     fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d", rand),
 	}
 }
 
@@ -159,15 +159,15 @@ var existAccessGroupClassicMapCheck = func(rand int) map[string]string {
 		"groups.0.description":        "tf-testAccAccessGroupsdatasource",
 		"groups.0.id":                 fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d", rand),
 		"groups.0.mount_target_count": CHECKSET,
-		"ids.#":                       "1",
-		"ids.0":                       fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d", rand),
+		"names.#":                     "1",
+		"names.0":                     fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d", rand),
 	}
 }
 
 var fakeAccessGroupMapCheck = func(rand int) map[string]string {
 	return map[string]string{
 		"groups.#": "0",
-		"ids.#":    "0",
+		"names.#":  "0",
 	}
 }
 
