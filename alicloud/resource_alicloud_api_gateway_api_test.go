@@ -12,7 +12,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 )
 
 func init() {
@@ -154,6 +153,20 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": "tf_testAcc_api description_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stage_names": []string{
+						"RELEASE",
+						"PRE",
+						"TEST",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stage_names.#": "3",
 					}),
 				),
 			},
@@ -324,25 +337,4 @@ var apiGatewayApiMap = map[string]string{
 	"http_service_config.0.timeout":   "20",
 	"http_service_config.0.aone_name": "cloudapi-openapi",
 	"api_id":                          CHECKSET,
-}
-
-func testAccCheckAlicloudApigatewayApiDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	cloudApiService := CloudApiService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_api_gateway_api" {
-			continue
-		}
-
-		_, err := cloudApiService.DescribeApiGatewayApi(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return fmt.Errorf("Error Describe Api: %#v", err)
-		}
-	}
-
-	return nil
 }
