@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"encoding/json"
-	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -37,6 +36,13 @@ func dataSourceAlicloudCRRepos() *schema.Resource {
 			},
 			// Computed values
 			"ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Schema{
@@ -130,27 +136,28 @@ func dataSourceAlicloudCRReposRead(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	invoker := NewInvoker()
 
-	req := cr.CreateGetRepoListRequest()
-	req.RegionId = string(client.Region)
-	req.PageSize = requests.NewInteger(PageSizeMedium)
-	req.Page = requests.NewInteger(1)
+	getRepoListRequest := cr.CreateGetRepoListRequest()
+	getRepoListRequest.RegionId = string(client.Region)
+	getRepoListRequest.PageSize = requests.NewInteger(PageSizeMedium)
+	getRepoListRequest.Page = requests.NewInteger(1)
 
 	var repos []crRepo
 	for {
-		var resp *cr.GetRepoListResponse
+		var getRepoListResponse *cr.GetRepoListResponse
 
 		if err := invoker.Run(func() error {
 			raw, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
-				return crClient.GetRepoList(req)
+				return crClient.GetRepoList(getRepoListRequest)
 			})
-			resp, _ = raw.(*cr.GetRepoListResponse)
+			getRepoListResponse, _ = raw.(*cr.GetRepoListResponse)
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_repos", "GetRepoList", AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cr_repos", "GetRepoList", AlibabaCloudSdkGoERROR)
 		}
+		addDebug(getRepoListRequest.GetActionName(), getRepoListResponse)
 		var crResp crDescribeReposResponse
 
-		err := json.Unmarshal(resp.GetHttpContentBytes(), &crResp)
+		err := json.Unmarshal(getRepoListResponse.GetHttpContentBytes(), &crResp)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -161,14 +168,14 @@ func dataSourceAlicloudCRReposRead(d *schema.ResourceData, meta interface{}) err
 			break
 		}
 
-		if page, err := getNextpageNumber(req.Page); err != nil {
+		if page, err := getNextpageNumber(getRepoListRequest.Page); err != nil {
 			return WrapError(err)
 		} else {
-			req.Page = page
+			getRepoListRequest.Page = page
 		}
 	}
 
-	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, repo := range repos {
@@ -194,7 +201,7 @@ func dataSourceAlicloudCRReposRead(d *schema.ResourceData, meta interface{}) err
 		}
 
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
-			ids = append(ids, fmt.Sprintf("%s%s%s", repo.RepoNamespace, SLASH_SEPARATED, repo.RepoName))
+			names = append(names, repo.RepoName)
 			s = append(s, mapping)
 			continue
 		}
@@ -208,29 +215,29 @@ func dataSourceAlicloudCRReposRead(d *schema.ResourceData, meta interface{}) err
 
 		var tags []crTag
 
-		req := cr.CreateGetRepoTagsRequest()
-		req.RegionId = string(client.Region)
-		req.PageSize = requests.NewInteger(PageSizeMedium)
-		req.Page = requests.NewInteger(1)
-		req.RepoNamespace = repo.RepoNamespace
-		req.RepoName = repo.RepoName
+		getRepoTagsRequest := cr.CreateGetRepoTagsRequest()
+		getRepoTagsRequest.RegionId = string(client.Region)
+		getRepoTagsRequest.PageSize = requests.NewInteger(PageSizeMedium)
+		getRepoTagsRequest.Page = requests.NewInteger(1)
+		getRepoTagsRequest.RepoNamespace = repo.RepoNamespace
+		getRepoTagsRequest.RepoName = repo.RepoName
 
 		for {
-			var resp *cr.GetRepoTagsResponse
+			var getRepoTagsResponse *cr.GetRepoTagsResponse
 
 			if err := invoker.Run(func() error {
 				raw, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
-					return crClient.GetRepoTags(req)
+					return crClient.GetRepoTags(getRepoTagsRequest)
 				})
-				resp, _ = raw.(*cr.GetRepoTagsResponse)
+				getRepoTagsResponse, _ = raw.(*cr.GetRepoTagsResponse)
 				return err
 			}); err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_repos", "GetRepoTags", AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cr_repos", "GetRepoTags", AlibabaCloudSdkGoERROR)
 			}
-
+			addDebug(getRepoTagsRequest.GetActionName(), getRepoTagsResponse)
 			var crResp crDescribeRepoTagsResponse
 
-			err := json.Unmarshal(resp.GetHttpContentBytes(), &crResp)
+			err := json.Unmarshal(getRepoTagsResponse.GetHttpContentBytes(), &crResp)
 			if err != nil {
 				return WrapError(err)
 			}
@@ -241,10 +248,10 @@ func dataSourceAlicloudCRReposRead(d *schema.ResourceData, meta interface{}) err
 				break
 			}
 
-			if page, err := getNextpageNumber(req.Page); err != nil {
+			if page, err := getNextpageNumber(getRepoTagsRequest.Page); err != nil {
 				return WrapError(err)
 			} else {
-				req.Page = page
+				getRepoTagsRequest.Page = page
 			}
 		}
 
@@ -262,13 +269,18 @@ func dataSourceAlicloudCRReposRead(d *schema.ResourceData, meta interface{}) err
 		}
 		mapping["tags"] = tagList
 
-		ids = append(ids, fmt.Sprintf("%s%s%s", repo.RepoNamespace, SLASH_SEPARATED, repo.RepoName))
+		names = append(names, repo.RepoName)
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
-	d.Set("ids", ids)
+	d.SetId(dataResourceIdHash(names))
 	if err := d.Set("repos", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", names); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 

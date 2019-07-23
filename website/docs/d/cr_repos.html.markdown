@@ -39,7 +39,8 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of matched Container Registry Repositories. Its element is formatted as `namespace/repository`.
+* `ids` - A list of matched Container Registry Repositories. Its element is set to `names`.
+* `names` - A list of repository names.
 * `repos` - A list of matched Container Registry Namespaces. Each element contains the following attributes:
   * `namespace` - Name of container registry namespace where repo is located.
   * `name` - Name of container registry namespace.
