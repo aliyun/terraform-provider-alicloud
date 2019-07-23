@@ -38,6 +38,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of matched Container Registry namespaces. Its element is a namespace name.
+* `names` - A list of namespace names.
 * `namespaces` - A list of matched Container Registry namespaces. Each element contains the following attributes:
   * `name` - Name of Container Registry namespace.
   * `auto_create` - Boolean, when it set to true, repositories are automatically created when pushing new images. If it set to false, you create repository for images before pushing.

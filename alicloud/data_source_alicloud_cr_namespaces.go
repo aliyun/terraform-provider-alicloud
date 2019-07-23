@@ -27,9 +27,12 @@ func dataSourceAlicloudCRNamespaces() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"namespaces": {
 				Type:     schema.TypeList,
@@ -59,26 +62,28 @@ func dataSourceAlicloudCRNamespacesRead(d *schema.ResourceData, meta interface{}
 	crService := CrService{client}
 	invoker := NewInvoker()
 
-	var resp *cr.GetNamespaceListResponse
-
+	var (
+		request  *cr.GetNamespaceListRequest
+		response *cr.GetNamespaceListResponse
+	)
 	if err := invoker.Run(func() error {
 		raw, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
-			req := cr.CreateGetNamespaceListRequest()
-			return crClient.GetNamespaceList(req)
+			request = cr.CreateGetNamespaceListRequest()
+			return crClient.GetNamespaceList(request)
 		})
-		resp, _ = raw.(*cr.GetNamespaceListResponse)
+		response, _ = raw.(*cr.GetNamespaceListResponse)
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_namespaces", "GetNamespaceList", AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cr_namespaces", "GetNamespaceList", AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), response)
 	var crResp crDescribeNamespaceListResponse
-	err := json.Unmarshal(resp.GetHttpContentBytes(), &crResp)
+	err := json.Unmarshal(response.GetHttpContentBytes(), &crResp)
 	if err != nil {
 		return WrapError(err)
 	}
 
-	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, ns := range crResp.Data.Namespace {
@@ -110,13 +115,18 @@ func dataSourceAlicloudCRNamespacesRead(d *schema.ResourceData, meta interface{}
 		mapping["auto_create"] = resp.Data.Namespace.AutoCreate
 		mapping["default_visibility"] = resp.Data.Namespace.DefaultVisibility
 
-		ids = append(ids, ns.Namespace)
+		names = append(names, ns.Namespace)
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
-	d.Set("ids", ids)
+	d.SetId(dataResourceIdHash(names))
 	if err := d.Set("namespaces", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", names); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 

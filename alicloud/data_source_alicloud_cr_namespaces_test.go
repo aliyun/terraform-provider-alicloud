@@ -2,98 +2,69 @@ package alicloud
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform/helper/acctest"
-
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudCRNamespacesDataSource_Empty(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccAlicloudCRNamespacesDataSourceEmpty,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_cr_namespaces.all_namespaces"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cr_namespaces.all_namespaces", "namespaces.#"),
-				),
-			},
-		},
-	})
+func TestAccAlicloudCRNamespacesDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_cr_namespaces.default"
+
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testacc-cr-ns-%d", rand),
+		dataSourceCRNamespacesConfigDependence)
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_cr_namespace.default.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_cr_namespace.default.name}-fake",
+		}),
+	}
+
+	var existCRNamespacesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"names.#":                         "1",
+			"names.0":                         fmt.Sprintf("tf-testacc-cr-ns-%d", rand),
+			"namespaces.#":                    "1",
+			"namespaces.0.name":               fmt.Sprintf("tf-testacc-cr-ns-%d", rand),
+			"namespaces.0.default_visibility": "PUBLIC",
+			"namespaces.0.auto_create":        "false",
+		}
+	}
+
+	var fakeCRNamespacesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"names.#":      "0",
+			"namespaces.#": "0",
+		}
+	}
+
+	var crNamespacesCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existCRNamespacesMapFunc,
+		fakeMapFunc:  fakeCRNamespacesMapFunc,
+	}
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions)
+	}
+	crNamespacesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
 
-const testAccAlicloudCRNamespacesDataSourceEmpty = `
-data "alicloud_cr_namespaces" "all_namespaces" {
-}
-`
-
-func TestAccAlicloudCRNamespacesDataSource_New(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccAlicloudCRNamespacesDataSourceNew(acctest.RandIntRange(1000, 9999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_cr_namespaces.my_namespaces"),
-					resource.TestCheckResourceAttr("data.alicloud_cr_namespaces.my_namespaces", "ids.#", "1"),
-					resource.TestMatchResourceAttr("data.alicloud_cr_namespaces.my_namespaces", "ids.0", regexp.MustCompile("^tf-testacc-cr-ns-basic-*")),
-					resource.TestCheckResourceAttr("data.alicloud_cr_namespaces.my_namespaces", "namespaces.#", "1"),
-					resource.TestMatchResourceAttr("data.alicloud_cr_namespaces.my_namespaces", "namespaces.0.name", regexp.MustCompile("^tf-testacc-cr-ns-basic-*")),
-					resource.TestCheckResourceAttr("data.alicloud_cr_namespaces.my_namespaces", "namespaces.0.default_visibility", "PUBLIC"),
-					resource.TestCheckResourceAttr("data.alicloud_cr_namespaces.my_namespaces", "namespaces.0.auto_create", "false"),
-				),
-			},
-			{
-				Config: testAccAlicloudCRNamespacesDataSourceNew_NonExists(acctest.RandIntRange(1000, 9999)),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_cr_namespaces.no_namespaces"),
-					resource.TestCheckResourceAttr("data.alicloud_cr_namespaces.no_namespaces", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_cr_namespaces.no_namespaces", "namespaces.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func testAccAlicloudCRNamespacesDataSourceNew(rand int) string {
+func dataSourceCRNamespacesConfigDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-    default = "tf-testacc-cr-ns-basic-%d"
-}
-
-resource "alicloud_cr_namespace" "default" {
-    name = "${var.name}"
-    auto_create	= false
-    default_visibility = "PUBLIC"
-}
-
-data "alicloud_cr_namespaces" "my_namespaces" {
-    name_regex = "${alicloud_cr_namespace.default.name}"
-}
-`, rand)
-}
-
-func testAccAlicloudCRNamespacesDataSourceNew_NonExists(rand int) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "tf-testacc-cr-ns-basic-%d"
-}
-
-resource "alicloud_cr_namespace" "default" {
-    name = "${var.name}"
-    auto_create	= false
-    default_visibility = "PUBLIC"
-}
-
-data "alicloud_cr_namespaces" "no_namespaces" {
-    name_regex = "${alicloud_cr_namespace.default.name}-nonexists"
-}
-`, rand)
+	variable "name" {
+		default = "%s"
+	}
+	
+	resource "alicloud_cr_namespace" "default" {
+		name = "${var.name}"
+		auto_create	= false
+		default_visibility = "PUBLIC"
+	}
+	`, name)
 }
