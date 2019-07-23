@@ -37,7 +37,7 @@ func dataSourceAlicloudRamRoles() *schema.Resource {
 			},
 			"ids": {
 				Type:     schema.TypeList,
-				Computed: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"names": {
@@ -102,7 +102,12 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 	policyName, policyNameOk := d.GetOk("policy_name")
 	policyType, policyTypeOk := d.GetOk("policy_type")
 	nameRegex, nameRegexOk := d.GetOk("name_regex")
-
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 	// all roles
 
 	request := ram.CreateListRolesRequest()
@@ -120,6 +125,11 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 		if nameRegexOk {
 			r := regexp.MustCompile(nameRegex.(string))
 			if !r.MatchString(v.RoleName) {
+				continue
+			}
+		}
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[v.RoleId]; !ok {
 				continue
 			}
 		}

@@ -28,20 +28,31 @@ func TestAccAlicloudRamRolesDataSource(t *testing.T) {
 		}),
 	}
 
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_ram_role.default.role_id}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_ram_role.default.role_id}_fake"]`,
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
 			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}"`,
 			"policy_type": `"Custom"`,
+			"ids":         `["${alicloud_ram_role.default.role_id}"]`,
 			"name_regex":  `"${alicloud_ram_role.default.name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
 			"policy_name": `"${alicloud_ram_role_policy_attachment.default.policy_name}"`,
 			"policy_type": `"Custom"`,
+			"ids":         `["${alicloud_ram_role.default.role_id}_fake"]`,
 			"name_regex":  `"${alicloud_ram_role.default.name}_fake"`,
 		}),
 	}
 
-	ramRolesCheckInfo.dataSourceTestCheck(t, rand, policyConf, nameRegexConf, allConf)
+	ramRolesCheckInfo.dataSourceTestCheck(t, rand, policyConf, nameRegexConf, idsConf, allConf)
 
 }
 
