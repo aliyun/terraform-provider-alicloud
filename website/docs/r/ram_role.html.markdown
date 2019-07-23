@@ -55,7 +55,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The role ID.
+* `id` - This ID of this resource. The value is set to `role_name`.
+* `role_id` - The role ID.
 * `name` - The role name.
 * `arn` - The role arn.
 * `description` - The role description.

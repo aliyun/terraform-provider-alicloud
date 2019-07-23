@@ -80,6 +80,10 @@ func resourceAlicloudRamRole() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"role_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -161,7 +165,7 @@ func resourceAlicloudRamRoleRead(d *schema.ResourceData, meta interface{}) error
 		d.Set("services", principal.Service)
 		d.Set("ram_users", principal.RAM)
 	}
-
+	d.Set("role_id", role.RoleId)
 	d.Set("name", role.RoleName)
 	d.Set("arn", role.Arn)
 	d.Set("description", role.Description)
