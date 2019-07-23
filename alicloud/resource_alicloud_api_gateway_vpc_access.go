@@ -12,9 +12,9 @@ import (
 
 func resourceAliyunApigatewayVpc() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunApigatewayVpcCreate,
-		Read:   resourceAliyunApigatewayVpcRead,
-		Delete: resourceAliyunApigatewayVpcDelete,
+		Create: resourceAliyunApigatewayVpcAccessCreate,
+		Read:   resourceAliyunApigatewayVpcAccessRead,
+		Delete: resourceAliyunApigatewayVpcAccessDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -44,7 +44,7 @@ func resourceAliyunApigatewayVpc() *schema.Resource {
 	}
 }
 
-func resourceAliyunApigatewayVpcCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliyunApigatewayVpcAccessCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := cloudapi.CreateSetVpcAccessRequest()
@@ -60,10 +60,10 @@ func resourceAliyunApigatewayVpcCreate(d *schema.ResourceData, meta interface{})
 	}
 	addDebug(request.GetActionName(), raw)
 	d.SetId(fmt.Sprintf("%s%s%s%s%s%s%s", request.Name, COLON_SEPARATED, request.VpcId, COLON_SEPARATED, request.InstanceId, COLON_SEPARATED, request.Port))
-	return resourceAliyunApigatewayVpcRead(d, meta)
+	return resourceAliyunApigatewayVpcAccessRead(d, meta)
 }
 
-func resourceAliyunApigatewayVpcRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliyunApigatewayVpcAccessRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
 
@@ -84,7 +84,7 @@ func resourceAliyunApigatewayVpcRead(d *schema.ResourceData, meta interface{}) e
 	return nil
 }
 
-func resourceAliyunApigatewayVpcDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliyunApigatewayVpcAccessDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := cloudapi.CreateRemoveVpcAccessRequest()
 	request.VpcId = d.Get("vpc_id").(string)
