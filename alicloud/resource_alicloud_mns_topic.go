@@ -1,11 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"time"
-
-	"github.com/hashicorp/terraform/helper/resource"
-
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -49,40 +44,37 @@ func resourceAlicloudMNSTopicCreate(d *schema.ResourceData, meta interface{}) er
 	name := d.Get("name").(string)
 	maximumMessageSize := d.Get("maximum_message_size").(int)
 	loggingEnabled := d.Get("logging_enabled").(bool)
-	_, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
+	raw, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
 		return nil, topicManager.CreateTopic(name, int32(maximumMessageSize), loggingEnabled)
 	})
 	if err != nil {
-		return fmt.Errorf("Create topic got an error: %#v", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mns_topic", "CreateTopic", AliMnsERROR)
 	}
+	addDebug("CreateTopic", raw)
 	d.SetId(name)
 	return resourceAlicloudMNSTopicRead(d, meta)
 }
 
 func resourceAlicloudMNSTopicRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	raw, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
-		return topicManager.GetTopicAttributes(d.Id())
-	})
-	mnsService := MnsService{}
+	mnsService := MnsService{client}
+	object, err := mnsService.DescribeMnsTopic(d.Id())
 	if err != nil {
-		if mnsService.TopicNotExistFunc(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Read mns topic error: %#v", err)
+		return WrapError(err)
 	}
-	attr, _ := raw.(ali_mns.TopicAttribute)
-	d.Set("name", attr.TopicName)
-	d.Set("maximum_message_size", attr.MaxMessageSize)
-	d.Set("logging_enabled", attr.LoggingEnabled)
+	d.Set("name", object.TopicName)
+	d.Set("maximum_message_size", object.MaxMessageSize)
+	d.Set("logging_enabled", object.LoggingEnabled)
 	return nil
 }
 
 func resourceAlicloudMNSTopicUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	attributeUpdate := false
-	name := d.Id()
 	maximumMessageSize := d.Get("maximum_message_size").(int)
 	loggingEnabled := d.Get("logging_enabled").(bool)
 	if d.HasChange("maximum_message_size") {
@@ -94,46 +86,31 @@ func resourceAlicloudMNSTopicUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if attributeUpdate {
-		_, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
-			return nil, topicManager.SetTopicAttributes(name, int32(maximumMessageSize), loggingEnabled)
+		raw, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
+			return nil, topicManager.SetTopicAttributes(d.Id(), int32(maximumMessageSize), loggingEnabled)
 		})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetTopicAttributes", AliMnsERROR)
 		}
+		addDebug("SetTopicAttributes", raw)
 	}
 	return resourceAlicloudMNSTopicRead(d, meta)
 }
 
 func resourceAlicloudMNSTopicDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mnsService := MnsService{}
-	name := d.Id()
-	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
-			return nil, topicManager.DeleteTopic(name)
-		})
+	mnsService := MnsService{client}
+	raw, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
+		return nil, topicManager.DeleteTopic(d.Id())
+	})
 
-		if err != nil {
-			if mnsService.TopicNotExistFunc(err) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Deleting mns topic got an error: %#v", err))
-		}
-
-		raw, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
-			return topicManager.GetTopicAttributes(name)
-		})
-		if err != nil {
-			if mnsService.TopicNotExistFunc(err) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Describe mns topic got an error: %#v", err))
-		}
-		attr, _ := raw.(ali_mns.TopicAttribute)
-		if attr.TopicName != name {
+	if err != nil {
+		if mnsService.TopicNotExistFunc(err) {
 			return nil
 		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteTopic", AliMnsERROR)
+	}
+	addDebug("DeleteTopic", raw)
 
-		return resource.RetryableError(fmt.Errorf("Deleting mns topic got an error: %#v", err))
-	})
+	return WrapError(mnsService.WaitForMnsTopic(d.Id(), Deleted, DefaultTimeout))
 }
