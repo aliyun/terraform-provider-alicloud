@@ -48,6 +48,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - This ID of this resource. The value is formate as `<access_group_name>:<access rule id>`.
+* `access_rule_id` - The nas access rule ID.
 
 ## Import
 

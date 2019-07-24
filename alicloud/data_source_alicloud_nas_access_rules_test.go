@@ -40,6 +40,16 @@ func TestAccAlicloudNasAccessRuleDataSource(t *testing.T) {
 			"user_access":       `"${alicloud_nas_access_rule.default.user_access_type}_fake"`,
 		}),
 	}
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
+			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
+			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}_fake"]`,
+		}),
+	}
 	AccessGroupNameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
@@ -50,16 +60,18 @@ func TestAccAlicloudNasAccessRuleDataSource(t *testing.T) {
 			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
 			"user_access":       `"${alicloud_nas_access_rule.default.user_access_type}"`,
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}"`,
+			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessRuleDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
 			"user_access":       `"${alicloud_nas_access_rule.default.user_access_type}_fake"`,
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}_fake"`,
+			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}_fake"`,
 		}),
 	}
-	accessRuleCheckInfo.dataSourceTestCheck(t, rand, ipConf, RWAccessConf, UserAccessConf, AccessGroupNameConf, allConf)
+	accessRuleCheckInfo.dataSourceTestCheck(t, rand, ipConf, RWAccessConf, UserAccessConf, idsConf, AccessGroupNameConf, allConf)
 }
 
 func testAccCheckAlicloudAccessRuleDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -98,7 +110,7 @@ var existAccessRuleMapCheck = func(rand int) map[string]string {
 		"rules.0.user_access":    "no_squash",
 		"rules.0.rw_access":      "RDWR",
 		"ids.#":                  "1",
-		"ids.0":                  fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d:1", rand),
+		"ids.0":                  "1",
 	}
 }
 
