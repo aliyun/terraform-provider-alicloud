@@ -321,8 +321,6 @@ data "alicloud_zones" main {
 }
 data "alicloud_instance_types" "default" {
  	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
 }
 
 resource "alicloud_vpc" "foo" {
@@ -366,8 +364,6 @@ func testAccCSSwarm_basic_zero_node(rand int) string {
 	}
 	data "alicloud_instance_types" "default" {
 		 availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-		cpu_core_count = 1
-		memory_size = 2
 	}
 
 	resource "alicloud_vpc" "foo" {
@@ -410,8 +406,6 @@ func testAccCSSwarm_basic_zero_node_update(rand int) string {
 	}
 	data "alicloud_instance_types" "default" {
 		 availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-		cpu_core_count = 1
-		memory_size = 2
 	}
 
 	resource "alicloud_vpc" "foo" {
@@ -454,8 +448,6 @@ data "alicloud_zones" main {
 }
 data "alicloud_instance_types" "default" {
  	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
 }
 
 resource "alicloud_vpc" "foo" {
@@ -500,8 +492,6 @@ func testAccCSSwarm_update(rand int) string {
 	}
 	data "alicloud_instance_types" "default" {
 		 availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-		cpu_core_count = 1
-		memory_size = 2
 	}
 
 	resource "alicloud_vpc" "foo" {
@@ -545,8 +535,6 @@ func testAccCSSwarm_updateAfter(rand int) string {
 	}
 	data "alicloud_instance_types" "default" {
 		 availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-		cpu_core_count = 1
-		memory_size = 2
 	}
 
 	resource "alicloud_vpc" "foo" {

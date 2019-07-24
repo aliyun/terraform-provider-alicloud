@@ -147,8 +147,6 @@ data "alicloud_zones" main {
 
 data "alicloud_instance_types" "default" {
 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-	cpu_core_count = 2
-	memory_size = 4
 	kubernetes_node_role = "Worker"
 }
 

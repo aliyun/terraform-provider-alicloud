@@ -311,15 +311,11 @@ data "alicloud_zones" main {
 
 data "alicloud_instance_types" "master" {
 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-	cpu_core_count = 2
-	memory_size = 4
 	kubernetes_node_role = "Master"
 }
 
 data "alicloud_instance_types" "worker" {
 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-	cpu_core_count = 2
-	memory_size = 4
 	kubernetes_node_role = "Worker"
 }
 
@@ -363,8 +359,6 @@ data "alicloud_zones" main {
 
 data "alicloud_instance_types" "default" {
 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-	cpu_core_count = 1
-	memory_size = 2
 }
 
 resource "alicloud_cs_kubernetes" "k8s" {
@@ -399,39 +393,27 @@ func testAccMultiAZKubernetes_basic(rand int) string {
 
 	data "alicloud_instance_types" "instance_types_1_master" {
 		availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-		cpu_core_count = 2
-		memory_size = 4
 		kubernetes_node_role = "Master"
 	}
 	data "alicloud_instance_types" "instance_types_2_master" {
 		availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-1)%%length(data.alicloud_zones.main.zones)], "id")}"
-		cpu_core_count = 2
-		memory_size = 4
 		kubernetes_node_role = "Master"
 	}
 	data "alicloud_instance_types" "instance_types_3_master" {
 		availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-2)%%length(data.alicloud_zones.main.zones)], "id")}"
-		cpu_core_count = 2
-		memory_size = 4
 		kubernetes_node_role = "Master"
 	}
 
 	data "alicloud_instance_types" "instance_types_1_worker" {
 		availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-		cpu_core_count = 2
-		memory_size = 4
 		kubernetes_node_role = "Worker"
 	}
 	data "alicloud_instance_types" "instance_types_2_worker" {
 		availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-1)%%length(data.alicloud_zones.main.zones)], "id")}"
-		cpu_core_count = 2
-		memory_size = 4
 		kubernetes_node_role = "Worker"
 	}
 	data "alicloud_instance_types" "instance_types_3_worker" {
 		availability_zone = "${lookup(data.alicloud_zones.main.zones[(length(data.alicloud_zones.main.zones)-2)%%length(data.alicloud_zones.main.zones)], "id")}"
-		cpu_core_count = 2
-		memory_size = 4
 		kubernetes_node_role = "Worker"
 	}
 	resource "alicloud_vpc" "foo" {
