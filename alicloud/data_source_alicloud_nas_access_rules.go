@@ -29,14 +29,14 @@ func dataSourceAlicloudAccessRules() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-			},
-			"ids": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			// Computed values
 			"rules": {
@@ -80,6 +80,12 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	var allArs []nas.DescribeAccessRulesAccessRule1
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 	invoker := NewInvoker()
 	for {
 		var raw interface{}
@@ -92,11 +98,13 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_access_rules", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		resp, _ := raw.(*nas.DescribeAccessRulesResponse)
-		if resp == nil || len(resp.AccessRules.AccessRule) < 1 {
+
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*nas.DescribeAccessRulesResponse)
+		if len(response.AccessRules.AccessRule) < 1 {
 			break
 		}
-		for _, rule := range resp.AccessRules.AccessRule {
+		for _, rule := range response.AccessRules.AccessRule {
 			if v, ok := d.GetOk("source_cidr_ip"); ok && rule.SourceCidrIp != Trim(v.(string)) {
 				continue
 			}
@@ -106,15 +114,20 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 			if v, ok := d.GetOk("rw_access"); ok && rule.RWAccess != Trim(v.(string)) {
 				continue
 			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[rule.AccessRuleId]; !ok {
+					continue
+				}
+			}
 			allArs = append(allArs, rule)
 		}
 
-		if len(resp.AccessRules.AccessRule) < PageSizeLarge {
+		if len(response.AccessRules.AccessRule) < PageSizeLarge {
 			break
 		}
 
 		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return err
+			return WrapError(err)
 		} else {
 			request.PageNumber = page
 		}
@@ -135,7 +148,7 @@ func accessRulesDecriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.D
 			"user_access":    ag.UserAccess,
 			"rw_access":      ag.RWAccess,
 		}
-		ids = append(ids, d.Get("access_group_name").(string)+":"+ag.AccessRuleId)
+		ids = append(ids, ag.AccessRuleId)
 		s = append(s, mapping)
 	}
 

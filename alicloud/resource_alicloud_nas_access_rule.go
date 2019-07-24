@@ -20,30 +20,34 @@ func resourceAlicloudNasAccessRule() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"access_group_name": &schema.Schema{
+			"access_group_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"source_cidr_ip": &schema.Schema{
+			"source_cidr_ip": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"rw_access_type": &schema.Schema{
+			"rw_access_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateAllowedStringValue([]string{"RDWR", "RDONLY"}),
 			},
-			"user_access_type": &schema.Schema{
+			"user_access_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateAllowedStringValue([]string{"no_squash", "root_squash", "all_squash"}),
 			},
-			"priority": &schema.Schema{
+			"priority": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
 				ValidateFunc: validateIntegerInRange(1, 100),
+			},
+			"access_rule_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -114,6 +118,7 @@ func resourceAlicloudNasAccessRuleRead(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return WrapError(err)
 	}
+	d.Set("access_rule_id", object.AccessRuleId)
 	d.Set("source_cidr_ip", object.SourceCidrIp)
 	d.Set("access_group_name", parts[0])
 	d.Set("priority", object.Priority)
