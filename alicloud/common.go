@@ -627,3 +627,17 @@ const (
 	EventWrite = EventRwType("Write")
 	EventAll   = EventRwType("All")
 )
+
+func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration) func() {
+	retryCount := 1
+	return func() {
+		var waitTime time.Duration
+		if retryCount == 1 {
+			waitTime = firstDuration
+		} else if retryCount > 1 {
+			waitTime = time.Duration(retryCount-1) * increaseDuration
+		}
+		time.Sleep(waitTime)
+		retryCount++
+	}
+}

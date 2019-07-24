@@ -55,15 +55,30 @@ func resourceAliyunVpnCustomerGatewayCreate(d *schema.ResourceData, meta interfa
 	}
 	request.ClientToken = buildClientToken(request.GetActionName())
 
-	var response *vpc.CreateCustomerGatewayResponse
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.CreateCustomerGateway(request)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var raw interface{}
+	var err error
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		args := *request
+		raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.CreateCustomerGateway(&args)
+		})
+		if err != nil {
+			if IsExceptedError(err, Throttling) {
+				wait()
+				return resource.RetryableError(err)
+			}
+
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpn_customer_gateway", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ = raw.(*vpc.CreateCustomerGatewayResponse)
+	response, _ := raw.(*vpc.CreateCustomerGatewayResponse)
 
 	d.SetId(response.CustomerGatewayId)
 
