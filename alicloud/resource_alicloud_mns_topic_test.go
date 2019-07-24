@@ -78,23 +78,35 @@ func testSweepMnsTopics(region string) error {
 }
 
 func TestAccAlicloudMnsTopic_basic(t *testing.T) {
-
-	var attr ali_mns.TopicAttribute
-	rand := acctest.RandIntRange(10000, 999999)
-	resourceId := "alicloud_mns_topic.topic"
+	var v *ali_mns.TopicAttribute
+	resourceId := "alicloud_mns_topic.default"
+	ra := resourceAttrInit(resourceId, mnsTopicMap)
+	serviceFunc := func() interface{} {
+		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMnsTopicConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:      func() { testAccPreCheck(t) },
-		Providers:     testAccProviders,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
 		IDRefreshName: resourceId,
-		CheckDestroy:  testAccCheckMNSTopicDestroy,
-
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccMNSTopicConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccMNSTopicExist("alicloud_mns_topic.topic", &attr),
-					resource.TestCheckResourceAttr("alicloud_mns_topic.topic", "name", fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand)),
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
 				),
 			},
 			{
@@ -103,16 +115,84 @@ func TestAccAlicloudMnsTopic_basic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccMNSTopicConfigUpdate(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"maximum_message_size": "12357",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccMNSTopicExist("alicloud_mns_topic.topic", &attr),
-					resource.TestCheckResourceAttr("alicloud_mns_topic.topic", "name", fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_mns_topic.topic", "maximum_message_size", "12357"),
-					resource.TestCheckResourceAttr("alicloud_mns_topic.topic", "logging_enabled", "true"),
+					testAccCheck(map[string]string{
+						"maximum_message_size": "12357",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"logging_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"logging_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maximum_message_size": "65536",
+					"logging_enabled":      "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maximum_message_size": "65536",
+						"logging_enabled":      "false",
+					}),
 				),
 			},
 		},
 	})
+}
+
+func TestAccAlicloudMnsTopic_multi(t *testing.T) {
+	var v *ali_mns.TopicAttribute
+	resourceId := "alicloud_mns_topic.default.4"
+	ra := resourceAttrInit(resourceId, mnsTopicMap)
+	serviceFunc := func() interface{} {
+		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMnsTopicConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":  name + "${count.index}",
+					"count": "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+}
+
+func resourceMnsTopicConfigDependence(name string) string {
+	return ""
+}
+
+var mnsTopicMap = map[string]string{
+	"name":                 CHECKSET,
+	"maximum_message_size": "65536",
+	"logging_enabled":      "false",
 }
 
 func testAccMNSTopicExist(n string, attr *ali_mns.TopicAttribute) resource.TestCheckFunc {
@@ -142,51 +222,4 @@ func testAccMNSTopicExist(n string, attr *ali_mns.TopicAttribute) resource.TestC
 		return nil
 	}
 
-}
-
-func testAccCheckMNSTopicDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	mnsService := MnsService{}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_mns_topic" {
-			continue
-		}
-
-		_, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
-			return topicManager.GetTopicAttributes(rs.Primary.ID)
-		})
-		if err != nil {
-			if mnsService.TopicNotExistFunc(err) {
-				continue
-			}
-			return err
-		}
-
-		return fmt.Errorf("MNS Topic %s still exist", rs.Primary.ID)
-	}
-
-	return nil
-}
-
-func testAccMNSTopicConfig(rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-		default = "tf-testAccMNSTopicConfig-%d"
-	}
-	resource "alicloud_mns_topic" "topic"{
-		name="${var.name}"
-	}`, rand)
-}
-
-func testAccMNSTopicConfigUpdate(rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-		default = "tf-testAccMNSTopicConfig-%d"
-	}
-	resource "alicloud_mns_topic" "topic"{
-		name="${var.name}"
-		maximum_message_size=12357
-		logging_enabled=true
-	}`, rand)
 }
