@@ -183,8 +183,6 @@ resource "alicloud_network_interface" "default" {
 
 data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  cpu_core_count    = 2
-  memory_size       = 4
   eni_amount = 2
 }
 

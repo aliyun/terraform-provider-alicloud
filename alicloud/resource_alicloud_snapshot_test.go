@@ -241,7 +241,7 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${reverse(data.alicloud_zones.default.zones).0.id}"
 }
 
 resource "alicloud_vpc" "default" {
@@ -253,7 +253,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   name = "${var.name}"
   cidr_block = "192.168.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${reverse(data.alicloud_zones.default.zones).0.id}"
   vpc_id = "${alicloud_vpc.default.id}"
 }
 
@@ -266,7 +266,7 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_disk" "default" {
   count = "2"
   name = "${var.name}"
-  availability_zone = "${alicloud_instance.default.availability_zone}"
+  availability_zone = "${reverse(data.alicloud_zones.default.zones).0.id}"
   category          = "cloud_efficiency"
   size              = "20"
 }
@@ -276,6 +276,7 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_instance" "default" {
+  availability_zone = "${reverse(data.alicloud_zones.default.zones).0.id}"
   instance_name   = "${var.name}"
   host_name       = "tf-testAcc"
   image_id        = "${data.alicloud_images.default.images.0.id}"
