@@ -65,6 +65,24 @@ func resourceAliyunDisk() *schema.Resource {
 				ConflictsWith: []string{"snapshot_id"},
 			},
 
+			"delete_auto_snapshot": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
+			"delete_with_instance": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
+			"enable_auto_snapshot": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -150,6 +168,9 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("description", object.Description)
 	d.Set("snapshot_id", object.SourceSnapshotId)
 	d.Set("encrypted", object.Encrypted)
+	d.Set("delete_auto_snapshot", object.DeleteAutoSnapshot)
+	d.Set("delete_with_instance", object.DeleteWithInstance)
+	d.Set("enable_auto_snapshot", object.EnableAutoSnapshot)
 
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceDisk)
 	if err != nil && !NotFoundError(err) {
@@ -171,6 +192,52 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	} else {
 		d.SetPartial("tags")
+	}
+	update := false
+	request := ecs.CreateModifyDiskAttributeRequest()
+	request.DiskId = d.Id()
+
+	if !d.IsNewResource() && d.HasChange("name") {
+		request.DiskName = d.Get("name").(string)
+		update = true
+		d.SetPartial("name")
+	}
+
+	if !d.IsNewResource() && d.HasChange("description") {
+		request.Description = d.Get("description").(string)
+		update = true
+		d.SetPartial("description")
+	}
+
+	if d.IsNewResource() || d.HasChange("delete_auto_snapshot") {
+		v := d.Get("delete_auto_snapshot")
+		request.DeleteAutoSnapshot = requests.NewBoolean(v.(bool))
+		update = true
+		d.SetPartial("delete_auto_snapshot")
+	}
+
+	if d.IsNewResource() || d.HasChange("delete_with_instance") {
+		v := d.Get("delete_with_instance")
+		request.DeleteWithInstance = requests.NewBoolean(v.(bool))
+		update = true
+		d.SetPartial("delete_with_instance")
+	}
+
+	if d.IsNewResource() || d.HasChange("enable_auto_snapshot") {
+		v := d.Get("enable_auto_snapshot")
+		request.EnableAutoSnapshot = requests.NewBoolean(v.(bool))
+		update = true
+		d.SetPartial("enable_auto_snapshot")
+	}
+
+	if update {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifyDiskAttribute(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw)
 	}
 
 	if d.IsNewResource() {
@@ -200,30 +267,6 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		d.SetPartial("size")
 	}
 
-	update := false
-	request := ecs.CreateModifyDiskAttributeRequest()
-	request.DiskId = d.Id()
-
-	if d.HasChange("name") {
-		request.DiskName = d.Get("name").(string)
-		update = true
-	}
-
-	if d.HasChange("description") {
-		request.Description = d.Get("description").(string)
-		update = true
-	}
-	if update {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyDiskAttribute(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw)
-		d.SetPartial("name")
-		d.SetPartial("description")
-	}
 	d.Partial(false)
 	return resourceAliyunDiskRead(d, meta)
 }

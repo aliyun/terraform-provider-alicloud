@@ -180,12 +180,39 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccDiskConfig_delete_auto_snapshot,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delete_auto_snapshot": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccDiskConfig_delete_with_instance,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delete_with_instance": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccDiskConfig_enable_auto_snapshot,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_auto_snapshot": "true",
+					}),
+				),
+			},
+			{
 				Config: testAccDiskConfig_all,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":      "0",
-						"name":        "tf-testAccDiskConfig_all",
-						"description": "nothing",
+						"tags.%":               "0",
+						"name":                 "tf-testAccDiskConfig_all",
+						"description":          "nothing",
+						"delete_auto_snapshot": "false",
+						"delete_with_instance": "false",
+						"enable_auto_snapshot": "false",
 					}),
 				),
 			},
@@ -311,6 +338,87 @@ resource "alicloud_disk" "default" {
 }
 `
 
+const testAccDiskConfig_delete_auto_snapshot = `
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
+}
+
+
+variable "name" {
+	default = "tf-testAccDiskConfig"
+}
+
+resource "alicloud_disk" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	size = "70"
+	name = "${var.name}"
+	description = "${var.name}_description"
+	category = "cloud_efficiency"
+	encrypted = "false"
+	tags = {
+		name1 = "name1"
+		name2 = "name2"
+		name3 = "name3"
+			}
+	delete_auto_snapshot = "true"
+}
+`
+
+const testAccDiskConfig_delete_with_instance = `
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
+}
+
+
+variable "name" {
+	default = "tf-testAccDiskConfig"
+}
+
+resource "alicloud_disk" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	size = "70"
+	name = "${var.name}"
+	description = "${var.name}_description"
+	category = "cloud_efficiency"
+	encrypted = "false"
+	tags = {
+		name1 = "name1"
+		name2 = "name2"
+		name3 = "name3"
+			}
+	delete_auto_snapshot = "true"
+	delete_with_instance = "true"
+}
+`
+
+const testAccDiskConfig_enable_auto_snapshot = `
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
+}
+
+
+variable "name" {
+	default = "tf-testAccDiskConfig"
+}
+
+resource "alicloud_disk" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	size = "70"
+	name = "${var.name}"
+	description = "${var.name}_description"
+	category = "cloud_efficiency"
+	encrypted = "false"
+	tags = {
+		name1 = "name1"
+		name2 = "name2"
+		name3 = "name3"
+			}
+	delete_auto_snapshot = "true"
+	delete_with_instance = "true"
+	enable_auto_snapshot = "true"
+}
+`
+
 const testAccDiskConfig_all = `
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
@@ -327,6 +435,9 @@ resource "alicloud_disk" "default" {
 	description = "nothing"
 	category = "cloud_efficiency"
 	encrypted = "false"
+	delete_auto_snapshot = "false"
+	delete_with_instance = "false"
+	enable_auto_snapshot = "false"
 }
 `
 
@@ -351,13 +462,16 @@ resource "alicloud_disk" "default" {
 `
 
 var testAccCheckResourceDiskBasicMap = map[string]string{
-	"availability_zone": CHECKSET,
-	"size":              "50",
-	"name":              "",
-	"description":       "",
-	"category":          "cloud_efficiency",
-	"snapshot_id":       "",
-	"encrypted":         "false",
-	"tags":              NOSET,
-	"status":            string(Available),
+	"availability_zone":    CHECKSET,
+	"size":                 "50",
+	"name":                 "",
+	"description":          "",
+	"category":             "cloud_efficiency",
+	"snapshot_id":          "",
+	"encrypted":            "false",
+	"tags":                 NOSET,
+	"status":               string(Available),
+	"delete_auto_snapshot": "false",
+	"delete_with_instance": "false",
+	"enable_auto_snapshot": "false",
 }
