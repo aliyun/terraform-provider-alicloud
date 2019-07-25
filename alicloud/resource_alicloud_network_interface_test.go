@@ -69,6 +69,7 @@ func testAlicloudNetworkInterface(region string) error {
 	}
 
 	sweeped := false
+	service := VpcService{client}
 	for _, eni := range enis {
 		name := eni.NetworkInterfaceName
 		skip := true
@@ -76,6 +77,12 @@ func testAlicloudNetworkInterface(region string) error {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 				skip = false
 				break
+			}
+		}
+		// If a nat gateway name is not set successfully, it should be fetched by vpc name and deleted.
+		if skip {
+			if need, err := service.needSweepVpc(eni.VpcId, ""); err == nil {
+				skip = !need
 			}
 		}
 		if skip {
