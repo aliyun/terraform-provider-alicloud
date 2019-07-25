@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform/helper/resource"
 	"strings"
 	"time"
 
@@ -95,9 +96,7 @@ func (s *GpdbService) ModifyGpdbSecurityIps(id, ips string) error {
 	}
 	response := raw.(*gpdb.ModifySecurityIpsResponse)
 	addDebug(request.GetActionName(), response)
-	if err := s.WaitForGpdbInstance(id, Running, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
-	}
+
 	return nil
 }
 
@@ -132,32 +131,23 @@ func (s *GpdbService) DescribeGpdbConnection(id string) (*gpdb.DBInstanceNetInfo
 	return nil, WrapErrorf(Error(GetNotFoundMessage("GpdbConnection", id)), NotFoundMsg, ProviderERROR)
 }
 
-// Wait for instance to given status
-func (s *GpdbService) WaitForGpdbInstance(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		instance, err := s.DescribeGpdbInstance(id)
+func (s *GpdbService) GpdbInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeGpdbInstance(id)
 		if err != nil {
 			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.DBInstanceStatus == failState {
+				return object, object.DBInstanceStatus, WrapError(Error(FailedToReachTargetStatus, object.DBInstanceStatus))
 			}
 		}
-
-		// if status equal to given status, then success
-		if instance.DBInstanceStatus == string(status) {
-			return nil
-		}
-
-		// timeout
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, instance.DBInstanceStatus, string(status), ProviderERROR)
-		}
-
-		time.Sleep(DefaultIntervalShort * time.Second)
+		return object, object.DBInstanceStatus, nil
 	}
 }
 

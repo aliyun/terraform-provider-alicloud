@@ -65,6 +65,16 @@ The following arguments are supported:
 * `connection_prefix` - (ForceNew) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 30 characters. Default to <instance_id> + '-tf'.
 * `port` - (Optional) Internet connection port. Valid value: [3200-3999]. Default to 3306.
 
+### Timeouts
+
+-> **NOTE:** Available in 1.53.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the Internet connection (until DB instance reaches the initial `Running` status). 
+* `update` - (Defaults to 10 mins) Used when activating the DB instance during update.
+* `delete` - (Defaults to 10 mins) Used when terminating the DB instance. 
+
 ## Attributes Reference
 
 The following attributes are exported:

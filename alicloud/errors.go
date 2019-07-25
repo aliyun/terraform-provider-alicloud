@@ -145,6 +145,7 @@ const (
 	InvalidGpdbNameNotFound       = "InvalidDBName.NotFound"
 	InvalidGpdbInstanceIdNotFound = "InvalidDBInstanceId.NotFound"
 	InvalidGpdbInstanceStatus     = "OperationDenied.DBInstanceStatus"
+	InvalidGpdbConcurrentOperate  = "SYSTEM.CONCURRENT_OPERATE"
 
 	// rds
 	InvalidDBInstanceIdNotFound            = "InvalidDBInstanceId.NotFound"
