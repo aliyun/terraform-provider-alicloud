@@ -38,7 +38,7 @@ func TestAccAlicloudGpdbInstancesDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex":        "${alicloud_gpdb_instance.default.description}",
-			"availability_zone": "${data.alicloud_zones.default.zones.1.id}",
+			"availability_zone": "${data.alicloud_zones.default.zones.0.id}F",
 		}),
 	}
 

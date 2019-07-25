@@ -67,6 +67,14 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
 * `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 
+### Timeouts
+
+-> **NOTE:** Available in 1.53.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 30 mins) Used when creating the DB instance (until it reaches the initial `Running` status). 
+
 ## Attributes Reference
 
 The following attributes are exported:

@@ -21,6 +21,10 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(30 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"availability_zone": {
 				Type:     schema.TypeString,
@@ -119,20 +123,31 @@ func resourceAlicloudGpdbInstanceCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapError(err)
 	}
-	raw, err := client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
-		return client.CreateDBInstance(request)
+	var raw interface{}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
+			return client.CreateDBInstance(request)
+		})
+		if err != nil {
+			if IsExceptedError(err, InvalidGpdbConcurrentOperate) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
+	response, _ := raw.(*gpdb.CreateDBInstanceResponse)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_gpdb_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	response, _ := raw.(*gpdb.CreateDBInstanceResponse)
-	addDebug(request.GetActionName(), response)
 	d.SetId(response.DBInstanceId)
-	if err := gpdbService.WaitForGpdbInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
-		return WrapError(err)
-	}
 
+	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 10*time.Minute, gpdbService.GpdbInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 	return resourceAlicloudGpdbInstanceUpdate(d, meta)
 }
 
@@ -180,7 +195,6 @@ func resourceAlicloudGpdbInstanceUpdate(d *schema.ResourceData, meta interface{}
 
 func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	gpdbService := GpdbService{client}
 
 	request := gpdb.CreateDeleteDBInstanceRequest()
 	request.DBInstanceId = d.Id()
@@ -205,7 +219,8 @@ func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(gpdbService.WaitForGpdbInstance(d.Id(), Deleted, DefaultLongTimeout))
+	// because DeleteDBInstance is called synchronously, there is no wait or describe here.
+	return nil
 }
 
 func buildGpdbCreateRequest(d *schema.ResourceData, meta interface{}) (*gpdb.CreateDBInstanceRequest, error) {

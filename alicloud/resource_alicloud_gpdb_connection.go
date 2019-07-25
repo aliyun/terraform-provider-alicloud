@@ -21,6 +21,12 @@ func resourceAlicloudGpdbConnection() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -84,13 +90,11 @@ func resourceAlicloudGpdbConnectionCreate(d *schema.ResourceData, meta interface
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", instanceId, COLON_SEPARATED, request.ConnectionStringPrefix))
-
-	if err := gpdbService.WaitForGpdbConnection(d.Id(), Available, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
-	}
 	// wait instance running after allocating
-	if err := gpdbService.WaitForGpdbInstance(instanceId, Running, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
+	stateConf := BuildStateConf([]string{"Creating", "NetAddressCreating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gpdbService.GpdbInstanceStateRefreshFunc(instanceId, []string{"Deleting"}))
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAlicloudGpdbConnectionRead(d, meta)
@@ -159,8 +163,10 @@ func resourceAlicloudGpdbConnectionUpdate(d *schema.ResourceData, meta interface
 		}
 
 		// wait instance running after modifying
-		if err := gpdbService.WaitForGpdbInstance(request.DBInstanceId, Running, DefaultTimeoutMedium); err != nil {
-			return WrapError(err)
+		stateConf := BuildStateConf([]string{"NET_MODIFYING"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, gpdbService.GpdbInstanceStateRefreshFunc(request.DBInstanceId, []string{"Deleting"}))
+
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 	return resourceAlicloudGpdbConnectionRead(d, meta)
@@ -204,6 +210,10 @@ func resourceAlicloudGpdbConnectionDelete(d *schema.ResourceData, meta interface
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	stateConf := BuildStateConf([]string{"NetAddressDeleting"}, []string{"Running"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gpdbService.GpdbInstanceStateRefreshFunc(request.DBInstanceId, []string{"Deleting"}))
 
-	return gpdbService.WaitForGpdbConnection(d.Id(), Deleted, DefaultTimeoutMedium)
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return WrapError(gpdbService.WaitForGpdbConnection(d.Id(), Deleted, DefaultTimeoutMedium))
 }
