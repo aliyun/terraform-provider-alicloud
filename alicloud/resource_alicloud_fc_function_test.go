@@ -2,13 +2,91 @@ package alicloud
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"log"
+	"strings"
+	"testing"
+	"time"
 )
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_fc_function",
+		&resource.Sweeper{
+			Name: "alicloud_fc_function",
+			F:    testSweepFcFunction,
+		})
+}
+
+func testSweepFcFunction(region string) error {
+	if testSweepPreCheckWithRegions(region, false, connectivity.ApiGatewayNoSupportedRegions) {
+		log.Printf("[INFO] Skipping API Gateway unsupported region: %s", region)
+		return nil
+	}
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testacc",
+		"tf_testacc",
+	}
+
+	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+		return fcClient.ListServices(fc.NewListServicesInput())
+	})
+	if err != nil {
+		return fmt.Errorf("Error retrieving FC services: %s", err)
+	}
+
+	swept := false
+	services, _ := raw.(*fc.ListServicesOutput)
+	for _, v := range services.Services {
+		serviceName := v.ServiceName
+		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.ListFunctions(fc.NewListFunctionsInput(*serviceName))
+		})
+		if err != nil {
+			fmt.Println(err.Error())
+		} else {
+			functions := raw.(*fc.ListFunctionsOutput)
+			for _, v := range functions.Functions {
+				functionName := v.FunctionName
+				skip := true
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(*functionName), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					continue
+				}
+				swept = true
+
+				_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+					return fcClient.DeleteFunction(&fc.DeleteFunctionInput{
+						ServiceName:  serviceName,
+						FunctionName: functionName,
+					})
+				})
+
+				if err != nil {
+					log.Printf("[ERROR] Failed to delete Api (%s): %s", *functionName, err)
+				}
+			}
+		}
+	}
+	if swept {
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudFCFunction_basic(t *testing.T) {
 	var v *fc.GetFunctionOutput
