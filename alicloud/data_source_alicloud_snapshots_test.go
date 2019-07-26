@@ -197,6 +197,8 @@ variable "name" {
 }
 
 data "alicloud_instance_types" "default" {
+	cpu_core_count    = 1
+	memory_size       = 2
 }
 
 resource "alicloud_vpc" "default" {
@@ -204,13 +206,11 @@ resource "alicloud_vpc" "default" {
   cidr_block = "192.168.0.0/16"
 }
 
-data "alicloud_zones" "default" {
-}
 
 resource "alicloud_vswitch" "default" {
   name = "${var.name}"
   cidr_block = "192.168.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   vpc_id = "${alicloud_vpc.default.id}"
 }
 
@@ -221,7 +221,7 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_disk" "default" {
-  availability_zone = "${alicloud_instance.default.availability_zone}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   category          = "cloud_efficiency"
   size              = "20"
 }
@@ -236,6 +236,7 @@ resource "alicloud_instance" "default" {
   instance_type   = "${data.alicloud_instance_types.default.instance_types.0.id}"
   security_groups = ["${alicloud_security_group.default.id}"]
   vswitch_id      = "${alicloud_vswitch.default.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
 }
 
 resource "alicloud_disk_attachment" "default" {

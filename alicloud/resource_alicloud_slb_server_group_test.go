@@ -217,15 +217,13 @@ const testAccSlbServerGroupVpc = `
 variable "name" {
 	default = "tf-testAccSlbServerGroupVpc"
 }
-data "alicloud_zones" "default" {
-	available_disk_category= "cloud_efficiency"
-	available_resource_creation= "VSwitch"
-}
+
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	cpu_core_count    = 1
+	memory_size       = 2
 }
 data "alicloud_images" "default" {
-        name_regex = "^ubuntu_14.*_64"
+	name_regex = "^ubuntu_14.*_64"
 	most_recent = true
 	owners = "system"
 }
@@ -236,7 +234,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   name = "${var.name}"
 }
 resource "alicloud_security_group" "default" {
@@ -251,7 +249,7 @@ resource "alicloud_instance" "default" {
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"
@@ -275,12 +273,10 @@ const testAccSlbServerGroupVpcUpdate = `
 variable "name" {
 	default = "tf-testAccSlbServerGroupVpcUpdate"
 }
-data "alicloud_zones" "default" {
-	available_disk_category= "cloud_efficiency"
-	available_resource_creation= "VSwitch"
-}
+
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	cpu_core_count    = 1
+	memory_size       = 2
 }
 data "alicloud_images" "default" {
   name_regex = "^ubuntu_14.*_64"
@@ -296,7 +292,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   name = "${var.name}"
 }
 resource "alicloud_security_group" "default" {
@@ -311,7 +307,7 @@ resource "alicloud_instance" "default" {
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"
@@ -337,15 +333,14 @@ const testAccSlbServerGroupVpcUpdateServer = `
 variable "name" {
 	default = "tf-testAccSlbServerGroupVpcUpdate"
 }
-data "alicloud_zones" "default" {
-	available_disk_category= "cloud_efficiency"
-	available_resource_creation= "VSwitch"
-}
+
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	cpu_core_count    = 1
+	memory_size       = 2
 }
 data "alicloud_instance_types" "new" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	cpu_core_count    = 1
+	memory_size       = 2
 	eni_amount = 2
 }
 data "alicloud_images" "default" {
@@ -383,7 +378,7 @@ resource "alicloud_instance" "default" {
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"
@@ -396,7 +391,7 @@ resource "alicloud_instance" "new" {
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.new.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"
@@ -436,15 +431,14 @@ func testAccSlbServerGroupVpcUpdateServerSize(count int) string {
 variable "name" {
 	default = "tf-testAccSlbServerGroupVpcUpdate"
 }
-data "alicloud_zones" "default" {
-	available_disk_category= "cloud_efficiency"
-	available_resource_creation= "VSwitch"
-}
+
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	cpu_core_count    = 1
+	memory_size       = 2
 }
 data "alicloud_instance_types" "new" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	cpu_core_count    = 1
+	memory_size       = 2
 	eni_amount = 2
 }
 data "alicloud_images" "default" {
@@ -461,7 +455,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   name = "${var.name}"
 }
 resource "alicloud_security_group" "default" {
@@ -482,7 +476,7 @@ resource "alicloud_instance" "default" {
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"
@@ -495,7 +489,7 @@ resource "alicloud_instance" "new" {
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.new.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"
@@ -525,12 +519,9 @@ variable "name" {
 	default = "tf-testAccSlbServerGroupClassic"
 }
 
-data "alicloud_zones" "default" {
-	available_disk_category= "cloud_efficiency"
-	available_resource_creation= "VSwitch"
-}
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	cpu_core_count    = 1
+	memory_size       = 2
 }
 data "alicloud_images" "default" {
   name_regex = "^ubuntu_14.*_64"
@@ -546,7 +537,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   name = "${var.name}"
 }
 resource "alicloud_security_group" "default" {
@@ -562,7 +553,7 @@ resource "alicloud_instance" "default" {
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"
@@ -593,12 +584,9 @@ variable "name" {
 	default = "tf-testAccSlbServerGroupClassicUpdate"
 }
 
-data "alicloud_zones" "default" {
-	available_disk_category= "cloud_efficiency"
-	available_resource_creation= "VSwitch"
-}
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	cpu_core_count    = 1
+	memory_size       = 2
 }
 data "alicloud_images" "default" {
   name_regex = "^ubuntu_14.*_64"
@@ -614,7 +602,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   name = "${var.name}"
 }
 resource "alicloud_security_group" "default" {
@@ -630,7 +618,7 @@ resource "alicloud_instance" "default" {
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"
@@ -661,12 +649,9 @@ variable "name" {
 	default = "tf-testAccSlbServerGroupClassicUpdate"
 }
 
-data "alicloud_zones" "default" {
-	available_disk_category= "cloud_efficiency"
-	available_resource_creation= "VSwitch"
-}
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	cpu_core_count    = 1
+	memory_size       = 2
 }
 data "alicloud_images" "default" {
   name_regex = "^ubuntu_14.*_64"
@@ -682,7 +667,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   name = "${var.name}"
 }
 resource "alicloud_security_group" "default" {
@@ -698,7 +683,7 @@ resource "alicloud_instance" "default" {
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"
@@ -723,12 +708,10 @@ const testAccSlbServerGroupVpc_multi = `
 variable "name" {
 	default = "tf-testAccSlbServerGroupVpc"
 }
-data "alicloud_zones" "default" {
-	available_disk_category= "cloud_efficiency"
-	available_resource_creation= "VSwitch"
-}
+
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	cpu_core_count    = 1
+	memory_size       = 2
 }
 data "alicloud_images" "default" {
         name_regex = "^ubuntu_14.*_64"
@@ -742,7 +725,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   name = "${var.name}"
 }
 resource "alicloud_security_group" "default" {
@@ -757,7 +740,7 @@ resource "alicloud_instance" "default" {
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"

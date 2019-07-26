@@ -89,16 +89,15 @@ variable "name" {
 	default = "tf-testAccslbservergroupsdatasourcebasic"
 }
 
-data "alicloud_zones" "default" {
-	available_resource_creation = "VSwitch"
-}
+
 data "alicloud_images" "default" {
   name_regex = "^ubuntu_16.*_64"
   most_recent = true
   owners = "system"
 }
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	cpu_core_count = 1
+	memory_size = 2
 }
 
 resource "alicloud_vpc" "default" {
@@ -110,7 +109,7 @@ resource "alicloud_vswitch" "default" {
   name = "${var.name}"
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
 }
 
 resource "alicloud_security_group" "default" {
@@ -150,6 +149,7 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_instance" "default" {
   image_id = "${data.alicloud_images.default.images.0.id}"
 
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   internet_charge_type = "PayByTraffic"
   system_disk_category = "cloud_efficiency"
