@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"strings"
 	"time"
 
@@ -45,12 +46,15 @@ func resourceAliyunDiskAttachmentCreate(d *schema.ResourceData, meta interface{}
 
 	diskID := d.Get("disk_id").(string)
 	instanceID := d.Get("instance_id").(string)
-
+	oldDisk, err := ecsService.DescribeDisk(diskID)
+	if err != nil {
+		return WrapError(err)
+	}
 	request := ecs.CreateAttachDiskRequest()
 	request.InstanceId = instanceID
 	request.DiskId = diskID
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.AttachDisk(request)
 		})
@@ -71,6 +75,22 @@ func resourceAliyunDiskAttachmentCreate(d *schema.ResourceData, meta interface{}
 
 	if err := ecsService.WaitForDiskAttachment(d.Id(), DiskInUse, DefaultTimeout); err != nil {
 		return WrapError(err)
+	}
+	newDisk, err := ecsService.DescribeDisk(diskID)
+	if err != nil {
+		return WrapError(err)
+	}
+	if newDisk.DeleteAutoSnapshot != oldDisk.DeleteAutoSnapshot {
+		request := ecs.CreateModifyDiskAttributeRequest()
+		request.DiskId = diskID
+		request.DeleteAutoSnapshot = requests.NewBoolean(oldDisk.DeleteAutoSnapshot)
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifyDiskAttribute(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw)
 	}
 	return resourceAliyunDiskAttachmentRead(d, meta)
 }

@@ -84,7 +84,7 @@ func TestAccAlicloudDiskMultiAttachment(t *testing.T) {
 		CheckDestroy:  testAccCheckDiskAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccMultiDiskAttachmentConfig(EcsInstanceCommonTestCase),
+				Config: testAccMultiDiskAttachmentConfig(EcsInstanceCommonNoZonesTestCase),
 				Check: resource.ComposeTestCheckFunc(
 					diskRc.checkResourceExists(),
 					instanceRc.checkResourceExists(),
@@ -122,12 +122,7 @@ func testAccCheckDiskAttachmentDestroy(s *terraform.State) error {
 
 func testAccDiskAttachmentConfig() string {
 	return fmt.Sprintf(`
-    data "alicloud_zones" "default" {
-      available_disk_category     = "cloud_efficiency"
-      available_resource_creation = "VSwitch"
-    }
     data "alicloud_instance_types" "default" {
-      availability_zone = "${data.alicloud_zones.default.zones.0.id}"
       cpu_core_count    = 2
       memory_size       = 4
     }
@@ -145,7 +140,7 @@ func testAccDiskAttachmentConfig() string {
     resource "alicloud_vswitch" "default" {
       vpc_id            = "${alicloud_vpc.default.id}"
       cidr_block        = "172.16.0.0/24"
-      availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+      availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
       name              = "${var.name}"
     }
     resource "alicloud_security_group" "default" {
@@ -168,7 +163,7 @@ func testAccDiskAttachmentConfig() string {
 	}
 
 	resource "alicloud_disk" "default" {
-	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
 	  size = "50"
 	  name = "${var.name}"
 	  category = "cloud_efficiency"
@@ -180,7 +175,7 @@ func testAccDiskAttachmentConfig() string {
 
 	resource "alicloud_instance" "default" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
 		system_disk_category = "cloud_ssd"
 		system_disk_size = 40
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
@@ -197,12 +192,7 @@ func testAccDiskAttachmentConfig() string {
 }
 func testAccDiskAttachmentConfigResize() string {
 	return fmt.Sprintf(`
-    data "alicloud_zones" "default" {
-      available_disk_category     = "cloud_efficiency"
-      available_resource_creation = "VSwitch"
-    }
     data "alicloud_instance_types" "default" {
-      availability_zone = "${data.alicloud_zones.default.zones.0.id}"
       cpu_core_count    = 2
       memory_size       = 4
     }
@@ -220,7 +210,7 @@ func testAccDiskAttachmentConfigResize() string {
     resource "alicloud_vswitch" "default" {
       vpc_id            = "${alicloud_vpc.default.id}"
       cidr_block        = "172.16.0.0/24"
-      availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+      availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
       name              = "${var.name}"
     }
     resource "alicloud_security_group" "default" {
@@ -243,7 +233,7 @@ func testAccDiskAttachmentConfigResize() string {
 	}
 
 	resource "alicloud_disk" "default" {
-	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
 	  size = "70"
 	  name = "${var.name}"
 	  category = "cloud_efficiency"
@@ -255,7 +245,7 @@ func testAccDiskAttachmentConfigResize() string {
 
 	resource "alicloud_instance" "default" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
 		system_disk_category = "cloud_ssd"
 		system_disk_size = 40
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
@@ -284,7 +274,7 @@ func testAccMultiDiskAttachmentConfig(common string) string {
 	resource "alicloud_disk" "default" {
 		name = "${var.name}-${count.index}"
 		count = "${var.number}"
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
 		size = "50"
 
 		tags = {
@@ -294,7 +284,7 @@ func testAccMultiDiskAttachmentConfig(common string) string {
 
 	resource "alicloud_instance" "default" {
 		image_id = "${data.alicloud_images.default.images.0.id}"
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
 		system_disk_category = "cloud_ssd"
 		system_disk_size = 40
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"

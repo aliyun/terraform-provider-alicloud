@@ -73,11 +73,11 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 	availabilityZoneConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
 			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
-			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
+			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
 			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
-			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}_fake"`,
+			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}_fake"`,
 		}),
 	}
 
@@ -118,7 +118,7 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 			"status":            `"Running"`,
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
-			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
+			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"`,
 		},
 			`tags = {
 				from = "datasource"
@@ -137,7 +137,7 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 			"status":            `"Running"`,
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
-			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
+			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"`,
 		},
 			`tags = {
 				from = "datasource_fake"
@@ -168,6 +168,7 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 	}
 
 	resource "alicloud_instance" "default" {
+		availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		private_ip = "172.16.0.10"
 		image_id = "${data.alicloud_images.default.images.0.id}"
@@ -189,7 +190,7 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 
 	data "alicloud_instances" "default" {
 		%s
-	}`, EcsInstanceCommonTestCase, rand, strings.Join(pairs, "\n  "))
+	}`, EcsInstanceCommonNoZonesTestCase, rand, strings.Join(pairs, "\n  "))
 	return config
 }
 
@@ -206,6 +207,7 @@ func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[
 	}
 
 	resource "alicloud_instance" "default" {
+		availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		private_ip = "172.16.0.10"
 		image_id = "${data.alicloud_images.default.images.0.id}"
@@ -228,7 +230,7 @@ func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[
 	data "alicloud_instances" "default" {
 		%s
 		%s
-	}`, EcsInstanceCommonTestCase, rand, strings.Join(pairs, "\n  "), tags)
+	}`, EcsInstanceCommonNoZonesTestCase, rand, strings.Join(pairs, "\n  "), tags)
 	return config
 }
 

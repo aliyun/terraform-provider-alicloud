@@ -684,6 +684,42 @@ func (s *SlbService) sweepSlb(id string) error {
 	return WrapError(err)
 }
 
+const EcsInstanceCommonNoZonesTestCase = `
+data "alicloud_instance_types" "default" {
+  cpu_core_count    = 1
+  memory_size       = 2
+}
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_14.*_64"
+  most_recent = true
+  owners      = "system"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+  name              = "${var.name}"
+}
+resource "alicloud_security_group" "default" {
+  name   = "${var.name}"
+  vpc_id = "${alicloud_vpc.default.id}"
+}
+resource "alicloud_security_group_rule" "default" {
+  	type = "ingress"
+  	ip_protocol = "tcp"
+  	nic_type = "intranet"
+  	policy = "accept"
+  	port_range = "22/22"
+  	priority = 1
+  	security_group_id = "${alicloud_security_group.default.id}"
+  	cidr_ip = "172.16.0.0/24"
+}
+`
+
 const EcsInstanceCommonTestCase = `
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
