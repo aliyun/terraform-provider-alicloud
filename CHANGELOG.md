@@ -1,4 +1,41 @@
-## 1.52.3 (Unreleased)
+## 1.53.0 (Unreleased)
+
+- **New Date Source:** `alicloud_ons_topics` [GH-1483]
+- **New Resource:** `alicloud_ons_topic` [GH-1483]
+
+IMPROVEMENTS:
+
+- improve(network_interface): enhance sweeper test [GH-1495]
+- improve(instance_type):update testcase config [GH-1493]
+- improve(disk):suppurt delete_auto_snapshot delete_with_instance enable_auto_snapshot [GH-1491]
+- Improve(mns_topic): Improve its resource use common method [GH-1488]
+- Improve(mns_queue): Improve its resource use common method [GH-1485]
+- improve(customer_gateway):create add retry [GH-1477]
+- improve(gpdb): resources supports timeouts setting [GH-1476]
+- improve(fc_triggers): Added ids filter to datasource [GH-1475]
+- improve(fc_services): Added ids filter to datasource [GH-1474]
+- improve(fc_functions): Added ids filter to datasource [GH-1473]
+- improve(instance_types):update instance_types filter condition [GH-1472]
+- improve(pvtz_zone__domain): Added ids filter to datasource [GH-1471]
+- improve(cr_repos): Added names to datasource attributes [GH-1470]
+- improve(cr_namespaces): Added names to datasource attributes [GH-1469]
+- improve(cdn): Added region to domain name and modified sweep rules [GH-1466]
+- improve(ram_roles): Added ids filter to datasource [GH-1461]
+- improve(ram_users): Added ids filter to datasource [GH-1459]
+- improve(pvtz_zones): Added ids filter and added names to datasource attributes [GH-1458]
+- improve(nas_file_systems): Added descriptions to datasource attributes [GH-1450]
+- improve(nas_access_rules): Added ids filter to datasource [GH-1448]
+- improve(nas_access_groups): Added names to its attributes [GH-1444]
+- improve(mns_topics): Added names to datasource attributes [GH-1442]
+- improve(mns_topic_subscriptions): Added names to datasource attributes [GH-1441]
+- improve(mns_queues): Added names to datasource attributes [GH-1439]
+
+BUG FIXES:
+
+- fix(api_gateway): fix can't get resource id when stage_names set [GH-1486]
+- fix(kvstore_instance): resource kvstore_instance add Retry while ModifyInstanceSpec err [GH-1484]
+- fix(cen): modified the timeouts of cen instance to avoid errors [GH-1451]
+
 ## 1.52.2 (July 20, 2019)
 
 IMPROVEMENTS:
