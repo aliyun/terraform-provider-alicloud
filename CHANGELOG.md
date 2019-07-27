@@ -1,5 +1,6 @@
 ## 1.53.0 (Unreleased)
 
+- **New Resource:** `alicloud_ess_scalinggroup_vserver_groups`
 - **New Date Source:** `alicloud_ons_topics` [GH-1483]
 - **New Resource:** `alicloud_ons_topic` [GH-1483]
 
