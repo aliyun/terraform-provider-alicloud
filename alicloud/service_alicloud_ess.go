@@ -197,6 +197,28 @@ func (s *EssService) flattenDataDiskMappings(list []ess.DataDisk) []map[string]i
 	return result
 }
 
+func (s *EssService) flattenVserverGroupList(vServerGroups []ess.VServerGroup) []map[string]interface{} {
+	groups := make([]map[string]interface{}, 0, len(vServerGroups))
+	for _, v := range vServerGroups {
+		vserverGroupAttributes := v.VServerGroupAttributes.VServerGroupAttribute
+		attrs := make([]map[string]interface{}, 0, len(vserverGroupAttributes))
+		for _, a := range vserverGroupAttributes {
+			attr := map[string]interface{}{
+				"vserver_group_id": a.VServerGroupId,
+				"port":             a.Port,
+				"weight":           a.Weight,
+			}
+			attrs = append(attrs, attr)
+		}
+		group := map[string]interface{}{
+			"loadbalancer_id":    v.LoadBalancerId,
+			"vserver_attributes": attrs,
+		}
+		groups = append(groups, group)
+	}
+	return groups
+}
+
 func (s *EssService) DescribeEssScalingRule(id string) (rule ess.ScalingRule, err error) {
 	request := ess.CreateDescribeScalingRulesRequest()
 	request.ScalingRuleId1 = id
