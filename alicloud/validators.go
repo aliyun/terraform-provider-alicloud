@@ -790,6 +790,47 @@ func validateOnsInstanceRemark(v interface{}, k string) (ws []string, errors []e
 	return
 }
 
+func validateOnsTopic(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) == 0 {
+		errors = append(errors, fmt.Errorf("%q cannot be empty", k))
+	} else if len(value) > 64 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters", k))
+	}
+	if strings.HasPrefix(value, "CID") || strings.HasPrefix(value, "GID") {
+		errors = append(errors, fmt.Errorf("topic name is invalid, it can not start with 'CID' or 'GID'"))
+	}
+	return
+}
+
+func validateOnsTopicRemark(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) == 0 {
+		errors = append(errors, fmt.Errorf("%q cannot be empty", k))
+	} else if len(value) > 128 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 128 characters", k))
+	}
+	return
+}
+
+func validateOnsTopicMessageType(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if value == 0 || value == 1 || value == 2 || value == 4 || value == 5 {
+		return
+	}
+	errors = append(errors, fmt.Errorf("%q must contain a valid message type (0|1|2|4|5), got %s", k, string(value)))
+	return
+}
+
+func validateOnsTopicPerm(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if value == 2 || value == 4 || value == 6 {
+		return
+	}
+	errors = append(errors, fmt.Errorf("%q must contain a valid perm (2|4|6), got %s", k, string(value)))
+	return
+}
+
 func validateDomainRecordType(v interface{}, k string) (ws []string, errors []error) {
 	// Valid Record types
 	// A, NS, MX, TXT, CNAME, SRV, AAAA, CAA, REDIRECT_URL, FORWORD_URL
