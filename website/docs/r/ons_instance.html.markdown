@@ -8,7 +8,7 @@ description: |-
 
 # alicloud\_ons\_instance
 
-Provides a ONS instance resource.
+Provides an ONS instance resource.
 
 For more information about how to use it, see [RocketMQ Instance Management API](https://www.alibabacloud.com/help/doc-detail/106354.html). 
 

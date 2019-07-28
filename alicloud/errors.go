@@ -324,8 +324,9 @@ const (
 	SubscriptionNotExist = "SubscriptionNotExist"
 
 	// ONS
-	OnsInstanceNotExist = "INSTANCE_NOT_FOUND"
-	OnsInstanceNotEmpty = "INSTANCE_NOT_EMPTY"
+	OnsInstanceNotExist    = "INSTANCE_NOT_FOUND"
+	OnsInstanceNotEmpty    = "INSTANCE_NOT_EMPTY"
+	AuthResourceOwnerError = "AUTH_RESOURCE_OWNER_ERROR"
 
 	//HaVip
 	InvalidHaVipIdNotFound = "InvalidHaVipId.NotFound"
