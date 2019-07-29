@@ -14,27 +14,39 @@ import (
 )
 
 func TestAccAlicloudLogStore_basic(t *testing.T) {
-	var project sls.LogProject
-	var store sls.LogStore
-	resourceId := "alicloud_log_store.foo"
+	var v *sls.LogStore
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, logStoreMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-log-store-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogStoreConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:      func() { testAccPreCheck(t) },
-		Providers:     testAccProviders,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
 		IDRefreshName: resourceId,
-		CheckDestroy:  testAccCheckAlicloudLogStoreDestroy,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudLogStoreBasic(acctest.RandInt()),
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"project":     "${alicloud_log_project.foo.name}",
+					"shard_count": "1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
-					testAccCheckAlicloudLogStoreExists("alicloud_log_store.foo", &store),
-					resource.TestCheckResourceAttr("alicloud_log_store.foo", "retention_period", "3000"),
-					resource.TestCheckResourceAttr("alicloud_log_store.foo", "shards.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_log_store.foo", "auto_split", "true"),
-					resource.TestCheckResourceAttr("alicloud_log_store.foo", "max_split_shard_count", "60"),
-					resource.TestCheckResourceAttr("alicloud_log_store.foo", "append_meta", "true"),
-					resource.TestCheckResourceAttr("alicloud_log_store.foo", "enable_web_tracking", "false"),
+					testAccCheck(map[string]string{
+						"name":        name,
+						"project":     name,
+						"shard_count": "1",
+					}),
 				),
 			},
 			{
@@ -42,8 +54,136 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"retention_period": "3000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_period": "3000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_split": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_split": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_split_shard_count": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_split_shard_count": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"append_meta": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"append_meta": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_web_tracking": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_web_tracking": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"retention_period":      REMOVEKEY,
+					"auto_split":            REMOVEKEY,
+					"max_split_shard_count": REMOVEKEY,
+					"append_meta":           REMOVEKEY,
+					"enable_web_tracking":   REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_period":      "30",
+						"auto_split":            "false",
+						"max_split_shard_count": "0",
+						"append_meta":           "true",
+						"enable_web_tracking":   "false",
+					}),
+				),
+			},
 		},
 	})
+}
+
+func TestAccAlicloudLogStore_multi(t *testing.T) {
+	var v *sls.LogStore
+	resourceId := "alicloud_log_store.default.4"
+	ra := resourceAttrInit(resourceId, logStoreMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-log-store-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogStoreConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":    name + "${count.index}",
+					"project": "${alicloud_log_project.foo.name}",
+					"count":   "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+}
+
+func resourceLogStoreConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	    default = "%s"
+	}
+	resource "alicloud_log_project" "foo" {
+	    name = "${var.name}"
+	    description = "tf unit test"
+	}
+	`, name)
+}
+
+var logStoreMap = map[string]string{
+	"name":                  CHECKSET,
+	"project":               CHECKSET,
+	"retention_period":      "30",
+	"shard_count":           CHECKSET,
+	"shards.#":              CHECKSET,
+	"auto_split":            "false",
+	"max_split_shard_count": "0",
+	"append_meta":           "true",
+	"enable_web_tracking":   "false",
 }
 
 func testAccCheckAlicloudLogStoreExists(name string, store *sls.LogStore) resource.TestCheckFunc {
@@ -61,7 +201,7 @@ func testAccCheckAlicloudLogStoreExists(name string, store *sls.LogStore) resour
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		logService := LogService{client}
 
-		logstore, err := logService.DescribeLogStore(split[0], split[1])
+		logstore, err := logService.DescribeLogStore(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -72,48 +212,4 @@ func testAccCheckAlicloudLogStoreExists(name string, store *sls.LogStore) resour
 
 		return nil
 	}
-}
-
-func testAccCheckAlicloudLogStoreDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	logService := LogService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_log_store" {
-			continue
-		}
-
-		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		if _, err := logService.DescribeLogStore(split[0], split[1]); err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return fmt.Errorf("Check log store got an error: %#v.", err)
-		}
-		return fmt.Errorf("Log store %s still exists.", split[0])
-	}
-
-	return nil
-}
-
-func testAlicloudLogStoreBasic(rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	    default = "tf-testacc-log-store-%d"
-	}
-	resource "alicloud_log_project" "foo" {
-	    name = "${var.name}"
-	    description = "tf unit test"
-	}
-	resource "alicloud_log_store" "foo" {
-	    project = "${alicloud_log_project.foo.name}"
-	    name = "${var.name}"
-	    retention_period = 3000
-		shard_count = 1
-		auto_split = true
-		max_split_shard_count = 60
-		append_meta = true
-		enable_web_tracking = false
-	}
-	`, rand)
 }

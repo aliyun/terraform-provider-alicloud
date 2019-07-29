@@ -7,8 +7,6 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
-	"strings"
-
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -113,7 +111,7 @@ func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) er
 	}
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 
-		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return nil, slsClient.CreateLogStoreV2(d.Get("project").(string), logstore)
 		})
 		if err != nil {
@@ -122,10 +120,11 @@ func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug("CreateLogStoreV2", raw)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "log_store", "CreateLogStoreV2", AliyunLogGoSdkERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "CreateLogStoreV2", AliyunLogGoSdkERROR)
 	}
 	d.SetId(fmt.Sprintf("%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("name").(string)))
 
@@ -135,9 +134,11 @@ func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudLogStoreRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-
-	store, err := logService.DescribeLogStore(split[0], split[1])
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	object, err := logService.DescribeLogStore(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -146,23 +147,24 @@ func resourceAlicloudLogStoreRead(d *schema.ResourceData, meta interface{}) erro
 		return err
 	}
 
-	d.Set("project", split[0])
-	d.Set("name", store.Name)
-	d.Set("retention_period", store.TTL)
-	d.Set("shard_count", store.ShardCount)
-	shards := []*sls.Shard{}
+	d.Set("project", parts[0])
+	d.Set("name", object.Name)
+	d.Set("retention_period", object.TTL)
+	d.Set("shard_count", object.ShardCount)
+	var shards []*sls.Shard
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-		shards, err = store.ListShards()
+		shards, err = object.ListShards()
 		if err != nil {
 			if IsExceptedError(err, InternalServerError) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug("ListShards", shards)
 		return nil
 	})
 	if err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "ListShards", AliyunLogGoSdkERROR)
 	}
 	var shardList []map[string]interface{}
 	for _, s := range shards {
@@ -175,10 +177,10 @@ func resourceAlicloudLogStoreRead(d *schema.ResourceData, meta interface{}) erro
 		shardList = append(shardList, mapping)
 	}
 	d.Set("shards", shardList)
-	d.Set("append_meta", store.AppendMeta)
-	d.Set("auto_split", store.AutoSplit)
-	d.Set("enable_web_tracking", store.WebTracking)
-	d.Set("max_split_shard_count", store.MaxSplitShard)
+	d.Set("append_meta", object.AppendMeta)
+	d.Set("auto_split", object.AutoSplit)
+	d.Set("enable_web_tracking", object.WebTracking)
+	d.Set("max_split_shard_count", object.MaxSplitShard)
 
 	return nil
 }
@@ -191,7 +193,10 @@ func resourceAlicloudLogStoreUpdate(d *schema.ResourceData, meta interface{}) er
 		return resourceAlicloudLogStoreRead(d, meta)
 	}
 
-	split := strings.Split(d.Id(), COLON_SEPARATED)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 	d.Partial(true)
 
 	update := false
@@ -217,22 +222,23 @@ func resourceAlicloudLogStoreUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if update {
-		store, err := logService.DescribeLogStore(split[0], split[1])
+		store, err := logService.DescribeLogStore(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
 		store.MaxSplitShard = d.Get("max_split_shard_count").(int)
 		store.TTL = d.Get("retention_period").(int)
 		store.WebTracking = d.Get("enable_web_tracking").(bool)
 		store.AppendMeta = d.Get("append_meta").(bool)
 		store.AutoSplit = d.Get("auto_split").(bool)
 
-		if err != nil {
-			return err
-		}
-		_, err = client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return nil, slsClient.UpdateLogStoreV2(split[0], store)
+		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return nil, slsClient.UpdateLogStoreV2(parts[0], store)
 		})
 		if err != nil {
-			return fmt.Errorf("UpdateLogStore %s got an error: %#v.", split[1], err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateLogStoreV2", AliyunLogGoSdkERROR)
 		}
+		addDebug("UpdateLogStoreV2", raw)
 	}
 	d.Partial(false)
 
@@ -243,33 +249,22 @@ func resourceAlicloudLogStoreDelete(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
 
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-
-	project, err := logService.DescribeLogProject(split[0])
+	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
-	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		err := project.DeleteLogStore(split[1])
-		if err != nil {
-			if IsExceptedErrors(err, []string{LogStoreNotExist}) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Deleting log store %s got an error: %#v", split[1], err))
-		}
 
-		store, err := logService.DescribeLogStore(split[0], split[1])
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(err)
-		}
-
-		if store.Name == "" {
+	project, err := logService.DescribeLogProject(parts[0])
+	if err != nil {
+		return WrapError(err)
+	}
+	err = project.DeleteLogStore(parts[1])
+	if err != nil {
+		if IsExceptedErrors(err, []string{LogStoreNotExist}) {
 			return nil
 		}
-
-		return resource.RetryableError(fmt.Errorf("Deleting log store %s got an error: %#v", split[1], err))
-	})
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteLogStore", AliyunLogGoSdkERROR)
+	}
+	addDebug("DeleteLogStore", nil)
+	return WrapError(logService.WaitForLogStore(d.Id(), Deleted, DefaultTimeout))
 }
