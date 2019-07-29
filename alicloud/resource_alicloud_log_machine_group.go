@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"strings"
-
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -58,10 +56,9 @@ func resourceAlicloudLogMachineGroup() *schema.Resource {
 
 func resourceAlicloudLogMachineGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	invoker := NewInvoker()
-	invoker.AddCatcher(SlsClientTimeoutCatcher)
-	if err := invoker.Run(func() error {
-		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+
+	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return nil, slsClient.CreateMachineGroup(d.Get("project").(string), &sls.MachineGroup{
 				Name:          d.Get("name").(string),
 				MachineIDType: d.Get("identify_type").(string),
@@ -71,9 +68,17 @@ func resourceAlicloudLogMachineGroupCreate(d *schema.ResourceData, meta interfac
 				},
 			})
 		})
-		return err
+		if err != nil {
+			if IsExceptedError(err, LogClientTimeout) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug("CreateMachineGroup", raw)
+		return nil
 	}); err != nil {
-		return fmt.Errorf("CreateLogMachineGroup got an error: %s.", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_machine_group", "CreateMachineGroup", AliyunLogGoSdkERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("name").(string)))
@@ -84,37 +89,41 @@ func resourceAlicloudLogMachineGroupCreate(d *schema.ResourceData, meta interfac
 func resourceAlicloudLogMachineGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-
-	group, err := logService.DescribeLogMachineGroup(split[0], split[1])
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	object, err := logService.DescribeLogMachineGroup(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("DescribeLogMachineGroup got an error: %#v.", err)
+		return WrapError(err)
 	}
 
-	d.Set("project", split[0])
-	d.Set("name", group.Name)
-	d.Set("identify_type", group.MachineIDType)
-	d.Set("identify_list", group.MachineIDList)
-	d.Set("topic", group.Attribute.TopicName)
+	d.Set("project", parts[0])
+	d.Set("name", object.Name)
+	d.Set("identify_type", object.MachineIDType)
+	d.Set("identify_list", object.MachineIDList)
+	d.Set("topic", object.Attribute.TopicName)
 
 	return nil
 }
 
 func resourceAlicloudLogMachineGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("identify_type") || d.HasChange("identify_list") || d.HasChange("topic") {
-		split := strings.Split(d.Id(), COLON_SEPARATED)
+		parts, err := ParseResourceId(d.Id(), 2)
+		if err != nil {
+			return WrapError(err)
+		}
 
 		client := meta.(*connectivity.AliyunClient)
-		invoker := NewInvoker()
-		invoker.AddCatcher(SlsClientTimeoutCatcher)
-		if err := invoker.Run(func() error {
-			_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-				return nil, slsClient.UpdateMachineGroup(split[0], &sls.MachineGroup{
-					Name:          split[1],
+
+		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+				return nil, slsClient.UpdateMachineGroup(parts[0], &sls.MachineGroup{
+					Name:          parts[1],
 					MachineIDType: d.Get("identify_type").(string),
 					MachineIDList: expandStringList(d.Get("identify_list").(*schema.Set).List()),
 					Attribute: sls.MachinGroupAttribute{
@@ -122,9 +131,17 @@ func resourceAlicloudLogMachineGroupUpdate(d *schema.ResourceData, meta interfac
 					},
 				})
 			})
-			return err
+			if err != nil {
+				if IsExceptedError(err, LogClientTimeout) {
+					time.Sleep(5 * time.Second)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug("UpdateMachineGroup", raw)
+			return nil
 		}); err != nil {
-			return fmt.Errorf("UpdateLogMachineGroup %s got an error: %#v.", split[1], err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateMachineGroup", AliyunLogGoSdkERROR)
 		}
 	}
 
@@ -134,26 +151,27 @@ func resourceAlicloudLogMachineGroupUpdate(d *schema.ResourceData, meta interfac
 func resourceAlicloudLogMachineGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
-	split := strings.Split(d.Id(), COLON_SEPARATED)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 
-	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return nil, slsClient.DeleteMachineGroup(split[0], split[1])
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return nil, slsClient.DeleteMachineGroup(parts[0], parts[1])
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{LogClientTimeout}) {
-				return resource.RetryableError(fmt.Errorf("Timeout. DeleteMachineGroup %s got an error: %#v", split[1], err))
-			}
-			return resource.NonRetryableError(fmt.Errorf("DeleteMachineGroup %s got an error: %#v", split[1], err))
-		}
-
-		if _, err := logService.DescribeLogMachineGroup(split[0], split[1]); err != nil {
-			if NotFoundError(err) {
-				return nil
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-
-		return resource.RetryableError(fmt.Errorf("Deleting log machine group %s timeout.", split[1]))
+		addDebug("DeleteMachineGroup", raw)
+		return nil
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "ListShards", AliyunLogGoSdkERROR)
+	}
+	return WrapError(logService.WaitForLogMachineGroup(d.Id(), Deleted, DefaultTimeout))
 }

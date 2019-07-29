@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"strings"
-
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -13,24 +11,39 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudLogMachineGroup_ip(t *testing.T) {
-	var project sls.LogProject
-	var group sls.MachineGroup
-	resourceId := "alicloud_log_project.foo"
+func TestAccAlicloudLogMachineGroup_basic(t *testing.T) {
+	var v *sls.MachineGroup
+	resourceId := "alicloud_log_machine_group.default"
+	ra := resourceAttrInit(resourceId, logMachineGroupMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacclogmachinegroupip-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogMachineGroupConfigDependence)
+
 	resource.Test(t, resource.TestCase{
-		PreCheck:      func() { testAccPreCheck(t) },
-		Providers:     testAccProviders,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
 		IDRefreshName: resourceId,
-		CheckDestroy:  testAccCheckAlicloudLogMachineGroupDestroy,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudLogMachineGroupIp(acctest.RandInt()),
+				Config: testAccConfig(map[string]interface{}{
+					"name":          name,
+					"project":       "${alicloud_log_project.default.name}",
+					"identify_list": []string{"10.0.0.1", "10.0.0.3", "10.0.0.2"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
-					testAccCheckAlicloudLogMachineGroupExists("alicloud_log_machine_group.foo", &group),
-					resource.TestCheckResourceAttr("alicloud_log_machine_group.foo", "identify_type", "ip"),
-					resource.TestCheckResourceAttr("alicloud_log_machine_group.foo", "topic", "terraform"),
-					resource.TestCheckResourceAttr("alicloud_log_machine_group.foo", "identify_list.#", "3"),
+					testAccCheck(map[string]string{
+						"name":    name,
+						"project": name,
+					}),
 				),
 			},
 			{
@@ -38,31 +51,99 @@ func TestAccAlicloudLogMachineGroup_ip(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-		},
-	})
-}
-
-func TestAccAlicloudLogMachineGroup_userdefined(t *testing.T) {
-	var project sls.LogProject
-	var group sls.MachineGroup
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlicloudLogMachineGroupDestroy,
-		Steps: []resource.TestStep{
 			{
-				Config: testAlicloudLogMachineGroupUserDefined(acctest.RandInt()),
+				Config: testAccConfig(map[string]interface{}{
+					"identify_type": "userdefined",
+					"identify_list": []string{"terraform", "abc1234"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudLogProjectExists("alicloud_log_project.bar", &project),
-					testAccCheckAlicloudLogMachineGroupExists("alicloud_log_machine_group.bar", &group),
-					resource.TestCheckResourceAttr("alicloud_log_machine_group.bar", "identify_type", "userdefined"),
-					resource.TestCheckResourceAttr("alicloud_log_machine_group.bar", "topic", "terraform"),
-					resource.TestCheckResourceAttr("alicloud_log_machine_group.bar", "identify_list.#", "2"),
+					testAccCheck(map[string]string{
+						"identify_type":   "userdefined",
+						"identify_list.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"topic": "terraform",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"topic": "terraform",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"identify_type": REMOVEKEY,
+					"identify_list": []string{"10.0.0.1", "10.0.0.3", "10.0.0.2"},
+					"topic":         REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"identify_type":   "ip",
+						"identify_list.#": "3",
+						"topic":           REMOVEKEY,
+					}),
 				),
 			},
 		},
 	})
+}
+
+func TestAccAlicloudLogMachineGroup_multi(t *testing.T) {
+	var v *sls.MachineGroup
+	resourceId := "alicloud_log_machine_group.default.4"
+	ra := resourceAttrInit(resourceId, logMachineGroupMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacclogmachinegroupip-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogMachineGroupConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":          name + "${count.index}",
+					"project":       "${alicloud_log_project.default.name}",
+					"identify_list": []string{"10.0.0.1", "10.0.0.3", "10.0.0.2"},
+					"count":         "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+}
+
+func resourceLogMachineGroupConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	    default = "%s"
+	}
+	resource "alicloud_log_project" "default" {
+	    name = "${var.name}"
+	    description = "tf unit test"
+	}
+	`, name)
+}
+
+var logMachineGroupMap = map[string]string{
+	"name":            CHECKSET,
+	"project":         CHECKSET,
+	"identify_list.#": "3",
 }
 
 func testAccCheckAlicloudLogMachineGroupExists(name string, group *sls.MachineGroup) resource.TestCheckFunc {
@@ -76,11 +157,9 @@ func testAccCheckAlicloudLogMachineGroupExists(name string, group *sls.MachineGr
 			return fmt.Errorf("No Log machine group ID is set")
 		}
 
-		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		logService := LogService{client}
-		g, err := logService.DescribeLogMachineGroup(split[0], split[1])
+		g, err := logService.DescribeLogMachineGroup(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -88,65 +167,4 @@ func testAccCheckAlicloudLogMachineGroupExists(name string, group *sls.MachineGr
 		group = g
 		return nil
 	}
-}
-
-func testAccCheckAlicloudLogMachineGroupDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	logService := LogService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_log_machine_group" {
-			continue
-		}
-
-		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-
-		if _, err := logService.DescribeLogMachineGroup(split[0], split[1]); err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return fmt.Errorf("Check log machine group got an error: %#v.", err)
-		}
-		return fmt.Errorf("Log machine group %s still exists.", rs.Primary.ID)
-	}
-
-	return nil
-}
-
-func testAlicloudLogMachineGroupIp(rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	    default = "tf-testacclogmachinegroupip-%d"
-	}
-	resource "alicloud_log_project" "foo" {
-	    name = "${var.name}"
-	    description = "tf unit test"
-	}
-
-	resource "alicloud_log_machine_group" "foo" {
-	    project = "${alicloud_log_project.foo.name}"
-	    name = "${var.name}"
-	    topic = "terraform"
-	    identify_list = ["10.0.0.1", "10.0.0.3", "10.0.0.2"]
-	}
-	`, rand)
-}
-
-func testAlicloudLogMachineGroupUserDefined(rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	    default = "tf-testacclogmachinegroup-%d"
-	}
-	resource "alicloud_log_project" "bar" {
-	    name = "${var.name}"
-	    description = "tf unit test"
-	}
-	resource "alicloud_log_machine_group" "bar" {
-	    project = "${alicloud_log_project.bar.name}"
-	    name = "${var.name}"
-	    identify_type = "userdefined"
-	    topic = "terraform"
-	    identify_list = ["terraform", "abc1234"]
-	}
-	`, rand)
 }
