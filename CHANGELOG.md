@@ -5,6 +5,8 @@
 
 IMPROVEMENTS:
 
+- improve(slb):update testcase [GH-1507]
+- improve(disk):update disk_attachment [GH-1501]
 - improve(network_interface): enhance sweeper test [GH-1495]
 - improve(instance_type):update testcase config [GH-1493]
 - improve(disk):suppurt delete_auto_snapshot delete_with_instance enable_auto_snapshot [GH-1491]
@@ -23,6 +25,7 @@ IMPROVEMENTS:
 - improve(ram_roles): Added ids filter to datasource [GH-1461]
 - improve(ram_users): Added ids filter to datasource [GH-1459]
 - improve(pvtz_zones): Added ids filter and added names to datasource attributes [GH-1458]
+- improve(nas_mount_targets): Added ids filter to datasource [GH-1453]
 - improve(nas_file_systems): Added descriptions to datasource attributes [GH-1450]
 - improve(nas_access_rules): Added ids filter to datasource [GH-1448]
 - improve(nas_access_groups): Added names to its attributes [GH-1444]
