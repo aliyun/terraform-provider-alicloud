@@ -339,8 +339,6 @@ data "alicloud_instance_types" "default" {
 	memory_size       = 2
 }
 data "alicloud_instance_types" "new" {
- 	cpu_core_count    = 1
-	memory_size       = 2
 	eni_amount = 2
 }
 data "alicloud_images" "default" {
@@ -357,7 +355,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   name = "${var.name}"
 }
 resource "alicloud_security_group" "default" {
@@ -374,7 +372,7 @@ resource "alicloud_instance" "default" {
   image_id = "${data.alicloud_images.default.images.0.id}"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   instance_name = "${var.name}"
-  count = "21"
+  count = "2"
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
@@ -437,8 +435,6 @@ data "alicloud_instance_types" "default" {
 	memory_size       = 2
 }
 data "alicloud_instance_types" "new" {
- 	cpu_core_count    = 1
-	memory_size       = 2
 	eni_amount = 2
 }
 data "alicloud_images" "default" {
