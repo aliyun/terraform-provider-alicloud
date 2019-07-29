@@ -2,17 +2,12 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
-
-	"time"
-
-	"bytes"
-
 	sls "github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
+	"time"
 )
 
 func resourceAlicloudLogStoreIndex() *schema.Resource {
@@ -58,9 +53,6 @@ func resourceAlicloudLogStoreIndex() *schema.Resource {
 						},
 					},
 				},
-				Set: func(v interface{}) int {
-					return 1
-				},
 				MaxItems: 1,
 			},
 			//field search
@@ -104,12 +96,6 @@ func resourceAlicloudLogStoreIndex() *schema.Resource {
 							Default:  true,
 						},
 					},
-				},
-				Set: func(v interface{}) int {
-					var buf bytes.Buffer
-					m := v.(map[string]interface{})
-					buf.WriteString(fmt.Sprintf("%s-", m["name"]))
-					return hashcode.String(buf.String())
 				},
 				MinItems: 1,
 			},
@@ -228,11 +214,13 @@ func resourceAlicloudLogStoreIndexRead(d *schema.ResourceData, meta interface{})
 
 func resourceAlicloudLogStoreIndexUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	logService := LogService{client}
 	split := strings.Split(d.Id(), COLON_SEPARATED)
-
+	index, err := logService.DescribeLogStoreIndex(split[0], split[1])
+	if err != nil {
+		return err
+	}
 	update := false
-	var index sls.Index
 	if d.HasChange("full_text") {
 		index.Line = buildIndexLine(d)
 		update = true
@@ -247,7 +235,7 @@ func resourceAlicloudLogStoreIndexUpdate(d *schema.ResourceData, meta interface{
 		invoker.AddCatcher(SlsClientTimeoutCatcher)
 		if err := invoker.Run(func() error {
 			_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-				return nil, slsClient.UpdateIndex(split[0], split[1], index)
+				return nil, slsClient.UpdateIndex(split[0], split[1], *index)
 			})
 			return err
 		}); err != nil {
