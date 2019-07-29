@@ -91,33 +91,65 @@ func (s *LogService) DescribeLogStoreIndex(projectName, name string) (index *sls
 	return
 }
 
-func (s *LogService) DescribeLogMachineGroup(projectName, groupName string) (group *sls.MachineGroup, err error) {
-
+func (s *LogService) DescribeLogMachineGroup(id string) (group *sls.MachineGroup, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	projectName, groupName := parts[0], parts[1]
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return slsClient.GetMachineGroup(projectName, groupName)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{ProjectNotExist, GroupNotExist, MachineGroupNotExist}) {
-				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("Log Machine Group", groupName)))
-			}
 			if IsExceptedErrors(err, []string{InternalServerError, LogClientTimeout}) {
-				return resource.RetryableError(fmt.Errorf("GetLogMachineGroup %s got an error: %#v.", groupName, err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("GetLogMachineGroup %s got an error: %#v.", groupName, err))
+			return resource.NonRetryableError(err)
 		}
+		addDebug("GetMachineGroup", raw)
 		group, _ = raw.(*sls.MachineGroup)
 		return nil
 	})
 
 	if err != nil {
-		return
+		if IsExceptedErrors(err, []string{ProjectNotExist, GroupNotExist, MachineGroupNotExist}) {
+			return group, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetMachineGroup", AliyunLogGoSdkERROR)
 	}
 
 	if group == nil || group.Name == "" {
-		return group, GetNotFoundErrorFromString(GetNotFoundMessage("Log Machine Group", groupName))
+		return group, WrapErrorf(Error(GetNotFoundMessage("LogMachineGroup", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
+}
+
+func (s *LogService) WaitForLogMachineGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	name := parts[1]
+	for {
+		object, err := s.DescribeLogMachineGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Name == name && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Name, name, ProviderERROR)
+		}
+	}
 }
 
 func (s *LogService) DescribeLogLogtailConfig(projectName, configName string) (logconfig *sls.LogConfig, err error) {
