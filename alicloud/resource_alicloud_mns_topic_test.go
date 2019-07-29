@@ -9,7 +9,6 @@ import (
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -193,33 +192,4 @@ var mnsTopicMap = map[string]string{
 	"name":                 CHECKSET,
 	"maximum_message_size": "65536",
 	"logging_enabled":      "false",
-}
-
-func testAccMNSTopicExist(n string, attr *ali_mns.TopicAttribute) resource.TestCheckFunc {
-
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No MNSTopic ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		raw, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
-			return topicManager.GetTopicAttributes(rs.Primary.ID)
-		})
-		if err != nil {
-			return err
-		}
-		instance, _ := raw.(ali_mns.TopicAttribute)
-		if instance.TopicName != rs.Primary.ID {
-			return fmt.Errorf("mns topic %s not found", n)
-		}
-		*attr = instance
-		return nil
-	}
-
 }

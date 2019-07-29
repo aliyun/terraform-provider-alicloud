@@ -11,11 +11,6 @@ type MnsService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *MnsService) GetTopicNameAndSubscriptionName(subscriptionId string) (string, string) {
-	arr := strings.Split(subscriptionId, COLON_SEPARATED)
-	return arr[0], arr[1]
-}
-
 func (s *MnsService) SubscriptionNotExistFunc(err error) bool {
 	return strings.Contains(err.Error(), SubscriptionNotExist)
 }
@@ -103,6 +98,53 @@ func (s *MnsService) WaitForMnsTopic(id string, status Status, timeout int) erro
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.TopicName, id, ProviderERROR)
+		}
+	}
+}
+
+func (s *MnsService) DescribeMnsTopicSubscription(id string) (response *ali_mns.SubscriptionAttribute, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return response, WrapError(err)
+	}
+	topicName, name := parts[0], parts[1]
+
+	raw, err := s.client.WithMnsSubscriptionManagerByTopicName(topicName, func(subscriptionManager ali_mns.AliMNSTopic) (interface{}, error) {
+		return subscriptionManager.GetSubscriptionAttributes(name)
+	})
+	if err != nil {
+		if s.TopicNotExistFunc(err) || s.SubscriptionNotExistFunc(err) {
+			return response, WrapErrorf(err, NotFoundMsg, AliMnsERROR)
+		}
+		return response, WrapErrorf(err, DefaultErrorMsg, id, "GetSubscriptionAttributes", AliMnsERROR)
+	}
+	addDebug("GetSubscriptionAttributes", raw)
+	resp, _ := raw.(ali_mns.SubscriptionAttribute)
+	response = &resp
+	if response.SubscriptionName == "" {
+		return response, WrapErrorf(Error(GetNotFoundMessage("MnsTopicSubscription", id)), NotFoundMsg, ProviderERROR)
+	}
+	return response, nil
+}
+
+func (s *MnsService) WaitForMnsTopicSubscription(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeMnsTopicSubscription(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.TopicName+":"+object.SubscriptionName == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.SubscriptionName, id, ProviderERROR)
 		}
 	}
 }
