@@ -109,7 +109,7 @@ func resourceAlicloudCenInstanceAttachmentRead(d *schema.ResourceData, meta inte
 	d.Set("instance_id", object.CenId)
 	d.Set("child_instance_id", object.ChildInstanceId)
 	d.Set("child_instance_region_id", object.ChildInstanceRegionId)
-	d.Set("child_instance_owner_id", strconv.Itoa(object.ChildInstanceOwnerId))
+	d.Set("child_instance_owner_id", strconv.Itoa(int(object.ChildInstanceOwnerId)))
 
 	return nil
 }

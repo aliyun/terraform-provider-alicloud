@@ -200,7 +200,7 @@ func (s *CenService) WaitForCenBandwidthPackage(id string, status Status, bandwi
 				return WrapError(err)
 			}
 		}
-		if object.Status == string(status) && object.Bandwidth == bandwidth {
+		if object.Status == string(status) && int(object.Bandwidth) == bandwidth {
 			return nil
 		}
 		if time.Now().After(deadline) {
