@@ -15,10 +15,10 @@ func dataSourceAlicloudCRNamespaces() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
+				Type:     schema.TypeString,
+				Optional: true,
 				ValidateFunc: validateNotAllowedStringValue([]string{
-					"private", "publish", "everyone","share","primary",
+					"private", "publish", "everyone", "share", "primary",
 				}),
 			},
 			"output_file": {

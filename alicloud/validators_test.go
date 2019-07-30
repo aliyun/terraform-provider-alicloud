@@ -434,7 +434,6 @@ func TestValidateNotAllowedStringValue(t *testing.T) {
 	}
 }
 
-
 func TestValidateAllowedStringSplitValue(t *testing.T) {
 	exceptValues := []string{"aliyun", "alicloud", "alibaba"}
 	validValues := "aliyun,alicloud"

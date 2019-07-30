@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"regexp"
+
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"regexp"
 )
 
 func dataSourceAlicloudFcFunctions() *schema.Resource {
