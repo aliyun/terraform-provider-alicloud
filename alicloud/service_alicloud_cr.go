@@ -1,11 +1,11 @@
 package alicloud
 
 import (
-	"fmt"
-	"strings"
-
+	"encoding/json"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
+	"time"
 )
 
 type CrService struct {
@@ -163,31 +163,53 @@ func (c *CrService) DescribeNamespace(namespaceName string) (*cr.GetNamespaceRes
 	return resp, nil
 }
 
-func (c *CrService) DescribeRepo(repoPath string) (*cr.GetRepoResponse, error) {
-	invoker := NewInvoker()
-
-	sli := strings.Split(repoPath, SLASH_SEPARATED)
+func (c *CrService) DescribeCrRepo(id string) (*cr.GetRepoResponse, error) {
+	sli := strings.Split(id, SLASH_SEPARATED)
 	repoNamespace := sli[0]
 	repoName := sli[1]
 
-	req := cr.CreateGetRepoRequest()
-	req.RepoNamespace = repoNamespace
-	req.RepoName = repoName
+	request := cr.CreateGetRepoRequest()
+	request.RepoNamespace = repoNamespace
+	request.RepoName = repoName
 
-	var resp *cr.GetRepoResponse
-
-	if err := invoker.Run(func() error {
-		var err error
-		raw, err := c.client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
-			return crClient.GetRepo(req)
-		})
-		resp, _ = raw.(*cr.GetRepoResponse)
-		return err
-	}); err != nil {
+	raw, err := c.client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+		return crClient.GetRepo(request)
+	})
+	response, _ := raw.(*cr.GetRepoResponse)
+	if err != nil {
 		if IsExceptedError(err, ErrorRepoNotExist) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, fmt.Sprintf("%s%s%s", repoNamespace, COLON_SEPARATED, repoName), req.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return resp, nil
+	addDebug(request.GetActionName(), raw)
+	return response, nil
+}
+
+func (c *CrService) WaitForCrRepo(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := c.DescribeCrRepo(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		var response crDescribeRepoResponse
+		err = json.Unmarshal(object.GetHttpContentBytes(), &response)
+		if err != nil {
+			return WrapError(err)
+		}
+		respId := response.Data.Repo.RepoNamespace + SLASH_SEPARATED + response.Data.Repo.RepoName
+		if respId == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, respId, id, ProviderERROR)
+		}
+	}
 }

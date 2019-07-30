@@ -3,13 +3,10 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"strings"
 )
 
 func resourceAlicloudCRRepo() *schema.Resource {
@@ -77,7 +74,6 @@ func resourceAlicloudCRRepo() *schema.Resource {
 
 func resourceAlicloudCRRepoCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	invoker := NewInvoker()
 
 	repoNamespace := d.Get("namespace").(string)
 	repoName := d.Get("name").(string)
@@ -93,18 +89,16 @@ func resourceAlicloudCRRepoCreate(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
-	req := cr.CreateCreateRepoRequest()
-	req.SetContent(serialized)
+	request := cr.CreateCreateRepoRequest()
+	request.SetContent(serialized)
 
-	if err := invoker.Run(func() error {
-		_, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
-			return crClient.CreateRepo(req)
-		})
-		return err
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_repo", req.GetActionName(), AlibabaCloudSdkGoERROR)
+	raw, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+		return crClient.CreateRepo(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_repo", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), raw)
 	d.SetId(fmt.Sprintf("%s%s%s", repoNamespace, SLASH_SEPARATED, repoName))
 
 	return resourceAlicloudCRRepoRead(d, meta)
@@ -112,7 +106,6 @@ func resourceAlicloudCRRepoCreate(d *schema.ResourceData, meta interface{}) erro
 
 func resourceAlicloudCRRepoUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	invoker := NewInvoker()
 
 	if d.HasChange("summary") || d.HasChange("detail") || d.HasChange("repo_type") {
 		payload := &crUpdateRepoRequestPayload{}
@@ -124,19 +117,18 @@ func resourceAlicloudCRRepoUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			return WrapError(err)
 		}
-		req := cr.CreateUpdateRepoRequest()
-		req.SetContent(serialized)
-		req.RepoName = d.Get("name").(string)
-		req.RepoNamespace = d.Get("namespace").(string)
+		request := cr.CreateUpdateRepoRequest()
+		request.SetContent(serialized)
+		request.RepoName = d.Get("name").(string)
+		request.RepoNamespace = d.Get("namespace").(string)
 
-		if err := invoker.Run(func() error {
-			_, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
-				return crClient.UpdateRepo(req)
-			})
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
+		raw, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+			return crClient.UpdateRepo(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 	}
 	return resourceAlicloudCRRepoRead(d, meta)
 }
@@ -145,7 +137,7 @@ func resourceAlicloudCRRepoRead(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*connectivity.AliyunClient)
 	crService := CrService{client}
 
-	raw, err := crService.DescribeRepo(d.Id())
+	object, err := crService.DescribeCrRepo(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -154,22 +146,22 @@ func resourceAlicloudCRRepoRead(d *schema.ResourceData, meta interface{}) error 
 		return WrapError(err)
 	}
 
-	var resp crDescribeRepoResponse
-	err = json.Unmarshal(raw.GetHttpContentBytes(), &resp)
+	var response crDescribeRepoResponse
+	err = json.Unmarshal(object.GetHttpContentBytes(), &response)
 	if err != nil {
 		return WrapError(err)
 	}
 
-	d.Set("namespace", resp.Data.Repo.RepoNamespace)
-	d.Set("name", resp.Data.Repo.RepoName)
-	d.Set("detail", resp.Data.Repo.Detail)
-	d.Set("summary", resp.Data.Repo.Summary)
-	d.Set("repo_type", resp.Data.Repo.RepoType)
+	d.Set("namespace", response.Data.Repo.RepoNamespace)
+	d.Set("name", response.Data.Repo.RepoName)
+	d.Set("detail", response.Data.Repo.Detail)
+	d.Set("summary", response.Data.Repo.Summary)
+	d.Set("repo_type", response.Data.Repo.RepoType)
 
 	domainList := make(map[string]string)
-	domainList["public"] = resp.Data.Repo.RepoDomainList.Public
-	domainList["internal"] = resp.Data.Repo.RepoDomainList.Internal
-	domainList["vpc"] = resp.Data.Repo.RepoDomainList.Vpc
+	domainList["public"] = response.Data.Repo.RepoDomainList.Public
+	domainList["internal"] = response.Data.Repo.RepoDomainList.Internal
+	domainList["vpc"] = response.Data.Repo.RepoDomainList.Vpc
 
 	d.Set("domain_list", domainList)
 
@@ -178,41 +170,25 @@ func resourceAlicloudCRRepoRead(d *schema.ResourceData, meta interface{}) error 
 
 func resourceAlicloudCRRepoDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	invoker := NewInvoker()
 	crService := CrService{client}
 
 	sli := strings.Split(d.Id(), SLASH_SEPARATED)
 	repoNamespace := sli[0]
 	repoName := sli[1]
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		req := cr.CreateDeleteRepoRequest()
-		req.RepoNamespace = repoNamespace
-		req.RepoName = repoName
+	request := cr.CreateDeleteRepoRequest()
+	request.RepoNamespace = repoNamespace
+	request.RepoName = repoName
 
-		if err := invoker.Run(func() error {
-			_, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
-				return crClient.DeleteRepo(req)
-			})
-			return err
-		}); err != nil {
-			if IsExceptedError(err, ErrorRepoNotExist) {
-				return nil
-			}
-			return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-
-		if err := invoker.Run(func() error {
-			_, err := crService.DescribeRepo(d.Id())
-			return err
-		}); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR))
-		}
-
-		time.Sleep(5 * time.Second)
-		return resource.RetryableError(WrapError(Error("DeleteRepo timeout")))
+	raw, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+		return crClient.DeleteRepo(request)
 	})
+	if err != nil {
+		if IsExceptedError(err, ErrorRepoNotExist) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	return WrapError(crService.WaitForCrRepo(d.Id(), Deleted, DefaultTimeout))
 }
