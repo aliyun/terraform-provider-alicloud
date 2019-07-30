@@ -415,6 +415,26 @@ func TestValidateAllowedStringValue(t *testing.T) {
 	}
 }
 
+func TestValidateNotAllowedStringValue(t *testing.T) {
+	exceptValues := []string{"aliyun", "alicloud", "alibaba"}
+	validValues := []string{"aliyun"}
+	for _, v := range validValues {
+		_, errors := validateNotAllowedStringValue(exceptValues)(v, "allowvalue")
+		if len(errors) != 0 {
+			t.Fatalf("%q should not be a valid value in %#v: %q", v, exceptValues, errors)
+		}
+	}
+
+	invalidValues := []string{"ali", "alidata", "terraform"}
+	for _, v := range invalidValues {
+		_, errors := validateNotAllowedStringValue(exceptValues)(v, "ali")
+		if len(errors) == 0 {
+			t.Fatalf("%q should be an invalid value", v)
+		}
+	}
+}
+
+
 func TestValidateAllowedStringSplitValue(t *testing.T) {
 	exceptValues := []string{"aliyun", "alicloud", "alibaba"}
 	validValues := "aliyun,alicloud"

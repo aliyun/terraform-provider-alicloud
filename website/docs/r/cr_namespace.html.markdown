@@ -31,6 +31,7 @@ resource "alicloud_cr_namespace" "my-namespace" {
 The following arguments are supported:
 
 * `name` - (Required, ForceNew) Name of Container Registry namespace.
+   > Note: The name can't be one of them: public, share, primary, everyone, private. it will cause a duplicate error.
 * `auto_create` - (Required) Boolean, when it set to true, repositories are automatically created when pushing new images. If it set to false, you create repository for images before pushing.
 * `default_visibility` - (Required) `PUBLIC` or `PRIVATE`, default repository visibility in this namespace.
 

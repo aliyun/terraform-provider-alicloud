@@ -17,7 +17,9 @@ func dataSourceAlicloudCRNamespaces() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validateNotAllowedStringValue([]string{
+					"private", "publish", "everyone","share","primary",
+				}),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
