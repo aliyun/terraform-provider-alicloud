@@ -18,6 +18,9 @@ func init() {
 		&resource.Sweeper{
 			Name: "alicloud_fc_function",
 			F:    testSweepFcFunction,
+			Dependencies: []string{
+				"alicloud_fc_trigger",
+			},
 		})
 }
 
