@@ -425,9 +425,8 @@ func TestValidateNotAllowedStringValue(t *testing.T) {
 		}
 	}
 
-	exceptValues := []string{"ali", "alidata", "terraform"}
 	for _, v := range invalidValues {
-		_, errors := validateNotAllowedStringValue(exceptValues)(v, "ali")
+		_, errors := validateNotAllowedStringValue(exceptValues)(v, "aliyun")
 		if len(errors) == 0 {
 			t.Fatalf("%q should be an invalid value", v)
 		}
