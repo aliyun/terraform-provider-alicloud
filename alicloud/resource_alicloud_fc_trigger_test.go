@@ -2,13 +2,118 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_fc_trigger",
+		&resource.Sweeper{
+			Name: "alicloud_fc_trigger",
+			F:    testSweepFcTrigger,
+		})
+}
+
+func testSweepFcTrigger(region string) error {
+	if testSweepPreCheckWithRegions(region, false, connectivity.ApiGatewayNoSupportedRegions) {
+		log.Printf("[INFO] Skipping API Gateway unsupported region: %s", region)
+		return nil
+	}
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testacc",
+		"tf_testacc",
+	}
+
+	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+		return fcClient.ListServices(fc.NewListServicesInput())
+	})
+	if err != nil {
+		return fmt.Errorf("Error retrieving FC services: %s", err)
+	}
+
+	swept := false
+	services, _ := raw.(*fc.ListServicesOutput)
+	for _, v := range services.Services {
+		serviceName := *v.ServiceName
+		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.ListFunctions(fc.NewListFunctionsInput(serviceName))
+		})
+		if err != nil {
+			return fmt.Errorf("Error retrieving FC functions: %s", err)
+		} else {
+			functions := raw.(*fc.ListFunctionsOutput)
+			for _, v := range functions.Functions {
+				functionName := *v.FunctionName
+				nextToken := ""
+				for {
+					request := fc.NewListTriggersInput(serviceName, functionName)
+					if nextToken != "" {
+						request.NextToken = &nextToken
+					}
+
+					raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+						return fcClient.ListTriggers(request)
+					})
+
+					if err != nil {
+						log.Printf("Error retrieving FC triggers: %s", err)
+					}
+
+					response, _ := raw.(*fc.ListTriggersOutput)
+
+					if len(response.Triggers) < 1 {
+						break
+					}
+
+					for _, trigger := range response.Triggers {
+
+						for _, prefix := range prefixes {
+							if strings.HasPrefix(strings.ToLower(*trigger.TriggerName), strings.ToLower(prefix)) {
+								_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+									return fcClient.DeleteTrigger(&fc.DeleteTriggerInput{
+										ServiceName:  StringPointer(serviceName),
+										FunctionName: StringPointer(functionName),
+										TriggerName:  StringPointer(*trigger.TriggerName),
+									})
+								})
+
+								if err != nil {
+									log.Printf("[ERROR] Failed to delete Api (%s): %s", *trigger.TriggerName, err)
+								}
+							}
+						}
+						swept = true
+					}
+
+					if response.NextToken != nil {
+						nextToken = *response.NextToken
+					}
+					if nextToken == "" {
+						break
+					}
+				}
+			}
+		}
+	}
+	if swept {
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudFCTrigger_log(t *testing.T) {
 	var v *fc.GetTriggerOutput
