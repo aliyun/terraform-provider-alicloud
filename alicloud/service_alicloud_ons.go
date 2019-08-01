@@ -78,6 +78,41 @@ func (s *OnsService) DescribeOnsTopic(id string) (onsTopic *ons.PublishInfoDo, e
 	return onsTopic, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 }
 
+func (s *OnsService) DescribeOnsGroup(id string) (onsGroup *ons.SubscribeInfoDo, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	instanceId := parts[0]
+	groupId := parts[1]
+
+	request := ons.CreateOnsGroupListRequest()
+	request.InstanceId = instanceId
+	request.PreventCache = s.GetPreventCache()
+
+	raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
+		return onsClient.OnsGroupList(request)
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{AuthResourceOwnerError, OnsInstanceNotExist}) {
+			return onsGroup, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return onsGroup, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	groupListResp, _ := raw.(*ons.OnsGroupListResponse)
+	addDebug(request.GetActionName(), raw)
+
+	for _, v := range groupListResp.Data.SubscribeInfoDo {
+		if v.GroupId == groupId {
+			onsGroup = &v
+			return
+		}
+	}
+
+	return onsGroup, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+}
+
 func (s *OnsService) WaitForOnsInstance(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
@@ -131,6 +166,32 @@ func (s *OnsService) WaitForOnsTopic(id string, status Status, timeout int) erro
 
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, instanceId+":"+topic, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *OnsService) WaitForOnsGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		response, err := s.DescribeOnsGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		if response.InstanceId+":"+response.GroupId == id && status != Deleted {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, response.InstanceId+":"+response.GroupId, id, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
