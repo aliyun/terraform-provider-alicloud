@@ -32,6 +32,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/ess
 github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb
 github.com/aliyun/alibaba-cloud-sdk-go/services/kms
 github.com/aliyun/alibaba-cloud-sdk-go/services/nas
+github.com/aliyun/alibaba-cloud-sdk-go/services/ons
 github.com/aliyun/alibaba-cloud-sdk-go/services/ots
 github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz
 github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore
@@ -112,7 +113,7 @@ github.com/blang/semver
 github.com/cenkalti/backoff
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/denverdino/aliyungo v0.0.0-20190308225517-f1fa5f5452ee
+# github.com/denverdino/aliyungo v0.0.0-20190730233141-daf435c01246
 github.com/denverdino/aliyungo/cdn
 github.com/denverdino/aliyungo/common
 github.com/denverdino/aliyungo/cs

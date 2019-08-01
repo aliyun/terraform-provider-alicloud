@@ -20,10 +20,7 @@ func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 					testAccCheckAlicloudDataSourceID("data.alicloud_cs_managed_kubernetes_clusters.default"),
 					resource.TestCheckResourceAttrSet("data.alicloud_cs_managed_kubernetes_clusters.default", "clusters.#"),
 					resource.TestMatchResourceAttr("data.alicloud_cs_managed_kubernetes_clusters.default", "clusters.0.name", regexp.MustCompile("^tf-testAccManagedK8s-datasource*")),
-					resource.TestCheckResourceAttr("data.alicloud_cs_managed_kubernetes_clusters.default", "clusters.0.worker_numbers.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_cs_managed_kubernetes_clusters.default", "clusters.0.worker_numbers.0", "2"),
-					resource.TestCheckResourceAttr("data.alicloud_cs_managed_kubernetes_clusters.default", "clusters.0.worker_disk_category", "cloud_efficiency"),
-					resource.TestCheckResourceAttr("data.alicloud_cs_managed_kubernetes_clusters.default", "clusters.0.worker_disk_size", "40"),
+					resource.TestCheckResourceAttr("data.alicloud_cs_managed_kubernetes_clusters.default", "clusters.0.worker_nodes.#", "2"),
 					resource.TestCheckResourceAttr("data.alicloud_cs_managed_kubernetes_clusters.default", "clusters.0.connections.%", "4"),
 					resource.TestCheckResourceAttrSet("data.alicloud_cs_managed_kubernetes_clusters.default", "clusters.0.connections.master_public_ip"),
 					resource.TestCheckResourceAttrSet("data.alicloud_cs_managed_kubernetes_clusters.default", "clusters.0.connections.api_server_internet"),
@@ -69,7 +66,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
   vswitch_ids = ["${alicloud_vswitch.foo.id}"]
   new_nat_gateway = true
   worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  worker_numbers = [2]
+  worker_number = 2
   password = "Yourpassword1234"
   pod_cidr = "172.20.0.0/16"
   service_cidr = "172.21.0.0/20"

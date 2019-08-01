@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -69,6 +68,7 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 						"slb_internet_enabled": {
 							Type:     schema.TypeBool,
 							Computed: true,
+							Removed:  "Field 'slb_internet_enabled' has been removed from provider version 1.53.0.",
 						},
 						"security_group_id": {
 							Type:     schema.TypeString,
@@ -88,6 +88,7 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
+							Removed: "Field 'vswitch_ids' has been removed from provider version 1.53.0.",
 						},
 						"worker_instance_types": {
 							Type:     schema.TypeList,
@@ -95,6 +96,7 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
+							Removed: "Field 'worker_instance_types' has been removed from provider version 1.53.0.",
 						},
 						"worker_numbers": {
 							Type:     schema.TypeList,
@@ -102,22 +104,27 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 							Elem: &schema.Schema{
 								Type: schema.TypeInt,
 							},
+							Removed: "Field 'worker_numbers' has been removed from provider version 1.53.0.",
 						},
 						"key_name": {
 							Type:     schema.TypeString,
 							Computed: true,
+							Removed:  "Field 'key_name' has been removed from provider version 1.53.0.",
 						},
 						"pod_cidr": {
 							Type:     schema.TypeString,
 							Computed: true,
+							Removed:  "Field 'pod_cidr' has been removed from provider version 1.53.0.",
 						},
 						"service_cidr": {
 							Type:     schema.TypeString,
 							Computed: true,
+							Removed:  "Field 'service_cidr' has been removed from provider version 1.53.0.",
 						},
 						"cluster_network_type": {
 							Type:     schema.TypeString,
 							Computed: true,
+							Removed:  "Field 'cluster_network_type' has been removed from provider version 1.53.0.",
 						},
 						"log_config": {
 							Type:     schema.TypeList,
@@ -134,46 +141,57 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 									},
 								},
 							},
+							Removed: "Field 'log_config' has been removed from provider version 1.53.0.",
 						},
 						"image_id": {
 							Type:     schema.TypeString,
 							Computed: true,
+							Removed:  "Field 'image_id' has been removed from provider version 1.53.0.",
 						},
 						"worker_disk_size": {
 							Type:     schema.TypeInt,
 							Computed: true,
+							Removed:  "Field 'worker_disk_size' has been removed from provider version 1.53.0.",
 						},
 						"worker_disk_category": {
 							Type:     schema.TypeString,
 							Computed: true,
+							Removed:  "Field 'worker_disk_category' has been removed from provider version 1.53.0.",
 						},
 						"worker_data_disk_size": {
 							Type:     schema.TypeInt,
 							Computed: true,
+							Removed:  "Field 'worker_data_disk_size' has been removed from provider version 1.53.0.",
 						},
 						"worker_data_disk_category": {
 							Type:     schema.TypeString,
 							Computed: true,
+							Removed:  "Field 'worker_data_disk_category' has been removed from provider version 1.53.0.",
 						},
 						"worker_instance_charge_type": {
 							Type:     schema.TypeString,
 							Computed: true,
+							Removed:  "Field 'worker_instance_charge_type' has been removed from provider version 1.53.0.",
 						},
 						"worker_period_unit": {
 							Type:     schema.TypeString,
 							Computed: true,
+							Removed:  "Field 'worker_period_unit' has been removed from provider version 1.53.0.",
 						},
 						"worker_period": {
 							Type:     schema.TypeInt,
 							Computed: true,
+							Removed:  "Field 'worker_period' has been removed from provider version 1.53.0.",
 						},
 						"worker_auto_renew": {
 							Type:     schema.TypeBool,
 							Computed: true,
+							Removed:  "Field 'worker_auto_renew' has been removed from provider version 1.53.0.",
 						},
 						"worker_auto_renew_period": {
 							Type:     schema.TypeInt,
 							Computed: true,
+							Removed:  "Field 'worker_auto_renew_period' has been removed from provider version 1.53.0.",
 						},
 						"worker_nodes": {
 							Type:     schema.TypeList,
@@ -318,71 +336,6 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 		mapping["vpc_id"] = ct.VPCID
 		mapping["security_group_id"] = ct.SecurityGroupID
 		mapping["availability_zone"] = ct.ZoneId
-		mapping["key_name"] = ct.Parameters.KeyPair
-		mapping["worker_disk_category"] = ct.Parameters.WorkerSystemDiskCategory
-		if ct.Parameters.PublicSLB != nil {
-			mapping["slb_internet_enabled"] = *ct.Parameters.PublicSLB
-		}
-
-		if ct.Parameters.ImageId != "" {
-			mapping["image_id"] = ct.Parameters.ImageId
-		} else {
-			mapping["image_id"] = ct.Parameters.MasterImageId
-		}
-
-		if size, err := strconv.Atoi(ct.Parameters.WorkerSystemDiskSize); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-		} else {
-			mapping["worker_disk_size"] = size
-		}
-
-		if ct.Parameters.WorkerInstanceChargeType == string(PrePaid) {
-			mapping["worker_instance_charge_type"] = string(PrePaid)
-			if period, err := strconv.Atoi(ct.Parameters.WorkerPeriod); err != nil {
-				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-			} else {
-				mapping["worker_period"] = period
-			}
-			mapping["worker_period_unit"] = ct.Parameters.WorkerPeriodUnit
-			if ct.Parameters.WorkerAutoRenew != nil {
-				mapping["worker_auto_renew"] = *ct.Parameters.WorkerAutoRenew
-			}
-			if period, err := strconv.Atoi(ct.Parameters.WorkerAutoRenewPeriod); err != nil {
-				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-			} else {
-				mapping["worker_auto_renew_period"] = period
-			}
-		} else {
-			mapping["worker_instance_charge_type"] = string(PostPaid)
-		}
-
-		if ct.Parameters.WorkerDataDisk != nil && *ct.Parameters.WorkerDataDisk {
-			if size, err := strconv.Atoi(ct.Parameters.WorkerDataDiskSize); err != nil {
-				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-			} else {
-				mapping["worker_data_disk_size"] = size
-			}
-			mapping["worker_data_disk_category"] = ct.Parameters.WorkerDataDiskCategory
-		}
-
-		if ct.Parameters.LoggingType != "None" {
-			logConfig := map[string]interface{}{}
-			logConfig["type"] = ct.Parameters.LoggingType
-			if ct.Parameters.SLSProjectName == "None" {
-				logConfig["project"] = ""
-			} else {
-				logConfig["project"] = ct.Parameters.SLSProjectName
-			}
-			mapping["log_config"] = []map[string]interface{}{logConfig}
-		}
-
-		if numOfNode, err := strconv.Atoi(ct.Parameters.NumOfNodes); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-		} else {
-			mapping["worker_numbers"] = []int{numOfNode}
-		}
-		mapping["vswitch_ids"] = []string{ct.Parameters.VSwitchID}
-		mapping["worker_instance_types"] = []string{ct.Parameters.WorkerInstanceType}
 
 		var workerNodes []map[string]interface{}
 

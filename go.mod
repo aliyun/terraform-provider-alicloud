@@ -12,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go v1.19.39 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
 	github.com/cloudflare/golz4 v0.0.0-20150217214814-ef862a3cdc58 // indirect
-	github.com/denverdino/aliyungo v0.0.0-20190308225517-f1fa5f5452ee
+	github.com/denverdino/aliyungo v0.0.0-20190730233141-daf435c01246
 	github.com/dxh031/ali_mns v0.0.0-20180927082505-3ae5346f8cf9
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/go-test/deep v1.0.2-0.20181118220953-042da051cf31 // indirect

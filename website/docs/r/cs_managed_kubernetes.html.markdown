@@ -10,13 +10,15 @@ description: |-
 
 This resource will help you to manager a Managed Kubernetes Cluster. The cluster is same as container service created by web console.
 
--> **NOTE:** Managed Kubernetes cluster only supports single availability zone currently. Arguments `vswitch_ids`, `worker_numbers`, `worker_instance_types` only accept one item.
+-> **NOTE:** From version 1.53.0, we provide `force_update`. When you want to change `worker_instance_types` and `vswitch_ids`, you have to set this field to true, then the cluster will be recreated.
+
+-> **NOTE:** From version 1.53.0, `worker_numbers` is deprecated, you should use `worker_number` to indicate a total number of workers.
+
+-> **NOTE:** Managed Kubernetes cluster can support multiple availability zones. Arguments `vswitch_ids`, `worker_instance_types` are string arrays.
 
 -> **NOTE:** Managed Kubernetes cluster only supports VPC network and it can access internet while creating kubernetes cluster.
 A Nat Gateway and configuring a SNAT for it can ensure one VPC network access internet. If there is no nat gateway in the
 VPC, you can set `new_nat_gateway` to "true" to create one automatically.
-
--> **NOTE:** If there is no specified `vswitch_ids`, the resource will create a new VPC and VSwitch while creating managed kubernetes cluster.
 
 -> **NOTE:** Creating managed kubernetes cluster need to install several packages and it will cost about 10 minutes. Please be patient.
 
@@ -83,7 +85,9 @@ It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in
 * `worker_disk_category` - (Optional, ForceNew) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `worker_data_disk_size` - (Optional, ForceNew) The data disk size of worker node. Its valid value range [20~32768] in GB. When `worker_data_disk_category` is presented, it defaults to 40.
 * `worker_data_disk_category` - (Optional, ForceNew) The data disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`, if not set, data disk will not be created.
-* `worker_numbers` - (Required) The worker node number of the kubernetes cluster. Default to [3]. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
+* `worker_number` - (Required) The total worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
+* `force_update` - (Optional) Default false, when you want to change `worker_instance_types` and `vswitch_ids`, you have to set this field to true, then the cluster will be recreated.
+* `worker_numbers` - (Deprecated from version 1.53.0) The worker node number of the kubernetes cluster. Default to [3]. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
 * `worker_instance_types` - (Required, ForceNew) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
 You can get the available kubetnetes master node instance types by [datasource instance_types](https://www.terraform.io/docs/providers/alicloud/d/instance_types.html#kubernetes_node_role)
 * `worker_instance_charge_type` - (Optional, ForceNew) Worker payment type. `PrePaid` or `PostPaid`, defaults to `PostPaid`.
