@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"strconv"
-
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
@@ -61,7 +59,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				},
 				MinItems:         1,
 				MaxItems:         5,
-				DiffSuppressFunc: csManagedKubernetesVswitchIdsSuppressFunc,
+				DiffSuppressFunc: csForceUpdate,
 			},
 			"new_nat_gateway": {
 				Type:     schema.TypeBool,
@@ -77,15 +75,21 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				},
 				MinItems:         1,
 				MaxItems:         5,
-				DiffSuppressFunc: csManagedKubernetesWorkerInstanceTypesSuppressFunc,
+				DiffSuppressFunc: csForceUpdate,
+			},
+			"worker_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  3,
 			},
 			"worker_numbers": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:       schema.TypeList,
+				Deprecated: "Field 'worker_numbers' has been deprecated from provider version 1.53.0. New field 'worker_number' replaces it.",
 				Elem: &schema.Schema{
 					Type:    schema.TypeInt,
 					Default: 3,
 				},
+				Optional: true,
 				MinItems: 1,
 				MaxItems: 1,
 			},
@@ -199,6 +203,11 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"force_update": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"kube_config": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -290,28 +299,53 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	d.Partial(true)
 	invoker := NewInvoker()
-	if d.HasChange("worker_numbers") {
+	if d.HasChange("worker_number") || d.HasChange("worker_numbers") {
+		var scaleSize int
+		if d.HasChange("worker_number") {
+			o, n := d.GetChange("worker_number")
+			oldNumber := o.(int)
+			newNumber := n.(int)
+			scaleSize = newNumber - oldNumber
+		} else {
+			var oSum, nSum int
+			o, n := d.GetChange("worker_numbers")
+			oInts := o.([]interface{})
+			for _, v := range oInts {
+				oSum += v.(int)
+			}
+			nInts := n.([]interface{})
+			for _, v := range nInts {
+				nSum += v.(int)
+			}
+			scaleSize = nSum - oSum
+		}
+		if scaleSize < 0 {
+			return fmt.Errorf("cannot scale down cluster")
+		}
 
-		workerNumbers := expandIntList(d.Get("worker_numbers").([]interface{}))
-		workerInstanceTypes := expandStringList(d.Get("worker_instance_types").([]interface{}))
+		workerInstanceTypes := deduplicateInstanceTypes(expandStringList(d.Get("worker_instance_types").([]interface{})))
 
 		// When cluster was created using keypair, LoginPassword will be ignored.
 		// When cluster was created using password, LoginPassword is required to resize.
-		args := &cs.KubernetesClusterResizeArgs{
-			DisableRollback: true,
-			TimeoutMins:     ManagedKubernetesCreationDefaultTimeoutInMinute,
-			LoginPassword:   d.Get("password").(string),
+		args := &cs.KubernetesClusterScaleArgs{
+			LoginPassword:            d.Get("password").(string),
+			KeyPair:                  d.Get("key_name").(string),
+			WorkerInstanceTypes:      workerInstanceTypes,
+			WorkerSystemDiskCategory: ecs.DiskCategory(d.Get("worker_disk_category").(string)),
+			WorkerSystemDiskSize:     int64(d.Get("worker_disk_size").(int)),
+			Count:                    scaleSize,
+		}
+		if _, ok := d.GetOk("worker_data_disk_category"); ok {
+			args.WorkerDataDisk = true
 		}
 
-		args.WorkerInstanceType = workerInstanceTypes[0]
-		args.NumOfNodes = int64(workerNumbers[0])
 		if err := invoker.Run(func() error {
 			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				return nil, csClient.ResizeKubernetesCluster(d.Id(), args)
+				return nil, csClient.ScaleKubernetesCluster(d.Id(), args)
 			})
 			return err
 		}); err != nil {
-			return fmt.Errorf("Resize Cluster got an error: %#v", err)
+			return fmt.Errorf("Scale Cluster got an error: %#v", err)
 		}
 
 		if err := invoker.Run(func() error {
@@ -374,50 +408,9 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 	}
 
 	d.Set("name", cluster.Name)
-	if cluster.Parameters.ImageId != "" {
-		d.Set("image_id", cluster.Parameters.ImageId)
-	} else {
-		d.Set("image_id", cluster.Parameters.WorkerImageId)
-	}
 	d.Set("vpc_id", cluster.VPCID)
 	d.Set("security_group_id", cluster.SecurityGroupID)
-	d.Set("key_name", cluster.Parameters.KeyPair)
-	if size, err := strconv.Atoi(cluster.Parameters.WorkerSystemDiskSize); err == nil {
-		d.Set("worker_disk_size", size)
-	} else {
-		return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-	}
-	d.Set("worker_disk_category", cluster.Parameters.WorkerSystemDiskCategory)
 	d.Set("availability_zone", cluster.ZoneId)
-
-	if cluster.Parameters.WorkerInstanceChargeType == string(PrePaid) {
-		d.Set("worker_instance_charge_type", string(PrePaid))
-		if period, err := strconv.Atoi(cluster.Parameters.WorkerPeriod); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-		} else {
-			d.Set("worker_period", period)
-		}
-		if cluster.Parameters.WorkerAutoRenew != nil {
-			d.Set("worker_auto_renew", *cluster.Parameters.WorkerAutoRenew)
-		}
-		d.Set("worker_period_unit", cluster.Parameters.WorkerPeriodUnit)
-		if period, err := strconv.Atoi(cluster.Parameters.WorkerAutoRenewPeriod); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-		} else {
-			d.Set("worker_auto_renew_period", period)
-		}
-	} else {
-		d.Set("worker_instance_charge_type", string(PostPaid))
-	}
-
-	if cluster.Parameters.WorkerDataDisk != nil && *cluster.Parameters.WorkerDataDisk {
-		if size, err := strconv.Atoi(cluster.Parameters.WorkerDataDiskSize); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
-		} else {
-			d.Set("worker_data_disk_size", size)
-		}
-		d.Set("worker_data_disk_category", cluster.Parameters.WorkerDataDiskCategory)
-	}
 
 	var workerNodes []map[string]interface{}
 
@@ -586,35 +579,15 @@ func resourceAlicloudCSManagedKubernetesDelete(d *schema.ResourceData, meta inte
 
 func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.KubernetesCreationArgs, error) {
 	client := meta.(*connectivity.AliyunClient)
-	ecsService := EcsService{client}
 	vpcService := VpcService{client}
 
-	// Ensure instance_type is valid
-	zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
-	if err != nil {
-		return nil, err
-	}
+	rawWorkerInstanceTypes := expandStringList(d.Get("worker_instance_types").([]interface{}))
 
-	var workerInstanceType, vswitchID string
-	var workerNumber int
+	workerInstanceTypes := deduplicateInstanceTypes(rawWorkerInstanceTypes)
 
-	workerInstanceType = expandStringList(d.Get("worker_instance_types").([]interface{}))[0]
+	vswitchIds := expandStringList(d.Get("vswitch_ids").([]interface{}))
 
-	if list := expandStringList(d.Get("vswitch_ids").([]interface{})); len(list) > 0 {
-		vswitchID = list[0]
-	} else {
-		vswitchID = ""
-	}
-
-	if list := expandIntList(d.Get("worker_numbers").([]interface{})); len(list) > 0 {
-		workerNumber = list[0]
-	} else {
-		workerNumber = 3
-	}
-
-	if err := ecsService.InstanceTypeValidation(workerInstanceType, zoneId, validZones); err != nil {
-		return nil, err
-	}
+	workerNumber := d.Get("worker_number").(int)
 
 	var clusterName string
 	if v, ok := d.GetOk("name"); ok {
@@ -623,19 +596,20 @@ func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
 	}
 
-	var vpcId string
-	if vswitchID != "" {
-		vsw, err := vpcService.DescribeVSwitch(vswitchID)
+	var vpcId, zoneId string
+	for _, vswId := range vswitchIds {
+		vsw, err := vpcService.DescribeVSwitch(vswId)
 		if err != nil {
 			return nil, err
 		}
-		vpcId = vsw.VpcId
-		if zoneId != "" && zoneId != vsw.ZoneId {
-			return nil, fmt.Errorf("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, zoneId)
+		if vpcId == "" {
+			vpcId = vsw.VpcId
+			zoneId = vsw.ZoneId
+		} else {
+			if vsw.VpcId != vpcId {
+				return nil, fmt.Errorf("all specified vswitch should be in the same vpc %s.", vswitchIds)
+			}
 		}
-		zoneId = vsw.ZoneId
-	} else if !d.Get("new_nat_gateway").(bool) {
-		return nil, fmt.Errorf("The automatic created VPC and VSwitch must set 'new_nat_gateway' to 'true'.")
 	}
 
 	creationArgs := &cs.KubernetesCreationArgs{
@@ -643,9 +617,10 @@ func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		ClusterType:              "ManagedKubernetes",
 		DisableRollback:          true,
 		TimeoutMins:              ManagedKubernetesCreationDefaultTimeoutInMinute,
-		WorkerInstanceType:       workerInstanceType,
+		RegionId:                 client.RegionId,
+		WorkerInstanceTypes:      workerInstanceTypes,
 		VPCID:                    vpcId,
-		VSwitchId:                vswitchID,
+		VSwitchIds:               vswitchIds,
 		LoginPassword:            d.Get("password").(string),
 		KeyPair:                  d.Get("key_name").(string),
 		ImageId:                  d.Get("image_id").(string),
@@ -679,4 +654,16 @@ func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 	}
 
 	return creationArgs, nil
+}
+
+func deduplicateInstanceTypes(instanceTypes []string) []string {
+	var ret []string
+	instanceTypesMaps := make(map[string]bool)
+	for _, v := range instanceTypes {
+		instanceTypesMaps[v] = true
+	}
+	for k := range instanceTypesMaps {
+		ret = append(ret, k)
+	}
+	return ret
 }

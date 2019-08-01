@@ -204,30 +204,11 @@ func csKubernetesWorkerPostPaidDiffSuppressFunc(k, old, new string, d *schema.Re
 	return common.InstanceChargeType(d.Get("worker_instance_charge_type").(string)) == common.PostPaid || !(d.Id() == "") && !d.Get("force_update").(bool)
 }
 
-func csManagedKubernetesVswitchIdsSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+func csForceUpdate(k, old, new string, d *schema.ResourceData) bool {
 	if d.Id() == "" {
 		return false
 	}
-	if k == "vswitch_ids.0" {
-		// return from server is empty, failure due to OpenAPI
-		if old == "" {
-			return true
-		}
-	}
-	return false
-}
-
-func csManagedKubernetesWorkerInstanceTypesSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.Id() == "" {
-		return false
-	}
-	if k == "worker_instance_types.0" {
-		// return from server is empty, failure due to OpenAPI
-		if old == "" {
-			return true
-		}
-	}
-	return false
+	return !d.Get("force_update").(bool)
 }
 
 func csForceUpdateSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
