@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/resource"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/resource"
 
 	"github.com/hashicorp/terraform/helper/schema"
 

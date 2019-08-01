@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"github.com/hashicorp/terraform/helper/resource"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"

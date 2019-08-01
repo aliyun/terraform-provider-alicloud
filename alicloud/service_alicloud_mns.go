@@ -1,10 +1,11 @@
 package alicloud
 
 import (
-	"github.com/dxh031/ali_mns"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"time"
+
+	"github.com/dxh031/ali_mns"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type MnsService struct {
