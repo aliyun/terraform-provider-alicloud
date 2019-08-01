@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"

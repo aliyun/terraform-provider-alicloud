@@ -484,12 +484,24 @@ jobs:
       TEST_CASE_CODE: "Ess"
       SWEEPER_CODE: "alicloud_ess_scalinggroup"
 #
-- name: FC
+- name: Instance
   plan:
   - <<: *clone-provider
   - get: trigger
     trigger: true
     resource: 13
+  - <<: *run
+    params:
+      <<: *run-params
+      TEST_CASE_CODE: "Instance"
+      SWEEPER_CODE: "alicloud_instance"
+
+- name: FC
+  plan:
+  - <<: *clone-provider
+  - get: trigger
+    trigger: true
+    resource: 14
   - <<: *run
     params:
       <<: *run-params
@@ -501,23 +513,11 @@ jobs:
   - <<: *clone-provider
   - get: trigger
     trigger: true
-    resource: 14
-  - <<: *run
-    params:
-      <<: *run-params
-      TEST_CASE_CODE: "Images"
-
-- name: Instance
-  plan:
-  - <<: *clone-provider
-  - get: trigger
-    trigger: true
     resource: 15
   - <<: *run
     params:
       <<: *run-params
-      TEST_CASE_CODE: "Instance"
-      SWEEPER_CODE: "alicloud_instance"
+      TEST_CASE_CODE: "Images"
 
 - name: KeyPair
   plan:

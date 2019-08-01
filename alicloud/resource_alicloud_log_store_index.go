@@ -2,12 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"strings"
-	"time"
 )
 
 func resourceAlicloudLogStoreIndex() *schema.Resource {

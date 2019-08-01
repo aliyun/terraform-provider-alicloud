@@ -2,14 +2,15 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/aliyun/fc-go-sdk"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"log"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/aliyun/fc-go-sdk"
+	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
