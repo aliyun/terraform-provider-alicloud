@@ -67,20 +67,35 @@ func testSweepLogProjects(region string) error {
 }
 
 func TestAccAlicloudLogProject_basic(t *testing.T) {
-	var project sls.LogProject
-	randInt := acctest.RandInt()
-	resourceId := "alicloud_log_project.foo"
+	var v *sls.LogProject
+	resourceId := "alicloud_log_project.default"
+	ra := resourceAttrInit(resourceId, logProjectMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacclogproject-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogProjectConfigDependence)
+
 	resource.Test(t, resource.TestCase{
-		PreCheck:      func() { testAccPreCheck(t) },
-		Providers:     testAccProviders,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
 		IDRefreshName: resourceId,
-		CheckDestroy:  testAccCheckAlicloudLogProjectDestroy,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccLogProjectBasic(randInt),
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
-					resource.TestCheckResourceAttr("alicloud_log_project.foo", "description", "tf unit test"),
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
 				),
 			},
 			{
@@ -89,14 +104,80 @@ func TestAccAlicloudLogProject_basic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccLogProjectUpdate(randInt),
+				Config: testAccConfig(map[string]interface{}{
+					"description": "tf unit test",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudLogProjectExists("alicloud_log_project.foo", &project),
-					resource.TestCheckResourceAttr("alicloud_log_project.foo", "description", "tf unit test update"),
+					testAccCheck(map[string]string{
+						"description": "tf unit test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "tf unit test update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "tf unit test update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": REMOVEKEY,
+					}),
 				),
 			},
 		},
 	})
+}
+
+func TestAccAlicloudLogProject_multi(t *testing.T) {
+	var v *sls.LogProject
+	resourceId := "alicloud_log_project.default.4"
+	ra := resourceAttrInit(resourceId, logProjectMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacclogproject-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogProjectConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":  name + "${count.index}",
+					"count": "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+}
+
+func resourceLogProjectConfigDependence(name string) string {
+	return ""
+}
+
+var logProjectMap = map[string]string{
+	"name": CHECKSET,
 }
 
 func testAccCheckAlicloudLogProjectExists(name string, project *sls.LogProject) resource.TestCheckFunc {
@@ -124,47 +205,4 @@ func testAccCheckAlicloudLogProjectExists(name string, project *sls.LogProject) 
 
 		return nil
 	}
-}
-
-func testAccCheckAlicloudLogProjectDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_log_project" {
-			continue
-		}
-
-		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return slsClient.CheckProjectExist(rs.Primary.ID)
-		})
-
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "logtail_project", "CheckProjectExist", AliyunLogGoSdkERROR)
-		}
-		exist, _ := raw.(bool)
-		if !exist {
-			return nil
-		}
-
-		return WrapError(fmt.Errorf("Log project %s still exists.", rs.Primary.ID))
-	}
-
-	return nil
-}
-
-func testAccLogProjectBasic(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_log_project" "foo" {
-	    name = "tf-testacclogproject-%d"
-	    description = "tf unit test"
-	}`, rand)
-}
-
-func testAccLogProjectUpdate(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_log_project" "foo"{
-		name = "tf-testacclogproject-%d"
-		description = "tf unit test update"
-}
-`, rand)
 }

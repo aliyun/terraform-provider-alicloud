@@ -14,23 +14,54 @@ type LogService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *LogService) DescribeLogProject(name string) (project *sls.LogProject, err error) {
-	invoker := NewInvoker()
-	invoker.AddCatcher(SlsClientTimeoutCatcher)
-	err = invoker.Run(func() error {
+func (s *LogService) DescribeLogProject(id string) (project *sls.LogProject, err error) {
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return slsClient.GetProject(name)
+			return slsClient.GetProject(id)
 		})
 		if err != nil {
-			return err
+			if IsExceptedError(err, LogClientTimeout) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
+		addDebug("GetProject", raw)
 		project, _ = raw.(*sls.LogProject)
-		if project == nil || project.Name == "" {
-			return GetNotFoundErrorFromString(GetNotFoundMessage("Log Project", name))
-		}
 		return nil
 	})
+	if err != nil {
+		if IsExceptedError(err, ProjectNotExist) {
+			return project, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetProject", AliyunLogGoSdkERROR)
+	}
+	if project == nil || project.Name == "" {
+		return project, WrapErrorf(Error(GetNotFoundMessage("LogProject", id)), NotFoundMsg, ProviderERROR)
+	}
 	return
+}
+
+func (s *LogService) WaitForLogProject(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeLogProject(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Name == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Name, id, ProviderERROR)
+		}
+	}
 }
 
 func (s *LogService) DescribeLogStore(id string) (store *sls.LogStore, err error) {

@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -37,20 +36,24 @@ func resourceAlicloudLogProject() *schema.Resource {
 
 func resourceAlicloudLogProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	invoker := NewInvoker()
-	invoker.AddCatcher(SlsClientTimeoutCatcher)
-	if err := invoker.Run(func() error {
+
+	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return slsClient.CreateProject(d.Get("name").(string), d.Get("description").(string))
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "log_project", "CreateProject", AliyunLogGoSdkERROR)
+			if IsExceptedError(err, LogClientTimeout) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
-		project, _ := raw.(*sls.LogProject)
-		d.SetId(project.Name)
+		addDebug("CreateProject", raw)
+		response, _ := raw.(*sls.LogProject)
+		d.SetId(response.Name)
 		return nil
 	}); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_project", "CreateProject", AliyunLogGoSdkERROR)
 	}
 
 	return resourceAlicloudLogProjectRead(d, meta)
@@ -58,37 +61,32 @@ func resourceAlicloudLogProjectCreate(d *schema.ResourceData, meta interface{}) 
 
 func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	invoker := NewInvoker()
-	invoker.AddCatcher(SlsClientTimeoutCatcher)
-	return invoker.Run(func() error {
-		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return slsClient.GetProject(d.Id())
-		})
-		if err != nil {
-			if IsExceptedError(err, ProjectNotExist) {
-				d.SetId("")
-				return nil
-			}
-			return WrapErrorf(err, DefaultErrorMsg, "log_project", "GetProject", AliyunLogGoSdkERROR)
+	logService := LogService{client}
+	object, err := logService.DescribeLogProject(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
 		}
-		project, _ := raw.(*sls.LogProject)
-		d.Set("name", project.Name)
-		d.Set("description", project.Description)
+		return WrapError(err)
+	}
+	d.Set("name", object.Name)
+	d.Set("description", object.Description)
 
-		return nil
-	})
+	return nil
 }
 
 func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	if d.HasChange("description") {
-		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return slsClient.UpdateProject(d.Get("name").(string), d.Get("description").(string))
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "log_project", "UpdateProject", AliyunLogGoSdkERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateProject", AliyunLogGoSdkERROR)
 		}
+		addDebug("UpdateProject", raw)
 	}
 
 	return resourceAlicloudLogProjectRead(d, meta)
@@ -96,34 +94,26 @@ func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) 
 
 func resourceAlicloudLogProjectDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	logService := LogService{client}
 
-	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return nil, slsClient.DeleteProject(d.Id())
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{LogClientTimeout, LogRequestTimeout}) {
-				return resource.RetryableError(BuildWrapError("DeleteProject", d.Id(), AliyunLogGoSdkERROR, err, ""))
+				return resource.RetryableError(err)
 			}
-			if !IsExceptedErrors(err, []string{ProjectNotExist}) {
-				return resource.NonRetryableError(BuildWrapError("DeleteProject", d.Id(), AliyunLogGoSdkERROR, err, ""))
-			}
+			return resource.NonRetryableError(err)
 		}
-
-		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return slsClient.CheckProjectExist(d.Id())
-		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{LogClientTimeout}) {
-				return resource.RetryableError(BuildWrapError("CheckProjectExist", d.Id(), AliyunLogGoSdkERROR, err, ""))
-			}
-			return resource.NonRetryableError(BuildWrapError("CheckProjectExist", d.Id(), AliyunLogGoSdkERROR, err, ""))
-		}
-		exist, _ := raw.(bool)
-		if !exist {
+		addDebug("DeleteProject", raw)
+		return nil
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{ProjectNotExist}) {
 			return nil
 		}
-
-		return resource.RetryableError(BuildWrapError("DeleteProject", d.Id(), ProviderERROR, fmt.Errorf("Timeout"), ""))
-	})
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteProject", AliyunLogGoSdkERROR)
+	}
+	return WrapError(logService.WaitForLogProject(d.Id(), Deleted, DefaultTimeout))
 }
