@@ -103,7 +103,7 @@ The servers mapping supports the following:
 
 The following attributes are exported:
 
-* `id` - The ID of the backend server
+* `id` - The ID of the resource and the value same as load balancer id.
 
 ## Import
 
