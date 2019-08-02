@@ -147,6 +147,67 @@ func expandBackendServersWithPortToString(items []interface{}) string {
 	return fmt.Sprintf("[%s]", strings.Join(servers, COMMA_SEPARATED))
 }
 
+func expandBackendServersInfoToString(items []interface{}) string {
+
+	if len(items) < 1 {
+		return ""
+	}
+	var servers []string
+	for _, server := range items {
+		s := server.(map[string]interface{})
+
+		var server_id string
+		var weight int
+		var stype string
+		if v, ok := s["server_id"]; ok {
+			server_id = v.(string)
+		}
+		if v, ok := s["weight"]; ok {
+			weight = v.(int)
+		}
+		if v, ok := s["type"]; ok {
+			stype = v.(string)
+		}
+		str := fmt.Sprintf("{'ServerId':'%s','Weight':'%d', 'Type': '%s'}", strings.Trim(server_id, " "), weight, strings.Trim(stype, " "))
+		servers = append(servers, str)
+
+	}
+	return fmt.Sprintf("[%s]", strings.Join(servers, COMMA_SEPARATED))
+}
+
+func expandBackendServersWithoutTypeToString(items []interface{}) string {
+
+	if len(items) < 1 {
+		return ""
+	}
+	var servers []string
+	for _, server := range items {
+		s := server.(map[string]interface{})
+
+		var server_id string
+		var weight int
+		if v, ok := s["server_id"]; ok {
+			server_id = v.(string)
+		}
+		if v, ok := s["weight"]; ok {
+			weight = v.(int)
+		}
+		str := fmt.Sprintf("{'ServerId':'%s','Weight':'%d'}", strings.Trim(server_id, " "), weight)
+		servers = append(servers, str)
+
+	}
+	return fmt.Sprintf("[%s]", strings.Join(servers, COMMA_SEPARATED))
+}
+
+func getIdSetFromServers(items []interface{}) *schema.Set {
+	rmId := make([]interface{}, 0)
+	for _, item := range items {
+		server := item.(map[string]interface{})
+		rmId = append(rmId, fmt.Sprintf("%s", server["server_id"]))
+	}
+	return schema.NewSet(schema.HashString, rmId)
+}
+
 func getIdPortSetFromServers(items []interface{}) *schema.Set {
 	rmIdPort := make([]interface{}, 0)
 	for _, item := range items {
