@@ -103,6 +103,28 @@ func (s *SlbService) DescribeSlbServerGroup(id string) (*slb.DescribeVServerGrou
 	return response, err
 }
 
+func (s *SlbService) DescribeSlbBackendServer(id string) (*slb.DescribeLoadBalancerAttributeResponse, error) {
+	request := slb.CreateDescribeLoadBalancerAttributeRequest()
+	request.LoadBalancerId = id
+	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeLoadBalancerAttribute(request)
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("SlbBackendServers", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		} else {
+			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		return nil, err
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
+	if response.LoadBalancerId == "" {
+		err = WrapErrorf(Error(GetNotFoundMessage("SlbBackendServers", id)), NotFoundMsg, ProviderERROR)
+	}
+	return response, err
+}
+
 func (s *SlbService) DescribeSlbListener(id string, protocol Protocol) (listener map[string]interface{}, err error) {
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
