@@ -1,63 +1,63 @@
-## 1.53.0 (Unreleased)
+## 1.53.0 (August 02, 2019)
 
-- **New Resource:** `alicloud_ons_group` [GH-1506]
-- **New Resource:** `alicloud_ess_scalinggroup_vserver_groups` [GH-1503]
-- **New Resource:** `alicloud_slb_backend_server` [GH-1498]
-- **New Resource:** `alicloud_ons_topic` [GH-1483]
-- **New Data Source:** `alicloud_ons_groups` [GH-1506]
-- **New Data source:** `alicloud_slb_backend_servers` [GH-1498]
-- **New Data Source:** `alicloud_ons_topics` [GH-1483]
+- **New Resource:** `alicloud_ons_group` ([#1506](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1506))
+- **New Resource:** `alicloud_ess_scalinggroup_vserver_groups` ([#1503](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1503))
+- **New Resource:** `alicloud_slb_backend_server` ([#1498](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1498))
+- **New Resource:** `alicloud_ons_topic` ([#1483](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1483))
+- **New Data Source:** `alicloud_ons_groups` ([#1506](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1506))
+- **New Data source:** `alicloud_slb_backend_servers` ([#1498](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1498))
+- **New Data Source:** `alicloud_ons_topics` ([#1483](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1483))
 
 
 IMPROVEMENTS:
 
-- improve(dns_record): add diffsuppressfunc to avoid DomainRecordDuplicate error. [GH-1518]
-- remove useless import [GH-1517]
-- remove empty fields in managed k8s, add force_update, add multiple az support [GH-1516]
-- improve(fc_function):fc_function support sweeper [GH-1513]
-- improve(fc_trigger):fc_trigger support sweeper [GH-1512]
-- Improve(logtail_attachment): Improve resource use common method [GH-1508] 
-- improve(slb):update testcase [GH-1507]
-- improve(disk):update disk_attachment [GH-1501]
-- add(slb_backend_server): slb backend server resource & data source [GH-1498]
-- Improve(log_machine_group): Improve resources use common method [GH-1497]
-- Improve(log_project): Improve resource use common method [GH-1496]
-- improve(network_interface): enhance sweeper test [GH-1495]
-- Improve(log_store): Improve resources use common method [GH-1494]
-- improve(instance_type):update testcase config [GH-1493]
-- Improve(mns_topic_subscription): Improve its resource use common method [GH-1492]
-- improve(disk):suppurt delete_auto_snapshot delete_with_instance enable_auto_snapshot [GH-1491]
-- Improve(mns_topic): Improve its resource use common method [GH-1488]
-- Improve(api_gateway): api_gateway_api added testcases [GH-1487]
-- Improve(mns_queue): Improve its resource use common method [GH-1485]
-- improve(customer_gateway):create add retry [GH-1477]
-- improve(gpdb): resources supports timeouts setting [GH-1476]
-- improve(fc_triggers): Added ids filter to datasource [GH-1475]
-- improve(fc_services): Added ids filter to datasource [GH-1474]
-- improve(fc_functions): Added ids filter to datasource [GH-1473]
-- improve(instance_types):update instance_types filter condition [GH-1472]
-- improve(pvtz_zone__domain): Added ids filter to datasource [GH-1471]
-- improve(cr_repos): Added names to datasource attributes [GH-1470]
-- improve(cr_namespaces): Added names to datasource attributes [GH-1469]
-- improve(cdn): Added region to domain name and modified sweep rules [GH-1466]
-- improve(ram_roles): Added ids filter to datasource [GH-1461]
-- improve(ram_users): Added ids filter to datasource [GH-1459]
-- improve(pvtz_zones): Added ids filter and added names to datasource attributes [GH-1458]
-- improve(nas_mount_targets): Added ids filter to datasource [GH-1453]
-- improve(nas_file_systems): Added descriptions to datasource attributes [GH-1450]
-- improve(nas_access_rules): Added ids filter to datasource [GH-1448]
-- improve(mongodb_instance): supports timeouts setting [GH-1446]
-- improve(nas_access_groups): Added names to its attributes [GH-1444]
-- improve(mns_topics): Added names to datasource attributes [GH-1442]
-- improve(mns_topic_subscriptions): Added names to datasource attributes [GH-1441]
-- improve(mns_queues): Added names to datasource attributes [GH-1439]
+- improve(dns_record): add diffsuppressfunc to avoid DomainRecordDuplicate error. ([#1518](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1518))
+- remove useless import ([#1517](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1517))
+- remove empty fields in managed k8s, add force_update, add multiple az support ([#1516](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1516))
+- improve(fc_function):fc_function support sweeper ([#1513](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1513))
+- improve(fc_trigger):fc_trigger support sweeper ([#1512](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1512))
+- Improve(logtail_attachment): Improve resource use common method [[#1508](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1508)] 
+- improve(slb):update testcase ([#1507](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1507))
+- improve(disk):update disk_attachment ([#1501](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1501))
+- add(slb_backend_server): slb backend server resource & data source ([#1498](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1498))
+- Improve(log_machine_group): Improve resources use common method ([#1497](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1497))
+- Improve(log_project): Improve resource use common method ([#1496](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1496))
+- improve(network_interface): enhance sweeper test ([#1495](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1495))
+- Improve(log_store): Improve resources use common method ([#1494](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1494))
+- improve(instance_type):update testcase config ([#1493](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1493))
+- Improve(mns_topic_subscription): Improve its resource use common method ([#1492](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1492))
+- improve(disk):suppurt delete_auto_snapshot delete_with_instance enable_auto_snapshot ([#1491](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1491))
+- Improve(mns_topic): Improve its resource use common method ([#1488](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1488))
+- Improve(api_gateway): api_gateway_api added testcases ([#1487](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1487))
+- Improve(mns_queue): Improve its resource use common method ([#1485](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1485))
+- improve(customer_gateway):create add retry ([#1477](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1477))
+- improve(gpdb): resources supports timeouts setting ([#1476](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1476))
+- improve(fc_triggers): Added ids filter to datasource ([#1475](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1475))
+- improve(fc_services): Added ids filter to datasource ([#1474](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1474))
+- improve(fc_functions): Added ids filter to datasource ([#1473](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1473))
+- improve(instance_types):update instance_types filter condition ([#1472](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1472))
+- improve(pvtz_zone__domain): Added ids filter to datasource ([#1471](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1471))
+- improve(cr_repos): Added names to datasource attributes ([#1470](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1470))
+- improve(cr_namespaces): Added names to datasource attributes ([#1469](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1469))
+- improve(cdn): Added region to domain name and modified sweep rules ([#1466](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1466))
+- improve(ram_roles): Added ids filter to datasource ([#1461](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1461))
+- improve(ram_users): Added ids filter to datasource ([#1459](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1459))
+- improve(pvtz_zones): Added ids filter and added names to datasource attributes ([#1458](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1458))
+- improve(nas_mount_targets): Added ids filter to datasource ([#1453](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1453))
+- improve(nas_file_systems): Added descriptions to datasource attributes ([#1450](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1450))
+- improve(nas_access_rules): Added ids filter to datasource ([#1448](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1448))
+- improve(mongodb_instance): supports timeouts setting ([#1446](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1446))
+- improve(nas_access_groups): Added names to its attributes ([#1444](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1444))
+- improve(mns_topics): Added names to datasource attributes ([#1442](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1442))
+- improve(mns_topic_subscriptions): Added names to datasource attributes ([#1441](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1441))
+- improve(mns_queues): Added names to datasource attributes ([#1439](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1439))
 
 BUG FIXES:
 
-- Fix(logstore_index): Invalid update parameter change [GH-1505]
-- fix(api_gateway): fix can't get resource id when stage_names set [GH-1486]
-- fix(kvstore_instance): resource kvstore_instance add Retry while ModifyInstanceSpec err [GH-1484]
-- fix(cen): modified the timeouts of cen instance to avoid errors [GH-1451]
+- Fix(logstore_index): Invalid update parameter change ([#1505](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1505))
+- fix(api_gateway): fix can't get resource id when stage_names set ([#1486](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1486))
+- fix(kvstore_instance): resource kvstore_instance add Retry while ModifyInstanceSpec err ([#1484](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1484))
+- fix(cen): modified the timeouts of cen instance to avoid errors ([#1451](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1451))
 
 ## 1.52.2 (July 20, 2019)
 
