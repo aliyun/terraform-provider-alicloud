@@ -1,17 +1,29 @@
 ## 1.53.0 (Unreleased)
 
-- **New Resource:** `alicloud_ess_scalinggroup_vserver_groups`
+- **New Date Source:** `alicloud_ons_groups` [GH-1506]
+- **New Resource:** `alicloud_ons_group` [GH-1506]
+- **New Resource:** `alicloud_ess_scalinggroup_vserver_groups` [GH-1503]
 - **New Date Source:** `alicloud_ons_topics` [GH-1483]
 - **New Resource:** `alicloud_ons_topic` [GH-1483]
 
 IMPROVEMENTS:
 
+- remove useless import [GH-1517]
+- remove empty fields in managed k8s, add force_update, add multiple az support [GH-1516]
+- improve(fc_function):fc_function support sweeper [GH-1513]
+- improve(fc_trigger):fc_trigger support sweeper [GH-1512]
+- Improve(logtail_attachment): Improve resource use common method [GH-1508] 
 - improve(slb):update testcase [GH-1507]
 - improve(disk):update disk_attachment [GH-1501]
+- Improve(log_machine_group): Improve resources use common method [GH-1497]
+- Improve(log_project): Improve resource use common method [GH-1496]
 - improve(network_interface): enhance sweeper test [GH-1495]
+- Improve(log_store): Improve resources use common method [GH-1494]
 - improve(instance_type):update testcase config [GH-1493]
+- Improve(mns_topic_subscription): Improve its resource use common method [GH-1492]
 - improve(disk):suppurt delete_auto_snapshot delete_with_instance enable_auto_snapshot [GH-1491]
 - Improve(mns_topic): Improve its resource use common method [GH-1488]
+- Improve(api_gateway): api_gateway_api added testcases [GH-1487]
 - Improve(mns_queue): Improve its resource use common method [GH-1485]
 - improve(customer_gateway):create add retry [GH-1477]
 - improve(gpdb): resources supports timeouts setting [GH-1476]
@@ -29,6 +41,7 @@ IMPROVEMENTS:
 - improve(nas_mount_targets): Added ids filter to datasource [GH-1453]
 - improve(nas_file_systems): Added descriptions to datasource attributes [GH-1450]
 - improve(nas_access_rules): Added ids filter to datasource [GH-1448]
+- improve(mongodb_instance): supports timeouts setting [GH-1446]
 - improve(nas_access_groups): Added names to its attributes [GH-1444]
 - improve(mns_topics): Added names to datasource attributes [GH-1442]
 - improve(mns_topic_subscriptions): Added names to datasource attributes [GH-1441]
@@ -36,6 +49,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix(logstore_index): Invalid update parameter change [GH-1505]
 - fix(api_gateway): fix can't get resource id when stage_names set [GH-1486]
 - fix(kvstore_instance): resource kvstore_instance add Retry while ModifyInstanceSpec err [GH-1484]
 - fix(cen): modified the timeouts of cen instance to avoid errors [GH-1451]
