@@ -1,13 +1,17 @@
 ## 1.53.0 (Unreleased)
 
-- **New Date Source:** `alicloud_ons_groups` [GH-1506]
 - **New Resource:** `alicloud_ons_group` [GH-1506]
 - **New Resource:** `alicloud_ess_scalinggroup_vserver_groups` [GH-1503]
-- **New Date Source:** `alicloud_ons_topics` [GH-1483]
+- **New Resource:** `alicloud_slb_backend_server` [GH-1498]
 - **New Resource:** `alicloud_ons_topic` [GH-1483]
+- **New Data Source:** `alicloud_ons_groups` [GH-1506]
+- **New Data source:** `alicloud_slb_backend_servers` [GH-1498]
+- **New Data Source:** `alicloud_ons_topics` [GH-1483]
+
 
 IMPROVEMENTS:
 
+- improve(dns_record): add diffsuppressfunc to avoid DomainRecordDuplicate error. [GH-1518]
 - remove useless import [GH-1517]
 - remove empty fields in managed k8s, add force_update, add multiple az support [GH-1516]
 - improve(fc_function):fc_function support sweeper [GH-1513]
@@ -15,6 +19,7 @@ IMPROVEMENTS:
 - Improve(logtail_attachment): Improve resource use common method [GH-1508] 
 - improve(slb):update testcase [GH-1507]
 - improve(disk):update disk_attachment [GH-1501]
+- add(slb_backend_server): slb backend server resource & data source [GH-1498]
 - Improve(log_machine_group): Improve resources use common method [GH-1497]
 - Improve(log_project): Improve resource use common method [GH-1496]
 - improve(network_interface): enhance sweeper test [GH-1495]
