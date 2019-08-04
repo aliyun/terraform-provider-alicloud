@@ -1,4 +1,9 @@
-## 1.54.0 (Unreleased)
+## 1.53.1 (Unreleased)
+
+BUG FIXES:
+
+- fix(mongodb_instance): fix notfound error when describing it [GH-1520]
+
 ## 1.53.0 (August 02, 2019)
 
 - **New Resource:** `alicloud_ons_group` ([#1506](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1506))
