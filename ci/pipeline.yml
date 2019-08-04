@@ -772,8 +772,8 @@ jobs:
     trigger: true
     resource: 1630
   - <<: *run
-    trigger: false
     params:
+      <<: *run-params
       TEST_CASE_CODE: "SslVpn"
 
 - name: Vpc
@@ -795,8 +795,8 @@ jobs:
     trigger: true
     resource: 1830
   - <<: *run
-    trigger: false
     params:
+      <<: *run-params
       TEST_CASE_CODE: "Vpn"
 
 - name: Mns
