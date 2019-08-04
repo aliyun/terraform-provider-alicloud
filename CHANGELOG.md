@@ -1,8 +1,12 @@
 ## 1.53.1 (Unreleased)
 
+IMPROVEMENTS:
+
+- remove useless trigger in vpn ci [GH-1522]
+
 BUG FIXES:
 
-- fix(mongodb_instance): fix notfound error when describing it [GH-1520]
+- fix(mongodb_instance): fix notfound error when describing it [GH-1521]
 
 ## 1.53.0 (August 02, 2019)
 
