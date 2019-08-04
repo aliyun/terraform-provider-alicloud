@@ -33,6 +33,9 @@ func (s *MongoDBService) DescribeMongoDBInstance(id string) (instance dds.DBInst
 	})
 	response, _ := raw.(*dds.DescribeDBInstanceAttributeResponse)
 	if err != nil {
+		if IsExceptedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), response)
