@@ -251,19 +251,28 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		request.DiskId = d.Id()
 		request.NewSize = requests.NewInteger(size)
 		request.Type = string(DiskResizeTypeOnline)
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ResizeDisk(request)
-		})
-		if IsExceptedErrors(err, DiskNotSupportOnlineChangeErrors) {
-			request.Type = string(DiskResizeTypeOffline)
-			raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		err := resource.Retry(10*time.Second, func() *resource.RetryError {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.ResizeDisk(request)
 			})
-		}
+			if IsExceptedErrors(err, DiskNotSupportOnlineChangeErrors) {
+				request.Type = string(DiskResizeTypeOffline)
+				raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+					return ecsClient.ResizeDisk(request)
+				})
+			}
+			if err != nil {
+				if IsExceptedError(err, "OperationConflict") {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw)
+			return nil
+		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
 		d.SetPartial("size")
 	}
 
