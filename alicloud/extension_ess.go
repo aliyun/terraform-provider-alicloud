@@ -90,6 +90,7 @@ const (
 type MultiAzPolicy string
 
 const (
-	Priority = MultiAzPolicy("PRIORITY")
-	Balance  = MultiAzPolicy("BALANCE")
+	Priority      = MultiAzPolicy("PRIORITY")
+	Balance       = MultiAzPolicy("BALANCE")
+	CostOptimized = MultiAzPolicy("COST_OPTIMIZED")
 )

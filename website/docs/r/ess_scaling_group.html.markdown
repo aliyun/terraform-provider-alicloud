@@ -107,11 +107,17 @@ The following arguments are supported:
       targeting your `alicloud_slb_listener` in order to make sure the listener with its HealthCheck configuration is ready before creating your scaling group).
     - The Server Load Balancer instance attached with VPC-type ECS instances cannot be attached to the scaling group.
     - The default weight of an ECS instance attached to the Server Load Balancer instance is 50.
-* `multi_az_policy` - (Optional, ForceNew) Multi-AZ scaling group ECS instance expansion and contraction strategy. PRIORITY or BALANCE.
+* `multi_az_policy` - (Optional, ForceNew) Multi-AZ scaling group ECS instance expansion and contraction strategy. PRIORITY, BALANCE or COST_OPTIMIZED(Available in 1.54.0+).
+* `on_demand_base_capacity` - (Optional, Available in 1.54.0+) The minimum amount of the Auto Scaling group's capacity that must be fulfilled by On-Demand Instances. This base portion is provisioned first as your group scales.
+* `on_demand_percentage_above_base_capacity` - (Optional, Available in 1.54.0+) Controls the percentages of On-Demand Instances and Spot Instances for your additional capacity beyond OnDemandBaseCapacity.  
+* `spot_instance_pools` - (Optional, Available in 1.54.0+) The number of Spot pools to use to allocate your Spot capacity. The Spot pools is composed of instance types of lowest price.
+* `spot_instance_remedy` - (Optional, Available in 1.54.0+) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.            
 
 -> **NOTE:** When detach loadbalancers, instances in group will be remove from loadbalancer's `Default Server Group`; On the contrary, When attach loadbalancers, instances in group will be added to loadbalancer's `Default Server Group`.
 
 -> **NOTE:** When detach dbInstances, private ip of instances in group will be remove from dbInstance's `WhiteList`; On the contrary, When attach dbInstances, private ip of instances in group will be added to dbInstance's `WhiteList`.
+
+-> **NOTE:** `on_demand_base_capacity`,`on_demand_percentage_above_base_capacity`,`spot_instance_pools`,`spot_instance_remedy` are valid only if `multi_az_policy` is 'COST_OPTIMIZED'.
 
 
 ## Attributes Reference

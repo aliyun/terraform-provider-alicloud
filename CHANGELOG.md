@@ -7,6 +7,7 @@ IMPROVEMENTS:
 BUG FIXES:
 
 - fix(mongodb_instance): fix notfound error when describing it [GH-1521]
+- improve(alicloud_ess_scaling_group): support 'COST_OPTIMIZED' mode of autoscaling group.
 
 ## 1.53.0 (August 02, 2019)
 

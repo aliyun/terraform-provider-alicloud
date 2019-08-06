@@ -80,8 +80,31 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      Priority,
-				ValidateFunc: validateAllowedStringValue([]string{string(Priority), string(Balance)}),
+				ValidateFunc: validateAllowedStringValue([]string{string(Priority), string(Balance), string(CostOptimized)}),
 				ForceNew:     true,
+			},
+			"on_demand_base_capacity": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validateIntegerInRange(0, 1000),
+			},
+			"on_demand_percentage_above_base_capacity": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validateIntegerInRange(0, 100),
+			},
+			"spot_instance_pools": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validateIntegerInRange(0, 10),
+			},
+			"spot_instance_remedy": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -140,6 +163,10 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("scaling_group_name", object.ScalingGroupName)
 	d.Set("default_cooldown", object.DefaultCooldown)
 	d.Set("multi_az_policy", object.MultiAZPolicy)
+	d.Set("on_demand_base_capacity", object.OnDemandBaseCapacity)
+	d.Set("on_demand_percentage_above_base_capacity", object.OnDemandPercentageAboveBaseCapacity)
+	d.Set("spot_instance_pools", object.SpotInstancePools)
+	d.Set("spot_instance_remedy", object.SpotInstanceRemedy)
 	var polices []string
 	if len(object.RemovalPolicies.RemovalPolicy) > 0 {
 		for _, v := range object.RemovalPolicies.RemovalPolicy {
@@ -210,6 +237,22 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 
+	if d.HasChange("on_demand_base_capacity") {
+		request.OnDemandBaseCapacity = requests.NewInteger(d.Get("on_demand_base_capacity").(int))
+	}
+
+	if d.HasChange("on_demand_percentage_above_base_capacity") {
+		request.OnDemandPercentageAboveBaseCapacity = requests.NewInteger(d.Get("on_demand_percentage_above_base_capacity").(int))
+	}
+
+	if d.HasChange("spot_instance_pools") {
+		request.SpotInstancePools = requests.NewInteger(d.Get("spot_instance_pools").(int))
+	}
+
+	if d.HasChange("spot_instance_remedy") {
+		request.SpotInstanceRemedy = requests.NewBoolean(d.Get("spot_instance_remedy").(bool))
+	}
+
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.ModifyScalingGroup(request)
 	})
@@ -222,6 +265,10 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	d.SetPartial("default_cooldown")
 	d.SetPartial("vswitch_ids")
 	d.SetPartial("removal_policies")
+	d.SetPartial("on_demand_base_capacity")
+	d.SetPartial("on_demand_percentage_above_base_capacity")
+	d.SetPartial("spot_instance_pools")
+	d.SetPartial("spot_instance_remedy")
 	addDebug(request.GetActionName(), raw)
 
 	if d.HasChange("loadbalancer_ids") {
@@ -301,6 +348,22 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("multi_az_policy"); ok && v.(string) != "" {
 		request.MultiAZPolicy = v.(string)
+	}
+
+	if v, ok := d.GetOk("on_demand_base_capacity"); ok {
+		request.OnDemandBaseCapacity = requests.NewInteger(v.(int))
+	}
+
+	if v, ok := d.GetOk("on_demand_percentage_above_base_capacity"); ok {
+		request.OnDemandPercentageAboveBaseCapacity = requests.NewInteger(v.(int))
+	}
+
+	if v, ok := d.GetOk("spot_instance_pools"); ok {
+		request.SpotInstancePools = requests.NewInteger(v.(int))
+	}
+
+	if v, ok := d.GetOk("spot_instance_remedy"); ok {
+		request.SpotInstanceRemedy = requests.NewBoolean(v.(bool))
 	}
 
 	return request, nil

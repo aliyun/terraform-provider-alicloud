@@ -200,6 +200,85 @@ func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 
 }
 
+func TestAccAlicloudEssScalingGroup_costoptimized(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":                                 "1",
+		"max_size":                                 "1",
+		"default_cooldown":                         "20",
+		"scaling_group_name":                       fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
+		"vswitch_ids.#":                            "2",
+		"removal_policies.#":                       "2",
+		"on_demand_base_capacity":                  "10",
+		"spot_instance_pools":                      "10",
+		"spot_instance_remedy":                     "false",
+		"on_demand_percentage_above_base_capacity": "10",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEssScalingGroupCostOptimized(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupSpotInstanceRemedy(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spot_instance_remedy": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupOnDemandBaseCapacity(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"on_demand_base_capacity": "8",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupOnDemandPercentageAboveBaseCapacity(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"on_demand_percentage_above_base_capacity": "8",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupSpotInstancePools(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spot_instance_pools": "8",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
 func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
@@ -1021,7 +1100,7 @@ func testAccEssScalingGroupModifyVSwitchIds(common string, rand int) string {
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 		  name = "${var.name}-bar"
 	}
-	
+
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 2
 		max_size = 2
@@ -1030,4 +1109,148 @@ func testAccEssScalingGroupModifyVSwitchIds(common string, rand int) string {
 		vswitch_ids = ["${alicloud_vswitch.default2.id}"]
 		removal_policies = ["OldestInstance"]
 	}`, common, rand)
+}
+
+func testAccEssScalingGroupCostOptimized(common string, rand int) string {
+	return fmt.Sprintf(`
+    %s
+    variable "name" {
+        default = "tf-testAccEssScalingGroup-%d"
+    }
+    
+    resource "alicloud_vswitch" "default2" {
+          vpc_id = "${alicloud_vpc.default.id}"
+          cidr_block = "172.16.1.0/24"
+          availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+          name = "${var.name}-bar"
+    }
+    
+    resource "alicloud_ess_scaling_group" "default" {
+        min_size = 1
+        max_size = 1
+        scaling_group_name = "${var.name}"
+        default_cooldown = 20
+        vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+        removal_policies = ["OldestInstance", "NewestInstance"]
+        multi_az_policy = "COST_OPTIMIZED"
+        on_demand_base_capacity = "10"
+        on_demand_percentage_above_base_capacity = "10"
+        spot_instance_pools = "10"
+    }`, common, rand)
+}
+
+func testAccEssScalingGroupSpotInstanceRemedy(common string, rand int) string {
+	return fmt.Sprintf(`
+    %s
+    variable "name" {
+        default = "tf-testAccEssScalingGroup-%d"
+    }
+    
+    resource "alicloud_vswitch" "default2" {
+          vpc_id = "${alicloud_vpc.default.id}"
+          cidr_block = "172.16.1.0/24"
+          availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+          name = "${var.name}-bar"
+    }
+    
+    resource "alicloud_ess_scaling_group" "default" {
+        min_size = 1
+        max_size = 1
+        scaling_group_name = "${var.name}"
+        default_cooldown = 20
+        vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+        removal_policies = ["OldestInstance", "NewestInstance"]
+        multi_az_policy = "COST_OPTIMIZED"
+        on_demand_base_capacity = "10"
+        on_demand_percentage_above_base_capacity = "10"
+        spot_instance_pools = "10"
+		spot_instance_remedy = true
+    }`, common, rand)
+}
+
+func testAccEssScalingGroupOnDemandBaseCapacity(common string, rand int) string {
+	return fmt.Sprintf(`
+    %s
+    variable "name" {
+        default = "tf-testAccEssScalingGroup-%d"
+    }
+    
+    resource "alicloud_vswitch" "default2" {
+          vpc_id = "${alicloud_vpc.default.id}"
+          cidr_block = "172.16.1.0/24"
+          availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+          name = "${var.name}-bar"
+    }
+    
+    resource "alicloud_ess_scaling_group" "default" {
+        min_size = 1
+        max_size = 1
+        scaling_group_name = "${var.name}"
+        default_cooldown = 20
+        vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+        removal_policies = ["OldestInstance", "NewestInstance"]
+        multi_az_policy = "COST_OPTIMIZED"
+        on_demand_base_capacity = "8"
+        on_demand_percentage_above_base_capacity = "10"
+        spot_instance_pools = "10"
+		spot_instance_remedy = true
+    }`, common, rand)
+}
+
+func testAccEssScalingGroupOnDemandPercentageAboveBaseCapacity(common string, rand int) string {
+	return fmt.Sprintf(`
+    %s
+    variable "name" {
+        default = "tf-testAccEssScalingGroup-%d"
+    }
+    
+    resource "alicloud_vswitch" "default2" {
+          vpc_id = "${alicloud_vpc.default.id}"
+          cidr_block = "172.16.1.0/24"
+          availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+          name = "${var.name}-bar"
+    }
+    
+    resource "alicloud_ess_scaling_group" "default" {
+        min_size = 1
+        max_size = 1
+        scaling_group_name = "${var.name}"
+        default_cooldown = 20
+        vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+        removal_policies = ["OldestInstance", "NewestInstance"]
+        multi_az_policy = "COST_OPTIMIZED"
+        on_demand_base_capacity = "8"
+        on_demand_percentage_above_base_capacity = "8"
+        spot_instance_pools = "10"
+		spot_instance_remedy = true
+    }`, common, rand)
+}
+
+func testAccEssScalingGroupSpotInstancePools(common string, rand int) string {
+	return fmt.Sprintf(`
+    %s
+    variable "name" {
+        default = "tf-testAccEssScalingGroup-%d"
+    }
+    
+    resource "alicloud_vswitch" "default2" {
+          vpc_id = "${alicloud_vpc.default.id}"
+          cidr_block = "172.16.1.0/24"
+          availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+          name = "${var.name}-bar"
+    }
+    
+    resource "alicloud_ess_scaling_group" "default" {
+        min_size = 1
+        max_size = 1
+        scaling_group_name = "${var.name}"
+        default_cooldown = 20
+        vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+        removal_policies = ["OldestInstance", "NewestInstance"]
+        multi_az_policy = "COST_OPTIMIZED"
+        on_demand_base_capacity = "8"
+        on_demand_percentage_above_base_capacity = "8"
+        spot_instance_pools = "8"
+		spot_instance_remedy = true
+    }`, common, rand)
 }
