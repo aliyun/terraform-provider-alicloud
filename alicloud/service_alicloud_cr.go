@@ -2,20 +2,15 @@ package alicloud
 
 import (
 	"encoding/json"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type CrService struct {
 	client *connectivity.AliyunClient
-}
-
-type crDefaultResponse struct {
-	RequestId string `json:"requestId"`
-	Data      struct {
-	} `json:"data"`
 }
 
 type crCreateNamespaceRequestPayload struct {
@@ -139,28 +134,54 @@ type crTag struct {
 	ImageSize   int    `json:"imageSize"`
 }
 
-func (c *CrService) DescribeNamespace(namespaceName string) (*cr.GetNamespaceResponse, error) {
-	invoker := NewInvoker()
+func (c *CrService) DescribeCrNamespace(id string) (*cr.GetNamespaceResponse, error) {
+	request := cr.CreateGetNamespaceRequest()
+	request.Namespace = id
 
-	req := cr.CreateGetNamespaceRequest()
-	req.Namespace = namespaceName
+	var response *cr.GetNamespaceResponse
 
-	var resp *cr.GetNamespaceResponse
-
-	if err := invoker.Run(func() error {
-		var err error
-		raw, err := c.client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
-			return crClient.GetNamespace(req)
-		})
-		resp, _ = raw.(*cr.GetNamespaceResponse)
-		return err
-	}); err != nil {
+	var err error
+	raw, err := c.client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+		return crClient.GetNamespace(request)
+	})
+	if err != nil {
 		if IsExceptedError(err, ErrorNamespaceNotExist) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, namespaceName, req.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return resp, nil
+	addDebug(request.GetActionName(), raw)
+	response, _ = raw.(*cr.GetNamespaceResponse)
+
+	return response, nil
+}
+
+func (c *CrService) WaitForCRNamespace(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		object, err := c.DescribeCrNamespace(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		var response crDescribeNamespaceResponse
+		err = json.Unmarshal(object.GetHttpContentBytes(), &response)
+		if err != nil {
+			return WrapError(err)
+		}
+		if response.Data.Namespace.Namespace == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, response.Data.Namespace.Namespace, id, ProviderERROR)
+		}
+	}
 }
 
 func (c *CrService) DescribeCrRepo(id string) (*cr.GetRepoResponse, error) {

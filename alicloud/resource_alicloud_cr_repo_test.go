@@ -2,8 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"testing"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 
 	"github.com/hashicorp/terraform/helper/acctest"
 
