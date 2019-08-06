@@ -28,8 +28,8 @@ func testSweepCdnDomains_new(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		fmt.Sprintf("tf-testacc%s", defaultRegionToTest),
-		fmt.Sprintf("tf_testacc%s", defaultRegionToTest),
+		fmt.Sprintf("tf-testacc%s", region),
+		fmt.Sprintf("tf_testacc%s", region),
 	}
 
 	var domains []cdn.PageData

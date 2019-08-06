@@ -36,8 +36,8 @@ func testSweepRamPolicies(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		fmt.Sprintf("tf-testAcc%s", defaultRegionToTest),
-		fmt.Sprintf("tf_testAcc%s", defaultRegionToTest),
+		fmt.Sprintf("tf-testAcc%s", region),
+		fmt.Sprintf("tf_testAcc%s", region),
 	}
 
 	request := ram.CreateListPoliciesRequest()
