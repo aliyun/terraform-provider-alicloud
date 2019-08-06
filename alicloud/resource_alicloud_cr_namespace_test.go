@@ -4,15 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/hashicorp/terraform/helper/acctest"
-
-	"github.com/hashicorp/terraform/terraform"
 
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
@@ -89,7 +86,7 @@ func testSweepCRNamespace(region string) error {
 
 			crService := CrService{client}
 
-			_, err = crService.DescribeNamespace(n)
+			_, err = crService.DescribeCrNamespace(n)
 			if err != nil {
 				if NotFoundError(err) {
 					return nil
@@ -108,146 +105,129 @@ func testSweepCRNamespace(region string) error {
 }
 
 func TestAccAlicloudCRNamespace_Basic(t *testing.T) {
+	var v *cr.GetNamespaceResponse
+	resourceId := "alicloud_cr_namespace.default"
+	ra := resourceAttrInit(resourceId, crNamespaceMap)
+	serviceFunc := func() interface{} {
+		return &CrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-cr-ns-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCRNamespaceConfigDependence)
+
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions) },
-
-		IDRefreshName: "alicloud_cr_namespace.default",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCRNamespaceDestroy,
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCRNamespace_Basic(acctest.RandIntRange(100000, 999999)),
+				Config: testAccConfig(map[string]interface{}{
+					"name":               name,
+					"auto_create":        "false",
+					"default_visibility": "PUBLIC",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCRNamespaceExists("alicloud_cr_namespace.default"),
-					resource.TestCheckResourceAttrSet("alicloud_cr_namespace.default", "id"),
-					resource.TestMatchResourceAttr("alicloud_cr_namespace.default", "name", regexp.MustCompile("tf-testacc-cr-ns-basic*")),
-					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "auto_create", "false"),
-					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "default_visibility", "PUBLIC"),
+					testAccCheck(map[string]string{
+						"name":               name,
+						"auto_create":        "false",
+						"default_visibility": "PUBLIC",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_create": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_create": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"default_visibility": "PRIVATE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"default_visibility": "PRIVATE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":               name,
+					"auto_create":        "false",
+					"default_visibility": "PUBLIC",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":               name,
+						"auto_create":        "false",
+						"default_visibility": "PUBLIC",
+					}),
 				),
 			},
 		},
 	})
 }
 
-func TestAccAlicloudCRNamespace_Update(t *testing.T) {
-	rand := acctest.RandIntRange(100000, 999999)
+func TestAccAlicloudCRNamespace_Multi(t *testing.T) {
+	var v *cr.GetNamespaceResponse
+	resourceId := "alicloud_cr_namespace.default.4"
+	ra := resourceAttrInit(resourceId, crNamespaceMap)
+	serviceFunc := func() interface{} {
+		return &CrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-cr-ns-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCRNamespaceConfigDependence)
+
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions) },
-
-		IDRefreshName: "alicloud_cr_namespace.default",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCRNamespaceDestroy,
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCRNamespace_UpdateBefore(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name":               name + "${count.index}",
+					"auto_create":        "false",
+					"default_visibility": "PUBLIC",
+					"count":              "5",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCRNamespaceExists("alicloud_cr_namespace.default"),
-					resource.TestCheckResourceAttrSet("alicloud_cr_namespace.default", "id"),
-					resource.TestMatchResourceAttr("alicloud_cr_namespace.default", "name", regexp.MustCompile("tf-testacc-cr-ns*")),
-					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "auto_create", "false"),
-					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "default_visibility", "PUBLIC"),
-				),
-			},
-			{
-				Config: testAccCRNamespace_UpdateAfter(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCRNamespaceExists("alicloud_cr_namespace.default"),
-					resource.TestCheckResourceAttrSet("alicloud_cr_namespace.default", "id"),
-					resource.TestMatchResourceAttr("alicloud_cr_namespace.default", "name", regexp.MustCompile("tf-testacc-cr-ns*")),
-					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "auto_create", "true"),
-					resource.TestCheckResourceAttr("alicloud_cr_namespace.default", "default_visibility", "PRIVATE"),
+					testAccCheck(nil),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckCRNamespaceDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_cr_namespace" {
-			continue
-		}
-
-		crService := CrService{client}
-		_, err := crService.DescribeNamespace(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return WrapError(err)
-		}
-
-		return fmt.Errorf("error namespace %s still exists", rs.Primary.ID)
-	}
-	return nil
+func resourceCRNamespaceConfigDependence(name string) string {
+	return ""
 }
 
-func testAccCheckCRNamespaceExists(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		crService := CrService{client}
-
-		namespace, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("resource not found: %s", n))
-		}
-		if namespace.Primary.ID == "" {
-			return WrapError(fmt.Errorf("resource id not set: %s", n))
-		}
-
-		_, err := crService.DescribeNamespace(namespace.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				return WrapError(fmt.Errorf("resource not exists: %s %s", n, namespace.Primary.ID))
-			}
-			return WrapError(err)
-		}
-		return nil
-	}
-}
-
-func testAccCRNamespace_Basic(rand int) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "tf-testacc-cr-ns-basic-%d"
-}
-
-resource "alicloud_cr_namespace" "default" {
-	name = "${var.name}"
-	auto_create	= false
-	default_visibility = "PUBLIC"
-}
-`, rand)
-}
-
-func testAccCRNamespace_UpdateBefore(rand int) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "tf-testacc-cr-ns-%d"
-}
-
-resource "alicloud_cr_namespace" "default" {
-	name = "${var.name}"
-	auto_create	= false
-	default_visibility = "PUBLIC"
-}
-`, rand)
-}
-
-func testAccCRNamespace_UpdateAfter(rand int) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "tf-testacc-cr-ns-%d"
-}
-
-resource "alicloud_cr_namespace" "default" {
-	name = "${var.name}"
-	auto_create	= true
-	default_visibility = "PRIVATE"
-}
-`, rand)
+var crNamespaceMap = map[string]string{
+	"name":               CHECKSET,
+	"auto_create":        CHECKSET,
+	"default_visibility": CHECKSET,
 }
