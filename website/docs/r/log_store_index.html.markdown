@@ -46,19 +46,19 @@ The following arguments are supported:
 * `logstore` - (Required, ForceNew) The log store name to the query index belongs.
 * `full_text` - The configuration of full text index. Valid item as follows:
 
-    * `case_sensitive` - Whether the case sensitive. Default to false.
-    * `include_chinese` - Whether includes the chinese. Default to false.
-    * `token` - The string of several split words, like "\r", "#"
+    * `case_sensitive` - (Optional) Whether the case sensitive. Default to false.
+    * `include_chinese` - (Optional) Whether includes the chinese. Default to false.
+    * `token` - (Optional) The string of several split words, like "\r", "#"
 
 * `field_search` - List configurations of field search index. Valid item as follows:
 
     * `name` - (Required) The field name, which is unique in the same log store.
-    * `type` - The type of one field. Valid values: ["long", "text", "double", "json"]. Default to "long".
-    * `alias` - The alias of one field
-    * `case_sensitive` - Whether the case sensitive for the field. Default to false. It is valid when "type" is "text" or "json".
-    * `include_chinese` - Whether includes the chinese for the field. Default to false. It is valid when "type" is "text" or "json".
-    * `token` - The string of several split words, like "\r", "#". It is valid when "type" is "text" or "json".
-    * `enable_analytics` - Whether to enable field analytics. Default to true.
+    * `type` - (Optional) The type of one field. Valid values: ["long", "text", "double", "json"]. Default to "long".
+    * `alias` - (Optional) The alias of one field
+    * `case_sensitive` - (Optional) Whether the case sensitive for the field. Default to false. It is valid when "type" is "text" or "json".
+    * `include_chinese` - (Optional) Whether includes the chinese for the field. Default to false. It is valid when "type" is "text" or "json".
+    * `token` - (Optional) The string of several split words, like "\r", "#". It is valid when "type" is "text" or "json".
+    * `enable_analytics` - (Optional) Whether to enable field analytics. Default to true.
 
 -> **Note:** At least one of the "full_text" and "field_search" should be specified.
 
@@ -67,10 +67,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the log store index. It formats of `<project>:<logstore>`.
-* `project` - The project name.
-* `logstore` - Log store name.
-* `full_text` - The full text index config.
-* `field_search` - The field search index config.
 
 ## Import
 
