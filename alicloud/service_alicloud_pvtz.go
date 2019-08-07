@@ -3,6 +3,8 @@ package alicloud
 import (
 	"strconv"
 
+	"github.com/hashicorp/terraform/helper/resource"
+
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -18,27 +20,32 @@ func (s *PvtzService) DescribePvtzZone(id string) (zone pvtz.DescribeZoneInfoRes
 	request := pvtz.CreateDescribeZoneInfoRequest()
 	request.ZoneId = id
 
-	invoker := PvtzInvoker()
-	err = invoker.Run(func() error {
+	var response *pvtz.DescribeZoneInfoResponse
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 			return pvtzClient.DescribeZoneInfo(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
-				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			if IsExceptedErrors(err, []string{ServiceUnavailable, PvtzThrottlingUser, PvtzSystemBusy}) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
 			}
-			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return resource.NonRetryableError(err)
 		}
-
 		addDebug(request.GetActionName(), raw)
-
-		response, _ := raw.(*pvtz.DescribeZoneInfoResponse)
-		if response.ZoneId != id {
-			return WrapErrorf(Error(GetNotFoundMessage("PvtzZone", id)), NotFoundMsg, ProviderERROR)
-		}
-		zone = *response
+		response, _ = raw.(*pvtz.DescribeZoneInfoResponse)
 		return nil
 	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
+			return zone, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return zone, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	if response.ZoneId != id {
+		return zone, WrapErrorf(Error(GetNotFoundMessage("PvtzZone", id)), NotFoundMsg, ProviderERROR)
+	}
+	zone = *response
 
 	return
 }
