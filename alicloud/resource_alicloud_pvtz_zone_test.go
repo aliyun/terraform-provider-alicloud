@@ -11,7 +11,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -111,10 +110,24 @@ func testSweepPvtzZones(region string) error {
 	return nil
 }
 
-func TestAccAlicloudPvtzZone_update(t *testing.T) {
-	var zone pvtz.DescribeZoneInfoResponse
-	rand := acctest.RandIntRange(10000, 999999)
-	resourceId := "alicloud_pvtz_zone.foo"
+func TestAccAlicloudPvtzZone_basic(t *testing.T) {
+	var v pvtz.DescribeZoneInfoResponse
+
+	resourceId := "alicloud_pvtz_zone.default"
+	ra := resourceAttrInit(resourceId, pvtzZoneBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%d.test.com", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePvtzZoneConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -122,21 +135,16 @@ func TestAccAlicloudPvtzZone_update(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccAlicloudPvtzZoneDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPvtzZoneConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.foo", &zone),
-					resource.TestCheckResourceAttr(
-						"alicloud_pvtz_zone.foo", "name", fmt.Sprintf("tf-testacc%d.test.com", rand)),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone.foo", "name", fmt.Sprintf("tf-testacc%d.test.com", rand)),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "id"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone.foo", "remark", ""),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "creation_time"),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "update_time"),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "is_ptr"),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "record_count"),
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
 				),
 			},
 			{
@@ -145,122 +153,81 @@ func TestAccAlicloudPvtzZone_update(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccPvtzZoneConfigUpdate(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"remark": "remark-test",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.foo", &zone),
-					resource.TestCheckResourceAttr(
-						"alicloud_pvtz_zone.foo", "name", fmt.Sprintf("tf-testacc%d.test.com", rand)),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone.foo", "name", fmt.Sprintf("tf-testacc%d.test.com", rand)),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "id"),
-					resource.TestCheckResourceAttr(
-						"alicloud_pvtz_zone.foo", "remark", "remark-test"),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "creation_time"),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "update_time"),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "is_ptr"),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo", "record_count"),
+					testAccCheck(map[string]string{
+						"remark": "remark-test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"remark": "remark-test-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"remark": "remark-test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"remark": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"remark": REMOVEKEY,
+					}),
 				),
 			},
 		},
 	})
-
 }
-
 func TestAccAlicloudPvtzZone_multi(t *testing.T) {
-	var zone pvtz.DescribeZoneInfoResponse
-	rand := acctest.RandIntRange(10000, 999999)
+	var v pvtz.DescribeZoneInfoResponse
+
+	resourceId := "alicloud_pvtz_zone.default.4"
+	ra := resourceAttrInit(resourceId, pvtzZoneBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%d.test.com", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePvtzZoneConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccAlicloudPvtzZoneDestroy,
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccPvtzZoneConfigMulti(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name":  fmt.Sprintf("tf-testacc%d${count.index}.test.com", rand),
+					"count": "5",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccAlicloudPvtzZoneExists("alicloud_pvtz_zone.foo.4", &zone),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone.foo.4", "name", fmt.Sprintf("tf-testacc%d.test.com", rand)),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo.4", "id"),
-					resource.TestCheckResourceAttr("alicloud_pvtz_zone.foo.4", "remark", ""),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo.4", "creation_time"),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo.4", "update_time"),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo.4", "is_ptr"),
-					resource.TestCheckResourceAttrSet("alicloud_pvtz_zone.foo.4", "record_count"),
+					testAccCheck(nil),
 				),
 			},
 		},
 	})
 }
-
-func testAccAlicloudPvtzZoneExists(n string, zone *pvtz.DescribeZoneInfoResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No ZONE ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		pvtzService := PvtzService{client}
-
-		instance, err := pvtzService.DescribePvtzZone(rs.Primary.ID)
-
-		if err != nil {
-			return err
-		}
-
-		*zone = instance
-		return nil
-	}
+func resourcePvtzZoneConfigDependence(name string) string {
+	return ""
 }
 
-func testAccAlicloudPvtzZoneDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	pvtzService := PvtzService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_pvtz_zone" {
-			continue
-		}
-
-		instance, err := pvtzService.DescribePvtzZone(rs.Primary.ID)
-
-		if err != nil && !NotFoundError(err) {
-			return err
-		}
-
-		if instance.ZoneId != "" {
-			return fmt.Errorf("zone %s still exist", instance.ZoneId)
-		}
-	}
-
-	return nil
-}
-
-func testAccPvtzZoneConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_pvtz_zone" "foo" {
-		name = "tf-testacc%d.test.com"
-	}
-	`, rand)
-}
-func testAccPvtzZoneConfigUpdate(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_pvtz_zone" "foo" {
-		name = "tf-testacc%d.test.com"
-		remark = "remark-test"
-	}
-	`, rand)
-}
-
-func testAccPvtzZoneConfigMulti(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_pvtz_zone" "foo" {
-		count = 5
-		name = "tf-testacc%d.test.com"
-	}
-	`, rand)
+var pvtzZoneBasicMap = map[string]string{
+	"name": CHECKSET,
 }

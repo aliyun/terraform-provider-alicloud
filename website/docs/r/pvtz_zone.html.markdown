@@ -25,7 +25,7 @@ resource "alicloud_pvtz_zone" "foo" {
 
 The following arguments are supported:
 
-* `name` - (Optional) The name of the Private Zone.
+* `name` - (Optional, ForceNew) The name of the Private Zone.
 * `remark` - (Optional) The remark of the Private Zone.
 
 ## Attributes Reference
