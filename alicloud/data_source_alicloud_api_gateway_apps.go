@@ -119,7 +119,7 @@ func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface
 			continue
 		}
 		if len(idsMap) > 0 {
-			if _, ok := idsMap[strconv.Itoa(app.AppId)]; !ok {
+			if _, ok := idsMap[strconv.FormatInt(app.AppId, 10)]; !ok {
 				continue
 			}
 		}
@@ -142,7 +142,7 @@ func apigatewayAppsDecriptionAttributes(d *schema.ResourceData, apps []cloudapi.
 			"created_time":  app.CreatedTime,
 			"modified_time": app.ModifiedTime,
 		}
-		ids = append(ids, strconv.Itoa(app.AppId))
+		ids = append(ids, strconv.FormatInt(app.AppId, 10))
 		s = append(s, mapping)
 		names = append(names, app.AppName)
 	}

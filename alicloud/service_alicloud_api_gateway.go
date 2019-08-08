@@ -155,7 +155,7 @@ func (s *CloudApiService) DescribeApiGatewayAppAttachment(id string) (*cloudapi.
 	request.GroupId = parts[0]
 	request.ApiId = parts[1]
 	request.StageName = parts[3]
-	appId, _ := strconv.Atoi(parts[2])
+	appId, _ := strconv.ParseInt(parts[2], 10, 64)
 
 	var allApps []cloudapi.AuthorizedApp
 
@@ -262,11 +262,11 @@ func (s *CloudApiService) WaitForApiGatewayAppAttachment(id string, status Statu
 				return WrapError(err)
 			}
 		}
-		if strconv.Itoa(object.AppId) == appIds && status != Deleted {
+		if strconv.FormatInt(object.AppId, 10) == appIds && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, strconv.Itoa(object.AppId), appIds, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, strconv.FormatInt(object.AppId, 10), appIds, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
