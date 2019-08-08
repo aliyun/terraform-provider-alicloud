@@ -103,6 +103,26 @@ func (s *SlbService) DescribeSlbServerGroup(id string) (*slb.DescribeVServerGrou
 	return response, err
 }
 
+func (s *SlbService) DescribeSlbMasterSlaveServerGroup(id string) (response *slb.DescribeMasterSlaveServerGroupAttributeResponse, err error) {
+	request := slb.CreateDescribeMasterSlaveServerGroupAttributeRequest()
+	request.MasterSlaveServerGroupId = id
+	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeMasterSlaveServerGroupAttribute(request)
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{MasterSlaveServerGroupNotFoundMessage, InvalidParameter}) {
+			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return response, WrapErrorf(err, DefaultDebugMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ = raw.(*slb.DescribeMasterSlaveServerGroupAttributeResponse)
+	if response.MasterSlaveServerGroupId == "" {
+		return response, WrapErrorf(Error(GetNotFoundMessage("SlbMasterSlaveServerGroup", id)), NotFoundMsg, ProviderERROR)
+	}
+	return response, err
+}
+
 func (s *SlbService) DescribeSlbBackendServer(id string) (*slb.DescribeLoadBalancerAttributeResponse, error) {
 	request := slb.CreateDescribeLoadBalancerAttributeRequest()
 	request.LoadBalancerId = id
@@ -322,6 +342,30 @@ func (s *SlbService) WaitForSlbServerGroup(id string, status Status, timeout int
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.VServerGroupId, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *SlbService) WaitForSlbMasterSlaveServerGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSlbMasterSlaveServerGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.MasterSlaveServerGroupId == id && status != Deleted {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.MasterSlaveServerGroupId, id, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
