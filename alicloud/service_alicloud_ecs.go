@@ -67,6 +67,36 @@ func (s *EcsService) DescribeZone(id string) (zone ecs.Zone, err error) {
 	return zone, WrapError(Error("availability_zone %s not exists in region %s, all zones are %s", id, s.client.RegionId, zoneIds))
 }
 
+func (s *EcsService) DescribeZones(d *schema.ResourceData) (zones []ecs.Zone, err error) {
+	request := ecs.CreateDescribeZonesRequest()
+	request.InstanceChargeType = d.Get("instance_charge_type").(string)
+	request.SpotStrategy = d.Get("spot_strategy").(string)
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeZones(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, "alicloud_instance_type_families", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ecs.DescribeZonesResponse)
+	if len(response.Zones.Zone) < 1 {
+		return zones, WrapError(Error("There is no any availability zone in region %s.", s.client.RegionId))
+	}
+	if v, ok := d.GetOk("zone_id"); ok {
+		zoneIds := []string{}
+		for _, z := range response.Zones.Zone {
+			if z.ZoneId == v.(string) {
+				return []ecs.Zone{z}, nil
+			}
+			zoneIds = append(zoneIds, z.ZoneId)
+		}
+		return zones, WrapError(Error("availability_zone %s not exists in region %s, all zones are %s", v.(string), s.client.RegionId, zoneIds))
+	} else {
+		return response.Zones.Zone, nil
+	}
+}
+
 func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err error) {
 	request := ecs.CreateDescribeInstancesRequest()
 	request.InstanceIds = convertListToJsonString([]interface{}{id})
