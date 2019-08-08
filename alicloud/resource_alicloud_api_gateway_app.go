@@ -59,7 +59,7 @@ func resourceAliyunApigatewayAppCreate(d *schema.ResourceData, meta interface{})
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*cloudapi.CreateAppResponse)
-		d.SetId(strconv.Itoa(response.AppId))
+		d.SetId(strconv.FormatInt(response.AppId, 10))
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_apigateway_app", request.GetActionName(), AlibabaCloudSdkGoERROR)
