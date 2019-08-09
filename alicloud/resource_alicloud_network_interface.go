@@ -62,6 +62,10 @@ func resourceAliyunNetworkInterface() *schema.Resource {
 				ValidateFunc:  validateIntegerInRange(0, 10),
 				ConflictsWith: []string{"private_ips"},
 			},
+			"mac": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -137,6 +141,7 @@ func resourceAliyunNetworkInterfaceRead(d *schema.ResourceData, meta interface{}
 	}
 	d.Set("private_ips", privateIps)
 	d.Set("private_ips_count", len(privateIps))
+	d.Set("mac", object.MacAddress)
 
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceEni)
 	if err != nil && !NotFoundError(err) {
