@@ -1,13 +1,28 @@
-## 1.53.1 (Unreleased)
+## 1.54.0 (Unreleased)
+
+- **New Data Source:** `alicloud_slb_master_slave_server_groups` [GH-1531]
+- **New Resource:** `alicloud_slb_master_slave_server_group` [GH-1531]
+- **New Data Source:** `alicloud_instance_type_families` [GH-1519]
 
 IMPROVEMENTS:
 
+- improve(provider):profile,role_arn,session_name,session_expiration support ENV [GH-1537]
+- support sg description [GH-1536]
+- support mac address [GH-1535]
+- improve(sdk): update sdk and modify api_gateway strconvs [GH-1533]
+- Improve(pvtz_zone_record): Improve resource use common method [GH-1528]
+- improve(alicloud_ess_scaling_group): support 'COST_OPTIMIZED' mode of autoscaling group [GH-1527]
+- Improve(pvtz_zone): Improve its and attachment resources use common method [GH-1525]
 - remove useless trigger in vpn ci [GH-1522]
+- Improve(cr_repo): Improve resource use common method [GH-1515]
+- Improve(cr_namespace): Improve resource use common method [GH-1509]
+- improve(kvstore): kvstore_instance resource supports timeouts setting [GH-1445]
 
 BUG FIXES:
 
+- Fix(alicloud_logstore_index) Repair parameter description document [GH-1532]
+- fix(sweep): modified the region of prefixes [GH-1526]
 - fix(mongodb_instance): fix notfound error when describing it [GH-1521]
-- improve(alicloud_ess_scaling_group): support 'COST_OPTIMIZED' mode of autoscaling group.
 
 ## 1.53.0 (August 02, 2019)
 
