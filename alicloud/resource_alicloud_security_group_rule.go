@@ -94,6 +94,12 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -184,6 +190,7 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	d.Set("nic_type", object.NicType)
 	d.Set("policy", strings.ToLower(string(object.Policy)))
 	d.Set("port_range", object.PortRange)
+	d.Set("description", object.Description)
 	if pri, err := strconv.Atoi(object.Priority); err != nil {
 		return WrapError(err)
 	} else {
@@ -339,6 +346,9 @@ func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*reques
 	}
 
 	request.QueryParams["SecurityGroupId"] = sgId
+
+	description := d.Get("description").(string)
+	request.QueryParams["Description"] = description
 
 	return request, nil
 }
