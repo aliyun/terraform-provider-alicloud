@@ -177,7 +177,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 
 * `shared_credentials_file` - (Optional, Available in 1.49.0+) This is the path to the shared credentials file. If this is not set and a profile is specified, ~/.aliyun/config.json will be used.
 
-* `profile` - (Optional, Available in 1.49.0+) This is the Alicloud profile name as set in the shared credentials file.
+* `profile` - (Optional, Available in 1.49.0+) This is the Alicloud profile name as set in the shared credentials file. It can also be sourced from the `ALICLOUD_PROFILE` environment variable.
 
 * `assume_role` - (Optional) An `assume_role` block (documented below). Only one `assume_role` block may be in the configuration.
 
@@ -187,15 +187,15 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 
 The nested `assume_role` block supports the following:
 
-* `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching.
+* `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching. It supports environment variable `ALICLOUD_ASSUME_ROLE_ARN`.
   Terraform executes configuration on account with provided credentials.
 
 * `policy` - (Optional) A more restrictive policy to apply to the temporary credentials. This gives you a way to further restrict the permissions for the resulting temporary
   security credentials. You cannot use the passed policy to grant permissions that are in excess of those allowed by the access policy of the role that is being assumed.
 
-* `session_name` - (Optional) The session name to use when assuming the role. If omitted, 'terraform' is passed to the AssumeRole call as session name.
+* `session_name` - (Optional) The session name to use when assuming the role. If omitted, 'terraform' is passed to the AssumeRole call as session name. It supports environment variable `ALICLOUD_ASSUME_ROLE_SESSION_NAME`.
 
-* `session_expiration` - (Optional) The time after which the established session for assuming role expires. Valid value range: [900-3600] seconds. Default to 3600 (in this case Alicloud use own default value).
+* `session_expiration` - (Optional) The time after which the established session for assuming role expires. Valid value range: [900-3600] seconds. Default to 3600 (in this case Alicloud use own default value). It supports environment variable `ALICLOUD_ASSUME_ROLE_SESSION_EXPIRATION`.
 
 Nested `endpoints` block supports the following:
 
