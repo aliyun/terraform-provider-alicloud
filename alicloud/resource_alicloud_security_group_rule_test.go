@@ -33,7 +33,9 @@ func TestAccAlicloudSecurityGroupRuleBasic(t *testing.T) {
 			{
 				Config: testAccSecurityGroupRuleBasic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"description": "abc",
+					}),
 				),
 			},
 			{
@@ -47,6 +49,7 @@ func TestAccAlicloudSecurityGroupRuleBasic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"source_security_group_id": REMOVEKEY,
 						"cidr_ip":                  "0.0.0.0/0",
+						"description":              "abcd",
 					}),
 				),
 			},
@@ -115,6 +118,7 @@ resource "alicloud_security_group_rule" "default" {
   priority = 100
   security_group_id = "${alicloud_security_group.default.0.id}"
   source_security_group_id = "${alicloud_security_group.default.1.id}"
+  description = "abc"
 }
 `
 const testAccSecurityGroupRule_cidrIp = `
@@ -143,6 +147,7 @@ resource "alicloud_security_group_rule" "default" {
   priority = 100
   security_group_id = "${alicloud_security_group.default.0.id}"
   cidr_ip = "0.0.0.0/0"
+  description = "abcd"
 }
 `
 
