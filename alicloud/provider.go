@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/hashcode"
@@ -89,6 +89,7 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: descriptions["profile"],
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_PROFILE", ""),
 			},
 			"skip_region_validation": {
 				Type:        schema.TypeBool,
@@ -361,40 +362,24 @@ var providerConfig map[string]interface{}
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
-	accessKey := d.Get("access_key").(string)
-	if accessKey == "" {
-		accessKeyId, err := getConfigFromProfile(d, "access_key_id")
-		if err == nil && accessKeyId != nil {
-			accessKey = accessKeyId.(string)
+	var getProviderConfig = func(str string, key string) string {
+		if str == "" {
+			value, err := getConfigFromProfile(d, key)
+			if err == nil && value != nil {
+				str = value.(string)
+			}
 		}
+		return str
 	}
 
-	secretKey := d.Get("secret_key").(string)
-	if secretKey == "" {
-		accessKeySecret, err := getConfigFromProfile(d, "access_key_secret")
-		if err == nil && accessKeySecret != nil {
-			secretKey = accessKeySecret.(string)
-		}
-	}
-
-	region := d.Get("region").(string)
-	if region == "" {
-		regionId, err := getConfigFromProfile(d, "region_id")
-		if err == nil && regionId != nil {
-			region = regionId.(string)
-		}
-	}
+	accessKey := getProviderConfig(d.Get("access_key").(string), "access_key_id")
+	secretKey := getProviderConfig(d.Get("secret_key").(string), "access_key_secret")
+	region := getProviderConfig(d.Get("region").(string), "region_id")
 	if region == "" {
 		region = DEFAULT_REGION
 	}
 
-	ecsRoleName := d.Get("ecs_role_name").(string)
-	if ecsRoleName == "" {
-		ramRoleName, err := getConfigFromProfile(d, "ram_role_name")
-		if err == nil && ramRoleName != nil {
-			ecsRoleName = ramRoleName.(string)
-		}
-	}
+	ecsRoleName := getProviderConfig(d.Get("ecs_role_name").(string), "ram_role_name")
 
 	config := connectivity.Config{
 		AccessKey:            strings.TrimSpace(accessKey),
@@ -405,37 +390,44 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SkipRegionValidation: d.Get("skip_region_validation").(bool),
 	}
 
-	token := d.Get("security_token").(string)
-	if token == "" {
-		stsToken, err := getConfigFromProfile(d, "sts_token")
-		if err == nil && stsToken != nil {
-			token = stsToken.(string)
-		}
-	}
+	token := getProviderConfig(d.Get("security_token").(string), "sts_token")
 	config.SecurityToken = strings.TrimSpace(token)
+
+	config.RamRoleArn = getProviderConfig("", "ram_role_arn")
+	config.RamRoleSessionName = getProviderConfig("", "ram_session_name")
+	expiredSeconds, err := getConfigFromProfile(d, "expired_seconds")
+	if err == nil && expiredSeconds != nil {
+		config.RamRoleSessionExpiration = (int)(expiredSeconds.(float64))
+	}
 
 	assumeRoleList := d.Get("assume_role").(*schema.Set).List()
 	if len(assumeRoleList) == 1 {
 		assumeRole := assumeRoleList[0].(map[string]interface{})
-		config.RamRoleArn = assumeRole["role_arn"].(string)
-		config.RamRoleSessionName = assumeRole["session_name"].(string)
+		if assumeRole["role_arn"].(string) != "" {
+			config.RamRoleArn = assumeRole["role_arn"].(string)
+		}
+		if assumeRole["session_name"].(string) != "" {
+			config.RamRoleSessionName = assumeRole["session_name"].(string)
+		}
+		if config.RamRoleSessionName == "" {
+			config.RamRoleSessionName = "terraform"
+		}
 		config.RamRolePolicy = assumeRole["policy"].(string)
-		config.RamRoleSessionExpiration = assumeRole["session_expiration"].(int)
+		if assumeRole["session_expiration"].(int) == 0 {
+			if v := os.Getenv("ALICLOUD_ASSUME_ROLE_SESSION_EXPIRATION"); v != "" {
+				if expiredSeconds, err := strconv.Atoi(v); err == nil {
+					config.RamRoleSessionExpiration = expiredSeconds
+				}
+			}
+			if config.RamRoleSessionExpiration == 0 {
+				config.RamRoleSessionExpiration = 3600
+			}
+		} else {
+			config.RamRoleSessionExpiration = assumeRole["session_expiration"].(int)
+		}
+
 		log.Printf("[INFO] assume_role configuration set: (RamRoleArn: %q, RamRoleSessionName: %q, RamRolePolicy: %q, RamRoleSessionExpiration: %d)",
 			config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration)
-	} else {
-		roleArn, err := getConfigFromProfile(d, "ram_role_arn")
-		if err == nil && roleArn != nil {
-			config.RamRoleArn = roleArn.(string)
-		}
-		sessionName, err := getConfigFromProfile(d, "ram_session_name")
-		if err == nil && sessionName != nil {
-			config.RamRoleSessionName = sessionName.(string)
-		}
-		sessionExpiration, err := getConfigFromProfile(d, "expired_seconds")
-		if err == nil && sessionExpiration != nil {
-			config.RamRoleSessionExpiration = (int)(sessionExpiration.(float64))
-		}
 	}
 
 	endpointsSet := d.Get("endpoints").(*schema.Set)
@@ -618,14 +610,13 @@ func assumeRoleSchema() *schema.Schema {
 					Type:        schema.TypeString,
 					Required:    true,
 					Description: descriptions["assume_role_role_arn"],
+					DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ASSUME_ROLE_ARN", ""),
 				},
 				"session_name": {
 					Type:        schema.TypeString,
 					Optional:    true,
-					Default:     "terraform",
 					Description: descriptions["assume_role_session_name"],
-					ValidateFunc: stringMatch(regexp.MustCompile(`^[a-zA-Z0-9\. @\-_]{2,32}$`),
-						"Field can contain only A-Z, a-z, ., @, -, _ and valid length is [2-32]"),
+					DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ASSUME_ROLE_SESSION_NAME", ""),
 				},
 				"policy": {
 					Type:        schema.TypeString,
@@ -635,7 +626,6 @@ func assumeRoleSchema() *schema.Schema {
 				"session_expiration": {
 					Type:         schema.TypeInt,
 					Optional:     true,
-					Default:      3600,
 					Description:  descriptions["assume_role_session_expiration"],
 					ValidateFunc: intBetween(900, 3600),
 				},
@@ -908,6 +898,10 @@ func endpointsToHash(v interface{}) int {
 func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{}, error) {
 
 	if providerConfig == nil {
+		if v, ok := d.GetOk("profile"); !ok && v.(string) == "" {
+			return nil, nil
+		}
+		current := d.Get("profile").(string)
 		profilePath := d.Get("shared_credentials_file").(string)
 		if profilePath == "" {
 			profilePath = fmt.Sprintf("%s/.aliyun/config.json", os.Getenv("HOME"))
@@ -926,10 +920,6 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 			err = json.Unmarshal(data, &config)
 			if err != nil {
 				return nil, WrapError(err)
-			}
-			current := "default"
-			if v, ok := d.GetOk("profile"); ok && v.(string) != "" {
-				current = v.(string)
 			}
 			for _, v := range config["profiles"].([]interface{}) {
 				if current == v.(map[string]interface{})["name"] {
