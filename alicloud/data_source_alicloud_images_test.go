@@ -269,17 +269,6 @@ func TestAccAlicloudImagesDataSource_linux(t *testing.T) {
 		}),
 	}
 
-	alinuxConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "^alinux.*",
-			"owners":     "system",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "^alinux.*fake",
-			"owners":     "system",
-		}),
-	}
-
 	var existImagesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                           CHECKSET,
@@ -315,7 +304,7 @@ func TestAccAlicloudImagesDataSource_linux(t *testing.T) {
 		fakeMapFunc:  fakeImagesMapFunc,
 	}
 
-	imagesCheckInfo.dataSourceTestCheck(t, rand, ubuntuConf, slesConf, openSuseConf, freebsdConf, centOsConf, debianConf, coreOsConf, aliyunConf, alinuxConf)
+	imagesCheckInfo.dataSourceTestCheck(t, rand, ubuntuConf, slesConf, openSuseConf, freebsdConf, centOsConf, debianConf, coreOsConf, aliyunConf)
 }
 
 func dataSourceImagesConfigDependence(name string) string {
