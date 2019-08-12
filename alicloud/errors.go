@@ -133,6 +133,7 @@ const (
 	EssThrottling                               = "Throttling"
 	InvalidScalingRuleIdNotFound                = "InvalidScalingRuleId.NotFound"
 	InvalidLifecycleHookIdNotFound              = "InvalidLifecycleHookId.NotExist"
+	InvalidNotificationNotFound                 = "NotificationConfigurationNotExist"
 	InvalidEssAlarmTaskNotFound                 = "404"
 	InvalidEssScalingConfigurationIdNotFound    = "InvalidScalingConfigurationId.NotFound"
 	//drds

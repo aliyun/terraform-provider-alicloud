@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -95,6 +96,53 @@ func (s *EssService) WaitForEssLifecycleHook(id string, status Status, timeout i
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.LifecycleHookId, id, ProviderERROR)
+		}
+	}
+}
+
+func (s *EssService) DescribeEssNotification(id string) (notification ess.NotificationConfigurationModel, err error) {
+	parts := strings.SplitN(id, ":", 2)
+	scalingGroupId, notificationArn := parts[0], parts[1]
+	request := ess.CreateDescribeNotificationConfigurationsRequest()
+	request.RegionId = s.client.RegionId
+	request.ScalingGroupId = scalingGroupId
+	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.DescribeNotificationConfigurations(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*ess.DescribeNotificationConfigurationsResponse)
+	for _, v := range response.NotificationConfigurationModels.NotificationConfigurationModel {
+		if v.NotificationArn == notificationArn {
+			return v, nil
+		}
+	}
+	err = WrapErrorf(Error(GetNotFoundMessage("EssNotificationConfiguration", id)), NotFoundMsg, ProviderERROR)
+	return
+}
+
+func (s *EssService) WaitForEssNotification(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeEssNotification(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		resourceId := fmt.Sprintf("%s:%s", object.ScalingGroupId, object.NotificationArn)
+		if resourceId == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, resourceId, id, ProviderERROR)
 		}
 	}
 }
