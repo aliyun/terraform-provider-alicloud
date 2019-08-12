@@ -235,7 +235,7 @@ func TestAccAlicloudRouterInterfaceBasic(t *testing.T) {
 
 func TestAccAlicloudRouterInterfaceMulti(t *testing.T) {
 	var v vpc.RouterInterfaceType
-	resourceId := "alicloud_router_interface.default.4"
+	resourceId := "alicloud_router_interface.default.2"
 	ra := resourceAttrInit(resourceId, testAccRouterInterfaceCheckMap)
 
 	rand := acctest.RandInt()
@@ -306,7 +306,7 @@ data "alicloud_regions" "default" {
 }
 
 resource "alicloud_router_interface" "default" {
-	count = 10
+	count = 3
 	opposite_region = "${data.alicloud_regions.default.regions.0.id}"
 	router_type = "VRouter"
 	router_id = "${alicloud_vpc.default.router_id}"
