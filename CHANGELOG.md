@@ -1,4 +1,7 @@
 ## 1.54.1 (Unreleased)
+
+- **New Resource:** `alicloud_ess_notification`
+
 ## 1.54.0 (August 12, 2019)
 
 - **New Data Source:** `alicloud_slb_master_slave_server_groups` ([#1531](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1531))

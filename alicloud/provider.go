@@ -234,6 +234,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ess_scheduled_task":                 resourceAlicloudEssScheduledTask(),
 			"alicloud_ess_attachment":                     resourceAlicloudEssAttachment(),
 			"alicloud_ess_lifecycle_hook":                 resourceAlicloudEssLifecycleHook(),
+			"alicloud_ess_notification":                   resourceAlicloudEssNotification(),
 			"alicloud_ess_alarm":                          resourceAlicloudEssAlarm(),
 			"alicloud_ess_scalinggroup_vserver_groups":    resourceAlicloudEssScalingGroupVserverGroups(),
 			"alicloud_vpc":                                resourceAliyunVpc(),
