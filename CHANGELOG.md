@@ -1,28 +1,28 @@
-## 1.54.0 (Unreleased)
+## 1.54.0 (August 12, 2019)
 
-- **New Data Source:** `alicloud_slb_master_slave_server_groups` [GH-1531]
-- **New Resource:** `alicloud_slb_master_slave_server_group` [GH-1531]
-- **New Data Source:** `alicloud_instance_type_families` [GH-1519]
+- **New Data Source:** `alicloud_slb_master_slave_server_groups` ([#1531](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1531))
+- **New Resource:** `alicloud_slb_master_slave_server_group` ([#1531](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1531))
+- **New Data Source:** `alicloud_instance_type_families` ([#1519](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1519))
 
 IMPROVEMENTS:
 
-- improve(provider):profile,role_arn,session_name,session_expiration support ENV [GH-1537]
-- support sg description [GH-1536]
-- support mac address [GH-1535]
-- improve(sdk): update sdk and modify api_gateway strconvs [GH-1533]
-- Improve(pvtz_zone_record): Improve resource use common method [GH-1528]
-- improve(alicloud_ess_scaling_group): support 'COST_OPTIMIZED' mode of autoscaling group [GH-1527]
-- Improve(pvtz_zone): Improve its and attachment resources use common method [GH-1525]
-- remove useless trigger in vpn ci [GH-1522]
-- Improve(cr_repo): Improve resource use common method [GH-1515]
-- Improve(cr_namespace): Improve resource use common method [GH-1509]
-- improve(kvstore): kvstore_instance resource supports timeouts setting [GH-1445]
+- improve(provider):profile,role_arn,session_name,session_expiration support ENV ([#1537](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1537))
+- support sg description ([#1536](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1536))
+- support mac address ([#1535](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1535))
+- improve(sdk): update sdk and modify api_gateway strconvs ([#1533](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1533))
+- Improve(pvtz_zone_record): Improve resource use common method ([#1528](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1528))
+- improve(alicloud_ess_scaling_group): support 'COST_OPTIMIZED' mode of autoscaling group ([#1527](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1527))
+- Improve(pvtz_zone): Improve its and attachment resources use common method ([#1525](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1525))
+- remove useless trigger in vpn ci ([#1522](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1522))
+- Improve(cr_repo): Improve resource use common method ([#1515](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1515))
+- Improve(cr_namespace): Improve resource use common method ([#1509](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1509))
+- improve(kvstore): kvstore_instance resource supports timeouts setting ([#1445](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1445))
 
 BUG FIXES:
 
-- Fix(alicloud_logstore_index) Repair parameter description document [GH-1532]
-- fix(sweep): modified the region of prefixes [GH-1526]
-- fix(mongodb_instance): fix notfound error when describing it [GH-1521]
+- Fix(alicloud_logstore_index) Repair parameter description document ([#1532](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1532))
+- fix(sweep): modified the region of prefixes ([#1526](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1526))
+- fix(mongodb_instance): fix notfound error when describing it ([#1521](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1521))
 
 ## 1.53.0 (August 02, 2019)
 
