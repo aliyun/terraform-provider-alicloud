@@ -66,3 +66,11 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The attachment ID. Composed of policy name, policy type and user name with format `user:<policy_name>:<policy_type>:<user_name>`.
+
+## Import
+
+RAM User Policy attachment can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_pvtz_zone.example user:my-policy:Custom:my-user
+```
