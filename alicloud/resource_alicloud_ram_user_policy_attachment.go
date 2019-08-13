@@ -13,6 +13,9 @@ func resourceAlicloudRamUserPolicyAtatchment() *schema.Resource {
 		Create: resourceAlicloudRamUserPolicyAttachmentCreate,
 		Read:   resourceAlicloudRamUserPolicyAttachmentRead,
 		Delete: resourceAlicloudRamUserPolicyAttachmentDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"user_name": {
@@ -58,9 +61,9 @@ func resourceAlicloudRamUserPolicyAttachmentRead(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
 	// In order to be compatible with previous Id (before 1.9.6) which format to user:<policy_name>:<policy_type>:<user_name>
-	id := strings.Join([]string{"user", d.Get("policy_name").(string), d.Get("policy_type").(string), d.Get("user_name").(string)}, COLON_SEPARATED)
 
-	if d.Id() != id {
+	if split := strings.Split(d.Id(), ":"); len(split) != 4 {
+		id := strings.Join([]string{"user", d.Get("policy_name").(string), d.Get("policy_type").(string), d.Get("user_name").(string)}, COLON_SEPARATED)
 		d.SetId(id)
 	}
 
@@ -73,7 +76,7 @@ func resourceAlicloudRamUserPolicyAttachmentRead(d *schema.ResourceData, meta in
 		return WrapError(err)
 	}
 
-	parts, err := ParseResourceId(id, 4)
+	parts, err := ParseResourceId(d.Id(), 4)
 	if err != nil {
 		return WrapError(err)
 	}

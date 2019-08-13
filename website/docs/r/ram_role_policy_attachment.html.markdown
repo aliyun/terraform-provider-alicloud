@@ -80,3 +80,11 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The attachment ID. Composed of policy name, policy type and role name with format `role:<policy_name>:<policy_type>:<role_name>`.
+
+## Import
+
+RAM Role Policy attachment can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_ram_role_policy_attachment.example role:my-policy:Custom:my-role
+```

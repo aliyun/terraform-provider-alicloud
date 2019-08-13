@@ -13,6 +13,9 @@ func resourceAlicloudRamGroupPolicyAtatchment() *schema.Resource {
 		Create: resourceAlicloudRamGroupPolicyAttachmentCreate,
 		Read:   resourceAlicloudRamGroupPolicyAttachmentRead,
 		Delete: resourceAlicloudRamGroupPolicyAttachmentDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"group_name": {
@@ -58,8 +61,9 @@ func resourceAlicloudRamGroupPolicyAttachmentCreate(d *schema.ResourceData, meta
 func resourceAlicloudRamGroupPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
-	id := strings.Join([]string{"group", d.Get("policy_name").(string), d.Get("policy_type").(string), d.Get("group_name").(string)}, COLON_SEPARATED)
-	if d.Id() != id {
+
+	if split := strings.Split(d.Id(), ":"); len(split) != 4 {
+		id := strings.Join([]string{"group", d.Get("policy_name").(string), d.Get("policy_type").(string), d.Get("group_name").(string)}, COLON_SEPARATED)
 		d.SetId(id)
 	}
 	object, err := ramService.DescribeRamGroupPolicyAttachment(d.Id())
@@ -71,7 +75,7 @@ func resourceAlicloudRamGroupPolicyAttachmentRead(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 
-	parts, err := ParseResourceId(id, 4)
+	parts, err := ParseResourceId(d.Id(), 4)
 	if err != nil {
 		return WrapError(err)
 	}
