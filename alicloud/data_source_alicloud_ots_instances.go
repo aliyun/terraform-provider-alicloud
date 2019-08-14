@@ -136,7 +136,7 @@ func dataSourceAlicloudOtsInstancesRead(d *schema.ResourceData, meta interface{}
 	for _, instanceName := range filteredInstanceNames {
 		instanceInfo, err := otsService.DescribeOtsInstance(instanceName)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instances", "DescribeOtsInstance", AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
 		allInstances = append(allInstances, instanceInfo)
 	}

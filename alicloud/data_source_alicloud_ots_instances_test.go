@@ -4,343 +4,117 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudOtsInstancesDataSource_ids(t *testing.T) {
-	randInt := acctest.RandIntRange(10000, 999999)
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOtsInstancesDataSource_ids_exist(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ots_instances.instances"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.id", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.name", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.status", string(Running)),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.write_capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.read_capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.cluster_type"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.create_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.user_id"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.network", "NORMAL"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.description", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.entity_quota"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "ids.0", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "names.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "names.0", fmt.Sprintf("tf-testAcc%d", randInt)),
-				),
+func TestAccAlicloudOtsInstancesDataSource(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 99999)
+	resourceId := "data.alicloud_ots_instances.default"
+
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testAcc%d", rand),
+		dataSourceOtsInstancesConfigDependence)
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_ots_instance.default.id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_ots_instance.default.id}-fake"},
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_ots_instance.default.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_ots_instance.default.name}-fake",
+		}),
+	}
+
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"tags": "${alicloud_ots_instance.default.tags}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]string{
+				"Created": "TF-fake",
+				"For":     "acceptance test fake",
 			},
-			{
-				Config: testAccCheckAlicloudOtsInstancesDataSource_ids_fake(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ots_instances.instances"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "names.#", "0"),
-				),
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":        []string{"${alicloud_ots_instance.default.id}"},
+			"name_regex": "${alicloud_ots_instance.default.name}",
+			"tags":       "${alicloud_ots_instance.default.tags}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":        []string{"${alicloud_ots_instance.default.id}"},
+			"name_regex": "${alicloud_ots_instance.default.name}",
+			"tags": map[string]string{
+				"Created": "TF-fake",
+				"For":     "acceptance test fake",
 			},
-		},
-	})
+		}),
+	}
+
+	var existOtsInstancesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"names.#":                    "1",
+			"names.0":                    fmt.Sprintf("tf-testAcc%d", rand),
+			"instances.#":                "1",
+			"instances.0.name":           fmt.Sprintf("tf-testAcc%d", rand),
+			"instances.0.id":             fmt.Sprintf("tf-testAcc%d", rand),
+			"instances.0.status":         string(Running),
+			"instances.0.write_capacity": CHECKSET,
+			"instances.0.read_capacity":  CHECKSET,
+			"instances.0.cluster_type":   CHECKSET,
+			"instances.0.create_time":    CHECKSET,
+			"instances.0.user_id":        CHECKSET,
+			"instances.0.network":        "NORMAL",
+			"instances.0.description":    fmt.Sprintf("tf-testAcc%d", rand),
+			"instances.0.entity_quota":   CHECKSET,
+			"instances.0.tags.%":         "2",
+		}
+	}
+
+	var fakeOtsInstancesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"names.#":  "0",
+			"topics.#": "0",
+		}
+	}
+
+	var otsInstancesCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existOtsInstancesMapFunc,
+		fakeMapFunc:  fakeOtsInstancesMapFunc,
+	}
+
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+	}
+	otsInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, tagsConf, allConf)
 }
 
-func TestAccAlicloudOtsInstancesDataSource_name_regex(t *testing.T) {
-	randInt := acctest.RandIntRange(10000, 999999)
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOtsInstancesDataSource_name_regex_exist(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ots_instances.instances"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.id", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.name", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.status", string(Running)),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.write_capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.read_capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.cluster_type"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.create_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.user_id"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.network", "NORMAL"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.description", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.entity_quota"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.tags.%", "2"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "ids.0", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "names.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "names.0", fmt.Sprintf("tf-testAcc%d", randInt)),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudOtsInstancesDataSource_name_regex_fake(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ots_instances.instances"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "names.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudOtsInstancesDataSource_tags(t *testing.T) {
-	randInt := acctest.RandIntRange(10000, 999999)
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOtsInstancesDataSource_tags_exist(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ots_instances.instances"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.id", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.name", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.status", string(Running)),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.write_capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.read_capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.cluster_type"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.create_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.user_id"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.network", "NORMAL"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.description", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.entity_quota"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.tags.%", "2"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "ids.0", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "names.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "names.0", fmt.Sprintf("tf-testAcc%d", randInt)),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudOtsInstancesDataSource_tags_fake(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ots_instances.instances"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "names.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudOtsInstancesDataSource_All(t *testing.T) {
-	randInt := acctest.RandIntRange(10000, 999999)
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudOtsInstancesDataSource_all_exist(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ots_instances.instances"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.id", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.name", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.status", string(Running)),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.write_capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.read_capacity"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.cluster_type"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.create_time"),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.user_id"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.network", "NORMAL"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.description", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttrSet("data.alicloud_ots_instances.instances", "instances.0.entity_quota"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.0.tags.%", "2"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "ids.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "ids.0", fmt.Sprintf("tf-testAcc%d", randInt)),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "names.#", "1"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "names.0", fmt.Sprintf("tf-testAcc%d", randInt)),
-				),
-			},
-			{
-				Config: testAccCheckAlicloudOtsInstancesDataSource_all_fake(randInt),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_ots_instances.instances"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "instances.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "ids.#", "0"),
-					resource.TestCheckResourceAttr("data.alicloud_ots_instances.instances", "names.#", "0"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckAlicloudOtsInstancesDataSource_ids_exist(randInt int) string {
+func dataSourceOtsInstancesConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-	  default = "tf-testAcc%d"
+	  default = "%s"
 	}
-	resource "alicloud_ots_instance" "foo" {
+	resource "alicloud_ots_instance" "default" {
 	  name = "${var.name}"
 	  description = "${var.name}"
 	  instance_type = "Capacity"
 	  tags = {
-		Created = "TF"
+		Created = "TF-${var.name}"
 		For = "acceptance test"
 	  }
 	}
-	data "alicloud_ots_instances" "instances" {
-      ids = [ "${alicloud_ots_instance.foo.id}" ]
-	}
-	`, randInt)
-}
-
-func testAccCheckAlicloudOtsInstancesDataSource_ids_fake(randInt int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%d"
-	}
-	resource "alicloud_ots_instance" "foo" {
-	  name = "${var.name}"
-	  description = "${var.name}"
-	  instance_type = "Capacity"
-	  tags = {
-		Created = "TF"
-		For = "acceptance test"
-	  }
-	}
-	data "alicloud_ots_instances" "instances" {
-      ids = [ "${alicloud_ots_instance.foo.id}-fake" ]
-	}
-	`, randInt)
-}
-
-func testAccCheckAlicloudOtsInstancesDataSource_name_regex_exist(randInt int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%d"
-	}
-	resource "alicloud_ots_instance" "foo" {
-	  name = "${var.name}"
-	  description = "${var.name}"
-	  instance_type = "Capacity"
-	  tags = {
-		Created = "TF"
-		For = "acceptance test"
-	  }
-	}
-	data "alicloud_ots_instances" "instances" {
-      name_regex = "${alicloud_ots_instance.foo.name}"	
-	}
-	`, randInt)
-}
-
-func testAccCheckAlicloudOtsInstancesDataSource_name_regex_fake(randInt int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%d"
-	}
-	resource "alicloud_ots_instance" "foo" {
-	  name = "${var.name}"
-	  description = "${var.name}"
-	  instance_type = "Capacity"
-	  tags = {
-		Created = "TF"
-		For = "acceptance test"
-	  }
-	}
-	data "alicloud_ots_instances" "instances" {
-      name_regex = "${alicloud_ots_instance.foo.name}-fake"	
-	}
-	`, randInt)
-}
-
-func testAccCheckAlicloudOtsInstancesDataSource_tags_exist(randInt int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%d"
-	}
-	resource "alicloud_ots_instance" "foo" {
-	  name = "${var.name}"
-	  description = "${var.name}"
-	  instance_type = "Capacity"
-	  tags = {
-		Created = "TF%d"
-		For = "acceptance test"
-	  }
-	}
-	data "alicloud_ots_instances" "instances" {
-      tags = "${alicloud_ots_instance.foo.tags}"
-	}
-	`, randInt, randInt)
-}
-
-func testAccCheckAlicloudOtsInstancesDataSource_tags_fake(randInt int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%d"
-	}
-	resource "alicloud_ots_instance" "foo" {
-	  name = "${var.name}"
-	  description = "${var.name}"
-	  instance_type = "Capacity"
-	  tags = {
-		Created = "TF%d"
-		For = "acceptance test"
-	  }
-	}
-	data "alicloud_ots_instances" "instances" {
-      tags = {
-        Created = "${alicloud_ots_instance.foo.tags.Created}-fake"
-        For = "${alicloud_ots_instance.foo.tags.For}-fake"
-      }
-	}
-	`, randInt, randInt)
-}
-
-func testAccCheckAlicloudOtsInstancesDataSource_all_exist(randInt int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%d"
-	}
-	resource "alicloud_ots_instance" "foo" {
-	  name = "${var.name}"
-	  description = "${var.name}"
-	  instance_type = "Capacity"
-	  tags = {
-		Created = "TF%d"
-		For = "acceptance test"
-	  }
-	}
-	data "alicloud_ots_instances" "instances" {
-	  ids = [ "${alicloud_ots_instance.foo.id}" ]
-      name_regex = "${alicloud_ots_instance.foo.name}"
-      tags = "${alicloud_ots_instance.foo.tags}"
-	}
-	`, randInt, randInt)
-}
-
-func testAccCheckAlicloudOtsInstancesDataSource_all_fake(randInt int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%d"
-	}
-	resource "alicloud_ots_instance" "foo" {
-	  name = "${var.name}"
-	  description = "${var.name}"
-	  instance_type = "Capacity"
-	  tags = {
-		Created = "TF%d"
-		For = "acceptance test"
-	  }
-	}
-	data "alicloud_ots_instances" "instances" {
-	  ids = [ "${alicloud_ots_instance.foo.id}-fake" ]
-      name_regex = "${alicloud_ots_instance.foo.name}-fake"	
-      tags = {
-        Created = "${alicloud_ots_instance.foo.tags.Created}-fake"
-        For = "${alicloud_ots_instance.foo.tags.For}-fake"
-      }
-	}
-	`, randInt, randInt)
+	`, name)
 }
