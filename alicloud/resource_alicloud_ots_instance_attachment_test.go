@@ -5,154 +5,164 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudOtsInstanceCapacityAttachment(t *testing.T) {
-	var instance ots.InstanceInfo
-	var vpcInfo ots.VpcInfo
-	var vsw vpc.DescribeVSwitchAttributesResponse
-	rand := acctest.RandIntRange(10000, 999999)
+func TestAccAlicloudOtsInstanceAttachment_basic(t *testing.T) {
+	var v ots.VpcInfo
+
+	resourceId := "alicloud_ots_instance_attachment.default"
+	ra := resourceAttrInit(resourceId, otsInstanceAttachmentBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsInstanceAttachmentConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
-
 		// module name
-		IDRefreshName: "alicloud_ots_instance_attachment.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckOtsInstanceAttachmentDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccOtsInstanceAttachment(string(OtsCapacity), rand),
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": "${alicloud_ots_instance.default.name}",
+					"vpc_name":      "test",
+					"vswitch_id":    "${alicloud_vswitch.default.id}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					testAccCheckVSwitchExists("alicloud_vswitch.foo", &vsw),
-					testAccCheckOtsInstanceAttachmentExist("alicloud_ots_instance_attachment.foo", &vpcInfo),
-					resource.TestCheckResourceAttr("alicloud_ots_instance_attachment.foo", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance_attachment.foo", "vpc_name", "test"),
-					resource.TestCheckResourceAttrSet("alicloud_ots_instance_attachment.foo", "vswitch_id"),
-					resource.TestCheckResourceAttrSet("alicloud_ots_instance_attachment.foo", "vpc_id"),
+					testAccCheck(map[string]string{
+						"instance_name": name,
+						"vpc_name":      "test",
+					}),
 				),
 			},
 		},
 	})
-
 }
 
-func TestAccAlicloudOtsInstanceHighPerformanceAttachment(t *testing.T) {
-	var instance ots.InstanceInfo
-	var vpcInfo ots.VpcInfo
-	var vsw vpc.DescribeVSwitchAttributesResponse
-	rand := acctest.RandIntRange(10000, 999999)
+func TestAccAlicloudOtsInstanceAttachment_highPerformance(t *testing.T) {
+	var v ots.VpcInfo
+
+	resourceId := "alicloud_ots_instance_attachment.default"
+	ra := resourceAttrInit(resourceId, otsInstanceAttachmentBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsInstanceAttachmentConfigDependenceHighperformance)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
 		},
-
 		// module name
-		IDRefreshName: "alicloud_ots_instance_attachment.foo",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckOtsInstanceAttachmentDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccOtsInstanceAttachment(string(OtsHighPerformance), rand),
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": "${alicloud_ots_instance.default.name}",
+					"vpc_name":      "test",
+					"vswitch_id":    "${alicloud_vswitch.default.id}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					testAccCheckVSwitchExists("alicloud_vswitch.foo", &vsw),
-					testAccCheckOtsInstanceAttachmentExist("alicloud_ots_instance_attachment.foo", &vpcInfo),
-					resource.TestCheckResourceAttr("alicloud_ots_instance_attachment.foo", "instance_name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance_attachment.foo", "vpc_name", "test"),
-					resource.TestCheckResourceAttrSet("alicloud_ots_instance_attachment.foo", "vswitch_id"),
-					resource.TestCheckResourceAttrSet("alicloud_ots_instance_attachment.foo", "vpc_id"),
+					testAccCheck(map[string]string{
+						"instance_name": name,
+						"vpc_name":      "test",
+					}),
 				),
 			},
 		},
 	})
-
 }
 
-func testAccCheckOtsInstanceAttachmentExist(n string, instance *ots.VpcInfo) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("not found OTS table: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("no OTS table ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		otsService := OtsService{client}
-
-		response, err := otsService.DescribeOtsInstanceVpc(rs.Primary.ID)
-
-		if err != nil {
-			return err
-		}
-		instance = &response
-		return nil
-	}
-}
-
-func testAccCheckOtsInstanceAttachmentDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ots_instance_attachment" {
-			continue
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		otsService := OtsService{client}
-
-		if _, err := otsService.DescribeOtsInstanceVpc(rs.Primary.ID); err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return err
-		}
-
-		return fmt.Errorf("Ots instance attachment %s still exists.", rs.Primary.ID)
-	}
-
-	return nil
-}
-
-func testAccOtsInstanceAttachment(instanceType string, rand int) string {
+func resourceOtsInstanceAttachmentConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-	  default = "tf-testAcc%d"
+	  default = "%s"
 	}
 
-	resource "alicloud_ots_instance" "foo" {
+	resource "alicloud_ots_instance" "default" {
 	  name = "${var.name}"
 	  description = "${var.name}"
 	  accessed_by = "Vpc"
 	  instance_type = "%s"
 	}
 
-	data "alicloud_zones" "foo" {
+	data "alicloud_zones" "default" {
 	  available_resource_creation = "VSwitch"
 	}
-	resource "alicloud_vpc" "foo" {
+	resource "alicloud_vpc" "default" {
 	  cidr_block = "172.16.0.0/16"
 	  name = "${var.name}"
 	}
 
-	resource "alicloud_vswitch" "foo" {
-	  vpc_id = "${alicloud_vpc.foo.id}"
+	resource "alicloud_vswitch" "default" {
+	  vpc_id = "${alicloud_vpc.default.id}"
 	  name = "${var.name}"
 	  cidr_block = "172.16.1.0/24"
-	  availability_zone = "${data.alicloud_zones.foo.zones.0.id}"
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
-	resource "alicloud_ots_instance_attachment" "foo" {
-	  instance_name = "${alicloud_ots_instance.foo.name}"
-	  vpc_name = "test"
-	  vswitch_id = "${alicloud_vswitch.foo.id}"
+	`, name, string(OtsCapacity))
+}
+
+func resourceOtsInstanceAttachmentConfigDependenceHighperformance(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "%s"
 	}
-	`, rand, instanceType)
+
+	resource "alicloud_ots_instance" "default" {
+	  name = "${var.name}"
+	  description = "${var.name}"
+	  accessed_by = "Vpc"
+	  instance_type = "%s"
+	}
+
+	data "alicloud_zones" "default" {
+	  available_resource_creation = "VSwitch"
+	}
+	resource "alicloud_vpc" "default" {
+	  cidr_block = "172.16.0.0/16"
+	  name = "${var.name}"
+	}
+
+	resource "alicloud_vswitch" "default" {
+	  vpc_id = "${alicloud_vpc.default.id}"
+	  name = "${var.name}"
+	  cidr_block = "172.16.1.0/24"
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+	`, name, string(OtsHighPerformance))
+}
+
+var otsInstanceAttachmentBasicMap = map[string]string{
+	"instance_name": CHECKSET,
+	"vpc_name":      CHECKSET,
+	"vswitch_id":    CHECKSET,
+	"vpc_id":        CHECKSET,
 }
