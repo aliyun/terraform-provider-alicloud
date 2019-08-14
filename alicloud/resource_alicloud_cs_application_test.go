@@ -11,7 +11,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudCSApplication_swarm(t *testing.T) {
+func SkipTestAccAlicloudCSApplication_swarm(t *testing.T) {
 	var basic, env cs.GetProjectResponse
 	var swarm cs.ClusterType
 
@@ -42,7 +42,7 @@ func TestAccAlicloudCSApplication_swarm(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCSApplication_update(t *testing.T) {
+func SkipTestAccAlicloudCSApplication_update(t *testing.T) {
 	var basic cs.GetProjectResponse
 	var swarm cs.ClusterType
 
