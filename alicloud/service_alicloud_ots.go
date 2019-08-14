@@ -194,41 +194,70 @@ func (s *OtsService) DescribeOtsInstance(id string) (inst ots.InstanceInfo, err 
 	return response.InstanceInfo, nil
 }
 
-func (s *OtsService) DescribeOtsInstanceVpc(name string) (inst ots.VpcInfo, err error) {
-	req := ots.CreateListVpcInfoByInstanceRequest()
-	req.Method = "GET"
-	req.InstanceName = name
+func (s *OtsService) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo, err error) {
+	request := ots.CreateListVpcInfoByInstanceRequest()
+	request.Method = "GET"
+	request.InstanceName = id
 	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-		return otsClient.ListVpcInfoByInstance(req)
+		return otsClient.ListVpcInfoByInstance(request)
 	})
 	if err != nil {
-		return inst, err
+		if NotFoundError(err) {
+			return inst, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return inst, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
-	if resp == nil || resp.TotalCount < 1 {
-		return inst, GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance VPC", name))
+	if resp.TotalCount < 1 {
+		return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstanceAttachment", id)), NotFoundMsg, ProviderERROR)
 	}
 	return resp.VpcInfos.VpcInfo[0], nil
 }
 
-func (s *OtsService) ListOtsInstanceVpc(name string) (inst []ots.VpcInfo, err error) {
-	req := ots.CreateListVpcInfoByInstanceRequest()
-	req.Method = "GET"
-	req.InstanceName = name
+func (s *OtsService) WaitForOtsInstanceVpc(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		object, err := s.DescribeOtsInstanceAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.InstanceName == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.InstanceName, id, ProviderERROR)
+		}
+
+	}
+}
+
+func (s *OtsService) ListOtsInstanceVpc(id string) (inst []ots.VpcInfo, err error) {
+	request := ots.CreateListVpcInfoByInstanceRequest()
+	request.Method = "GET"
+	request.InstanceName = id
 	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-		return otsClient.ListVpcInfoByInstance(req)
+		return otsClient.ListVpcInfoByInstance(request)
 	})
 	if err != nil {
-		return inst, err
+		return inst, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ots_instance_attachments", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
-	if resp == nil || resp.TotalCount < 1 {
-		return inst, GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance VPC", name))
+	if resp.TotalCount < 1 {
+		return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstanceAttachment", id)), NotFoundMsg, ProviderERROR)
 	}
 
 	var retInfos []ots.VpcInfo
 	for _, vpcInfo := range resp.VpcInfos.VpcInfo {
-		vpcInfo.InstanceName = name
+		vpcInfo.InstanceName = id
 		retInfos = append(retInfos, vpcInfo)
 	}
 	return retInfos, nil
