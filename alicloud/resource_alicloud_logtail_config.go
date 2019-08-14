@@ -23,13 +23,13 @@ func resourceAlicloudLogtailConfig() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"input_type": &schema.Schema{
+			"input_type": {
 				Type:     schema.TypeString,
 				Required: true,
 				ValidateFunc: validateAllowedStringValue([]string{
@@ -37,26 +37,26 @@ func resourceAlicloudLogtailConfig() *schema.Resource {
 					"plugin",
 				}),
 			},
-			"log_sample": &schema.Schema{
+			"log_sample": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
-			"project": &schema.Schema{
+			"project": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"logstore": &schema.Schema{
+			"logstore": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"output_type": &schema.Schema{
+			"output_type": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"input_detail": &schema.Schema{
+			"input_detail": {
 				Type:     schema.TypeString,
 				Required: true,
 				StateFunc: func(v interface{}) string {
@@ -76,7 +76,7 @@ func resourceAlicloudLogtailConfigCreate(d *schema.ResourceData, meta interface{
 	if json_err := json.Unmarshal([]byte(data), &inputConfigInputDetail); json_err != nil {
 		return WrapError(json_err)
 	}
-	_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 		logconfig := &sls.LogConfig{
 			Name:       d.Get("name").(string),
 			LogSample:  d.Get("log_sample").(string),
@@ -96,8 +96,9 @@ func resourceAlicloudLogtailConfigCreate(d *schema.ResourceData, meta interface{
 		return nil, slsClient.CreateConfig(d.Get("project").(string), logconfig)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "logtail_config", "CreateConfig", AliyunLogGoSdkERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_logtail_config", "CreateConfig", AliyunLogGoSdkERROR)
 	}
+	addDebug("CreateConfig", raw)
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("logstore").(string), COLON_SEPARATED, d.Get("name").(string)))
 	return resourceAlicloudLogtailConfigRead(d, meta)
 }
@@ -106,7 +107,7 @@ func resourceAlicloudLogtailConfigRead(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
 	split := strings.Split(d.Id(), COLON_SEPARATED)
-	config, err := logService.DescribeLogLogtailConfig(split[0], split[2])
+	config, err := logService.DescribeLogtailConfig(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -115,18 +116,37 @@ func resourceAlicloudLogtailConfigRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
+	// Because the server will return redundant parameters, we filter here
+	inputDetail := d.Get("input_detail").(string)
+	var oMap map[string]interface{}
+	json.Unmarshal([]byte(inputDetail), &oMap)
+	nMap := config.InputDetail.(map[string]interface{})
+	if inputDetail != "" {
+		for nk := range nMap {
+			if _, ok := oMap[nk]; !ok {
+				delete(nMap, nk)
+			}
+		}
+	}
+	nMapJson, err := json.Marshal(nMap)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("input_detail", string(nMapJson))
 	d.Set("project", split[0])
-	d.Set("config_name", config.Name)
+	d.Set("name", config.Name)
 	d.Set("logstore", split[1])
 	d.Set("input_type", config.InputType)
-	d.Set("input_detail", config.InputDetail)
 	d.Set("log_sample", config.LogSample)
 	d.Set("output_type", config.OutputType)
 	return nil
 }
 
 func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface{}) error {
-	split := strings.Split(d.Id(), COLON_SEPARATED)
+	parts, err := ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return WrapError(err)
+	}
 
 	update := false
 	if d.HasChange("log_sample") {
@@ -154,9 +174,9 @@ func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface
 		}
 
 		client := meta.(*connectivity.AliyunClient)
-		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return nil, slsClient.UpdateConfig(split[0], &sls.LogConfig{
-				Name:        split[2],
+		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return nil, slsClient.UpdateConfig(parts[0], &sls.LogConfig{
+				Name:        parts[2],
 				LogSample:   d.Get("log_sample").(string),
 				InputType:   d.Get("input_type").(string),
 				OutputType:  d.Get("output_type").(string),
@@ -170,6 +190,7 @@ func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateConfig", AliyunLogGoSdkERROR)
 		}
+		addDebug("UpdateConfig", raw)
 	}
 	return resourceAlicloudLogtailConfigRead(d, meta)
 }
@@ -177,25 +198,31 @@ func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface
 func resourceAlicloudLogtailConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return nil, slsClient.DeleteConfig(split[0], split[2])
+	parts, err := ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return nil, slsClient.DeleteConfig(parts[0], parts[2])
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{LogClientTimeout}) {
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteConfig", AliyunLogGoSdkERROR))
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteConfig", AliyunLogGoSdkERROR))
+			return resource.NonRetryableError(err)
 		}
-		if _, err := logService.DescribeLogLogtailConfig(split[0], split[2]); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(WrapError(err))
-		}
-		return resource.RetryableError(WrapErrorf(err, DeleteTimeoutMsg, d.Id(), "DeleteConfig", ProviderERROR))
+		addDebug("DeleteConfig", raw)
+		return nil
 	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist, LogConfigNotExist}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteConfig", AliyunLogGoSdkERROR)
+	}
+	return WrapError(logService.WaitForLogtailConfig(d.Id(), Deleted, DefaultTimeout))
 }
 
 // This function is used to assert and convert the type to sls.LogConfig
@@ -203,14 +230,14 @@ func assertInputDetailType(inputConfigInputDetail map[string]interface{}, logcon
 	if inputConfigInputDetail["logType"] == "json_log" {
 		JSONConfigInputDetail, ok := sls.ConvertToJSONConfigInputDetail(inputConfigInputDetail)
 		if ok != true {
-			return nil, WrapError(fmt.Errorf("covert to JSONConfigInputDetail false "))
+			return nil, WrapError(Error("covert to JSONConfigInputDetail false "))
 		}
 		logconfig.InputDetail = JSONConfigInputDetail
 	}
 	if inputConfigInputDetail["logType"] == "apsara_log" {
 		ApsaraLogConfigInputDetail, ok := sls.ConvertToApsaraLogConfigInputDetail(inputConfigInputDetail)
 		if ok != true {
-			return nil, WrapError(fmt.Errorf("covert to JSONConfigInputDetail false "))
+			return nil, WrapError(Error("covert to JSONConfigInputDetail false "))
 		}
 		logconfig.InputDetail = ApsaraLogConfigInputDetail
 	}
@@ -218,21 +245,21 @@ func assertInputDetailType(inputConfigInputDetail map[string]interface{}, logcon
 	if inputConfigInputDetail["logType"] == "common_reg_log" {
 		RegexConfigInputDetail, ok := sls.ConvertToRegexConfigInputDetail(inputConfigInputDetail)
 		if ok != true {
-			return nil, WrapError(fmt.Errorf("covert to JSONConfigInputDetail false "))
+			return nil, WrapError(Error("covert to JSONConfigInputDetail false "))
 		}
 		logconfig.InputDetail = RegexConfigInputDetail
 	}
 	if inputConfigInputDetail["logType"] == "delimiter_log" {
 		DelimiterConfigInputDetail, ok := sls.ConvertToDelimiterConfigInputDetail(inputConfigInputDetail)
 		if ok != true {
-			return nil, WrapError(fmt.Errorf("covert to JSONConfigInputDetail false "))
+			return nil, WrapError(Error("covert to JSONConfigInputDetail false "))
 		}
 		logconfig.InputDetail = DelimiterConfigInputDetail
 	}
 	if logconfig.InputType == "plugin" {
 		PluginLogConfigInputDetail, ok := sls.ConvertToPluginLogConfigInputDetail(inputConfigInputDetail)
 		if ok != true {
-			return nil, WrapError(fmt.Errorf("covert to JSONConfigInputDetail false "))
+			return nil, WrapError(Error("covert to JSONConfigInputDetail false "))
 		}
 		logconfig.InputDetail = PluginLogConfigInputDetail
 	}
