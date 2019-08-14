@@ -33,90 +33,98 @@ func (s *OtsService) getPrimaryKeyType(primaryKeyType string) tablestore.Primary
 }
 
 func (s *OtsService) ListOtsTable(instanceName string) (table *tablestore.ListTableResponse, err error) {
+	if _, err := s.DescribeOtsInstance(instanceName); err != nil {
+		return nil, WrapError(err)
+	}
+	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, e := s.DescribeOtsInstance(instanceName); e != nil {
-			return resource.NonRetryableError(e)
-		}
-		raw, e := s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+		raw, err = s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			return tableStoreClient.ListTable()
 		})
-		if e != nil {
-			if strings.HasSuffix(e.Error(), SuffixNoSuchHost) {
-				return resource.RetryableError(fmt.Errorf("RetryTimeout. Failed to list table with error: %s", e))
+		if err != nil {
+			if strings.HasSuffix(err.Error(), SuffixNoSuchHost) {
+				return resource.RetryableError(err)
 			}
-			if strings.HasPrefix(e.Error(), OTSObjectNotExist) {
-				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance Tables", instanceName)))
-			}
-			return resource.NonRetryableError(fmt.Errorf("Failed to describe table with error: %#v", e))
+			return resource.NonRetryableError(err)
 		}
-		table, _ = raw.(*tablestore.ListTableResponse)
-		if table == nil {
-			return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance Tables", instanceName)))
-		}
+		addDebug("ListTable", raw)
 		return nil
 	})
-
+	if err != nil {
+		if strings.HasPrefix(err.Error(), OTSObjectNotExist) {
+			return table, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
+		}
+		return nil, WrapErrorf(err, DataDefaultErrorMsg, instanceName, "ListTable", AliyunTablestoreGoSdk)
+	}
+	table, _ = raw.(*tablestore.ListTableResponse)
+	if table == nil {
+		return table, WrapErrorf(Error(GetNotFoundMessage("OtsTable", instanceName)), NotFoundMsg, ProviderERROR)
+	}
 	return
 }
 
-func (s *OtsService) DescribeOtsTable(instanceName, tableName string) (table *tablestore.DescribeTableResponse, err error) {
-	describeTableReq := new(tablestore.DescribeTableRequest)
-	describeTableReq.TableName = tableName
+func (s *OtsService) DescribeOtsTable(id string) (table *tablestore.DescribeTableResponse, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	instanceName, tableName := parts[0], parts[1]
+	request := new(tablestore.DescribeTableRequest)
+	request.TableName = tableName
 
+	if _, err := s.DescribeOtsInstance(instanceName); err != nil {
+		return nil, WrapError(err)
+	}
+	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		if _, e := s.DescribeOtsInstance(instanceName); e != nil {
-			return resource.NonRetryableError(e)
-		}
-		raw, e := s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
-			return tableStoreClient.DescribeTable(describeTableReq)
+		raw, err = s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			return tableStoreClient.DescribeTable(request)
 		})
-		if e != nil {
-			if IsExceptedErrors(e, OtsTableIsTemporarilyUnavailable) {
-				return resource.RetryableError(fmt.Errorf("RetryTimeout. Failed to describe table with error: %s", e))
-			} else if strings.HasPrefix(e.Error(), OTSObjectNotExist) {
-				return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("OTS Table", tableName)))
+		if err != nil {
+			if IsExceptedErrors(err, OtsTableIsTemporarilyUnavailable) {
+				return resource.RetryableError(err)
 			}
-
-			return resource.NonRetryableError(fmt.Errorf("Failed to describe table with error: %#v", e))
+			return resource.NonRetryableError(err)
 		}
-		table, _ = raw.(*tablestore.DescribeTableResponse)
-		if table == nil || table.TableMeta == nil || table.TableMeta.TableName != tableName {
-			return resource.NonRetryableError(GetNotFoundErrorFromString(GetNotFoundMessage("OTS Table", tableName)))
-		}
+		addDebug("DescribeTable", raw)
 		return nil
 	})
-
+	if err != nil {
+		if strings.HasPrefix(err.Error(), OTSObjectNotExist) {
+			return table, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, "DescribeTable", AliyunTablestoreGoSdk)
+	}
+	table, _ = raw.(*tablestore.DescribeTableResponse)
+	if table == nil || table.TableMeta == nil || table.TableMeta.TableName != tableName {
+		return table, WrapErrorf(Error(GetNotFoundMessage("OtsTable", id)), NotFoundMsg, ProviderERROR)
+	}
 	return
 }
 
-func (s *OtsService) DeleteOtsTable(instanceName, tableName string) (bool, error) {
+func (s *OtsService) WaitForOtsTable(instanceName, tableName string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	id := fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName)
 
-	deleteReq := new(tablestore.DeleteTableRequest)
-	deleteReq.TableName = tableName
-	_, err := s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
-		return tableStoreClient.DeleteTable(deleteReq)
-	})
-	if err != nil {
-		if NotFoundError(err) {
-			return true, nil
+	for {
+		object, err := s.DescribeOtsTable(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-		return false, err
-	}
-
-	describ, err := s.DescribeOtsTable(instanceName, tableName)
-
-	if err != nil {
-		if NotFoundError(err) {
-			return true, nil
+		if object.TableMeta.TableName == tableName && status != Deleted {
+			return nil
 		}
-		return false, err
-	}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.TableMeta.TableName, tableName, ProviderERROR)
+		}
 
-	if describ.TableMeta != nil {
-		return false, err
 	}
-
-	return true, err
 }
 
 // Convert tablestore.PrimaryKeyType to PrimaryKeyTypeString
