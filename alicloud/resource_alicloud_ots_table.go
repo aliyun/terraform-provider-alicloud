@@ -53,6 +53,7 @@ func resourceAlicloudOtsTable() *schema.Resource {
 					},
 				},
 				MaxItems: 4,
+				ForceNew: true,
 			},
 			"time_to_live": {
 				Type:         schema.TypeInt,
@@ -82,7 +83,8 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
 	if err := resource.Retry(1*time.Minute, func() *resource.RetryError {
-		if _, e := otsService.DescribeOtsInstance(instanceName); e != nil {
+		_, e := otsService.DescribeOtsInstance(instanceName)
+		if e != nil {
 			if NotFoundError(e) {
 				return resource.RetryableError(e)
 			}
@@ -90,7 +92,7 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 		}
 		return nil
 	}); err != nil {
-		return err
+		return WrapError(err)
 	}
 	for _, primaryKey := range d.Get("primary_key").([]interface{}) {
 		pk := primaryKey.(map[string]interface{})
@@ -105,13 +107,13 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 	reservedThroughput := new(tablestore.ReservedThroughput)
 
-	createTableRequest := new(tablestore.CreateTableRequest)
-	createTableRequest.TableMeta = tableMeta
-	createTableRequest.TableOption = tableOption
-	createTableRequest.ReservedThroughput = reservedThroughput
+	request := new(tablestore.CreateTableRequest)
+	request.TableMeta = tableMeta
+	request.TableOption = tableOption
+	request.ReservedThroughput = reservedThroughput
 	if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
-		_, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
-			return tableStoreClient.CreateTable(createTableRequest)
+		raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			return tableStoreClient.CreateTable(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, OtsTableIsTemporarilyUnavailable) {
@@ -119,9 +121,10 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug("CreateTable", raw)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "ots_table", "CreateTable", AliyunTablestoreGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_table", "CreateTable", AliyunTablestoreGoSdk)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
@@ -129,28 +132,28 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error {
-	instanceName, tableName, err := parseId(d, meta)
+	instanceName, _, err := parseId(d, meta)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
-	describe, err := otsService.DescribeOtsTable(instanceName, tableName)
+	object, err := otsService.DescribeOtsTable(d.Id())
 
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("failed to describe table with error: %s", err)
+		return WrapError(err)
 	}
 
 	d.Set("instance_name", instanceName)
-	d.Set("table_name", describe.TableMeta.TableName)
+	d.Set("table_name", object.TableMeta.TableName)
 
 	var pks []map[string]interface{}
-	keys := describe.TableMeta.SchemaEntry
+	keys := object.TableMeta.SchemaEntry
 	for _, v := range keys {
 		item := make(map[string]interface{})
 		item["name"] = *v.Name
@@ -158,10 +161,9 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 		pks = append(pks, item)
 	}
 	d.Set("primary_key", pks)
-
-	d.Set("time_to_live", describe.TableOption.TimeToAlive)
-	d.Set("max_version", describe.TableOption.MaxVersion)
-	d.Set("deviation_cell_version_in_sec", strconv.FormatInt(describe.TableOption.DeviationCellVersionInSec, 10))
+	d.Set("time_to_live", object.TableOption.TimeToAlive)
+	d.Set("max_version", object.TableOption.MaxVersion)
+	d.Set("deviation_cell_version_in_sec", strconv.FormatInt(object.TableOption.DeviationCellVersionInSec, 10))
 
 	return nil
 }
@@ -176,8 +178,8 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 		client := meta.(*connectivity.AliyunClient)
 
-		updateTableReq := new(tablestore.UpdateTableRequest)
-		updateTableReq.TableName = tableName
+		request := new(tablestore.UpdateTableRequest)
+		request.TableName = tableName
 		tableOption := new(tablestore.TableOption)
 
 		tableOption.TimeToAlive = d.Get("time_to_live").(int)
@@ -186,20 +188,21 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 			tableOption.DeviationCellVersionInSec, _ = strconv.ParseInt(deviation.(string), 10, 64)
 		}
 
-		updateTableReq.TableOption = tableOption
+		request.TableOption = tableOption
 		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-			_, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
-				return tableStoreClient.UpdateTable(updateTableReq)
+			raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+				return tableStoreClient.UpdateTable(request)
 			})
 			if err != nil {
 				if IsExceptedErrors(err, OtsTableIsTemporarilyUnavailable) {
-					return resource.RetryableError(fmt.Errorf("Updating table %s timeout with error: %s", tableName, err))
+					return resource.RetryableError(err)
 				}
-				return resource.NonRetryableError(fmt.Errorf("Failed to update table %s with error: %#v", tableName, err))
+				return resource.NonRetryableError(err)
 			}
+			addDebug("UpdateTable", raw)
 			return nil
 		}); err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateTable", AliyunTablestoreGoSdk)
 		}
 	}
 	return resourceAliyunOtsTableRead(d, meta)
@@ -208,39 +211,33 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 func resourceAliyunOtsTableDelete(d *schema.ResourceData, meta interface{}) error {
 	instanceName, tableName, err := parseId(d, meta)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
 	req := new(tablestore.DeleteTableRequest)
 	req.TableName = tableName
-	return resource.Retry(2*time.Minute, func() *resource.RetryError {
-		if _, err := otsService.DescribeOtsInstance(instanceName); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("When deleting table %s, describing instance %s got an error: %#v.", tableName, instanceName, err))
-		}
-		if _, err := otsService.DescribeOtsTable(instanceName, tableName); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("When deleting table %s, describing table got an error: %s.", tableName, err))
-		}
-		_, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 			return tableStoreClient.DeleteTable(req)
 		})
 		if err != nil {
-			if strings.HasPrefix(err.Error(), OTSObjectNotExist) {
-				return nil
-			} else if IsExceptedErrors(err, OtsTableIsTemporarilyUnavailable) {
-				return resource.RetryableError(fmt.Errorf("Deleting table %s timeout with the error: %#v.", tableName, err))
+			if IsExceptedErrors(err, OtsTableIsTemporarilyUnavailable) {
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("Deleting table %s got an error: %#v.", tableName, err))
+			return resource.NonRetryableError(err)
 		}
-		return resource.RetryableError(fmt.Errorf("Deleting table %s timeout.", tableName))
+		addDebug("DeleteTable", raw)
+		return nil
 	})
+	if err != nil {
+		if strings.HasPrefix(err.Error(), OTSObjectNotExist) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteTable", AliyunTablestoreGoSdk)
+	}
+	return WrapError(otsService.WaitForOtsTable(instanceName, tableName, Deleted, DefaultTimeout))
 }
 
 func parseId(d *schema.ResourceData, meta interface{}) (instanceName, tableName string, err error) {
@@ -252,8 +249,8 @@ func parseId(d *schema.ResourceData, meta interface{}) (instanceName, tableName 
 			instanceName = meta.(*connectivity.AliyunClient).OtsInstanceName
 			d.SetId(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
 		} else {
-			err = fmt.Errorf("From Provider version 1.10.0, the provider field 'ots_instance_name' has been deprecated and " +
-				"you should use resource alicloud_ots_table's new field 'instance_name' and 'table_name' to re-import this resource.")
+			err = WrapError(Error("From Provider version 1.10.0, the provider field 'ots_instance_name' has been deprecated and " +
+				"you should use resource alicloud_ots_table's new field 'instance_name' and 'table_name' to re-import this resource."))
 			return
 		}
 	} else {

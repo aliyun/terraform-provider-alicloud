@@ -105,9 +105,9 @@ func dataSourceAlicloudOtsTablesRead(d *schema.ResourceData, meta interface{}) e
 	otsService := OtsService{client}
 	instanceName := d.Get("instance_name").(string)
 
-	listTableResp, err := otsService.ListOtsTable(instanceName)
+	object, err := otsService.ListOtsTable(instanceName)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_tables", "ListOtsTable", AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
 
 	idsMap := make(map[string]bool)
@@ -123,7 +123,7 @@ func dataSourceAlicloudOtsTablesRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	var filteredTableNames []string
-	for _, tableName := range listTableResp.TableNames {
+	for _, tableName := range object.TableNames {
 		//name_regex mismatch
 		if nameReg != nil && !nameReg.MatchString(tableName) {
 			continue
@@ -141,16 +141,16 @@ func dataSourceAlicloudOtsTablesRead(d *schema.ResourceData, meta interface{}) e
 	// get full table info via DescribeTable
 	var allTableInfos []OtsTableInfo
 	for _, tableName := range filteredTableNames {
-		describeResp, err := otsService.DescribeOtsTable(instanceName, tableName)
+		object, err := otsService.DescribeOtsTable(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_tables", "DescribeOtsTable", AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
 		allTableInfos = append(allTableInfos, OtsTableInfo{
 			instanceName: instanceName,
-			tableName:    describeResp.TableMeta.TableName,
-			primaryKey:   describeResp.TableMeta.SchemaEntry,
-			timeToLive:   describeResp.TableOption.TimeToAlive,
-			maxVersion:   describeResp.TableOption.MaxVersion,
+			tableName:    object.TableMeta.TableName,
+			primaryKey:   object.TableMeta.SchemaEntry,
+			timeToLive:   object.TableOption.TimeToAlive,
+			maxVersion:   object.TableOption.MaxVersion,
 		})
 	}
 
