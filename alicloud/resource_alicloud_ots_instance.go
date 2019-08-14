@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -64,36 +63,37 @@ func resourceAliyunOtsInstanceCreate(d *schema.ResourceData, meta interface{}) e
 	otsService := OtsService{client}
 
 	instanceType := d.Get("instance_type").(string)
-	req := ots.CreateInsertInstanceRequest()
-	req.ClusterType = convertInstanceType(OtsInstanceType(instanceType))
+	request := ots.CreateInsertInstanceRequest()
+	request.ClusterType = convertInstanceType(OtsInstanceType(instanceType))
 	types, err := otsService.DescribeOtsInstanceTypes()
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 	valid := false
 	for _, t := range types {
-		if req.ClusterType == t {
+		if request.ClusterType == t {
 			valid = true
 			break
 		}
 	}
 	if !valid {
-		return fmt.Errorf("The instance type %s is not available in the region %s.", instanceType, client.RegionId)
+		return WrapError(Error("The instance type %s is not available in the region %s.", instanceType, client.RegionId))
 	}
-	req.InstanceName = d.Get("name").(string)
-	req.Description = d.Get("description").(string)
-	req.Network = convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string)))
+	request.InstanceName = d.Get("name").(string)
+	request.Description = d.Get("description").(string)
+	request.Network = convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string)))
 
-	_, err = client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-		return otsClient.InsertInstance(req)
+	raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+		return otsClient.InsertInstance(request)
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create instance with error: %s", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw)
 
-	d.SetId(req.InstanceName)
-	if err := otsService.WaitForOtsInstance(req.InstanceName, Running, DefaultTimeout); err != nil {
-		return err
+	d.SetId(request.InstanceName)
+	if err := otsService.WaitForOtsInstance(request.InstanceName, Running, DefaultTimeout); err != nil {
+		return WrapError(err)
 	}
 	return resourceAliyunOtsInstanceUpdate(d, meta)
 }
@@ -101,20 +101,20 @@ func resourceAliyunOtsInstanceCreate(d *schema.ResourceData, meta interface{}) e
 func resourceAliyunOtsInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
-	inst, err := otsService.DescribeOtsInstance(d.Id())
+	object, err := otsService.DescribeOtsInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("failed to describe instance with error: %s", err)
+		return WrapError(err)
 	}
 
-	d.Set("name", inst.InstanceName)
-	d.Set("accessed_by", convertInstanceAccessedByRevert(inst.Network))
-	d.Set("instance_type", convertInstanceTypeRevert(inst.ClusterType))
-	d.Set("description", inst.Description)
-	d.Set("tags", otsTagsToMap(inst.TagInfos.TagInfo))
+	d.Set("name", object.InstanceName)
+	d.Set("accessed_by", convertInstanceAccessedByRevert(object.Network))
+	d.Set("instance_type", convertInstanceTypeRevert(object.ClusterType))
+	d.Set("description", object.Description)
+	d.Set("tags", otsTagsToMap(object.TagInfos.TagInfo))
 	return nil
 }
 
@@ -125,15 +125,16 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 	d.Partial(true)
 
 	if !d.IsNewResource() && d.HasChange("accessed_by") {
-		req := ots.CreateUpdateInstanceRequest()
-		req.InstanceName = d.Id()
-		req.Network = convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string)))
-		_, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-			return otsClient.UpdateInstance(req)
+		request := ots.CreateUpdateInstanceRequest()
+		request.InstanceName = d.Id()
+		request.Network = convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string)))
+		raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+			return otsClient.UpdateInstance(request)
 		})
 		if err != nil {
-			return fmt.Errorf("UpdateInstance %s got an error: %#v.", d.Id(), err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw)
 		d.SetPartial("accessed_by")
 	}
 
@@ -144,8 +145,8 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 		create, remove := diffTags(tagsFromMap(o), tagsFromMap(n))
 
 		if len(remove) > 0 {
-			args := ots.CreateDeleteTagsRequest()
-			args.InstanceName = d.Id()
+			request := ots.CreateDeleteTagsRequest()
+			request.InstanceName = d.Id()
 			var tags []ots.DeleteTagsTagInfo
 			for _, t := range remove {
 				tags = append(tags, ots.DeleteTagsTagInfo{
@@ -153,18 +154,19 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 					TagValue: t.Value,
 				})
 			}
-			args.TagInfo = &tags
-			_, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-				return otsClient.DeleteTags(args)
+			request.TagInfo = &tags
+			raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+				return otsClient.DeleteTags(request)
 			})
 			if err != nil {
-				return fmt.Errorf("Remove tags got error: %s", err)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
+			addDebug(request.GetActionName(), raw)
 		}
 
 		if len(create) > 0 {
-			args := ots.CreateInsertTagsRequest()
-			args.InstanceName = d.Id()
+			request := ots.CreateInsertTagsRequest()
+			request.InstanceName = d.Id()
 			var tags []ots.InsertTagsTagInfo
 			for _, t := range create {
 				tags = append(tags, ots.InsertTagsTagInfo{
@@ -172,18 +174,19 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 					TagValue: t.Value,
 				})
 			}
-			args.TagInfo = &tags
-			_, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-				return otsClient.InsertTags(args)
+			request.TagInfo = &tags
+			raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+				return otsClient.InsertTags(request)
 			})
 			if err != nil {
-				return fmt.Errorf("Insertting tags got error: %s", err)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
+			addDebug(request.GetActionName(), raw)
 		}
 		d.SetPartial("tags")
 	}
 	if err := otsService.WaitForOtsInstance(d.Id(), Running, DefaultTimeout); err != nil {
-		return err
+		return WrapError(err)
 	}
 	d.Partial(false)
 	return resourceAliyunOtsInstanceRead(d, meta)
@@ -192,29 +195,26 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 func resourceAliyunOtsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
-	req := ots.CreateDeleteInstanceRequest()
-	req.InstanceName = d.Id()
-	return resource.Retry(10*time.Minute, func() *resource.RetryError {
-		if _, err := otsService.DescribeOtsInstance(d.Id()); err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("When deleting instance, failed to describe instance with error: %s", err))
-		}
-
-		_, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-			return otsClient.DeleteInstance(req)
+	request := ots.CreateDeleteInstanceRequest()
+	request.InstanceName = d.Id()
+	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+			return otsClient.DeleteInstance(request)
 		})
 		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
 			if IsExceptedErrors(err, []string{"AuthFailed", "InvalidStatus", "ValidationFailed"}) {
-				return resource.RetryableError(fmt.Errorf("Deleting instance %s timeout and got an error: %#v.", d.Id(), err))
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-
-		return resource.RetryableError(fmt.Errorf("Deleting instance %s timeout.", d.Id()))
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
+	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return WrapError(otsService.WaitForOtsInstance(d.Id(), Deleted, DefaultLongTimeout))
 }

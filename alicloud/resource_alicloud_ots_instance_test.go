@@ -121,31 +121,46 @@ func testSweepOtsInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOtsInstanceCapacity_basic(t *testing.T) {
-	var instance ots.InstanceInfo
-	rand := acctest.RandIntRange(10000, 999999)
-	resourceId := "alicloud_ots_instance.foo"
+func TestAccAlicloudOtsInstance_basic(t *testing.T) {
+	var v ots.InstanceInfo
+
+	resourceId := "alicloud_ots_instance.default"
+	ra := resourceAttrInit(resourceId, otsInstanceBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsInstanceConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
-
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckOtsInstanceDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccOtsInstance(string(OtsCapacity), rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name":          name,
+					"description":   name,
+					"instance_type": "Capacity",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "Any"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsCapacity)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
+					testAccCheck(map[string]string{
+						"name":          name,
+						"description":   name,
+						"instance_type": "Capacity",
+					}),
 				),
 			},
 			{
@@ -153,352 +168,227 @@ func TestAccAlicloudOtsInstanceCapacity_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessed_by": "Vpc",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accessed_by": "Vpc",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+						"Updated": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "3",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+						"tags.Updated": "TF",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessed_by": REMOVEKEY,
+					"tags":        REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accessed_by":  "Any",
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+						"tags.Updated": REMOVEKEY,
+					}),
+				),
+			},
 		},
 	})
-
 }
 
-func TestAccAlicloudOtsInstanceCapacity_updateAccessBy(t *testing.T) {
-	var instance ots.InstanceInfo
-	rand := acctest.RandIntRange(10000, 999999)
-	resourceId := "alicloud_ots_instance.foo"
+func TestAccAlicloudOtsInstance_highPerformance(t *testing.T) {
+	var v ots.InstanceInfo
+
+	resourceId := "alicloud_ots_instance.default"
+	ra := resourceAttrInit(resourceId, otsInstanceBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsInstanceConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":          name,
+					"description":   name,
+					"instance_type": "Capacity",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":          name,
+						"description":   name,
+						"instance_type": "Capacity",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessed_by": "Vpc",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accessed_by": "Vpc",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+						"Updated": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "3",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+						"tags.Updated": "TF",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessed_by": REMOVEKEY,
+					"tags":        REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accessed_by":  "Any",
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+						"tags.Updated": REMOVEKEY,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudOtsInstance_multi(t *testing.T) {
+	var v ots.InstanceInfo
+
+	resourceId := "alicloud_ots_instance.default.4"
+	ra := resourceAttrInit(resourceId, otsInstanceBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
-
 		},
-
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckOtsInstanceDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccOtsInstance(string(OtsCapacity), rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name":          name + "${count.index}",
+					"description":   name + "${count.index}",
+					"instance_type": "Capacity",
+					"count":         "5",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "Any"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsCapacity)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccOtsInstanceUpdateAccessBy(string(OtsCapacity), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "Vpc"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsCapacity)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
+					testAccCheck(nil),
 				),
 			},
 		},
 	})
-
 }
 
-func TestAccAlicloudOtsInstanceCapacity_updateTags(t *testing.T) {
-	var instance ots.InstanceInfo
-	rand := acctest.RandIntRange(10000, 999999)
-	resourceId := "alicloud_ots_instance.foo"
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
-		},
-
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckOtsInstanceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccOtsInstance(string(OtsCapacity), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "Any"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsCapacity)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccOtsInstanceUpdateTags(string(OtsCapacity), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "Any"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsCapacity)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "3"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Updated", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.From", "TF"),
-				),
-			},
-		},
-	})
-
-}
-func TestAccAlicloudOtsInstanceCapacity_updateAll(t *testing.T) {
-	var instance ots.InstanceInfo
-	rand := acctest.RandIntRange(10000, 999999)
-	resourceId := "alicloud_ots_instance.foo"
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
-		},
-
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckOtsInstanceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccOtsInstance(string(OtsCapacity), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "Any"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsCapacity)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccOtsInstanceUpdateAll(string(OtsCapacity), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "ConsoleOrVpc"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsCapacity)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "3"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Updated", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.From", "TF"),
-				),
-			},
-		},
-	})
-
+func resourceOtsInstanceConfigDependence(name string) string {
+	return ""
 }
 
-// Test HighPerformance instance
-func TestAccAlicloudOtsInstanceHighPerformance_basic(t *testing.T) {
-	var instance ots.InstanceInfo
-	rand := acctest.RandIntRange(10000, 999999)
-	resourceId := "alicloud_ots_instance.foo"
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
-		},
-
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckOtsInstanceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccOtsInstance(string(OtsHighPerformance), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "Any"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsHighPerformance)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudOtsInstanceHighPerformance_updateAccessBy(t *testing.T) {
-	var instance ots.InstanceInfo
-	rand := acctest.RandIntRange(10000, 999999)
-	resourceId := "alicloud_ots_instance.foo"
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
-		},
-
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckOtsInstanceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccOtsInstance(string(OtsHighPerformance), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "Any"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsHighPerformance)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccOtsInstanceUpdateAccessBy(string(OtsHighPerformance), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "Vpc"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsHighPerformance)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAlicloudOtsInstanceHighPerformance_updateTags(t *testing.T) {
-	var instance ots.InstanceInfo
-	rand := acctest.RandIntRange(10000, 999999)
-	resourceId := "alicloud_ots_instance.foo"
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
-		},
-
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckOtsInstanceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccOtsInstance(string(OtsHighPerformance), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "Any"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsHighPerformance)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccOtsInstanceUpdateTags(string(OtsHighPerformance), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "Any"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsHighPerformance)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "3"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Updated", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.From", "TF"),
-				),
-			},
-		},
-	})
-
-}
-func TestAccAlicloudOtsInstanceHighPerformance_updateAll(t *testing.T) {
-	var instance ots.InstanceInfo
-	rand := acctest.RandIntRange(10000, 999999)
-	resourceId := "alicloud_ots_instance.foo"
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
-		},
-
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckOtsInstanceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccOtsInstance(string(OtsHighPerformance), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "Any"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsHighPerformance)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Created", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccOtsInstanceUpdateAll(string(OtsHighPerformance), rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOtsInstanceExist("alicloud_ots_instance.foo", &instance),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "name", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "accessed_by", "ConsoleOrVpc"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "instance_type", string(OtsHighPerformance)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "description", fmt.Sprintf("tf-testAcc%d", rand)),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.%", "3"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.Updated", "TF"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.For", "acceptance test"),
-					resource.TestCheckResourceAttr("alicloud_ots_instance.foo", "tags.From", "TF"),
-				),
-			},
-		},
-	})
-
+var otsInstanceBasicMap = map[string]string{
+	"name":          CHECKSET,
+	"accessed_by":   "Any",
+	"instance_type": CHECKSET,
+	"description":   CHECKSET,
 }
 
 func testAccCheckOtsInstanceExist(n string, instance *ots.InstanceInfo) resource.TestCheckFunc {
@@ -523,98 +413,4 @@ func testAccCheckOtsInstanceExist(n string, instance *ots.InstanceInfo) resource
 		instance = &response
 		return nil
 	}
-}
-
-func testAccCheckOtsInstanceDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ots_instance" {
-			continue
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		otsService := OtsService{client}
-
-		if _, err := otsService.DescribeOtsInstance(rs.Primary.ID); err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return err
-		}
-
-		return fmt.Errorf("Ots instance %s still exists.", rs.Primary.ID)
-	}
-
-	return nil
-}
-
-func testAccOtsInstance(instanceType string, rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%d"
-	}
-	resource "alicloud_ots_instance" "foo" {
-	  name = "${var.name}"
-	  description = "${var.name}"
-	  instance_type = "%s"
-	  tags = {
-		Created = "TF"
-		For = "acceptance test"
-	  }
-	}
-	`, rand, instanceType)
-}
-
-func testAccOtsInstanceUpdateAccessBy(instanceType string, rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%d"
-	}
-	resource "alicloud_ots_instance" "foo" {
-	  name = "${var.name}"
-	  description = "${var.name}"
-	  accessed_by = "Vpc"
-	  instance_type = "%s"
-	  tags = {
-		Created = "TF"
-		For = "acceptance test"
-	  }
-	}
-	`, rand, instanceType)
-}
-
-func testAccOtsInstanceUpdateTags(instanceType string, rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%d"
-	}
-	resource "alicloud_ots_instance" "foo" {
-	  name = "${var.name}"
-	  description = "${var.name}"
-	  instance_type = "%s"
-	  tags = {
-		Updated = "TF"
-		For = "acceptance test"
-		From = "TF"
-	  }
-	}
-	`, rand, instanceType)
-}
-
-func testAccOtsInstanceUpdateAll(instanceType string, rand int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf-testAcc%d"
-	}
-	resource "alicloud_ots_instance" "foo" {
-	  name = "${var.name}"
-	  description = "${var.name}"
-	  accessed_by = "ConsoleOrVpc"
-	  instance_type = "%s"
-	  tags = {
-		Updated = "TF"
-		For = "acceptance test"
-		From = "TF"
-	  }
-	}
-	`, rand, instanceType)
 }

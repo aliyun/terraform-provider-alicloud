@@ -171,23 +171,27 @@ func (s *OtsService) ListOtsInstance(pageSize int, pageNum int) ([]string, error
 	return allInstanceNames, nil
 }
 
-func (s *OtsService) DescribeOtsInstance(name string) (inst ots.InstanceInfo, err error) {
-	req := ots.CreateGetInstanceRequest()
-	req.InstanceName = name
-	req.Method = "GET"
+func (s *OtsService) DescribeOtsInstance(id string) (inst ots.InstanceInfo, err error) {
+	request := ots.CreateGetInstanceRequest()
+	request.InstanceName = id
+	request.Method = "GET"
 	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-		return otsClient.GetInstance(req)
+		return otsClient.GetInstance(request)
 	})
 
 	// OTS instance not found error code is "NotFound"
 	if err != nil {
-		return
+		if NotFoundError(err) {
+			return inst, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return inst, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	resp, _ := raw.(*ots.GetInstanceResponse)
-	if resp == nil || resp.InstanceInfo.InstanceName != name {
-		return inst, GetNotFoundErrorFromString(GetNotFoundMessage("OTS Instance", name))
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*ots.GetInstanceResponse)
+	if response.InstanceInfo.InstanceName != id {
+		return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstance", id)), NotFoundMsg, ProviderERROR)
 	}
-	return resp.InstanceInfo, nil
+	return response.InstanceInfo, nil
 }
 
 func (s *OtsService) DescribeOtsInstanceVpc(name string) (inst ots.VpcInfo, err error) {
@@ -230,23 +234,25 @@ func (s *OtsService) ListOtsInstanceVpc(name string) (inst []ots.VpcInfo, err er
 	return retInfos, nil
 }
 
-func (s *OtsService) WaitForOtsInstance(name string, status Status, timeout int) error {
-	if timeout <= 0 {
-		timeout = DefaultTimeout
-	}
+func (s *OtsService) WaitForOtsInstance(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
-		inst, err := s.DescribeOtsInstance(name)
+		object, err := s.DescribeOtsInstance(id)
 		if err != nil {
-			return err
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
 		}
-
-		if inst.Status == convertOtsInstanceStatus(status) {
+		if object.Status == convertOtsInstanceStatus(status) {
 			break
 		}
-		timeout = timeout - DefaultIntervalShort
-		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("OTS Instance", string(status)))
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, string(object.Status), status, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
@@ -254,15 +260,15 @@ func (s *OtsService) WaitForOtsInstance(name string, status Status, timeout int)
 }
 
 func (s *OtsService) DescribeOtsInstanceTypes() (types []string, err error) {
-	req := ots.CreateListClusterTypeRequest()
-	req.Method = requests.GET
+	request := ots.CreateListClusterTypeRequest()
+	request.Method = requests.GET
 	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-		return otsClient.ListClusterType(req)
+		return otsClient.ListClusterType(request)
 	})
 	if err != nil {
-		err = fmt.Errorf("Failed to list instance type with error: %#v", err)
-		return
+		return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug("ListClusterType", raw)
 	resp, _ := raw.(*ots.ListClusterTypeResponse)
 	if resp != nil {
 		return resp.ClusterTypeInfos.ClusterType, nil
