@@ -41,18 +41,33 @@ resource "alicloud_nat_gateway" "default" {
 }
 
 resource "alicloud_eip" "eip" {
-  name = "${var.name}"
+  count = 2
+  name  = "${var.name}"
 }
 
 resource "alicloud_eip_association" "default" {
-  allocation_id = "${alicloud_eip.eip.id}"
+  count         = 2
+  allocation_id = "${element(alicloud_eip.default.*.id, count.index)}"
   instance_id   = "${alicloud_nat_gateway.default.id}"
+}
+
+resource "alicloud_common_bandwidth_package" "default" {
+  name                 = "tf_cbp"
+  bandwidth            = 10
+  internet_charge_type = "PayByTraffic"
+  ratio                = 100
+}
+
+resource "alicloud_common_bandwidth_package_attachment" "default" {
+  count                = 2
+  bandwidth_package_id = "${alicloud_common_bandwidth_package.default.id}"
+  instance_id          = "${element(alicloud_eip.default.*.id, count.index)}"
 }
 
 resource "alicloud_snat_entry" "default" {
   snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids}"
   source_vswitch_id = "${alicloud_vswitch.vswitch.id}"
-  snat_ip           = "${alicloud_eip.eip.ip_address}"
+  snat_ip           = "${join(",", alicloud_eip.default.*.ip_address)}"
 }
 ```
 
