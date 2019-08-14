@@ -218,30 +218,63 @@ func (s *LogService) WaitForLogMachineGroup(id string, status Status, timeout in
 	}
 }
 
-func (s *LogService) DescribeLogLogtailConfig(projectName, configName string) (logconfig *sls.LogConfig, err error) {
+func (s *LogService) DescribeLogtailConfig(id string) (response *sls.LogConfig, err error) {
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	projectName, configName := parts[0], parts[2]
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			return slsClient.GetConfig(projectName, configName)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist, LogConfigNotExist}) {
-				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR))
-			}
 			if IsExceptedErrors(err, []string{InternalServerError}) {
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, configName, "GetConfig", AliyunLogGoSdkERROR))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, configName, "GetConfig", AliyunLogGoSdkERROR))
+			return resource.NonRetryableError(err)
 		}
-		logconfig, _ = raw.(*sls.LogConfig)
+		addDebug("GetConfig", raw)
+		response, _ = raw.(*sls.LogConfig)
 		return nil
 	})
 	if err != nil {
-		return
+		if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist, LogConfigNotExist}) {
+			return response, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetConfig", AliyunLogGoSdkERROR)
 	}
-	if logconfig == nil || logconfig.Name == "" {
-		return logconfig, WrapErrorf(Error(GetNotFoundMessage("Log LogTail Config", configName)), NotFoundMsg, ProviderERROR)
+	if response == nil || response.Name == "" {
+		return response, WrapErrorf(Error(GetNotFoundMessage("LogTailConfig", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
+}
+
+func (s *LogService) WaitForLogtailConfig(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	name := parts[2]
+	for {
+		object, err := s.DescribeLogtailConfig(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Name == name && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Name, name, ProviderERROR)
+		}
+	}
 }
 
 func (s *LogService) DescribeLogtailAttachment(id string) (groupName string, err error) {
