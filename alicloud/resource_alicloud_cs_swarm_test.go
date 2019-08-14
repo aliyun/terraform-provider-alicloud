@@ -122,7 +122,7 @@ func testSweepCSSwarms(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCSSwarm_vpc(t *testing.T) {
+func SkipTestAccAlicloudCSSwarm_vpc(t *testing.T) {
 	var container cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
@@ -148,7 +148,7 @@ func TestAccAlicloudCSSwarm_vpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCSSwarm_vpc_zero_node(t *testing.T) {
+func SkipTestAccAlicloudCSSwarm_vpc_zero_node(t *testing.T) {
 	var container cs.ClusterType
 	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
@@ -189,7 +189,7 @@ func TestAccAlicloudCSSwarm_vpc_zero_node(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCSSwarm_vpc_noslb(t *testing.T) {
+func SkipTestAccAlicloudCSSwarm_vpc_noslb(t *testing.T) {
 	var container cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
@@ -216,7 +216,7 @@ func TestAccAlicloudCSSwarm_vpc_noslb(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCSSwarm_update(t *testing.T) {
+func SkipTestAccAlicloudCSSwarm_update(t *testing.T) {
 	var container cs.ClusterType
 	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
