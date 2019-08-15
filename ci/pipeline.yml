@@ -274,8 +274,6 @@ shared:
       ACCESS_USER_NAME: {{access_ci_user_name}}
       ACCESS_PASSWORD: {{access_ci_password}}
       DING_TALK_TOKEN: {{ding_talk_token}}
-      BUCKET_NAME: {{bucket_name}}
-      BUCKET_REGION: {{bucket_region}}
 
 jobs:
   - name: Sweeper-1
