@@ -27,13 +27,14 @@ func dataSourceAlicloudRamAccountAliasRead(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ram.CreateGetAccountAliasRequest()
+	request.RegionId = client.RegionId
 	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.GetAccountAlias(request)
 	})
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_account_alias", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ram.GetAccountAliasResponse)
 	d.SetId(response.AccountAlias)
 	d.Set("account_alias", response.AccountAlias)

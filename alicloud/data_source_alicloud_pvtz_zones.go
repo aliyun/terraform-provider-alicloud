@@ -79,6 +79,7 @@ func dataSourceAlicloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	pvtzService := PvtzService{client}
 	request := pvtz.CreateDescribeZonesRequest()
+	request.RegionId = client.RegionId
 	if keyword, ok := d.GetOk("keyword"); ok {
 		request.Keyword = keyword.(string)
 	}
@@ -105,7 +106,7 @@ func dataSourceAlicloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) e
 			raw, err = client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 				return pvtzClient.DescribeZones(request)
 			})
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return err
 		})
 		if err != nil {

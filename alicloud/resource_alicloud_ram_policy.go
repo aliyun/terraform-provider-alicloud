@@ -118,7 +118,7 @@ func resourceAlicloudRamPolicyCreate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_policy", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ram.CreatePolicyResponse)
 	d.SetId(response.Policy.PolicyName)
 	return resourceAlicloudRamPolicyRead(d, meta)
@@ -142,7 +142,7 @@ func resourceAlicloudRamPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	d.Partial(false)
 
 	return resourceAlicloudRamPolicyRead(d, meta)
@@ -223,7 +223,7 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 				if err != nil && !RamEntityNotExist(err) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			}
 		}
 
@@ -239,7 +239,7 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 				if err != nil && !RamEntityNotExist(err) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			}
 		}
 
@@ -255,7 +255,7 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 				if err != nil && !RamEntityNotExist(err) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			}
 		}
 
@@ -322,6 +322,7 @@ func buildAlicloudRamPolicyCreateArgs(d *schema.ResourceData, meta interface{}) 
 	}
 
 	request := ram.CreateCreatePolicyRequest()
+	request.RegionId = client.RegionId
 	request.PolicyDocument = document
 	request.PolicyName = d.Get("name").(string)
 
@@ -336,6 +337,7 @@ func buildAlicloudRamPolicyUpdateArgs(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
 	request := ram.CreateCreatePolicyVersionRequest()
+	request.RegionId = client.RegionId
 	request.SetAsDefault = "true"
 	request.PolicyName = d.Id()
 
@@ -387,6 +389,7 @@ func ramPolicyPruneVersions(policyName, policyType string, meta interface{}) err
 func ramPolicyDeleteVersion(versionId, policyName string, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := ram.CreateDeletePolicyVersionRequest()
+	request.RegionId = client.RegionId
 	request.VersionId = versionId
 	request.PolicyName = policyName
 	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -395,13 +398,14 @@ func ramPolicyDeleteVersion(versionId, policyName string, meta interface{}) erro
 	if err != nil && !RamEntityNotExist(err) {
 		return WrapErrorf(err, DefaultErrorMsg, policyName, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 
 func ramPolicyListVersions(policyName, policyType string, meta interface{}) ([]ram.PolicyVersion, error) {
 	client := meta.(*connectivity.AliyunClient)
 	request := ram.CreateListPolicyVersionsRequest()
+	request.RegionId = client.RegionId
 	request.PolicyName = policyName
 	request.PolicyType = policyType
 	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -410,7 +414,7 @@ func ramPolicyListVersions(policyName, policyType string, meta interface{}) ([]r
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, policyName, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ram.ListPolicyVersionsResponse)
 
 	return response.PolicyVersions.PolicyVersion, nil

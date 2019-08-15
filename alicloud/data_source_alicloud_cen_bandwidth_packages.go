@@ -123,6 +123,7 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 	client := meta.(*connectivity.AliyunClient)
 
 	request := cbn.CreateDescribeCenBandwidthPackagesRequest()
+	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 
@@ -163,7 +164,7 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 
 			return allCenBwps, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_bandwidth_packages", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
 
 		if len(response.CenBandwidthPackages.CenBandwidthPackage) < 1 {

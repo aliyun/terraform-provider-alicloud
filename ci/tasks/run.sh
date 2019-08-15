@@ -12,16 +12,24 @@ set -e
 : ${ACCESS_USER_NAME:=""}
 : ${ACCESS_PASSWORD:=""}
 : ${DING_TALK_TOKEN:=""}
+: ${BUCKET_NAME:=?}
+: ${BUCKET_REGION:=?}
 
 
 export ALICLOUD_ACCESS_KEY=${ALICLOUD_ACCESS_KEY}
 export ALICLOUD_SECRET_KEY=${ALICLOUD_SECRET_KEY}
 export ALICLOUD_REGION=${ALICLOUD_REGION}
 export ALICLOUD_ACCOUNT_SITE=${ALICLOUD_ACCOUNT_SITE}
+export DEBUG=terraform
 
 echo -e "Account Site: ${ALICLOUD_ACCOUNT_SITE}"
 
 export ALICLOUD_CMS_CONTACT_GROUP=tf-testAccCms
+
+my_dir="$( cd $(dirname $0) && pwd )"
+release_dir="$( cd ${my_dir} && cd ../.. && pwd )"
+
+source ${release_dir}/ci/tasks/utils.sh
 
 PIPELINE_NAME=${ALICLOUD_REGION}
 if [[ "${ALICLOUD_ACCOUNT_SITE}" = "International" ]]; then
@@ -34,7 +42,7 @@ fi
 
 CURRENT_PATH=$(pwd)
 
-rm -rf aliyun*
+rm -rf ${TEST_CASE_CODE}.log
 go version
 
 cd $GOPATH
@@ -106,24 +114,34 @@ if [[ ${TEST_CASE_CODE} == "Ram" ]]; then
     fi
 fi
 
+FILE_NAME=${ALICLOUD_REGION}-${TEST_CASE_CODE}
+FAIL_FLAG=false
+
 TF_ACC=1 go test ./alicloud -v -run=TestAccAlicloud${TEST_CASE_CODE} -timeout=1200m | {
 while read LINE
 do
-    echo -e "$LINE"
-    if [[ $LINE == "=== RUN "* ]]; then
-        TOTAL_COUNT=$((${TOTAL_COUNT}+1))
-    fi
-    if [[ $LINE == "--- FAIL: "* ]]; then
-        FAILED_COUNT=$((${FAILED_COUNT}+1))
-    fi
-    if [[ $LINE == "--- SKIP: "* ]]; then
-        SKIP_COUNT=$((${SKIP_COUNT}+1))
-    fi
-    if [[ $LINE == "--- PASS: "* ]]; then
-        PASS_COUNT=$((${PASS_COUNT}+1))
-    fi
-    if [[ $LINE == "panic: "* ]]; then
-        exit 1
+    echo "$LINE" >> ${FILE_NAME}.log
+    if [[ ${LINE} == "=== "* || ${LINE} == "--- "* || ${LINE} == "PASS" || ${LINE} == "ok  "* || ${LINE} == "FAIL"* ]];then
+        FAIL_FLAG=false
+        echo -e "$LINE"
+        if [[ $LINE == "=== RUN "* ]]; then
+            TOTAL_COUNT=$((${TOTAL_COUNT}+1))
+        fi
+        if [[ $LINE == "--- FAIL: "* ]]; then
+            FAILED_COUNT=$((${FAILED_COUNT}+1))
+            FAIL_FLAG=true
+        fi
+        if [[ $LINE == "--- SKIP: "* ]]; then
+            SKIP_COUNT=$((${SKIP_COUNT}+1))
+        fi
+        if [[ $LINE == "--- PASS: "* ]]; then
+            PASS_COUNT=$((${PASS_COUNT}+1))
+        fi
+        if [[ $LINE == "panic: "* ]]; then
+            exit 1
+        fi
+    elif [[ ${FAIL_FLAG} == true ]];then
+        echo -e "$LINE"
     fi
 done
 
@@ -132,14 +150,34 @@ echo -e "--------------- END ---------------\n"
 if [[ $TOTAL_COUNT -lt 1 ]]; then
     EXITCODE=1
     PASSED=0.00
-elif [[ $TOTAL_COUNT -eq $SKIP_COUNT ]]; then
-    PASSED="---"
-elif [[ $FAILED_COUNT -gt 0 ]]; then
+elif [[ ${SKIP_COUNT} -gt 0 ]]; then
+    PASSED=`awk 'BEGIN{printf "%.2f%%\n",('${PASS_COUNT}+${SKIP_COUNT}')/'${TOTAL_COUNT}'*100}'`
+elif [[ ${FAILED_COUNT} -gt 0 ]]; then
     EXITCODE=1
-    PASSED=`awk 'BEGIN{printf "%.2f%%\n",'$PASS_COUNT'/('$TOTAL_COUNT-$SKIP_COUNT')*100}'`
+    PASSED=`awk 'BEGIN{printf "%.2f%%\n",('${PASS_COUNT}+${SKIP_COUNT}')/'${TOTAL_COUNT}'*100}'`
 fi
 
-echo -e "Total: $TOTAL_COUNT; Failed: $FAILED_COUNT; Skipped: $SKIP_COUNT; Passed: $PASS_COUNT. PassedRate: $PASSED\n"
+product=${TEST_CASE_CODE}
+
+if [[ ${TEST_CASE_CODE} == "CommonBandwidth" || ${TEST_CASE_CODE} == "Eip" || ${TEST_CASE_CODE} == "Forward" || ${TEST_CASE_CODE} == "NatGateway" || ${TEST_CASE_CODE} == "RouteTable" || ${TEST_CASE_CODE} == "RouteEntry" || ${TEST_CASE_CODE} == "Vpc" || ${TEST_CASE_CODE} == "VSwitch" || ${TEST_CASE_CODE} == "Snat" || ${TEST_CASE_CODE} == "RouterInterface" || ${TEST_CASE_CODE} == "SslVpn" || ${TEST_CASE_CODE} == "Vpn" ]]; then
+    product="Vpc"
+elif [[ ${TEST_CASE_CODE} == "Regions" || ${TEST_CASE_CODE} == "Zones" || ${TEST_CASE_CODE} == "Images" || ${TEST_CASE_CODE} == "Instance" || ${TEST_CASE_CODE} == "Disk" || ${TEST_CASE_CODE} == "SecurityGroup" || ${TEST_CASE_CODE} == "KeyPair" || ${TEST_CASE_CODE} == "NetworkInterface" || ${TEST_CASE_CODE} == "Snapshot" || ${TEST_CASE_CODE} == "LaunchTemplate" ]]; then
+    product="Ecs"
+elif [[ ${TEST_CASE_CODE} == "DB" ]]; then
+    product="Rds"
+elif [[ ${TEST_CASE_CODE} == "CS" ]]; then
+    product="ContainerService"
+elif [[ ${TEST_CASE_CODE} == "CR" ]]; then
+    product="ContainerRegistry"
+elif [[ ${TEST_CASE_CODE} == "Log" ]]; then
+    product="Sls"
+fi
+
+echo -e "Total: $TOTAL_COUNT; Failed: $FAILED_COUNT; Skipped: $SKIP_COUNT; Passed: $PASS_COUNT; PassedRate: $PASSED\n"
+echo "AccountType: $ALICLOUD_ACCOUNT_SITE; Product: $product; Resource: $TEST_CASE_CODE; Region: $ALICLOUD_REGION; Total: $TOTAL_COUNT; Failed: $FAILED_COUNT; Skipped: $SKIP_COUNT; Passed: $PASS_COUNT; PassedRate: $PASSED" >> ${FILE_NAME}.score
+
+aliyun oss cp ${FILE_NAME}.score oss://${BUCKET_NAME}/${FILE_NAME}.score -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
+aliyun oss cp ${FILE_NAME}.log oss://${BUCKET_NAME}/${FILE_NAME}.log -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
 
 RESULT=${RESULT}"$ALICLOUD_REGION      $TOTAL_COUNT          $FAILED_COUNT         $SKIP_COUNT          $PASS_COUNT        $PASSED\n"
 

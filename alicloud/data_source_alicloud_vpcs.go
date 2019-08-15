@@ -128,7 +128,7 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 			raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.DescribeVpcs(request)
 			})
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return err
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpcs", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -194,6 +194,7 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 		}
 
 		request := vpc.CreateDescribeVRoutersRequest()
+		request.RegionId = client.RegionId
 		request.VRouterId = v.VRouterId
 		request.RegionId = string(client.Region)
 
@@ -204,7 +205,7 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpcs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		response, _ := raw.(*vpc.DescribeVRoutersResponse)
 		if len(response.VRouters.VRouter) > 0 {

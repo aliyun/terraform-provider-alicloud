@@ -294,6 +294,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 func resourceAliyunApigatewayApiCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request, err := buildAliyunApiArgs(d, meta)
+	request.RegionId = client.RegionId
 	if err != nil {
 		return WrapError(err)
 	}
@@ -304,7 +305,7 @@ func resourceAliyunApigatewayApiCreate(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_apigateway_api", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cloudapi.CreateApiResponse)
 
 	d.SetId(fmt.Sprintf("%s%s%s", request.GroupId, COLON_SEPARATED, response.ApiId))
@@ -323,6 +324,7 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
 	request := cloudapi.CreateDescribeApiRequest()
+	request.RegionId = client.RegionId
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -531,7 +533,7 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		d.SetPartial("name")
 		d.SetPartial("description")
@@ -596,7 +598,7 @@ func resourceAliyunApigatewayApiDelete(d *schema.ResourceData, meta interface{})
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(cloudApiService.WaitForApiGatewayApi(d.Id(), Deleted, DefaultTimeout))
 }
 

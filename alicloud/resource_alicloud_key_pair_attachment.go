@@ -73,6 +73,7 @@ func resourceAlicloudKeyPairAttachmentCreate(d *schema.ResourceData, meta interf
 
 	if force {
 		request := ecs.CreateRebootInstanceRequest()
+		request.RegionId = client.RegionId
 		request.ForceStop = requests.NewBoolean(true)
 		for _, id := range newIds {
 			request.InstanceId = id
@@ -82,7 +83,7 @@ func resourceAlicloudKeyPairAttachmentCreate(d *schema.ResourceData, meta interf
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 		for _, id := range newIds {
 			if err := ecsService.WaitForEcsInstance(id, Running, DefaultLongTimeout); err != nil {
@@ -130,6 +131,7 @@ func resourceAlicloudKeyPairAttachmentDelete(d *schema.ResourceData, meta interf
 	instanceIds := strings.Split(d.Id(), ":")[1]
 
 	request := ecs.CreateDetachKeyPairRequest()
+	request.RegionId = client.RegionId
 	request.KeyPairName = keyName
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -140,7 +142,7 @@ func resourceAlicloudKeyPairAttachmentDelete(d *schema.ResourceData, meta interf
 		if err != nil {
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		instance_ids, _, err := ecsService.QueryInstancesWithKeyPair(instanceIds, keyName)
 		if err != nil {
 			return resource.NonRetryableError(WrapError(err))

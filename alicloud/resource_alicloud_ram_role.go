@@ -102,7 +102,7 @@ func resourceAlicloudRamRoleCreate(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_role", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ram.CreateRoleResponse)
 	d.SetId(response.Role.RoleName)
 	return resourceAlicloudRamRoleRead(d, meta)
@@ -113,6 +113,7 @@ func resourceAlicloudRamRoleUpdate(d *schema.ResourceData, meta interface{}) err
 	ramService := RamService{client}
 
 	request := ram.CreateUpdateRoleRequest()
+	request.RegionId = client.RegionId
 	request.RoleName = d.Id()
 
 	attributeUpdate := false
@@ -138,7 +139,7 @@ func resourceAlicloudRamRoleUpdate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAlicloudRamRoleRead(d, meta)
 }
@@ -178,6 +179,7 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
 	ListPoliciesForRoleRequest := ram.CreateListPoliciesForRoleRequest()
+	ListPoliciesForRoleRequest.RegionId = client.RegionId
 	ListPoliciesForRoleRequest.RoleName = d.Id()
 
 	if d.Get("force").(bool) {
@@ -190,12 +192,13 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), ListPoliciesForRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(ListPoliciesForRoleRequest.GetActionName(), raw)
+		addDebug(ListPoliciesForRoleRequest.GetActionName(), raw, ListPoliciesForRoleRequest.RpcRequest, ListPoliciesForRoleRequest)
 		response, _ := raw.(*ram.ListPoliciesForRoleResponse)
 		// Loop and remove the Policies from the Role
 		if len(response.Policies.Policy) > 0 {
 			for _, v := range response.Policies.Policy {
 				request := ram.CreateDetachPolicyFromRoleRequest()
+				request.RegionId = client.RegionId
 				request.RoleName = v.PolicyName
 				request.PolicyType = v.PolicyType
 				request.RoleName = d.Id()
@@ -205,12 +208,13 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 				if err != nil && !RamEntityNotExist(err) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			}
 		}
 	}
 
 	deleteRoleRequest := ram.CreateDeleteRoleRequest()
+	deleteRoleRequest.RegionId = client.RegionId
 	deleteRoleRequest.RoleName = d.Id()
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -222,7 +226,7 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(ListPoliciesForRoleRequest.GetActionName(), raw)
+		addDebug(ListPoliciesForRoleRequest.GetActionName(), raw, ListPoliciesForRoleRequest.RpcRequest, ListPoliciesForRoleRequest)
 		return nil
 	})
 	if err != nil {
@@ -238,6 +242,7 @@ func buildAlicloudRamRoleCreateArgs(d *schema.ResourceData, meta interface{}) (*
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
 	request := ram.CreateCreateRoleRequest()
+	request.RegionId = client.RegionId
 	request.RoleName = d.Get("name").(string)
 
 	ramUsers, usersOk := d.GetOk("ram_users")
@@ -269,6 +274,7 @@ func buildAlicloudRamRoleUpdateArgs(d *schema.ResourceData, meta interface{}) (*
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
 	request := ram.CreateUpdateRoleRequest()
+	request.RegionId = client.RegionId
 	request.RoleName = d.Id()
 
 	attributeUpdate := false

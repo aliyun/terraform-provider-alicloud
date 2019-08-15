@@ -121,7 +121,7 @@ func resourceAlicloudDBReadonlyInstanceCreate(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*rds.CreateReadOnlyDBInstanceResponse)
 	d.SetId(resp.DBInstanceId)
 
@@ -152,6 +152,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 
 	if d.HasChange("instance_name") {
 		request := rds.CreateModifyDBInstanceDescriptionRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
 		request.DBInstanceDescription = d.Get("instance_name").(string)
 
@@ -166,7 +167,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 				return resource.NonRetryableError(err)
 			}
 
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 			d.SetPartial("instance_name")
 			return nil
@@ -180,6 +181,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 
 	update := false
 	request := rds.CreateModifyDBInstanceSpecRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
 	request.PayType = string(Postpaid)
 
@@ -210,7 +212,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			d.SetPartial("instance_type")
 			d.SetPartial("instance_storage")
 			return nil
@@ -277,6 +279,7 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 	}
 
 	request := rds.CreateDeleteDBInstanceRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -292,7 +295,7 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 			return resource.NonRetryableError(err)
 		}
 
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		return nil
 	})

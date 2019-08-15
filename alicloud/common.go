@@ -5,6 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	"github.com/aliyun/fc-go-sdk"
 	"io/ioutil"
 	"log"
 	"os"
@@ -567,12 +572,80 @@ func debugOn() bool {
 	return false
 }
 
-func addDebug(action, content interface{}) {
+func addDebug(action, content interface{}, requestInfo ...interface{}) {
 	if debugOn() {
 		trace := "[DEBUG TRACE]:\n"
 		for skip := 1; skip < 5; skip++ {
 			_, filepath, line, _ := runtime.Caller(skip)
 			trace += fmt.Sprintf("%s:%d\n", filepath, line)
+		}
+
+		if len(requestInfo) > 0 {
+			var request = struct {
+				Domain     string
+				Version    string
+				UserAgent  string
+				ActionName string
+				Method     string
+				Product    string
+				Region     string
+				AK         string
+			}{}
+			switch requestInfo[0].(type) {
+			case *requests.RpcRequest:
+				tmp := requestInfo[0].(*requests.RpcRequest)
+				request.Domain = tmp.GetDomain()
+				request.Version = tmp.GetVersion()
+				request.ActionName = tmp.GetActionName()
+				request.Method = tmp.GetMethod()
+				request.Product = tmp.GetProduct()
+				request.Region = tmp.GetRegionId()
+			case *requests.RoaRequest:
+				tmp := requestInfo[0].(*requests.RoaRequest)
+				request.Domain = tmp.GetDomain()
+				request.Version = tmp.GetVersion()
+				request.ActionName = tmp.GetActionName()
+				request.Method = tmp.GetMethod()
+				request.Product = tmp.GetProduct()
+				request.Region = tmp.GetRegionId()
+			case *fc.Client:
+				client := requestInfo[0].(*fc.Client)
+				request.Version = client.Config.APIVersion
+				request.Product = "FC"
+				request.ActionName = fmt.Sprintf("%s", action)
+				request.UserAgent = client.Config.UserAgent
+				request.AK = client.Config.AccessKeyID
+			case *sls.Client:
+				client := requestInfo[0].(*sls.Client)
+				request.Product = "LOG"
+				request.ActionName = fmt.Sprintf("%s", action)
+				request.UserAgent = client.UserAgent
+				request.AK = client.AccessKeyID
+			case *tablestore.TableStoreClient:
+				request.Product = "OTS"
+				request.ActionName = fmt.Sprintf("%s", action)
+			case *oss.Client:
+				client := requestInfo[0].(*oss.Client)
+				request.UserAgent = client.Config.UserAgent
+				request.Product = "OSS"
+				request.ActionName = fmt.Sprintf("%s", action)
+				request.AK = client.Config.AccessKeyID
+			case *datahub.DataHub:
+				client := requestInfo[0].(*datahub.DataHub)
+				request.UserAgent = client.Client.Useragent
+				request.Product = "DataHub"
+				request.ActionName = fmt.Sprintf("%s", action)
+			}
+
+			requestContent := ""
+			if len(requestInfo) > 1 {
+				requestContent = fmt.Sprintf("%#v", requestInfo[1])
+			}
+
+			content = fmt.Sprintf("%vDomain:%v, Version:%v, ActionName:%v, Method:%v, Product:%v, Region:%v\n\n"+
+				"*************** %s Request ***************\n%v\n",
+				content, request.Domain, request.Version, request.ActionName,
+				request.Method, request.Product, request.Region, request.ActionName, requestContent)
 		}
 
 		fmt.Printf(DefaultDebugMsg, action, content, trace)

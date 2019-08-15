@@ -148,7 +148,7 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vswitches", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeVSwitchesResponse)
 		if len(response.VSwitches.VSwitch) < 1 {
 			break
@@ -219,7 +219,7 @@ func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, m
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vswitches", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		response, _ := raw.(*ecs.DescribeInstancesResponse)
 		if len(response.Instances.Instance) > 0 {

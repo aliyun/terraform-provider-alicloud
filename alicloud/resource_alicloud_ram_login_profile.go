@@ -48,6 +48,7 @@ func resourceAlicloudRamLoginProfileCreate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	ramSercvice := RamService{client}
 	request := ram.CreateCreateLoginProfileRequest()
+	request.RegionId = client.RegionId
 	request.UserName = d.Get("user_name").(string)
 	request.Password = d.Get("password").(string)
 	if v, ok := d.GetOk("password_reset_required"); ok {
@@ -63,7 +64,7 @@ func resourceAlicloudRamLoginProfileCreate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_login_profile", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	d.SetId(request.UserName)
 	err = ramSercvice.WaitForRamLoginProfile(d.Id(), Normal, DefaultTimeout)
@@ -77,6 +78,7 @@ func resourceAlicloudRamLoginProfileUpdate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ram.CreateUpdateLoginProfileRequest()
+	request.RegionId = client.RegionId
 	request.Password = d.Get("password").(string)
 	request.UserName = d.Id()
 
@@ -94,7 +96,7 @@ func resourceAlicloudRamLoginProfileUpdate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return resourceAlicloudRamLoginProfileRead(d, meta)
 }
@@ -122,6 +124,7 @@ func resourceAlicloudRamLoginProfileDelete(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
 	request := ram.CreateDeleteLoginProfileRequest()
+	request.RegionId = client.RegionId
 	request.UserName = d.Id()
 
 	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -133,7 +136,7 @@ func resourceAlicloudRamLoginProfileDelete(d *schema.ResourceData, meta interfac
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(ramService.WaitForRamLoginProfile(d.Id(), Deleted, DefaultTimeout))
 

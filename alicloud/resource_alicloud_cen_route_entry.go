@@ -50,6 +50,7 @@ func resourceAlicloudCenRouteEntryCreate(d *schema.ResourceData, meta interface{
 	}
 
 	request := cbn.CreatePublishRouteEntriesRequest()
+	request.RegionId = client.RegionId
 	request.CenId = cenId
 	request.ChildInstanceId = childInstanceId
 	request.ChildInstanceType = childInstanceType
@@ -67,7 +68,7 @@ func resourceAlicloudCenRouteEntryCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -131,6 +132,7 @@ func resourceAlicloudCenRouteEntryDelete(d *schema.ResourceData, meta interface{
 	}
 
 	request := cbn.CreateWithdrawPublishedRouteEntriesRequest()
+	request.RegionId = client.RegionId
 	request.CenId = cenId
 	request.ChildInstanceId = childInstanceId
 	request.ChildInstanceType = childInstanceType
@@ -149,7 +151,7 @@ func resourceAlicloudCenRouteEntryDelete(d *schema.ResourceData, meta interface{
 
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

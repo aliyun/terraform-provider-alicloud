@@ -66,6 +66,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	drdsService := DrdsService{client}
 
 	request := drds.CreateCreateDrdsInstanceRequest()
+	request.RegionId = client.RegionId
 	request.Description = d.Get("description").(string)
 	request.Type = "1"
 	request.ZoneId = d.Get("zone_id").(string)
@@ -98,7 +99,7 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_drds_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*drds.CreateDrdsInstanceResponse)
 	idList := response.Data.DrdsInstanceIdList.DrdsInstanceId
 	if len(idList) != 1 {
@@ -124,13 +125,14 @@ func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}
 		request.DrdsInstanceId = d.Id()
 		request.Description = d.Get("description").(string)
 		client := meta.(*connectivity.AliyunClient)
+		request.RegionId = client.RegionId
 		raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 			return drdsClient.ModifyDrdsInstanceDescription(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAliCloudDRDSInstanceRead(d, meta)
 }
@@ -159,6 +161,7 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	drdsService := DrdsService{client}
 	request := drds.CreateRemoveDrdsInstanceRequest()
+	request.RegionId = client.RegionId
 	request.DrdsInstanceId = d.Id()
 	raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.RemoveDrdsInstance(request)
@@ -169,7 +172,7 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*drds.RemoveDrdsInstanceResponse)
 	if !response.Success {
 		return WrapError(Error("failed to delete instance timeout "+"and got an error: %#v", err))

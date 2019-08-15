@@ -225,7 +225,7 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ess.CreateScalingConfigurationResponse)
 		d.SetId(response.ScalingConfigurationId)
 		return nil
@@ -425,7 +425,7 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 
@@ -463,6 +463,7 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				}
 
 				request := ess.CreateEnableScalingGroupRequest()
+				request.RegionId = client.RegionId
 				request.ScalingGroupId = sgId
 				request.ActiveScalingConfigurationId = activeConfig
 
@@ -472,7 +473,7 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				if err := essService.WaitForEssScalingGroup(sgId, Active, DefaultTimeout); err != nil {
 					return WrapError(err)
 				}
@@ -482,6 +483,7 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		} else {
 			if group.LifecycleState == string(Active) {
 				request := ess.CreateDisableScalingGroupRequest()
+				request.RegionId = client.RegionId
 				request.ScalingGroupId = sgId
 				raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 					return essClient.DisableScalingGroup(request)
@@ -489,7 +491,7 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				if err := essService.WaitForEssScalingGroup(sgId, Inactive, DefaultTimeout); err != nil {
 					return WrapError(err)
 				}
@@ -577,6 +579,7 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 	}
 
 	request := ess.CreateDescribeScalingConfigurationsRequest()
+	request.RegionId = client.RegionId
 	request.ScalingGroupId = object.ScalingGroupId
 
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -585,7 +588,7 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.DescribeScalingConfigurationsResponse)
 	if len(response.ScalingConfigurations.ScalingConfiguration) < 1 {
 		return nil
@@ -594,7 +597,7 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 			request := ess.CreateDeleteScalingGroupRequest()
 			request.ScalingGroupId = object.ScalingGroupId
 			request.ForceDelete = requests.NewBoolean(true)
-
+			request.RegionId = client.RegionId
 			raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 				return essClient.DeleteScalingGroup(request)
 			})
@@ -605,7 +608,7 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 				}
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return WrapError(essService.WaitForEssScalingGroup(d.Id(), Deleted, DefaultTimeout))
 		}
 		return WrapError(Error("Current scaling configuration %s is the last configuration for the scaling group %s. Please launch a new "+
@@ -625,7 +628,7 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), rawDeleteScalingConfiguration)
+	addDebug(request.GetActionName(), rawDeleteScalingConfiguration, request.RpcRequest, request)
 
 	return WrapError(essService.WaitForScalingConfiguration(d.Id(), Deleted, DefaultTimeout))
 }
@@ -639,6 +642,7 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 	}
 
 	request := ess.CreateCreateScalingConfigurationRequest()
+	request.RegionId = client.RegionId
 	request.ScalingGroupId = d.Get("scaling_group_id").(string)
 	request.ImageId = d.Get("image_id").(string)
 	request.SecurityGroupId = d.Get("security_group_id").(string)
@@ -763,6 +767,7 @@ func activeSubstituteScalingConfiguration(d *schema.ResourceData, meta interface
 	}
 
 	request := ess.CreateDescribeScalingConfigurationsRequest()
+	request.RegionId = client.RegionId
 	request.ScalingGroupId = c.ScalingGroupId
 
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -772,7 +777,7 @@ func activeSubstituteScalingConfiguration(d *schema.ResourceData, meta interface
 		err = WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.DescribeScalingConfigurationsResponse)
 	if len(response.ScalingConfigurations.ScalingConfiguration) < 1 {
 		return

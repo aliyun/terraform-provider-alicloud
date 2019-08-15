@@ -103,7 +103,7 @@ func dataSourceAlicloudApigatewayGroupsRead(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_api_gateway_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cloudapi.DescribeApiGroupsResponse)
 
 		allGroups = append(allGroups, response.ApiGroupAttributes.ApiGroupAttribute...)

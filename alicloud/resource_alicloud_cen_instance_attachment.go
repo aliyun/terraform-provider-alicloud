@@ -59,6 +59,7 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 	}
 
 	request := cbn.CreateAttachCenChildInstanceRequest()
+	request.RegionId = client.RegionId
 	request.CenId = cenId
 	request.ChildInstanceId = instanceId
 	request.ChildInstanceType = instanceType
@@ -82,7 +83,7 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_instance_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	d.SetId(cenId + COLON_SEPARATED + instanceId)
 
@@ -127,6 +128,7 @@ func resourceAlicloudCenInstanceAttachmentDelete(d *schema.ResourceData, meta in
 	}
 
 	request := cbn.CreateDetachCenChildInstanceRequest()
+	request.RegionId = client.RegionId
 	request.CenId = cenId
 	request.ChildInstanceId = instanceId
 	request.ChildInstanceType = instanceType
@@ -144,7 +146,7 @@ func resourceAlicloudCenInstanceAttachmentDelete(d *schema.ResourceData, meta in
 
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 

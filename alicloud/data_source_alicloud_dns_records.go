@@ -131,6 +131,7 @@ func dataSourceAlicloudDnsRecordsRead(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 
 	request := alidns.CreateDescribeDomainRecordsRequest()
+	request.RegionId = client.RegionId
 	request.DomainName = d.Get("domain_name").(string)
 	if v, ok := d.GetOk("type"); ok && v.(string) != "" {
 		request.TypeKeyWord = v.(string)
@@ -147,7 +148,7 @@ func dataSourceAlicloudDnsRecordsRead(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dns_records", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*alidns.DescribeDomainRecordsResponse)
 		records := response.DomainRecords.Record
 		for _, record := range records {

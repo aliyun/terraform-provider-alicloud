@@ -79,6 +79,7 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := drds.CreateDescribeDrdsInstancesRequest()
+	request.RegionId = client.RegionId
 	var dbi []drds.Instance
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -100,7 +101,7 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_drds_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 
 	for _, item := range response.Data.Instance {

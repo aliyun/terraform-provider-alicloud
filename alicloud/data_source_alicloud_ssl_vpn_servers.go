@@ -129,7 +129,7 @@ func dataSourceAlicloudSslVpnServersRead(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ssl_vpn_servers", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeSslVpnServersResponse)
 		if len(response.SslVpnServers.SslVpnServer) < 1 {
 			break

@@ -74,6 +74,7 @@ func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta inte
 		kvstoreService := KvstoreService{client}
 
 		request := r_kvstore.CreateModifyBackupPolicyRequest()
+		request.RegionId = client.RegionId
 		request.InstanceId = d.Id()
 		request.PreferredBackupTime = d.Get("backup_time").(string)
 		periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
@@ -85,7 +86,7 @@ func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		// There is a random error and need waiting some seconds to ensure the update is success
 		_, err = kvstoreService.DescribeKVstoreBackupPolicy(d.Id())
 		if err != nil {
@@ -100,6 +101,7 @@ func resourceAlicloudKVStoreBackupPolicyDelete(d *schema.ResourceData, meta inte
 	// In case of a delete we are resetting to default values which is Monday - Sunday each 3am-4am
 	client := meta.(*connectivity.AliyunClient)
 	request := r_kvstore.CreateModifyBackupPolicyRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 
 	request.PreferredBackupTime = "01:00Z-02:00Z"
@@ -111,6 +113,6 @@ func resourceAlicloudKVStoreBackupPolicyDelete(d *schema.ResourceData, meta inte
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }

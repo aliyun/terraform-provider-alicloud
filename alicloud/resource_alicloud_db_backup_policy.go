@@ -171,6 +171,7 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	request := rds.CreateModifyBackupPolicyRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
 	request.PreferredBackupPeriod = "Tuesday,Thursday,Saturday"
 	request.BackupRetentionPeriod = "7"
@@ -184,7 +185,7 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return rdsService.WaitForDBInstance(d.Id(), Running, DefaultTimeoutMedium)
 }

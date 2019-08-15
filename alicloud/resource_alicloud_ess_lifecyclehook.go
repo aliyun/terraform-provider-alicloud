@@ -67,7 +67,7 @@ func resourceAliyunEssLifeCycleHookCreate(d *schema.ResourceData, meta interface
 
 	request := buildAlicloudEssLifeCycleHookArgs(d)
 	client := meta.(*connectivity.AliyunClient)
-
+	request.RegionId = client.RegionId
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.CreateLifecycleHook(request)
@@ -78,7 +78,7 @@ func resourceAliyunEssLifeCycleHookCreate(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ess.CreateLifecycleHookResponse)
 		d.SetId(response.LifecycleHookId)
 		return nil
@@ -119,7 +119,7 @@ func resourceAliyunEssLifeCycleHookUpdate(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	request := ess.CreateModifyLifecycleHookRequest()
 	request.LifecycleHookId = d.Id()
-
+	request.RegionId = client.RegionId
 	if d.HasChange("lifecycle_transition") {
 		request.LifecycleTransition = d.Get("lifecycle_transition").(string)
 	}
@@ -146,7 +146,7 @@ func resourceAliyunEssLifeCycleHookUpdate(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return resourceAliyunEssLifeCycleHookRead(d, meta)
 }
 
@@ -156,7 +156,7 @@ func resourceAliyunEssLifeCycleHookDelete(d *schema.ResourceData, meta interface
 	essService := EssService{client}
 	request := ess.CreateDeleteLifecycleHookRequest()
 	request.LifecycleHookId = d.Id()
-
+	request.RegionId = client.RegionId
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DeleteLifecycleHook(request)
 	})
@@ -166,7 +166,7 @@ func resourceAliyunEssLifeCycleHookDelete(d *schema.ResourceData, meta interface
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(essService.WaitForEssLifecycleHook(d.Id(), Deleted, DefaultTimeout))
 

@@ -113,6 +113,7 @@ func dataSourceAlicloudMountTargetRead(d *schema.ResourceData, meta interface{})
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_mount_targets", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		resp, _ := raw.(*nas.DescribeMountTargetsResponse)
 
 		if resp == nil || len(resp.MountTargets.MountTarget) < 1 {

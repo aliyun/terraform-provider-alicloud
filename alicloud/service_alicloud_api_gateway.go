@@ -16,6 +16,7 @@ type CloudApiService struct {
 
 func (s *CloudApiService) DescribeApiGatewayGroup(id string) (apiGroup *cloudapi.DescribeApiGroupResponse, err error) {
 	request := cloudapi.CreateDescribeApiGroupRequest()
+	request.RegionId = s.client.RegionId
 	request.GroupId = id
 
 	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
@@ -28,7 +29,7 @@ func (s *CloudApiService) DescribeApiGatewayGroup(id string) (apiGroup *cloudapi
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	apiGroup, _ = raw.(*cloudapi.DescribeApiGroupResponse)
 	if apiGroup.GroupId == "" {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("ApiGatewayGroup", id)), NotFoundMsg, ProviderERROR)
@@ -59,6 +60,7 @@ func (s *CloudApiService) WaitForApiGatewayGroup(id string, status Status, timeo
 
 func (s *CloudApiService) DescribeApiGatewayApp(id string) (app *cloudapi.DescribeAppResponse, err error) {
 	request := cloudapi.CreateDescribeAppRequest()
+	request.RegionId = s.client.RegionId
 	request.AppId = requests.Integer(id)
 
 	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
@@ -70,7 +72,7 @@ func (s *CloudApiService) DescribeApiGatewayApp(id string) (app *cloudapi.Descri
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	app, _ = raw.(*cloudapi.DescribeAppResponse)
 	return
 }
@@ -103,6 +105,7 @@ func (s *CloudApiService) DescribeApiGatewayApi(id string) (api *cloudapi.Descri
 		return nil, WrapError(err)
 	}
 	request := cloudapi.CreateDescribeApiRequest()
+	request.RegionId = s.client.RegionId
 	request.ApiId = parts[1]
 	request.GroupId = parts[0]
 
@@ -115,7 +118,7 @@ func (s *CloudApiService) DescribeApiGatewayApi(id string) (api *cloudapi.Descri
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	api, _ = raw.(*cloudapi.DescribeApiResponse)
 	if api.ApiId == "" {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("ApiGatewayApi", id)), NotFoundMsg, ProviderERROR)
@@ -148,6 +151,7 @@ func (s *CloudApiService) WaitForApiGatewayApi(id string, status Status, timeout
 
 func (s *CloudApiService) DescribeApiGatewayAppAttachment(id string) (*cloudapi.AuthorizedApp, error) {
 	request := cloudapi.CreateDescribeAuthorizedAppsRequest()
+	request.RegionId = s.client.RegionId
 	parts, err := ParseResourceId(id, 4)
 	if err != nil {
 		return nil, WrapError(err)
@@ -169,6 +173,7 @@ func (s *CloudApiService) DescribeApiGatewayAppAttachment(id string) (*cloudapi.
 			}
 			return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cloudapi.DescribeAuthorizedAppsResponse)
 
 		allApps = append(allApps, response.AuthorizedApps.AuthorizedApp...)
@@ -200,6 +205,7 @@ func (s *CloudApiService) DescribeApiGatewayAppAttachment(id string) (*cloudapi.
 
 func (s *CloudApiService) DescribeApiGatewayVpcAccess(id string) (vpc *cloudapi.VpcAccessAttribute, e error) {
 	request := cloudapi.CreateDescribeVpcAccessesRequest()
+	request.RegionId = s.client.RegionId
 	parts, err := ParseResourceId(id, 4)
 	if err != nil {
 		return nil, WrapError(err)
@@ -213,7 +219,7 @@ func (s *CloudApiService) DescribeApiGatewayVpcAccess(id string) (vpc *cloudapi.
 		if err != nil {
 			return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cloudapi.DescribeVpcAccessesResponse)
 
 		allVpcs = append(allVpcs, response.VpcAccessAttributes.VpcAccessAttribute...)
@@ -274,6 +280,7 @@ func (s *CloudApiService) WaitForApiGatewayAppAttachment(id string, status Statu
 
 func (s *CloudApiService) DescribeDeployedApi(id string, stageName string) (api *cloudapi.DescribeDeployedApiResponse, err error) {
 	request := cloudapi.CreateDescribeDeployedApiRequest()
+	request.RegionId = s.client.RegionId
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return nil, WrapError(err)
@@ -291,13 +298,14 @@ func (s *CloudApiService) DescribeDeployedApi(id string, stageName string) (api 
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	api, _ = raw.(*cloudapi.DescribeDeployedApiResponse)
 	return
 }
 
 func (s *CloudApiService) DeployedApi(id string, stageName string) (err error) {
 	request := cloudapi.CreateDeployApiRequest()
+	request.RegionId = s.client.RegionId
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return WrapError(err)
@@ -313,12 +321,13 @@ func (s *CloudApiService) DeployedApi(id string, stageName string) (err error) {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return
 }
 
 func (s *CloudApiService) AbolishApi(id string, stageName string) (err error) {
 	request := cloudapi.CreateAbolishApiRequest()
+	request.RegionId = s.client.RegionId
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return WrapError(err)
@@ -337,6 +346,6 @@ func (s *CloudApiService) AbolishApi(id string, stageName string) (err error) {
 		}
 		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return
 }

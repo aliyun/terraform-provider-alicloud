@@ -81,6 +81,7 @@ func dataSourceAlicloudSlbRulesRead(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 
 	request := slb.CreateDescribeRulesRequest()
+	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
 	request.ListenerPort = requests.NewInteger(d.Get("frontend_port").(int))
 
@@ -97,6 +98,7 @@ func dataSourceAlicloudSlbRulesRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_rules", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.DescribeRulesResponse)
 	var filteredRulesTemp []slb.Rule
 	nameRegex, ok := d.GetOk("name_regex")

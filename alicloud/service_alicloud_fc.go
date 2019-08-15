@@ -13,8 +13,11 @@ type FcService struct {
 }
 
 func (s *FcService) DescribeFcService(id string) (response *fc.GetServiceOutput, err error) {
+	request := &fc.GetServiceInput{ServiceName: &id}
+	var requestInfo *fc.Client
 	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-		return fcClient.GetService(&fc.GetServiceInput{ServiceName: &id})
+		requestInfo = fcClient
+		return fcClient.GetService(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound}) {
@@ -24,7 +27,7 @@ func (s *FcService) DescribeFcService(id string) (response *fc.GetServiceOutput,
 		}
 		return
 	}
-	addDebug("GetService", raw)
+	addDebug("GetService", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetServiceOutput)
 	if *response.ServiceName != id {
 		err = WrapErrorf(Error(GetNotFoundMessage("FcService", id)), NotFoundMsg, FcGoSdk)
@@ -63,11 +66,14 @@ func (s *FcService) DescribeFcFunction(id string) (response *fc.GetFunctionOutpu
 		return
 	}
 	service, name := parts[0], parts[1]
+	request := &fc.GetFunctionInput{
+		ServiceName:  &service,
+		FunctionName: &name,
+	}
+	var requestInfo *fc.Client
 	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-		return fcClient.GetFunction(&fc.GetFunctionInput{
-			ServiceName:  &service,
-			FunctionName: &name,
-		})
+		requestInfo = fcClient
+		return fcClient.GetFunction(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound}) {
@@ -77,7 +83,7 @@ func (s *FcService) DescribeFcFunction(id string) (response *fc.GetFunctionOutpu
 		}
 		return
 	}
-	addDebug("GetFunction", raw)
+	addDebug("GetFunction", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetFunctionOutput)
 	if *response.FunctionName == "" {
 		err = WrapErrorf(Error(GetNotFoundMessage("FcFunction", id)), NotFoundMsg, FcGoSdk)
@@ -120,8 +126,11 @@ func (s *FcService) DescribeFcTrigger(id string) (response *fc.GetTriggerOutput,
 		return
 	}
 	service, function, name := parts[0], parts[1], parts[2]
+	request := fc.NewGetTriggerInput(service, function, name)
+	var requestInfo *fc.Client
 	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-		return fcClient.GetTrigger(fc.NewGetTriggerInput(service, function, name))
+		requestInfo = fcClient
+		return fcClient.GetTrigger(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound, TriggerNotFound}) {
@@ -131,7 +140,7 @@ func (s *FcService) DescribeFcTrigger(id string) (response *fc.GetTriggerOutput,
 		}
 		return
 	}
-	addDebug("GetTrigger", raw)
+	addDebug("GetTrigger", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetTriggerOutput)
 	if *response.TriggerName != name {
 		err = WrapErrorf(Error(GetNotFoundMessage("FcTrigger", name)), NotFoundMsg, ProviderERROR)

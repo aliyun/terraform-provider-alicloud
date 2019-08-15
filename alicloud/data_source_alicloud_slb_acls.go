@@ -105,6 +105,7 @@ func dataSourceAlicloudSlbAcls() *schema.Resource {
 func dataSourceAlicloudSlbAclsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := slb.CreateDescribeAccessControlListsRequest()
+	request.RegionId = client.RegionId
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -117,7 +118,7 @@ func dataSourceAlicloudSlbAclsRead(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_acls", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.DescribeAccessControlListsResponse)
 	var filteredAclsTemp []slb.Acl
 	nameRegex, ok := d.GetOk("name_regex")
@@ -161,7 +162,7 @@ func slbAclsDescriptionAttributes(d *schema.ResourceData, acls []slb.Acl, client
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_acls", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*slb.DescribeAccessControlListAttributeResponse)
 		mapping := map[string]interface{}{
 			"id":                response.AclId,

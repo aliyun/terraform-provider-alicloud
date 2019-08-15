@@ -94,7 +94,7 @@ func dataSourceAlicloudSnatEntriesRead(d *schema.ResourceData, meta interface{})
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_snat_entries", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeSnatTableEntriesResponse)
 		if len(response.SnatTableEntries.SnatTableEntry) < 1 {
 			break

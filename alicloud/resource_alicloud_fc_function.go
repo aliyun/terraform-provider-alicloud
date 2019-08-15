@@ -153,8 +153,10 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 	request.FunctionCreateObject = object
 
 	var function *fc.CreateFunctionOutput
+	var requestInfo *fc.Client
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			requestInfo = fcClient
 			return fcClient.CreateFunction(request)
 		})
 		if err != nil {
@@ -163,7 +165,7 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(WrapError(err))
 		}
-		addDebug("CreateFunction", raw)
+		addDebug("CreateFunction", raw, requestInfo, request)
 		function, _ = raw.(*fc.CreateFunctionOutput)
 		return nil
 
@@ -256,14 +258,15 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 		request.Code = code
-
+		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			requestInfo = fcClient
 			return fcClient.UpdateFunction(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateFunction", FcGoSdk)
 		}
-		addDebug("UpdateFunction", raw)
+		addDebug("UpdateFunction", raw, requestInfo, request)
 	}
 
 	return resourceAlicloudFCFunctionRead(d, meta)
@@ -276,12 +279,14 @@ func resourceAlicloudFCFunctionDelete(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapError(err)
 	}
-
+	request := &fc.DeleteFunctionInput{
+		ServiceName:  StringPointer(parts[0]),
+		FunctionName: StringPointer(parts[1]),
+	}
+	var requestInfo *fc.Client
 	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-		return fcClient.DeleteFunction(&fc.DeleteFunctionInput{
-			ServiceName:  StringPointer(parts[0]),
-			FunctionName: StringPointer(parts[1]),
-		})
+		requestInfo = fcClient
+		return fcClient.DeleteFunction(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound}) {
@@ -289,7 +294,7 @@ func resourceAlicloudFCFunctionDelete(d *schema.ResourceData, meta interface{}) 
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteFunction", FcGoSdk)
 	}
-	addDebug("DeleteFunction", raw)
+	addDebug("DeleteFunction", raw, requestInfo, request)
 	return WrapError(fcService.WaitForFcFunction(d.Id(), Deleted, DefaultTimeout))
 }
 

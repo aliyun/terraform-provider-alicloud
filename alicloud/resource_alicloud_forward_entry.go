@@ -86,12 +86,11 @@ func resourceAliyunForwardEntryCreate(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_forward_entry", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*vpc.CreateForwardEntryResponse)
 	d.SetId(request.ForwardTableId + COLON_SEPARATED + response.ForwardEntryId)
 	if err := vpcService.WaitForForwardEntry(d.Id(), Available, DefaultTimeoutMedium); err != nil {
@@ -173,7 +172,7 @@ func resourceAliyunForwardEntryUpdate(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if err := vpcService.WaitForForwardEntry(d.Id(), Available, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
@@ -205,7 +204,7 @@ func resourceAliyunForwardEntryDelete(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

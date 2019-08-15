@@ -38,12 +38,13 @@ func resourceAliyunHaVipAttachmentCreate(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	haVipService := HaVipService{client}
 
-	args := vpc.CreateAssociateHaVipRequest()
-	args.HaVipId = Trim(d.Get("havip_id").(string))
-	args.InstanceId = Trim(d.Get("instance_id").(string))
+	request := vpc.CreateAssociateHaVipRequest()
+	request.RegionId = client.RegionId
+	request.HaVipId = Trim(d.Get("havip_id").(string))
+	request.InstanceId = Trim(d.Get("instance_id").(string))
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		ar := args
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		ar := request
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.AssociateHaVip(ar)
 		})
 		if err != nil {
@@ -52,16 +53,17 @@ func resourceAliyunHaVipAttachmentCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(fmt.Errorf("AssociateHaVip got an error: %#v", err))
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	}); err != nil {
 		return err
 	}
 	//check the havip attachment
-	if err := haVipService.WaitForHaVipAttachment(args.HaVipId, args.InstanceId, 5*DefaultTimeout); err != nil {
+	if err := haVipService.WaitForHaVipAttachment(request.HaVipId, request.InstanceId, 5*DefaultTimeout); err != nil {
 		return fmt.Errorf("Wait for havip attachment got error: %#v", err)
 	}
 
-	d.SetId(args.HaVipId + COLON_SEPARATED + args.InstanceId)
+	d.SetId(request.HaVipId + COLON_SEPARATED + request.InstanceId)
 
 	return resourceAliyunHaVipAttachmentRead(d, meta)
 }
@@ -96,11 +98,12 @@ func resourceAliyunHaVipAttachmentDelete(d *schema.ResourceData, meta interface{
 	}
 
 	request := vpc.CreateUnassociateHaVipRequest()
+	request.RegionId = client.RegionId
 	request.HaVipId = haVipId
 	request.InstanceId = instanceId
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.UnassociateHaVip(request)
 		})
 		//Waiting for unassociate the havip
@@ -109,6 +112,7 @@ func resourceAliyunHaVipAttachmentDelete(d *schema.ResourceData, meta interface{
 				return resource.RetryableError(fmt.Errorf("Unassociate HaVip timeout and got an error:%#v.", err))
 			}
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		//Eusure the instance has been unassociated truly.
 		err = haVipService.DescribeHaVipAttachment(haVipId, instanceId)
 		if err != nil {

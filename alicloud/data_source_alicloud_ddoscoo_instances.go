@@ -80,6 +80,7 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ddoscoo.CreateDescribeInstancesRequest()
+	request.RegionId = client.RegionId
 	request.PageSize = strconv.Itoa(PageSizeSmall)
 	request.PageNo = "1"
 	var instances []ddoscoo.Instance
@@ -104,7 +105,7 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddoscoo_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		resp, _ := raw.(*ddoscoo.DescribeInstancesResponse)
 		if len(resp.Instances) < 1 {
 			break

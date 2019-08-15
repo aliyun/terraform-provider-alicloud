@@ -69,7 +69,7 @@ func resourceAliyunRouteTableCreate(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_route_table", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*vpc.CreateRouteTableResponse)
 	d.SetId(response.RouteTableId)
 
@@ -101,6 +101,7 @@ func resourceAliyunRouteTableUpdate(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 
 	request := vpc.CreateModifyRouteTableAttributesRequest()
+	request.RegionId = client.RegionId
 	request.RouteTableId = d.Id()
 
 	if d.HasChange("description") {
@@ -117,7 +118,7 @@ func resourceAliyunRouteTableUpdate(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return resourceAliyunRouteTableRead(d, meta)
 }
@@ -126,6 +127,7 @@ func resourceAliyunRouteTableDelete(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	routeTableService := VpcService{client}
 	request := vpc.CreateDeleteRouteTableRequest()
+	request.RegionId = client.RegionId
 	request.RouteTableId = d.Id()
 
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
@@ -134,6 +136,6 @@ func resourceAliyunRouteTableDelete(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(routeTableService.WaitForRouteTable(d.Id(), Deleted, DefaultTimeoutMedium))
 }

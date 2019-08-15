@@ -144,7 +144,7 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 	slbService := &SlbService{client}
 
 	request := slb.CreateDescribeLoadBalancersRequest()
-
+	request.RegionId = client.RegionId
 	if v, ok := d.GetOk("master_availability_zone"); ok && v.(string) != "" {
 		request.MasterZoneId = v.(string)
 	}
@@ -193,7 +193,7 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_slbs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*slb.DescribeLoadBalancersResponse)
 		if len(response.LoadBalancers.LoadBalancer) < 1 {
 			break

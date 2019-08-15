@@ -195,6 +195,7 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	request := slb.CreateCreateRulesRequest()
+	request.RegionId = client.RegionId
 	request.LoadBalancerId = slb_id
 	request.ListenerPort = requests.NewInteger(port)
 	request.RuleList = rule
@@ -210,7 +211,7 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -327,13 +328,14 @@ func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 	if update || fullUpdate {
 		client := meta.(*connectivity.AliyunClient)
+		request.RegionId = client.RegionId
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.SetRule(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return resourceAliyunSlbRuleRead(d, meta)
@@ -343,6 +345,7 @@ func resourceAliyunSlbRuleDelete(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 	request := slb.CreateDeleteRulesRequest()
+	request.RegionId = client.RegionId
 	request.RuleIds = fmt.Sprintf("['%s']", d.Id())
 
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -354,7 +357,7 @@ func resourceAliyunSlbRuleDelete(d *schema.ResourceData, meta interface{}) error
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(slbService.WaitForSlbRule(d.Id(), Deleted, DefaultTimeoutMedium))
 

@@ -54,6 +54,7 @@ func resourceAlicloudDBDatabaseCreate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	request := rds.CreateCreateDatabaseRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Get("instance_id").(string)
 	request.DBName = d.Get("name").(string)
 	request.CharacterSetName = d.Get("character_set").(string)
@@ -78,7 +79,7 @@ func resourceAlicloudDBDatabaseCreate(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 
@@ -119,6 +120,7 @@ func resourceAlicloudDBDatabaseUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 		request := rds.CreateModifyDBDescriptionRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = parts[0]
 		request.DBName = parts[1]
 		request.DBDescription = d.Get("description").(string)
@@ -129,7 +131,7 @@ func resourceAlicloudDBDatabaseUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAlicloudDBDatabaseRead(d, meta)
 }
@@ -142,6 +144,7 @@ func resourceAlicloudDBDatabaseDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	request := rds.CreateDeleteDatabaseRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = parts[0]
 	request.DBName = parts[1]
 	// wait instance status is running before deleting database
@@ -157,7 +160,7 @@ func resourceAlicloudDBDatabaseDelete(d *schema.ResourceData, meta interface{}) 
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

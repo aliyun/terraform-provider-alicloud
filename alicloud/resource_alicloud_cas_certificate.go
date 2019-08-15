@@ -43,6 +43,7 @@ func resourceAlicloudCasCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	args := cas.CreateCreateUserCertificateRequest()
+	args.RegionId = client.RegionId
 	if v, ok := d.GetOk("name"); ok {
 		args.Name = v.(string)
 	}
@@ -62,7 +63,7 @@ func resourceAlicloudCasCreate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return WrapError(err)
 	}
-
+	addDebug(args.GetActionName(), raw, args.RpcRequest, args)
 	response, _ := raw.(*cas.CreateUserCertificateResponse)
 	d.SetId(strconv.Itoa(response.CertId))
 	return resourceAlicloudCasRead(d, meta)
@@ -92,10 +93,11 @@ func resourceAlicloudCasDelete(d *schema.ResourceData, meta interface{}) error {
 	casService := &CasService{client: client}
 
 	request := cas.CreateDeleteUserCertificateRequest()
+	request.RegionId = client.RegionId
 	request.CertId = requests.Integer(d.Id())
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
+		raw, err := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
 			return casClient.DeleteUserCertificate(request)
 		})
 
@@ -105,7 +107,7 @@ func resourceAlicloudCasDelete(d *schema.ResourceData, meta interface{}) error {
 			}
 			return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		if _, err := casService.DescribeCas(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil

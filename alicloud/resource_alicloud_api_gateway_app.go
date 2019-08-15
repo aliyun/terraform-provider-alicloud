@@ -41,6 +41,7 @@ func resourceAliyunApigatewayAppCreate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 
 	request := cloudapi.CreateCreateAppRequest()
+	request.RegionId = client.RegionId
 	request.AppName = d.Get("name").(string)
 	if v, exist := d.GetOk("description"); exist {
 		request.Description = v.(string)
@@ -57,7 +58,7 @@ func resourceAliyunApigatewayAppCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cloudapi.CreateAppResponse)
 		d.SetId(strconv.FormatInt(response.AppId, 10))
 		return nil
@@ -71,9 +72,6 @@ func resourceAliyunApigatewayAppCreate(d *schema.ResourceData, meta interface{})
 func resourceAliyunApigatewayAppRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
-
-	request := cloudapi.CreateDescribeAppRequest()
-	request.AppId = requests.Integer(d.Id())
 
 	if err := resource.Retry(3*time.Second, func() *resource.RetryError {
 		object, err := cloudApiService.DescribeApiGatewayApp(d.Id())
@@ -98,6 +96,7 @@ func resourceAliyunApigatewayAppUpdate(d *schema.ResourceData, meta interface{})
 
 	if d.HasChange("name") || d.HasChange("description") {
 		request := cloudapi.CreateModifyAppRequest()
+		request.RegionId = client.RegionId
 		request.AppId = requests.Integer(d.Id())
 		request.AppName = d.Get("name").(string)
 		if v, exist := d.GetOk("description"); exist {
@@ -110,7 +109,7 @@ func resourceAliyunApigatewayAppUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	time.Sleep(3 * time.Second)
 	return resourceAliyunApigatewayAppRead(d, meta)
@@ -121,6 +120,7 @@ func resourceAliyunApigatewayAppDelete(d *schema.ResourceData, meta interface{})
 	cloudApiService := CloudApiService{client}
 
 	request := cloudapi.CreateDeleteAppRequest()
+	request.RegionId = client.RegionId
 	request.AppId = requests.Integer(d.Id())
 
 	raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
@@ -132,6 +132,6 @@ func resourceAliyunApigatewayAppDelete(d *schema.ResourceData, meta interface{})
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(cloudApiService.WaitForApiGatewayApp(d.Id(), Deleted, DefaultTimeout))
 }

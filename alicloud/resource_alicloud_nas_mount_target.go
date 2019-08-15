@@ -74,7 +74,7 @@ func resourceAlicloudNasMountTargetCreate(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return resourceAlicloudNasMountTargetUpdate(d, meta)
 }
 
@@ -83,6 +83,7 @@ func resourceAlicloudNasMountTargetUpdate(d *schema.ResourceData, meta interface
 	split := strings.Split(d.Id(), "-")
 	update := false
 	request := nas.CreateModifyMountTargetRequest()
+	request.RegionId = client.RegionId
 	request.FileSystemId = split[0]
 	request.MountTargetDomain = d.Id()
 	if !d.IsNewResource() && d.HasChange("access_group_name") {
@@ -100,7 +101,7 @@ func resourceAlicloudNasMountTargetUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAlicloudNasMountTargetRead(d, meta)
 }
@@ -128,6 +129,7 @@ func resourceAlicloudNasMountTargetDelete(d *schema.ResourceData, meta interface
 	nasService := NasService{client}
 	split := strings.Split(d.Id(), "-")
 	request := nas.CreateDeleteMountTargetRequest()
+	request.RegionId = client.RegionId
 	request.FileSystemId = split[0]
 	request.MountTargetDomain = d.Id()
 	raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
@@ -141,6 +143,6 @@ func resourceAlicloudNasMountTargetDelete(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(nasService.WaitForNasMountTarget(d.Id(), Deleted, DefaultTimeoutMedium))
 }

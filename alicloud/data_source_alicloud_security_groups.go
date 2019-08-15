@@ -88,6 +88,7 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 	ecsService := EcsService{client}
 
 	request := ecs.CreateDescribeSecurityGroupsRequest()
+	request.RegionId = client.RegionId
 	request.VpcId = d.Get("vpc_id").(string)
 	request.PageNumber = requests.NewInteger(1)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
@@ -126,7 +127,7 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "security_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.DescribeSecurityGroupsResponse)
 		if len(response.SecurityGroups.SecurityGroup) < 1 {
 			break

@@ -14,6 +14,7 @@ type KmsService struct {
 
 func (k *KmsService) DescribeKmsKey(id string) (*kms.DescribeKeyResponse, error) {
 	request := kms.CreateDescribeKeyRequest()
+	request.RegionId = k.client.RegionId
 	request.KeyId = id
 
 	raw, err := k.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
@@ -23,7 +24,7 @@ func (k *KmsService) DescribeKmsKey(id string) (*kms.DescribeKeyResponse, error)
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	key, _ := raw.(*kms.DescribeKeyResponse)
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if key == nil || key.KeyMetadata.KeyId != id {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("Kms_key", id)), NotFoundMsg, ProviderERROR)
 	}

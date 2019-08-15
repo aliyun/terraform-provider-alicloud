@@ -87,6 +87,7 @@ func getCenBandwidthLimits(instanceId string, meta interface{}) ([]cbn.CenInterR
 	client := meta.(*connectivity.AliyunClient)
 
 	request := cbn.CreateDescribeCenInterRegionBandwidthLimitsRequest()
+	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	if instanceId != "" {
@@ -110,7 +111,7 @@ func getCenBandwidthLimits(instanceId string, meta interface{}) ([]cbn.CenInterR
 			}
 			return allCenBwLimits, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_bandwidth_limits", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cbn.DescribeCenInterRegionBandwidthLimitsResponse)
 
 		if len(response.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit) < 1 {

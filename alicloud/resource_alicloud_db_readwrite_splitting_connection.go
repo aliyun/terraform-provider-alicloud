@@ -104,7 +104,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionCreate(d *schema.ResourceData
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -173,6 +173,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionUpdate(d *schema.ResourceData
 	rdsService := RdsService{client}
 
 	request := rds.CreateModifyReadWriteSplittingConnectionRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
 
 	update := false
@@ -218,7 +219,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionUpdate(d *schema.ResourceData
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -237,6 +238,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionDelete(d *schema.ResourceData
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	request := rds.CreateReleaseReadWriteSplittingConnectionRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
 
 	if err := resource.Retry(30*time.Minute, func() *resource.RetryError {
@@ -253,7 +255,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionDelete(d *schema.ResourceData
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

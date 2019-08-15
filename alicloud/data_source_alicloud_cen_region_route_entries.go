@@ -64,6 +64,7 @@ func dataSourceAlicloudCenRegionDomainRouteEntriesRead(d *schema.ResourceData, m
 	client := meta.(*connectivity.AliyunClient)
 
 	request := cbn.CreateDescribeCenRegionDomainRouteEntriesRequest()
+	request.RegionId = client.RegionId
 	request.CenId = d.Get("instance_id").(string)
 	request.CenRegionId = d.Get("region_id").(string)
 
@@ -77,7 +78,7 @@ func dataSourceAlicloudCenRegionDomainRouteEntriesRead(d *schema.ResourceData, m
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_region_route_entries", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cbn.DescribeCenRegionDomainRouteEntriesResponse)
 
 		if len(response.CenRouteEntries.CenRouteEntry) < 1 {

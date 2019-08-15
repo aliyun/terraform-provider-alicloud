@@ -89,7 +89,7 @@ func dataSourceAlicloudVpnCgwsRead(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "aliclioud_vpn_customer_gateways", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeCustomerGatewaysResponse)
 		if len(response.CustomerGateways.CustomerGateway) < 1 {
 			break

@@ -73,7 +73,7 @@ func resourceAliyunNetworkAclCreate(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_network_acl", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName, raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*vpc.CreateNetworkAclResponse)
 	d.SetId(response.NetworkAclId)
 
@@ -109,6 +109,7 @@ func resourceAliyunNetworkAclUpdate(d *schema.ResourceData, meta interface{}) er
 	vpcService := VpcService{client}
 
 	request := vpc.CreateModifyNetworkAclAttributesRequest()
+	request.RegionId = client.RegionId
 	request.NetworkAclId = d.Id()
 
 	if d.HasChange("description") {
@@ -124,7 +125,7 @@ func resourceAliyunNetworkAclUpdate(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if err := vpcService.WaitForNetworkAcl(d.Id(), Available, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
@@ -140,6 +141,7 @@ func resourceAliyunNetworkAclDelete(d *schema.ResourceData, meta interface{}) er
 	}
 
 	request := vpc.CreateDeleteNetworkAclRequest()
+	request.RegionId = client.RegionId
 	request.NetworkAclId = d.Id()
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.DeleteNetworkAcl(request)
@@ -150,6 +152,6 @@ func resourceAliyunNetworkAclDelete(d *schema.ResourceData, meta interface{}) er
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(vpcService.WaitForNetworkAcl(d.Id(), Deleted, DefaultTimeoutMedium))
 }

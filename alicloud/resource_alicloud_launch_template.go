@@ -267,6 +267,7 @@ func resourceAliyunLaunchTemplateCreate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ecs.CreateCreateLaunchTemplateRequest()
+	request.RegionId = client.RegionId
 	request.LaunchTemplateName = d.Get("name").(string)
 	request.Description = d.Get("description").(string)
 	request.HostName = d.Get("host_name").(string)
@@ -349,7 +350,7 @@ func resourceAliyunLaunchTemplateCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_launch_template", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ecs.CreateLaunchTemplateResponse)
 
 	d.SetId(response.LaunchTemplateId)
@@ -473,6 +474,7 @@ func resourceAliyunLaunchTemplateDelete(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ecs.CreateDeleteLaunchTemplateRequest()
+	request.RegionId = client.RegionId
 	request.LaunchTemplateId = d.Id()
 
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
@@ -481,7 +483,7 @@ func resourceAliyunLaunchTemplateDelete(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetAcceptFormat(), raw)
+	addDebug(request.GetAcceptFormat(), raw, request.RpcRequest, request)
 	ecsService := EcsService{client}
 	if err := ecsService.WaitForLaunchTemplate(d.Id(), Deleted, DefaultTimeout); err != nil {
 		return WrapError(err)
@@ -501,7 +503,7 @@ func getLaunchTemplateVersions(id string, meta interface{}) ([]ecs.LaunchTemplat
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response := raw.(*ecs.DescribeLaunchTemplateVersionsResponse)
 	if len(response.LaunchTemplateVersionSets.LaunchTemplateVersionSet) > 0 {
 		return response.LaunchTemplateVersionSets.LaunchTemplateVersionSet, nil
@@ -522,13 +524,14 @@ func deleteLaunchTemplateVersion(id string, version int, meta interface{}) error
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), ProviderERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 
 func createLaunchTemplateVersion(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := ecs.CreateCreateLaunchTemplateVersionRequest()
+	request.RegionId = client.RegionId
 	request.LaunchTemplateId = d.Id()
 	request.Description = d.Get("description").(string)
 	request.HostName = d.Get("host_name").(string)
@@ -611,7 +614,7 @@ func createLaunchTemplateVersion(d *schema.ResourceData, meta interface{}) error
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 
 }

@@ -143,10 +143,11 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 	request.VPCConfig = vpcconfig
-
+	var requestInfo *fc.Client
 	var response *fc.CreateServiceOutput
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			requestInfo = fcClient
 			return fcClient.CreateService(request)
 		})
 		if err != nil {
@@ -155,7 +156,7 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("CreateService", raw)
+		addDebug("CreateService", raw, requestInfo, request)
 		response, _ = raw.(*fc.CreateServiceOutput)
 		return nil
 
@@ -215,18 +216,18 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
-	response := &fc.UpdateServiceInput{}
+	request := &fc.UpdateServiceInput{}
 
 	if d.HasChange("role") {
-		response.Role = StringPointer(d.Get("role").(string))
+		request.Role = StringPointer(d.Get("role").(string))
 		d.SetPartial("role")
 	}
 	if d.HasChange("internet_access") {
-		response.InternetAccess = BoolPointer(d.Get("internet_access").(bool))
+		request.InternetAccess = BoolPointer(d.Get("internet_access").(bool))
 		d.SetPartial("internet_access")
 	}
 	if d.HasChange("description") {
-		response.Description = StringPointer(d.Get("description").(string))
+		request.Description = StringPointer(d.Get("description").(string))
 		d.SetPartial("description")
 	}
 	if d.HasChange("log_config") {
@@ -234,7 +235,7 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapError(err)
 		}
-		response.LogConfig = &fc.LogConfig{
+		request.LogConfig = &fc.LogConfig{
 			Project:  StringPointer(project),
 			Logstore: StringPointer(logstore),
 		}
@@ -246,19 +247,21 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapError(err)
 		}
-		response.VPCConfig = vpcconfig
+		request.VPCConfig = vpcconfig
 		d.SetPartial("vpc_config")
 	}
 
-	if response != nil {
-		response.ServiceName = StringPointer(d.Id())
+	if request != nil {
+		request.ServiceName = StringPointer(d.Id())
+		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			return fcClient.UpdateService(response)
+			requestInfo = fcClient
+			return fcClient.UpdateService(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateService", FcGoSdk)
 		}
-		addDebug("UpdateService", raw)
+		addDebug("UpdateService", raw, requestInfo, request)
 	}
 
 	d.Partial(false)
@@ -268,11 +271,13 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudFCServiceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	fcService := FcService{client}
-
+	request := &fc.DeleteServiceInput{
+		ServiceName: StringPointer(d.Id()),
+	}
+	var requestInfo *fc.Client
 	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-		return fcClient.DeleteService(&fc.DeleteServiceInput{
-			ServiceName: StringPointer(d.Id()),
-		})
+		requestInfo = fcClient
+		return fcClient.DeleteService(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound}) {
@@ -280,7 +285,7 @@ func resourceAlicloudFCServiceDelete(d *schema.ResourceData, meta interface{}) e
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteService", FcGoSdk)
 	}
-	addDebug("DeleteService", raw)
+	addDebug("DeleteService", raw, requestInfo, request)
 	return WrapError(fcService.WaitForFcService(d.Id(), Deleted, DefaultTimeout))
 
 }
@@ -334,8 +339,10 @@ func parseLogConfig(d *schema.ResourceData, meta interface{}) (project, logstore
 		}
 	}
 	if project != "" {
+		var requestInfo *sls.Client
 		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 			raw, e := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+				requestInfo = slsClient
 				return slsClient.CheckProjectExist(project)
 			})
 			if e != nil {
@@ -344,7 +351,7 @@ func parseLogConfig(d *schema.ResourceData, meta interface{}) (project, logstore
 				}
 				return resource.NonRetryableError(e)
 			}
-			addDebug("CheckProjectExist", raw)
+			addDebug("CheckProjectExist", raw, requestInfo, project)
 			return nil
 		})
 	}

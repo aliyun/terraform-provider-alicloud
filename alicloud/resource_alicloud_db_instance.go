@@ -294,7 +294,7 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*rds.CreateDBInstanceResponse)
 	d.SetId(response.DBInstanceId)
 
@@ -325,6 +325,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if !d.IsNewResource() && (d.HasChange("instance_charge_type") || d.HasChange("period")) {
 		prePaidRequest := rds.CreateModifyDBInstancePayTypeRequest()
+		prePaidRequest.RegionId = client.RegionId
 		prePaidRequest.DBInstanceId = d.Id()
 		payType := PayType(d.Get("instance_charge_type").(string))
 		prePaidRequest.PayType = string(payType)
@@ -344,7 +345,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), prePaidRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(prePaidRequest.GetActionName(), raw)
+		addDebug(prePaidRequest.GetActionName(), raw, prePaidRequest.RpcRequest, prePaidRequest)
 		// wait instance status is Normal after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -357,7 +358,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	if d.HasChange("auto_renew") || d.HasChange("auto_renew_period") {
 		request := rds.CreateModifyInstanceAutoRenewalAttributeRequest()
 		request.DBInstanceId = d.Id()
-
+		request.RegionId = client.RegionId
 		auto_renew := d.Get("auto_renew").(bool)
 		if auto_renew {
 			request.AutoRenew = "True"
@@ -372,7 +373,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		d.SetPartial("auto_renew")
 		d.SetPartial("auto_renew_period")
@@ -389,6 +390,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	if d.HasChange("monitoring_period") {
 		period := d.Get("monitoring_period").(int)
 		request := rds.CreateModifyDBInstanceMonitorRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
 		request.Period = strconv.Itoa(period)
 
@@ -398,7 +400,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if d.IsNewResource() {
@@ -408,6 +410,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if d.HasChange("instance_name") {
 		request := rds.CreateModifyDBInstanceDescriptionRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
 		request.DBInstanceDescription = d.Get("instance_name").(string)
 
@@ -417,7 +420,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("instance_name")
 	}
 
@@ -438,6 +441,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	update := false
 	request := rds.CreateModifyDBInstanceSpecRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
 	request.PayType = string(Postpaid)
 
@@ -466,7 +470,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			d.SetPartial("instance_type")
 			d.SetPartial("instance_storage")
 			return nil
@@ -539,6 +543,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 
 	if instance.PayType == string(Prepaid) {
 		request := rds.CreateDescribeInstanceAutoRenewalAttributeRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
 
 		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
@@ -547,7 +552,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*rds.DescribeInstanceAutoRenewalAttributeResponse)
 		if response != nil && len(response.Items.Item) > 0 {
 			renew := response.Items.Item[0]
@@ -583,6 +588,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	}
 
 	request := rds.CreateDeleteDBInstanceRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
 
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
@@ -596,7 +602,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		return nil
 	})

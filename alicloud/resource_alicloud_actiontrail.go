@@ -60,7 +60,7 @@ func resourceAlicloudActiontrailCreate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	trailService := ActionTrailService{client}
 	request := actiontrail.CreateCreateTrailRequest()
-
+	request.RegionId = client.RegionId
 	request.Name = d.Get("name").(string)
 	request.OssBucketName = d.Get("oss_bucket_name").(string)
 	request.RoleName = d.Get("role_name").(string)
@@ -96,7 +96,7 @@ func resourceAlicloudActiontrailCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 
@@ -146,6 +146,7 @@ func resourceAlicloudActiontrailUpdate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 
 	request := actiontrail.CreateUpdateTrailRequest()
+	request.RegionId = client.RegionId
 	request.Name = d.Id()
 	request.OssBucketName = d.Get("oss_bucket_name").(string)
 	request.RoleName = d.Get("role_name").(string)
@@ -179,7 +180,7 @@ func resourceAlicloudActiontrailUpdate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 
@@ -194,6 +195,7 @@ func resourceAlicloudActiontrailDelete(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	trailService := ActionTrailService{client}
 	request := actiontrail.CreateDeleteTrailRequest()
+	request.RegionId = client.RegionId
 	request.Name = d.Id()
 
 	raw, err := client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
@@ -207,7 +209,7 @@ func resourceAlicloudActiontrailDelete(d *schema.ResourceData, meta interface{})
 		return WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(trailService.WaitForActionTrail(d.Id(), Deleted, DefaultTimeout))
 

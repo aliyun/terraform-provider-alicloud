@@ -59,14 +59,14 @@ func resourceAliyunEssScalingRuleCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-
+	request.RegionId = client.RegionId
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.CreateScalingRule(request)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scalingrule", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.CreateScalingRuleResponse)
 	d.SetId(response.ScalingRuleId)
 
@@ -115,7 +115,7 @@ func resourceAliyunEssScalingRuleDelete(d *schema.ResourceData, meta interface{}
 	essService := EssService{client}
 	request := ess.CreateDeleteScalingRuleRequest()
 	request.ScalingRuleId = d.Id()
-
+	request.RegionId = client.RegionId
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DeleteScalingRule(request)
 	})
@@ -125,7 +125,7 @@ func resourceAliyunEssScalingRuleDelete(d *schema.ResourceData, meta interface{}
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(essService.WaitForEssScalingRule(d.Id(), Deleted, DefaultTimeout))
 }
 
@@ -140,7 +140,7 @@ func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	request := ess.CreateModifyScalingRuleRequest()
 	request.ScalingRuleId = d.Id()
-
+	request.RegionId = client.RegionId
 	if d.HasChange("adjustment_type") {
 		request.AdjustmentType = d.Get("adjustment_type").(string)
 	}
@@ -163,7 +163,7 @@ func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return resourceAliyunEssScalingRuleRead(d, meta)
 }
 

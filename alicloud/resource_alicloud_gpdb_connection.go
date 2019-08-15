@@ -68,6 +68,7 @@ func resourceAlicloudGpdbConnectionCreate(d *schema.ResourceData, meta interface
 	}
 
 	request := gpdb.CreateAllocateInstancePublicConnectionRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = instanceId
 	request.ConnectionStringPrefix = prefix
 	request.Port = d.Get("port").(string)
@@ -82,7 +83,7 @@ func resourceAlicloudGpdbConnectionCreate(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -137,6 +138,7 @@ func resourceAlicloudGpdbConnectionUpdate(d *schema.ResourceData, meta interface
 		gpdbService := GpdbService{client}
 
 		request := gpdb.CreateModifyDBInstanceConnectionStringRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = parts[0]
 		object, err := gpdbService.DescribeGpdbConnection(d.Id())
 		if err != nil {
@@ -156,7 +158,7 @@ func resourceAlicloudGpdbConnectionUpdate(d *schema.ResourceData, meta interface
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -183,7 +185,7 @@ func resourceAlicloudGpdbConnectionDelete(d *schema.ResourceData, meta interface
 
 	client := meta.(*connectivity.AliyunClient)
 	gpdbService := GpdbService{client}
-
+	request.RegionId = client.RegionId
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		object, err := gpdbService.DescribeGpdbConnection(d.Id())
 		if err != nil {
@@ -201,7 +203,7 @@ func resourceAlicloudGpdbConnectionDelete(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

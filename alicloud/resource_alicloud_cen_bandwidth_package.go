@@ -130,6 +130,7 @@ func resourceAlicloudCenBandwidthPackageCreate(d *schema.ResourceData, meta inte
 	cenService := CenService{client}
 	var response *cbn.CreateCenBandwidthPackageResponse
 	request := buildAliCloudCenBandwidthPackageArgs(d, meta)
+	request.RegionId = client.RegionId
 	bandwidth, _ := strconv.Atoi(string(request.Bandwidth))
 
 	req := *request
@@ -144,7 +145,7 @@ func resourceAlicloudCenBandwidthPackageCreate(d *schema.ResourceData, meta inte
 			return resource.NonRetryableError(err)
 		}
 		response = raw.(*cbn.CreateCenBandwidthPackageResponse)
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -265,7 +266,7 @@ func resourceAlicloudCenBandwidthPackageDelete(d *schema.ResourceData, meta inte
 			}
 			return resource.RetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

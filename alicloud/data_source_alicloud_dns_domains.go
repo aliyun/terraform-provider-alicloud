@@ -109,6 +109,7 @@ func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) 
 	request := alidns.CreateDescribeDomainsRequest()
 
 	var allDomains []alidns.Domain
+	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	for {
@@ -118,7 +119,7 @@ func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dns_domains", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*alidns.DescribeDomainsResponse)
 		domains := response.Domains.Domain
 		for _, domain := range domains {

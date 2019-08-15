@@ -122,7 +122,7 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nat_gateways", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeNatGatewaysResponse)
 		if len(response.NatGateways.NatGateway) < 1 {
 			break

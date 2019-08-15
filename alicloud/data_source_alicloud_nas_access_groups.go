@@ -103,7 +103,7 @@ func dataSourceAlicloudAccessGroupsRead(d *schema.ResourceData, meta interface{}
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_access_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*nas.DescribeAccessGroupsResponse)
 		if len(response.AccessGroups.AccessGroup) < 1 {
 			break

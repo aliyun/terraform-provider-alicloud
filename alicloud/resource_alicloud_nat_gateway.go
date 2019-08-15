@@ -166,7 +166,7 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(args.GetActionName(), raw)
+		addDebug(args.GetActionName(), raw, args.RpcRequest, args)
 		response, _ := raw.(*vpc.CreateNatGatewayResponse)
 		d.SetId(response.NatGatewayId)
 		return nil
@@ -262,7 +262,7 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyNatGatewayAttributeRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(modifyNatGatewayAttributeRequest.GetActionName(), raw)
+		addDebug(modifyNatGatewayAttributeRequest.GetActionName(), raw, modifyNatGatewayAttributeRequest.RpcRequest, modifyNatGatewayAttributeRequest)
 	}
 
 	if d.HasChange("specification") {
@@ -278,7 +278,7 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyNatGatewaySpecRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(modifyNatGatewaySpecRequest.GetActionName(), raw)
+		addDebug(modifyNatGatewaySpecRequest.GetActionName(), raw, modifyNatGatewaySpecRequest.RpcRequest, modifyNatGatewaySpecRequest)
 	}
 	d.Partial(false)
 	if err := vpcService.WaitForNatGateway(d.Id(), Available, DefaultTimeout); err != nil {
@@ -313,7 +313,7 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -334,7 +334,7 @@ func deleteBandwidthPackages(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return resource.NonRetryableError(err)
 		}
-		addDebug(packRequest.GetActionName(), raw)
+		addDebug(packRequest.GetActionName(), raw, packRequest.RpcRequest, packRequest)
 		response, _ := raw.(*vpc.DescribeBandwidthPackagesResponse)
 		retry := false
 		if len(response.BandwidthPackages.BandwidthPackage) > 0 {
@@ -354,7 +354,7 @@ func deleteBandwidthPackages(d *schema.ResourceData, meta interface{}) error {
 					err = e
 					retry = true
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			}
 		}
 
@@ -398,20 +398,21 @@ func flattenBandWidthPackages(bandWidthPackageIds []string, meta interface{}, d 
 	return result, nil
 }
 func getPackage(packageId string, meta interface{}, d *schema.ResourceData) (pack vpc.BandwidthPackage, err error) {
+	client := meta.(*connectivity.AliyunClient)
 	request := vpc.CreateDescribeBandwidthPackagesRequest()
+	request.RegionId = client.RegionId
 	request.NatGatewayId = d.Id()
 	request.BandwidthPackageId = packageId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		client := meta.(*connectivity.AliyunClient)
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DescribeBandwidthPackages(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		packages, _ := raw.(*vpc.DescribeBandwidthPackagesResponse)
 		if len(packages.BandwidthPackages.BandwidthPackage) < 1 || packages.BandwidthPackages.BandwidthPackage[0].BandwidthPackageId != packageId {
 			return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)

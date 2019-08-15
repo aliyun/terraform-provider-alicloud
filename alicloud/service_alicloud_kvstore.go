@@ -15,6 +15,7 @@ type KvstoreService struct {
 
 func (s *KvstoreService) DescribeKVstoreInstance(id string) (instance *r_kvstore.DBInstanceAttribute, err error) {
 	request := r_kvstore.CreateDescribeInstanceAttributeRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceId = id
 	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.DescribeInstanceAttribute(request)
@@ -25,7 +26,7 @@ func (s *KvstoreService) DescribeKVstoreInstance(id string) (instance *r_kvstore
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*r_kvstore.DescribeInstanceAttributeResponse)
 	if len(response.Instances.DBInstanceAttribute) <= 0 {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("KVstoreInstance", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -36,6 +37,7 @@ func (s *KvstoreService) DescribeKVstoreInstance(id string) (instance *r_kvstore
 
 func (s *KvstoreService) DescribeKVstoreBackupPolicy(id string) (response *r_kvstore.DescribeBackupPolicyResponse, err error) {
 	request := r_kvstore.CreateDescribeBackupPolicyRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceId = id
 	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.DescribeBackupPolicy(request)
@@ -46,7 +48,7 @@ func (s *KvstoreService) DescribeKVstoreBackupPolicy(id string) (response *r_kvs
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*r_kvstore.DescribeBackupPolicyResponse)
 	return
 }
@@ -113,6 +115,7 @@ func (s *KvstoreService) WaitForKVstoreInstanceVpcAuthMode(id string, status str
 
 func (s *KvstoreService) DescribeParameters(id string) (ds *r_kvstore.DescribeParametersResponse, err error) {
 	request := r_kvstore.CreateDescribeParametersRequest()
+	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
 
 	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
@@ -124,13 +127,14 @@ func (s *KvstoreService) DescribeParameters(id string) (ds *r_kvstore.DescribePa
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*r_kvstore.DescribeParametersResponse)
 	return response, err
 }
 
 func (s *KvstoreService) ModifyInstanceConfig(id string, config string) error {
 	request := r_kvstore.CreateModifyInstanceConfigRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceId = id
 	request.Config = config
 
@@ -143,6 +147,6 @@ func (s *KvstoreService) ModifyInstanceConfig(id string, config string) error {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }

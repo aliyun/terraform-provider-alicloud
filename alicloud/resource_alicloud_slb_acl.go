@@ -56,6 +56,7 @@ func resourceAlicloudSlbAclCreate(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 
 	request := slb.CreateCreateAccessControlListRequest()
+	request.RegionId = client.RegionId
 	request.AclName = strings.TrimSpace(d.Get("name").(string))
 	request.AddressIPVersion = d.Get("ip_version").(string)
 
@@ -65,7 +66,7 @@ func resourceAlicloudSlbAclCreate(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_acl", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName, raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.CreateAccessControlListResponse)
 
 	d.SetId(response.AclId)
@@ -100,6 +101,7 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	if !d.IsNewResource() && d.HasChange("name") {
 		request := slb.CreateSetAccessControlListAttributeRequest()
+		request.RegionId = client.RegionId
 		request.AclId = d.Id()
 		request.AclName = d.Get("name").(string)
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -109,7 +111,7 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("name")
 	}
 
@@ -143,6 +145,7 @@ func resourceAlicloudSlbAclDelete(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 	request := slb.CreateDeleteAccessControlListRequest()
+	request.RegionId = client.RegionId
 	request.AclId = d.Id()
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.DeleteAccessControlList(request)
@@ -152,6 +155,6 @@ func resourceAlicloudSlbAclDelete(d *schema.ResourceData, meta interface{}) erro
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(slbService.WaitForSlbAcl(d.Id(), Deleted, DefaultTimeoutMedium))
 }

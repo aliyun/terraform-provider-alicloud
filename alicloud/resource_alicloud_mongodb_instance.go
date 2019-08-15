@@ -193,8 +193,8 @@ func resourceAlicloudMongoDBInstanceCreate(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mongodb_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*dds.CreateDBInstanceResponse)
-	addDebug(request.GetActionName(), response)
 
 	d.SetId(response.DBInstanceId)
 
@@ -280,7 +280,7 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("name")
 	}
 
@@ -335,7 +335,7 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("db_instance_class")
 		d.SetPartial("db_instance_storage")
 		d.SetPartial("replication_factor")
@@ -367,7 +367,7 @@ func resourceAlicloudMongoDBInstanceDelete(d *schema.ResourceData, meta interfac
 			}
 			return resource.RetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 

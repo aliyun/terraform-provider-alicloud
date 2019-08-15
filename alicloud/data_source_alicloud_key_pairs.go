@@ -84,6 +84,7 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 	request := ecs.CreateDescribeKeyPairsRequest()
+	request.RegionId = client.RegionId
 	if fingerPrint, ok := d.GetOk("finger_print"); ok {
 		request.KeyPairFingerPrint = fingerPrint.(string)
 	}
@@ -99,7 +100,7 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_key_pairs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request, raw)
+		addDebug(request, raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.DescribeKeyPairsResponse)
 		if len(response.KeyPairs.KeyPair) < 1 {
 			break

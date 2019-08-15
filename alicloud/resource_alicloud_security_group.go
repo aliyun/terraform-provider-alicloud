@@ -51,6 +51,7 @@ func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ecs.CreateCreateSecurityGroupRequest()
+	request.RegionId = client.RegionId
 
 	if v := d.Get("name").(string); v != "" {
 		request.SecurityGroupName = v
@@ -71,7 +72,7 @@ func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_security_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ecs.CreateSecurityGroupResponse)
 	d.SetId(response.SecurityGroupId)
 	return resourceAliyunSecurityGroupUpdate(d, meta)
@@ -123,6 +124,7 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 				policy = GroupInnerDrop
 			}
 			request := ecs.CreateModifySecurityGroupPolicyRequest()
+			request.RegionId = client.RegionId
 			request.SecurityGroupId = d.Id()
 			request.InnerAccessPolicy = string(policy)
 			request.ClientToken = buildClientToken(request.GetActionName())
@@ -133,7 +135,7 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			d.SetPartial("inner_access")
 		}
 	}
@@ -145,6 +147,7 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 
 	update := false
 	request := ecs.CreateModifySecurityGroupAttributeRequest()
+	request.RegionId = client.RegionId
 	request.SecurityGroupId = d.Id()
 	if d.HasChange("name") {
 		request.SecurityGroupName = d.Get("name").(string)
@@ -162,7 +165,7 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("name")
 		d.SetPartial("description")
 	}
@@ -176,6 +179,7 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	request := ecs.CreateDeleteSecurityGroupRequest()
+	request.RegionId = client.RegionId
 	request.SecurityGroupId = d.Id()
 
 	err := resource.Retry(6*time.Minute, func() *resource.RetryError {
@@ -189,7 +193,7 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 

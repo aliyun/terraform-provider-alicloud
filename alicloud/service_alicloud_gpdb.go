@@ -16,6 +16,7 @@ type GpdbService struct {
 
 func (s *GpdbService) DescribeGpdbInstance(id string) (instanceAttribute gpdb.DBInstanceAttribute, err error) {
 	request := gpdb.CreateDescribeDBInstanceAttributeRequest()
+	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
 	raw, err := s.client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
 		return client.DescribeDBInstanceAttribute(request)
@@ -32,7 +33,7 @@ func (s *GpdbService) DescribeGpdbInstance(id string) (instanceAttribute gpdb.DB
 		return
 	}
 
-	addDebug(request.GetActionName(), response)
+	addDebug(request.GetActionName(), response, request.RpcRequest, request)
 	if len(response.Items.DBInstanceAttribute) == 0 {
 		return instanceAttribute, WrapErrorf(Error(GetNotFoundMessage("Gpdb Instance", id)), NotFoundMsg, ProviderERROR)
 	}
@@ -67,6 +68,7 @@ func (s *GpdbService) GetSecurityIps(id string) ([]string, error) {
 
 func (s *GpdbService) DescribeGpdbSecurityIps(id string) (ips []gpdb.DBInstanceIPArray, err error) {
 	request := gpdb.CreateDescribeDBInstanceIPArrayListRequest()
+	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
 
 	raw, err := s.client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
@@ -81,12 +83,13 @@ func (s *GpdbService) DescribeGpdbSecurityIps(id string) (ips []gpdb.DBInstanceI
 		return
 	}
 	response, _ := raw.(*gpdb.DescribeDBInstanceIPArrayListResponse)
-	addDebug(request.GetActionName(), response)
+	addDebug(request.GetActionName(), response, request.RpcRequest, request)
 	return response.Items.DBInstanceIPArray, nil
 }
 
 func (s *GpdbService) ModifyGpdbSecurityIps(id, ips string) error {
 	request := gpdb.CreateModifySecurityIpsRequest()
+	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
 	request.SecurityIPList = ips
 	raw, err := s.client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
@@ -96,7 +99,7 @@ func (s *GpdbService) ModifyGpdbSecurityIps(id, ips string) error {
 		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	response := raw.(*gpdb.ModifySecurityIpsResponse)
-	addDebug(request.GetActionName(), response)
+	addDebug(request.GetActionName(), response, request.RpcRequest, request)
 
 	return nil
 }
@@ -109,6 +112,7 @@ func (s *GpdbService) DescribeGpdbConnection(id string) (*gpdb.DBInstanceNetInfo
 
 	// Describe DB Instance Net Info
 	request := gpdb.CreateDescribeDBInstanceNetInfoRequest()
+	request.RegionId = s.client.RegionId
 	request.DBInstanceId = parts[0]
 	raw, err := s.client.WithGpdbClient(func(gpdbClient *gpdb.Client) (interface{}, error) {
 		return gpdbClient.DescribeDBInstanceNetInfo(request)
@@ -119,7 +123,7 @@ func (s *GpdbService) DescribeGpdbConnection(id string) (*gpdb.DBInstanceNetInfo
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*gpdb.DescribeDBInstanceNetInfoResponse)
 	if response.DBInstanceNetInfos.DBInstanceNetInfo != nil {
 		for _, o := range response.DBInstanceNetInfos.DBInstanceNetInfo {

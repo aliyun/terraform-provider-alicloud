@@ -49,6 +49,7 @@ func resourceAlicloudDnsCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := alidns.CreateAddDomainRequest()
+	request.RegionId = client.RegionId
 	request.DomainName = d.Get("name").(string)
 
 	raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
@@ -57,7 +58,7 @@ func resourceAlicloudDnsCreate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dns", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*alidns.AddDomainResponse)
 	d.SetId(response.DomainName)
 	return resourceAlicloudDnsUpdate(d, meta)
@@ -67,6 +68,7 @@ func resourceAlicloudDnsUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := alidns.CreateChangeDomainGroupRequest()
+	request.RegionId = client.RegionId
 	request.DomainName = d.Id()
 	request.GroupId = d.Get("group_id").(string)
 
@@ -77,7 +79,7 @@ func resourceAlicloudDnsUpdate(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAlicloudDnsRead(d, meta)
 }
@@ -106,7 +108,7 @@ func resourceAlicloudDnsDelete(d *schema.ResourceData, meta interface{}) error {
 
 	request := alidns.CreateDeleteDomainRequest()
 	request.DomainName = d.Id()
-
+	request.RegionId = client.RegionId
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
 			return dnsClient.DeleteDomain(request)
@@ -117,7 +119,7 @@ func resourceAlicloudDnsDelete(d *schema.ResourceData, meta interface{}) error {
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 }

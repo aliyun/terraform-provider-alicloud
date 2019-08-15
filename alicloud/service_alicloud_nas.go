@@ -16,6 +16,7 @@ type NasService struct {
 func (s *NasService) DescribeNasFileSystem(id string) (fs nas.DescribeFileSystemsFileSystem1, err error) {
 
 	request := nas.CreateDescribeFileSystemsRequest()
+	request.RegionId = s.client.RegionId
 	request.FileSystemId = id
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
@@ -30,7 +31,7 @@ func (s *NasService) DescribeNasFileSystem(id string) (fs nas.DescribeFileSystem
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*nas.DescribeFileSystemsResponse)
 		if response.TotalCount <= 0 {
 			return resource.NonRetryableError(WrapErrorf(Error(GetNotFoundMessage("NasFileSystem", id)), NotFoundMsg, ProviderERROR))
@@ -60,7 +61,7 @@ func (s *NasService) DescribeNasMountTarget(id string) (fs nas.DescribeMountTarg
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*nas.DescribeMountTargetsResponse)
 		for _, mountTarget := range response.MountTargets.MountTarget {
 			if id == mountTarget.MountTargetDomain {
@@ -92,7 +93,7 @@ func (s *NasService) DescribeNasAccessGroup(id string) (ag nas.DescribeAccessGro
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*nas.DescribeAccessGroupsResponse)
 		if len(response.AccessGroups.AccessGroup) <= 0 {
 			return resource.NonRetryableError(WrapErrorf(Error(GetNotFoundMessage("NasAccessGroup", id)), NotFoundMsg, ProviderERROR))
@@ -127,7 +128,7 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.DescribeAccessRule
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*nas.DescribeAccessRulesResponse)
 		for _, accessRule := range response.AccessRules.AccessRule {
 			if parts[1] == accessRule.AccessRuleId {

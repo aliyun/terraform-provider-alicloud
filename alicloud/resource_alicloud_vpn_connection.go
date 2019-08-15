@@ -192,7 +192,7 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*vpc.CreateVpnConnectionResponse)
 		return nil
 	})
@@ -249,6 +249,7 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
 	request := vpc.CreateModifyVpnConnectionAttributeRequest()
+	request.RegionId = client.RegionId
 	request.ClientToken = buildClientToken(request.GetActionName())
 	request.VpnConnectionId = d.Id()
 
@@ -286,7 +287,7 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return resourceAliyunVpnConnectionRead(d, meta)
 }
@@ -295,6 +296,7 @@ func resourceAliyunVpnConnectionDelete(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
 	request := vpc.CreateDeleteVpnConnectionRequest()
+	request.RegionId = client.RegionId
 	request.ClientToken = buildClientToken(request.GetActionName())
 	request.VpnConnectionId = d.Id()
 
@@ -312,7 +314,7 @@ func resourceAliyunVpnConnectionDelete(d *schema.ResourceData, meta interface{})
 
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

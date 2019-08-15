@@ -42,6 +42,7 @@ func resourceAlicloudRamUserPolicyAttachmentCreate(d *schema.ResourceData, meta 
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ram.CreateAttachPolicyToUserRequest()
+	request.RegionId = client.RegionId
 	request.UserName = d.Get("user_name").(string)
 	request.PolicyName = d.Get("policy_name").(string)
 	request.PolicyType = d.Get("policy_type").(string)
@@ -52,7 +53,7 @@ func resourceAlicloudRamUserPolicyAttachmentCreate(d *schema.ResourceData, meta 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_user_policy_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	d.SetId(strings.Join([]string{"user", request.PolicyName, request.PolicyType, request.UserName}, COLON_SEPARATED))
 	return resourceAlicloudRamUserPolicyAttachmentRead(d, meta)
 }
@@ -101,6 +102,7 @@ func resourceAlicloudRamUserPolicyAttachmentDelete(d *schema.ResourceData, meta 
 		return WrapError(err)
 	}
 	request := ram.CreateDetachPolicyFromUserRequest()
+	request.RegionId = client.RegionId
 	request.PolicyName = parts[1]
 	request.PolicyType = parts[2]
 	request.UserName = parts[3]
@@ -114,7 +116,7 @@ func resourceAlicloudRamUserPolicyAttachmentDelete(d *schema.ResourceData, meta 
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(ramService.WaitForRamUserPolicyAttachment(d.Id(), Deleted, DefaultTimeout))
 

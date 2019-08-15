@@ -149,6 +149,7 @@ func (s *RamService) AssemblePolicyDocument(document []interface{}, version stri
 // Judge whether the role policy contains service "ecs.aliyuncs.com"
 func (s *RamService) JudgeRolePolicyPrincipal(roleName string) error {
 	request := ram.CreateGetRoleRequest()
+	request.RegionId = s.client.RegionId
 	request.RoleName = roleName
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.GetRole(request)
@@ -156,6 +157,7 @@ func (s *RamService) JudgeRolePolicyPrincipal(roleName string) error {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, roleName, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ram.GetRoleResponse)
 	policy, err := s.ParseRolePolicyDocument(resp.Role.AssumeRolePolicyDocument)
 	if err != nil {
@@ -193,6 +195,7 @@ func (s *RamService) GetIntersection(dataMap []map[string]interface{}, allDataMa
 func (s *RamService) DescribeRamUser(id string) (*ram.User, error) {
 
 	listUsersRequest := ram.CreateListUsersRequest()
+	listUsersRequest.RegionId = s.client.RegionId
 	var userName string
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.ListUsers(listUsersRequest)
@@ -203,7 +206,7 @@ func (s *RamService) DescribeRamUser(id string) (*ram.User, error) {
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, listUsersRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(listUsersRequest.GetActionName(), raw)
+	addDebug(listUsersRequest.GetActionName(), raw, listUsersRequest.RegionId, listUsersRequest)
 	users, _ := raw.(*ram.ListUsersResponse)
 	for _, user := range users.Users.User {
 		if user.UserId == id {
@@ -214,6 +217,7 @@ func (s *RamService) DescribeRamUser(id string) (*ram.User, error) {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("RamUser", id)), NotFoundMsg, ProviderERROR)
 	}
 	getUserRequest := ram.CreateGetUserRequest()
+	getUserRequest.RegionId = s.client.RegionId
 	getUserRequest.UserName = userName
 	raw, err = s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.GetUser(getUserRequest)
@@ -224,7 +228,7 @@ func (s *RamService) DescribeRamUser(id string) (*ram.User, error) {
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, getUserRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(listUsersRequest.GetActionName(), raw)
+	addDebug(getUserRequest.GetActionName(), raw, getUserRequest.RpcRequest, getUserRequest)
 	user, _ := raw.(*ram.GetUserResponse)
 
 	return &user.User, nil
@@ -253,6 +257,7 @@ func (s *RamService) WaitForRamUser(id string, status Status, timeout int) error
 }
 func (s *RamService) DescribeRamGroupMembership(id string) (response *ram.ListUsersForGroupResponse, err error) {
 	request := ram.CreateListUsersForGroupRequest()
+	request.RegionId = s.client.RegionId
 	request.GroupName = id
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.ListUsersForGroup(request)
@@ -263,7 +268,7 @@ func (s *RamService) DescribeRamGroupMembership(id string) (response *ram.ListUs
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response = raw.(*ram.ListUsersForGroupResponse)
 	if len(response.Users.User) > 0 {
 		return
@@ -295,6 +300,7 @@ func (s *RamService) WaitForRamGroupMembership(id string, status Status, timeout
 
 func (s *RamService) DescribeRamLoginProfile(id string) (response *ram.GetLoginProfileResponse, err error) {
 	request := ram.CreateGetLoginProfileRequest()
+	request.RegionId = s.client.RegionId
 	request.UserName = id
 
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -307,7 +313,7 @@ func (s *RamService) DescribeRamLoginProfile(id string) (response *ram.GetLoginP
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response = raw.(*ram.GetLoginProfileResponse)
 	return
 
@@ -337,6 +343,7 @@ func (s *RamService) WaitForRamLoginProfile(id string, status Status, timeout in
 
 func (s *RamService) DescribeRamGroupPolicyAttachment(id string) (response *ram.Policy, err error) {
 	request := ram.CreateListPoliciesForGroupRequest()
+	request.RegionId = s.client.RegionId
 	parts, err := ParseResourceId(id, 4)
 	if err != nil {
 		return nil, WrapError(err)
@@ -351,7 +358,7 @@ func (s *RamService) DescribeRamGroupPolicyAttachment(id string) (response *ram.
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	listPoliciesForGroupResponse, _ := raw.(*ram.ListPoliciesForGroupResponse)
 	if len(listPoliciesForGroupResponse.Policies.Policy) > 0 {
 		for _, v := range listPoliciesForGroupResponse.Policies.Policy {
@@ -391,7 +398,7 @@ func (s *RamService) WaitForRamGroupPolicyAttachment(id string, status Status, t
 
 func (s *RamService) DescribeRamAccountAlias(id string) (*ram.GetAccountAliasResponse, error) {
 	request := ram.CreateGetAccountAliasRequest()
-
+	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.GetAccountAlias(request)
 	})
@@ -401,7 +408,7 @@ func (s *RamService) DescribeRamAccountAlias(id string) (*ram.GetAccountAliasRes
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response := raw.(*ram.GetAccountAliasResponse)
 
 	return response, nil
@@ -409,6 +416,7 @@ func (s *RamService) DescribeRamAccountAlias(id string) (*ram.GetAccountAliasRes
 
 func (s *RamService) DescribeRamAccessKey(id, userName string) (*ram.AccessKey, error) {
 	request := ram.CreateListAccessKeysRequest()
+	request.RegionId = s.client.RegionId
 	request.UserName = userName
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.ListAccessKeys(request)
@@ -420,7 +428,7 @@ func (s *RamService) DescribeRamAccessKey(id, userName string) (*ram.AccessKey, 
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ram.ListAccessKeysResponse)
 	var object *ram.AccessKey
 	for _, accessKey := range response.AccessKeys.AccessKey {
@@ -456,6 +464,7 @@ func (s *RamService) WaitForRamAccessKey(id, useName string, status Status, time
 
 func (s *RamService) DescribeRamPolicy(id string) (response *ram.GetPolicyResponse, err error) {
 	request := ram.CreateGetPolicyRequest()
+	request.RegionId = s.client.RegionId
 	request.PolicyName = id
 	request.PolicyType = "Custom"
 
@@ -468,7 +477,7 @@ func (s *RamService) DescribeRamPolicy(id string) (response *ram.GetPolicyRespon
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response = raw.(*ram.GetPolicyResponse)
 	return
 }
@@ -502,6 +511,7 @@ func (s *RamService) DescribeRamRoleAttachment(id string) (response *ecs.Describ
 		return nil, WrapError(err)
 	}
 	request := ecs.CreateDescribeInstanceRamRoleRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceIds = parts[1]
 	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -522,7 +532,7 @@ func (s *RamService) DescribeRamRoleAttachment(id string) (response *ecs.Describ
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	response = raw.(*ecs.DescribeInstanceRamRoleResponse)
 	instRoleSets := response.InstanceRamRoleSets.InstanceRamRoleSet
@@ -567,6 +577,7 @@ func (s *RamService) WaitForRamRoleAttachment(id string, status Status, timeout 
 
 func (s *RamService) DescribeRamRole(id string) (response *ram.GetRoleResponse, err error) {
 	request := ram.CreateGetRoleRequest()
+	request.RegionId = s.client.RegionId
 	request.RoleName = id
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.GetRole(request)
@@ -577,7 +588,7 @@ func (s *RamService) DescribeRamRole(id string) (response *ram.GetRoleResponse, 
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*ram.GetRoleResponse)
 	return
 }
@@ -606,6 +617,7 @@ func (s *RamService) WaitForRamRole(id string, status Status, timeout int) error
 
 func (s *RamService) DescribeRamUserPolicyAttachment(id string) (response *ram.Policy, err error) {
 	request := ram.CreateListPoliciesForUserRequest()
+	request.RegionId = s.client.RegionId
 	parts, err := ParseResourceId(id, 4)
 	if err != nil {
 		return nil, WrapError(err)
@@ -620,7 +632,7 @@ func (s *RamService) DescribeRamUserPolicyAttachment(id string) (response *ram.P
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	listPoliciesForUserResponse, _ := raw.(*ram.ListPoliciesForUserResponse)
 	if len(listPoliciesForUserResponse.Policies.Policy) > 0 {
@@ -661,6 +673,7 @@ func (s *RamService) WaitForRamUserPolicyAttachment(id string, status Status, ti
 
 func (s *RamService) DescribeRamRolePolicyAttachment(id string) (response *ram.Policy, err error) {
 	request := ram.CreateListPoliciesForRoleRequest()
+	request.RegionId = s.client.RegionId
 	parts, err := ParseResourceId(id, 4)
 	if err != nil {
 		return nil, WrapError(err)
@@ -675,7 +688,7 @@ func (s *RamService) DescribeRamRolePolicyAttachment(id string) (response *ram.P
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	listPoliciesForRoleResponse, _ := raw.(*ram.ListPoliciesForRoleResponse)
 	if len(listPoliciesForRoleResponse.Policies.Policy) > 0 {
@@ -717,6 +730,7 @@ func (s *RamService) WaitForRamRolePolicyAttachment(id string, status Status, ti
 
 func (s *RamService) DescribeRamGroup(id string) (response *ram.GetGroupResponse, err error) {
 	request := ram.CreateGetGroupRequest()
+	request.RegionId = s.client.RegionId
 	request.GroupName = id
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.GetGroup(request)
@@ -727,7 +741,7 @@ func (s *RamService) DescribeRamGroup(id string) (response *ram.GetGroupResponse
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*ram.GetGroupResponse)
 
 	if response.Group.GroupName != id {
@@ -760,13 +774,14 @@ func (s *RamService) WaitForRamGroup(id string, status Status, timeout int) erro
 
 func (s *RamService) DescribeRamAccountPasswordPolicy(id string) (response *ram.GetPasswordPolicyResponse, err error) {
 	request := ram.CreateGetPasswordPolicyRequest()
+	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.GetPasswordPolicy(request)
 	})
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*ram.GetPasswordPolicyResponse)
 
 	return

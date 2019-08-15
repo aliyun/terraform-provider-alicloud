@@ -60,6 +60,7 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	request := rds.CreateCreateAccountRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Get("instance_id").(string)
 	request.AccountName = d.Get("name").(string)
 	request.AccountPassword = d.Get("password").(string)
@@ -83,7 +84,7 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 
@@ -133,6 +134,7 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 			return WrapError(err)
 		}
 		request := rds.CreateModifyAccountDescriptionRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = instanceId
 		request.AccountName = accountName
 		request.AccountDescription = d.Get("description").(string)
@@ -143,7 +145,7 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("description")
 	}
 
@@ -152,6 +154,7 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 			return WrapError(err)
 		}
 		request := rds.CreateResetAccountPasswordRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = instanceId
 		request.AccountName = accountName
 		request.AccountPassword = d.Get("password").(string)
@@ -162,7 +165,7 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("password")
 	}
 
@@ -178,6 +181,7 @@ func resourceAlicloudDBAccountDelete(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 	request := rds.CreateDeleteAccountRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = parts[0]
 	request.AccountName = parts[1]
 
@@ -187,7 +191,7 @@ func resourceAlicloudDBAccountDelete(d *schema.ResourceData, meta interface{}) e
 	if err != nil && !IsExceptedError(err, InvalidAccountNameNotFound) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return rdsService.WaitForAccount(d.Id(), Deleted, DefaultTimeoutMedium)
 }

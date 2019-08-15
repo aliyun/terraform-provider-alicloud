@@ -134,6 +134,7 @@ func dataSourceAlicloudNetworkInterfaces() *schema.Resource {
 func dataSourceAlicloudNetworkInterfacesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := ecs.CreateDescribeNetworkInterfacesRequest()
+	request.RegionId = client.RegionId
 	if networkInterfaceIds, ok := d.GetOk("ids"); ok {
 		ids := expandStringList(networkInterfaceIds.(*schema.Set).List())
 		request.NetworkInterfaceId = &ids
@@ -183,7 +184,7 @@ func dataSourceAlicloudNetworkInterfacesRead(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_network_interfaces", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		object := raw.(*ecs.DescribeNetworkInterfacesResponse)
 
 		allEnis = append(allEnis, object.NetworkInterfaceSets.NetworkInterfaceSet...)

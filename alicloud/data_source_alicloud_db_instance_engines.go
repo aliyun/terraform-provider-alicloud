@@ -112,7 +112,7 @@ func dataSourceAlicloudDBInstanceEnginesRead(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response = raw.(*rds.DescribeAvailableResourceResponse)
 		return nil
 	})

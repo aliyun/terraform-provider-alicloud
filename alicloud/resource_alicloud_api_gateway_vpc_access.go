@@ -48,6 +48,7 @@ func resourceAliyunApigatewayVpcAccessCreate(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 
 	request := cloudapi.CreateSetVpcAccessRequest()
+	request.RegionId = client.RegionId
 	request.Name = d.Get("name").(string)
 	request.VpcId = d.Get("vpc_id").(string)
 	request.InstanceId = d.Get("instance_id").(string)
@@ -58,7 +59,7 @@ func resourceAliyunApigatewayVpcAccessCreate(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_api_gateway_vpc", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	d.SetId(fmt.Sprintf("%s%s%s%s%s%s%s", request.Name, COLON_SEPARATED, request.VpcId, COLON_SEPARATED, request.InstanceId, COLON_SEPARATED, request.Port))
 	return resourceAliyunApigatewayVpcAccessRead(d, meta)
 }
@@ -87,6 +88,7 @@ func resourceAliyunApigatewayVpcAccessRead(d *schema.ResourceData, meta interfac
 func resourceAliyunApigatewayVpcAccessDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := cloudapi.CreateRemoveVpcAccessRequest()
+	request.RegionId = client.RegionId
 	request.VpcId = d.Get("vpc_id").(string)
 	request.InstanceId = d.Get("instance_id").(string)
 	request.Port = requests.NewInteger(d.Get("port").(int))
@@ -97,7 +99,7 @@ func resourceAliyunApigatewayVpcAccessDelete(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return nil
 

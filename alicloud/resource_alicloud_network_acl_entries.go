@@ -167,6 +167,7 @@ func resourceAliyunNetworkAclEntriesUpdate(d *schema.ResourceData, meta interfac
 	}
 	networkAclId := parts[0]
 	request := vpc.CreateUpdateNetworkAclEntriesRequest()
+	request.RegionId = client.RegionId
 	request.NetworkAclId = networkAclId
 	request.UpdateIngressAclEntries = requests.NewBoolean(true)
 	request.UpdateEgressAclEntries = requests.NewBoolean(true)
@@ -217,7 +218,7 @@ func resourceAliyunNetworkAclEntriesUpdate(d *schema.ResourceData, meta interfac
 				return resource.RetryableError(err)
 			}
 		}
-		addDebug(request.GetActionName, raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -236,6 +237,7 @@ func resourceAliyunNetworkAclEntriesDelete(d *schema.ResourceData, meta interfac
 	networkAclId := parts[0]
 
 	request := vpc.CreateUpdateNetworkAclEntriesRequest()
+	request.RegionId = client.RegionId
 	request.NetworkAclId = networkAclId
 	ingress := []vpc.UpdateNetworkAclEntriesIngressAclEntries{}
 	egress := []vpc.UpdateNetworkAclEntriesEgressAclEntries{}
@@ -257,7 +259,7 @@ func resourceAliyunNetworkAclEntriesDelete(d *schema.ResourceData, meta interfac
 				return resource.RetryableError(err)
 			}
 		}
-		addDebug(request.GetActionName, raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

@@ -69,6 +69,7 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 
 	request := pvtz.CreateAddZoneRecordRequest()
+	request.RegionId = client.RegionId
 
 	if v, ok := d.GetOk("resource_record"); ok && v.(string) != "" {
 		request.Rr = v.(string)
@@ -112,12 +113,13 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 		return nil
 	})
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if err != nil {
 
 		if IsExceptedErrors(err, []string{RecordInvalidConflict}) {
 			req := pvtz.CreateDescribeZoneRecordsRequest()
+			req.RegionId = client.RegionId
 			req.ZoneId = request.ZoneId
 			req.Keyword = request.Rr
 			req.PageSize = requests.NewInteger(PageSizeXLarge)
@@ -136,7 +138,7 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(req.GetActionName(), raw)
+					addDebug(req.GetActionName(), raw, req.RpcRequest, req)
 					return nil
 				}); err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, "alicloud_pvtz_zone_record", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -203,6 +205,7 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 
 	if update {
 		client := meta.(*connectivity.AliyunClient)
+		request.RegionId = client.RegionId
 		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 				return pvtzClient.UpdateZoneRecord(request)
@@ -214,7 +217,7 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -258,6 +261,7 @@ func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface
 	pvtzService := PvtzService{client}
 
 	request := pvtz.CreateDeleteZoneRecordRequest()
+	request.RegionId = client.RegionId
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -281,7 +285,7 @@ func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface
 			return resource.NonRetryableError(err)
 		}
 
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 

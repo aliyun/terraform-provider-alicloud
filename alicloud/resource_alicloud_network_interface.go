@@ -80,7 +80,7 @@ func resourceAliyunNetworkInterfaceCreate(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	request := ecs.CreateCreateNetworkInterfaceRequest()
-
+	request.RegionId = client.RegionId
 	request.VSwitchId = d.Get("vswitch_id").(string)
 	groups := d.Get("security_groups").(*schema.Set).List()
 
@@ -104,7 +104,7 @@ func resourceAliyunNetworkInterfaceCreate(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_network_interface", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	object := raw.(*ecs.CreateNetworkInterfaceResponse)
 	d.SetId(object.NetworkInterfaceId)
 
@@ -164,7 +164,7 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 	attributeUpdate := false
 	request := ecs.CreateModifyNetworkInterfaceAttributeRequest()
 	request.NetworkInterfaceId = d.Id()
-
+	request.RegionId = client.RegionId
 	if !d.IsNewResource() && d.HasChange("description") {
 		request.Description = d.Get("description").(string)
 		attributeUpdate = true
@@ -184,12 +184,13 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 	}
 
 	if attributeUpdate {
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ModifyNetworkInterfaceAttribute(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("security_groups")
 		d.SetPartial("description")
 		d.SetPartial("name")
@@ -204,10 +205,11 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 		if unAssignIps.Len() > 0 {
 			unAssignIpList := expandStringList(unAssignIps.List())
 			unAssignPrivateIpAddressesRequest := ecs.CreateUnassignPrivateIpAddressesRequest()
+			unAssignPrivateIpAddressesRequest.RegionId = client.RegionId
 			unAssignPrivateIpAddressesRequest.NetworkInterfaceId = d.Id()
 			unAssignPrivateIpAddressesRequest.PrivateIpAddress = &unAssignIpList
 			err := resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
-				_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 					return ecsClient.UnassignPrivateIpAddresses(unAssignPrivateIpAddressesRequest)
 				})
 				if err != nil {
@@ -216,6 +218,7 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 					}
 					return resource.NonRetryableError(err)
 				}
+				addDebug(unAssignPrivateIpAddressesRequest.GetActionName(), raw, unAssignPrivateIpAddressesRequest.RpcRequest, unAssignPrivateIpAddressesRequest)
 				return nil
 			})
 			if err != nil {
@@ -227,10 +230,11 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 		if assignIps.Len() > 0 {
 			assignIpList := expandStringList(assignIps.List())
 			assignPrivateIpAddressesRequest := ecs.CreateAssignPrivateIpAddressesRequest()
+			assignPrivateIpAddressesRequest.RegionId = client.RegionId
 			assignPrivateIpAddressesRequest.NetworkInterfaceId = d.Id()
 			assignPrivateIpAddressesRequest.PrivateIpAddress = &assignIpList
 			err := resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
-				_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 					return ecsClient.AssignPrivateIpAddresses(assignPrivateIpAddressesRequest)
 				})
 				if err != nil {
@@ -239,11 +243,11 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 					}
 					return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 				}
-
+				addDebug(assignPrivateIpAddressesRequest.GetActionName(), raw, assignPrivateIpAddressesRequest.RpcRequest, assignPrivateIpAddressesRequest)
 				return nil
 			})
 			if err != nil {
-				return err
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), assignPrivateIpAddressesRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 		}
 
@@ -261,10 +265,11 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 			diff := newIpsCount.(int) - oldIpsCount.(int)
 			if diff > 0 {
 				assignPrivateIpAddressesRequest := ecs.CreateAssignPrivateIpAddressesRequest()
+				assignPrivateIpAddressesRequest.RegionId = client.RegionId
 				assignPrivateIpAddressesRequest.NetworkInterfaceId = d.Id()
 				assignPrivateIpAddressesRequest.SecondaryPrivateIpAddressCount = requests.NewInteger(diff)
 				err := resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
-					_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 						return ecsClient.AssignPrivateIpAddresses(assignPrivateIpAddressesRequest)
 					})
 
@@ -274,10 +279,11 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 						}
 						return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), assignPrivateIpAddressesRequest.GetActionName(), AlibabaCloudSdkGoERROR))
 					}
+					addDebug(assignPrivateIpAddressesRequest.GetActionName(), raw, assignPrivateIpAddressesRequest.RpcRequest, assignPrivateIpAddressesRequest)
 					return nil
 				})
 				if err != nil {
-					return err
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), assignPrivateIpAddressesRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
 			}
 
@@ -285,6 +291,7 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 				diff *= -1
 				unAssignIps := privateIpList[:diff]
 				unAssignPrivateIpAddressesRequest := ecs.CreateUnassignPrivateIpAddressesRequest()
+				unAssignPrivateIpAddressesRequest.RegionId = client.RegionId
 				err := resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
 					unAssignPrivateIpAddressesRequest.NetworkInterfaceId = d.Id()
 					unAssignPrivateIpAddressesRequest.PrivateIpAddress = &unAssignIps
@@ -297,7 +304,7 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 						}
 						return resource.RetryableError(err)
 					}
-					addDebug(unAssignPrivateIpAddressesRequest.GetActionName(), raw)
+					addDebug(unAssignPrivateIpAddressesRequest.GetActionName(), raw, unAssignPrivateIpAddressesRequest.RpcRequest, unAssignPrivateIpAddressesRequest)
 					return nil
 				})
 				if err != nil {
@@ -329,10 +336,11 @@ func resourceAliyunNetworkInterfaceDelete(d *schema.ResourceData, meta interface
 	ecsService := EcsService{client}
 
 	request := ecs.CreateDeleteNetworkInterfaceRequest()
+	request.RegionId = client.RegionId
 	request.NetworkInterfaceId = d.Id()
 
 	err := resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DeleteNetworkInterface(request)
 		})
 		if err != nil {
@@ -341,6 +349,7 @@ func resourceAliyunNetworkInterfaceDelete(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

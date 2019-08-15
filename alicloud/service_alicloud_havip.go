@@ -17,6 +17,7 @@ type HaVipService struct {
 
 func (s *HaVipService) DescribeHaVip(haVipId string) (v vpc.HaVip, err error) {
 	request := vpc.CreateDescribeHaVipsRequest()
+	request.RegionId = s.client.RegionId
 	values := []string{haVipId}
 	filter := []vpc.DescribeHaVipsFilter{{
 		Key:   "HaVipId",
@@ -33,6 +34,7 @@ func (s *HaVipService) DescribeHaVip(haVipId string) (v vpc.HaVip, err error) {
 		if err != nil {
 			return err
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		resp, _ := raw.(*vpc.DescribeHaVipsResponse)
 		if resp == nil || len(resp.HaVips.HaVip) <= 0 ||
 			resp.HaVips.HaVip[0].HaVipId != haVipId {

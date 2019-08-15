@@ -114,7 +114,7 @@ func resourceAliyunSslVpnServerCreate(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*vpc.CreateSslVpnServerResponse)
 		return nil
 	})
@@ -163,6 +163,7 @@ func resourceAliyunSslVpnServerRead(d *schema.ResourceData, meta interface{}) er
 func resourceAliyunSslVpnServerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := vpc.CreateModifySslVpnServerRequest()
+	request.RegionId = client.RegionId
 	request.SslVpnServerId = d.Id()
 
 	if d.HasChange("name") {
@@ -200,7 +201,7 @@ func resourceAliyunSslVpnServerUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 
@@ -215,6 +216,7 @@ func resourceAliyunSslVpnServerDelete(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	vpnGatewayService := VpnGatewayService{client}
 	request := vpc.CreateDeleteSslVpnServerRequest()
+	request.RegionId = client.RegionId
 	request.SslVpnServerId = d.Id()
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -229,7 +231,7 @@ func resourceAliyunSslVpnServerDelete(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 

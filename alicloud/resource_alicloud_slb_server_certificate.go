@@ -53,6 +53,7 @@ func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta int
 	client := meta.(*connectivity.AliyunClient)
 
 	request := slb.CreateUploadServerCertificateRequest()
+	request.RegionId = client.RegionId
 
 	if val, ok := d.GetOk("name"); ok && val != "" {
 		request.ServerCertificateName = val.(string)
@@ -91,7 +92,7 @@ func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta int
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.UploadServerCertificateResponse)
 	d.SetId(response.ServerCertificateId)
 
@@ -135,6 +136,7 @@ func resourceAlicloudSlbServerCertificateUpdate(d *schema.ResourceData, meta int
 
 	if !d.IsNewResource() && d.HasChange("name") {
 		request := slb.CreateSetServerCertificateNameRequest()
+		request.RegionId = client.RegionId
 		request.ServerCertificateId = d.Id()
 		request.ServerCertificateName = d.Get("name").(string)
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -143,7 +145,7 @@ func resourceAlicloudSlbServerCertificateUpdate(d *schema.ResourceData, meta int
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAlicloudSlbServerCertificateRead(d, meta)
 }
@@ -153,6 +155,7 @@ func resourceAlicloudSlbServerCertificateDelete(d *schema.ResourceData, meta int
 	slbService := SlbService{client}
 
 	request := slb.CreateDeleteServerCertificateRequest()
+	request.RegionId = client.RegionId
 	request.ServerCertificateId = d.Id()
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.DeleteServerCertificate(request)
@@ -163,7 +166,7 @@ func resourceAlicloudSlbServerCertificateDelete(d *schema.ResourceData, meta int
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(slbService.WaitForSlbServerCertificate(d.Id(), Deleted, DefaultTimeoutMedium))
 

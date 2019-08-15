@@ -136,6 +136,7 @@ func resourceAlicloudCdnDomainCreateNew(d *schema.ResourceData, meta interface{}
 	cdnService := &CdnService{client: client}
 
 	request := cdn.CreateAddCdnDomainRequest()
+	request.RegionId = client.RegionId
 	request.DomainName = d.Get("domain_name").(string)
 	request.CdnType = d.Get("cdn_type").(string)
 	if v, ok := d.GetOk("scope"); ok {
@@ -163,7 +164,7 @@ func resourceAlicloudCdnDomainCreateNew(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cdn_domain", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	d.SetId(request.DomainName)
 
@@ -183,6 +184,7 @@ func resourceAlicloudCdnDomainUpdateNew(d *schema.ResourceData, meta interface{}
 
 	if !d.IsNewResource() {
 		request := cdn.CreateModifyCdnDomainRequest()
+		request.RegionId = client.RegionId
 		request.DomainName = d.Id()
 
 		if d.HasChange("sources") {
@@ -207,7 +209,7 @@ func resourceAlicloudCdnDomainUpdateNew(d *schema.ResourceData, meta interface{}
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 			err = cdnService.WaitForCdnDomain(d.Id(), Online, DefaultTimeoutMedium)
 			if err != nil {
@@ -297,6 +299,7 @@ func resourceAlicloudCdnDomainDeleteNew(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	cdnService := CdnService{client}
 	request := cdn.CreateDeleteCdnDomainRequest()
+	request.RegionId = client.RegionId
 	request.DomainName = d.Id()
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
@@ -308,7 +311,7 @@ func resourceAlicloudCdnDomainDeleteNew(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 
@@ -325,6 +328,7 @@ func resourceAlicloudCdnDomainDeleteNew(d *schema.ResourceData, meta interface{}
 func certificateConfigUpdateNew(client *connectivity.AliyunClient, d *schema.ResourceData) error {
 	cdnService := &CdnService{client}
 	request := cdn.CreateSetDomainServerCertificateRequest()
+	request.RegionId = client.RegionId
 	request.DomainName = d.Id()
 	v, ok := d.GetOk("certificate_config")
 	if !ok {
@@ -339,7 +343,7 @@ func certificateConfigUpdateNew(client *connectivity.AliyunClient, d *schema.Res
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
 		if err != nil {
@@ -379,7 +383,7 @@ func certificateConfigUpdateNew(client *connectivity.AliyunClient, d *schema.Res
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

@@ -151,6 +151,7 @@ func dataSourceAlicloudSnapshots() *schema.Resource {
 func dataSourceAlicloudSnapshotsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := ecs.CreateDescribeSnapshotsRequest()
+	request.RegionId = client.RegionId
 
 	if instanceId, ok := d.GetOk("instance_id"); ok {
 		request.InstanceId = instanceId.(string)
@@ -200,7 +201,7 @@ func dataSourceAlicloudSnapshotsRead(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_snapshots", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response := raw.(*ecs.DescribeSnapshotsResponse)
 		allSnapshots = append(allSnapshots, response.Snapshots.Snapshot...)
 

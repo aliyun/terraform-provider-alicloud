@@ -107,6 +107,7 @@ func dataSourceAlicloudCenPublishedRouteEntriesRead(d *schema.ResourceData, meta
 	cenService := CenService{client}
 
 	request := cbn.CreateDescribePublishedRouteEntriesRequest()
+	request.RegionId = client.RegionId
 	request.CenId = d.Get("instance_id").(string)
 	request.ChildInstanceRouteTableId = d.Get("route_table_id").(string)
 	if v, ok := d.GetOk("cidr_block"); ok {
@@ -133,7 +134,7 @@ func dataSourceAlicloudCenPublishedRouteEntriesRead(d *schema.ResourceData, meta
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_route_entries", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cbn.DescribePublishedRouteEntriesResponse)
 
 		if len(response.PublishedRouteEntries.PublishedRouteEntry) < 1 {

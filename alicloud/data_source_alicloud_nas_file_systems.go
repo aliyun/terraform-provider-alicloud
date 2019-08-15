@@ -105,7 +105,7 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_file_systems", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		destription, ok := d.GetOk("description_regex")
 		var r *regexp.Regexp
 		if ok && destription.(string) != "" {

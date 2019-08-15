@@ -163,7 +163,7 @@ func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	stateConf := BuildStateConf([]string{"Creating", "Active", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Second, cenService.CenInstanceStateRefreshFunc(d.Id(), []string{}))
 

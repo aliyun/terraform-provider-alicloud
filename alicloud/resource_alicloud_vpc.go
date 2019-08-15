@@ -93,7 +93,7 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*vpc.CreateVpcResponse)
 		return nil
 	})
@@ -148,7 +148,7 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			response, _ := raw.(*vpc.DescribeRouteTablesResponse)
 			routeTabls = append(routeTabls, response.RouteTables.RouteTable...)
 			total = len(response.RouteTables.RouteTable)
@@ -183,6 +183,7 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	attributeUpdate := false
 	request := vpc.CreateModifyVpcAttributeRequest()
+	request.RegionId = client.RegionId
 	request.VpcId = d.Id()
 
 	if d.HasChange("name") {
@@ -196,12 +197,13 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if attributeUpdate {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.ModifyVpcAttribute(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return resourceAliyunVpcRead(d, meta)
@@ -211,6 +213,7 @@ func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	request := vpc.CreateDeleteVpcRequest()
+	request.RegionId = client.RegionId
 	request.VpcId = d.Id()
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
@@ -222,7 +225,7 @@ func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 			}
 			return resource.RetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -234,7 +237,7 @@ func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 func buildAliyunVpcArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateVpcRequest {
 	client := meta.(*connectivity.AliyunClient)
 	request := vpc.CreateCreateVpcRequest()
-	request.RegionId = string(client.Region)
+	request.RegionId = client.RegionId
 	request.CidrBlock = d.Get("cidr_block").(string)
 
 	if v := d.Get("name").(string); v != "" {

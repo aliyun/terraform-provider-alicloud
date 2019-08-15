@@ -67,7 +67,7 @@ func resourceAliyunSnatEntryCreate(d *schema.ResourceData, meta interface{}) err
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.CreateSnatEntryResponse)
 		d.SetId(fmt.Sprintf("%s%s%s", request.SnatTableId, COLON_SEPARATED, response.SnatEntryId))
 		return nil
@@ -128,12 +128,13 @@ func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) err
 		request.SnatEntryId = parts[1]
 		request.SnatIp = d.Get("snat_ip").(string)
 
-		if _, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.ModifySnatEntry(request)
-		}); err != nil {
+		})
+		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		if err := vpcService.WaitForSnatEntry(d.Id(), Available, DefaultTimeout); err != nil {
 			return WrapError(err)
 		}
@@ -167,7 +168,7 @@ func resourceAliyunSnatEntryDelete(d *schema.ResourceData, meta interface{}) err
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
