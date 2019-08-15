@@ -1057,392 +1057,392 @@ jobs:
           TEST_SWEEPER_CASE_CODE: "alicloud_vpc"
 
 resources:
-  - name: terraform-provider-alicloud
-    type: git
-    source:
-      uri: https://github.com/terraform-providers/terraform-provider-alicloud.git
-      branch: master
+- name: terraform-provider-alicloud
+  type: git
+  source:
+    uri: https://github.com/terraform-providers/terraform-provider-alicloud.git
+    branch: master
 
-        - name: aliyun-cli
-          type: github-release
-          source:
-            owner: aliyun
-            repository: aliyun-cli
-            insecure: true
+- name: aliyun-cli
+  type: github-release
+  source:
+    owner: aliyun
+    repository: aliyun-cli
+    insecure: true
 
-      - name: 00
-        type: time
-        source:
-          start: 00:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 00
+  type: time
+  source:
+    start: 00:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 0030
-        type: time
-        source:
-          start: 00:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 0030
+  type: time
+  source:
+    start: 00:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 01
-        type: time
-        source:
-          start: 01:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 01
+  type: time
+  source:
+    start: 01:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 0130
-        type: time
-        source:
-          start: 01:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 0130
+  type: time
+  source:
+    start: 01:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 02
-        type: time
-        source:
-          start: 02:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 02
+  type: time
+  source:
+    start: 02:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 0230
-        type: time
-        source:
-          start: 02:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 0230
+  type: time
+  source:
+    start: 02:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 03
-        type: time
-        source:
-          start: 03:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 03
+  type: time
+  source:
+    start: 03:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 0330
-        type: time
-        source:
-          start: 03:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 0330
+  type: time
+  source:
+    start: 03:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 04
-        type: time
-        source:
-          start: 04:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 04
+  type: time
+  source:
+    start: 04:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 0430
-        type: time
-        source:
-          start: 04:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 0430
+  type: time
+  source:
+    start: 04:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 05
-        type: time
-        source:
-          start: 05:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 05
+  type: time
+  source:
+    start: 05:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 0530
-        type: time
-        source:
-          start: 05:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 0530
+  type: time
+  source:
+    start: 05:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 06
-        type: time
-        source:
-          start: 06:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 06
+  type: time
+  source:
+    start: 06:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 0630
-        type: time
-        source:
-          start: 06:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 0630
+  type: time
+  source:
+    start: 06:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 07
-        type: time
-        source:
-          start: 07:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 07
+  type: time
+  source:
+    start: 07:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 0730
-        type: time
-        source:
-          start: 07:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 0730
+  type: time
+  source:
+    start: 07:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 08
-        type: time
-        source:
-          start: 08:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 08
+  type: time
+  source:
+    start: 08:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 0830
-        type: time
-        source:
-          start: 08:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 0830
+  type: time
+  source:
+    start: 08:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 09
-        type: time
-        source:
-          start: 09:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 09
+  type: time
+  source:
+    start: 09:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 0930
-        type: time
-        source:
-          start: 09:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 0930
+  type: time
+  source:
+    start: 09:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 10
-        type: time
-        source:
-          start: 10:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 10
+  type: time
+  source:
+    start: 10:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 1030
-        type: time
-        source:
-          start: 10:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 1030
+  type: time
+  source:
+    start: 10:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 11
-        type: time
-        source:
-          start: 11:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 11
+  type: time
+  source:
+    start: 11:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 1130
-        type: time
-        source:
-          start: 11:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 1130
+  type: time
+  source:
+    start: 11:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 12
-        type: time
-        source:
-          start: 12:00 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 12
+  type: time
+  source:
+    start: 12:00 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 1230
-        type: time
-        source:
-          start: 12:30 AM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 1230
+  type: time
+  source:
+    start: 12:30 AM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 13
-        type: time
-        source:
-          start: 01:00 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 13
+  type: time
+  source:
+    start: 01:00 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 1330
-        type: time
-        source:
-          start: 01:30 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 1330
+  type: time
+  source:
+    start: 01:30 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 14
-        type: time
-        source:
-          start: 02:00 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 14
+  type: time
+  source:
+    start: 02:00 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 1430
-        type: time
-        source:
-          start: 02:30 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 1430
+  type: time
+  source:
+    start: 02:30 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 15
-        type: time
-        source:
-          start: 03:00 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 15
+  type: time
+  source:
+    start: 03:00 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 1530
-        type: time
-        source:
-          start: 03:30 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 1530
+  type: time
+  source:
+    start: 03:30 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 16
-        type: time
-        source:
-          start: 04:00 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 16
+  type: time
+  source:
+    start: 04:00 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 1630
-        type: time
-        source:
-          start: 04:30 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 1630
+  type: time
+  source:
+    start: 04:30 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 17
-        type: time
-        source:
-          start: 05:00 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 17
+  type: time
+  source:
+    start: 05:00 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 1730
-        type: time
-        source:
-          start: 05:30 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 1730
+  type: time
+  source:
+    start: 05:30 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 18
-        type: time
-        source:
-          start: 06:00 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 18
+  type: time
+  source:
+    start: 06:00 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 1830
-        type: time
-        source:
-          start: 06:30 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 1830
+  type: time
+  source:
+    start: 06:30 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 19
-        type: time
-        source:
-          start: 07:00 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 19
+  type: time
+  source:
+    start: 07:00 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 1930
-        type: time
-        source:
-          start: 07:30 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 1930
+  type: time
+  source:
+    start: 07:30 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 20
-        type: time
-        source:
-          start: 08:00 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 20
+  type: time
+  source:
+    start: 08:00 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      - name: 2030
-        type: time
-        source:
-          start: 08:30 PM
-          stop: 10:50 PM
-          #    days: [Sunday]
-          location: {{time_location}}
+- name: 2030
+  type: time
+  source:
+    start: 08:30 PM
+    stop: 10:50 PM
+    #    days: [Sunday]
+    location: {{time_location}}
 
-      #apply to sweeper
-      - name: 1645
-        type: time
-        source:
-          start: 4:45 PM
-          stop: 5:00 PM
-          days: [Sunday, Monday, Tuesday, Saturday]
-          location: {{time_location}}
+#apply to sweeper
+- name: 1645
+  type: time
+  source:
+    start: 4:45 PM
+    stop: 5:00 PM
+    days: [Sunday, Monday, Tuesday, Saturday]
+    location: {{time_location}}
 
-      - name: 1715
-        type: time
-        source:
-          start: 5:15 PM
-          stop: 5:30 PM
-          days: [Sunday, Monday, Tuesday, Saturday]
-          location: {{time_location}}
+- name: 1715
+  type: time
+  source:
+    start: 5:15 PM
+    stop: 5:30 PM
+    days: [Sunday, Monday, Tuesday, Saturday]
+    location: {{time_location}}
 
-      - name: 22
-        type: time
-        source:
-          start: 10:00 PM
-          stop: 11:50 PM
-          days: [Sunday, Monday, Tuesday, Saturday]
-          location: {{time_location}}
+- name: 22
+  type: time
+  source:
+    start: 10:00 PM
+    stop: 11:50 PM
+    days: [Sunday, Monday, Tuesday, Saturday]
+    location: {{time_location}}
 
-      - name: 2230
-        type: time
-        source:
-          start: 10:30 PM
-          stop: 11:50 PM
-          days: [Sunday, Monday, Tuesday, Saturday]
-          location: {{time_location}}
+- name: 2230
+  type: time
+  source:
+    start: 10:30 PM
+    stop: 11:50 PM
+    days: [Sunday, Monday, Tuesday, Saturday]
+    location: {{time_location}}
 
-      - name: 23
-        type: time
-        source:
-          start: 11:00 PM
-          stop: 11:50 PM
-          days: [Sunday, Monday, Tuesday, Saturday]
-          location: {{time_location}}
+- name: 23
+  type: time
+  source:
+    start: 11:00 PM
+    stop: 11:50 PM
+    days: [Sunday, Monday, Tuesday, Saturday]
+    location: {{time_location}}
