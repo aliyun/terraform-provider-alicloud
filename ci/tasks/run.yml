@@ -22,6 +22,6 @@ params:
   ACCESS_USER_NAME:      ""
   ACCESS_PASSWORD:       ""
   DING_TALK_TOKEN:       ""
-  BUCKET_NAME:           ""
-  BUCKET_REGION:         ""
+  BUCKET_NAME:           "terraform-ci"
+  BUCKET_REGION:         "cn-beijing"
 
