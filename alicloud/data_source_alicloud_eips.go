@@ -117,7 +117,7 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_eips", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeEipAddressesResponse)
 		if len(response.EipAddresses.EipAddress) < 1 {
 			break

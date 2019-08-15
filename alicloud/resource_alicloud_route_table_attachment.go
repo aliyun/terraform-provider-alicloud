@@ -38,6 +38,7 @@ func resourceAliyunRouteTableAttachmentCreate(d *schema.ResourceData, meta inter
 	vpcService := VpcService{client}
 
 	request := vpc.CreateAssociateRouteTableRequest()
+	request.RegionId = client.RegionId
 	request.RouteTableId = Trim(d.Get("route_table_id").(string))
 	request.VSwitchId = Trim(d.Get("vswitch_id").(string))
 	request.ClientToken = buildClientToken(request.GetActionName())
@@ -52,7 +53,7 @@ func resourceAliyunRouteTableAttachmentCreate(d *schema.ResourceData, meta inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_route_table_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -98,6 +99,7 @@ func resourceAliyunRouteTableAttachmentDelete(d *schema.ResourceData, meta inter
 	}
 
 	request := vpc.CreateUnassociateRouteTableRequest()
+	request.RegionId = client.RegionId
 	request.RouteTableId = parts[0]
 	request.VSwitchId = parts[1]
 	request.ClientToken = buildClientToken(request.GetActionName())
@@ -113,7 +115,7 @@ func resourceAliyunRouteTableAttachmentDelete(d *schema.ResourceData, meta inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

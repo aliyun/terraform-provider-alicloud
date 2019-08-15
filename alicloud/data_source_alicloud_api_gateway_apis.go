@@ -105,7 +105,7 @@ func dataSourceAlicloudApigatewayApisRead(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_api_gateway_apis", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cloudapi.DescribeApisResponse)
 
 		allapis = append(allapis, response.ApiSummarys.ApiSummary...)

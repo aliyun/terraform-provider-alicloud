@@ -48,6 +48,7 @@ func resourceAliyunSnapshotPolicyCreate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ecs.CreateCreateAutoSnapshotPolicyRequest()
+	request.RegionId = client.RegionId
 	request.AutoSnapshotPolicyName = d.Get("name").(string)
 	request.RepeatWeekdays = convertListToJsonString(d.Get("repeat_weekdays").(*schema.Set).List())
 	request.RetentionDays = requests.NewInteger(d.Get("retention_days").(int))
@@ -59,7 +60,7 @@ func resourceAliyunSnapshotPolicyCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_snapshot_policy", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response := raw.(*ecs.CreateAutoSnapshotPolicyResponse)
 	d.SetId(response.AutoSnapshotPolicyId)
 
@@ -103,6 +104,7 @@ func resourceAliyunSnapshotPolicyUpdate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ecs.CreateModifyAutoSnapshotPolicyExRequest()
+	request.RegionId = client.RegionId
 	request.AutoSnapshotPolicyId = d.Id()
 	if d.HasChange("name") {
 		request.AutoSnapshotPolicyName = d.Get("name").(string)
@@ -122,7 +124,7 @@ func resourceAliyunSnapshotPolicyUpdate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return resourceAliyunSnapshotPolicyRead(d, meta)
 }
 
@@ -131,6 +133,7 @@ func resourceAliyunSnapshotPolicyDelete(d *schema.ResourceData, meta interface{}
 	ecsService := EcsService{client}
 
 	request := ecs.CreateDeleteAutoSnapshotPolicyRequest()
+	request.RegionId = client.RegionId
 	request.AutoSnapshotPolicyId = d.Id()
 	err := resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
@@ -142,7 +145,7 @@ func resourceAliyunSnapshotPolicyDelete(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

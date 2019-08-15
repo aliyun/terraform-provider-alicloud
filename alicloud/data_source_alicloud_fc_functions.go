@@ -120,14 +120,15 @@ func dataSourceAlicloudFcFunctionsRead(d *schema.ResourceData, meta interface{})
 		if nextToken != "" {
 			request.NextToken = &nextToken
 		}
-
+		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			requestInfo = fcClient
 			return fcClient.ListFunctions(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fc_functions", "ListFunctions", FcGoSdk)
 		}
-		addDebug("ListFunctions", raw)
+		addDebug("ListFunctions", raw, requestInfo, request)
 		response, _ := raw.(*fc.ListFunctionsOutput)
 
 		if response.Functions == nil || len(response.Functions) < 1 {

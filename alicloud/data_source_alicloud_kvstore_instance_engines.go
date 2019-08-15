@@ -85,7 +85,7 @@ func dataSourceAlicloudKVStoreInstanceEnginesRead(d *schema.ResourceData, meta i
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response = raw.(*r_kvstore.DescribeAvailableResourceResponse)
 		return nil
 	})

@@ -14,6 +14,7 @@ type CdnService struct {
 
 func (c *CdnService) DescribeCdnDomainNew(id string) (*cdn.GetDomainDetailModel, error) {
 	request := cdn.CreateDescribeCdnDomainDetailRequest()
+	request.RegionId = c.client.RegionId
 	request.DomainName = id
 
 	raw, err := c.client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
@@ -26,7 +27,7 @@ func (c *CdnService) DescribeCdnDomainNew(id string) (*cdn.GetDomainDetailModel,
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	domain, _ := raw.(*cdn.DescribeCdnDomainDetailResponse)
 	if domain.GetDomainDetailModel.DomainName != id {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("cdn_domain", id)), NotFoundMsg, ProviderERROR)
@@ -40,6 +41,7 @@ func (c *CdnService) DescribeCdnDomainConfig(id string) (*cdn.DomainConfig, erro
 		return nil, WrapError(err)
 	}
 	request := cdn.CreateDescribeCdnDomainConfigsRequest()
+	request.RegionId = c.client.RegionId
 	request.DomainName = parts[0]
 
 	raw, err := c.client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
@@ -51,7 +53,7 @@ func (c *CdnService) DescribeCdnDomainConfig(id string) (*cdn.DomainConfig, erro
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cdn.DescribeCdnDomainConfigsResponse)
 	for _, value := range response.DomainConfigs.DomainConfig {
 		if value.FunctionName == parts[1] {
@@ -87,6 +89,7 @@ func (c *CdnService) WaitForCdnDomain(id string, status Status, timeout int) err
 
 func (c *CdnService) DescribeDomainCertificateInfo(id string) (certInfo cdn.CertInfo, err error) {
 	request := cdn.CreateDescribeDomainCertificateInfoRequest()
+	request.RegionId = c.client.RegionId
 	request.DomainName = id
 	raw, err := c.client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
 		return cdnClient.DescribeDomainCertificateInfo(request)
@@ -94,7 +97,7 @@ func (c *CdnService) DescribeDomainCertificateInfo(id string) (certInfo cdn.Cert
 	if err != nil {
 		return certInfo, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cdn.DescribeDomainCertificateInfoResponse)
 	if len(response.CertInfos.CertInfo) <= 0 {
 		return certInfo, WrapErrorf(Error(GetNotFoundMessage("DomainCertificateInfo", id)), NotFoundMsg, ProviderERROR)

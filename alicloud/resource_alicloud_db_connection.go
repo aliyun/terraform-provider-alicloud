@@ -69,6 +69,7 @@ func resourceAlicloudDBConnectionCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	request := rds.CreateAllocateInstancePublicConnectionRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = instanceId
 	request.ConnectionStringPrefix = prefix
 	request.Port = d.Get("port").(string)
@@ -85,7 +86,7 @@ func resourceAlicloudDBConnectionCreate(d *schema.ResourceData, meta interface{}
 
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 
@@ -152,6 +153,7 @@ func resourceAlicloudDBConnectionUpdate(d *schema.ResourceData, meta interface{}
 
 	if d.HasChange("port") {
 		request := rds.CreateModifyDBInstanceConnectionStringRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = parts[0]
 		object, err := rdsService.DescribeDBConnection(d.Id())
 		if err != nil {
@@ -170,7 +172,7 @@ func resourceAlicloudDBConnectionUpdate(d *schema.ResourceData, meta interface{}
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -195,6 +197,7 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 	request := rds.CreateReleaseInstancePublicConnectionRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = split[0]
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -214,7 +217,7 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 

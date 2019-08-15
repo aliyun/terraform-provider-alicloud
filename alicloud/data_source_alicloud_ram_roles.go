@@ -111,6 +111,7 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 	// all roles
 
 	request := ram.CreateListRolesRequest()
+	request.RegionId = client.RegionId
 	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.ListRoles(request)
 	})
@@ -118,7 +119,7 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	response, _ := raw.(*ram.ListRolesResponse)
 	for _, v := range response.Roles.Role {
@@ -152,7 +153,7 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ram.ListEntitiesForPolicyResponse)
 		for _, v := range response.Roles.Role {
 			role, ok := allRolesMap[v.RoleName]
@@ -180,7 +181,7 @@ func ramRolesDescriptionAttributes(d *schema.ResourceData, meta interface{}, rol
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ram.GetRoleResponse)
 		mapping := map[string]interface{}{
 			"id":                          role.RoleId,

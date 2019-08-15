@@ -99,7 +99,7 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_access_rules", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*nas.DescribeAccessRulesResponse)
 		if len(response.AccessRules.AccessRule) < 1 {
 			break

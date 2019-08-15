@@ -113,7 +113,7 @@ func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{})
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_route_tables", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeRouteTableListResponse)
 		if len(response.RouterTableList.RouterTableListType) < 1 {
 			break

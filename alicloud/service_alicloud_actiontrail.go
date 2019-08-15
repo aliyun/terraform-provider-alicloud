@@ -13,14 +13,14 @@ type ActionTrailService struct {
 
 func (s *ActionTrailService) DescribeActionTrail(id string) (trail actiontrail.TrailListItem, err error) {
 	request := actiontrail.CreateDescribeTrailsRequest()
-
+	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
 		return actiontrailClient.DescribeTrails(request)
 	})
 	if err != nil {
 		return trail, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*actiontrail.DescribeTrailsResponse)
 	for _, item := range response.TrailList {
 		if item.Name == id {
@@ -33,6 +33,7 @@ func (s *ActionTrailService) DescribeActionTrail(id string) (trail actiontrail.T
 
 func (s *ActionTrailService) startActionTrail(id string) (err error) {
 	request := actiontrail.CreateStartLoggingRequest()
+	request.RegionId = s.client.RegionId
 	request.Name = id
 	request.Method = "GET"
 	raw, err := s.client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
@@ -41,7 +42,7 @@ func (s *ActionTrailService) startActionTrail(id string) (err error) {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 

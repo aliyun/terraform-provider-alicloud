@@ -61,6 +61,7 @@ func dataSourceAlicloudDnsGroupsRead(d *schema.ResourceData, meta interface{}) e
 	request := alidns.CreateDescribeDomainGroupsRequest()
 
 	var allGroups []alidns.DomainGroup
+	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	idsMap := make(map[string]string)
@@ -76,7 +77,7 @@ func dataSourceAlicloudDnsGroupsRead(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dns_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*alidns.DescribeDomainGroupsResponse)
 		groups := response.DomainGroups.DomainGroup
 		for _, domainGroup := range groups {

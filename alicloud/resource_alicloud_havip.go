@@ -60,6 +60,7 @@ func resourceAliyunHaVipCreate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	havip, _ := raw.(*vpc.CreateHaVipResponse)
 	d.SetId(havip.HaVipId)
 	if err := haVipService.WaitForHaVip(havip.HaVipId, Available, 2*DefaultTimeout); err != nil {
@@ -92,14 +93,16 @@ func resourceAliyunHaVipUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	if d.HasChange("description") {
 		request := vpc.CreateModifyHaVipAttributeRequest()
+		request.RegionId = client.RegionId
 		request.HaVipId = d.Id()
 		request.Description = d.Get("description").(string)
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.ModifyHaVipAttribute(request)
 		})
 		if err != nil {
 			return err
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return resourceAliyunHaVipRead(d, meta)
@@ -113,10 +116,11 @@ func resourceAliyunHaVipDelete(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("WaitHaVip %s got error: %#v, %s", Available, err, d.Id())
 	}
 	request := vpc.CreateDeleteHaVipRequest()
+	request.RegionId = client.RegionId
 	request.HaVipId = d.Id()
 
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DeleteHaVip(request)
 		})
 		if err != nil {
@@ -125,6 +129,7 @@ func resourceAliyunHaVipDelete(d *schema.ResourceData, meta interface{}) error {
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		if _, err := haVipService.DescribeHaVip(d.Id()); err != nil {
 			if NotFoundError(err) {
 				return nil

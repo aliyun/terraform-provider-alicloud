@@ -128,13 +128,15 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 		if nextToken != "" {
 			request.NextToken = &nextToken
 		}
-
+		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			requestInfo = fcClient
 			return fcClient.ListServices(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fc_services", "ListServices", FcGoSdk)
 		}
+		addDebug("ListServices", raw, requestInfo, request)
 		response, _ := raw.(*fc.ListServicesOutput)
 
 		if response.Services == nil || len(response.Services) < 1 {

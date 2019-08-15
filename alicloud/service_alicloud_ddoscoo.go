@@ -15,6 +15,7 @@ type DdoscooService struct {
 
 func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance, err error) {
 	request := ddoscoo.CreateDescribeInstancesRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceIds = "[\"" + id + "\"]"
 	request.PageNo = "1"
 	request.PageSize = "10"
@@ -32,7 +33,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance,
 
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		resp, _ := raw.(*ddoscoo.DescribeInstancesResponse)
 		if resp == nil || len(resp.Instances) == 0 || resp.Instances[0].InstanceId != id {
 			return WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
@@ -47,6 +48,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance,
 
 func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (v ddoscoo.InstanceSpec, err error) {
 	request := ddoscoo.CreateDescribeInstanceSpecsRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceIds = "[\"" + id + "\"]"
 
 	invoker := NewInvoker()
@@ -62,7 +64,7 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (v ddoscoo.Insta
 
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		resp, _ := raw.(*ddoscoo.DescribeInstanceSpecsResponse)
 		if resp == nil || len(resp.InstanceSpecs) == 0 || resp.InstanceSpecs[0].InstanceId != id {
 			return WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
@@ -77,19 +79,23 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (v ddoscoo.Insta
 
 func (s *DdoscooService) UpdateDdoscooInstanceName(instanceId string, name string) error {
 	request := ddoscoo.CreateModifyInstanceRemarkRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceId = instanceId
 	request.Remark = name
 
-	if _, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+	raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
 		return ddoscooClient.ModifyInstanceRemark(request)
-	}); err != nil {
+	})
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 
 func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, d *schema.ResourceData, meta interface{}) error {
 	request := bssopenapi.CreateModifyInstanceRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceId = d.Id()
 
 	request.ProductCode = "ddos"
@@ -119,7 +125,7 @@ func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*bssopenapi.ModifyInstanceResponse)
 	if !resp.Success {
 		return WrapError(Error(resp.Message))

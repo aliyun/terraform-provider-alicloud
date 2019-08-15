@@ -50,6 +50,7 @@ func resourceAliyunSnapshotCreate(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ecs.CreateCreateSnapshotRequest()
+	request.RegionId = client.RegionId
 	request.DiskId = d.Get("disk_id").(string)
 	request.ClientToken = buildClientToken(request.GetActionName())
 	if name, ok := d.GetOk("name"); ok {
@@ -65,7 +66,7 @@ func resourceAliyunSnapshotCreate(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapErrorf(err, DefaultDebugMsg, "alicloud_snapshot", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response := raw.(*ecs.CreateSnapshotResponse)
 	d.SetId(response.SnapshotId)
 
@@ -121,6 +122,7 @@ func resourceAliyunSnapshotDelete(d *schema.ResourceData, meta interface{}) erro
 	ecsService := EcsService{client}
 
 	request := ecs.CreateDeleteSnapshotRequest()
+	request.RegionId = client.RegionId
 	request.SnapshotId = d.Id()
 
 	var raw interface{}
@@ -144,7 +146,7 @@ func resourceAliyunSnapshotDelete(d *schema.ResourceData, meta interface{}) erro
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 0,
 		ecsService.SnapshotStateRefreshFunc(d.Id(), []string{string(SnapshotCreatingFailed)}))

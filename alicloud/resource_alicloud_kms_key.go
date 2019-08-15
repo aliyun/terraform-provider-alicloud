@@ -65,6 +65,7 @@ func resourceAlicloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 
 	request := kms.CreateCreateKeyRequest()
+	request.RegionId = client.RegionId
 	request.KeyUsage = d.Get("key_usage").(string)
 
 	if v, ok := d.GetOk("description"); ok {
@@ -76,7 +77,7 @@ func resourceAlicloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_key", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*kms.CreateKeyResponse)
 	d.SetId(response.KeyMetadata.KeyId)
 
@@ -118,6 +119,7 @@ func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 		if d.Get("is_enabled").(bool) && KeyState(key.KeyMetadata.KeyState) == Disabled {
 			request := kms.CreateEnableKeyRequest()
+			request.RegionId = client.RegionId
 			request.KeyId = d.Id()
 			raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
 				return kmsClient.EnableKey(request)
@@ -125,11 +127,12 @@ func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 		if !d.Get("is_enabled").(bool) && KeyState(key.KeyMetadata.KeyState) == Enabled {
 			request := kms.CreateDisableKeyRequest()
+			request.RegionId = client.RegionId
 			request.KeyId = d.Id()
 			raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
 				return kmsClient.DisableKey(request)
@@ -137,7 +140,7 @@ func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 		d.SetPartial("is_enabled")
 	}
@@ -151,6 +154,7 @@ func resourceAlicloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 	kmsService := KmsService{client}
 	request := kms.CreateScheduleKeyDeletionRequest()
+	request.RegionId = client.RegionId
 	request.KeyId = d.Id()
 	request.PendingWindowInDays = requests.NewInteger((d.Get("deletion_window_in_days").(int)))
 	raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
@@ -159,7 +163,7 @@ func resourceAlicloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(kmsService.WaitForKmsKey(d.Id(), Deleted, DefaultTimeoutMedium))
 }

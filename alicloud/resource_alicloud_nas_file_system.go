@@ -57,7 +57,7 @@ func resourceAlicloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_file_system", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*nas.CreateFileSystemResponse)
 	d.SetId(response.FileSystemId)
 	return resourceAlicloudNasFileSystemUpdate(d, meta)
@@ -66,6 +66,7 @@ func resourceAlicloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := nas.CreateModifyFileSystemRequest()
+	request.RegionId = client.RegionId
 	request.FileSystemId = d.Id()
 
 	if d.HasChange("description") {
@@ -76,7 +77,7 @@ func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAlicloudNasFileSystemRead(d, meta)
 }
@@ -103,6 +104,7 @@ func resourceAlicloudNasFileSystemDelete(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
 	request := nas.CreateDeleteFileSystemRequest()
+	request.RegionId = client.RegionId
 	request.FileSystemId = d.Id()
 
 	raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
@@ -116,6 +118,6 @@ func resourceAlicloudNasFileSystemDelete(d *schema.ResourceData, meta interface{
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(nasService.WaitForNasFileSystem(d.Id(), Deleted, DefaultTimeoutMedium))
 }

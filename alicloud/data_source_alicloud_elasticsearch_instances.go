@@ -121,7 +121,7 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_elasticsearch_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 		response, _ := raw.(*elasticsearch.ListInstanceResponse)
 		if len(response.Result) < 1 {
 			break

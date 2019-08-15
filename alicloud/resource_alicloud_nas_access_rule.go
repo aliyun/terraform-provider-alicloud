@@ -74,7 +74,7 @@ func resourceAlicloudNasAccessRuleCreate(d *schema.ResourceData, meta interface{
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_access_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	response, _ := raw.(*nas.CreateAccessRuleResponse)
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	d.SetId(fmt.Sprintf("%s%s%s", d.Get("access_group_name").(string), COLON_SEPARATED, response.AccessRuleId))
 	return resourceAlicloudNasAccessRuleRead(d, meta)
 }
@@ -87,6 +87,7 @@ func resourceAlicloudNasAccessRuleUpdate(d *schema.ResourceData, meta interface{
 		return err
 	}
 	request := nas.CreateModifyAccessRuleRequest()
+	request.RegionId = client.RegionId
 	request.AccessGroupName = d.Get("access_group_name").(string)
 	request.AccessRuleId = parts[1]
 	request.SourceCidrIp = d.Get("source_cidr_ip").(string)
@@ -99,7 +100,7 @@ func resourceAlicloudNasAccessRuleUpdate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return resourceAlicloudNasAccessRuleRead(d, meta)
 }
 
@@ -132,6 +133,7 @@ func resourceAlicloudNasAccessRuleDelete(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
 	request := nas.CreateDeleteAccessRuleRequest()
+	request.RegionId = client.RegionId
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		err = WrapError(err)
@@ -151,7 +153,7 @@ func resourceAlicloudNasAccessRuleDelete(d *schema.ResourceData, meta interface{
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(nasService.WaitForNasAccessRule(d.Id(), Deleted, DefaultTimeoutMedium))
 
 }

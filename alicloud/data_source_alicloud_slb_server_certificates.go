@@ -103,6 +103,7 @@ func dataSourceAlicloudSlbServerCertificatesRead(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 
 	request := slb.CreateDescribeServerCertificatesRequest()
+	request.RegionId = client.RegionId
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -116,7 +117,7 @@ func dataSourceAlicloudSlbServerCertificatesRead(d *schema.ResourceData, meta in
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_server_certificates", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.DescribeServerCertificatesResponse)
 	var filteredTemp []slb.ServerCertificate
 	nameRegex, ok := d.GetOk("name_regex")

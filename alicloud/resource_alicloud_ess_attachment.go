@@ -77,6 +77,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 
 		if len(add) > 0 {
 			request := ess.CreateAttachInstancesRequest()
+			request.RegionId = client.RegionId
 			request.ScalingGroupId = d.Id()
 			s := reflect.ValueOf(request).Elem()
 
@@ -133,7 +134,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 					}
 					return resource.NonRetryableError(WrapError(err))
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
 			}); err != nil {
 				return WrapError(err)
@@ -220,6 +221,7 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		request := ess.CreateRemoveInstancesRequest()
+		request.RegionId = client.RegionId
 		request.ScalingGroupId = d.Id()
 
 		if len(removed) > 0 {
@@ -250,7 +252,7 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		time.Sleep(3 * time.Second)
 		instances, err := essService.DescribeEssAttachment(d.Id(), removed)
 		if err != nil {

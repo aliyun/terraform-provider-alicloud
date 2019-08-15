@@ -57,6 +57,7 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 		pvtzService := PvtzService{client}
 
 		request := pvtz.CreateBindZoneVpcRequest()
+		request.RegionId = client.RegionId
 		request.ZoneId = d.Id()
 
 		o, n := d.GetChange("vpc_ids")
@@ -92,7 +93,7 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
 		if err != nil {
@@ -141,6 +142,7 @@ func resourceAlicloudPvtzZoneAttachmentDelete(d *schema.ResourceData, meta inter
 	pvtzService := PvtzService{client}
 
 	request := pvtz.CreateBindZoneVpcRequest()
+	request.RegionId = client.RegionId
 	request.ZoneId = d.Id()
 	vpcs := make([]pvtz.BindZoneVpcVpcs, 0)
 	request.Vpcs = &vpcs
@@ -157,7 +159,7 @@ func resourceAlicloudPvtzZoneAttachmentDelete(d *schema.ResourceData, meta inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 

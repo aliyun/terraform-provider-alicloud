@@ -134,7 +134,7 @@ func resourceAlicloudGpdbInstanceCreate(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	response, _ := raw.(*gpdb.CreateDBInstanceResponse)
@@ -161,6 +161,7 @@ func resourceAlicloudGpdbInstanceUpdate(d *schema.ResourceData, meta interface{}
 	// Update Instance Description
 	if d.HasChange("description") {
 		request := gpdb.CreateModifyDBInstanceDescriptionRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
 		request.DBInstanceDescription = d.Get("description").(string)
 		raw, err := client.WithGpdbClient(func(gpdbClient *gpdb.Client) (interface{}, error) {
@@ -169,7 +170,7 @@ func resourceAlicloudGpdbInstanceUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("description")
 	}
 
@@ -197,6 +198,7 @@ func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 
 	request := gpdb.CreateDeleteDBInstanceRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
 
 	err := resource.Retry(10*5*time.Minute, func() *resource.RetryError {
@@ -210,7 +212,7 @@ func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

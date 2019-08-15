@@ -263,6 +263,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 	request := slb.CreateCreateLoadBalancerRequest()
+	request.RegionId = client.RegionId
 	request.LoadBalancerName = d.Get("name").(string)
 	request.AddressType = strings.ToLower(string(Intranet))
 	request.InternetChargeType = strings.ToLower(string(PayByTraffic))
@@ -334,7 +335,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest)
 	response, _ := raw.(*slb.CreateLoadBalancerResponse)
 	d.SetId(response.LoadBalancerId)
 
@@ -409,6 +410,7 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if d.HasChange("name") {
 		request := slb.CreateSetLoadBalancerNameRequest()
+		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
 		request.LoadBalancerName = d.Get("name").(string)
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -417,12 +419,13 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("name")
 	}
 
 	if d.HasChange("specification") {
 		request := slb.CreateModifyLoadBalancerInstanceSpecRequest()
+		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
 		if _, ok := d.GetOk("specification"); !ok {
 			return WrapError(Error(`'specification': required field is not set when updating it'.`))
@@ -435,12 +438,13 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("specification")
 	}
 
 	if d.HasChange("delete_protection") {
 		request := slb.CreateSetLoadBalancerDeleteProtectionRequest()
+		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
 		request.DeleteProtection = d.Get("delete_protection").(string)
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -449,11 +453,12 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("delete_protection")
 	}
 	update := false
 	modifyLoadBalancerInternetSpecRequest := slb.CreateModifyLoadBalancerInternetSpecRequest()
+	modifyLoadBalancerInternetSpecRequest.RegionId = client.RegionId
 	modifyLoadBalancerInternetSpecRequest.LoadBalancerId = d.Id()
 	if d.HasChange("internet_charge_type") {
 		modifyLoadBalancerInternetSpecRequest.InternetChargeType = strings.ToLower(d.Get("internet_charge_type").(string))
@@ -474,11 +479,12 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyLoadBalancerInternetSpecRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(modifyLoadBalancerInternetSpecRequest.GetActionName(), raw)
+		addDebug(modifyLoadBalancerInternetSpecRequest.GetActionName(), raw, modifyLoadBalancerInternetSpecRequest.RpcRequest, modifyLoadBalancerInternetSpecRequest)
 	}
 
 	update = false
 	modifyLoadBalancerPayTypeRequest := slb.CreateModifyLoadBalancerPayTypeRequest()
+	modifyLoadBalancerPayTypeRequest.RegionId = client.RegionId
 	modifyLoadBalancerPayTypeRequest.LoadBalancerId = d.Id()
 	if d.HasChange("instance_charge_type") {
 		modifyLoadBalancerPayTypeRequest.PayType = d.Get("instance_charge_type").(string)
@@ -508,7 +514,7 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyLoadBalancerPayTypeRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(modifyLoadBalancerPayTypeRequest.GetActionName(), raw)
+		addDebug(modifyLoadBalancerPayTypeRequest.GetActionName(), raw, modifyLoadBalancerPayTypeRequest.RpcRequest, modifyLoadBalancerPayTypeRequest)
 	}
 	d.Partial(false)
 
@@ -520,6 +526,7 @@ func resourceAliyunSlbDelete(d *schema.ResourceData, meta interface{}) error {
 	slbService := SlbService{client}
 
 	request := slb.CreateDeleteLoadBalancerRequest()
+	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Id()
 
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -531,7 +538,7 @@ func resourceAliyunSlbDelete(d *schema.ResourceData, meta interface{}) error {
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(slbService.WaitForSlb(d.Id(), Deleted, DefaultTimeoutMedium))
 }

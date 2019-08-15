@@ -86,6 +86,7 @@ func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 
 	request := kms.CreateListKeysRequest()
+	request.RegionId = client.RegionId
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
@@ -107,7 +108,7 @@ func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_keys", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*kms.ListKeysResponse)
 		for _, key := range response.Keys.Key {
 			if len(idsMap) > 0 {
@@ -146,7 +147,7 @@ func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, k, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		key, _ := raw.(*kms.DescribeKeyResponse)
 		if r != nil && !r.MatchString(key.KeyMetadata.Description) {
 			continue

@@ -196,7 +196,7 @@ func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interfa
 			if err != nil {
 				return err
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			response, _ = raw.(*vpc.DescribeRouterInterfacesResponse)
 			return nil
 		}); err != nil {

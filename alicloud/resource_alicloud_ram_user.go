@@ -52,6 +52,7 @@ func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) err
 	ramService := RamService{client}
 
 	request := ram.CreateCreateUserRequest()
+	request.RegionId = client.RegionId
 	request.UserName = d.Get("name").(string)
 	if v, ok := d.GetOk("display_name"); ok {
 		request.DisplayName = v.(string)
@@ -72,7 +73,7 @@ func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_user", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ram.CreateUserResponse)
 
 	d.SetId(response.User.UserId)
@@ -88,6 +89,7 @@ func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ram.CreateUpdateUserRequest()
+	request.RegionId = client.RegionId
 	request.UserName = d.Get("name").(string)
 	request.NewUserName = d.Get("name").(string)
 
@@ -128,7 +130,7 @@ func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return resourceAlicloudRamUserRead(d, meta)
@@ -170,6 +172,7 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 
 	userName := object.UserName
 	request := ram.CreateListAccessKeysRequest()
+	request.RegionId = client.RegionId
 	request.UserName = userName
 
 	if d.Get("force").(bool) {
@@ -180,11 +183,12 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		listAccessKeysResponse, _ := raw.(*ram.ListAccessKeysResponse)
 		if len(listAccessKeysResponse.AccessKeys.AccessKey) > 0 {
 			for _, v := range listAccessKeysResponse.AccessKeys.AccessKey {
 				request := ram.CreateDeleteAccessKeyRequest()
+				request.RegionId = client.RegionId
 				request.UserAccessKeyId = v.AccessKeyId
 				request.UserName = userName
 				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -193,12 +197,13 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 				if err != nil && !RamEntityNotExist(err) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			}
 		}
 
 		// list and delete policies for this user
 		request := ram.CreateListPoliciesForUserRequest()
+		request.RegionId = client.RegionId
 		request.UserName = userName
 		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.ListPoliciesForUser(request)
@@ -206,11 +211,12 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		listPoliciesForUserResponse, _ := raw.(*ram.ListPoliciesForUserResponse)
 		if len(listPoliciesForUserResponse.Policies.Policy) > 0 {
 			for _, v := range listPoliciesForUserResponse.Policies.Policy {
 				request := ram.CreateDetachPolicyFromUserRequest()
+				request.RegionId = client.RegionId
 				request.PolicyName = v.PolicyName
 				request.PolicyType = v.PolicyType
 				request.UserName = userName
@@ -220,12 +226,13 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 				if err != nil && !RamEntityNotExist(err) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			}
 		}
 
 		// list and delete groups for this user
 		listGroupsForUserRequest := ram.CreateListGroupsForUserRequest()
+		listGroupsForUserRequest.RegionId = client.RegionId
 		listGroupsForUserRequest.UserName = userName
 		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.ListGroupsForUser(listGroupsForUserRequest)
@@ -233,11 +240,12 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), listGroupsForUserRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(listGroupsForUserRequest.GetActionName(), raw)
+		addDebug(listGroupsForUserRequest.GetActionName(), raw, listGroupsForUserRequest.RpcRequest, listGroupsForUserRequest)
 		listGroupsForUserResponse, _ := raw.(*ram.ListGroupsForUserResponse)
 		if len(listGroupsForUserResponse.Groups.Group) > 0 {
 			for _, v := range listGroupsForUserResponse.Groups.Group {
 				request := ram.CreateRemoveUserFromGroupRequest()
+				request.RegionId = client.RegionId
 				request.UserName = userName
 				request.GroupName = v.GroupName
 				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -246,12 +254,13 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 				if err != nil && !RamEntityNotExist(err) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			}
 		}
 
 		// delete login profile for this user
 		deleteLoginProfileRequest := ram.CreateDeleteLoginProfileRequest()
+		deleteLoginProfileRequest.RegionId = client.RegionId
 		deleteLoginProfileRequest.UserName = userName
 		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.DeleteLoginProfile(deleteLoginProfileRequest)
@@ -269,9 +278,10 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		if err != nil && !RamEntityNotExist(err) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), unbindMFADeviceRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(unbindMFADeviceRequest.GetActionName(), raw)
+		addDebug(unbindMFADeviceRequest.GetActionName(), raw, deleteLoginProfileRequest.RpcRequest, deleteLoginProfileRequest)
 	}
 	deleteUserRequest := ram.CreateDeleteUserRequest()
+	deleteUserRequest.RegionId = client.RegionId
 	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		deleteUserRequest.UserName = userName
 		return ramClient.DeleteUser(deleteUserRequest)
@@ -282,6 +292,6 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(deleteUserRequest.GetActionName(), raw)
+	addDebug(deleteUserRequest.GetActionName(), raw, deleteUserRequest.RpcRequest, deleteUserRequest)
 	return WrapError(ramService.WaitForRamUser(d.Id(), Deleted, DefaultTimeout))
 }

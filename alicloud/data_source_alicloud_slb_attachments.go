@@ -50,6 +50,7 @@ func dataSourceAlicloudSlbAttachments() *schema.Resource {
 func dataSourceAlicloudSlbAttachmentsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := slb.CreateDescribeLoadBalancerAttributeRequest()
+	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
 
 	instanceIdsMap := make(map[string]string)
@@ -64,7 +65,7 @@ func dataSourceAlicloudSlbAttachmentsRead(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_attachments", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
 	var filteredBackendServersTemp []slb.BackendServer
 	if len(instanceIdsMap) > 0 {

@@ -128,6 +128,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 
 		if len(add) > 0 {
 			request := slb.CreateAddBackendServersRequest()
+			request.RegionId = client.RegionId
 			request.LoadBalancerId = d.Id()
 			request.BackendServers = expandBackendServersToString(ns.Difference(os).List(), weight)
 			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
@@ -140,7 +141,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
 			}); err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -148,6 +149,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 		}
 		if len(remove) > 0 {
 			request := slb.CreateRemoveBackendServersRequest()
+			request.RegionId = client.RegionId
 			request.LoadBalancerId = d.Id()
 			request.BackendServers = expandBackendServersToString(os.Difference(ns).List(), weight)
 			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
@@ -160,7 +162,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
 			}); err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -175,6 +177,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 
 	if update {
 		request := slb.CreateSetBackendServersRequest()
+		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
 		request.BackendServers = expandBackendServersToString(d.Get("instance_ids").(*schema.Set).List(), weight)
 		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
@@ -187,7 +190,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -204,6 +207,7 @@ func resourceAliyunSlbAttachmentDelete(d *schema.ResourceData, meta interface{})
 	instanceSet := d.Get("instance_ids").(*schema.Set)
 	if len(instanceSet.List()) > 0 {
 		request := slb.CreateRemoveBackendServersRequest()
+		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
 		request.BackendServers = convertListToJsonString(instanceSet.List())
 		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
@@ -216,7 +220,7 @@ func resourceAliyunSlbAttachmentDelete(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

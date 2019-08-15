@@ -14,6 +14,7 @@ type CasService struct {
 
 func (s *CasService) DescribeCas(id string) (*cas.Certificate, error) {
 	request := cas.CreateDescribeUserCertificateListRequest()
+	request.RegionId = s.client.RegionId
 	request.ShowSize = requests.NewInteger(PageSizeLarge)
 	request.CurrentPage = requests.NewInteger(1)
 
@@ -26,7 +27,7 @@ func (s *CasService) DescribeCas(id string) (*cas.Certificate, error) {
 		if err != nil {
 			return nil, WrapError(err)
 		}
-
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		res, _ := raw.(*cas.DescribeUserCertificateListResponse)
 		for _, v := range res.CertificateList {
 			if id == strconv.Itoa(v.Id) {

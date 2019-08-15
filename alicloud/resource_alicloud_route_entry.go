@@ -64,6 +64,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 	request := vpc.CreateCreateRouteEntryRequest()
+	request.RegionId = client.RegionId
 	request.RouteTableId = rtId
 	request.DestinationCidrBlock = cidr
 	request.NextHopType = nt
@@ -88,7 +89,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -143,6 +144,7 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 	client := meta.(*connectivity.AliyunClient)
+	request.RegionId = client.RegionId
 	vpcService := VpcService{client}
 	parts, err := ParseResourceId(d.Id(), 5)
 	rtId := parts[0]
@@ -163,7 +165,7 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

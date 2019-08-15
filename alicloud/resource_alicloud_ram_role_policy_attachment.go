@@ -42,6 +42,7 @@ func resourceAlicloudRamRolePolicyAttachment() *schema.Resource {
 func resourceAlicloudRamRolePolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := ram.CreateAttachPolicyToRoleRequest()
+	request.RegionId = client.RegionId
 	request.RoleName = d.Get("role_name").(string)
 	request.PolicyType = d.Get("policy_type").(string)
 	request.PolicyName = d.Get("policy_name").(string)
@@ -52,7 +53,7 @@ func resourceAlicloudRamRolePolicyAttachmentCreate(d *schema.ResourceData, meta 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_role_policy_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	// In order to be compatible with previous Id (before 1.9.6) which format to role:<policy_name>:<policy_type>:<role_name>
 	d.SetId(strings.Join([]string{"role", request.PolicyName, request.PolicyType, request.RoleName}, COLON_SEPARATED))
@@ -100,6 +101,7 @@ func resourceAlicloudRamRolePolicyAttachmentDelete(d *schema.ResourceData, meta 
 		return WrapError(err)
 	}
 	request := ram.CreateDetachPolicyFromRoleRequest()
+	request.RegionId = client.RegionId
 	request.PolicyName = parts[1]
 	request.PolicyType = parts[2]
 	request.RoleName = parts[3]
@@ -114,7 +116,7 @@ func resourceAlicloudRamRolePolicyAttachmentDelete(d *schema.ResourceData, meta 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(ramService.WaitForRamRolePolicyAttachment(d.Id(), Deleted, DefaultTimeout))
 }

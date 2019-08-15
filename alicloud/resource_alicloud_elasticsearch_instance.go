@@ -178,7 +178,7 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_elasticsearch_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	response, _ := raw.(*elasticsearch.CreateInstanceResponse)
 	d.SetId(response.Result.InstanceId)
 
@@ -345,6 +345,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	}
 
 	request := elasticsearch.CreateDeleteInstanceRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContentType("application/json")
 
@@ -358,7 +359,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating", "inactive", "active"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{}))
 	stateConf.PollInterval = 5 * time.Second
@@ -375,6 +376,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (*elasticsearch.CreateInstanceRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
 	request := elasticsearch.CreateCreateInstanceRequest()
+	request.RegionId = client.RegionId
 	vpcService := VpcService{client}
 
 	content := make(map[string]interface{})

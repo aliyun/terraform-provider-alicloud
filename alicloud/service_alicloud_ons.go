@@ -23,6 +23,7 @@ func (s *OnsService) GetPreventCache() requests.Integer {
 
 func (s *OnsService) DescribeOnsInstance(id string) (*ons.OnsInstanceBaseInfoResponse, error) {
 	request := ons.CreateOnsInstanceBaseInfoRequest()
+	request.RegionId = s.client.RegionId
 	request.PreventCache = s.GetPreventCache()
 	request.InstanceId = id
 
@@ -38,7 +39,7 @@ func (s *OnsService) DescribeOnsInstance(id string) (*ons.OnsInstanceBaseInfoRes
 	}
 
 	response, _ := raw.(*ons.OnsInstanceBaseInfoResponse)
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return response, nil
 
 }

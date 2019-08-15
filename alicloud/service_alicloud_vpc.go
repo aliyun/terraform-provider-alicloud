@@ -23,7 +23,7 @@ func (s *VpcService) DescribeEip(id string) (eip vpc.EipAddress, err error) {
 	if err != nil {
 		return eip, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*vpc.DescribeEipAddressesResponse)
 	if len(response.EipAddresses.EipAddress) <= 0 || response.EipAddresses.EipAddress[0].AllocationId != id {
 		return eip, WrapErrorf(Error(GetNotFoundMessage("Eip", id)), NotFoundMsg, ProviderERROR)
@@ -66,7 +66,7 @@ func (s *VpcService) DescribeNatGateway(id string) (nat vpc.NatGateway, err erro
 			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeNatGatewaysResponse)
 		if len(response.NatGateways.NatGateway) <= 0 || response.NatGateways.NatGateway[0].NatGatewayId != id {
 			return WrapErrorf(Error(GetNotFoundMessage("NatGateway", id)), NotFoundMsg, ProviderERROR)
@@ -79,6 +79,7 @@ func (s *VpcService) DescribeNatGateway(id string) (nat vpc.NatGateway, err erro
 
 func (s *VpcService) DescribeVpc(id string) (v vpc.DescribeVpcAttributeResponse, err error) {
 	request := vpc.CreateDescribeVpcAttributeRequest()
+	request.RegionId = s.client.RegionId
 	request.VpcId = id
 
 	invoker := NewInvoker()
@@ -92,7 +93,7 @@ func (s *VpcService) DescribeVpc(id string) (v vpc.DescribeVpcAttributeResponse,
 			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeVpcAttributeResponse)
 		if response.VpcId != id {
 			return WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundMsg, ProviderERROR)
@@ -105,6 +106,7 @@ func (s *VpcService) DescribeVpc(id string) (v vpc.DescribeVpcAttributeResponse,
 
 func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
 	request := vpc.CreateDescribeVSwitchAttributesRequest()
+	request.RegionId = s.client.RegionId
 	request.VSwitchId = id
 
 	invoker := NewInvoker()
@@ -118,7 +120,7 @@ func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributes
 			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeVSwitchAttributesResponse)
 		if response.VSwitchId != id {
 			return WrapErrorf(Error(GetNotFoundMessage("vswitch", id)), NotFoundMsg, ProviderERROR)
@@ -159,7 +161,7 @@ func (s *VpcService) DescribeSnatEntry(id string) (snat vpc.SnatTableEntry, err 
 			}
 			return snat, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		if len(response.SnatTableEntries.SnatTableEntry) < 1 {
 			break
@@ -207,7 +209,7 @@ func (s *VpcService) DescribeForwardEntry(id string) (entry vpc.ForwardTableEntr
 			}
 			return WrapErrorf(err, DefaultErrorMsg, "ForwardEntry", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeForwardTableEntriesResponse)
 
 		for _, forward := range response.ForwardTableEntries.ForwardTableEntry {
@@ -223,6 +225,7 @@ func (s *VpcService) DescribeForwardEntry(id string) (entry vpc.ForwardTableEntr
 
 func (s *VpcService) QueryRouteTableById(routeTableId string) (rt vpc.RouteTable, err error) {
 	request := vpc.CreateDescribeRouteTablesRequest()
+	request.RegionId = s.client.RegionId
 	request.RouteTableId = routeTableId
 
 	invoker := NewInvoker()
@@ -233,7 +236,7 @@ func (s *VpcService) QueryRouteTableById(routeTableId string) (rt vpc.RouteTable
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, routeTableId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeRouteTablesResponse)
 		if len(response.RouteTables.RouteTable) == 0 ||
 			response.RouteTables.RouteTable[0].RouteTableId != routeTableId {
@@ -268,6 +271,7 @@ func (s *VpcService) DescribeRouteEntry(id string) (v *vpc.RouteEntry, err error
 		}); err != nil {
 			return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeRouteTablesResponse)
 		if len(response.RouteTables.RouteTable) < 1 {
 			break
@@ -313,7 +317,7 @@ func (s *VpcService) DescribeRouterInterface(id, regionId string) (ri vpc.Router
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeRouterInterfacesResponse)
 		if len(response.RouterInterfaceSet.RouterInterfaceType) <= 0 ||
 			response.RouterInterfaceSet.RouterInterfaceType[0].RouterInterfaceId != id {
@@ -363,6 +367,7 @@ func (s *VpcService) DescribeCenInstanceGrant(id string) (rule vpc.CbnGrantRule,
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeGrantRulesToCenResponse)
 		ruleList := response.CenGrantRules.CbnGrantRule
 		if len(ruleList) <= 0 {
@@ -413,6 +418,7 @@ func (s *VpcService) WaitForCenInstanceGrant(id string, status Status, timeout i
 
 func (s *VpcService) DescribeCommonBandwidthPackage(id string) (v vpc.CommonBandwidthPackage, err error) {
 	request := vpc.CreateDescribeCommonBandwidthPackagesRequest()
+	request.RegionId = s.client.RegionId
 	request.BandwidthPackageId = id
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
@@ -422,7 +428,7 @@ func (s *VpcService) DescribeCommonBandwidthPackage(id string) (v vpc.CommonBand
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeCommonBandwidthPackagesResponse)
 		//Finding the commonBandwidthPackageId
 		for _, bandPackage := range response.CommonBandwidthPackages.CommonBandwidthPackage {
@@ -459,6 +465,7 @@ func (s *VpcService) DescribeCommonBandwidthPackageAttachment(id string) (v vpc.
 
 func (s *VpcService) DescribeRouteTable(id string) (v vpc.RouterTableListType, err error) {
 	request := vpc.CreateDescribeRouteTableListRequest()
+	request.RegionId = s.client.RegionId
 	request.RouteTableId = id
 
 	invoker := NewInvoker()
@@ -469,7 +476,7 @@ func (s *VpcService) DescribeRouteTable(id string) (v vpc.RouterTableListType, e
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeRouteTableListResponse)
 		//Finding the routeTableId
 		for _, routerTableType := range response.RouterTableList.RouterTableListType {
@@ -718,6 +725,7 @@ func (s *VpcService) WaitForEipAssociation(id string, status Status, timeout int
 
 func (s *VpcService) DeactivateRouterInterface(interfaceId string) error {
 	request := vpc.CreateDeactivateRouterInterfaceRequest()
+	request.RegionId = s.client.RegionId
 	request.RouterInterfaceId = interfaceId
 	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.DeactivateRouterInterface(request)
@@ -725,12 +733,13 @@ func (s *VpcService) DeactivateRouterInterface(interfaceId string) error {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "RouterInterface", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 
 func (s *VpcService) ActivateRouterInterface(interfaceId string) error {
 	request := vpc.CreateActivateRouterInterfaceRequest()
+	request.RegionId = s.client.RegionId
 	request.RouterInterfaceId = interfaceId
 	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.ActivateRouterInterface(request)
@@ -738,7 +747,7 @@ func (s *VpcService) ActivateRouterInterface(interfaceId string) error {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "RouterInterface", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 
@@ -903,6 +912,7 @@ func (s *VpcService) WaitForRouteTableAttachment(id string, status Status, timeo
 func (s *VpcService) DescribeNetworkAcl(id string) (networkAcl vpc.NetworkAcl, err error) {
 
 	request := vpc.CreateDescribeNetworkAclsRequest()
+	request.RegionId = s.client.RegionId
 	request.NetworkAclId = id
 
 	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
@@ -915,7 +925,7 @@ func (s *VpcService) DescribeNetworkAcl(id string) (networkAcl vpc.NetworkAcl, e
 		return networkAcl, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	response, _ := raw.(*vpc.DescribeNetworkAclsResponse)
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if len(response.NetworkAcls.NetworkAcl) <= 0 || response.NetworkAcls.NetworkAcl[0].NetworkAclId != id {
 		return networkAcl, WrapErrorf(Error(GetNotFoundMessage("NetworkAcl", id)), NotFoundMsg, ProviderERROR)
 	}

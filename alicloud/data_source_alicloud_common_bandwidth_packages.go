@@ -132,7 +132,7 @@ func dataSourceAlicloudCommonBandwidthPackagesRead(d *schema.ResourceData, meta 
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_common_bandwidth_packages", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeCommonBandwidthPackagesResponse)
 		if len(response.CommonBandwidthPackages.CommonBandwidthPackage) < 1 {
 			break

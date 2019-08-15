@@ -50,7 +50,7 @@ func resourceAlicloudNasAccessGroupCreate(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_access_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*nas.CreateAccessGroupResponse)
 	d.SetId(response.AccessGroupName)
 	return resourceAlicloudNasAccessGroupRead(d, meta)
@@ -59,6 +59,7 @@ func resourceAlicloudNasAccessGroupCreate(d *schema.ResourceData, meta interface
 func resourceAlicloudNasAccessGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := nas.CreateModifyAccessGroupRequest()
+	request.RegionId = client.RegionId
 	request.AccessGroupName = d.Id()
 
 	if d.HasChange("description") {
@@ -69,7 +70,7 @@ func resourceAlicloudNasAccessGroupUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return resourceAlicloudNasAccessGroupRead(d, meta)
@@ -99,6 +100,7 @@ func resourceAlicloudNasAccessGroupDelete(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
 	request := nas.CreateDeleteAccessGroupRequest()
+	request.RegionId = client.RegionId
 	request.AccessGroupName = d.Id()
 
 	raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
@@ -112,6 +114,6 @@ func resourceAlicloudNasAccessGroupDelete(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(nasService.WaitForNasAccessGroup(d.Id(), Deleted, DefaultTimeoutMedium))
 }

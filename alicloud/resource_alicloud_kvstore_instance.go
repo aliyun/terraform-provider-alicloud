@@ -171,7 +171,7 @@ func resourceAlicloudKVStoreInstanceCreate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kvstore_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*r_kvstore.CreateInstanceResponse)
 	d.SetId(response.InstanceId)
 
@@ -214,6 +214,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 		request := r_kvstore.CreateModifySecurityIpsRequest()
+		request.RegionId = client.RegionId
 		request.SecurityIpGroupName = "default"
 		request.InstanceId = d.Id()
 		if len(d.Get("security_ips").(*schema.Set).List()) > 0 {
@@ -227,7 +228,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("security_ips")
 		// wait instance status is Normal after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
@@ -246,6 +247,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				}
 
 				request := r_kvstore.CreateModifyInstanceVpcAuthModeRequest()
+				request.RegionId = client.RegionId
 				request.InstanceId = d.Id()
 				request.VpcAuthMode = d.Get("vpc_auth_mode").(string)
 
@@ -255,7 +257,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				d.SetPartial("vpc_auth_mode")
 
 				// The auth mode take some time to be effective, so wait to ensure the state !
@@ -268,6 +270,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if !d.IsNewResource() && (d.HasChange("instance_charge_type") || d.HasChange("period")) {
 		prePaidRequest := r_kvstore.CreateTransformToPrePaidRequest()
+		prePaidRequest.RegionId = client.RegionId
 		prePaidRequest.InstanceId = d.Id()
 		prePaidRequest.Period = requests.Integer(strconv.Itoa(d.Get("period").(int)))
 
@@ -280,7 +283,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), prePaidRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(prePaidRequest.GetActionName(), raw)
+			addDebug(prePaidRequest.GetActionName(), raw, prePaidRequest.RpcRequest, prePaidRequest)
 			// wait instance status is Normal after modifying
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapError(err)
@@ -292,6 +295,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if d.HasChange("auto_renew") || d.HasChange("auto_renew_period") {
 		request := r_kvstore.CreateModifyInstanceAutoRenewalAttributeRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
 
 		auto_renew := d.Get("auto_renew").(bool)
@@ -308,7 +312,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("auto_renew")
 		d.SetPartial("auto_renew_period")
 	}
@@ -325,6 +329,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		request := r_kvstore.CreateModifyInstanceSpecRequest()
+		request.RegionId = client.RegionId
 		request.InstanceId = d.Id()
 		request.InstanceClass = d.Get("instance_class").(string)
 		request.EffectiveTime = "Immediately"
@@ -340,7 +345,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
 		if err != nil {
@@ -369,6 +374,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	request := r_kvstore.CreateModifyInstanceAttributeRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	update := false
 	if d.HasChange("instance_name") {
@@ -392,7 +398,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		// wait instance status is Normal after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
@@ -430,6 +436,7 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 
 	if object.ChargeType == string(Prepaid) {
 		request := r_kvstore.CreateDescribeInstanceAutoRenewalAttributeRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
 
 		raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
@@ -438,7 +445,7 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*r_kvstore.DescribeInstanceAutoRenewalAttributeResponse)
 		if len(response.Items.Item) > 0 {
 			renew := response.Items.Item[0]
@@ -471,6 +478,7 @@ func resourceAlicloudKVStoreInstanceDelete(d *schema.ResourceData, meta interfac
 		return WrapError(Error("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically"))
 	}
 	request := r_kvstore.CreateDeleteInstanceRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 
 	raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
@@ -483,7 +491,7 @@ func resourceAlicloudKVStoreInstanceDelete(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	stateConf := BuildStateConf([]string{"Creating", "Active", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, kvstoreService.RdsKvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
 	_, err = stateConf.WaitForState()

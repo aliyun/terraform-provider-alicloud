@@ -37,6 +37,7 @@ func resourceAliyunCommonBandwidthPackageAttachmentCreate(d *schema.ResourceData
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	request := vpc.CreateAddCommonBandwidthPackageIpRequest()
+	request.RegionId = client.RegionId
 	request.BandwidthPackageId = Trim(d.Get("bandwidth_package_id").(string))
 	request.IpInstanceId = Trim(d.Get("instance_id").(string))
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
@@ -45,7 +46,7 @@ func resourceAliyunCommonBandwidthPackageAttachmentCreate(d *schema.ResourceData
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_common_bandwidth_package_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	//check the common bandwidth package attachment
 	d.SetId(request.BandwidthPackageId + COLON_SEPARATED + request.IpInstanceId)
 	if err := vpcService.WaitForCommonBandwidthPackageAttachment(d.Id(), Available, 5*DefaultTimeout); err != nil {
@@ -101,7 +102,7 @@ func resourceAliyunCommonBandwidthPackageAttachmentDelete(d *schema.ResourceData
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

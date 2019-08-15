@@ -12,6 +12,7 @@ type DnsService struct {
 
 func (s *DnsService) DescribeDns(id string) (*alidns.DescribeDomainInfoResponse, error) {
 	request := alidns.CreateDescribeDomainInfoRequest()
+	request.RegionId = s.client.RegionId
 	request.DomainName = id
 
 	raw, err := s.client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
@@ -24,7 +25,7 @@ func (s *DnsService) DescribeDns(id string) (*alidns.DescribeDomainInfoResponse,
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	response, _ := raw.(*alidns.DescribeDomainInfoResponse)
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if response.DomainName != id {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("Dns", id)), NotFoundMsg, ProviderERROR)
 	}
@@ -34,6 +35,7 @@ func (s *DnsService) DescribeDns(id string) (*alidns.DescribeDomainInfoResponse,
 func (dns *DnsService) DescribeDnsGroup(id string) (alidns.DomainGroup, error) {
 	var group alidns.DomainGroup
 	request := alidns.CreateDescribeDomainGroupsRequest()
+	request.RegionId = dns.client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	for {
@@ -43,7 +45,7 @@ func (dns *DnsService) DescribeDnsGroup(id string) (alidns.DomainGroup, error) {
 		if err != nil {
 			return group, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*alidns.DescribeDomainGroupsResponse)
 		groups := response.DomainGroups.DomainGroup
 		for _, domainGroup := range groups {
@@ -67,7 +69,7 @@ func (dns *DnsService) DescribeDnsGroup(id string) (alidns.DomainGroup, error) {
 func (dns *DnsService) DescribeDnsRecord(id string) (*alidns.DescribeDomainRecordInfoResponse, error) {
 	request := alidns.CreateDescribeDomainRecordInfoRequest()
 	request.RecordId = id
-
+	request.RegionId = dns.client.RegionId
 	raw, err := dns.client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
 		return dnsClient.DescribeDomainRecordInfo(request)
 	})
@@ -77,7 +79,7 @@ func (dns *DnsService) DescribeDnsRecord(id string) (*alidns.DescribeDomainRecor
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*alidns.DescribeDomainRecordInfoResponse)
 	if response.RecordId != id {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("DnsRecord", id)), NotFoundMsg, ProviderERROR)

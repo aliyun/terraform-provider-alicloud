@@ -27,6 +27,7 @@ func (s *MongoDBService) NotFoundMongoDBInstance(err error) bool {
 
 func (s *MongoDBService) DescribeMongoDBInstance(id string) (instance dds.DBInstance, err error) {
 	request := dds.CreateDescribeDBInstanceAttributeRequest()
+	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
 	raw, err := s.client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
 		return client.DescribeDBInstanceAttribute(request)
@@ -38,7 +39,7 @@ func (s *MongoDBService) DescribeMongoDBInstance(id string) (instance dds.DBInst
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), response)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if response == nil || len(response.DBInstances.DBInstance) == 0 {
 		return instance, WrapErrorf(Error(GetNotFoundMessage("MongoDB Instance", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
@@ -129,6 +130,7 @@ func (s *MongoDBService) GetSecurityIps(instanceId string) ([]string, error) {
 
 func (s *MongoDBService) DescribeMongoDBSecurityIps(instanceId string) (ips []dds.SecurityIpGroup, err error) {
 	request := dds.CreateDescribeSecurityIpsRequest()
+	request.RegionId = s.client.RegionId
 	request.DBInstanceId = instanceId
 
 	raw, err := s.client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
@@ -138,13 +140,14 @@ func (s *MongoDBService) DescribeMongoDBSecurityIps(instanceId string) (ips []dd
 		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	respone, _ := raw.(*dds.DescribeSecurityIpsResponse)
-	addDebug(request.GetActionName(), respone)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return respone.SecurityIpGroups.SecurityIpGroup, nil
 }
 
 func (s *MongoDBService) ModifyMongoDBSecurityIps(instanceId, ips string) error {
 	request := dds.CreateModifySecurityIpsRequest()
+	request.RegionId = s.client.RegionId
 	request.DBInstanceId = instanceId
 	request.SecurityIps = ips
 
@@ -155,8 +158,7 @@ func (s *MongoDBService) ModifyMongoDBSecurityIps(instanceId, ips string) error 
 		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	respone := raw.(*dds.ModifySecurityIpsResponse)
-	addDebug(request.GetActionName(), respone)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if err := s.WaitForMongoDBInstance(instanceId, Running, DefaultTimeoutMedium); err != nil {
 		return WrapError(err)
@@ -182,6 +184,7 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 			node := item.(map[string]interface{})
 
 			request := dds.CreateCreateNodeRequest()
+			request.RegionId = server.client.RegionId
 			request.DBInstanceId = instanceID
 			request.NodeClass = node["node_class"].(string)
 			request.NodeType = string(nodeType)
@@ -197,7 +200,7 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, instanceID, request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 			err = server.WaitForMongoDBInstance(instanceID, Updating, DefaultLongTimeout)
 			if err != nil {
@@ -217,6 +220,7 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 			node := item.(map[string]interface{})
 
 			request := dds.CreateDeleteNodeRequest()
+			request.RegionId = server.client.RegionId
 			request.DBInstanceId = instanceID
 			request.NodeId = node["node_id"].(string)
 			request.ClientToken = buildClientToken(request.GetActionName())
@@ -228,7 +232,7 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 				return WrapErrorf(err, DefaultErrorMsg, instanceID, request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 			err = server.WaitForMongoDBInstance(instanceID, Running, DefaultLongTimeout)
 			if err != nil {
@@ -245,6 +249,7 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 		if state["node_class"] != diff["node_class"] ||
 			state["node_storage"] != diff["node_storage"] {
 			request := dds.CreateModifyNodeSpecRequest()
+			request.RegionId = server.client.RegionId
 			request.DBInstanceId = instanceID
 			request.NodeClass = diff["node_class"].(string)
 			request.ClientToken = buildClientToken(request.GetActionName())
@@ -260,7 +265,7 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, instanceID, request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			err = server.WaitForMongoDBInstance(instanceID, Updating, DefaultLongTimeout)
 			if err != nil {
 				return WrapError(err)
@@ -276,14 +281,15 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 
 func (s *MongoDBService) DescribeMongoDBBackupPolicy(id string) (response *dds.DescribeBackupPolicyResponse, err error) {
 	request := dds.CreateDescribeBackupPolicyRequest()
+	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
 	raw, err := s.client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
 		return ddsClient.DescribeBackupPolicy(request)
 	})
-	addDebug(request.GetActionName(), raw)
 	if err != nil {
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*dds.DescribeBackupPolicyResponse)
 	return response, nil
 }
@@ -297,6 +303,7 @@ func (s *MongoDBService) MotifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	backupTime := d.Get("backup_time").(string)
 
 	request := dds.CreateModifyBackupPolicyRequest()
+	request.RegionId = s.client.RegionId
 	request.DBInstanceId = d.Id()
 	request.PreferredBackupPeriod = backupPeriod
 	request.PreferredBackupTime = backupTime
@@ -306,7 +313,7 @@ func (s *MongoDBService) MotifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if err := s.WaitForMongoDBInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
 		return WrapError(err)
 	}
@@ -315,6 +322,7 @@ func (s *MongoDBService) MotifyMongoDBBackupPolicy(d *schema.ResourceData) error
 
 func (s *MongoDBService) ResetAccountPassword(d *schema.ResourceData, password string) error {
 	request := dds.CreateResetAccountPasswordRequest()
+	request.RegionId = s.client.RegionId
 	request.DBInstanceId = d.Id()
 	request.AccountName = "root"
 	request.AccountPassword = password
@@ -324,6 +332,6 @@ func (s *MongoDBService) ResetAccountPassword(d *schema.ResourceData, password s
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return err
 }

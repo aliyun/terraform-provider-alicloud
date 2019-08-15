@@ -56,6 +56,7 @@ func resourceAlicloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 
 	request := buildDdoscooCreateRequest(d, meta)
+	request.RegionId = client.RegionId
 
 	raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
 		return bssopenapiClient.CreateInstance(request)
@@ -64,7 +65,7 @@ func resourceAlicloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	resp := raw.(*bssopenapi.CreateInstanceResponse)
 	// execute errors including in the bssopenapi response
@@ -177,9 +178,10 @@ func resourceAlicloudDdoscooInstanceDelete(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ddoscoo.CreateReleaseInstanceRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 
-	_, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+	raw, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
 		return ddoscooClient.ReleaseInstance(request)
 	})
 	if err != nil {
@@ -189,7 +191,7 @@ func resourceAlicloudDdoscooInstanceDelete(d *schema.ResourceData, meta interfac
 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 

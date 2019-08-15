@@ -38,6 +38,7 @@ func resourceAlicloudSlbCACertificateCreate(d *schema.ResourceData, meta interfa
 	slbService := SlbService{client}
 
 	request := slb.CreateUploadCACertificateRequest()
+	request.RegionId = client.RegionId
 
 	if val, ok := d.GetOk("name"); ok && val.(string) != "" {
 		request.CACertificateName = val.(string)
@@ -55,7 +56,7 @@ func resourceAlicloudSlbCACertificateCreate(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_ca_certificate", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response := raw.(*slb.UploadCACertificateResponse)
 
 	d.SetId(response.CACertificateId)
@@ -88,6 +89,7 @@ func resourceAlicloudSlbCACertificateUpdate(d *schema.ResourceData, meta interfa
 
 	if d.HasChange("name") {
 		request := slb.CreateSetCACertificateNameRequest()
+		request.RegionId = client.RegionId
 		request.CACertificateId = d.Id()
 		request.CACertificateName = d.Get("name").(string)
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -96,7 +98,7 @@ func resourceAlicloudSlbCACertificateUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return resourceAlicloudSlbCACertificateRead(d, meta)
@@ -107,6 +109,7 @@ func resourceAlicloudSlbCACertificateDelete(d *schema.ResourceData, meta interfa
 	slbService := SlbService{client}
 
 	request := slb.CreateDeleteCACertificateRequest()
+	request.RegionId = client.RegionId
 	request.CACertificateId = d.Id()
 
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
@@ -119,7 +122,7 @@ func resourceAlicloudSlbCACertificateDelete(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	}); err != nil {
 		if IsExceptedError(err, SlbCACertificateIdNotFound) {

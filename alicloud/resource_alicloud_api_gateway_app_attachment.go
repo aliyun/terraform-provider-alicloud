@@ -54,18 +54,19 @@ func resourceAliyunApigatewayAppAttachmentCreate(d *schema.ResourceData, meta in
 	appId := d.Get("app_id").(string)
 
 	request := cloudapi.CreateSetAppsAuthoritiesRequest()
+	request.RegionId = client.RegionId
 	request.GroupId = groupId
 	request.ApiId = apiId
 	request.AppIds = appId
 	request.StageName = stageName
 
-	_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+	raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
 		return cloudApiClient.SetAppsAuthorities(request)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_apigateway_app_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	id := fmt.Sprintf("%s%s%s%s%s%s%s", groupId, COLON_SEPARATED, apiId, COLON_SEPARATED, appId, COLON_SEPARATED, stageName)
 
 	err = cloudApiService.WaitForApiGatewayAppAttachment(id, Normal, DefaultTimeout)
@@ -102,6 +103,7 @@ func resourceAliyunApigatewayAppAttachmentDelete(d *schema.ResourceData, meta in
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
 	request := cloudapi.CreateRemoveAppsAuthoritiesRequest()
+	request.RegionId = client.RegionId
 	parts, err := ParseResourceId(d.Id(), 4)
 	if err != nil {
 		return WrapError(err)
@@ -120,7 +122,7 @@ func resourceAliyunApigatewayAppAttachmentDelete(d *schema.ResourceData, meta in
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(cloudApiService.WaitForApiGatewayAppAttachment(d.Id(), Deleted, DefaultLongTimeout))
 }

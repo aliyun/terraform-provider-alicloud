@@ -61,14 +61,17 @@ func dataSourceAlicloudRegions() *schema.Resource {
 
 func dataSourceAlicloudRegionsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	request := ecs.CreateDescribeRegionsRequest()
+	request.RegionId = client.RegionId
 	currentRegion := client.RegionId
 
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeRegions(ecs.CreateDescribeRegionsRequest())
+		return ecsClient.DescribeRegions(request)
 	})
 	if err != nil {
-		return err
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_regions", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ecs.DescribeRegionsResponse)
 	if resp == nil || len(resp.Regions.Region) == 0 {
 		return fmt.Errorf("no matching regions found")

@@ -78,6 +78,7 @@ func resourceAlicloudKeyPairCreate(d *schema.ResourceData, meta interface{}) err
 
 	if publicKey, ok := d.GetOk("public_key"); ok {
 		request := ecs.CreateImportKeyPairRequest()
+		request.RegionId = client.RegionId
 		request.KeyPairName = keyName
 		request.PublicKeyBody = publicKey.(string)
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
@@ -86,11 +87,12 @@ func resourceAlicloudKeyPairCreate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_key_pair", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		object, _ := raw.(*ecs.ImportKeyPairResponse)
 		d.SetId(object.KeyPairName)
 	} else {
 		request := ecs.CreateCreateKeyPairRequest()
+		request.RegionId = client.RegionId
 		request.KeyPairName = keyName
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.CreateKeyPair(request)
@@ -98,7 +100,7 @@ func resourceAlicloudKeyPairCreate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_key_pair", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		keyPair, _ := raw.(*ecs.CreateKeyPairResponse)
 		d.SetId(keyPair.KeyPairName)
 		if file, ok := d.GetOk("key_file"); ok {
@@ -132,6 +134,7 @@ func resourceAlicloudKeyPairDelete(d *schema.ResourceData, meta interface{}) err
 	ecsService := EcsService{client}
 
 	request := ecs.CreateDeleteKeyPairsRequest()
+	request.RegionId = client.RegionId
 	request.KeyPairNames = convertListToJsonString(append(make([]interface{}, 0, 1), d.Id()))
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -144,7 +147,7 @@ func resourceAlicloudKeyPairDelete(d *schema.ResourceData, meta interface{}) err
 			}
 			return resource.RetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

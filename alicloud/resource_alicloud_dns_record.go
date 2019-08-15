@@ -72,6 +72,7 @@ func resourceAlicloudDnsRecord() *schema.Resource {
 func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := alidns.CreateAddDomainRecordRequest()
+	request.RegionId = client.RegionId
 	request.DomainName = d.Get("name").(string)
 	request.RR = d.Get("host_record").(string)
 	request.Type = d.Get("type").(string)
@@ -102,7 +103,7 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*alidns.AddDomainRecordResponse)
 		d.SetId(response.RecordId)
 		return nil
@@ -117,6 +118,7 @@ func resourceAlicloudDnsRecordUpdate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 
 	request := alidns.CreateUpdateDomainRecordRequest()
+	request.RegionId = client.RegionId
 	request.RecordId = d.Id()
 	request.RR = d.Get("host_record").(string)
 	request.Type = d.Get("type").(string)
@@ -134,7 +136,7 @@ func resourceAlicloudDnsRecordUpdate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return resourceAlicloudDnsRecordRead(d, meta)
 }
@@ -168,6 +170,7 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	dnsService := &DnsService{client: client}
 	request := alidns.CreateDeleteDomainRecordRequest()
+	request.RegionId = client.RegionId
 	request.RecordId = d.Id()
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
@@ -182,7 +185,7 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		_, err = dnsService.DescribeDnsRecord(d.Id())
 		if err != nil {
 			if NotFoundError(err) {

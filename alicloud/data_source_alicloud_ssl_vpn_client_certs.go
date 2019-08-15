@@ -101,7 +101,7 @@ func dataSourceAlicloudSslVpnClientCertsRead(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ssl_vpn_client_certs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeSslVpnClientCertsResponse)
 		if len(response.SslVpnClientCertKeys.SslVpnClientCertKey) < 1 {
 			break

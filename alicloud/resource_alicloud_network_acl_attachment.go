@@ -99,6 +99,7 @@ func resourceAliyunNetworkAclAttachmentUpdate(d *schema.ResourceData, meta inter
 
 		if len(remove) > 0 {
 			request := vpc.CreateUnassociateNetworkAclRequest()
+			request.RegionId = client.RegionId
 			request.NetworkAclId = networkAclId
 			request.ClientToken = buildClientToken(request.GetActionName())
 			var resources []vpc.UnassociateNetworkAclResource
@@ -128,7 +129,7 @@ func resourceAliyunNetworkAclAttachmentUpdate(d *schema.ResourceData, meta inter
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName, raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			if err := vpcService.WaitForNetworkAclAttachment(request.NetworkAclId, vpcResource, Available, DefaultTimeout); err != nil {
 				return WrapError(err)
 			}
@@ -136,6 +137,7 @@ func resourceAliyunNetworkAclAttachmentUpdate(d *schema.ResourceData, meta inter
 
 		if len(create) > 0 {
 			request := vpc.CreateAssociateNetworkAclRequest()
+			request.RegionId = client.RegionId
 			request.NetworkAclId = networkAclId
 			request.ClientToken = buildClientToken(request.GetActionName())
 			var resources []vpc.AssociateNetworkAclResource
@@ -165,7 +167,7 @@ func resourceAliyunNetworkAclAttachmentUpdate(d *schema.ResourceData, meta inter
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName, raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			if err := vpcService.WaitForNetworkAclAttachment(request.NetworkAclId, vpcResource, Available, DefaultTimeout); err != nil {
 				return WrapError(err)
 			}
@@ -190,6 +192,7 @@ func resourceAliyunNetworkAclAttachmentDelete(d *schema.ResourceData, meta inter
 	object, err := vpcService.DescribeNetworkAcl(networkAclId)
 	vpcResource := []vpc.Resource{}
 	request := vpc.CreateUnassociateNetworkAclRequest()
+	request.RegionId = client.RegionId
 	request.NetworkAclId = networkAclId
 	request.ClientToken = buildClientToken(request.GetActionName())
 	for _, e := range object.Resources.Resource {
@@ -214,7 +217,7 @@ func resourceAliyunNetworkAclAttachmentDelete(d *schema.ResourceData, meta inter
 				return resource.RetryableError(err)
 			}
 		}
-		addDebug(request.GetActionName, raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

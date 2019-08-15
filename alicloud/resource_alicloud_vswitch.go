@@ -70,7 +70,7 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.CreateVSwitchResponse)
 		vswitchID = response.VSwitchId
 		return nil
@@ -110,6 +110,7 @@ func resourceAliyunSwitchUpdate(d *schema.ResourceData, meta interface{}) error 
 
 	update := false
 	request := vpc.CreateModifyVSwitchAttributeRequest()
+	request.RegionId = client.RegionId
 	request.VSwitchId = d.Id()
 
 	if d.HasChange("name") {
@@ -128,7 +129,7 @@ func resourceAliyunSwitchUpdate(d *schema.ResourceData, meta interface{}) error 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAliyunSwitchRead(d, meta)
 }
@@ -137,6 +138,7 @@ func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	request := vpc.CreateDeleteVSwitchRequest()
+	request.RegionId = client.RegionId
 	request.VSwitchId = d.Id()
 	err := resource.Retry(6*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
@@ -152,7 +154,7 @@ func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error 
 
 			return resource.RetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -174,6 +176,7 @@ func buildAliyunSwitchArgs(d *schema.ResourceData, meta interface{}) (*vpc.Creat
 		return nil, WrapError(err)
 	}
 	request := vpc.CreateCreateVSwitchRequest()
+	request.RegionId = client.RegionId
 	request.VpcId = Trim(d.Get("vpc_id").(string))
 	request.ZoneId = zoneID
 	request.CidrBlock = Trim(d.Get("cidr_block").(string))

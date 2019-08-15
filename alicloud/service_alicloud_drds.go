@@ -13,6 +13,7 @@ type DrdsService struct {
 
 func (s *DrdsService) DescribeDrdsInstance(id string) (response *drds.DescribeDrdsInstanceResponse, err error) {
 	request := drds.CreateDescribeDrdsInstanceRequest()
+	request.RegionId = s.client.RegionId
 	request.DrdsInstanceId = id
 	raw, err := s.client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.DescribeDrdsInstance(request)
@@ -24,7 +25,7 @@ func (s *DrdsService) DescribeDrdsInstance(id string) (response *drds.DescribeDr
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*drds.DescribeDrdsInstanceResponse)
 	if response.Data.Status == "5" {
 		return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)

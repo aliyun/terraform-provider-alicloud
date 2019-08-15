@@ -155,8 +155,10 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 		TriggerCreateObject: object,
 	}
 	var response *fc.CreateTriggerOutput
+	var requestInfo *fc.Client
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			requestInfo = fcClient
 			return fcClient.CreateTrigger(request)
 		})
 		if err != nil {
@@ -165,7 +167,7 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("CreateTrigger", raw)
+		addDebug("CreateTrigger", raw, requestInfo, request)
 		response, _ = raw.(*fc.CreateTriggerOutput)
 		return nil
 
@@ -247,14 +249,15 @@ func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) e
 		updateInput.ServiceName = StringPointer(parts[0])
 		updateInput.FunctionName = StringPointer(parts[1])
 		updateInput.TriggerName = StringPointer(parts[2])
-
+		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			requestInfo = fcClient
 			return fcClient.UpdateTrigger(updateInput)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateTrigger", FcGoSdk)
 		}
-		addDebug("UpdateTrigger", raw)
+		addDebug("UpdateTrigger", raw, requestInfo, updateInput)
 	}
 
 	return resourceAlicloudFCTriggerRead(d, meta)
@@ -268,13 +271,15 @@ func resourceAlicloudFCTriggerDelete(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapError(err)
 	}
-
+	request := &fc.DeleteTriggerInput{
+		ServiceName:  StringPointer(parts[0]),
+		FunctionName: StringPointer(parts[1]),
+		TriggerName:  StringPointer(parts[2]),
+	}
+	var requestInfo *fc.Client
 	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-		return fcClient.DeleteTrigger(&fc.DeleteTriggerInput{
-			ServiceName:  StringPointer(parts[0]),
-			FunctionName: StringPointer(parts[1]),
-			TriggerName:  StringPointer(parts[2]),
-		})
+		requestInfo = fcClient
+		return fcClient.DeleteTrigger(request)
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound, TriggerNotFound}) {
@@ -282,6 +287,6 @@ func resourceAlicloudFCTriggerDelete(d *schema.ResourceData, meta interface{}) e
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteTrigger", FcGoSdk)
 	}
-	addDebug("DeleteTrigger", raw)
+	addDebug("DeleteTrigger", raw, requestInfo, request)
 	return WrapError(fcService.WaitForFcTrigger(d.Id(), Deleted, DefaultTimeoutMedium))
 }

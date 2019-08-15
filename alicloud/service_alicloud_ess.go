@@ -17,6 +17,7 @@ type EssService struct {
 
 func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 	request := ess.CreateDescribeAlarmsRequest()
+	request.RegionId = s.client.RegionId
 	request.AlarmTaskId = id
 	request.MetricType = string(System)
 	Alarms, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -25,7 +26,7 @@ func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 	if err != nil {
 		return alarm, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), Alarms)
+	addDebug(request.GetActionName(), Alarms, request.RpcRequest, request)
 	AlarmsResponse, _ := Alarms.(*ess.DescribeAlarmsResponse)
 	systemAlarms := AlarmsResponse.AlarmList.Alarm
 
@@ -34,6 +35,7 @@ func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 	}
 
 	AlarmsRequest := ess.CreateDescribeAlarmsRequest()
+	AlarmsRequest.RegionId = s.client.RegionId
 	AlarmsRequest.AlarmTaskId = id
 	AlarmsRequest.MetricType = string(Custom)
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -42,7 +44,7 @@ func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 	if err != nil {
 		return alarm, WrapErrorf(err, DefaultErrorMsg, id, AlarmsRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(AlarmsRequest.GetActionName(), raw)
+	addDebug(AlarmsRequest.GetActionName(), raw, AlarmsRequest.RpcRequest, AlarmsRequest)
 	response, _ := raw.(*ess.DescribeAlarmsResponse)
 	customAlarms := response.AlarmList.Alarm
 
@@ -55,7 +57,7 @@ func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 func (s *EssService) DescribeEssLifecycleHook(id string) (hook ess.LifecycleHook, err error) {
 	request := ess.CreateDescribeLifecycleHooksRequest()
 	request.LifecycleHookId = &[]string{id}
-
+	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeLifecycleHooks(request)
 	})
@@ -63,7 +65,7 @@ func (s *EssService) DescribeEssLifecycleHook(id string) (hook ess.LifecycleHook
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.DescribeLifecycleHooksResponse)
 	for _, v := range response.LifecycleHooks.LifecycleHook {
 		if v.LifecycleHookId == id {
@@ -100,7 +102,7 @@ func (s *EssService) WaitForEssLifecycleHook(id string, status Status, timeout i
 func (s *EssService) DescribeEssScalingGroup(id string) (group ess.ScalingGroup, err error) {
 	request := ess.CreateDescribeScalingGroupsRequest()
 	request.ScalingGroupId1 = id
-
+	request.RegionId = s.client.RegionId
 	raw, e := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingGroups(request)
 	})
@@ -108,7 +110,7 @@ func (s *EssService) DescribeEssScalingGroup(id string) (group ess.ScalingGroup,
 		err = WrapErrorf(e, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.DescribeScalingGroupsResponse)
 	for _, v := range response.ScalingGroups.ScalingGroup {
 		if v.ScalingGroupId == id {
@@ -122,7 +124,7 @@ func (s *EssService) DescribeEssScalingGroup(id string) (group ess.ScalingGroup,
 func (s *EssService) DescribeEssScalingConfiguration(id string) (config ess.ScalingConfiguration, err error) {
 	request := ess.CreateDescribeScalingConfigurationsRequest()
 	request.ScalingConfigurationId1 = id
-
+	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingConfigurations(request)
 	})
@@ -130,6 +132,7 @@ func (s *EssService) DescribeEssScalingConfiguration(id string) (config ess.Scal
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.DescribeScalingConfigurationsResponse)
 	for _, v := range response.ScalingConfigurations.ScalingConfiguration {
 		if v.ScalingConfigurationId == id {
@@ -145,14 +148,14 @@ func (s *EssService) ActiveEssScalingConfiguration(sgId, id string) error {
 	request := ess.CreateModifyScalingGroupRequest()
 	request.ScalingGroupId = sgId
 	request.ActiveScalingConfigurationId = id
-
+	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.ModifyScalingGroup(request)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return err
 }
 
@@ -222,7 +225,7 @@ func (s *EssService) flattenVserverGroupList(vServerGroups []ess.VServerGroup) [
 func (s *EssService) DescribeEssScalingRule(id string) (rule ess.ScalingRule, err error) {
 	request := ess.CreateDescribeScalingRulesRequest()
 	request.ScalingRuleId1 = id
-
+	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingRules(request)
 	})
@@ -232,6 +235,7 @@ func (s *EssService) DescribeEssScalingRule(id string) (rule ess.ScalingRule, er
 		}
 		return rule, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.DescribeScalingRulesResponse)
 	for _, v := range response.ScalingRules.ScalingRule {
 		if v.ScalingRuleId == id {
@@ -269,14 +273,14 @@ func (s *EssService) WaitForEssScalingRule(id string, status Status, timeout int
 func (s *EssService) DescribeEssScheduledTask(id string) (task ess.ScheduledTask, err error) {
 	request := ess.CreateDescribeScheduledTasksRequest()
 	request.ScheduledTaskId1 = id
-
+	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScheduledTasks(request)
 	})
 	if err != nil {
 		return task, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.DescribeScheduledTasksResponse)
 
 	for _, v := range response.ScheduledTasks.ScheduledTask {
@@ -316,7 +320,7 @@ func (s *EssService) WaitForEssScheduledTask(id string, status Status, timeout i
 
 func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (instances []ess.ScalingInstance, err error) {
 	request := ess.CreateDescribeScalingInstancesRequest()
-
+	request.RegionId = srv.client.RegionId
 	request.ScalingGroupId = id
 	s := reflect.ValueOf(request).Elem()
 
@@ -337,7 +341,7 @@ func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (i
 		}
 		return
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.DescribeScalingInstancesResponse)
 	if len(response.ScalingInstances.ScalingInstance) < 1 {
 		err = WrapErrorf(Error(GetNotFoundMessage("EssAttachment", id)), NotFoundMsg, ProviderERROR)
@@ -351,7 +355,7 @@ func (s *EssService) DescribeEssScalingConfifurations(id string) (configs []ess.
 	request.ScalingGroupId = id
 	request.PageNumber = requests.NewInteger(1)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
-
+	request.RegionId = s.client.RegionId
 	for {
 		raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.DescribeScalingConfigurations(request)
@@ -359,7 +363,7 @@ func (s *EssService) DescribeEssScalingConfifurations(id string) (configs []ess.
 		if err != nil {
 			return configs, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ess.DescribeScalingConfigurationsResponse)
 		if len(response.ScalingConfigurations.ScalingConfiguration) < 1 {
 			break
@@ -409,7 +413,7 @@ func (srv *EssService) EssRemoveInstances(id string, instanceIds []string) error
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		request := ess.CreateRemoveInstancesRequest()
 		request.ScalingGroupId = id
-
+		request.RegionId = srv.client.RegionId
 		if len(removed) > 0 {
 			request.InstanceId = &removed
 		} else {
@@ -437,7 +441,7 @@ func (srv *EssService) EssRemoveInstances(id string, instanceIds []string) error
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		time.Sleep(3 * time.Second)
 		instances, err := srv.DescribeEssAttachment(id, instanceIds)
 		if err != nil {

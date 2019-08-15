@@ -74,6 +74,7 @@ func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 	bytconfig, _ := json.Marshal(config)
 
 	request := cdn.CreateBatchSetCdnDomainConfigRequest()
+	request.RegionId = client.RegionId
 	request.DomainNames = d.Get("domain_name").(string)
 	request.Functions = string(bytconfig)
 	raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
@@ -82,7 +83,7 @@ func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "cdn_domain_config", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	d.SetId(fmt.Sprintf("%s:%s", request.DomainNames, d.Get("function_name").(string)))
 
@@ -148,7 +149,7 @@ func resourceAlicloudCdnDomainConfigDelete(d *schema.ResourceData, meta interfac
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(cdnService.WaitForCdnDomain(d.Id(), Deleted, DefaultTimeout))
 }
 

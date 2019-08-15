@@ -242,7 +242,7 @@ func resourceAlicloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 	}
 
 	response, _ := raw.(*dds.CreateShardingDBInstanceResponse)
-	addDebug(request.GetActionName(), response)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	d.SetId(response.DBInstanceId)
 
@@ -358,6 +358,7 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if d.HasChange("name") {
 		request := dds.CreateModifyDBInstanceDescriptionRequest()
+		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
 		request.DBInstanceDescription = d.Get("name").(string)
 
@@ -368,7 +369,7 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("name")
 	}
 
@@ -402,6 +403,7 @@ func resourceAlicloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta 
 	ddsService := MongoDBService{client}
 
 	request := dds.CreateDeleteDBInstanceRequest()
+	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
 
 	err := resource.Retry(10*5*time.Minute, func() *resource.RetryError {
@@ -415,7 +417,7 @@ func resourceAlicloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta 
 			}
 			return resource.RetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 

@@ -42,6 +42,7 @@ func dataSourceAlicloudNasProtocols() *schema.Resource {
 func dataSourceAlicloudNasProtocolsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := nas.CreateDescribeZonesRequest()
+	request.RegionId = client.RegionId
 	var nasProtocol []nas.DescribeZonesProtocol
 	for {
 		raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
@@ -50,7 +51,7 @@ func dataSourceAlicloudNasProtocolsRead(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_protocols", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*nas.DescribeZonesResponse)
 		if len(response.Zones.Zone) < 1 {
 			break

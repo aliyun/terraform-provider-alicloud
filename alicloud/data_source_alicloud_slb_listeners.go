@@ -201,6 +201,7 @@ func dataSourceAlicloudSlbListenersRead(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 
 	request := slb.CreateDescribeLoadBalancerAttributeRequest()
+	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
 
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -209,7 +210,7 @@ func dataSourceAlicloudSlbListenersRead(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_listeners", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
 	var filteredListenersTemp []slb.ListenerPortAndProtocol
 	port := -1
@@ -262,7 +263,7 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 			if err != nil {
 				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_listeners", request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			response, _ := raw.(*slb.DescribeLoadBalancerHTTPListenerAttributeResponse)
 			mapping["backend_port"] = response.BackendServerPort
 			mapping["status"] = response.Status
@@ -299,7 +300,7 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 			if err != nil {
 				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_listeners", request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			response, _ := raw.(*slb.DescribeLoadBalancerHTTPSListenerAttributeResponse)
 			mapping["backend_port"] = response.BackendServerPort
 			mapping["status"] = response.Status
@@ -341,7 +342,7 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 			if err != nil {
 				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_listeners", request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			response, _ := raw.(*slb.DescribeLoadBalancerTCPListenerAttributeResponse)
 			mapping["backend_port"] = response.BackendServerPort
 			mapping["status"] = response.Status
@@ -371,7 +372,7 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 			if err != nil {
 				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_listeners", request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			response, _ := raw.(*slb.DescribeLoadBalancerUDPListenerAttributeResponse)
 			mapping["backend_port"] = response.BackendServerPort
 			mapping["status"] = response.Status

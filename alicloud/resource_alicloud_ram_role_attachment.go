@@ -38,6 +38,7 @@ func resourceAlicloudInstanceRoleAttachmentCreate(d *schema.ResourceData, meta i
 	instanceIds := convertListToJsonString(d.Get("instance_ids").(*schema.Set).List())
 
 	request := ecs.CreateAttachInstanceRamRoleRequest()
+	request.RegionId = client.RegionId
 	request.InstanceIds = instanceIds
 	request.RamRoleName = d.Get("role_name").(string)
 
@@ -56,7 +57,7 @@ func resourceAlicloudInstanceRoleAttachmentCreate(d *schema.ResourceData, meta i
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "ram_role_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetId(d.Get("role_name").(string) + COLON_SEPARATED + instanceIds)
 		return resource.NonRetryableError(WrapError(resourceAlicloudInstanceRoleAttachmentRead(d, meta)))
 	})
@@ -102,6 +103,7 @@ func resourceAlicloudInstanceRoleAttachmentDelete(d *schema.ResourceData, meta i
 	instanceIds := parts[1]
 
 	request := ecs.CreateDetachInstanceRamRoleRequest()
+	request.RegionId = client.RegionId
 	request.RamRoleName = roleName
 	request.InstanceIds = instanceIds
 
@@ -115,7 +117,7 @@ func resourceAlicloudInstanceRoleAttachmentDelete(d *schema.ResourceData, meta i
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

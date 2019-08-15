@@ -18,6 +18,7 @@ type PvtzService struct {
 
 func (s *PvtzService) DescribePvtzZone(id string) (zone pvtz.DescribeZoneInfoResponse, err error) {
 	request := pvtz.CreateDescribeZoneInfoRequest()
+	request.RegionId = s.client.RegionId
 	request.ZoneId = id
 
 	var response *pvtz.DescribeZoneInfoResponse
@@ -32,7 +33,7 @@ func (s *PvtzService) DescribePvtzZone(id string) (zone pvtz.DescribeZoneInfoRes
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*pvtz.DescribeZoneInfoResponse)
 		return nil
 	})
@@ -99,6 +100,7 @@ func (s *PvtzService) DescribePvtzZoneRecord(id string) (record pvtz.Record, err
 		return record, WrapError(err)
 	}
 	request := pvtz.CreateDescribeZoneRecordsRequest()
+	request.RegionId = s.client.RegionId
 	request.ZoneId = parts[1]
 	request.PageNumber = requests.NewInteger(1)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
@@ -118,7 +120,7 @@ func (s *PvtzService) DescribePvtzZoneRecord(id string) (record pvtz.Record, err
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			response, _ = raw.(*pvtz.DescribeZoneRecordsResponse)
 			return nil
 		})

@@ -54,7 +54,7 @@ func resourceAlicloudPvtzZoneCreate(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 
 	request := pvtz.CreateAddZoneRequest()
-
+	request.RegionId = client.RegionId
 	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
 		request.ZoneName = v.(string)
 	}
@@ -71,7 +71,7 @@ func resourceAlicloudPvtzZoneCreate(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*pvtz.AddZoneResponse)
 		return nil
 	})
@@ -128,7 +128,7 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
 		if err != nil {
@@ -158,7 +158,7 @@ func resourceAlicloudPvtzZoneDelete(d *schema.ResourceData, meta interface{}) er
 			return resource.NonRetryableError(err)
 		}
 
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 
 	})

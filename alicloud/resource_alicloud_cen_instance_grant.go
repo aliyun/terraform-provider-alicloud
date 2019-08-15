@@ -76,7 +76,7 @@ func resourceAlicloudCenInstanceGrantCreate(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_instance_grant", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	d.SetId(cenId + COLON_SEPARATED + instanceId + COLON_SEPARATED + string(ownerId))
 
@@ -151,7 +151,7 @@ func resourceAlicloudCenInstanceGrantDelete(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(vpcService.WaitForCenInstanceGrant(d.Id(), Deleted, DefaultCenTimeout))
 }

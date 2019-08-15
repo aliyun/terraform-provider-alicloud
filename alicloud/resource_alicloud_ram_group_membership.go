@@ -119,6 +119,7 @@ func resourceAlicloudRamGroupMembershipDelete(d *schema.ResourceData, meta inter
 func addUsersToGroup(client *connectivity.AliyunClient, users []string, group string) error {
 	for _, u := range users {
 		request := ram.CreateAddUserToGroupRequest()
+		request.RegionId = client.RegionId
 		request.UserName = u
 		request.GroupName = group
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -127,7 +128,7 @@ func addUsersToGroup(client *connectivity.AliyunClient, users []string, group st
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, u, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	}
 	return nil
@@ -136,6 +137,7 @@ func addUsersToGroup(client *connectivity.AliyunClient, users []string, group st
 func removeUsersFromGroup(client *connectivity.AliyunClient, users []string, group string) error {
 	for _, u := range users {
 		request := ram.CreateRemoveUserFromGroupRequest()
+		request.RegionId = client.RegionId
 		request.UserName = u
 		request.GroupName = group
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -144,7 +146,7 @@ func removeUsersFromGroup(client *connectivity.AliyunClient, users []string, gro
 		if err != nil && !RamEntityNotExist(err) {
 			return WrapErrorf(err, DefaultErrorMsg, u, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	}
 	return nil

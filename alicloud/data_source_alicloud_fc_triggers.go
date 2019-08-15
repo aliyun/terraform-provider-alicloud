@@ -108,14 +108,15 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 		if nextToken != "" {
 			request.NextToken = &nextToken
 		}
-
+		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			requestInfo = fcClient
 			return fcClient.ListTriggers(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fc_triggers", "ListTriggers", FcGoSdk)
 		}
-		addDebug("ListTriggers", raw)
+		addDebug("ListTriggers", raw, requestInfo, request)
 		response, _ := raw.(*fc.ListTriggersOutput)
 
 		if len(response.Triggers) < 1 {

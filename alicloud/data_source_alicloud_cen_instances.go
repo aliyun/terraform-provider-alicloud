@@ -101,6 +101,7 @@ func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, m
 	client := meta.(*connectivity.AliyunClient)
 
 	request := cbn.CreateDescribeCensRequest()
+	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	if filters != nil {
@@ -131,7 +132,7 @@ func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, m
 			}
 			return allCens, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		response, _ := raw.(*cbn.DescribeCensResponse)
 		if len(response.Cens.Cen) < 1 {
@@ -257,7 +258,7 @@ func censDescribeCenAttachedChildInstances(d *schema.ResourceData, cenId string,
 		if err != nil {
 			return nil, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		response, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
 		if len(response.ChildInstances.ChildInstance) > 0 {

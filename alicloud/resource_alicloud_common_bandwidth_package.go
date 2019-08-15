@@ -84,7 +84,7 @@ func resourceAliyunCommonBandwidthPackageCreate(d *schema.ResourceData, meta int
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_common_bandwidth_package", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*vpc.CreateCommonBandwidthPackageResponse)
 	d.SetId(response.BandwidthPackageId)
 	if err = vpcService.WaitForCommonBandwidthPackage(response.BandwidthPackageId, Available, DefaultTimeout); err != nil {
@@ -124,6 +124,7 @@ func resourceAliyunCommonBandwidthPackageUpdate(d *schema.ResourceData, meta int
 	d.Partial(true)
 	update := false
 	request := vpc.CreateModifyCommonBandwidthPackageAttributeRequest()
+	request.RegionId = client.RegionId
 	request.BandwidthPackageId = d.Id()
 	if d.HasChange("description") {
 		request.Description = d.Get("description").(string)
@@ -142,7 +143,7 @@ func resourceAliyunCommonBandwidthPackageUpdate(d *schema.ResourceData, meta int
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("description")
 		d.SetPartial("name")
 	}
@@ -158,7 +159,7 @@ func resourceAliyunCommonBandwidthPackageUpdate(d *schema.ResourceData, meta int
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("bandwidth")
 	}
 
@@ -171,6 +172,7 @@ func resourceAliyunCommonBandwidthPackageDelete(d *schema.ResourceData, meta int
 	vpcService := VpcService{client}
 
 	request := vpc.CreateDeleteCommonBandwidthPackageRequest()
+	request.RegionId = client.RegionId
 	request.BandwidthPackageId = d.Id()
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.DeleteCommonBandwidthPackage(request)
@@ -178,7 +180,7 @@ func resourceAliyunCommonBandwidthPackageDelete(d *schema.ResourceData, meta int
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(vpcService.WaitForCommonBandwidthPackage(d.Id(), Deleted, DefaultTimeoutMedium))
 }

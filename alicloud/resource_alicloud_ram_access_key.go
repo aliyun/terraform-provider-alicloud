@@ -62,7 +62,7 @@ func resourceAlicloudRamAccessKeyCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_access_key", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ram.CreateAccessKeyResponse)
 
 	if v, ok := d.GetOk("pgp_key"); ok {
@@ -96,6 +96,7 @@ func resourceAlicloudRamAccessKeyUpdate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ram.CreateUpdateAccessKeyRequest()
+	request.RegionId = client.RegionId
 	request.UserAccessKeyId = d.Id()
 	request.Status = d.Get("status").(string)
 
@@ -110,7 +111,7 @@ func resourceAlicloudRamAccessKeyUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAlicloudRamAccessKeyRead(d, meta)
 }
@@ -138,6 +139,7 @@ func resourceAlicloudRamAccessKeyDelete(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
 	request := ram.CreateDeleteAccessKeyRequest()
+	request.RegionId = client.RegionId
 	request.UserAccessKeyId = d.Id()
 
 	if v, ok := d.GetOk("user_name"); ok && v.(string) != "" {
@@ -153,7 +155,7 @@ func resourceAlicloudRamAccessKeyDelete(d *schema.ResourceData, meta interface{}
 		}
 		return WrapErrorf(err, DefaultErrorMsg, request.UserName, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(ramService.WaitForRamAccessKey(d.Id(), request.UserName, Deleted, DefaultTimeoutMedium))
 
 }

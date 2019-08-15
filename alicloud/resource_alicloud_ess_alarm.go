@@ -129,6 +129,7 @@ func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	client := meta.(*connectivity.AliyunClient)
+	request.RegionId = client.RegionId
 	var raw interface{}
 	if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -140,7 +141,7 @@ func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) erro
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_alarm", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -151,6 +152,7 @@ func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) erro
 	enable := d.Get("enable")
 	if !enable.(bool) {
 		disableAlarmRequest := ess.CreateDisableAlarmRequest()
+		disableAlarmRequest.RegionId = client.RegionId
 		disableAlarmRequest.AlarmTaskId = response.AlarmTaskId
 		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.DisableAlarm(disableAlarmRequest)
@@ -158,7 +160,7 @@ func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), disableAlarmRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(disableAlarmRequest.GetActionName(), raw)
+		addDebug(disableAlarmRequest.GetActionName(), raw, disableAlarmRequest.RpcRequest, disableAlarmRequest)
 	}
 	return resourceAliyunEssAlarmRead(d, meta)
 }
@@ -210,7 +212,7 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 	request := ess.CreateModifyAlarmRequest()
 	request.AlarmTaskId = d.Id()
-
+	request.RegionId = client.RegionId
 	d.Partial(true)
 	if d.HasChange("name") {
 		request.Name = d.Get("name").(string)
@@ -279,7 +281,7 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 	d.SetPartial("evaluation_count")
 	d.SetPartial("cloud_monitor_group_id")
 	d.SetPartial("dimensions")
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if d.HasChange("enable") {
 		enable := d.Get("enable")
@@ -315,7 +317,7 @@ func resourceAliyunEssAlarmDelete(d *schema.ResourceData, meta interface{}) erro
 	essService := EssService{client}
 	request := ess.CreateDeleteAlarmRequest()
 	request.AlarmTaskId = d.Id()
-
+	request.RegionId = client.RegionId
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DeleteAlarm(request)
 	})
@@ -325,7 +327,7 @@ func resourceAliyunEssAlarmDelete(d *schema.ResourceData, meta interface{}) erro
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(essService.WaitForEssAlarm(d.Id(), Deleted, DefaultTimeout))
 }
 

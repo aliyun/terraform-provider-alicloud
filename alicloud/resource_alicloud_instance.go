@@ -359,7 +359,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.RunInstancesResponse)
 		d.SetId(response.InstanceIdSets.InstanceIdSet[0])
 		return nil
@@ -444,6 +444,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	dataRequest := ecs.CreateDescribeUserDataRequest()
+	dataRequest.RegionId = client.RegionId
 	dataRequest.InstanceId = d.Id()
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.DescribeUserData(dataRequest)
@@ -452,12 +453,13 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), dataRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(dataRequest.GetActionName(), raw)
+	addDebug(dataRequest.GetActionName(), raw, dataRequest.RpcRequest, dataRequest)
 	response, _ := raw.(*ecs.DescribeUserDataResponse)
 	d.Set("user_data", userDataHashSum(response.UserData))
 
 	if len(instance.VpcAttributes.VSwitchId) > 0 {
 		request := ecs.CreateDescribeInstanceRamRoleRequest()
+		request.RegionId = client.RegionId
 		request.InstanceIds = convertListToJsonString([]interface{}{d.Id()})
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DescribeInstanceRamRole(request)
@@ -465,7 +467,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.DescribeInstanceRamRoleResponse)
 		if len(response.InstanceRamRoleSets.InstanceRamRoleSet) >= 1 {
 			d.Set("role_name", response.InstanceRamRoleSets.InstanceRamRoleSet[0].RamRoleName)
@@ -474,6 +476,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 
 	if instance.InstanceChargeType == string(PrePaid) {
 		request := ecs.CreateDescribeInstanceAutoRenewAttributeRequest()
+		request.RegionId = client.RegionId
 		request.InstanceId = d.Id()
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DescribeInstanceAutoRenewAttribute(request)
@@ -481,7 +484,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.DescribeInstanceAutoRenewAttributeResponse)
 		if len(response.InstanceRenewAttributes.InstanceRenewAttribute) > 0 {
 			renew := response.InstanceRenewAttributes.InstanceRenewAttribute[0]
@@ -504,6 +507,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	request := ecs.CreateListTagResourcesRequest()
+	request.RegionId = client.RegionId
 	raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		request.ResourceType = string(TagResourceDisk)
 		request.ResourceId = &ids
@@ -512,7 +516,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	volumeTagsResp := raw.(*ecs.ListTagResourcesResponse)
 	var volumeTags []ecs.Tag
 	for _, tag := range volumeTagsResp.TagResources.TagResource {
@@ -601,6 +605,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		if instance.Status == string(Running) {
 			log.Printf("[DEBUG] Stop instance when changing image or password or vpc attribute")
 			stopRequest := ecs.CreateStopInstanceRequest()
+			stopRequest.RegionId = client.RegionId
 			stopRequest.InstanceId = d.Id()
 			stopRequest.ForceStop = requests.NewBoolean(false)
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
@@ -699,7 +704,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("renewal_status")
 		d.SetPartial("auto_renew_period")
 	}
@@ -761,6 +766,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	ecsService := EcsService{client}
 
 	request := ecs.CreateRunInstancesRequest()
+	request.RegionId = client.RegionId
 	request.InstanceType = d.Get("instance_type").(string)
 
 	imageID := d.Get("image_id").(string)
@@ -949,7 +955,7 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -1001,7 +1007,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		if err != nil {
 			return update, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		// Ensure instance's image has been replaced successfully.
 		timeout := DefaultTimeoutMedium
 		for {
@@ -1108,7 +1114,7 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
 		if err != nil {
@@ -1168,7 +1174,7 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
 
@@ -1223,7 +1229,7 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
 			})
 			if err != nil {
@@ -1248,7 +1254,7 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
 			})
 			if err != nil {
@@ -1334,7 +1340,7 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -1372,7 +1378,7 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 	}
 	return nil

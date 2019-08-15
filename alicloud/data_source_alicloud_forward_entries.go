@@ -127,7 +127,7 @@ func dataSourceAlicloudForwardEntriesRead(d *schema.ResourceData, meta interface
 		}); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_forward_entries", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeForwardTableEntriesResponse)
 		if len(response.ForwardTableEntries.ForwardTableEntry) < 1 {
 			break

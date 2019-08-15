@@ -130,6 +130,7 @@ func dataSourceAlicloudEssScalingGroups() *schema.Resource {
 func dataSourceAlicloudEssScalingGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := ess.CreateDescribeScalingGroupsRequest()
+	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 
@@ -142,7 +143,7 @@ func dataSourceAlicloudEssScalingGroupsRead(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ess_scalinggroups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ess.DescribeScalingGroupsResponse)
 		if len(response.ScalingGroups.ScalingGroup) < 1 {
 			break

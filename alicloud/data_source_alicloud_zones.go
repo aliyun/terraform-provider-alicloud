@@ -174,13 +174,14 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRds)) {
 		request := rds.CreateDescribeRegionsRequest()
+		request.RegionId = client.RegionId
 		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.DescribeRegions(request)
 		})
 		if err != nil {
 			return fmt.Errorf("[ERROR] DescribeRegions got an error: %#v", err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		regions, _ := raw.(*rds.DescribeRegionsResponse)
 		if len(regions.Regions.RDSRegion) <= 0 {
 			return fmt.Errorf("[ERROR] There is no available region for RDS.")
@@ -195,12 +196,14 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	}
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRkv)) {
 		request := r_kvstore.CreateDescribeRegionsRequest()
+		request.RegionId = client.RegionId
 		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 			return rkvClient.DescribeRegions(request)
 		})
 		if err != nil {
 			return fmt.Errorf("[ERROR] DescribeRegions got an error: %#v", err)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		regions, _ := raw.(*r_kvstore.DescribeRegionsResponse)
 		if len(regions.RegionIds.KVStoreRegion) <= 0 {
 			return fmt.Errorf("[ERROR] There is no available region for KVStore")
@@ -217,12 +220,14 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	}
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeMongoDB)) {
 		request := dds.CreateDescribeRegionsRequest()
+		request.RegionId = client.RegionId
 		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
 			return ddsClient.DescribeRegions(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		regions, _ := raw.(*dds.DescribeRegionsResponse)
 		if len(regions.Regions.DdsRegion) <= 0 {
 			return WrapError(fmt.Errorf("[ERROR] There is no available region for MongoDB."))
@@ -239,13 +244,14 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	}
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeGpdb)) {
 		request := gpdb.CreateDescribeRegionsRequest()
+		request.RegionId = client.RegionId
 		raw, err := client.WithGpdbClient(func(gpdbClient *gpdb.Client) (interface{}, error) {
 			return gpdbClient.DescribeRegions(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*gpdb.DescribeRegionsResponse)
 		if len(response.Regions.Region) <= 0 {
 			return WrapError(fmt.Errorf("[ERROR] There is no available region for gpdb."))
@@ -263,6 +269,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	elasticsearchZones := make(map[string]string)
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeElasticsearch)) {
 		request := elasticsearch.CreateGetRegionConfigurationRequest()
+		request.RegionId = client.RegionId
 		raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 			return elasticsearchClient.GetRegionConfiguration(request)
 		})
@@ -270,7 +277,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		if err != nil {
 			return BuildWrapError("[Error] DescribeZones", "", AlibabaCloudSdkGoERROR, err, "")
 		}
-
+		addDebug(request.GetActionName(), raw, request.GetActionName(), request)
 		zones, _ := raw.(*elasticsearch.GetRegionConfigurationResponse)
 		for _, zoneID := range zones.Result.Zones {
 			if multi && strings.Contains(zoneID, MULTI_IZ_SYMBOL) {
@@ -289,12 +296,15 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 
 	// Retrieving available zones for VPC-FC
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeFC)) {
+		var clientInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			clientInfo = fcClient
 			return fcClient.GetAccountSettings(fc.NewGetAccountSettingsInput())
 		})
 		if err != nil {
 			return fmt.Errorf("[API ERROR] FC GetAccountSettings: %#v", err)
 		}
+		addDebug("GetAccountSettings", raw, clientInfo)
 		out, _ := raw.(*fc.GetAccountSettingsOutput)
 		if out != nil && len(out.AvailableAZs) > 0 {
 			sort.Strings(out.AvailableAZs)
@@ -306,6 +316,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	slaveZones := make(map[string][]string)
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeSlb)) {
 		request := slb.CreateDescribeAvailableResourceRequest()
+		request.RegionId = client.RegionId
 		if ipVersion, ok := d.GetOk("available_slb_address_ip_version"); ok {
 			request.AddressIPVersion = ipVersion.(string)
 		}
@@ -318,7 +329,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*slb.DescribeAvailableResourceResponse)
 		for _, resource := range response.AvailableResources.AvailableResource {
 			slaveIds := slaveZones[resource.MasterZoneId]
@@ -336,6 +347,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	}
 
 	req := ecs.CreateDescribeZonesRequest()
+	req.RegionId = client.RegionId
 	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) != "" {
 		req.InstanceChargeType = v.(string)
 	}
@@ -349,6 +361,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	if err != nil {
 		return fmt.Errorf("DescribeZones got an error: %#v", err)
 	}
+	addDebug(req.GetActionName(), raw, req.RpcRequest, req)
 	resp, _ := raw.(*ecs.DescribeZonesResponse)
 	if resp == nil || len(resp.Zones.Zone) < 1 {
 		return fmt.Errorf("There are no availability zones in the region: %#v.", client.Region)

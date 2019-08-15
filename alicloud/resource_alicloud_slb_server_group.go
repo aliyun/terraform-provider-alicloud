@@ -73,6 +73,7 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 func resourceAliyunSlbServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := slb.CreateCreateVServerGroupRequest()
+	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
 	if v, ok := d.GetOk("name"); ok {
 		request.VServerGroupName = v.(string)
@@ -83,7 +84,7 @@ func resourceAliyunSlbServerGroupCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_server_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.CreateVServerGroupResponse)
 	d.SetId(response.VServerGroupId)
 
@@ -183,6 +184,7 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 				}
 			}
 			request := slb.CreateRemoveVServerGroupBackendServersRequest()
+			request.RegionId = client.RegionId
 			request.VServerGroupId = d.Id()
 			segs := len(rmservers)/step + 1
 			for i := 0; i < segs; i++ {
@@ -198,7 +200,7 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				d.SetPartial("servers")
 			}
 		}
@@ -223,6 +225,7 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 				}
 			}
 			request := slb.CreateAddVServerGroupBackendServersRequest()
+			request.RegionId = client.RegionId
 			request.VServerGroupId = d.Id()
 			segs := len(addservers)/step + 1
 			for i := 0; i < segs; i++ {
@@ -239,7 +242,7 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				d.SetPartial("servers")
 			}
 		}
@@ -254,6 +257,7 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 	}
 	if serverUpdate || nameUpdate {
 		request := slb.CreateSetVServerGroupAttributeRequest()
+		request.RegionId = client.RegionId
 		request.VServerGroupId = d.Id()
 		request.VServerGroupName = name
 		if serverUpdate {
@@ -290,7 +294,7 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				d.SetPartial("servers")
 				d.SetPartial("name")
 			}
@@ -301,7 +305,7 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			d.SetPartial("name")
 		}
 	}
@@ -314,6 +318,7 @@ func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 	request := slb.CreateDeleteVServerGroupRequest()
+	request.RegionId = client.RegionId
 	request.VServerGroupId = d.Id()
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -325,7 +330,7 @@ func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

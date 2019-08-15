@@ -217,7 +217,7 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_mongodb_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*dds.DescribeDBInstancesResponse)
 		if len(response.DBInstances.DBInstance) < 1 {
 			break

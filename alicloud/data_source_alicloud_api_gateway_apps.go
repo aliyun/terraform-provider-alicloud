@@ -71,6 +71,7 @@ func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 
 	request := cloudapi.CreateDescribeAppAttributesRequest()
+	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 
@@ -83,7 +84,7 @@ func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_api_gateway_apps", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cloudapi.DescribeAppAttributesResponse)
 
 		apps = append(apps, response.Apps.AppAttribute...)

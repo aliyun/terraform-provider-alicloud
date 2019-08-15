@@ -70,6 +70,7 @@ func dataSourceAlicloudActiontrails() *schema.Resource {
 func dataSourceAlicloudActionTrailsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := actiontrail.CreateDescribeTrailsRequest()
+	request.RegionId = client.RegionId
 	raw, err := client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
 		return actiontrailClient.DescribeTrails(request)
 	})
@@ -77,7 +78,7 @@ func dataSourceAlicloudActionTrailsRead(d *schema.ResourceData, meta interface{}
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_actiontrails", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	response, _ := raw.(*actiontrail.DescribeTrailsResponse)
 	var filteredTrailList []actiontrail.TrailListItem

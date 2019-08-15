@@ -108,7 +108,7 @@ func resourceAliyunEipCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eip", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*vpc.AllocateEipAddressResponse)
 	d.SetId(response.AllocationId)
 	err = vpcService.WaitForEip(d.Id(), Available, DefaultTimeoutMedium)
@@ -148,6 +148,7 @@ func resourceAliyunEipUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	update := false
 	request := vpc.CreateModifyEipAddressAttributeRequest()
+	request.RegionId = client.RegionId
 	request.AllocationId = d.Id()
 
 	if d.HasChange("bandwidth") && !d.IsNewResource() {
@@ -169,7 +170,7 @@ func resourceAliyunEipUpdate(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAliyunEipRead(d, meta)
 }
@@ -180,7 +181,7 @@ func resourceAliyunEipDelete(d *schema.ResourceData, meta interface{}) error {
 
 	request := vpc.CreateReleaseEipAddressRequest()
 	request.AllocationId = d.Id()
-
+	request.RegionId = client.RegionId
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.ReleaseEipAddress(request)
@@ -193,7 +194,7 @@ func resourceAliyunEipDelete(d *schema.ResourceData, meta interface{}) error {
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

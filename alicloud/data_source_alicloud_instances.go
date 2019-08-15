@@ -191,6 +191,7 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ecs.CreateDescribeInstancesRequest()
+	request.RegionId = client.RegionId
 	request.Status = d.Get("status").(string)
 
 	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
@@ -226,9 +227,9 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 			return ecsClient.DescribeInstances(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.DescribeInstancesResponse)
 		if len(response.Instances.Instance) < 1 {
 			break
@@ -345,7 +346,7 @@ func instanceDisksMappings(d *schema.ResourceData, instanceId string, meta inter
 		log.Printf("[ERROR] DescribeDisks for instance got error: %#v", err)
 		return nil
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ecs.DescribeDisksResponse)
 	if len(response.Disks.Disk) < 1 {
 		return nil

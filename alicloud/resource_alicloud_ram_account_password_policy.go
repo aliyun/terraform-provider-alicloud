@@ -91,6 +91,7 @@ func resourceAlicloudRamAccountPasswordPolicyUpdate(d *schema.ResourceData, meta
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ram.CreateSetPasswordPolicyRequest()
+	request.RegionId = client.RegionId
 	request.MinimumPasswordLength = requests.NewInteger(d.Get("minimum_password_length").(int))
 	request.RequireLowercaseCharacters = requests.NewBoolean(d.Get("require_lowercase_characters").(bool))
 	request.RequireUppercaseCharacters = requests.NewBoolean(d.Get("require_uppercase_characters").(bool))
@@ -106,7 +107,7 @@ func resourceAlicloudRamAccountPasswordPolicyUpdate(d *schema.ResourceData, meta
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_account_password_policy", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	d.SetId("ram-account-password-policy")
 
@@ -137,6 +138,7 @@ func resourceAlicloudRamAccountPasswordPolicyDelete(d *schema.ResourceData, meta
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ram.CreateSetPasswordPolicyRequest()
+	request.RegionId = client.RegionId
 	request.MinimumPasswordLength = requests.NewInteger(default_minimum_password_length)
 	request.RequireLowercaseCharacters = requests.NewBoolean(default_require_lowercase_characters)
 	request.RequireUppercaseCharacters = requests.NewBoolean(default_require_uppercase_characters)
@@ -152,6 +154,6 @@ func resourceAlicloudRamAccountPasswordPolicyDelete(d *schema.ResourceData, meta
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }

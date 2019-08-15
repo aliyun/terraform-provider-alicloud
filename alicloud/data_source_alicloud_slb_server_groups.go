@@ -80,6 +80,7 @@ func dataSourceAlicloudSlbServerGroupsRead(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 
 	request := slb.CreateDescribeVServerGroupsRequest()
+	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
 
 	idsMap := make(map[string]string)
@@ -95,7 +96,7 @@ func dataSourceAlicloudSlbServerGroupsRead(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_server_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.DescribeVServerGroupsResponse)
 	var filteredServerGroupsTemp []slb.VServerGroup
 	nameRegex, ok := d.GetOk("name_regex")
@@ -144,7 +145,7 @@ func slbServerGroupsDescriptionAttributes(d *schema.ResourceData, serverGroups [
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_server_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*slb.DescribeVServerGroupAttributeResponse)
 		if response != nil && len(response.BackendServers.BackendServer) > 0 {
 			var backendServerMappings []map[string]interface{}

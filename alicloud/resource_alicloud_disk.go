@@ -103,6 +103,7 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	request := ecs.CreateCreateDiskRequest()
+	request.RegionId = client.RegionId
 	request.ZoneId = availabilityZone.ZoneId
 
 	if v, ok := d.GetOk("category"); ok && v.(string) != "" {
@@ -137,7 +138,7 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_disk", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ecs.CreateDiskResponse)
 	d.SetId(response.DiskId)
 	if err := ecsService.WaitForDisk(d.Id(), Available, DefaultTimeout); err != nil {
@@ -263,7 +264,7 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("size")
 	}
 
@@ -288,7 +289,7 @@ func resourceAliyunDiskDelete(d *schema.ResourceData, meta interface{}) error {
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

@@ -198,7 +198,7 @@ func dataSourceAlicloudVpnConnectionsRead(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpn_connections", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeVpnConnectionsResponse)
 
 		if len(response.VpnConnections.VpnConnection) < 1 {

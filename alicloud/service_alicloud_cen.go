@@ -24,7 +24,7 @@ const ChildInstanceTypeVbr = "VBR"
 
 func (s *CenService) DescribeCenInstance(id string) (c cbn.Cen, err error) {
 	request := cbn.CreateDescribeCensRequest()
-
+	request.RegionId = s.client.RegionId
 	values := []string{id}
 	filters := []cbn.DescribeCensFilter{{
 		Key:   "CenId",
@@ -45,7 +45,7 @@ func (s *CenService) DescribeCenInstance(id string) (c cbn.Cen, err error) {
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -85,6 +85,7 @@ func (s *CenService) CenInstanceStateRefreshFunc(id string, failStates []string)
 
 func (s *CenService) DescribeCenInstanceAttachment(id string) (c *cbn.ChildInstance, err error) {
 	request := cbn.CreateDescribeCenAttachedChildInstancesRequest()
+	request.RegionId = s.client.RegionId
 	cenId, instanceId, err := s.GetCenIdAndAnotherId(id)
 	if err != nil {
 		return nil, WrapError(err)
@@ -104,7 +105,7 @@ func (s *CenService) DescribeCenInstanceAttachment(id string) (c *cbn.ChildInsta
 			return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), ProviderERROR)
 		}
 		response, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		instanceList := response.ChildInstances.ChildInstance
 		for instanceNum := 0; instanceNum <= len(instanceList)-1; instanceNum++ {
@@ -146,7 +147,7 @@ func (s *CenService) WaitForCenInstanceAttachment(id string, status Status, time
 
 func (s *CenService) DescribeCenBandwidthPackage(id string) (c cbn.CenBandwidthPackage, err error) {
 	request := cbn.CreateDescribeCenBandwidthPackagesRequest()
-
+	request.RegionId = s.client.RegionId
 	values := []string{id}
 	filters := []cbn.DescribeCenBandwidthPackagesFilter{{
 		Key:   "CenBandwidthPackageId",
@@ -166,7 +167,7 @@ func (s *CenService) DescribeCenBandwidthPackage(id string) (c cbn.CenBandwidthP
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -249,6 +250,7 @@ func (s *CenService) WaitForCenBandwidthPackageAttachment(id string, status Stat
 
 func (s *CenService) SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId string, bandwidthLimit int) (err error) {
 	request := cbn.CreateSetCenInterRegionBandwidthLimitRequest()
+	request.RegionId = s.client.RegionId
 	request.CenId = cenId
 	request.LocalRegionId = localRegionId
 	request.OppositeRegionId = oppositeRegionId
@@ -263,12 +265,13 @@ func (s *CenService) SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppos
 		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_bandwidth_limit", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 
 func (s *CenService) DescribeCenBandwidthLimit(id string) (c cbn.CenInterRegionBandwidthLimit, err error) {
 	request := cbn.CreateDescribeCenInterRegionBandwidthLimitsRequest()
+	request.RegionId = s.client.RegionId
 	paras, err := s.GetCenAndRegionIds(id)
 	if err != nil {
 		return c, WrapError(err)
@@ -291,7 +294,7 @@ func (s *CenService) DescribeCenBandwidthLimit(id string) (c cbn.CenInterRegionB
 		if err != nil {
 			return c, WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_bandwidth_limit", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cbn.DescribeCenInterRegionBandwidthLimitsResponse)
 
 		cenBandwidthLimitList := response.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit
@@ -365,6 +368,7 @@ func (s *CenService) DescribeCenRouteEntry(id string) (c cbn.PublishedRouteEntry
 	}
 
 	request := cbn.CreateDescribePublishedRouteEntriesRequest()
+	request.RegionId = s.client.RegionId
 	request.CenId = cenId
 	request.ChildInstanceId = childInstanceId
 	request.ChildInstanceType = childInstanceType
@@ -384,7 +388,7 @@ func (s *CenService) DescribeCenRouteEntry(id string) (c cbn.PublishedRouteEntry
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

@@ -118,6 +118,7 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 	client := meta.(*connectivity.AliyunClient)
 
 	req := ecs.CreateDescribeSecurityGroupAttributeRequest()
+	req.RegionId = client.RegionId
 	req.SecurityGroupId = d.Get("group_id").(string)
 	req.NicType = d.Get("nic_type").(string)
 	req.Direction = d.Get("direction").(string)
@@ -127,6 +128,7 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "security_group_rules", req.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(req.GetActionName(), raw, req.RpcRequest, req)
 	attr, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
 	var rules []map[string]interface{}
 

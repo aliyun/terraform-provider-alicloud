@@ -42,11 +42,12 @@ func resourceAliyunNetworkInterfaceAttachmentCreate(d *schema.ResourceData, meta
 	instanceId := d.Get("instance_id").(string)
 
 	request := ecs.CreateAttachNetworkInterfaceRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = instanceId
 	request.NetworkInterfaceId = eniId
 
 	err := resource.Retry(DefaultTimeout*time.Minute, func() *resource.RetryError {
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.AttachNetworkInterface(request)
 		})
 		if err != nil {
@@ -55,6 +56,7 @@ func resourceAliyunNetworkInterfaceAttachmentCreate(d *schema.ResourceData, meta
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -104,6 +106,7 @@ func resourceAliyunNetworkInterfaceAttachmentDelete(d *schema.ResourceData, meta
 	}
 
 	request := ecs.CreateDetachNetworkInterfaceRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = instanceId
 	request.NetworkInterfaceId = eniId
 
@@ -117,7 +120,7 @@ func resourceAliyunNetworkInterfaceAttachmentDelete(d *schema.ResourceData, meta
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

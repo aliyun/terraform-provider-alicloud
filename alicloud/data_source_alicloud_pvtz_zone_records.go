@@ -74,6 +74,7 @@ func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := pvtz.CreateDescribeZoneRecordsRequest()
+	request.RegionId = client.RegionId
 	if zoneId, ok := d.GetOk("zone_id"); ok {
 		request.ZoneId = zoneId.(string)
 	}
@@ -111,7 +112,7 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_pvtz_zone_records", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		response, _ := raw.(*pvtz.DescribeZoneRecordsResponse)
 		if len(response.Records.Record) < 1 {

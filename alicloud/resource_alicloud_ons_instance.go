@@ -56,6 +56,7 @@ func resourceAlicloudOnsInstanceCreate(d *schema.ResourceData, meta interface{})
 	onsService := OnsService{client}
 
 	request := ons.CreateOnsInstanceCreateRequest()
+	request.RegionId = client.RegionId
 	request.InstanceName = d.Get("name").(string)
 	request.PreventCache = onsService.GetPreventCache()
 	if v, ok := d.GetOk("remark"); ok {
@@ -69,7 +70,7 @@ func resourceAlicloudOnsInstanceCreate(d *schema.ResourceData, meta interface{})
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ons_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	var response *ons.OnsInstanceCreateResponse
 	response, _ = raw.(*ons.OnsInstanceCreateResponse)
@@ -108,6 +109,7 @@ func resourceAlicloudOnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	attributeUpdate := false
 
 	request := ons.CreateOnsInstanceUpdateRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.PreventCache = onsService.GetPreventCache()
 
@@ -136,7 +138,7 @@ func resourceAlicloudOnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return resourceAlicloudOnsInstanceRead(d, meta)
@@ -147,6 +149,7 @@ func resourceAlicloudOnsInstanceDelete(d *schema.ResourceData, meta interface{})
 	onsService := OnsService{client}
 
 	request := ons.CreateOnsInstanceDeleteRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.PreventCache = onsService.GetPreventCache()
 
@@ -160,7 +163,7 @@ func resourceAlicloudOnsInstanceDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

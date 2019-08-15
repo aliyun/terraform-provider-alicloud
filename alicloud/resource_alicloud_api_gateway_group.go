@@ -37,6 +37,7 @@ func resourceAliyunApigatewayGroupCreate(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 
 	request := cloudapi.CreateCreateApiGroupRequest()
+	request.RegionId = client.RegionId
 	request.GroupName = d.Get("name").(string)
 	request.Description = d.Get("description").(string)
 
@@ -50,7 +51,7 @@ func resourceAliyunApigatewayGroupCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*cloudapi.CreateApiGroupResponse)
 		d.SetId(response.GroupId)
 		return nil
@@ -84,6 +85,7 @@ func resourceAliyunApigatewayGroupUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("name") || d.HasChange("description") {
 		request := cloudapi.CreateModifyApiGroupRequest()
+		request.RegionId = client.RegionId
 		request.Description = d.Get("description").(string)
 		request.GroupName = d.Get("name").(string)
 		request.GroupId = d.Id()
@@ -93,7 +95,7 @@ func resourceAliyunApigatewayGroupUpdate(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAliyunApigatewayGroupRead(d, meta)
 }
@@ -102,6 +104,7 @@ func resourceAliyunApigatewayGroupDelete(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
 	request := cloudapi.CreateDeleteApiGroupRequest()
+	request.RegionId = client.RegionId
 	request.GroupId = d.Id()
 
 	raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
@@ -110,7 +113,7 @@ func resourceAliyunApigatewayGroupDelete(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(cloudApiService.WaitForApiGatewayGroup(d.Id(), Deleted, DefaultTimeout))
 
 }

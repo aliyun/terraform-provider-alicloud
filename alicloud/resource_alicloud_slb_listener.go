@@ -383,6 +383,7 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	startLoadBalancerListenerRequest := slb.CreateStartLoadBalancerListenerRequest()
+	startLoadBalancerListenerRequest.RegionId = client.RegionId
 	startLoadBalancerListenerRequest.LoadBalancerId = lb_id
 	startLoadBalancerListenerRequest.ListenerPort = requests.NewInteger(frontend)
 	raw, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -391,7 +392,7 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_listener", startLoadBalancerListenerRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(startLoadBalancerListenerRequest.GetActionName(), raw)
+	addDebug(startLoadBalancerListenerRequest.GetActionName(), raw, startLoadBalancerListenerRequest.RpcRequest, startLoadBalancerListenerRequest)
 	if err = slbService.WaitForSlbListener(d.Id(), Protocol(protocol), Running, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
@@ -699,6 +700,7 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 	request := slb.CreateDeleteLoadBalancerListenerRequest()
+	request.RegionId = client.RegionId
 	request.LoadBalancerId = lb_id
 	request.ListenerPort = requests.NewInteger(port)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -712,7 +714,7 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -729,6 +731,7 @@ func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) (*request
 	if err != nil {
 		return request, WrapError(err)
 	}
+	request.RegionId = client.RegionId
 	request.QueryParams["LoadBalancerId"] = d.Get("load_balancer_id").(string)
 	request.QueryParams["ListenerPort"] = string(requests.NewInteger(d.Get("frontend_port").(int)))
 	if backendServerPort, ok := d.GetOk("backend_port"); ok {

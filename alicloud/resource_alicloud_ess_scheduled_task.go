@@ -71,14 +71,14 @@ func resourceAliyunEssScheduledTaskCreate(d *schema.ResourceData, meta interface
 
 	request := buildAlicloudEssScheduledTaskArgs(d)
 	client := meta.(*connectivity.AliyunClient)
-
+	request.RegionId = client.RegionId
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.CreateScheduledTask(request)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scheduled_task", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.CreateScheduledTaskResponse)
 	d.SetId(response.ScheduledTaskId)
 
@@ -117,6 +117,7 @@ func resourceAliyunEssScheduledTaskUpdate(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ess.CreateModifyScheduledTaskRequest()
+	request.RegionId = client.RegionId
 	request.ScheduledTaskId = d.Id()
 	request.LaunchExpirationTime = requests.NewInteger(d.Get("launch_expiration_time").(int))
 
@@ -158,7 +159,7 @@ func resourceAliyunEssScheduledTaskUpdate(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return resourceAliyunEssScheduledTaskRead(d, meta)
 }
 
@@ -168,7 +169,7 @@ func resourceAliyunEssScheduledTaskDelete(d *schema.ResourceData, meta interface
 
 	request := ess.CreateDeleteScheduledTaskRequest()
 	request.ScheduledTaskId = d.Id()
-
+	request.RegionId = client.RegionId
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DeleteScheduledTask(request)
 	})
@@ -178,7 +179,7 @@ func resourceAliyunEssScheduledTaskDelete(d *schema.ResourceData, meta interface
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(essService.WaitForEssScheduledTask(d.Id(), Deleted, DefaultTimeout))
 }

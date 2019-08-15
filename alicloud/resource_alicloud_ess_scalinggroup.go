@@ -130,7 +130,7 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ess.CreateScalingGroupResponse)
 		d.SetId(response.ScalingGroupId)
 		return nil
@@ -205,6 +205,7 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 
 	client := meta.(*connectivity.AliyunClient)
 	request := ess.CreateModifyScalingGroupRequest()
+	request.RegionId = client.RegionId
 	request.ScalingGroupId = d.Id()
 
 	d.Partial(true)
@@ -269,7 +270,7 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	d.SetPartial("on_demand_percentage_above_base_capacity")
 	d.SetPartial("spot_instance_pools")
 	d.SetPartial("spot_instance_remedy")
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if d.HasChange("loadbalancer_ids") {
 		oldLoadbalancers, newLoadbalancers := d.GetChange("loadbalancer_ids")
@@ -297,6 +298,7 @@ func resourceAliyunEssScalingGroupDelete(d *schema.ResourceData, meta interface{
 	essService := EssService{client}
 
 	request := ess.CreateDeleteScalingGroupRequest()
+	request.RegionId = client.RegionId
 	request.ScalingGroupId = d.Id()
 	request.ForceDelete = requests.NewBoolean(true)
 
@@ -310,7 +312,7 @@ func resourceAliyunEssScalingGroupDelete(d *schema.ResourceData, meta interface{
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(essService.WaitForEssScalingGroup(d.Id(), Deleted, DefaultTimeout))
 }
@@ -319,7 +321,7 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 	request := ess.CreateCreateScalingGroupRequest()
-
+	request.RegionId = client.RegionId
 	request.MinSize = requests.NewInteger(d.Get("min_size").(int))
 	request.MaxSize = requests.NewInteger(d.Get("max_size").(int))
 	request.DefaultCooldown = requests.NewInteger(d.Get("default_cooldown").(int))
@@ -377,6 +379,7 @@ func attachOrDetachLoadbalancers(d *schema.ResourceData, client *connectivity.Al
 		var subLists = partition(attachLoadbalancerSet, int(AttachDetachLoadbalancersBatchsize))
 		for _, subList := range subLists {
 			attachLoadbalancersRequest := ess.CreateAttachLoadBalancersRequest()
+			attachLoadbalancersRequest.RegionId = client.RegionId
 			attachLoadbalancersRequest.ScalingGroupId = d.Id()
 			attachLoadbalancersRequest.ForceAttach = requests.NewBoolean(true)
 			attachLoadbalancersRequest.LoadBalancer = &subList
@@ -386,7 +389,7 @@ func attachOrDetachLoadbalancers(d *schema.ResourceData, client *connectivity.Al
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), attachLoadbalancersRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(attachLoadbalancersRequest.GetActionName(), raw)
+			addDebug(attachLoadbalancersRequest.GetActionName(), raw, attachLoadbalancersRequest.RpcRequest, attachLoadbalancersRequest)
 		}
 	}
 	// detach
@@ -394,6 +397,7 @@ func attachOrDetachLoadbalancers(d *schema.ResourceData, client *connectivity.Al
 		var subLists = partition(detachLoadbalancerSet, int(AttachDetachLoadbalancersBatchsize))
 		for _, subList := range subLists {
 			detachLoadbalancersRequest := ess.CreateDetachLoadBalancersRequest()
+			detachLoadbalancersRequest.RegionId = client.RegionId
 			detachLoadbalancersRequest.ScalingGroupId = d.Id()
 			detachLoadbalancersRequest.ForceDetach = requests.NewBoolean(false)
 			detachLoadbalancersRequest.LoadBalancer = &subList
@@ -403,7 +407,7 @@ func attachOrDetachLoadbalancers(d *schema.ResourceData, client *connectivity.Al
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), detachLoadbalancersRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(detachLoadbalancersRequest.GetActionName(), raw)
+			addDebug(detachLoadbalancersRequest.GetActionName(), raw, detachLoadbalancersRequest.RpcRequest, detachLoadbalancersRequest)
 		}
 	}
 	return nil
@@ -417,6 +421,7 @@ func attachOrDetachDbInstances(d *schema.ResourceData, client *connectivity.Aliy
 		var subLists = partition(attachDbInstanceSet, int(AttachDetachDbinstancesBatchsize))
 		for _, subList := range subLists {
 			attachDbInstancesRequest := ess.CreateAttachDBInstancesRequest()
+			attachDbInstancesRequest.RegionId = client.RegionId
 			attachDbInstancesRequest.ScalingGroupId = d.Id()
 			attachDbInstancesRequest.ForceAttach = requests.NewBoolean(true)
 			attachDbInstancesRequest.DBInstance = &subList
@@ -426,7 +431,7 @@ func attachOrDetachDbInstances(d *schema.ResourceData, client *connectivity.Aliy
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), attachDbInstancesRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(attachDbInstancesRequest.GetActionName(), raw)
+			addDebug(attachDbInstancesRequest.GetActionName(), raw, attachDbInstancesRequest.RpcRequest, attachDbInstancesRequest)
 		}
 	}
 	// detach
@@ -434,6 +439,7 @@ func attachOrDetachDbInstances(d *schema.ResourceData, client *connectivity.Aliy
 		var subLists = partition(detachDbInstanceSet, int(AttachDetachDbinstancesBatchsize))
 		for _, subList := range subLists {
 			detachDbInstancesRequest := ess.CreateDetachDBInstancesRequest()
+			detachDbInstancesRequest.RegionId = client.RegionId
 			detachDbInstancesRequest.ScalingGroupId = d.Id()
 			detachDbInstancesRequest.ForceDetach = requests.NewBoolean(true)
 			detachDbInstancesRequest.DBInstance = &subList
@@ -443,7 +449,7 @@ func attachOrDetachDbInstances(d *schema.ResourceData, client *connectivity.Aliy
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), detachDbInstancesRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(detachDbInstancesRequest.GetActionName(), raw)
+			addDebug(detachDbInstancesRequest.GetActionName(), raw, detachDbInstancesRequest.RpcRequest, detachDbInstancesRequest)
 		}
 	}
 	return nil

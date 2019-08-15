@@ -52,6 +52,7 @@ func resourceAliyunDiskAttachmentCreate(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	request := ecs.CreateAttachDiskRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = instanceID
 	request.DiskId = diskID
 
@@ -66,7 +67,7 @@ func resourceAliyunDiskAttachmentCreate(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {
@@ -128,6 +129,7 @@ func resourceAliyunDiskAttachmentDelete(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	request := ecs.CreateDetachDiskRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = parts[1]
 	request.DiskId = parts[0]
 
@@ -142,7 +144,7 @@ func resourceAliyunDiskAttachmentDelete(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

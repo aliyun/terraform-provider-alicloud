@@ -186,7 +186,7 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_kvstore_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*r_kvstore.DescribeInstancesResponse)
 		if len(response.Instances.KVStoreInstance) < 1 {
 			break

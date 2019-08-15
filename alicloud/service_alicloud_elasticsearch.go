@@ -18,6 +18,7 @@ type ElasticsearchService struct {
 
 func (s *ElasticsearchService) DescribeElasticsearchInstance(id string) (response *elasticsearch.DescribeInstanceResponse, err error) {
 	request := elasticsearch.CreateDescribeInstanceRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceId = id
 	request.SetContentType("application/json")
 
@@ -35,7 +36,7 @@ func (s *ElasticsearchService) DescribeElasticsearchInstance(id string) (respons
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 		response, _ = raw.(*elasticsearch.DescribeInstanceResponse)
 		if response.Result.InstanceId != id {
 			return WrapErrorf(Error(GetNotFoundMessage("Elasticsearch Instance", id)), NotFoundMsg, ProviderERROR)
@@ -79,6 +80,7 @@ func updateDescription(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	request := elasticsearch.CreateUpdateDescriptionRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
@@ -89,7 +91,7 @@ func updateDescription(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	return nil
 }
 
@@ -105,6 +107,7 @@ func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	request := elasticsearch.CreateUpdateWhiteIpsRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
@@ -115,7 +118,7 @@ func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
 	stateConf.PollInterval = 5 * time.Second
@@ -137,6 +140,7 @@ func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdatePublicWhiteIpsRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
@@ -147,7 +151,7 @@ func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
 	stateConf.PollInterval = 5 * time.Second
@@ -170,6 +174,7 @@ func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateInstanceRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
@@ -181,7 +186,7 @@ func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
 	stateConf.PollInterval = 5 * time.Second
@@ -209,6 +214,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateInstanceRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
@@ -219,7 +225,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 	if err != nil && !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
 	stateConf.PollInterval = 5 * time.Second
@@ -253,6 +259,7 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateInstanceRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
@@ -263,7 +270,7 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 	if err != nil && !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
 	stateConf.PollInterval = 5 * time.Second
@@ -285,6 +292,7 @@ func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateKibanaWhiteIpsRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
@@ -295,7 +303,7 @@ func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
 	stateConf.PollInterval = 5 * time.Second
@@ -317,6 +325,7 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateAdminPasswordRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
@@ -327,7 +336,7 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
 	stateConf.PollInterval = 5 * time.Second

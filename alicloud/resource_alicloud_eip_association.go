@@ -51,6 +51,7 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	vpcService := VpcService{client}
 
 	request := vpc.CreateAssociateEipAddressRequest()
+	request.RegionId = client.RegionId
 	request.AllocationId = Trim(d.Get("allocation_id").(string))
 	request.InstanceId = Trim(d.Get("instance_id").(string))
 	request.InstanceType = EcsInstance
@@ -77,7 +78,7 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eip_association", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -127,6 +128,7 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 	}
 
 	request := vpc.CreateUnassociateEipAddressRequest()
+	request.RegionId = client.RegionId
 	request.AllocationId = allocationId
 	request.InstanceId = instanceId
 	request.InstanceType = EcsInstance
@@ -151,7 +153,7 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

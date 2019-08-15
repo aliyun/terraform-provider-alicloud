@@ -142,6 +142,7 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ecs.CreateDescribeDisksRequest()
+	request.RegionId = client.RegionId
 
 	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
 		request.DiskIds = convertListToJsonString(v.([]interface{}))
@@ -182,9 +183,9 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 			return ecsClient.DescribeDisks(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_disks", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_disks", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.DescribeDisksResponse)
 
 		if response == nil || len(response.Disks.Disk) < 1 {
