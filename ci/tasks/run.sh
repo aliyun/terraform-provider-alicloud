@@ -42,7 +42,6 @@ fi
 
 CURRENT_PATH=$(pwd)
 
-rm -rf ${TEST_CASE_CODE}.log
 go version
 
 cd $GOPATH
