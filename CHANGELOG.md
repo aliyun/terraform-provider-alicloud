@@ -1,6 +1,27 @@
 ## 1.54.1 (Unreleased)
 
-- **New Resource:** `alicloud_ess_notification`
+- **New Resource:** `alicloud_ess_notification` [GH-1549]
+
+IMPROVEMENTS:
+
+- improve(key_pair):update key_pair document [GH-1563]
+- improve(CI): add default bucket and region for CI [GH-1561]
+- improve(CI): terraform CI log [GH-1557]
+- Improve(ots_instance_attachment): Improve its resource and datasource use common method [GH-1552]
+- Improve(ots_instance): Improve its resource and datasource use common method [GH-1551]
+- Improve(ram): ram policy attachment resources supports import [GH-1550]
+- Improve(ots_table): Improve its resource and datasource use common method [GH-1546]
+- Improve(router_interface): modified testcase multi count [GH-1545]
+- Improve(images): removed image alinux check in datasource [GH-1543]
+- Improve(logtail_config): Improve resource use common method [GH-1500]
+
+BUG FIXES:
+
+- fix(CI): remove the useless code [GH-1564]
+- fix(CI): fix pipeline grammar error [GH-1562]
+- Fix log document [GH-1559]
+- modify(cs): skip the testcases of cs_application and cs_swarm [GH-1553]
+- fix kvstore unexpected state 'Changing' [GH-1539]
 
 ## 1.54.0 (August 12, 2019)
 
