@@ -40,12 +40,24 @@ func testSweepCenBandwidthPackage(region string) error {
 	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
+
 	for {
-		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribeCenBandwidthPackages(request)
+		var raw interface{}
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err = client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+				return cbnClient.DescribeCenBandwidthPackages(request)
+			})
+			if err != nil {
+				if IsExceptedError(err, CenThrottlingUser) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving CEN Bandwidth Package: %s", err)
+			log.Printf("[ERROR] Failed to retrieving CEN Bandwidth Package: %s", err)
+			break
 		}
 		response, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
 		if len(response.CenBandwidthPackages.CenBandwidthPackage) < 1 {
