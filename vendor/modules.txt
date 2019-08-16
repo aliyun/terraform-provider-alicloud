@@ -53,7 +53,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/signers
 github.com/aliyun/aliyun-datahub-sdk-go/datahub
 # github.com/aliyun/aliyun-log-go-sdk v0.0.0-20181030123559-4e6c160e1ce5
 github.com/aliyun/aliyun-log-go-sdk
-# github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190528142024-f8d6d645dc4b
+# github.com/aliyun/aliyun-oss-go-sdk v2.0.1+incompatible
 github.com/aliyun/aliyun-oss-go-sdk/oss
 # github.com/aliyun/aliyun-tablestore-go-sdk v0.0.0-20190510022849-652e2509df2e
 github.com/aliyun/aliyun-tablestore-go-sdk/tablestore

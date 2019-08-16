@@ -34,8 +34,8 @@ github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0/go.mo
 github.com/aliyun/aliyun-log-go-sdk v0.0.0-20181030123559-4e6c160e1ce5 h1:7hpDIbKLWNgm3DXcB7lktF6Ti5Imm4KRHEfp1TOxLOs=
 github.com/aliyun/aliyun-log-go-sdk v0.0.0-20181030123559-4e6c160e1ce5/go.mod h1:s3YpfQC+iMbiVR7vog8NoYAbdfWdRxeUG03a6as4U34=
 github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190307165228-86c17b95fcd5/go.mod h1:T/Aws4fEfogEE9v+HPhhw+CntffsBHJ8nXQCwKr0/g8=
-github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190528142024-f8d6d645dc4b h1:z6MCjm8mbUthTytmIVw5l7RiFF4GltKgZpNL5n84O/k=
-github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190528142024-f8d6d645dc4b/go.mod h1:T/Aws4fEfogEE9v+HPhhw+CntffsBHJ8nXQCwKr0/g8=
+github.com/aliyun/aliyun-oss-go-sdk v2.0.1+incompatible h1:/MzpJOMHn/uBtd1dkS7Q9PF2ZjT6xTQMXSvv1e6ydXc=
+github.com/aliyun/aliyun-oss-go-sdk v2.0.1+incompatible/go.mod h1:T/Aws4fEfogEE9v+HPhhw+CntffsBHJ8nXQCwKr0/g8=
 github.com/aliyun/aliyun-tablestore-go-sdk v0.0.0-20190510022849-652e2509df2e h1:hFZH/lTpWEcAY4563IF/OE90+GQe2xvXDGxFC2wWx5Y=
 github.com/aliyun/aliyun-tablestore-go-sdk v0.0.0-20190510022849-652e2509df2e/go.mod h1:LDQHRZylxvcg8H7wBIDfvO5g/cy4/sz1iucBlc2l3Jw=
 github.com/aliyun/fc-go-sdk v0.0.0-20190326033901-db3e654c23d6 h1:hCuQ6O6p0P4KTT2U+m5rY3gEaQTAiaSKv4ttseuqi+I=

@@ -6,7 +6,7 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190807025415-f7b53401d4e7
 	github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
 	github.com/aliyun/aliyun-log-go-sdk v0.0.0-20181030123559-4e6c160e1ce5
-	github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190528142024-f8d6d645dc4b
+	github.com/aliyun/aliyun-oss-go-sdk v2.0.1+incompatible
 	github.com/aliyun/aliyun-tablestore-go-sdk v0.0.0-20190510022849-652e2509df2e
 	github.com/aliyun/fc-go-sdk v0.0.0-20190326033901-db3e654c23d6
 	github.com/aws/aws-sdk-go v1.19.39 // indirect
