@@ -1,29 +1,29 @@
-## 1.55.0 (Unreleased)
+## 1.55.0 (August 16, 2019)
 
-- **New Resource:** `alicloud_ess_notification` [GH-1549]
+- **New Resource:** `alicloud_ess_notification` ([#1549](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1549))
 
 IMPROVEMENTS:
 
-- improve(key_pair):update key_pair document [GH-1563]
-- improve(CI): add default bucket and region for CI [GH-1561]
-- improve(CI): terraform CI log [GH-1557]
-- Improve(ots_instance_attachment): Improve its resource and datasource use common method [GH-1552]
-- Improve(ots_instance): Improve its resource and datasource use common method [GH-1551]
-- Improve(ram): ram policy attachment resources supports import [GH-1550]
-- Improve(ots_table): Improve its resource and datasource use common method [GH-1546]
-- Improve(router_interface): modified testcase multi count [GH-1545]
-- Improve(images): removed image alinux check in datasource [GH-1543]
-- Improve(logtail_config): Improve resource use common method [GH-1500]
+- improve(key_pair):update key_pair document ([#1563](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1563))
+- improve(CI): add default bucket and region for CI ([#1561](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1561))
+- improve(CI): terraform CI log ([#1557](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1557))
+- Improve(ots_instance_attachment): Improve its resource and datasource use common method ([#1552](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1552))
+- Improve(ots_instance): Improve its resource and datasource use common method ([#1551](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1551))
+- Improve(ram): ram policy attachment resources supports import ([#1550](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1550))
+- Improve(ots_table): Improve its resource and datasource use common method ([#1546](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1546))
+- Improve(router_interface): modified testcase multi count ([#1545](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1545))
+- Improve(images): removed image alinux check in datasource ([#1543](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1543))
+- Improve(logtail_config): Improve resource use common method ([#1500](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1500))
 
 BUG FIXES:
 
-- bugfix：throw notFoundError when scalingGroup is not found [GH-1572]
-- fix(sweep): modified the error return to run sweep completely [GH-1569]
-- fix(CI): remove the useless code [GH-1564]
-- fix(CI): fix pipeline grammar error [GH-1562]
-- Fix log document [GH-1559]
-- modify(cs): skip the testcases of cs_application and cs_swarm [GH-1553]
-- fix kvstore unexpected state 'Changing' [GH-1539]
+- bugfix：throw notFoundError when scalingGroup is not found ([#1572](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1572))
+- fix(sweep): modified the error return to run sweep completely ([#1569](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1569))
+- fix(CI): remove the useless code ([#1564](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1564))
+- fix(CI): fix pipeline grammar error ([#1562](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1562))
+- Fix log document ([#1559](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1559))
+- modify(cs): skip the testcases of cs_application and cs_swarm ([#1553](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1553))
+- fix kvstore unexpected state 'Changing' ([#1539](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1539))
 
 ## 1.54.0 (August 12, 2019)
 
