@@ -5,8 +5,6 @@ import (
 	"log"
 	"testing"
 
-	"regexp"
-
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -111,69 +109,119 @@ func testSweepDatahubProject(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDatahubProject_Basic(t *testing.T) {
+func TestAccAlicloudDatahubProject_basic(t *testing.T) {
+	var v *datahub.Project
+
+	resourceId := "alicloud_datahub_project.default"
+	ra := resourceAttrInit(resourceId, datahubProjectBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(100000, 999999)
+	name := fmt.Sprintf("tf_testaccdatahubproject%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDatahubProjectConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
-
 		// module name
-		IDRefreshName: "alicloud_datahub_project.basic",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckDatahubProjectDestroy,
-
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDatahubProject(acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)),
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDatahubProjectExist(
-						"alicloud_datahub_project.basic"),
-					resource.TestMatchResourceAttr("alicloud_datahub_project.basic",
-						"name", regexp.MustCompile("^tf_testaccdatahubproject*")),
-					resource.TestCheckResourceAttr("alicloud_datahub_project.basic",
-						"comment", "project for basic."),
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"comment": "project for basic.",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"comment": "project for basic.",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"comment": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"comment": "project added by terraform",
+					}),
 				),
 			},
 		},
 	})
 }
+func TestAccAlicloudDatahubProject_multi(t *testing.T) {
+	var v *datahub.Project
 
-func TestAccAlicloudDatahubProject_Update(t *testing.T) {
-	randdom := acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)
+	resourceId := "alicloud_datahub_project.default.4"
+	ra := resourceAttrInit(resourceId, datahubProjectBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(100000, 999999)
+	name := fmt.Sprintf("tf_testaccdatahubproject%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDatahubProjectConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
-
 		// module name
-		IDRefreshName: "alicloud_datahub_project.basic",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckDatahubProjectDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDatahubProject(randdom),
+				Config: testAccConfig(map[string]interface{}{
+					"name":  name + "${count.index}",
+					"count": "5",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDatahubProjectExist("alicloud_datahub_project.basic"),
-					resource.TestMatchResourceAttr("alicloud_datahub_project.basic",
-						"name", regexp.MustCompile("^tf_testaccdatahubproject*")),
-					resource.TestCheckResourceAttr(
-						"alicloud_datahub_project.basic",
-						"comment", "project for basic."),
-				),
-			},
-
-			{
-				Config: testAccDatahubProjectUpdate(randdom),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDatahubProjectExist(
-						"alicloud_datahub_project.basic"),
-					resource.TestCheckResourceAttr(
-						"alicloud_datahub_project.basic",
-						"comment", "project for update."),
+					testAccCheck(nil),
 				),
 			},
 		},
 	})
+}
+func resourceDatahubProjectConfigDependence(name string) string {
+	return ""
+}
+
+var datahubProjectBasicMap = map[string]string{
+	"name":    CHECKSET,
+	"comment": "project added by terraform",
 }
 
 func testAccCheckDatahubProjectExist(n string) resource.TestCheckFunc {
@@ -197,49 +245,4 @@ func testAccCheckDatahubProjectExist(n string) resource.TestCheckFunc {
 		}
 		return nil
 	}
-}
-
-func testAccCheckDatahubProjectDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_datahub_project" {
-			continue
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-			return dataHubClient.GetProject(rs.Primary.ID)
-		})
-
-		if err != nil && isDatahubNotExistError(err) {
-			continue
-		}
-
-		return fmt.Errorf("Datahub project %s may still exist", rs.Primary.ID)
-	}
-
-	return nil
-}
-
-func testAccDatahubProject(randInt int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf_testaccdatahubproject%d"
-	}
-	resource "alicloud_datahub_project" "basic" {
-	  name = "${var.name}"
-	  comment = "project for basic."
-	}
-	`, randInt)
-}
-
-func testAccDatahubProjectUpdate(randInt int) string {
-	return fmt.Sprintf(`
-	variable "name" {
-	  default = "tf_testaccdatahubproject%d"
-	}
-	resource "alicloud_datahub_project" "basic" {
-	  name = "${var.name}"
-	  comment = "project for update."
-	}
-	`, randInt)
 }

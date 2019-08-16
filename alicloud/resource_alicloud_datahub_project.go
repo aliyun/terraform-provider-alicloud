@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -59,12 +58,19 @@ func resourceAliyunDatahubProjectCreate(d *schema.ResourceData, meta interface{}
 	projectName := d.Get("name").(string)
 	projectComment := d.Get("comment").(string)
 
-	_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+	var requestInfo *datahub.DataHub
+	requestMap := make(map[string]string)
+	requestMap["ProjectName"] = projectName
+	requestMap["ProjectComment"] = projectComment
+
+	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+		requestInfo = dataHubClient
 		return nil, dataHubClient.CreateProject(projectName, projectComment)
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create project '%s' with error: %s", projectName, err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_datahub_project", "CreateProject", AliyunDatahubSdkGo)
 	}
+	addDebug("CreateProject", raw, requestInfo, requestMap)
 
 	d.SetId(strings.ToLower(projectName))
 	return resourceAliyunDatahubProjectRead(d, meta)
@@ -72,26 +78,22 @@ func resourceAliyunDatahubProjectCreate(d *schema.ResourceData, meta interface{}
 
 func resourceAliyunDatahubProjectRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	projectName := d.Id()
-	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-		return dataHubClient.GetProject(projectName)
-	})
+	datahubService := DatahubService{client}
+	object, err := datahubService.DescribeDatahubProject(d.Id())
 	if err != nil {
-		if isDatahubNotExistError(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("failed to create project '%s' with error: %s", projectName, err)
+		return WrapError(err)
 	}
-	project, _ := raw.(*datahub.Project)
 
-	d.SetId(strings.ToLower(projectName))
+	d.SetId(strings.ToLower(d.Id()))
 
-	d.Set("name", projectName)
-	d.Set("comment", project.Comment)
-	d.Set("create_time", datahub.Uint64ToTimeString(project.CreateTime))
-	d.Set("last_modify_time", datahub.Uint64ToTimeString(project.LastModifyTime))
+	d.Set("name", d.Id())
+	d.Set("comment", object.Comment)
+	d.Set("create_time", datahub.Uint64ToTimeString(object.CreateTime))
+	d.Set("last_modify_time", datahub.Uint64ToTimeString(object.LastModifyTime))
 	return nil
 }
 
@@ -99,14 +101,23 @@ func resourceAliyunDatahubProjectUpdate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 
 	if d.HasChange("comment") {
+
 		projectName := d.Id()
 		projectComment := d.Get("comment").(string)
-		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+
+		var requestInfo *datahub.DataHub
+		requestMap := make(map[string]string)
+		requestMap["ProjectName"] = projectName
+		requestMap["ProjectComment"] = projectComment
+
+		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			requestInfo = dataHubClient
 			return nil, dataHubClient.UpdateProject(projectName, projectComment)
 		})
 		if err != nil {
-			return fmt.Errorf("failed to update project '%s' with error: %s", projectName, err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateProject", AliyunDatahubSdkGo)
 		}
+		addDebug("UpdateProject", raw, requestInfo, requestMap)
 	}
 
 	return resourceAliyunDatahubProjectRead(d, meta)
@@ -114,34 +125,33 @@ func resourceAliyunDatahubProjectUpdate(d *schema.ResourceData, meta interface{}
 
 func resourceAliyunDatahubProjectDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	datahubService := DatahubService{client}
 
 	projectName := d.Id()
-	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-			return dataHubClient.GetProject(projectName)
-		})
-		if err != nil {
-			if isDatahubNotExistError(err) {
-				return nil
-			}
-			if isRetryableDatahubError(err) {
-				return resource.RetryableError(fmt.Errorf("when deleting project '%s', failed to access it with error: %s", projectName, err))
-			}
-			return resource.NonRetryableError(fmt.Errorf("when deleting project '%s', failed to access it with error: %s", projectName, err))
-		}
 
-		_, err = client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+	var requestInfo *datahub.DataHub
+	requestMap := make(map[string]string)
+	requestMap["ProjectName"] = projectName
+
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			requestInfo = dataHubClient
 			return nil, dataHubClient.DeleteProject(projectName)
 		})
-		if err == nil || isDatahubNotExistError(err) {
+		if err != nil {
+			if isRetryableDatahubError(err) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug("DeleteProject", raw, requestInfo, requestMap)
+		return nil
+	})
+	if err != nil {
+		if isDatahubNotExistError(err) {
 			return nil
 		}
-
-		if isRetryableDatahubError(err) {
-			return resource.RetryableError(fmt.Errorf("Deleting project '%s' timeout and got an error: %#v.", projectName, err))
-		}
-
-		return resource.NonRetryableError(fmt.Errorf("Deleting project '%s' timeout and got an error: %#v.", projectName, err))
-	})
-
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteProject", AliyunDatahubSdkGo)
+	}
+	return WrapError(datahubService.WaitForDatahubProject(d.Id(), Deleted, DefaultTimeout))
 }
