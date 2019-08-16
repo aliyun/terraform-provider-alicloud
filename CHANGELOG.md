@@ -1,4 +1,4 @@
-## 1.54.1 (Unreleased)
+## 1.55.0 (Unreleased)
 
 - **New Resource:** `alicloud_ess_notification` [GH-1549]
 
@@ -17,6 +17,8 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- bugfix：throw notFoundError when scalingGroup is not found [GH-1572]
+- fix(sweep): modified the error return to run sweep completely [GH-1569]
 - fix(CI): remove the useless code [GH-1564]
 - fix(CI): fix pipeline grammar error [GH-1562]
 - Fix log document [GH-1559]
