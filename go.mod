@@ -3,7 +3,7 @@ module github.com/terraform-providers/terraform-provider-alicloud
 require (
 	cloud.google.com/go v0.37.4 // indirect
 	github.com/Sirupsen/logrus v0.0.0-20181010200618-458213699411 // indirect
-	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190807025415-f7b53401d4e7
+	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190816033045-7f2f1ae15e0a
 	github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
 	github.com/aliyun/aliyun-log-go-sdk v0.0.0-20181030123559-4e6c160e1ce5
 	github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190528142024-f8d6d645dc4b

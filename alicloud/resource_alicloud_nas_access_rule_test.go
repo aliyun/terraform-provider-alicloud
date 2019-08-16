@@ -12,7 +12,7 @@ import (
 )
 
 func TestAccAlicloudNas_AccessRule_update(t *testing.T) {
-	var v nas.DescribeAccessRulesAccessRule1
+	var v nas.AccessRule
 	rand := acctest.RandIntRange(10000, 999999)
 	resourceID := "alicloud_nas_access_rule.default"
 	ra := resourceAttrInit(resourceID, map[string]string{})

@@ -77,6 +77,7 @@ func (client *Client) CreateBgpPeerWithCallback(request *CreateBgpPeerRequest, c
 type CreateBgpPeerRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	EnableBfd            requests.Boolean `position:"Query" name:"EnableBfd"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ClientToken          string           `position:"Query" name:"ClientToken"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`

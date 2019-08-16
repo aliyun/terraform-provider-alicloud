@@ -12,7 +12,7 @@ import (
 )
 
 func TestAccAlicloudNas_MountTarget_update(t *testing.T) {
-	var v nas.DescribeMountTargetsMountTarget1
+	var v nas.MountTarget
 	rand1 := acctest.RandIntRange(10000, 499999)
 	rand2 := acctest.RandIntRange(500000, 999999)
 	resourceID := "alicloud_nas_mount_target.default"
@@ -86,7 +86,7 @@ func TestAccAlicloudNas_MountTarget_update(t *testing.T) {
 }
 
 func TestAccAlicloudNas_MountTarget_updateT(t *testing.T) {
-	var v nas.DescribeMountTargetsMountTarget1
+	var v nas.MountTarget
 	rand1 := acctest.RandIntRange(10000, 499999)
 	rand2 := acctest.RandIntRange(500000, 999999)
 	resourceID := "alicloud_nas_mount_target.default"

@@ -92,7 +92,7 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 	request.RegionId = string(client.Region)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-	var allfss []nas.DescribeFileSystemsFileSystem1
+	var allfss []nas.FileSystem
 	invoker := NewInvoker()
 	for {
 		var raw interface{}
@@ -122,7 +122,7 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 			if v, ok := d.GetOk("protocol_type"); ok && string(file_system.ProtocolType) != Trim(v.(string)) {
 				continue
 			}
-			if r != nil && !r.MatchString(file_system.Destription) {
+			if r != nil && !r.MatchString(file_system.Description) {
 				continue
 			}
 			if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
@@ -153,7 +153,7 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 	return fileSystemsDecriptionAttributes(d, allfss, meta)
 }
 
-func fileSystemsDecriptionAttributes(d *schema.ResourceData, fssSetTypes []nas.DescribeFileSystemsFileSystem1, meta interface{}) error {
+func fileSystemsDecriptionAttributes(d *schema.ResourceData, fssSetTypes []nas.FileSystem, meta interface{}) error {
 	var ids []string
 	var descriptions []string
 	var s []map[string]interface{}
@@ -162,13 +162,13 @@ func fileSystemsDecriptionAttributes(d *schema.ResourceData, fssSetTypes []nas.D
 			"id":            fs.FileSystemId,
 			"region_id":     fs.RegionId,
 			"create_time":   fs.CreateTime,
-			"description":   fs.Destription,
+			"description":   fs.Description,
 			"protocol_type": fs.ProtocolType,
 			"storage_type":  fs.StorageType,
 			"metered_size":  fs.MeteredSize,
 		}
 		ids = append(ids, fs.FileSystemId)
-		descriptions = append(descriptions, fs.Destription)
+		descriptions = append(descriptions, fs.Description)
 		s = append(s, mapping)
 	}
 	d.SetId(dataResourceIdHash(ids))

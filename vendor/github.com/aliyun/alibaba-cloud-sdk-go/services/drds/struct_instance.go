@@ -24,8 +24,11 @@ type Instance struct {
 	Description        string                      `json:"Description" xml:"Description"`
 	NetworkType        string                      `json:"NetworkType" xml:"NetworkType"`
 	Status             string                      `json:"Status" xml:"Status"`
-	CreateTime         int                         `json:"CreateTime" xml:"CreateTime"`
-	Version            int                         `json:"Version" xml:"Version"`
+	CreateTime         int64                       `json:"CreateTime" xml:"CreateTime"`
+	Version            int64                       `json:"Version" xml:"Version"`
 	VpcCloudInstanceId string                      `json:"VpcCloudInstanceId" xml:"VpcCloudInstanceId"`
+	InstRole           string                      `json:"InstRole" xml:"InstRole"`
+	MasterInstId       string                      `json:"MasterInstId" xml:"MasterInstId"`
+	SlaveInstId        SlaveInstId                 `json:"SlaveInstId" xml:"SlaveInstId"`
 	Vips               VipsInDescribeDrdsInstances `json:"Vips" xml:"Vips"`
 }

@@ -13,7 +13,7 @@ type NasService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *NasService) DescribeNasFileSystem(id string) (fs nas.DescribeFileSystemsFileSystem1, err error) {
+func (s *NasService) DescribeNasFileSystem(id string) (fs nas.FileSystem, err error) {
 
 	request := nas.CreateDescribeFileSystemsRequest()
 	request.RegionId = s.client.RegionId
@@ -42,7 +42,7 @@ func (s *NasService) DescribeNasFileSystem(id string) (fs nas.DescribeFileSystem
 	return fs, WrapError(err)
 }
 
-func (s *NasService) DescribeNasMountTarget(id string) (fs nas.DescribeMountTargetsMountTarget1, err error) {
+func (s *NasService) DescribeNasMountTarget(id string) (fs nas.MountTarget, err error) {
 
 	request := nas.CreateDescribeMountTargetsRequest()
 	request.RegionId = string(s.client.Region)
@@ -74,7 +74,7 @@ func (s *NasService) DescribeNasMountTarget(id string) (fs nas.DescribeMountTarg
 	return fs, WrapError(err)
 }
 
-func (s *NasService) DescribeNasAccessGroup(id string) (ag nas.DescribeAccessGroupsAccessGroup1, err error) {
+func (s *NasService) DescribeNasAccessGroup(id string) (ag nas.AccessGroup, err error) {
 
 	request := nas.CreateDescribeAccessGroupsRequest()
 	request.RegionId = string(s.client.Region)
@@ -104,7 +104,7 @@ func (s *NasService) DescribeNasAccessGroup(id string) (ag nas.DescribeAccessGro
 	return ag, WrapError(err)
 }
 
-func (s *NasService) DescribeNasAccessRule(id string) (fs nas.DescribeAccessRulesAccessRule1, err error) {
+func (s *NasService) DescribeNasAccessRule(id string) (fs nas.AccessRule, err error) {
 
 	request := nas.CreateDescribeAccessRulesRequest()
 	request.RegionId = string(s.client.Region)
