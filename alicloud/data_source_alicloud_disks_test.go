@@ -80,7 +80,7 @@ func TestAccAlicloudDisksDataSource(t *testing.T) {
 	instanceIdConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDisksDataSourceConfigWithCommon(rand, map[string]string{
 			"instance_id": `"${alicloud_disk_attachment.default.instance_id}"`,
-			"type":        `"data"`,
+			"name_regex":  `"${alicloud_disk.default.name}"`,
 		}),
 		existChangMap: map[string]string{
 			"disks.0.instance_id":   CHECKSET,
@@ -89,7 +89,7 @@ func TestAccAlicloudDisksDataSource(t *testing.T) {
 		},
 		fakeConfig: testAccCheckAlicloudDisksDataSourceConfigWithCommon(rand, map[string]string{
 			"instance_id": `"${alicloud_disk_attachment.default.instance_id}_fake"`,
-			"type":        `"data"`,
+			"name_regex":  `"${alicloud_disk.default.name}"`,
 		}),
 	}
 
