@@ -110,6 +110,9 @@ func (s *EssService) DescribeEssNotification(id string) (notification ess.Notifi
 		return essClient.DescribeNotificationConfigurations(request)
 	})
 	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidNotificationNotFound, InvalidScalingGroupIdNotFound}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("EssNotification", id)), NotFoundMsg, ProviderERROR)
+		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
