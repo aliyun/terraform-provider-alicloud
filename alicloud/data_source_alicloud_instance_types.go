@@ -236,7 +236,7 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 			if eniAmount > types.EniQuantity {
 				continue
 			}
-			// Kubernetes node does not support instance types which family is "ecs.t5" and spec less that 2c4g
+			// Kubernetes node does not support instance types which family is "ecs.t5" and spec less that c2g4
 			// Kubernetes master node does not support gpu instance types which family prefixes with "ecs.gn"
 			if k8sNode != "" {
 				if types.InstanceTypeFamily == "ecs.t5" {
