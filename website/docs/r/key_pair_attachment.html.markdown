@@ -52,7 +52,7 @@ resource "alicloud_security_group" "group" {
   vpc_id      = "${alicloud_vpc.vpc.id}"
 }
 
-resource "alicloud_instance" "instancd" {
+resource "alicloud_instance" "instance" {
   instance_name   = "${var.name}-${count.index + 1}"
   image_id        = "${data.alicloud_images.images.images.0.id}"
   instance_type   = "${data.alicloud_instance_types.type.instance_types.0.id}"
