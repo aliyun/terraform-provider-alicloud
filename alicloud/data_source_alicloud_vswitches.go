@@ -136,12 +136,22 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		request.DryRun = requests.NewBoolean(true)
+		return vpcClient.DescribeVSwitches(request)
+	})
+	if err != nil && IsExceptedError(err, ForbiddenRAM) {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vswitches", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
 	invoker := NewInvoker()
 	for {
 		var raw interface{}
 		var err error
 		if err = invoker.Run(func() error {
 			raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				request.DryRun = requests.NewBoolean(false)
 				return vpcClient.DescribeVSwitches(request)
 			})
 			return err

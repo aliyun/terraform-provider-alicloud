@@ -119,6 +119,15 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		request.DryRun = requests.NewBoolean(true)
+		return vpcClient.DescribeVpcs(request)
+	})
+	if err != nil && IsExceptedError(err, ForbiddenRAM) {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpcs", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
 	var allVpcs []vpc.Vpc
 	invoker := NewInvoker()
 	for {
@@ -126,6 +135,7 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 		var err error
 		if err = invoker.Run(func() error {
 			raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				request.DryRun = requests.NewBoolean(false)
 				return vpcClient.DescribeVpcs(request)
 			})
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)

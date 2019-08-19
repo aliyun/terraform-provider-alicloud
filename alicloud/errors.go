@@ -83,6 +83,7 @@ const (
 	Throttling           = "Throttling"
 	IncorrectVpcStatus   = "IncorrectVpcStatus"
 	IncorrectStatus      = "IncorrectStatus"
+	ForbiddenRAM         = "Forbidden.RAM"
 
 	// NAS
 	InvalidFileSystemIDNotFound = "InvalidFileSystem.NotFound"

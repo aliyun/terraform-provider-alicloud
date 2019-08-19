@@ -82,9 +82,19 @@ func (s *VpcService) DescribeVpc(id string) (v vpc.DescribeVpcAttributeResponse,
 	request.RegionId = s.client.RegionId
 	request.VpcId = id
 
+	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		request.DryRun = requests.NewBoolean(true)
+		return vpcClient.DescribeVpcAttribute(request)
+	})
+	if err != nil && IsExceptedError(err, ForbiddenRAM) {
+		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
 		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			request.DryRun = requests.NewBoolean(false)
 			return vpcClient.DescribeVpcAttribute(request)
 		})
 		if err != nil {
@@ -109,9 +119,19 @@ func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributes
 	request.RegionId = s.client.RegionId
 	request.VSwitchId = id
 
+	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		request.DryRun = requests.NewBoolean(true)
+		return vpcClient.DescribeVSwitchAttributes(request)
+	})
+	if err != nil && IsExceptedError(err, ForbiddenRAM) {
+		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
 		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			request.DryRun = requests.NewBoolean(false)
 			return vpcClient.DescribeVSwitchAttributes(request)
 		})
 		if err != nil {
