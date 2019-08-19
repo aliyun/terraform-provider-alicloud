@@ -2,12 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"testing"
 )
 
 func TestAccAlicloudEssNotification_basic(t *testing.T) {

@@ -94,7 +94,7 @@ func resourceAlicloudNasFileSystemRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	d.Set("description", object.Destription)
+	d.Set("description", object.Description)
 	d.Set("protocol_type", object.ProtocolType)
 	d.Set("storage_type", object.StorageType)
 	return nil

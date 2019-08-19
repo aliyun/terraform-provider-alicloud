@@ -122,7 +122,7 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 			if v, ok := d.GetOk("protocol_type"); ok && string(file_system.ProtocolType) != Trim(v.(string)) {
 				continue
 			}
-			if r != nil && !r.MatchString(file_system.Destription) {
+			if r != nil && !r.MatchString(file_system.Description) {
 				continue
 			}
 			if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
@@ -162,13 +162,13 @@ func fileSystemsDecriptionAttributes(d *schema.ResourceData, fssSetTypes []nas.D
 			"id":            fs.FileSystemId,
 			"region_id":     fs.RegionId,
 			"create_time":   fs.CreateTime,
-			"description":   fs.Destription,
+			"description":   fs.Description,
 			"protocol_type": fs.ProtocolType,
 			"storage_type":  fs.StorageType,
 			"metered_size":  fs.MeteredSize,
 		}
 		ids = append(ids, fs.FileSystemId)
-		descriptions = append(descriptions, fs.Destription)
+		descriptions = append(descriptions, fs.Description)
 		s = append(s, mapping)
 	}
 	d.SetId(dataResourceIdHash(ids))

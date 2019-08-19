@@ -69,7 +69,7 @@ func testSweepNasFileSystem(region string) error {
 	for _, fs := range filesystems {
 
 		id := fs.FileSystemId
-		destription := fs.Destription
+		destription := fs.Description
 		domain := fs.MountTargets.MountTarget
 		skip := true
 		for _, prefix := range prefixes {

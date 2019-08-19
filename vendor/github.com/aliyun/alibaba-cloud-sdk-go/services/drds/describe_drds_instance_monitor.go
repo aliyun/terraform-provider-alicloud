@@ -96,7 +96,7 @@ func CreateDescribeDrdsInstanceMonitorRequest() (request *DescribeDrdsInstanceMo
 	request = &DescribeDrdsInstanceMonitorRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Drds", "2017-10-16", "DescribeDrdsInstanceMonitor", "", "")
+	request.InitWithApiInfo("Drds", "2017-10-16", "DescribeDrdsInstanceMonitor", "drds", "openAPI")
 	return
 }
 

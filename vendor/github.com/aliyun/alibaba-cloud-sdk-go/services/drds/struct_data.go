@@ -17,10 +17,10 @@ package drds
 
 // Data is a nested struct in drds response
 type Data struct {
-	Version            int                           `json:"Version" xml:"Version"`
+	Version            int64                         `json:"Version" xml:"Version"`
 	SpecTypeName       string                        `json:"SpecTypeName" xml:"SpecTypeName"`
-	OrderId            int                           `json:"OrderId" xml:"OrderId"`
-	CreateTime         int                           `json:"CreateTime" xml:"CreateTime"`
+	OrderId            int64                         `json:"OrderId" xml:"OrderId"`
+	CreateTime         int64                         `json:"CreateTime" xml:"CreateTime"`
 	DrdsInstanceId     string                        `json:"DrdsInstanceId" xml:"DrdsInstanceId"`
 	DbName             string                        `json:"DbName" xml:"DbName"`
 	VpcCloudInstanceId string                        `json:"VpcCloudInstanceId" xml:"VpcCloudInstanceId"`
