@@ -149,10 +149,10 @@ echo -e "--------------- END ---------------\n"
 if [[ $TOTAL_COUNT -lt 1 ]]; then
     EXITCODE=1
     PASSED=0.00
-elif [[ ${SKIP_COUNT} -gt 0 ]]; then
-    PASSED=`awk 'BEGIN{printf "%.2f%%\n",('${PASS_COUNT}+${SKIP_COUNT}')/'${TOTAL_COUNT}'*100}'`
-elif [[ ${FAILED_COUNT} -gt 0 ]]; then
-    EXITCODE=1
+else
+    if [[ ${FAILED_COUNT} -gt 0 ]]; then
+        EXITCODE=1
+    fi
     PASSED=`awk 'BEGIN{printf "%.2f%%\n",('${PASS_COUNT}+${SKIP_COUNT}')/'${TOTAL_COUNT}'*100}'`
 fi
 
