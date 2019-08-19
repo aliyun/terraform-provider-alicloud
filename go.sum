@@ -27,8 +27,8 @@ github.com/agext/levenshtein v1.2.2/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki
 github.com/agl/ed25519 v0.0.0-20150830182803-278e1ec8e8a6/go.mod h1:WPjqKcmVOxf0XSf3YxCJs6N6AOSrOx3obionmG7T0y0=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
-github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190807025415-f7b53401d4e7 h1:8GBnf+16EjPsGiI/oAoc4kOqwIZ8fRAyO6OaVo478mc=
-github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190807025415-f7b53401d4e7/go.mod h1:myCDvQSzCW+wB1WAlocEru4wMGJxy+vlxHdhegi1CDQ=
+github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190819021317-d73869dfd258 h1:HVdc5vQibOQ/ER3sT9oaXxx//eyO5Zgu5dXo/zelIIc=
+github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190819021317-d73869dfd258/go.mod h1:myCDvQSzCW+wB1WAlocEru4wMGJxy+vlxHdhegi1CDQ=
 github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0 h1:nvOIS4LOMKF65MCDkJgAMZXNk5MdbbfFcA3Dk9WwsXM=
 github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0/go.mod h1:GwtZxKUD+aLBrtlkEcyPNAx+jRkBioEC7EKOlQ26lTc=
 github.com/aliyun/aliyun-log-go-sdk v0.0.0-20181030123559-4e6c160e1ce5 h1:7hpDIbKLWNgm3DXcB7lktF6Ti5Imm4KRHEfp1TOxLOs=

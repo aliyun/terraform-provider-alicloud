@@ -77,6 +77,7 @@ func (client *Client) DescribeDrdsInstancesWithCallback(request *DescribeDrdsIns
 type DescribeDrdsInstancesRequest struct {
 	*requests.RpcRequest
 	Type string `position:"Query" name:"Type"`
+	Tags string `position:"Query" name:"Tags"`
 }
 
 // DescribeDrdsInstancesResponse is the response struct for api DescribeDrdsInstances
@@ -92,7 +93,7 @@ func CreateDescribeDrdsInstancesRequest() (request *DescribeDrdsInstancesRequest
 	request = &DescribeDrdsInstancesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Drds", "2017-10-16", "DescribeDrdsInstances", "", "")
+	request.InitWithApiInfo("Drds", "2017-10-16", "DescribeDrdsInstances", "drds", "openAPI")
 	return
 }
 

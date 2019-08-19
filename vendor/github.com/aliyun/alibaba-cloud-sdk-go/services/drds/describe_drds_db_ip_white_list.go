@@ -94,7 +94,7 @@ func CreateDescribeDrdsDBIpWhiteListRequest() (request *DescribeDrdsDBIpWhiteLis
 	request = &DescribeDrdsDBIpWhiteListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Drds", "2017-10-16", "DescribeDrdsDBIpWhiteList", "", "")
+	request.InitWithApiInfo("Drds", "2017-10-16", "DescribeDrdsDBIpWhiteList", "drds", "openAPI")
 	return
 }
 

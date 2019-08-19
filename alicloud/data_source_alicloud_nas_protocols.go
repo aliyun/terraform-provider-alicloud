@@ -43,7 +43,7 @@ func dataSourceAlicloudNasProtocolsRead(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	request := nas.CreateDescribeZonesRequest()
 	request.RegionId = client.RegionId
-	var nasProtocol []nas.DescribeZonesProtocol
+	var nasProtocol [][]string
 	for {
 		raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 			return nasClient.DescribeZones(request)
@@ -65,14 +65,14 @@ func dataSourceAlicloudNasProtocolsRead(d *schema.ResourceData, meta interface{}
 					if len(val.Performance.Protocol) == 0 {
 						continue
 					} else {
-						nasProtocol = append(nasProtocol, val.Performance)
+						nasProtocol = append(nasProtocol, val.Performance.Protocol)
 					}
 				}
 				if Trim(v.(string)) == "Capacity" {
 					if len(val.Capacity.Protocol) == 0 {
 						continue
 					} else {
-						nasProtocol = append(nasProtocol, val.Capacity)
+						nasProtocol = append(nasProtocol, val.Capacity.Protocol)
 					}
 				}
 			}
@@ -83,11 +83,11 @@ func dataSourceAlicloudNasProtocolsRead(d *schema.ResourceData, meta interface{}
 	return nasProtocolsDescriptionAttributes(d, nasProtocol)
 }
 
-func nasProtocolsDescriptionAttributes(d *schema.ResourceData, nasProtocol []nas.DescribeZonesProtocol) error {
+func nasProtocolsDescriptionAttributes(d *schema.ResourceData, nasProtocol [][]string) error {
 	var s []string
 	var ids []string
 	for _, val := range nasProtocol {
-		for _, protocol := range val.Protocol {
+		for _, protocol := range val {
 			s = append(s, strings.ToUpper(protocol))
 			ids = append(ids, protocol)
 		}
