@@ -59,9 +59,6 @@ func resourceAliyunDatahubProjectCreate(d *schema.ResourceData, meta interface{}
 	projectComment := d.Get("comment").(string)
 
 	var requestInfo *datahub.DataHub
-	requestMap := make(map[string]string)
-	requestMap["ProjectName"] = projectName
-	requestMap["ProjectComment"] = projectComment
 
 	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
 		requestInfo = dataHubClient
@@ -70,7 +67,12 @@ func resourceAliyunDatahubProjectCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_datahub_project", "CreateProject", AliyunDatahubSdkGo)
 	}
-	addDebug("CreateProject", raw, requestInfo, requestMap)
+	if debugOn() {
+		requestMap := make(map[string]string)
+		requestMap["ProjectName"] = projectName
+		requestMap["ProjectComment"] = projectComment
+		addDebug("CreateProject", raw, requestInfo, requestMap)
+	}
 
 	d.SetId(strings.ToLower(projectName))
 	return resourceAliyunDatahubProjectRead(d, meta)
@@ -106,9 +108,6 @@ func resourceAliyunDatahubProjectUpdate(d *schema.ResourceData, meta interface{}
 		projectComment := d.Get("comment").(string)
 
 		var requestInfo *datahub.DataHub
-		requestMap := make(map[string]string)
-		requestMap["ProjectName"] = projectName
-		requestMap["ProjectComment"] = projectComment
 
 		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
 			requestInfo = dataHubClient
@@ -117,7 +116,12 @@ func resourceAliyunDatahubProjectUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateProject", AliyunDatahubSdkGo)
 		}
-		addDebug("UpdateProject", raw, requestInfo, requestMap)
+		if debugOn() {
+			requestMap := make(map[string]string)
+			requestMap["ProjectName"] = projectName
+			requestMap["ProjectComment"] = projectComment
+			addDebug("UpdateProject", raw, requestInfo, requestMap)
+		}
 	}
 
 	return resourceAliyunDatahubProjectRead(d, meta)
@@ -130,8 +134,6 @@ func resourceAliyunDatahubProjectDelete(d *schema.ResourceData, meta interface{}
 	projectName := d.Id()
 
 	var requestInfo *datahub.DataHub
-	requestMap := make(map[string]string)
-	requestMap["ProjectName"] = projectName
 
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
@@ -144,7 +146,11 @@ func resourceAliyunDatahubProjectDelete(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("DeleteProject", raw, requestInfo, requestMap)
+		if debugOn() {
+			requestMap := make(map[string]string)
+			requestMap["ProjectName"] = projectName
+			addDebug("DeleteProject", raw, requestInfo, requestMap)
+		}
 		return nil
 	})
 	if err != nil {

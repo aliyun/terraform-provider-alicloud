@@ -16,8 +16,6 @@ type DatahubService struct {
 
 func (s *DatahubService) DescribeDatahubProject(id string) (project *datahub.Project, err error) {
 	var requestInfo *datahub.DataHub
-	requestMap := make(map[string]string)
-	requestMap["ProjectName"] = id
 
 	raw, err := s.client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
 		requestInfo = dataHubClient
@@ -29,7 +27,11 @@ func (s *DatahubService) DescribeDatahubProject(id string) (project *datahub.Pro
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetProject", AliyunDatahubSdkGo)
 	}
-	addDebug("GetProject", raw, requestInfo, requestMap)
+	if debugOn() {
+		requestMap := make(map[string]string)
+		requestMap["ProjectName"] = id
+		addDebug("GetProject", raw, requestInfo, requestMap)
+	}
 	project, _ = raw.(*datahub.Project)
 	if project == nil {
 		return project, WrapErrorf(Error(GetNotFoundMessage("DatahubProject", id)), NotFoundMsg, ProviderERROR)
@@ -54,6 +56,67 @@ func (s *DatahubService) WaitForDatahubProject(id string, status Status, timeout
 
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.String(), id, ProviderERROR)
+		}
+
+	}
+}
+
+func (s *DatahubService) DescribeDatahubSubscription(id string) (subscription *datahub.Subscription, err error) {
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	projectName, topicName, subId := parts[0], parts[1], parts[2]
+
+	var requestInfo *datahub.DataHub
+
+	raw, err := s.client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+		requestInfo = dataHubClient
+		return dataHubClient.GetSubscription(projectName, topicName, subId)
+	})
+	if err != nil {
+		if isDatahubNotExistError(err) {
+			return subscription, WrapErrorf(err, NotFoundMsg, AliyunDatahubSdkGo)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetSubscription", AliyunDatahubSdkGo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]string)
+		requestMap["ProjectName"] = projectName
+		requestMap["TopicName"] = topicName
+		requestMap["SubId"] = subId
+		addDebug("GetProject", raw, requestInfo, requestMap)
+	}
+	subscription, _ = raw.(*datahub.Subscription)
+	if subscription == nil || subscription.TopicName != topicName || subscription.SubId != subId {
+		return subscription, WrapErrorf(Error(GetNotFoundMessage("DatahubSubscription", id)), NotFoundMsg, ProviderERROR)
+	}
+	return
+}
+
+func (s *DatahubService) WaitForDatahubSubscription(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	topicName, subId := parts[1], parts[2]
+	for {
+		object, err := s.DescribeDatahubSubscription(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.TopicName == topicName && object.SubId == subId && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.TopicName+":"+object.SubId, parts[1]+":"+parts[2], ProviderERROR)
 		}
 
 	}
