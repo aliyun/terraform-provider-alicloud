@@ -39,6 +39,7 @@ func TestAccAlicloudRouteEntryInstance(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"nexthop_type": "Instance",
+						"name":         fmt.Sprintf("tf-testAccRouteEntryConfigName%d", rand),
 					}),
 				),
 			},
@@ -78,6 +79,7 @@ func TestAccAlicloudRouteEntryInterface(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"nexthop_type": "RouterInterface",
+						"name":         fmt.Sprintf("tf-testAccRouteEntryInterfaceConfig%d", rand),
 					}),
 				),
 			},
@@ -112,6 +114,7 @@ func TestAccAlicloudRouteEntryNatGateway(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"nexthop_type": "NatGateway",
+						"name":         fmt.Sprintf("tf-testAccRouteEntryNatGatewayConfig%d", rand),
 					}),
 				),
 			},
@@ -147,6 +150,7 @@ func TestAccAlicloudRouteEntryMulti(t *testing.T) {
 					testAccCheck(map[string]string{
 						"nexthop_type":          "NetworkInterface",
 						"destination_cidrblock": "172.16.4.0/24",
+						"name":                  fmt.Sprintf("tf-testAccRouteEntryConcurrence%d", rand),
 					}),
 				),
 			},
@@ -248,6 +252,7 @@ resource "alicloud_route_entry" "default" {
 	destination_cidrblock = "172.11.1.1/32"
 	nexthop_type = "Instance"
 	nexthop_id = "${alicloud_instance.default.id}"
+	name = "${var.name}"
 }
 `, rand)
 }
@@ -309,6 +314,7 @@ resource "alicloud_route_entry" "default" {
   destination_cidrblock = "172.11.1.1/32"
   nexthop_type = "RouterInterface"
   nexthop_id = "${alicloud_router_interface.default.id}"
+  name = "${var.name}"
 }
 `, rand)
 }
@@ -345,6 +351,7 @@ resource "alicloud_route_entry" "default" {
   destination_cidrblock = "172.11.1.1/32"
   nexthop_type = "NatGateway"
   nexthop_id = "${alicloud_nat_gateway.default.id}"
+  name = "${var.name}"
 }`, rand)
 }
 
@@ -386,6 +393,7 @@ resource "alicloud_route_entry" "default" {
 	destination_cidrblock = "172.16.${count.index}.0/24"
 	nexthop_type = "NetworkInterface"
 	nexthop_id = "${alicloud_network_interface.default.id}"
+	name = "${var.name}"
 }
 `, rand)
 }

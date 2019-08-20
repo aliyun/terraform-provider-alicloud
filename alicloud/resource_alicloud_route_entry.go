@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -45,6 +47,23 @@ func resourceAliyunRouteEntry() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
+					value := v.(string)
+					if len(value) < 2 || len(value) > 128 {
+						errors = append(errors, fmt.Errorf("%s cannot be longer than 128 characters", k))
+					}
+
+					if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+						errors = append(errors, fmt.Errorf("%s cannot starts with http:// or https://", k))
+					}
+
+					return
+				},
+			},
 		},
 	}
 }
@@ -70,6 +89,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 	request.NextHopType = nt
 	request.NextHopId = ni
 	request.ClientToken = buildClientToken(request.GetActionName())
+	request.RouteEntryName = d.Get("name").(string)
 
 	// retry 10 min to create lots of entries concurrently
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
@@ -135,6 +155,7 @@ func resourceAliyunRouteEntryRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("destination_cidrblock", object.DestinationCidrBlock)
 	d.Set("nexthop_type", object.NextHopType)
 	d.Set("nexthop_id", object.InstanceId)
+	d.Set("name", object.RouteEntryName)
 	return nil
 }
 
