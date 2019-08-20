@@ -2,153 +2,124 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
 	"testing"
-
-	"regexp"
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDatahubSubscription_Basic(t *testing.T) {
+func TestAccAlicloudDatahubSubscription_basic(t *testing.T) {
+	var v *datahub.Subscription
+
+	resourceId := "alicloud_datahub_subscription.default"
+	ra := resourceAttrInit(resourceId, datahubSubscriptionBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(100000, 999999)
+	name := fmt.Sprintf("tf_testacc_datahub_project%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDatahubSubscriptionConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
-
 		// module name
-		IDRefreshName: "alicloud_datahub_subscription.basic",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckDatahubSubscriptionDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDatahubSubscription(acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)),
+				Config: testAccConfig(map[string]interface{}{
+					"project_name": "${alicloud_datahub_project.basic.name}",
+					"topic_name":   "${alicloud_datahub_topic.basic.name}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDatahubProjectExist(
-						"alicloud_datahub_project.basic"),
-					testAccCheckDatahubTopicExist(
-						"alicloud_datahub_topic.basic"),
-					testAccCheckDatahubSubscriptionExist(
-						"alicloud_datahub_subscription.basic"),
-					resource.TestMatchResourceAttr(
-						"alicloud_datahub_subscription.basic",
-						"project_name", regexp.MustCompile("^tf_testacc_datahub_project*")),
-					resource.TestCheckResourceAttr(
-						"alicloud_datahub_subscription.basic",
-						"topic_name", "tf_testacc_datahub_topic"),
+					testAccCheck(nil),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"comment": "subscription for basic.",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"comment": "subscription for basic.",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"comment": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"comment": "subscription added by terraform",
+					}),
 				),
 			},
 		},
 	})
 }
+func TestAccAlicloudDatahubSubscription_multi(t *testing.T) {
+	var v *datahub.Subscription
 
-func TestAccAlicloudDatahubSubscription_Update(t *testing.T) {
-	suffix := acctest.RandIntRange(datahubProjectSuffixMin, datahubProjectSuffixMax)
+	resourceId := "alicloud_datahub_subscription.default.4"
+	ra := resourceAttrInit(resourceId, datahubSubscriptionBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(100000, 999999)
+	name := fmt.Sprintf("tf_testacc_datahub_project%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDatahubSubscriptionConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
-
 		// module name
-		IDRefreshName: "alicloud_datahub_subscription.basic",
+		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckDatahubSubscriptionDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDatahubSubscription(suffix),
+				Config: testAccConfig(map[string]interface{}{
+					"project_name": "${alicloud_datahub_project.basic.name}",
+					"topic_name":   "${alicloud_datahub_topic.basic.name}",
+					"count":        "5",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDatahubProjectExist(
-						"alicloud_datahub_project.basic"),
-					testAccCheckDatahubTopicExist(
-						"alicloud_datahub_topic.basic"),
-					testAccCheckDatahubSubscriptionExist(
-						"alicloud_datahub_subscription.basic"),
-					resource.TestCheckResourceAttr(
-						"alicloud_datahub_subscription.basic",
-						"comment", "subscription for basic."),
-				),
-			},
-
-			{
-				Config: testAccDatahubSubscriptionUpdate(suffix),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckDatahubProjectExist(
-						"alicloud_datahub_project.basic"),
-					testAccCheckDatahubTopicExist(
-						"alicloud_datahub_topic.basic"),
-					testAccCheckDatahubSubscriptionExist(
-						"alicloud_datahub_subscription.basic"),
-					resource.TestCheckResourceAttr(
-						"alicloud_datahub_subscription.basic",
-						"comment", "subscription for update."),
+					testAccCheck(nil),
 				),
 			},
 		},
 	})
 }
-
-func testAccCheckDatahubSubscriptionExist(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("not found Datahub subscription: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("no Datahub Subscription ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		projectName := split[0]
-		topicName := split[1]
-		subId := split[2]
-		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-			return dataHubClient.GetSubscription(projectName, topicName, subId)
-		})
-
-		if err == nil || isDatahubNotExistError(err) {
-			return nil
-		}
-		return err
-	}
-}
-
-func testAccCheckDatahubSubscriptionDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_datahub_subscription" {
-			continue
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		projectName := split[0]
-		topicName := split[1]
-		subId := split[2]
-		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-			return dataHubClient.GetSubscription(projectName, topicName, subId)
-		})
-
-		if err != nil && isDatahubNotExistError(err) {
-			continue
-		}
-
-		return fmt.Errorf("Datahub subscription %s still exists", rs.Primary.ID)
-	}
-
-	return nil
-}
-
-func testAccDatahubSubscription(randInt int) string {
+func resourceDatahubSubscriptionConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "project_name" {
-	  default = "tf_testacc_datahub_project%d"
+	  default = "%s"
 	}
 	variable "topic_name" {
 	  default = "tf_testacc_datahub_topic"
@@ -168,41 +139,11 @@ func testAccDatahubSubscription(randInt int) string {
 	  life_cycle = 7
 	  comment = "topic for basic."
 	}
-	resource "alicloud_datahub_subscription" "basic" {
-	  project_name = "${alicloud_datahub_project.basic.name}"
-	  topic_name = "${alicloud_datahub_topic.basic.name}"
-	  comment = "subscription for basic."
-	}
-	`, randInt)
+	`, name)
 }
 
-func testAccDatahubSubscriptionUpdate(randInt int) string {
-	return fmt.Sprintf(`
-	variable "project_name" {
-	  default = "tf_testacc_datahub_project%d"
-	}
-	variable "topic_name" {
-	  default = "tf_testacc_datahub_topic"
-	}
-	variable "record_type" {
-	  default = "BLOB"
-	}
-	resource "alicloud_datahub_project" "basic" {
-	  name = "${var.project_name}"
-	  comment = "project for basic."
-	}
-	resource "alicloud_datahub_topic" "basic" {
-	  project_name = "${alicloud_datahub_project.basic.name}"
-	  name = "${var.topic_name}"
-	  record_type = "${var.record_type}"
-	  shard_count = 3
-	  life_cycle = 7
-	  comment = "topic for basic."
-	}
-	resource "alicloud_datahub_subscription" "basic" {
-	  project_name = "${alicloud_datahub_project.basic.name}"
-	  topic_name = "${alicloud_datahub_topic.basic.name}"
-	  comment = "subscription for update."
-	}
-	`, randInt)
+var datahubSubscriptionBasicMap = map[string]string{
+	"project_name": CHECKSET,
+	"topic_name":   CHECKSET,
+	"comment":      "subscription added by terraform",
 }

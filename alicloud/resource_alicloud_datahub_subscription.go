@@ -73,11 +73,21 @@ func resourceAliyunDatahubSubscriptionCreate(d *schema.ResourceData, meta interf
 	topicName := d.Get("topic_name").(string)
 	subComment := d.Get("comment").(string)
 
+	var requestInfo *datahub.DataHub
+
 	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+		requestInfo = dataHubClient
 		return dataHubClient.CreateSubscription(projectName, topicName, subComment)
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create subscription under '%s/%s' with error: %s", projectName, topicName, err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_datahub_subscription", "CreateSubscription", AliyunDatahubSdkGo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]string)
+		requestMap["ProjectName"] = projectName
+		requestMap["TopicName"] = topicName
+		requestMap["SubComment"] = subComment
+		addDebug("CreateSubscription", raw, requestInfo, requestMap)
 	}
 	subId, _ := raw.(string)
 
@@ -85,66 +95,60 @@ func resourceAliyunDatahubSubscriptionCreate(d *schema.ResourceData, meta interf
 	return resourceAliyunDatahubSubscriptionRead(d, meta)
 }
 
-func parseId3(d *schema.ResourceData, meta interface{}) (projectName, topicName, subId string, err error) {
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-	if len(split) != 3 {
-		err = fmt.Errorf("you should use resource alicloud_datahub_subscription's new field 'project_name' and 'topic_name' to re-import this resource.")
-		return
-	} else {
-		projectName = split[0]
-		topicName = split[1]
-		subId = split[2]
-	}
-	return
-}
-
 func resourceAliyunDatahubSubscriptionRead(d *schema.ResourceData, meta interface{}) error {
-	projectName, topicName, subId, err := parseId3(d, meta)
-	if err != nil {
-		return err
-	}
-
 	client := meta.(*connectivity.AliyunClient)
-	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-		return dataHubClient.GetSubscription(projectName, topicName, subId)
-	})
-
+	datahubService := DatahubService{client}
+	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
-		if isDatahubNotExistError(err) {
+		return WrapError(err)
+	}
+	projectName := parts[0]
+	object, err := datahubService.DescribeDatahubSubscription(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("failed to get subscription %s with error: %s", subId, err)
+		return WrapError(err)
 	}
-	sub, _ := raw.(*datahub.Subscription)
-
-	d.SetId(fmt.Sprintf("%s%s%s%s%s", strings.ToLower(projectName), COLON_SEPARATED, strings.ToLower(sub.TopicName), COLON_SEPARATED, sub.SubId))
+	d.SetId(fmt.Sprintf("%s%s%s%s%s", strings.ToLower(projectName), COLON_SEPARATED, strings.ToLower(object.TopicName), COLON_SEPARATED, object.SubId))
 
 	d.Set("project_name", projectName)
-	d.Set("topic_name", sub.TopicName)
-	d.Set("sub_id", sub.SubId)
-	d.Set("comment", sub.Comment)
-	d.Set("create_time", datahub.Uint64ToTimeString(sub.CreateTime))
-	d.Set("last_modify_time", datahub.Uint64ToTimeString(sub.LastModifyTime))
+	d.Set("topic_name", object.TopicName)
+	d.Set("sub_id", object.SubId)
+	d.Set("comment", object.Comment)
+	d.Set("create_time", datahub.Uint64ToTimeString(object.CreateTime))
+	d.Set("last_modify_time", datahub.Uint64ToTimeString(object.LastModifyTime))
 	return nil
 }
 
 func resourceAliyunDatahubSubscriptionUpdate(d *schema.ResourceData, meta interface{}) error {
-	projectName, topicName, subId, err := parseId3(d, meta)
+	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
-
+	projectName, topicName, subId := parts[0], parts[1], parts[2]
 	client := meta.(*connectivity.AliyunClient)
 
 	if d.HasChange("comment") {
 		subComment := d.Get("comment").(string)
 
-		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+		var requestInfo *datahub.DataHub
+
+		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			requestInfo = dataHubClient
 			return nil, dataHubClient.UpdateSubscription(projectName, topicName, subId, subComment)
 		})
 		if err != nil {
-			return fmt.Errorf("failed to update subscription %s's comment with error: %s", subId, err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateSubscription", AliyunDatahubSdkGo)
+		}
+		if debugOn() {
+			requestMap := make(map[string]string)
+			requestMap["ProjectName"] = projectName
+			requestMap["TopicName"] = topicName
+			requestMap["SubId"] = subId
+			requestMap["SubComment"] = subComment
+			addDebug("UpdateSubscription", raw, requestInfo, requestMap)
 		}
 	}
 
@@ -152,37 +156,42 @@ func resourceAliyunDatahubSubscriptionUpdate(d *schema.ResourceData, meta interf
 }
 
 func resourceAliyunDatahubSubscriptionDelete(d *schema.ResourceData, meta interface{}) error {
-	projectName, topicName, subId, err := parseId3(d, meta)
-	if err != nil {
-		return err
-	}
-
 	client := meta.(*connectivity.AliyunClient)
+	datahubService := DatahubService{client}
 
-	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-			return dataHubClient.GetSubscription(projectName, topicName, subId)
-		})
-		if err != nil {
-			if isDatahubNotExistError(err) {
-				return nil
-			}
-			if isRetryableDatahubError(err) {
-				return resource.RetryableError(fmt.Errorf("while deleting subscription '%s', failed to get it with error: %s", subId, err))
-			}
-			return resource.NonRetryableError(fmt.Errorf("while deleting subscription '%s', failed to get it with error: %s", subId, err))
-		}
+	parts, err := ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	projectName, topicName, subId := parts[0], parts[1], parts[2]
 
-		_, err = client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+	var requestInfo *datahub.DataHub
+
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			requestInfo = dataHubClient
 			return nil, dataHubClient.DeleteSubscription(projectName, topicName, subId)
 		})
-		if err == nil || isDatahubNotExistError(err) {
+		if err != nil {
+			if isRetryableDatahubError(err) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			requestMap := make(map[string]string)
+			requestMap["ProjectName"] = projectName
+			requestMap["TopicName"] = topicName
+			requestMap["SubId"] = subId
+			addDebug("DeleteSubscription", raw, requestInfo, requestMap)
+		}
+		return nil
+	})
+	if err != nil {
+		if isDatahubNotExistError(err) {
 			return nil
 		}
-
-		if isRetryableDatahubError(err) {
-			return resource.RetryableError(fmt.Errorf("Deleting subscription '%s' timeout and got an error: %#v.", subId, err))
-		}
-		return resource.NonRetryableError(fmt.Errorf("Deleting subscription '%s' timeout.", subId))
-	})
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteSubscription", AliyunDatahubSdkGo)
+	}
+	return WrapError(datahubService.WaitForDatahubSubscription(d.Id(), Deleted, DefaultTimeout))
 }
