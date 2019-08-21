@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"log"
 	"testing"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -106,7 +106,9 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccSlbClassicInstanceConfigSpot%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbClassicConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.SlbClassicNoSupportedRegions)
@@ -116,19 +118,23 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckSlbDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlb_no_specification,
+				Config: testAccConfig(map[string]interface{}{
+					"name":     name,
+					"internet": "true",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                 "tf-testAccslbbasic_name",
+						"name":                 name,
 						"internet_charge_type": "PayByTraffic",
 						"bandwidth":            CHECKSET,
 						"specification":        "",
 						"address":              CHECKSET,
 						"master_zone_id":       CHECKSET,
 						"slave_zone_id":        CHECKSET,
+						"address_ip_version":   "ipv4",
 					}),
 				),
 			},
@@ -138,21 +144,19 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccSlb_clissic_basic,
+				Config: testAccConfig(map[string]interface{}{
+					"specification": "slb.s2.small",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                 "tf-testAccslbbasic_name",
-						"internet_charge_type": "PayByTraffic",
-						"bandwidth":            CHECKSET,
-						"specification":        "slb.s2.small",
-						"address":              CHECKSET,
-						"master_zone_id":       CHECKSET,
-						"slave_zone_id":        CHECKSET,
+						"specification": "slb.s2.small",
 					}),
 				),
 			},
 			{
-				Config: testAccSlb_clissic_specification,
+				Config: testAccConfig(map[string]interface{}{
+					"specification": "slb.s2.medium",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"specification": "slb.s2.medium",
@@ -160,26 +164,41 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlb_clissic_name,
+				Config: testAccConfig(map[string]interface{}{
+					"name": fmt.Sprintf("tf-testAccSlbClassicInstanceConfigSpot%d_change", rand),
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-testAccslbbasic_namenew",
+						"name": fmt.Sprintf("tf-testAccSlbClassicInstanceConfigSpot%d_change", rand),
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"tag_a": "1",
+						"tag_b": "2",
+						"tag_c": "3",
+						"tag_d": "4",
+						"tag_e": "5",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%": "5",
 					}),
 				),
 			},
 			{
-				Config: testAccSlb_clissic_tags,
+				Config: testAccConfig(map[string]interface{}{
+					"name":          name,
+					"specification": "slb.s2.small",
+					"internet":      "true",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%": "10",
-					}),
-				),
-			},
-			{
-				Config: testAccSlb_clissic_basic,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":                 "tf-testAccslbbasic_name",
+						"name":                 name,
 						"internet_charge_type": "PayByTraffic",
 						"bandwidth":            CHECKSET,
 						"specification":        "slb.s2.small",
@@ -187,6 +206,16 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 						"master_zone_id":       CHECKSET,
 						"slave_zone_id":        CHECKSET,
 						"tags.%":               REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"address_ip_version": "ipv6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address_ip_version": "ipv6",
 					}),
 				),
 			},
@@ -204,7 +233,9 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccSlbVpcInstanceConfigSpot%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbVpcConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -214,13 +245,17 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckSlbDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlbVpc_no_specification,
+				Config: testAccConfig(map[string]interface{}{
+					"name":              name,
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"delete_protection": "on",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                 "tf-testAccSlb4Vpc",
+						"name":                 name,
 						"internet_charge_type": "PayByTraffic",
 						"bandwidth":            CHECKSET,
 						"specification":        "",
@@ -237,7 +272,9 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccSlbDeleteProtectionUpdate,
+				Config: testAccConfig(map[string]interface{}{
+					"delete_protection": "off",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"delete_protection": "off",
@@ -245,21 +282,19 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbVpc,
+				Config: testAccConfig(map[string]interface{}{
+					"specification": "slb.s2.small",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                 "tf-testAccSlb4Vpc",
-						"internet_charge_type": "PayByTraffic",
-						"bandwidth":            CHECKSET,
-						"specification":        "slb.s2.small",
-						"address":              CHECKSET,
-						"master_zone_id":       CHECKSET,
-						"slave_zone_id":        CHECKSET,
+						"specification": "slb.s2.small",
 					}),
 				),
 			},
 			{
-				Config: testAccSlbBandSpecUpdate,
+				Config: testAccConfig(map[string]interface{}{
+					"specification": "slb.s2.medium",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"specification": "slb.s2.medium",
@@ -267,23 +302,15 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbVpcUpInternet_charge_type,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"internet_charge_type": "PayByBandwidth",
-					}),
-				),
-			},
-			{
-				Config: testAccSlbVpcUpBandwidth,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"bandwidth": "10",
-					}),
-				),
-			},
-			{
-				Config: testAccSlbtagsUpdate,
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"tag_a": "1",
+						"tag_b": "2",
+						"tag_c": "3",
+						"tag_d": "4",
+						"tag_e": "5",
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%": "5",
@@ -291,25 +318,33 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbnamesUpdate,
+				Config: testAccConfig(map[string]interface{}{
+					"name": fmt.Sprintf("tf-testAccSlbVpcInstanceConfigSpot%d_change", rand),
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-testAccSlb4Vpcnew",
+						"name": fmt.Sprintf("tf-testAccSlbVpcInstanceConfigSpot%d_change", rand),
 					}),
 				),
 			},
 			{
-				Config: testAccSlbVpc,
+				Config: testAccConfig(map[string]interface{}{
+					"name":              name,
+					"specification":     "slb.s2.small",
+					"delete_protection": "off",
+					"address":           "172.16.0.1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                 "tf-testAccSlb4Vpc",
+						"name":                 name,
 						"internet_charge_type": "PayByTraffic",
 						"bandwidth":            CHECKSET,
 						"specification":        "slb.s2.small",
 						"tags.%":               REMOVEKEY,
-						"address":              CHECKSET,
+						"address":              "172.16.0.1",
 						"master_zone_id":       CHECKSET,
 						"slave_zone_id":        CHECKSET,
+						"delete_protection":    "off",
 					}),
 				),
 			},
@@ -327,7 +362,9 @@ func TestAccAlicloudSlb_vpcmulti(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccSlbVpcInstancemultiConfigSpot%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbVpcConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -337,17 +374,29 @@ func TestAccAlicloudSlb_vpcmulti(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckSlbDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlbVpc_multi,
+				Config: testAccConfig(map[string]interface{}{
+					"count":         "10",
+					"name":          name,
+					"specification": "slb.s2.small",
+					"vswitch_id":    "${alicloud_vswitch.default.id}",
+					"tags": map[string]string{
+						"tag_a": "1",
+						"tag_b": "2",
+						"tag_c": "3",
+						"tag_d": "4",
+						"tag_e": "5",
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                 "tf-testAccSlb4Vpc",
+						"name":                 name,
 						"internet_charge_type": "PayByTraffic",
 						"bandwidth":            CHECKSET,
 						"specification":        "slb.s2.small",
-						"tags.%":               "10",
+						"tags.%":               "5",
 						"address":              CHECKSET,
 						"master_zone_id":       CHECKSET,
 						"slave_zone_id":        CHECKSET,
@@ -358,418 +407,19 @@ func TestAccAlicloudSlb_vpcmulti(t *testing.T) {
 	})
 }
 
-func testAccCheckSlbExists(n string, slb *slb.DescribeLoadBalancerAttributeResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(Error("No SLB ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		slbService := SlbService{client}
-		instance, err := slbService.DescribeSlb(rs.Primary.ID)
-
-		if err != nil {
-			return WrapError(err)
-		}
-
-		slb = instance
-		return nil
+func resourceSlbVpcConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "%s"
 	}
+	`, SlbVpcCommonTestCase, name)
 }
 
-func testAccCheckSlbDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	slbService := SlbService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_slb" {
-			continue
-		}
-
-		// Try to find the Slb
-		if _, err := slbService.DescribeSlb(rs.Primary.ID); err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return WrapError(err)
-		}
-		return WrapError(Error("SLB still exist"))
+func resourceSlbClassicConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
 	}
-
-	return nil
+	`, name)
 }
-
-const testAccSlb_clissic_basic = `
-variable "name" {
-  default = "tf-testAccslbbasic_name"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  specification = "slb.s2.small"
-	internet = true
-}
-`
-
-const testAccSlb_clissic_specification = `
-variable "name" {
-  default = "tf-testAccslbbasic_name"
-}
-resource "alicloud_slb" "default" {
-  	name = "${var.name}"
-  	specification = "slb.s2.medium"
-	internet = true
-}
-`
-
-const testAccSlb_clissic_name = `
-variable "name" {
-  default = "tf-testAccslbbasic_namenew"
-}
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  specification = "slb.s2.medium"
-internet = true
-}
-`
-
-const testAccSlb_clissic_internet_charge_type = `
-variable "name" {
-  default = "tf-testAccslbbasic_namenew"
-}
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  specification = "slb.s2.medium"
-internet_charge_type = "PayByBandwidth"
-internet = true
-}
-`
-
-const testAccSlb_clissic_bandwidth = `
-variable "name" {
-  default = "tf-testAccslbbasic_namenew"
-}
-resource "alicloud_slb" "default" {
-  	name = "${var.name}"
-  	specification = "slb.s2.medium"
-	internet_charge_type = "PayByBandwidth"
-	bandwidth="10"
-internet = true
-}
-`
-const testAccSlb_clissic_tags = `
-variable "name" {
-  default = "tf-testAccslbbasic_namenew"
-}
-resource "alicloud_slb" "default" {
-  	name = "${var.name}"
-  	specification = "slb.s2.medium"
-	internet_charge_type = "PayByBandwidth"
-	bandwidth="10"
-	tags = {
-    	tag_a = 1
-    	tag_b = 2
-    	tag_c = 3
-    	tag_d = 4
-    	tag_e = 5
-    	tag_f = 6
-    	tag_g = 7
-    	tag_h = 8
-    	tag_i = 9
-    	tag_j = 10
-  	}
-}
-`
-
-const testAccSlbVpc = `
-variable "name" {
-  default = "tf-testAccSlb4Vpc"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  specification = "slb.s2.small"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-`
-
-const testAccSlbBandSpecUpdate = `
-variable "name" {
-  default = "tf-testAccSlb4Vpc"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_slb" "default" {
-  	name = "${var.name}"
-  	specification = "slb.s2.medium"
-  	vswitch_id = "${alicloud_vswitch.default.id}"
-}
-`
-
-const testAccSlbVpcUpInternet_charge_type = `
-variable "name" {
-  default = "tf-testAccSlb4Vpc"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  specification = "slb.s2.medium"
-  internet_charge_type = "PayByBandwidth"
-  internet = true
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-`
-const testAccSlbVpcUpBandwidth = `
-variable "name" {
-  default = "tf-testAccSlb4Vpc"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  specification = "slb.s2.medium"
-  internet_charge_type = "PayByBandwidth"
-  internet = true
-  bandwidth = "10"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-`
-
-const testAccSlbtagsUpdate = `
-variable "name" {
-  default = "tf-testAccSlb4Vpc"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-specification = "slb.s2.medium"
-  internet_charge_type = "PayByBandwidth"
-  internet = true
-  bandwidth = "10"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  tags = {
-    tag_a = 1
-    tag_b = 2
-    tag_c = 3
-    tag_d = 4
-    tag_e = 5
-  }
-}
-`
-
-const testAccSlbnamesUpdate = `
-variable "name" {
-  default = "tf-testAccSlb4Vpcnew"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-specification = "slb.s2.medium"
-  internet_charge_type = "PayByBandwidth"
-  internet = true
-  bandwidth = "10"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  tags = {
-    tag_a = 1
-    tag_b = 2
-    tag_c = 3
-    tag_d = 4
-    tag_e = 5
-  }
-}
-`
-
-const testAccSlbVpc_multi = `
-variable "name" {
-  default = "tf-testAccSlb4Vpc"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-	count = 10
-  name = "${var.name}"
-  specification = "slb.s2.small"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  tags = {
-    tag_a = 1
-    tag_b = 2
-    tag_c = 3
-    tag_d = 4
-    tag_e = 5
-    tag_f = 6
-    tag_g = 7
-    tag_h = 8
-    tag_i = 9
-    tag_j = 10
-  }
-}
-`
-const testAccSlb_no_specification = `
-variable "name" {
-  default = "tf-testAccslbbasic_name"
-}
-resource "alicloud_slb" "default" {
-  	name = "${var.name}"
-	internet = true
-}
-`
-const testAccSlbVpc_no_specification = `
-variable "name" {
-  default = "tf-testAccSlb4Vpc"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  delete_protection = "on"
-}
-`
-
-const testAccSlbDeleteProtectionUpdate = `
-variable "name" {
-  default = "tf-testAccSlb4Vpc"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  delete_protection = "off"
-}
-`
