@@ -41,13 +41,21 @@ func resourceAlicloudLogtailAttachmentCreate(d *schema.ResourceData, meta interf
 	project := d.Get("project").(string)
 	config_name := d.Get("logtail_config_name").(string)
 	group_name := d.Get("machine_group_name").(string)
+	var requestInfo *sls.Client
 	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+		requestInfo = slsClient
 		return nil, slsClient.ApplyConfigToMachineGroup(project, config_name, group_name)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_logtail_attachment", "ApplyConfigToMachineGroup", AliyunLogGoSdkERROR)
 	}
-	addDebug("ApplyConfigToMachineGroup", raw)
+	if debugOn() {
+		addDebug("ApplyConfigToMachineGroup", raw, requestInfo, map[string]string{
+			"project":   project,
+			"confName":  config_name,
+			"groupName": group_name,
+		})
+	}
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", project, COLON_SEPARATED, config_name, COLON_SEPARATED, group_name))
 	return resourceAlicloudLogtailAttachmentRead(d, meta)
 }
@@ -82,13 +90,21 @@ func resourceAlicloudLogtailAttachmentDelete(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapError(err)
 	}
+	var requestInfo *sls.Client
 	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+		requestInfo = slsClient
 		return nil, slsClient.RemoveConfigFromMachineGroup(parts[0], parts[1], parts[2])
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "RemoveConfigFromMachineGroup", AliyunLogGoSdkERROR)
 	}
-	addDebug("RemoveConfigFromMachineGroup", raw)
+	if debugOn() {
+		addDebug("RemoveConfigFromMachineGroup", raw, requestInfo, map[string]string{
+			"project":   parts[0],
+			"confName":  parts[1],
+			"groupName": parts[2],
+		})
+	}
 	return WrapError(logService.WaitForLogtailAttachment(d.Id(), Deleted, DefaultTimeout))
 
 }

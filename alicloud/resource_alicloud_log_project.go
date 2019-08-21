@@ -36,10 +36,15 @@ func resourceAlicloudLogProject() *schema.Resource {
 
 func resourceAlicloudLogProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	var requestInfo *sls.Client
+	request := map[string]string{
+		"name":        d.Get("name").(string),
+		"description": d.Get("description").(string),
+	}
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return slsClient.CreateProject(d.Get("name").(string), d.Get("description").(string))
+			requestInfo = slsClient
+			return slsClient.CreateProject(request["name"], request["description"])
 		})
 		if err != nil {
 			if IsExceptedError(err, LogClientTimeout) {
@@ -48,7 +53,7 @@ func resourceAlicloudLogProjectCreate(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("CreateProject", raw)
+		addDebug("CreateProject", raw, requestInfo, request)
 		response, _ := raw.(*sls.LogProject)
 		d.SetId(response.Name)
 		return nil
@@ -78,15 +83,20 @@ func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) er
 
 func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	var requestInfo *sls.Client
+	request := map[string]string{
+		"name":        d.Get("name").(string),
+		"description": d.Get("description").(string),
+	}
 	if d.HasChange("description") {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return slsClient.UpdateProject(d.Get("name").(string), d.Get("description").(string))
+			requestInfo = slsClient
+			return slsClient.UpdateProject(request["name"], request["description"])
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateProject", AliyunLogGoSdkERROR)
 		}
-		addDebug("UpdateProject", raw)
+		addDebug("UpdateProject", raw, requestInfo, request)
 	}
 
 	return resourceAlicloudLogProjectRead(d, meta)
@@ -95,10 +105,15 @@ func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) 
 func resourceAlicloudLogProjectDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
-
+	var requestInfo *sls.Client
+	request := map[string]string{
+		"name":        d.Get("name").(string),
+		"description": d.Get("description").(string),
+	}
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return nil, slsClient.DeleteProject(d.Id())
+			requestInfo = slsClient
+			return nil, slsClient.DeleteProject(request["name"])
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{LogClientTimeout, LogRequestTimeout}) {
@@ -106,7 +121,7 @@ func resourceAlicloudLogProjectDelete(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("DeleteProject", raw)
+		addDebug("DeleteProject", raw, requestInfo, request)
 		return nil
 	})
 	if err != nil {

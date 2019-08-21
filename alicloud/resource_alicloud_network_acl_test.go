@@ -57,7 +57,7 @@ func testSweepNetworkAcl(region string) error {
 			log.Printf("[ERROR] %s got an error: %#v", request.GetActionName(), err)
 			return nil
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeNetworkAclsResponse)
 		if len(response.NetworkAcls.NetworkAcl) < 1 {
 			break
@@ -98,7 +98,7 @@ func testSweepNetworkAcl(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Network Acl (%s (%s)): %s", name, id, err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return nil
 }

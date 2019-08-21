@@ -227,6 +227,7 @@ func attachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 			attachScalingGroupVserverGroups = append(attachScalingGroupVserverGroups, vserverGroup)
 		}
 		request := ess.CreateAttachVServerGroupsRequest()
+		request.RegionId = client.RegionId
 		request.ScalingGroupId = d.Id()
 		request.ForceAttach = requests.NewBoolean(true)
 		request.VServerGroup = &attachScalingGroupVserverGroups
@@ -236,7 +237,7 @@ func attachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return nil
 }
@@ -262,6 +263,7 @@ func detachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 			detachScalingGroupVserverGroups = append(detachScalingGroupVserverGroups, vserverGroup)
 		}
 		request := ess.CreateDetachVServerGroupsRequest()
+		request.RegionId = client.RegionId
 		request.ScalingGroupId = d.Id()
 		request.ForceDetach = requests.NewBoolean(true)
 		request.VServerGroup = &detachScalingGroupVserverGroups
@@ -271,7 +273,7 @@ func detachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return nil
 }

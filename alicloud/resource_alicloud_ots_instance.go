@@ -64,6 +64,7 @@ func resourceAliyunOtsInstanceCreate(d *schema.ResourceData, meta interface{}) e
 
 	instanceType := d.Get("instance_type").(string)
 	request := ots.CreateInsertInstanceRequest()
+	request.RegionId = client.RegionId
 	request.ClusterType = convertInstanceType(OtsInstanceType(instanceType))
 	types, err := otsService.DescribeOtsInstanceTypes()
 	if err != nil {
@@ -89,7 +90,7 @@ func resourceAliyunOtsInstanceCreate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	d.SetId(request.InstanceName)
 	if err := otsService.WaitForOtsInstance(request.InstanceName, Running, DefaultTimeout); err != nil {
@@ -126,6 +127,7 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 
 	if !d.IsNewResource() && d.HasChange("accessed_by") {
 		request := ots.CreateUpdateInstanceRequest()
+		request.RegionId = client.RegionId
 		request.InstanceName = d.Id()
 		request.Network = convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string)))
 		raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
@@ -134,7 +136,7 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("accessed_by")
 	}
 
@@ -146,6 +148,7 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 
 		if len(remove) > 0 {
 			request := ots.CreateDeleteTagsRequest()
+			request.RegionId = client.RegionId
 			request.InstanceName = d.Id()
 			var tags []ots.DeleteTagsTagInfo
 			for _, t := range remove {
@@ -161,11 +164,12 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 		if len(create) > 0 {
 			request := ots.CreateInsertTagsRequest()
+			request.RegionId = client.RegionId
 			request.InstanceName = d.Id()
 			var tags []ots.InsertTagsTagInfo
 			for _, t := range create {
@@ -181,7 +185,7 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw)
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 		d.SetPartial("tags")
 	}
@@ -196,6 +200,7 @@ func resourceAliyunOtsInstanceDelete(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
 	request := ots.CreateDeleteInstanceRequest()
+	request.RegionId = client.RegionId
 	request.InstanceName = d.Id()
 	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
@@ -207,7 +212,7 @@ func resourceAliyunOtsInstanceDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

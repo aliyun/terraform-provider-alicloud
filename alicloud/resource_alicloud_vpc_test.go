@@ -62,7 +62,7 @@ func testSweepVpcs(region string) error {
 		}); err != nil {
 			log.Printf("[ERROR] Error retrieving VPCs: %s", WrapError(err))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeVpcsResponse)
 		if len(response.Vpcs.Vpc) < 1 {
 			break

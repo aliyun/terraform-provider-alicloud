@@ -15,8 +15,10 @@ type LogService struct {
 }
 
 func (s *LogService) DescribeLogProject(id string) (project *sls.LogProject, err error) {
+	var requestInfo *sls.Client
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
 			return slsClient.GetProject(id)
 		})
 		if err != nil {
@@ -26,7 +28,9 @@ func (s *LogService) DescribeLogProject(id string) (project *sls.LogProject, err
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("GetProject", raw)
+		if debugOn() {
+			addDebug("GetProject", raw, requestInfo, map[string]string{"name": id})
+		}
 		project, _ = raw.(*sls.LogProject)
 		return nil
 	})
@@ -70,8 +74,10 @@ func (s *LogService) DescribeLogStore(id string) (store *sls.LogStore, err error
 		return nil, WrapError(err)
 	}
 	projectName, name := parts[0], parts[1]
+	var requestInfo *sls.Client
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
 			return slsClient.GetLogStore(projectName, name)
 		})
 		if err != nil {
@@ -80,7 +86,12 @@ func (s *LogService) DescribeLogStore(id string) (store *sls.LogStore, err error
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("GetLogStore", raw)
+		if debugOn() {
+			addDebug("GetLogStore", raw, requestInfo, map[string]string{
+				"project":  projectName,
+				"logstore": name,
+			})
+		}
 		store, _ = raw.(*sls.LogStore)
 		return nil
 	})
@@ -129,8 +140,10 @@ func (s *LogService) DescribeLogStoreIndex(id string) (index *sls.Index, err err
 		return nil, WrapError(err)
 	}
 	projectName, name := parts[0], parts[1]
+	var requestInfo *sls.Client
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
 			return slsClient.GetIndex(projectName, name)
 		})
 		if err != nil {
@@ -139,7 +152,12 @@ func (s *LogService) DescribeLogStoreIndex(id string) (index *sls.Index, err err
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("GetIndex", raw)
+		if debugOn() {
+			addDebug("GetIndex", raw, requestInfo, map[string]string{
+				"project":  projectName,
+				"logstore": name,
+			})
+		}
 		index, _ = raw.(*sls.Index)
 		return nil
 	})
@@ -163,8 +181,10 @@ func (s *LogService) DescribeLogMachineGroup(id string) (group *sls.MachineGroup
 		return nil, WrapError(err)
 	}
 	projectName, groupName := parts[0], parts[1]
+	var requestInfo *sls.Client
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
 			return slsClient.GetMachineGroup(projectName, groupName)
 		})
 		if err != nil {
@@ -173,7 +193,12 @@ func (s *LogService) DescribeLogMachineGroup(id string) (group *sls.MachineGroup
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("GetMachineGroup", raw)
+		if debugOn() {
+			addDebug("GetMachineGroup", raw, requestInfo, map[string]string{
+				"project":      projectName,
+				"machineGroup": groupName,
+			})
+		}
 		group, _ = raw.(*sls.MachineGroup)
 		return nil
 	})
@@ -224,8 +249,10 @@ func (s *LogService) DescribeLogtailConfig(id string) (response *sls.LogConfig, 
 		return nil, WrapError(err)
 	}
 	projectName, configName := parts[0], parts[2]
+	var requestInfo *sls.Client
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
 			return slsClient.GetConfig(projectName, configName)
 		})
 		if err != nil {
@@ -234,7 +261,12 @@ func (s *LogService) DescribeLogtailConfig(id string) (response *sls.LogConfig, 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("GetConfig", raw)
+		if debugOn() {
+			addDebug("GetConfig", raw, requestInfo, map[string]string{
+				"project": projectName,
+				"config":  configName,
+			})
+		}
 		response, _ = raw.(*sls.LogConfig)
 		return nil
 	})
@@ -284,9 +316,11 @@ func (s *LogService) DescribeLogtailAttachment(id string) (groupName string, err
 	}
 	projectName, configName, name := parts[0], parts[1], parts[2]
 	var groupNames []string
+	var requestInfo *sls.Client
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
 			return slsClient.GetAppliedMachineGroups(projectName, configName)
 		})
 		if err != nil {
@@ -295,7 +329,12 @@ func (s *LogService) DescribeLogtailAttachment(id string) (groupName string, err
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("GetAppliedMachineGroups", raw)
+		if debugOn() {
+			addDebug("GetAppliedMachineGroups", raw, requestInfo, map[string]string{
+				"project":  projectName,
+				"confName": configName,
+			})
+		}
 		groupNames, _ = raw.([]string)
 		return nil
 	})

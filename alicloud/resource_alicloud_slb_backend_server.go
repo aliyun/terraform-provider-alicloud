@@ -56,6 +56,7 @@ func resourceAliyunSlbBackendServer() *schema.Resource {
 func resourceAliyunSlbBackendServersCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := slb.CreateAddBackendServersRequest()
+	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
 	if v, ok := d.GetOk("backend_servers"); ok {
 		request.BackendServers = expandBackendServersInfoToString(v.(*schema.Set).List())
@@ -66,7 +67,7 @@ func resourceAliyunSlbBackendServersCreate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_backend_servers", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.AddBackendServersResponse)
 	d.SetId(response.LoadBalancerId)
 
@@ -141,6 +142,7 @@ func resourceAliyunSlbBackendServersUpdate(d *schema.ResourceData, meta interfac
 				}
 			}
 			request := slb.CreateRemoveBackendServersRequest()
+			request.RegionId = client.RegionId
 			request.LoadBalancerId = d.Id()
 
 			segs := len(rmservers)/step + 1
@@ -157,7 +159,7 @@ func resourceAliyunSlbBackendServersUpdate(d *schema.ResourceData, meta interfac
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				d.SetPartial("backend_servers")
 			}
 
@@ -177,6 +179,7 @@ func resourceAliyunSlbBackendServersUpdate(d *schema.ResourceData, meta interfac
 				}
 			}
 			request := slb.CreateAddBackendServersRequest()
+			request.RegionId = client.RegionId
 			request.LoadBalancerId = d.Id()
 
 			segs := len(addservers)/step + 1
@@ -193,7 +196,7 @@ func resourceAliyunSlbBackendServersUpdate(d *schema.ResourceData, meta interfac
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				d.SetPartial("backend_servers")
 			}
 		}
@@ -221,6 +224,7 @@ func resourceAliyunSlbBackendServersUpdate(d *schema.ResourceData, meta interfac
 					end = len(servers)
 				}
 				request := slb.CreateSetBackendServersRequest()
+				request.RegionId = client.RegionId
 				request.LoadBalancerId = d.Id()
 				request.BackendServers = expandBackendServersInfoToString(servers[start:end])
 				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -229,7 +233,7 @@ func resourceAliyunSlbBackendServersUpdate(d *schema.ResourceData, meta interfac
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				d.SetPartial("backend_servers")
 			}
 		}
@@ -257,6 +261,7 @@ func resourceAliyunSlbBackendServersDelete(d *schema.ResourceData, meta interfac
 		}
 
 		request := slb.CreateRemoveBackendServersRequest()
+		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
 
 		segs := len(servers)/step + 1
@@ -278,7 +283,7 @@ func resourceAliyunSlbBackendServersDelete(d *schema.ResourceData, meta interfac
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(request.GetActionName(), raw)
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
 			})
 			if err != nil {

@@ -109,7 +109,7 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 

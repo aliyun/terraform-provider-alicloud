@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/denverdino/aliyungo/cs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -609,32 +610,33 @@ func addDebug(action, content interface{}, requestInfo ...interface{}) {
 				request.Method = tmp.GetMethod()
 				request.Product = tmp.GetProduct()
 				request.Region = tmp.GetRegionId()
+			case *requests.CommonRequest:
+				tmp := requestInfo[0].(*requests.CommonRequest)
+				request.Domain = tmp.GetDomain()
+				request.Version = tmp.GetVersion()
+				request.ActionName = tmp.GetActionName()
+				request.Method = tmp.GetMethod()
+				request.Product = tmp.GetProduct()
+				request.Region = tmp.GetRegionId()
 			case *fc.Client:
 				client := requestInfo[0].(*fc.Client)
 				request.Version = client.Config.APIVersion
 				request.Product = "FC"
 				request.ActionName = fmt.Sprintf("%s", action)
-				request.UserAgent = client.Config.UserAgent
-				request.AK = client.Config.AccessKeyID
 			case *sls.Client:
-				client := requestInfo[0].(*sls.Client)
 				request.Product = "LOG"
 				request.ActionName = fmt.Sprintf("%s", action)
-				request.UserAgent = client.UserAgent
-				request.AK = client.AccessKeyID
 			case *tablestore.TableStoreClient:
 				request.Product = "OTS"
 				request.ActionName = fmt.Sprintf("%s", action)
 			case *oss.Client:
-				client := requestInfo[0].(*oss.Client)
-				request.UserAgent = client.Config.UserAgent
 				request.Product = "OSS"
 				request.ActionName = fmt.Sprintf("%s", action)
-				request.AK = client.Config.AccessKeyID
 			case *datahub.DataHub:
-				client := requestInfo[0].(*datahub.DataHub)
-				request.UserAgent = client.Client.Useragent
 				request.Product = "DataHub"
+				request.ActionName = fmt.Sprintf("%s", action)
+			case *cs.Client:
+				request.Product = "CS"
 				request.ActionName = fmt.Sprintf("%s", action)
 			}
 
@@ -644,7 +646,7 @@ func addDebug(action, content interface{}, requestInfo ...interface{}) {
 			}
 
 			content = fmt.Sprintf("%vDomain:%v, Version:%v, ActionName:%v, Method:%v, Product:%v, Region:%v\n\n"+
-				"*************** %s Request ***************\n%v\n",
+				"*************** %s Request ***************\n%#v\n",
 				content, request.Domain, request.Version, request.ActionName,
 				request.Method, request.Product, request.Region, request.ActionName, requestContent)
 		}

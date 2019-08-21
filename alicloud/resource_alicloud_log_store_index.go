@@ -245,8 +245,10 @@ func resourceAlicloudLogStoreIndexUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if update {
+		var requestInfo *sls.Client
 		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+				requestInfo = slsClient
 				return nil, slsClient.UpdateIndex(parts[0], parts[1], *index)
 			})
 			if err != nil {
@@ -256,7 +258,13 @@ func resourceAlicloudLogStoreIndexUpdate(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug("UpdateIndex", raw)
+			if debugOn() {
+				addDebug("UpdateIndex", raw, requestInfo, map[string]interface{}{
+					"project":  parts[0],
+					"logstore": parts[1],
+					"index":    index,
+				})
+			}
 			return nil
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateIndex", AliyunLogGoSdkERROR)
@@ -281,9 +289,10 @@ func resourceAlicloudLogStoreIndexDelete(d *schema.ResourceData, meta interface{
 		}
 		return WrapError(err)
 	}
-
+	var requestInfo *sls.Client
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
 			return nil, slsClient.DeleteIndex(parts[0], parts[1])
 		})
 		if err != nil {
@@ -293,7 +302,12 @@ func resourceAlicloudLogStoreIndexDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("DeleteIndex", raw)
+		if debugOn() {
+			addDebug("DeleteIndex", raw, requestInfo, map[string]interface{}{
+				"project":  parts[0],
+				"logstore": parts[1],
+			})
+		}
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteIndex", AliyunLogGoSdkERROR)

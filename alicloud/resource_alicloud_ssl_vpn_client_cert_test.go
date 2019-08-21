@@ -49,7 +49,7 @@ func testSweepSslVpnClientCerts(region string) error {
 			log.Printf("[ERROR] %s", WrapError(err))
 			return WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeSslVpnClientCertsResponse)
 		if len(response.SslVpnClientCertKeys.SslVpnClientCertKey) < 1 {
 			break
@@ -93,7 +93,7 @@ func testSweepSslVpnClientCerts(region string) error {
 			log.Printf("[ERROR] Failed to delete Ssl Client Cert (%s (%s)): %s", name, id, WrapError(err))
 			return WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	if sweeped {
 		time.Sleep(10 * time.Second)

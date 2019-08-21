@@ -73,6 +73,7 @@ func (s *EcsService) DescribeZone(id string) (zone ecs.Zone, err error) {
 
 func (s *EcsService) DescribeZones(d *schema.ResourceData) (zones []ecs.Zone, err error) {
 	request := ecs.CreateDescribeZonesRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceChargeType = d.Get("instance_charge_type").(string)
 	request.SpotStrategy = d.Get("spot_strategy").(string)
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
@@ -82,7 +83,7 @@ func (s *EcsService) DescribeZones(d *schema.ResourceData) (zones []ecs.Zone, er
 		err = WrapErrorf(err, DefaultErrorMsg, "alicloud_instance_type_families", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ecs.DescribeZonesResponse)
 	if len(response.Zones.Zone) < 1 {
 		return zones, WrapError(Error("There is no any availability zone in region %s.", s.client.RegionId))

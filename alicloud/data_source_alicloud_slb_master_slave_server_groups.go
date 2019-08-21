@@ -92,6 +92,7 @@ func dataSourceAlicloudSlbMasterSlaveServerGroupsRead(d *schema.ResourceData, me
 	client := meta.(*connectivity.AliyunClient)
 
 	request := slb.CreateDescribeMasterSlaveServerGroupsRequest()
+	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
 
 	idsMap := make(map[string]string)
@@ -107,7 +108,7 @@ func dataSourceAlicloudSlbMasterSlaveServerGroupsRead(d *schema.ResourceData, me
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_master_slave_server_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.DescribeMasterSlaveServerGroupsResponse)
 	var filteredServerGroupsTemp []slb.MasterSlaveServerGroup
 	nameRegex, ok := d.GetOk("name_regex")
@@ -156,7 +157,7 @@ func slbMasterSlaveServerGroupsDescriptionAttributes(d *schema.ResourceData, ser
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_slb_master_slave_server_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*slb.DescribeMasterSlaveServerGroupAttributeResponse)
 		if response != nil && len(response.MasterSlaveBackendServers.MasterSlaveBackendServer) > 0 {
 			var backendServerMappings []map[string]interface{}

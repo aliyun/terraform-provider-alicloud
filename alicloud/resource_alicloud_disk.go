@@ -196,6 +196,7 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 	update := false
 	request := ecs.CreateModifyDiskAttributeRequest()
+	request.RegionId = client.RegionId
 	request.DiskId = d.Id()
 
 	if !d.IsNewResource() && d.HasChange("name") {
@@ -238,7 +239,7 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if d.IsNewResource() {
@@ -249,6 +250,7 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("size") {
 		size := d.Get("size").(int)
 		request := ecs.CreateResizeDiskRequest()
+		request.RegionId = client.RegionId
 		request.DiskId = d.Id()
 		request.NewSize = requests.NewInteger(size)
 		request.Type = string(DiskResizeTypeOnline)
@@ -277,6 +279,7 @@ func resourceAliyunDiskDelete(d *schema.ResourceData, meta interface{}) error {
 	ecsService := EcsService{client}
 
 	request := ecs.CreateDeleteDiskRequest()
+	request.RegionId = client.RegionId
 	request.DiskId = d.Id()
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {

@@ -119,7 +119,7 @@ func dataSourceAlicloudOssBucketObjectsRead(d *schema.ResourceData, meta interfa
 		keyPrefix := v.(string)
 		initialOptions = append(initialOptions, oss.Prefix(keyPrefix))
 	}
-
+	var requestInfo *oss.Client
 	var allObjects []oss.ObjectProperties
 	nextMarker := ""
 	for {
@@ -130,10 +130,14 @@ func dataSourceAlicloudOssBucketObjectsRead(d *schema.ResourceData, meta interfa
 		}
 
 		raw, err := client.WithOssBucketByName(bucketName, func(bucket *oss.Bucket) (interface{}, error) {
+			requestInfo = &bucket.Client
 			return bucket.ListObjects(options...)
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_oss_bucket_object", "ListObjects", AliyunOssGoSdk)
+		}
+		if debugOn() {
+			addDebug("ListObjects", raw, requestInfo, map[string]interface{}{"options": options})
 		}
 		response, _ := raw.(oss.ListObjectsResult)
 
@@ -177,6 +181,7 @@ func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucketName strin
 	client := meta.(*connectivity.AliyunClient)
 	var ids []string
 	var s []map[string]interface{}
+	var requestInfo *oss.Client
 	for _, object := range objects {
 		mapping := map[string]interface{}{
 			"key":                    object.Key,
@@ -187,6 +192,7 @@ func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucketName strin
 
 		// Add metadata information
 		raw, err := client.WithOssBucketByName(bucketName, func(bucket *oss.Bucket) (interface{}, error) {
+			requestInfo = &bucket.Client
 			return bucket.GetObjectDetailedMeta(object.Key)
 		})
 		if err != nil {
@@ -203,9 +209,12 @@ func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucketName strin
 			mapping["server_side_encryption"] = objectHeader.Get(oss.HTTPHeaderOssServerSideEncryption)
 			mapping["sse_kms_key_id"] = objectHeader.Get(oss.HTTPHeaderOssServerSideEncryptionKeyID)
 		}
-		addDebug("GetObjectDetailedMeta", raw)
+		if debugOn() {
+			addDebug("GetObjectDetailedMeta", raw, requestInfo, map[string]string{"objectKey": object.Key})
+		}
 		// Add ACL information
 		raw, err = client.WithOssBucketByName(bucketName, func(bucket *oss.Bucket) (interface{}, error) {
+			requestInfo = &bucket.Client
 			return bucket.GetObjectACL(object.Key)
 		})
 		if err != nil {
@@ -214,7 +223,9 @@ func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucketName strin
 			objectACL, _ := raw.(oss.GetObjectACLResult)
 			mapping["acl"] = objectACL.ACL
 		}
-		addDebug("GetObjectACL", raw)
+		if debugOn() {
+			addDebug("GetObjectACL", raw, requestInfo, map[string]string{"objectKey": object.Key})
+		}
 
 		ids = append(ids, object.Key)
 		s = append(s, mapping)

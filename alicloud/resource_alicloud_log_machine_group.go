@@ -56,17 +56,19 @@ func resourceAlicloudLogMachineGroup() *schema.Resource {
 
 func resourceAlicloudLogMachineGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	params := &sls.MachineGroup{
+		Name:          d.Get("name").(string),
+		MachineIDType: d.Get("identify_type").(string),
+		MachineIDList: expandStringList(d.Get("identify_list").(*schema.Set).List()),
+		Attribute: sls.MachinGroupAttribute{
+			TopicName: d.Get("topic").(string),
+		},
+	}
+	var requestInfo *sls.Client
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return nil, slsClient.CreateMachineGroup(d.Get("project").(string), &sls.MachineGroup{
-				Name:          d.Get("name").(string),
-				MachineIDType: d.Get("identify_type").(string),
-				MachineIDList: expandStringList(d.Get("identify_list").(*schema.Set).List()),
-				Attribute: sls.MachinGroupAttribute{
-					TopicName: d.Get("topic").(string),
-				},
-			})
+			requestInfo = slsClient
+			return nil, slsClient.CreateMachineGroup(d.Get("project").(string), params)
 		})
 		if err != nil {
 			if IsExceptedError(err, LogClientTimeout) {
@@ -75,7 +77,12 @@ func resourceAlicloudLogMachineGroupCreate(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("CreateMachineGroup", raw)
+		if debugOn() {
+			addDebug("CreateMachineGroup", raw, requestInfo, map[string]interface{}{
+				"project":      d.Get("project").(string),
+				"MachineGroup": params,
+			})
+		}
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_machine_group", "CreateMachineGroup", AliyunLogGoSdkERROR)
@@ -119,17 +126,19 @@ func resourceAlicloudLogMachineGroupUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		client := meta.(*connectivity.AliyunClient)
-
+		var requestInfo *sls.Client
+		params := &sls.MachineGroup{
+			Name:          parts[1],
+			MachineIDType: d.Get("identify_type").(string),
+			MachineIDList: expandStringList(d.Get("identify_list").(*schema.Set).List()),
+			Attribute: sls.MachinGroupAttribute{
+				TopicName: d.Get("topic").(string),
+			},
+		}
 		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-				return nil, slsClient.UpdateMachineGroup(parts[0], &sls.MachineGroup{
-					Name:          parts[1],
-					MachineIDType: d.Get("identify_type").(string),
-					MachineIDList: expandStringList(d.Get("identify_list").(*schema.Set).List()),
-					Attribute: sls.MachinGroupAttribute{
-						TopicName: d.Get("topic").(string),
-					},
-				})
+				requestInfo = slsClient
+				return nil, slsClient.UpdateMachineGroup(parts[0], params)
 			})
 			if err != nil {
 				if IsExceptedError(err, LogClientTimeout) {
@@ -138,7 +147,12 @@ func resourceAlicloudLogMachineGroupUpdate(d *schema.ResourceData, meta interfac
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug("UpdateMachineGroup", raw)
+			if debugOn() {
+				addDebug("UpdateMachineGroup", raw, requestInfo, map[string]interface{}{
+					"project":      parts[0],
+					"MachineGroup": params,
+				})
+			}
 			return nil
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateMachineGroup", AliyunLogGoSdkERROR)
@@ -155,9 +169,10 @@ func resourceAlicloudLogMachineGroupDelete(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapError(err)
 	}
-
+	var requestInfo *sls.Client
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
 			return nil, slsClient.DeleteMachineGroup(parts[0], parts[1])
 		})
 		if err != nil {
@@ -167,7 +182,12 @@ func resourceAlicloudLogMachineGroupDelete(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("DeleteMachineGroup", raw)
+		if debugOn() {
+			addDebug("DeleteMachineGroup", raw, requestInfo, map[string]interface{}{
+				"project":      parts[0],
+				"machineGroup": parts[1],
+			})
+		}
 		return nil
 	})
 	if err != nil {

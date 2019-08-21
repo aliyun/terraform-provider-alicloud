@@ -111,8 +111,10 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	request.TableMeta = tableMeta
 	request.TableOption = tableOption
 	request.ReservedThroughput = reservedThroughput
+	var requestinfo *tablestore.TableStoreClient
 	if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			requestinfo = tableStoreClient
 			return tableStoreClient.CreateTable(request)
 		})
 		if err != nil {
@@ -121,7 +123,7 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("CreateTable", raw)
+		addDebug("CreateTable", raw, requestinfo, request)
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_table", "CreateTable", AliyunTablestoreGoSdk)
@@ -189,8 +191,10 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 
 		request.TableOption = tableOption
+		var requestinfo *tablestore.TableStoreClient
 		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+				requestinfo = tableStoreClient
 				return tableStoreClient.UpdateTable(request)
 			})
 			if err != nil {
@@ -199,7 +203,7 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug("UpdateTable", raw)
+			addDebug("UpdateTable", raw, requestinfo, request)
 			return nil
 		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateTable", AliyunTablestoreGoSdk)
@@ -218,8 +222,10 @@ func resourceAliyunOtsTableDelete(d *schema.ResourceData, meta interface{}) erro
 	otsService := OtsService{client}
 	req := new(tablestore.DeleteTableRequest)
 	req.TableName = tableName
+	var requestinfo *tablestore.TableStoreClient
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			requestinfo = tableStoreClient
 			return tableStoreClient.DeleteTable(req)
 		})
 		if err != nil {
@@ -228,7 +234,7 @@ func resourceAliyunOtsTableDelete(d *schema.ResourceData, meta interface{}) erro
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("DeleteTable", raw)
+		addDebug("DeleteTable", raw, requestinfo, req)
 		return nil
 	})
 	if err != nil {

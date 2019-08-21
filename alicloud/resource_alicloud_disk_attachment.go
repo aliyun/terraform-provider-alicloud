@@ -84,6 +84,7 @@ func resourceAliyunDiskAttachmentCreate(d *schema.ResourceData, meta interface{}
 	}
 	if newDisk.DeleteAutoSnapshot != oldDisk.DeleteAutoSnapshot {
 		request := ecs.CreateModifyDiskAttributeRequest()
+		request.RegionId = client.RegionId
 		request.DiskId = diskID
 		request.DeleteAutoSnapshot = requests.NewBoolean(oldDisk.DeleteAutoSnapshot)
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
@@ -92,7 +93,7 @@ func resourceAliyunDiskAttachmentCreate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return resourceAliyunDiskAttachmentRead(d, meta)
 }
