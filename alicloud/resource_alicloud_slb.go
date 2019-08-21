@@ -209,8 +209,12 @@ func resourceAliyunSlb() *schema.Resource {
 			},
 
 			"address": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:             schema.TypeString,
+				Computed:         true,
+				ForceNew:         true,
+				Optional:         true,
+				ValidateFunc:     validateIpAddress,
+				DiffSuppressFunc: slbAddressDiffSuppressFunc,
 			},
 
 			"tags": {
@@ -254,6 +258,15 @@ func resourceAliyunSlb() *schema.Resource {
 				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
 				DiffSuppressFunc: slbDeleteProtectionSuppressFunc,
 				Default:          string(OffFlag),
+			},
+
+			"address_ip_version": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validateAllowedStringValue([]string{string(IPV4), string(IPV6)}),
+				Default:          string(IPV4),
+				ForceNew:         true,
+				DiffSuppressFunc: slbAddressIpVersionSuppressFunc,
 			},
 		},
 	}
@@ -308,6 +321,15 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("delete_protection"); ok && v.(string) != "" {
 		request.DeleteProtection = d.Get("delete_protection").(string)
 	}
+
+	if v, ok := d.GetOk("address_ip_version"); ok && v.(string) != "" {
+		request.AddressIPVersion = v.(string)
+	}
+
+	if v, ok := d.GetOk("address"); ok && v.(string) != "" {
+		request.Address = v.(string)
+	}
+
 	if request.PayType == string("PrePay") {
 		period := d.Get("period").(int)
 		request.Duration = requests.NewInteger(period)
@@ -335,7 +357,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.CreateLoadBalancerResponse)
 	d.SetId(response.LoadBalancerId)
 
@@ -377,6 +399,7 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("instance_charge_type", object.PayType)
 	d.Set("master_zone_id", object.MasterZoneId)
 	d.Set("slave_zone_id", object.SlaveZoneId)
+	d.Set("address_ip_version", object.AddressIPVersion)
 	if object.PayType == "PrePay" {
 		d.Set("instance_charge_type", PrePaid)
 	} else {

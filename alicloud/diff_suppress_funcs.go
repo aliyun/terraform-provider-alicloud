@@ -376,6 +376,13 @@ func slbDeleteProtectionSuppressFunc(k, old, new string, d *schema.ResourceData)
 	return false
 }
 
+func slbAddressIpVersionSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("internet"); ok && v.(bool) {
+		return false
+	}
+	return true
+}
+
 func slbRuleStickySessionTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	listenerSync := slbRuleListenerSyncDiffSuppressFunc(k, old, new, d)
 	if session, ok := d.GetOk("sticky_session"); !listenerSync && ok && session.(string) == string(OnFlag) {
@@ -413,4 +420,11 @@ func slbRuleListenerSyncDiffSuppressFunc(k, old, new string, d *schema.ResourceD
 		return false
 	}
 	return true
+}
+
+func slbAddressDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("internet"); ok && v.(bool) {
+		return true
+	}
+	return false
 }
