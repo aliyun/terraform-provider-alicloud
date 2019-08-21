@@ -375,7 +375,7 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_listener", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request, request.QueryParams)
 	d.SetId(lb_id + ":" + strconv.Itoa(frontend))
 
 	if err := slbService.WaitForSlbListener(d.Id(), Protocol(protocol), Stopped, DefaultTimeout); err != nil {
@@ -679,7 +679,7 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request, request.QueryParams)
 	}
 
 	d.Partial(false)

@@ -37,8 +37,10 @@ func (s *OtsService) ListOtsTable(instanceName string) (table *tablestore.ListTa
 		return nil, WrapError(err)
 	}
 	var raw interface{}
+	var requestInfo *tablestore.TableStoreClient
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err = s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			requestInfo = tableStoreClient
 			return tableStoreClient.ListTable()
 		})
 		if err != nil {
@@ -47,7 +49,7 @@ func (s *OtsService) ListOtsTable(instanceName string) (table *tablestore.ListTa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("ListTable", raw)
+		addDebug("ListTable", raw, requestInfo)
 		return nil
 	})
 	if err != nil {
@@ -76,8 +78,10 @@ func (s *OtsService) DescribeOtsTable(id string) (table *tablestore.DescribeTabl
 		return nil, WrapError(err)
 	}
 	var raw interface{}
+	var requestInfo *tablestore.TableStoreClient
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err = s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			requestInfo = tableStoreClient
 			return tableStoreClient.DescribeTable(request)
 		})
 		if err != nil {
@@ -86,7 +90,7 @@ func (s *OtsService) DescribeOtsTable(id string) (table *tablestore.DescribeTabl
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("DescribeTable", raw)
+		addDebug("DescribeTable", raw, requestInfo, request)
 		return nil
 	})
 	if err != nil {
@@ -143,6 +147,7 @@ func (s *OtsService) convertPrimaryKeyType(t tablestore.PrimaryKeyType) PrimaryK
 
 func (s *OtsService) ListOtsInstance(pageSize int, pageNum int) ([]string, error) {
 	req := ots.CreateListInstanceRequest()
+	req.RegionId = s.client.RegionId
 	req.Method = "GET"
 	req.PageSize = requests.NewInteger(pageSize)
 	req.PageNum = requests.NewInteger(pageNum)
@@ -155,7 +160,7 @@ func (s *OtsService) ListOtsInstance(pageSize int, pageNum int) ([]string, error
 		if err != nil {
 			return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instances", req.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(req.GetActionName(), raw)
+		addDebug(req.GetActionName(), raw, req.RpcRequest, req)
 		response, _ := raw.(*ots.ListInstanceResponse)
 
 		if response == nil || len(response.InstanceInfos.InstanceInfo) < 1 {
@@ -181,6 +186,7 @@ func (s *OtsService) ListOtsInstance(pageSize int, pageNum int) ([]string, error
 
 func (s *OtsService) DescribeOtsInstance(id string) (inst ots.InstanceInfo, err error) {
 	request := ots.CreateGetInstanceRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceName = id
 	request.Method = "GET"
 	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
@@ -194,7 +200,7 @@ func (s *OtsService) DescribeOtsInstance(id string) (inst ots.InstanceInfo, err 
 		}
 		return inst, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ots.GetInstanceResponse)
 	if response.InstanceInfo.InstanceName != id {
 		return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstance", id)), NotFoundMsg, ProviderERROR)
@@ -204,6 +210,7 @@ func (s *OtsService) DescribeOtsInstance(id string) (inst ots.InstanceInfo, err 
 
 func (s *OtsService) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo, err error) {
 	request := ots.CreateListVpcInfoByInstanceRequest()
+	request.RegionId = s.client.RegionId
 	request.Method = "GET"
 	request.InstanceName = id
 	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
@@ -215,7 +222,7 @@ func (s *OtsService) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo,
 		}
 		return inst, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
 	if resp.TotalCount < 1 {
 		return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstanceAttachment", id)), NotFoundMsg, ProviderERROR)
@@ -249,6 +256,7 @@ func (s *OtsService) WaitForOtsInstanceVpc(id string, status Status, timeout int
 
 func (s *OtsService) ListOtsInstanceVpc(id string) (inst []ots.VpcInfo, err error) {
 	request := ots.CreateListVpcInfoByInstanceRequest()
+	request.RegionId = s.client.RegionId
 	request.Method = "GET"
 	request.InstanceName = id
 	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
@@ -257,7 +265,7 @@ func (s *OtsService) ListOtsInstanceVpc(id string) (inst []ots.VpcInfo, err erro
 	if err != nil {
 		return inst, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ots_instance_attachments", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
 	if resp.TotalCount < 1 {
 		return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstanceAttachment", id)), NotFoundMsg, ProviderERROR)
@@ -305,7 +313,7 @@ func (s *OtsService) DescribeOtsInstanceTypes() (types []string, err error) {
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug("ListClusterType", raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ots.ListClusterTypeResponse)
 	if resp != nil {
 		return resp.ClusterTypeInfos.ClusterType, nil

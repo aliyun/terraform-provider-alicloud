@@ -77,6 +77,7 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 	onsService := OnsService{client}
 
 	request := ons.CreateOnsInstanceInServiceListRequest()
+	request.RegionId = client.RegionId
 	request.PreventCache = onsService.GetPreventCache()
 
 	idsMap := make(map[string]string)
@@ -92,7 +93,7 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ons.OnsInstanceInServiceListResponse)
 
 	var filteredInstances []ons.InstanceVO

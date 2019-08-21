@@ -76,17 +76,19 @@ func resourceAlicloudLogtailConfigCreate(d *schema.ResourceData, meta interface{
 	if json_err := json.Unmarshal([]byte(data), &inputConfigInputDetail); json_err != nil {
 		return WrapError(json_err)
 	}
+	var requestInfo *sls.Client
+	logconfig := &sls.LogConfig{
+		Name:       d.Get("name").(string),
+		LogSample:  d.Get("log_sample").(string),
+		InputType:  d.Get("input_type").(string),
+		OutputType: d.Get("output_type").(string),
+		OutputDetail: sls.OutputDetail{
+			ProjectName:  d.Get("project").(string),
+			LogStoreName: d.Get("logstore").(string),
+		},
+	}
 	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-		logconfig := &sls.LogConfig{
-			Name:       d.Get("name").(string),
-			LogSample:  d.Get("log_sample").(string),
-			InputType:  d.Get("input_type").(string),
-			OutputType: d.Get("output_type").(string),
-			OutputDetail: sls.OutputDetail{
-				ProjectName:  d.Get("project").(string),
-				LogStoreName: d.Get("logstore").(string),
-			},
-		}
+		requestInfo = slsClient
 		sls.AddNecessaryInputConfigField(inputConfigInputDetail)
 		if covert_input, covert_err := assertInputDetailType(inputConfigInputDetail, logconfig); covert_err != nil {
 			return nil, WrapError(covert_err)
@@ -98,7 +100,12 @@ func resourceAlicloudLogtailConfigCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_logtail_config", "CreateConfig", AliyunLogGoSdkERROR)
 	}
-	addDebug("CreateConfig", raw)
+	if debugOn() {
+		addDebug("CreateConfig", raw, requestInfo, map[string]interface{}{
+			"project": d.Get("project").(string),
+			"config":  logconfig,
+		})
+	}
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("logstore").(string), COLON_SEPARATED, d.Get("name").(string)))
 	return resourceAlicloudLogtailConfigRead(d, meta)
 }
@@ -174,23 +181,31 @@ func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface
 		}
 
 		client := meta.(*connectivity.AliyunClient)
+		var requestInfo *sls.Client
+		params := &sls.LogConfig{
+			Name:        parts[2],
+			LogSample:   d.Get("log_sample").(string),
+			InputType:   d.Get("input_type").(string),
+			OutputType:  d.Get("output_type").(string),
+			InputDetail: logconfig.InputDetail,
+			OutputDetail: sls.OutputDetail{
+				ProjectName:  d.Get("project").(string),
+				LogStoreName: d.Get("logstore").(string),
+			},
+		}
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return nil, slsClient.UpdateConfig(parts[0], &sls.LogConfig{
-				Name:        parts[2],
-				LogSample:   d.Get("log_sample").(string),
-				InputType:   d.Get("input_type").(string),
-				OutputType:  d.Get("output_type").(string),
-				InputDetail: logconfig.InputDetail,
-				OutputDetail: sls.OutputDetail{
-					ProjectName:  d.Get("project").(string),
-					LogStoreName: d.Get("logstore").(string),
-				},
-			})
+			requestInfo = slsClient
+			return nil, slsClient.UpdateConfig(parts[0], params)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateConfig", AliyunLogGoSdkERROR)
 		}
-		addDebug("UpdateConfig", raw)
+		if debugOn() {
+			addDebug("UpdateConfig", raw, requestInfo, map[string]interface{}{
+				"project": parts[0],
+				"config":  params,
+			})
+		}
 	}
 	return resourceAlicloudLogtailConfigRead(d, meta)
 }
@@ -202,8 +217,10 @@ func resourceAlicloudLogtailConfigDelete(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
+	var requestInfo *sls.Client
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
 			return nil, slsClient.DeleteConfig(parts[0], parts[2])
 		})
 		if err != nil {
@@ -213,7 +230,12 @@ func resourceAlicloudLogtailConfigDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("DeleteConfig", raw)
+		if debugOn() {
+			addDebug("DeleteConfig", raw, requestInfo, map[string]string{
+				"project": parts[0],
+				"config":  parts[2],
+			})
+		}
 		return nil
 	})
 	if err != nil {

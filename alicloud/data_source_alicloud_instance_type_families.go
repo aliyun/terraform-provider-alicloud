@@ -77,6 +77,7 @@ func dataSourceAlicloudInstanceTypeFamiliesRead(d *schema.ResourceData, meta int
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	request := ecs.CreateDescribeInstanceTypeFamiliesRequest()
+	request.RegionId = client.RegionId
 	if v, ok := d.GetOk("generation"); ok {
 		request.Generation = v.(string)
 	}
@@ -99,7 +100,7 @@ func dataSourceAlicloudInstanceTypeFamiliesRead(d *schema.ResourceData, meta int
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instance_type_families", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	var instanceTypeFamilies []ecs.InstanceTypeFamily
 	response, _ := raw.(*ecs.DescribeInstanceTypeFamiliesResponse)
 	if response != nil {

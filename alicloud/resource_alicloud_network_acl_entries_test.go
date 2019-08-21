@@ -51,7 +51,7 @@ func testSweepNetworkAclEntries(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", request.GetActionName(), err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeNetworkAclsResponse)
 		if len(response.NetworkAcls.NetworkAcl) < 1 {
 			break
@@ -99,7 +99,7 @@ func testSweepNetworkAclEntries(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to update Network Acl entries (%s (%s)): %s", name, id, err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	return nil
 }

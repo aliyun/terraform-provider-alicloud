@@ -50,7 +50,7 @@ func testSweepVPNCustomerGateways(region string) error {
 		if err != nil {
 			return WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeCustomerGatewaysResponse)
 		if len(response.CustomerGateways.CustomerGateway) < 1 {
 			break

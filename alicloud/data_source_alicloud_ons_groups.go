@@ -68,6 +68,7 @@ func dataSourceAlicloudOnsGroupsRead(d *schema.ResourceData, meta interface{}) e
 	onsService := OnsService{client}
 
 	request := ons.CreateOnsGroupListRequest()
+	request.RegionId = client.RegionId
 	request.PreventCache = onsService.GetPreventCache()
 	request.InstanceId = d.Get("instance_id").(string)
 
@@ -77,7 +78,7 @@ func dataSourceAlicloudOnsGroupsRead(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ons.OnsGroupListResponse)
 
 	var filteredGroups []ons.SubscribeInfoDo

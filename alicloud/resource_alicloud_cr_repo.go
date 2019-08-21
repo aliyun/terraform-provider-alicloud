@@ -91,6 +91,7 @@ func resourceAlicloudCRRepoCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	request := cr.CreateCreateRepoRequest()
+	request.RegionId = client.RegionId
 	request.SetContent(serialized)
 
 	raw, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
@@ -99,7 +100,7 @@ func resourceAlicloudCRRepoCreate(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_repo", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	d.SetId(fmt.Sprintf("%s%s%s", repoNamespace, SLASH_SEPARATED, repoName))
 
 	return resourceAlicloudCRRepoRead(d, meta)
@@ -119,6 +120,7 @@ func resourceAlicloudCRRepoUpdate(d *schema.ResourceData, meta interface{}) erro
 			return WrapError(err)
 		}
 		request := cr.CreateUpdateRepoRequest()
+		request.RegionId = client.RegionId
 		request.SetContent(serialized)
 		request.RepoName = d.Get("name").(string)
 		request.RepoNamespace = d.Get("namespace").(string)
@@ -129,7 +131,7 @@ func resourceAlicloudCRRepoUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	}
 	return resourceAlicloudCRRepoRead(d, meta)
 }
@@ -178,6 +180,7 @@ func resourceAlicloudCRRepoDelete(d *schema.ResourceData, meta interface{}) erro
 	repoName := sli[1]
 
 	request := cr.CreateDeleteRepoRequest()
+	request.RegionId = client.RegionId
 	request.RepoNamespace = repoNamespace
 	request.RepoName = repoName
 
@@ -190,6 +193,6 @@ func resourceAlicloudCRRepoDelete(d *schema.ResourceData, meta interface{}) erro
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	return WrapError(crService.WaitForCrRepo(d.Id(), Deleted, DefaultTimeout))
 }

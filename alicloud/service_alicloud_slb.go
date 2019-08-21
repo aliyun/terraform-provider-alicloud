@@ -109,6 +109,7 @@ func (s *SlbService) DescribeSlbServerGroup(id string) (*slb.DescribeVServerGrou
 
 func (s *SlbService) DescribeSlbMasterSlaveServerGroup(id string) (response *slb.DescribeMasterSlaveServerGroupAttributeResponse, err error) {
 	request := slb.CreateDescribeMasterSlaveServerGroupAttributeRequest()
+	request.RegionId = s.client.RegionId
 	request.MasterSlaveServerGroupId = id
 	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.DescribeMasterSlaveServerGroupAttribute(request)
@@ -119,7 +120,7 @@ func (s *SlbService) DescribeSlbMasterSlaveServerGroup(id string) (response *slb
 		}
 		return response, WrapErrorf(err, DefaultDebugMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*slb.DescribeMasterSlaveServerGroupAttributeResponse)
 	if response.MasterSlaveServerGroupId == "" {
 		return response, WrapErrorf(Error(GetNotFoundMessage("SlbMasterSlaveServerGroup", id)), NotFoundMsg, ProviderERROR)
@@ -129,6 +130,7 @@ func (s *SlbService) DescribeSlbMasterSlaveServerGroup(id string) (response *slb
 
 func (s *SlbService) DescribeSlbBackendServer(id string) (*slb.DescribeLoadBalancerAttributeResponse, error) {
 	request := slb.CreateDescribeLoadBalancerAttributeRequest()
+	request.RegionId = s.client.RegionId
 	request.LoadBalancerId = id
 	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.DescribeLoadBalancerAttribute(request)
@@ -141,7 +143,7 @@ func (s *SlbService) DescribeSlbBackendServer(id string) (*slb.DescribeLoadBalan
 		}
 		return nil, err
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
 	if response.LoadBalancerId == "" {
 		err = WrapErrorf(Error(GetNotFoundMessage("SlbBackendServers", id)), NotFoundMsg, ProviderERROR)
@@ -156,6 +158,7 @@ func (s *SlbService) DescribeSlbListener(id string, protocol Protocol) (listener
 	}
 
 	request, err := s.BuildSlbCommonRequest()
+	request.RegionId = s.client.RegionId
 	if err != nil {
 		err = WrapError(err)
 		return
@@ -178,7 +181,7 @@ func (s *SlbService) DescribeSlbListener(id string, protocol Protocol) (listener
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request, request.QueryParams)
 		response, _ := raw.(*responses.CommonResponse)
 		if err = json.Unmarshal(response.GetHttpContentBytes(), &listener); err != nil {
 			return resource.NonRetryableError(WrapError(err))

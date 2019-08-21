@@ -53,6 +53,7 @@ func (s *OnsService) DescribeOnsTopic(id string) (onsTopic *ons.PublishInfoDo, e
 	topic := parts[1]
 
 	request := ons.CreateOnsTopicListRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceId = instanceId
 	request.PreventCache = s.GetPreventCache()
 
@@ -68,7 +69,7 @@ func (s *OnsService) DescribeOnsTopic(id string) (onsTopic *ons.PublishInfoDo, e
 	}
 
 	topicListResp, _ := raw.(*ons.OnsTopicListResponse)
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	for _, v := range topicListResp.Data.PublishInfoDo {
 		if v.Topic == topic {
@@ -88,6 +89,7 @@ func (s *OnsService) DescribeOnsGroup(id string) (onsGroup *ons.SubscribeInfoDo,
 	groupId := parts[1]
 
 	request := ons.CreateOnsGroupListRequest()
+	request.RegionId = s.client.RegionId
 	request.InstanceId = instanceId
 	request.PreventCache = s.GetPreventCache()
 
@@ -102,7 +104,7 @@ func (s *OnsService) DescribeOnsGroup(id string) (onsGroup *ons.SubscribeInfoDo,
 	}
 
 	groupListResp, _ := raw.(*ons.OnsGroupListResponse)
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	for _, v := range groupListResp.Data.SubscribeInfoDo {
 		if v.GroupId == groupId {

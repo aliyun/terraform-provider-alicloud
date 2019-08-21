@@ -109,9 +109,11 @@ func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) er
 		MaxSplitShard: d.Get("max_split_shard_count").(int),
 		AppendMeta:    d.Get("append_meta").(bool),
 	}
+	var requestinfo *sls.Client
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestinfo = slsClient
 			return nil, slsClient.CreateLogStoreV2(d.Get("project").(string), logstore)
 		})
 		if err != nil {
@@ -120,7 +122,12 @@ func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("CreateLogStoreV2", raw)
+		if debugOn() {
+			addDebug("CreateLogStoreV2", raw, requestinfo, map[string]interface{}{
+				"project":  d.Get("project").(string),
+				"logstore": logstore,
+			})
+		}
 		return nil
 	})
 	if err != nil {
@@ -231,14 +238,20 @@ func resourceAlicloudLogStoreUpdate(d *schema.ResourceData, meta interface{}) er
 		store.WebTracking = d.Get("enable_web_tracking").(bool)
 		store.AppendMeta = d.Get("append_meta").(bool)
 		store.AutoSplit = d.Get("auto_split").(bool)
-
+		var requestInfo *sls.Client
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
 			return nil, slsClient.UpdateLogStoreV2(parts[0], store)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateLogStoreV2", AliyunLogGoSdkERROR)
 		}
-		addDebug("UpdateLogStoreV2", raw)
+		if debugOn() {
+			addDebug("UpdateLogStoreV2", raw, requestInfo, map[string]interface{}{
+				"project":  parts[0],
+				"logstore": store,
+			})
+		}
 	}
 	d.Partial(false)
 

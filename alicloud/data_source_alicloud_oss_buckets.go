@@ -241,7 +241,7 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 
 func dataSourceAlicloudOssBucketsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	var requestInfo *oss.Client
 	var allBuckets []oss.BucketProperties
 	nextMarker := ""
 	for {
@@ -251,12 +251,15 @@ func dataSourceAlicloudOssBucketsRead(d *schema.ResourceData, meta interface{}) 
 		}
 
 		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			requestInfo = ossClient
 			return ossClient.ListBuckets(options...)
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_oss_bucket", "CreateBucket", AliyunOssGoSdk)
 		}
-		addDebug("CreateBucket", raw)
+		if debugOn() {
+			addDebug("ListBuckets", raw, requestInfo, map[string]interface{}{"options": options})
+		}
 		response, _ := raw.(oss.ListBucketsResult)
 
 		if response.Buckets == nil || len(response.Buckets) < 1 {
@@ -296,6 +299,7 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 	var ids []string
 	var s []map[string]interface{}
 	var names []string
+	var requestInfo *oss.Client
 	for _, bucket := range buckets {
 		mapping := map[string]interface{}{
 			"name":          bucket.Name,
@@ -306,10 +310,13 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 
 		// Add additional information
 		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			requestInfo = ossClient
 			return ossClient.GetBucketInfo(bucket.Name)
 		})
 		if err == nil {
-			addDebug("GetBucketInfo", raw)
+			if debugOn() {
+				addDebug("GetBucketInfo", raw, requestInfo, map[string]string{"bucketName": bucket.Name})
+			}
 			response, _ := raw.(oss.GetBucketInfoResult)
 			mapping["acl"] = response.BucketInfo.ACL
 			mapping["extranet_endpoint"] = response.BucketInfo.ExtranetEndpoint
@@ -347,10 +354,13 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		// Add CORS rule information
 		var ruleMappings []map[string]interface{}
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			requestInfo = ossClient
 			return ossClient.GetBucketCORS(bucket.Name)
 		})
 		if err == nil {
-			addDebug("GetBucketCORS", raw)
+			if debugOn() {
+				addDebug("GetBucketCORS", raw, requestInfo, map[string]string{"bucketName": bucket.Name})
+			}
 			cors, _ := raw.(oss.GetBucketCORSResult)
 			if cors.CORSRules != nil {
 				for _, rule := range cors.CORSRules {
@@ -371,10 +381,13 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		// Add website configuration
 		var websiteMappings []map[string]interface{}
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			requestInfo = ossClient
 			return ossClient.GetBucketWebsite(bucket.Name)
 		})
 		if err == nil {
-			addDebug("GetBucketWebsite", raw)
+			if debugOn() {
+				addDebug("GetBucketWebsite", raw, requestInfo, map[string]string{"bucketName": bucket.Name})
+			}
 			ws, _ := raw.(oss.GetBucketWebsiteResult)
 			websiteMapping := make(map[string]interface{})
 			if v := &ws.IndexDocument; v != nil {
@@ -412,10 +425,13 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		// Add referer information
 		var refererMappings []map[string]interface{}
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			requestInfo = ossClient
 			return ossClient.GetBucketReferer(bucket.Name)
 		})
 		if err == nil {
-			addDebug("GetBucketReferer", raw)
+			if debugOn() {
+				addDebug("GetBucketReferer", raw, requestInfo, map[string]string{"bucketName": bucket.Name})
+			}
 			referer, _ := raw.(oss.GetBucketRefererResult)
 			refererMapping := map[string]interface{}{
 				"allow_empty": referer.AllowEmptyReferer,
@@ -430,10 +446,13 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		// Add lifecycle information
 		var lifecycleRuleMappings []map[string]interface{}
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			requestInfo = ossClient
 			return ossClient.GetBucketLifecycle(bucket.Name)
 		})
 		if err == nil {
-			addDebug("GetBucketLifecycle", raw)
+			if debugOn() {
+				addDebug("GetBucketLifecycle", raw, requestInfo, map[string]string{"bucketName": bucket.Name})
+			}
 			lifecycle, _ := raw.(oss.GetBucketLifecycleResult)
 			if len(lifecycle.Rules) > 0 {
 				for _, lifecycleRule := range lifecycle.Rules {
@@ -470,13 +489,16 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		// Add policy information
 		var policy string
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			requestInfo = ossClient
 			params := map[string]interface{}{}
 			params["policy"] = nil
 			return ossClient.Conn.Do("GET", bucket.Name, "", params, nil, nil, 0, nil)
 		})
 
 		if err == nil {
-			addDebug("GetPolicyByConn", raw)
+			if debugOn() {
+				addDebug("GetPolicyByConn", raw, requestInfo, map[string]string{"bucketName": bucket.Name})
+			}
 			rawResp := raw.(*oss.Response)
 			rawData, err := ioutil.ReadAll(rawResp.Body)
 			if err != nil {
@@ -491,10 +513,13 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 		// Add tags information
 		tagsMap := make(map[string]string)
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			requestInfo = ossClient
 			return ossClient.GetBucketTagging(bucket.Name)
 		})
 		if err == nil {
-			addDebug("GetBucketTagging", raw)
+			if debugOn() {
+				addDebug("GetBucketTagging", raw, requestInfo, map[string]string{"bucketName": bucket.Name})
+			}
 			tagging, _ := raw.(oss.GetBucketTaggingResult)
 			for _, t := range tagging.Tags {
 				tagsMap[t.Key] = t.Value

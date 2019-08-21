@@ -80,6 +80,7 @@ func resourceAliyunSlbMasterSlaveServerGroup() *schema.Resource {
 func resourceAliyunSlbMasterSlaveServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := slb.CreateCreateMasterSlaveServerGroupRequest()
+	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
 	if v, ok := d.GetOk("name"); ok {
 		request.MasterSlaveServerGroupName = v.(string)
@@ -93,7 +94,7 @@ func resourceAliyunSlbMasterSlaveServerGroupCreate(d *schema.ResourceData, meta 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_master_slave_server_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.CreateMasterSlaveServerGroupResponse)
 	d.SetId(response.MasterSlaveServerGroupId)
 
@@ -141,6 +142,7 @@ func resourceAliyunSlbMasterSlaveServerGroupDelete(d *schema.ResourceData, meta 
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 	request := slb.CreateDeleteMasterSlaveServerGroupRequest()
+	request.RegionId = client.RegionId
 	request.MasterSlaveServerGroupId = d.Id()
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -153,7 +155,7 @@ func resourceAliyunSlbMasterSlaveServerGroupDelete(d *schema.ResourceData, meta 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 	if err != nil {

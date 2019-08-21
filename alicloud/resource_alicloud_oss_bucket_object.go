@@ -111,13 +111,15 @@ func resourceAlicloudOssBucketObject() *schema.Resource {
 
 func resourceAlicloudOssBucketObjectPut(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var requestInfo *oss.Client
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		requestInfo = ossClient
 		return ossClient.Bucket(d.Get("bucket").(string))
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket_object", "Bucket", AliyunOssGoSdk)
 	}
-	addDebug("Bucket", raw)
+	addDebug("Bucket", raw, requestInfo, map[string]string{"bucketName": d.Get("bucket").(string)})
 	bucket, _ := raw.(*oss.Bucket)
 	var filePath string
 	var body io.Reader
@@ -160,13 +162,15 @@ func resourceAlicloudOssBucketObjectPut(d *schema.ResourceData, meta interface{}
 
 func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var requestInfo *oss.Client
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		requestInfo = ossClient
 		return ossClient.Bucket(d.Get("bucket").(string))
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "Bucket", AliyunOssGoSdk)
 	}
-	addDebug("Bucket", raw)
+	addDebug("Bucket", raw, requestInfo, map[string]string{"bucketName": d.Get("bucket").(string)})
 	bucket, _ := raw.(*oss.Bucket)
 	options, err := buildObjectHeaderOptions(d)
 	if err != nil {
@@ -181,7 +185,10 @@ func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetObjectDetailedMeta", AliyunOssGoSdk)
 	}
-	addDebug("GetObjectDetailedMeta", object)
+	addDebug("GetObjectDetailedMeta", object, requestInfo, map[string]interface{}{
+		"objectKey": d.Get("key").(string),
+		"options":   options,
+	})
 
 	d.Set("content_type", object.Get("Content-Type"))
 	d.Set("content_length", object.Get("Content-Length"))
@@ -199,12 +206,15 @@ func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{
 func resourceAlicloudOssBucketObjectDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ossService := OssService{client}
+	var requestInfo *oss.Client
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		requestInfo = ossClient
 		return ossClient.Bucket(d.Get("bucket").(string))
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "Bucket", AliyunOssGoSdk)
 	}
+	addDebug("Bucket", raw, requestInfo, map[string]string{"bucketName": d.Get("bucket").(string)})
 	bucket, _ := raw.(*oss.Bucket)
 
 	err = bucket.DeleteObject(d.Id())

@@ -57,6 +57,7 @@ func resourceAlicloudOnsTopicCreate(d *schema.ResourceData, meta interface{}) er
 	topic := d.Get("topic").(string)
 
 	request := ons.CreateOnsTopicCreateRequest()
+	request.RegionId = client.RegionId
 	request.Topic = topic
 	request.InstanceId = instanceId
 	request.MessageType = requests.NewInteger(d.Get("message_type").(int))
@@ -72,7 +73,7 @@ func resourceAlicloudOnsTopicCreate(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ons_topic", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	d.SetId(instanceId + ":" + topic)
 
 	if err = onsService.WaitForOnsTopic(d.Id(), Available, DefaultTimeout); err != nil {
@@ -115,6 +116,7 @@ func resourceAlicloudOnsTopicUpdate(d *schema.ResourceData, meta interface{}) er
 	topic := parts[1]
 
 	request := ons.CreateOnsTopicUpdateRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = instanceId
 	request.Topic = topic
 	request.PreventCache = onsService.GetPreventCache()
@@ -129,7 +131,7 @@ func resourceAlicloudOnsTopicUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return resourceAlicloudOnsTopicRead(d, meta)
@@ -147,6 +149,7 @@ func resourceAlicloudOnsTopicDelete(d *schema.ResourceData, meta interface{}) er
 	topic := parts[1]
 
 	request := ons.CreateOnsTopicDeleteRequest()
+	request.RegionId = client.RegionId
 	request.Topic = topic
 	request.InstanceId = instanceId
 	request.PreventCache = onsService.GetPreventCache()
@@ -160,7 +163,7 @@ func resourceAlicloudOnsTopicDelete(d *schema.ResourceData, meta interface{}) er
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(onsService.WaitForOnsTopic(d.Id(), Deleted, DefaultTimeoutMedium))
 }

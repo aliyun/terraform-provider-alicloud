@@ -42,6 +42,7 @@ func resourceAliyunOtsInstanceAttachmentCreate(d *schema.ResourceData, meta inte
 	vpcService := VpcService{client}
 
 	request := ots.CreateBindInstance2VpcRequest()
+	request.RegionId = client.RegionId
 	request.InstanceName = d.Get("instance_name").(string)
 	request.InstanceVpcName = d.Get("vpc_name").(string)
 	request.VirtualSwitchId = d.Get("vswitch_id").(string)
@@ -58,7 +59,7 @@ func resourceAliyunOtsInstanceAttachmentCreate(d *schema.ResourceData, meta inte
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instance_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	d.SetId(request.InstanceName)
 	return resourceAliyunOtsInstanceAttachmentRead(d, meta)
@@ -93,6 +94,7 @@ func resourceAliyunOtsInstanceAttachmentDelete(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 	request := ots.CreateUnbindInstance2VpcRequest()
+	request.RegionId = client.RegionId
 	request.InstanceName = d.Id()
 	request.InstanceVpcName = object.InstanceVpcName
 
@@ -105,6 +107,6 @@ func resourceAliyunOtsInstanceAttachmentDelete(d *schema.ResourceData, meta inte
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(otsService.WaitForOtsInstanceVpc(d.Id(), Deleted, DefaultTimeout))
 }

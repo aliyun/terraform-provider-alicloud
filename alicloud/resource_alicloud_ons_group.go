@@ -50,6 +50,7 @@ func resourceAlicloudOnsGroupCreate(d *schema.ResourceData, meta interface{}) er
 	groupId := d.Get("group_id").(string)
 
 	request := ons.CreateOnsGroupCreateRequest()
+	request.RegionId = client.RegionId
 	request.GroupId = groupId
 	request.InstanceId = instanceId
 	request.PreventCache = onsService.GetPreventCache()
@@ -64,7 +65,7 @@ func resourceAlicloudOnsGroupCreate(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ons_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	d.SetId(instanceId + ":" + groupId)
 
 	if err = onsService.WaitForOnsGroup(d.Id(), Available, DefaultTimeout); err != nil {
@@ -107,6 +108,7 @@ func resourceAlicloudOnsGroupUpdate(d *schema.ResourceData, meta interface{}) er
 	groupId := parts[1]
 
 	request := ons.CreateOnsGroupConsumerUpdateRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = instanceId
 	request.GroupId = groupId
 	request.PreventCache = onsService.GetPreventCache()
@@ -120,7 +122,7 @@ func resourceAlicloudOnsGroupUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return resourceAlicloudOnsGroupRead(d, meta)
@@ -138,6 +140,7 @@ func resourceAlicloudOnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 	groupId := parts[1]
 
 	request := ons.CreateOnsGroupDeleteRequest()
+	request.RegionId = client.RegionId
 	request.InstanceId = instanceId
 	request.GroupId = groupId
 	request.PreventCache = onsService.GetPreventCache()
@@ -151,7 +154,7 @@ func resourceAlicloudOnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(onsService.WaitForOnsGroup(d.Id(), Deleted, DefaultTimeoutMedium))
 }

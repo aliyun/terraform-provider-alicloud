@@ -59,7 +59,7 @@ func resourceAlicloudCRNamespaceCreate(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_namespace", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	d.SetId(namespaceName)
 
@@ -79,6 +79,7 @@ func resourceAlicloudCRNamespaceUpdate(d *schema.ResourceData, meta interface{})
 			return WrapError(err)
 		}
 		request := cr.CreateUpdateNamespaceRequest()
+		request.RegionId = client.RegionId
 		request.SetContent(serialized)
 		request.Namespace = d.Get("name").(string)
 
@@ -88,7 +89,7 @@ func resourceAlicloudCRNamespaceUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	}
 	return resourceAlicloudCRNamespaceRead(d, meta)
 }
@@ -135,6 +136,6 @@ func resourceAlicloudCRNamespaceDelete(d *schema.ResourceData, meta interface{})
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	return WrapError(crService.WaitForCRNamespace(d.Id(), Deleted, DefaultTimeout))
 }

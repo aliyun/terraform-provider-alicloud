@@ -13,8 +13,11 @@ type OssService struct {
 }
 
 func (s *OssService) DescribeOssBucket(id string) (response oss.GetBucketInfoResult, err error) {
+	request := map[string]string{"bucketName": id}
+	var requestInfo *oss.Client
 	raw, err := s.client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return ossClient.GetBucketInfo(id)
+		requestInfo = ossClient
+		return ossClient.GetBucketInfo(request["bucketName"])
 	})
 	if err != nil {
 		if ossNotFoundError(err) {
@@ -23,7 +26,7 @@ func (s *OssService) DescribeOssBucket(id string) (response oss.GetBucketInfoRes
 		return response, WrapErrorf(err, DefaultErrorMsg, id, "GetBucketInfo", AliyunOssGoSdk)
 	}
 
-	addDebug("GetBucketInfo", raw)
+	addDebug("GetBucketInfo", raw, requestInfo, request)
 	response, _ = raw.(oss.GetBucketInfoResult)
 	return
 }

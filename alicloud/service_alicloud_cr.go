@@ -136,6 +136,7 @@ type crTag struct {
 
 func (c *CrService) DescribeCrNamespace(id string) (*cr.GetNamespaceResponse, error) {
 	request := cr.CreateGetNamespaceRequest()
+	request.RegionId = c.client.RegionId
 	request.Namespace = id
 
 	var response *cr.GetNamespaceResponse
@@ -150,7 +151,7 @@ func (c *CrService) DescribeCrNamespace(id string) (*cr.GetNamespaceResponse, er
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	response, _ = raw.(*cr.GetNamespaceResponse)
 
 	return response, nil
@@ -190,6 +191,7 @@ func (c *CrService) DescribeCrRepo(id string) (*cr.GetRepoResponse, error) {
 	repoName := sli[1]
 
 	request := cr.CreateGetRepoRequest()
+	request.RegionId = c.client.RegionId
 	request.RepoNamespace = repoNamespace
 	request.RepoName = repoName
 
@@ -203,7 +205,7 @@ func (c *CrService) DescribeCrRepo(id string) (*cr.GetRepoResponse, error) {
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	return response, nil
 }
 
