@@ -21,6 +21,7 @@ const (
 	VPN_AUTH_SHA256     = string("sha256")
 	VPN_AUTH_SHA386     = string("sha386")
 	VPN_AUTH_SHA512     = string("sha512")
+	VPN_PFS_DISABLED    = string("disabled")
 	VPN_PFS_G1          = string("group1")
 	VPN_PFS_G2          = string("group2")
 	VPN_PFS_G5          = string("group5")
