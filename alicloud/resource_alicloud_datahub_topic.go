@@ -2,6 +2,8 @@ package alicloud
 
 import (
 	"fmt"
+
+	"strconv"
 	"strings"
 	"time"
 
@@ -44,6 +46,7 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 			"shard_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				ForceNew:     true,
 				Default:      1,
 				ValidateFunc: validateIntegerInRange(1, 10),
 			},
@@ -68,6 +71,7 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 			"record_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				ForceNew:     true,
 				Default:      "TUPLE",
 				ValidateFunc: validateAllowedStringValue([]string{string(datahub.TUPLE), string(datahub.BLOB)}),
 			},
@@ -75,6 +79,7 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 				Type:     schema.TypeMap,
 				Elem:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("record_type") != string(datahub.TUPLE)
 				},
@@ -115,68 +120,56 @@ func resourceAliyunDatahubTopicCreate(d *schema.ResourceData, meta interface{}) 
 		t.RecordType = datahub.BLOB
 	}
 
-	_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+	var requestInfo *datahub.DataHub
+
+	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+		requestInfo = dataHubClient
 		return nil, dataHubClient.CreateTopic(t)
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create topic'%s/%s' with error: %s", t.ProjectName, t.TopicName, err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_datahub_topic", "CreateTopic", AliyunDatahubSdkGo)
 	}
+	addDebug("CreateTopic", raw, requestInfo, t)
 
 	d.SetId(strings.ToLower(fmt.Sprintf("%s%s%s", t.ProjectName, COLON_SEPARATED, t.TopicName)))
 	return resourceAliyunDatahubTopicRead(d, meta)
 }
 
-func parseId2(d *schema.ResourceData, meta interface{}) (projectName, topicName string, err error) {
-	split := strings.Split(d.Id(), COLON_SEPARATED)
-	if len(split) != 2 {
-		err = fmt.Errorf("you should use resource alicloud_datahub_topic's new field 'project_name' and 'name' to re-import this resource.")
-		return
-	} else {
-		projectName = split[0]
-		topicName = split[1]
-		return
-	}
-}
-
 func resourceAliyunDatahubTopicRead(d *schema.ResourceData, meta interface{}) error {
-	projectName, topicName, err := parseId2(d, meta)
-	if err != nil {
-		return err
-	}
 
 	client := meta.(*connectivity.AliyunClient)
-
-	raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-		return dataHubClient.GetTopic(projectName, topicName)
-	})
+	datahubService := DatahubService{client}
+	object, err := datahubService.DescribeDatahubTopic(d.Id())
 	if err != nil {
-		if isDatahubNotExistError(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("failed to access topic '%s/%s' with error: %s", projectName, topicName, err)
+		return WrapError(err)
 	}
-	topic, _ := raw.(*datahub.Topic)
 
-	d.SetId(strings.ToLower(fmt.Sprintf("%s%s%s", topic.ProjectName, COLON_SEPARATED, topic.TopicName)))
+	d.SetId(strings.ToLower(fmt.Sprintf("%s%s%s", object.ProjectName, COLON_SEPARATED, object.TopicName)))
 
-	d.Set("name", topic.TopicName)
-	d.Set("project_name", topic.ProjectName)
-	d.Set("shard_count", topic.ShardCount)
-	d.Set("life_cycle", topic.Lifecycle)
-	d.Set("comment", topic.Comment)
-	d.Set("record_type", topic.RecordType.String())
-	d.Set("record_schema", topic.RecordSchema.String())
-	d.Set("create_time", datahub.Uint64ToTimeString(topic.CreateTime))
-	d.Set("last_modify_time", datahub.Uint64ToTimeString(topic.LastModifyTime))
+	d.Set("name", object.TopicName)
+	d.Set("project_name", object.ProjectName)
+	d.Set("shard_count", object.ShardCount)
+	d.Set("life_cycle", object.Lifecycle)
+	d.Set("comment", object.Comment)
+	d.Set("record_type", object.RecordType.String())
+	if object.RecordSchema != nil {
+		d.Set("record_schema", recordSchemaToMap(object.RecordSchema.Fields))
+	}
+	d.Set("create_time", datahub.Uint64ToTimeString(object.CreateTime))
+	d.Set("last_modify_time", datahub.Uint64ToTimeString(object.LastModifyTime))
 	return nil
 }
 
 func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) error {
-	projectName, topicName, err := parseId2(d, meta)
+	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
+	projectName, topicName := parts[0], parts[1]
 
 	client := meta.(*connectivity.AliyunClient)
 	// Currently, life_cycle can not be modified and it will be fixed in the next future.
@@ -184,11 +177,22 @@ func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) 
 		lifeCycle := d.Get("life_cycle").(int)
 		topicComment := d.Get("comment").(string)
 
-		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+		var requestInfo *datahub.DataHub
+
+		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			requestInfo = dataHubClient
 			return nil, dataHubClient.UpdateTopic(projectName, topicName, lifeCycle, topicComment)
 		})
 		if err != nil {
-			return fmt.Errorf("failed to update topic '%s/%s' with error: %s", projectName, topicName, err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateTopic", AliyunDatahubSdkGo)
+		}
+		if debugOn() {
+			requestMap := make(map[string]string)
+			requestMap["ProjectName"] = projectName
+			requestMap["TopicName"] = topicName
+			requestMap["LifeCycle"] = strconv.Itoa(lifeCycle)
+			requestMap["TopicComment"] = topicComment
+			addDebug("UpdateTopic", raw, requestInfo, requestMap)
 		}
 	}
 
@@ -196,39 +200,40 @@ func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceAliyunDatahubTopicDelete(d *schema.ResourceData, meta interface{}) error {
-	projectName, topicName, err := parseId2(d, meta)
+	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
+	projectName, topicName := parts[0], parts[1]
 
 	client := meta.(*connectivity.AliyunClient)
+	datahubService := DatahubService{client}
+	var requestInfo *datahub.DataHub
 
-	return resource.Retry(3*time.Minute, func() *resource.RetryError {
-		_, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
-			return dataHubClient.GetTopic(projectName, topicName)
-		})
-
-		if err != nil {
-			if isDatahubNotExistError(err) {
-				return nil
-			}
-			if isRetryableDatahubError(err) {
-				return resource.RetryableError(fmt.Errorf("while deleting '%s/%s', failed to access it with error: %s", projectName, topicName, err))
-			}
-			return resource.NonRetryableError(fmt.Errorf("while deleting '%s/%s', failed to access it with error: %s", projectName, topicName, err))
-		}
-
-		_, err = client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+			requestInfo = dataHubClient
 			return nil, dataHubClient.DeleteTopic(projectName, topicName)
 		})
-		if err == nil || isDatahubNotExistError(err) {
+		if err != nil {
+			if isRetryableDatahubError(err) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			requestMap := make(map[string]string)
+			requestMap["ProjectName"] = projectName
+			requestMap["TopicName"] = topicName
+			addDebug("DeleteTopic", raw, requestInfo, requestMap)
+		}
+		return nil
+	})
+	if err != nil {
+		if isDatahubNotExistError(err) {
 			return nil
 		}
-
-		if isRetryableDatahubError(err) {
-			return resource.RetryableError(fmt.Errorf("Deleting topic '%s/%s' timeout and got an error: %#v.", projectName, topicName, err))
-		}
-
-		return resource.NonRetryableError(fmt.Errorf("Deleting topic '%s/%s' timeout and got an error: %#v.", projectName, topicName, err))
-	})
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteTopic", AliyunDatahubSdkGo)
+	}
+	return WrapError(datahubService.WaitForDatahubTopic(d.Id(), Deleted, DefaultTimeout))
 }

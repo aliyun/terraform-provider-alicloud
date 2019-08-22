@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/denverdino/aliyungo/cs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/denverdino/aliyungo/cs"
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
