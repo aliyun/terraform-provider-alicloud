@@ -40,6 +40,11 @@ func TestAccAlicloudRamGroupMembership_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccRamGroupMembershipUserNameConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{"user_names.#": "1"}),

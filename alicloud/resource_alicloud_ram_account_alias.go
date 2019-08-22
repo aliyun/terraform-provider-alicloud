@@ -11,7 +11,9 @@ func resourceAlicloudRamAccountAlias() *schema.Resource {
 		Create: resourceAlicloudRamAccountAliasCreate,
 		Read:   resourceAlicloudRamAccountAliasRead,
 		Delete: resourceAlicloudRamAccountAliasDelete,
-
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 		Schema: map[string]*schema.Schema{
 			"account_alias": {
 				Type:     schema.TypeString,

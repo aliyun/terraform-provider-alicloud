@@ -29,4 +29,11 @@ The following arguments are supported:
 
 The following attributes are exported:
 
+* `id` - The account alias ID, it's set to `account_alias`.
 * `account_alias` - The account alias.
+
+## Import
+RAM account alias can be imported using the id, e.g.
+```
+$ terraform import alicloud_ram_account_alias.example my-alias
+```

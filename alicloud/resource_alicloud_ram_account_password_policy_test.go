@@ -40,6 +40,11 @@ func TestAccAlicloudRamAccountPasswordPolicy_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccAlicloudRamAccountPasswordPolicyRequireLowercaseCharacters,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

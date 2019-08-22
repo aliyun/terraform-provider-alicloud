@@ -12,6 +12,9 @@ func resourceAlicloudRamGroupMembership() *schema.Resource {
 		Read:   resourceAlicloudRamGroupMembershipRead,
 		Update: resourceAlicloudRamGroupMembershipUpdate,
 		Delete: resourceAlicloudRamGroupMembershipDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"group_name": {
