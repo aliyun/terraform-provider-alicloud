@@ -39,7 +39,7 @@ func testSweepCSSwarms(region string) error {
 		return csClient.DescribeClusters("")
 	})
 	if err != nil {
-		return fmt.Errorf("Error retrieving CS Swarm Clusters: %s", err)
+		return fmt.Errorf("Error retrieving CS Clusters: %s", err)
 	}
 	clusters, _ := raw.([]cs.ClusterType)
 	sweeped := false
@@ -60,15 +60,15 @@ func testSweepCSSwarms(region string) error {
 			}
 		}
 		if skip {
-			log.Printf("[INFO] Skipping CS Swarm Clusters: %s (%s)", name, id)
+			log.Printf("[INFO] Skipping CS Clusters: %s (%s)", name, id)
 			continue
 		}
-		log.Printf("[INFO] Deleting CS Swarm Clusters: %s (%s)", name, id)
+		log.Printf("[INFO] Deleting CS Clusters: %s (%s)", name, id)
 		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 			return nil, csClient.DeleteCluster(id)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete CS Swarm Clusters (%s (%s)): %s", name, id, err)
+			log.Printf("[ERROR] Failed to delete CS Clusters (%s (%s)): %s", name, id, err)
 		} else {
 			sweeped = true
 		}

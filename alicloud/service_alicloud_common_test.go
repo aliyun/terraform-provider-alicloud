@@ -671,12 +671,21 @@ func (s *SlbService) sweepSlb(id string) error {
 	if id == "" {
 		return nil
 	}
-
-	log.Printf("[DEBUG] Deleting SLB %s ...", id)
-	request := slb.CreateDeleteLoadBalancerRequest()
+	log.Printf("[DEBUG] Set SLB DeleteProtection to off before deleting %s ...", id)
+	request := slb.CreateSetLoadBalancerDeleteProtectionRequest()
 	request.LoadBalancerId = id
+	request.DeleteProtection = "off"
 	_, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DeleteLoadBalancer(request)
+		return slbClient.SetLoadBalancerDeleteProtection(request)
+	})
+	if err != nil {
+		log.Printf("[ERROR] Set SLB %s DeleteProtection to off failed.", id)
+	}
+	log.Printf("[DEBUG] Deleting SLB %s ...", id)
+	delRequest := slb.CreateDeleteLoadBalancerRequest()
+	delRequest.LoadBalancerId = id
+	_, err = s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DeleteLoadBalancer(delRequest)
 	})
 	if err == nil {
 		time.Sleep(1 * time.Second)

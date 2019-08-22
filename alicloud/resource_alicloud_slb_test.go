@@ -67,6 +67,7 @@ func testSweepSLBs(region string) error {
 	}
 
 	service := SlbService{client}
+	vpcService := VpcService{client}
 	for _, loadBalancer := range slbs {
 		name := loadBalancer.LoadBalancerName
 		id := loadBalancer.LoadBalancerId
@@ -75,6 +76,12 @@ func testSweepSLBs(region string) error {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 				skip = false
 				break
+			}
+		}
+		// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+		if skip {
+			if need, err := vpcService.needSweepVpc(loadBalancer.VpcId, loadBalancer.VSwitchId); err == nil {
+				skip = !need
 			}
 		}
 		if skip {
