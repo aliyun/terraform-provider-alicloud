@@ -151,13 +151,13 @@ func TestAccAlicloudSnapshotBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"version": "1.0",
-						"tag2":    "tag2",
+						"Tag2":    "Tag2",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":    "2",
-						"tags.tag2": "tag2",
+						"tags.Tag2": "Tag2",
 					}),
 				),
 			},
@@ -170,7 +170,7 @@ func TestAccAlicloudSnapshotBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":    "1",
-						"tags.tag2": REMOVEKEY,
+						"tags.Tag2": REMOVEKEY,
 					}),
 				),
 			},

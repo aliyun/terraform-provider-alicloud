@@ -288,14 +288,14 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"key1": "value1",
-						"key2": "value2",
+						"Key2": "Value2",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":    "2",
 						"tags.key1": "value1",
-						"tags.key2": "value2",
+						"tags.Key2": "Value2",
 					}),
 				),
 			},
@@ -303,7 +303,7 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"key1-update": "value1-update",
-						"key2-update": "value2-update",
+						"Key2-update": "Value2-update",
 						"key3-new":    "value3-new",
 					},
 				}),
@@ -311,10 +311,10 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"tags.%":           "3",
 						"tags.key1-update": "value1-update",
-						"tags.key2-update": "value2-update",
+						"tags.Key2-update": "Value2-update",
 						"tags.key3-new":    "value3-new",
 						"tags.key1":        REMOVEKEY,
-						"tags.key2":        REMOVEKEY,
+						"tags.Key2":        REMOVEKEY,
 					}),
 				),
 			},
@@ -348,7 +348,7 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 						"lifecycle_rule.1.expiration." + hashcode2 + ".date": REMOVEKEY,
 						"tags.%":           "0",
 						"tags.key1-update": REMOVEKEY,
-						"tags.key2-update": REMOVEKEY,
+						"tags.Key2-update": REMOVEKEY,
 						"tags.key3-new":    REMOVEKEY,
 					}),
 				),
