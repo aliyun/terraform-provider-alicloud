@@ -550,7 +550,7 @@ resource "alicloud_network_interface" "default" {
     name = "${var.name}Change%d"
     description = "tf-testAcc-eni-description"
     tags = {
-		TF-VER = "0.11.3"
+		TF-VER = "Version 0.11.3"
 	}
 }
 `, rand)

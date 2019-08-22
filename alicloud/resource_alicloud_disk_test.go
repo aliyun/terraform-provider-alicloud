@@ -175,7 +175,10 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				Config: testAccDiskConfig_tags,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%": "3",
+						"tags.%":     "3",
+						"tags.name1": "name1",
+						"tags.Name2": "Name2",
+						"tags.name3": "name3",
 					}),
 				),
 			},
@@ -208,6 +211,9 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":               "0",
+						"tags.name1":           REMOVEKEY,
+						"tags.Name2":           REMOVEKEY,
+						"tags.name3":           REMOVEKEY,
 						"name":                 "tf-testAccDiskConfig_all",
 						"description":          "nothing",
 						"delete_auto_snapshot": "false",
@@ -332,7 +338,7 @@ resource "alicloud_disk" "default" {
 	encrypted = "false"
 	tags = {
 		name1 = "name1"
-		name2 = "name2"
+		Name2 = "Name2"
 		name3 = "name3"
 			}
 }
@@ -357,7 +363,7 @@ resource "alicloud_disk" "default" {
 	encrypted = "false"
 	tags = {
 		name1 = "name1"
-		name2 = "name2"
+		Name2 = "Name2"
 		name3 = "name3"
 			}
 	delete_auto_snapshot = "true"
@@ -383,7 +389,7 @@ resource "alicloud_disk" "default" {
 	encrypted = "false"
 	tags = {
 		name1 = "name1"
-		name2 = "name2"
+		Name2 = "Name2"
 		name3 = "name3"
 			}
 	delete_auto_snapshot = "true"
@@ -410,7 +416,7 @@ resource "alicloud_disk" "default" {
 	encrypted = "false"
 	tags = {
 		name1 = "name1"
-		name2 = "name2"
+		Name2 = "Name2"
 		name3 = "name3"
 			}
 	delete_auto_snapshot = "true"

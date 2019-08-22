@@ -203,7 +203,8 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 				Config: testAccCheckSecurityGroupConfig_tags,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%": "1",
+						"tags.%":    "1",
+						"tags.Test": REMOVEKEY,
 					}),
 				),
 			},
@@ -264,7 +265,7 @@ resource "alicloud_security_group" "default" {
   description = "${var.name}_describe"
   tags = {
 		foo  = "foo"
-        test = "test"
+        Test = "Test"
   }
 }
 `
@@ -287,7 +288,7 @@ resource "alicloud_security_group" "default" {
   description = "${var.name}_describe"
   tags = {
 		foo  = "foo"
-        test = "test"
+        Test = "Test"
   }
 }
 `
@@ -311,7 +312,7 @@ resource "alicloud_security_group" "default" {
   description = "${var.name}_describe"
   tags = {
 		foo  = "foo"
-        test = "test"
+        Test = "Test"
   }
 }
 `
@@ -335,7 +336,7 @@ resource "alicloud_security_group" "default" {
   description = "${var.name}_describe_change"
   tags = {
 		foo  = "foo"
-        test = "test"
+        Test = "Test"
   }
 }
 `
@@ -382,7 +383,7 @@ resource "alicloud_security_group" "default" {
   description = "${var.name}_describe"
   tags = {
 		foo  = "foo"
-        test = "test"
+        Test = "Test"
   }
 }
 `
@@ -393,4 +394,6 @@ var testAccCheckSecurityBasicMap = map[string]string{
 	"name":         "tf-testAccCheckSecurityGroupName",
 	"description":  "tf-testAccCheckSecurityGroupName_describe",
 	"tags.%":       "2",
+	"tags.foo":     "foo",
+	"tags.Test":    "Test",
 }
