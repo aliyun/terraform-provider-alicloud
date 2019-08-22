@@ -54,6 +54,12 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The membership ID.
+* `id` - The membership ID, it's set to `group_name`
 * `group_name` - The group name.
 * `user_names` - The list of names of users which in the group.
+
+## Import
+RAM Group membership can be imported using the id, e.g.
+```
+$ terraform import alicloud_ram_group_membership.example my-group
+```

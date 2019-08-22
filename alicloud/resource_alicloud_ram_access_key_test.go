@@ -36,16 +36,9 @@ func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamAccessKeyExists(resourceAKId, &v),
 					testAccCheckRamUserExists(resourceUserId, &u),
-					testAccCheck(map[string]string{"user_name": fmt.Sprintf("tf-testAcc%sRamAccessKeyConfig%d", defaultRegionToTest, rand)}),
-				),
-			},
-			{
-				Config: testAccRamAccessKeyPgp(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRamAccessKeyExists(resourceAKId, &v),
-					testAccCheckRamUserExists(resourceUserId, &u),
 					testAccCheckDecryptSecretKeyAndTest(resourceAKId, pgpPrivKey),
 					testAccCheck(accessKeyBasicMap),
+					testAccCheck(map[string]string{"user_name": fmt.Sprintf("tf-testAcc%sRamAccessKeyConfig%d", defaultRegionToTest, rand)}),
 				),
 			},
 			{
@@ -135,23 +128,6 @@ func testAccCheckRamAccessKeyDestroy(s *terraform.State) error {
 }
 
 func testAccRamAccessKeyCreate(rand int) string {
-	return fmt.Sprintf(`
-resource "alicloud_ram_user" "default" {
-  name = "tf-testAcc%sRamAccessKeyConfig%d"
-  display_name = "displayname"
-  mobile = "86-18888888888"
-  email = "hello.uuu@aaa.com"
-  comments = "yoyoyo"
-}
-
-resource "alicloud_ram_access_key" "default" {
-  user_name = "${alicloud_ram_user.default.name}"
-  status = "Active"
-  secret_file = "/hello.txt"
-}`, defaultRegionToTest, rand)
-}
-
-func testAccRamAccessKeyPgp(rand int) string {
 	return fmt.Sprintf(`
 resource "alicloud_ram_user" "default" {
   name = "tf-testAcc%sRamAccessKeyConfig%d"
