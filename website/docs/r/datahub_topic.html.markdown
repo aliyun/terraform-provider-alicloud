@@ -52,10 +52,10 @@ The following arguments are supported:
 
 * `name` - (Required, ForceNew) The name of the datahub topic. Its length is limited to 1-128 and only characters such as letters, digits and '_' are allowed. It is case-insensitive.
 * `project_name` - (Required, ForceNew) The name of the datahub project that this topic belongs to. It is case-insensitive.
-* `shard_count` - (Optional) The number of shards this topic contains. The permitted range of values is [1, 10]. The default value is 1.
+* `shard_count` - (Optional, ForceNew) The number of shards this topic contains. The permitted range of values is [1, 10]. The default value is 1.
 * `life_cycle` - (Optional) How many days this topic lives. The permitted range of values is [1, 7]. The default value is 3.
-* `record_type` - (Optional) The type of this topic. Its value must be one of {BLOB, TUPLE}. For BLOB topic, data will be organized as binary and encoded by BASE64. For TUPLE topic, data has fixed schema. The default value is "TUPLE" with a schema {STRING}.
-* `record_schema` - (Optional) Schema of this topic, required only for TUPLE topic. Supported data types (case-insensitive) are:
+* `record_type` - (Optional, ForceNew) The type of this topic. Its value must be one of {BLOB, TUPLE}. For BLOB topic, data will be organized as binary and encoded by BASE64. For TUPLE topic, data has fixed schema. The default value is "TUPLE" with a schema {STRING}.
+* `record_schema` - (Optional, ForceNew) Schema of this topic, required only for TUPLE topic. Supported data types (case-insensitive) are:
   - BIGINT
   - STRING
   - BOOLEAN

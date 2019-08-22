@@ -122,6 +122,66 @@ func (s *DatahubService) WaitForDatahubSubscription(id string, status Status, ti
 	}
 }
 
+func (s *DatahubService) DescribeDatahubTopic(id string) (topic *datahub.Topic, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	projectName, topicName := parts[0], parts[1]
+
+	var requestInfo *datahub.DataHub
+
+	raw, err := s.client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
+		requestInfo = dataHubClient
+		return dataHubClient.GetTopic(projectName, topicName)
+	})
+	if err != nil {
+		if isDatahubNotExistError(err) {
+			return topic, WrapErrorf(err, NotFoundMsg, AliyunDatahubSdkGo)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetTopic", AliyunDatahubSdkGo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]string)
+		requestMap["ProjectName"] = projectName
+		requestMap["TopicName"] = topicName
+		addDebug("GetTopic", raw, requestInfo, requestMap)
+	}
+	topic, _ = raw.(*datahub.Topic)
+	if topic == nil {
+		return topic, WrapErrorf(Error(GetNotFoundMessage("DatahubTopic", id)), NotFoundMsg, ProviderERROR)
+	}
+	return
+}
+
+func (s *DatahubService) WaitForDatahubTopic(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	projectName, topicName := parts[0], parts[1]
+	for {
+		object, err := s.DescribeDatahubTopic(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.ProjectName == projectName && object.TopicName == topicName && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ProjectName+":"+object.TopicName, id, ProviderERROR)
+		}
+
+	}
+}
+
 func convUint64ToDate(t uint64) string {
 	return time.Unix(int64(t), 0).Format("2006-01-02 15:04:05")
 }
@@ -178,4 +238,13 @@ func getDefaultRecordSchemainMap() map[string]interface{} {
 	return map[string]interface{}{
 		"string_field": "STRING",
 	}
+}
+
+func recordSchemaToMap(fields []datahub.Field) map[string]string {
+	result := make(map[string]string)
+	for _, f := range fields {
+		result[f.Name] = f.Type.String()
+	}
+
+	return result
 }
