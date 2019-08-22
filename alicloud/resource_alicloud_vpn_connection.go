@@ -134,7 +134,7 @@ func resourceAliyunVpnConnection() *schema.Resource {
 			"ipsec_config": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Computed: true,
+				// Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"ipsec_enc_alg": {
@@ -153,7 +153,7 @@ func resourceAliyunVpnConnection() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      VPN_PFS_G2,
-							ValidateFunc: validateAllowedStringValue([]string{VPN_PFS_G1, VPN_PFS_G2, VPN_PFS_G5, VPN_PFS_G14, VPN_PFS_G24}),
+							ValidateFunc: validateAllowedStringValue([]string{VPN_PFS_G1, VPN_PFS_G2, VPN_PFS_G5, VPN_PFS_G14, VPN_PFS_G24, VPN_PFS_DISABLED}),
 						},
 						"ipsec_lifetime": {
 							Type:         schema.TypeInt,
