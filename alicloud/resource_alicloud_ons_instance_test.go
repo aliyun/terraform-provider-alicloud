@@ -34,7 +34,11 @@ func testSweepOnsInstance(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf-testacc",
+		"tf_testacc",
+		"GID-tf-testAcc",
+		"GID_tf-testacc",
+		"CID-tf-testAcc",
+		"CID_tf-testacc",
 	}
 
 	request := ons.CreateOnsInstanceInServiceListRequest()
