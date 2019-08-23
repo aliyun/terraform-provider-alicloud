@@ -1,28 +1,28 @@
-## 1.55.1 (Unreleased)
+## 1.55.1 (August 23, 2019)
 
 IMPROVEMENTS:
 
-- improve(ons_instance): set instance name using random [GH-1597]
-- add support to Ipsec_pfs field be set with "disabled" and add example files [GH-1589]
-- improve(slb): sweep the protected slb [GH-1588]
-- Improve(ram): ram resources supports import [GH-1586]
-- improve(tags): modified test case to check the upper case letters in tags [GH-1585]
-- improve(Document):improve document demo about set [GH-1580]
-- Update RouteEntry Resource RouteEntryName Field [GH-1578]
-- improve(ci):supplement log [GH-1577]
-- improve(sdk):update alibaba-cloud-sdk-go(1.60.107) [GH-1575]
-- Rename resource name that is not start with a letter [GH-1573]
-- Improve(datahub_topic): Improve resource use common method [GH-1565]
-- Improve(datahub_subscription): Improve resource use common method [GH-1556]
-- Improve(datahub_project): Improve resource use common method [GH-1555]
+- improve(ons_instance): set instance name using random ([#1597](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1597))
+- add support to Ipsec_pfs field be set with "disabled" and add example files ([#1589](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1589))
+- improve(slb): sweep the protected slb ([#1588](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1588))
+- Improve(ram): ram resources supports import ([#1586](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1586))
+- improve(tags): modified test case to check the upper case letters in tags ([#1585](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1585))
+- improve(Document):improve document demo about set ([#1580](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1580))
+- Update RouteEntry Resource RouteEntryName Field ([#1578](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1578))
+- improve(ci):supplement log ([#1577](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1577))
+- improve(sdk):update alibaba-cloud-sdk-go(1.60.107) ([#1575](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1575))
+- Rename resource name that is not start with a letter ([#1573](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1573))
+- Improve(datahub_topic): Improve resource use common method ([#1565](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1565))
+- Improve(datahub_subscription): Improve resource use common method ([#1556](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1556))
+- Improve(datahub_project): Improve resource use common method ([#1555](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1555))
 
 BUG FIXES:
 
-- fix(vsw): fix bug from github issue [GH-1593]
-- fix(instance):update instance testcase [GH-1590]
-- fix(ci):fix CI statistics bug [GH-1576]
-- Fix typo [GH-1574]
-- fix(disks):fix dataSource test case bug [GH-1566]
+- fix(vsw): fix bug from github issue ([#1593](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1593))
+- fix(instance):update instance testcase ([#1590](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1590))
+- fix(ci):fix CI statistics bug ([#1576](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1576))
+- Fix typo ([#1574](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1574))
+- fix(disks):fix dataSource test case bug ([#1566](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1566))
 
 ## 1.55.0 (August 16, 2019)
 
