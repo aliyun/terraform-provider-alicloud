@@ -134,7 +134,7 @@ func resourceAliyunVpnConnection() *schema.Resource {
 			"ipsec_config": {
 				Type:     schema.TypeList,
 				Optional: true,
-				// Computed: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"ipsec_enc_alg": {

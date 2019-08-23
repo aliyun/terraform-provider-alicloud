@@ -40,7 +40,7 @@ resource "alicloud_vpn_connection" "foo" {
   local_subnet        = ["172.16.0.0/24", "172.16.1.0/24"]
   remote_subnet       = ["10.0.0.0/24", "10.0.1.0/24"]
   effect_immediately  = true
-  ike_config = [{
+  ike_config {
     ike_auth_alg  = "md5"
     ike_enc_alg   = "des"
     ike_version   = "ikev1"
@@ -51,13 +51,12 @@ resource "alicloud_vpn_connection" "foo" {
     ike_remote_id = "testbob2"
     ike_local_id  = "testalice2"
     }
-  ]
-  ipsec_config = [{
+  ipsec_config {
     ipsec_pfs      = "group5"
     ipsec_enc_alg  = "des"
     ipsec_auth_alg = "md5"
     ipsec_lifetime = 8640
-  }]
+  }
 }
 ```
 ## Argument Reference
@@ -93,7 +92,7 @@ The ipsec_config mapping supports the following:
 
 * `ipsec_enc_alg` - (Optional) The encryption algorithm of phase-two negotiation. Valid value: aes | aes192 | aes256 | des | 3des. Default value: aes
 * `ipsec_auth_alg` - (Optional) The authentication algorithm of phase-two negotiation. Valid value: md5 | sha1 | sha256 | sha384 | sha512 |. Default value: sha1
-* `ipsec_pfs` - (Optional) The Diffie-Hellman key exchange algorithm used by phase-two negotiation. Valid value: group1 | group2 | group5 | group14 | group24. Default value: group2
+* `ipsec_pfs` - (Optional) The Diffie-Hellman key exchange algorithm used by phase-two negotiation. Valid value: group1 | group2 | group5 | group14 | group24| disabled. Default value: group2
 * `ipsec_lifetime` - (Optional)  The SA lifecycle as the result of phase-two negotiation. The valid value is [0, 86400], the unit is second and the default value is 86400.
 
 ## Attributes Reference
