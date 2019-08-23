@@ -223,11 +223,10 @@ func VSwitchesDecriptionAttributes(d *schema.ResourceData, vsws []vpc.VSwitch, m
 
 		response, _ := raw.(*ecs.DescribeInstancesResponse)
 		if len(response.Instances.Instance) > 0 {
-			instance_ids := make([]string, len(response.Instances.Instance))
-			if len(instance_ids) > 0 {
-				for _, inst := range response.Instances.Instance {
-					instance_ids = append(instance_ids, inst.InstanceId)
-				}
+			instance_ids := make([]string, 0, len(response.Instances.Instance))
+
+			for _, inst := range response.Instances.Instance {
+				instance_ids = append(instance_ids, inst.InstanceId)
 			}
 			mapping["instance_ids"] = instance_ids
 		}
