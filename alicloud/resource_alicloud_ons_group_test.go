@@ -174,13 +174,13 @@ func TestAccAlicloudOnsGroup_basic(t *testing.T) {
 func resourceOnsGroupConfigDependence(name string) string {
 	return fmt.Sprintf(`
 resource "alicloud_ons_instance" "default" {
-  name = "tf-testaccOnsInstanceGroupbasic"
+  name = "%s"
 }
 
 variable "group_id" {
- default = "%v"
+ default = "%s"
 }
-`, name)
+`, name, name)
 }
 
 var onsGroupBasicMap = map[string]string{

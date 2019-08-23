@@ -200,13 +200,13 @@ func TestAccAlicloudOnsTopic_basic(t *testing.T) {
 func resourceOnsTopicConfigDependence(name string) string {
 	return fmt.Sprintf(`
 resource "alicloud_ons_instance" "default" {
-  name = "tf-testaccOnsInstancebasic"
+  name = "%s"
 }
 
 variable "topic" {
- default = "%v"
+ default = "%s"
 }
-`, name)
+`, name, name)
 }
 
 var onsTopicBasicMap = map[string]string{

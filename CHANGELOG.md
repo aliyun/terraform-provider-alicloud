@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- improve(ons_instance): set instance name using random [GH-1597]
 - add support to Ipsec_pfs field be set with "disabled" and add example files [GH-1589]
 - improve(slb): sweep the protected slb [GH-1588]
 - Improve(ram): ram resources supports import [GH-1586]
