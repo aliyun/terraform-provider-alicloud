@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"strconv"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
@@ -14,6 +16,9 @@ func resourceAlicloudDdoscooInstance() *schema.Resource {
 		Read:   resourceAlicloudDdoscooInstanceRead,
 		Update: resourceAlicloudDdoscooInstanceUpdate,
 		Delete: resourceAlicloudDdoscooInstanceDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -21,23 +26,23 @@ func resourceAlicloudDdoscooInstance() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validateDdoscooInstanceName,
 			},
-			"base_bandwidth": &schema.Schema{
+			"base_bandwidth": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"bandwidth": &schema.Schema{
+			"bandwidth": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"service_bandwidth": &schema.Schema{
+			"service_bandwidth": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"port_count": &schema.Schema{
+			"port_count": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"domain_count": &schema.Schema{
+			"domain_count": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -67,13 +72,13 @@ func resourceAlicloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	resp := raw.(*bssopenapi.CreateInstanceResponse)
+	response := raw.(*bssopenapi.CreateInstanceResponse)
 	// execute errors including in the bssopenapi response
-	if !resp.Success {
-		return WrapError(Error(resp.Message))
+	if !response.Success {
+		return WrapError(Error(response.Message))
 	}
 
-	d.SetId(resp.Data.InstanceId)
+	d.SetId(response.Data.InstanceId)
 
 	return resourceAlicloudDdoscooInstanceUpdate(d, meta)
 }
@@ -103,11 +108,11 @@ func resourceAlicloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("name", insInfo.Remark)
-	d.Set("bandwidth", specInfo.ElasticBandwidth)
-	d.Set("base_bandwidth", specInfo.BaseBandwidth)
-	d.Set("domain_count", specInfo.DomainLimit)
-	d.Set("port_count", specInfo.PortLimit)
-	d.Set("service_bandwidth", specInfo.BandwidthMbps)
+	d.Set("bandwidth", strconv.Itoa(specInfo.ElasticBandwidth))
+	d.Set("base_bandwidth", strconv.Itoa(specInfo.BaseBandwidth))
+	d.Set("domain_count", strconv.Itoa(specInfo.DomainLimit))
+	d.Set("port_count", strconv.Itoa(specInfo.PortLimit))
+	d.Set("service_bandwidth", strconv.Itoa(specInfo.BandwidthMbps))
 
 	return nil
 }

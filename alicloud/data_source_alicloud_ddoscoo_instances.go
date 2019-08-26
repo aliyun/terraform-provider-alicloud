@@ -106,12 +106,12 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 		}
 
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		resp, _ := raw.(*ddoscoo.DescribeInstancesResponse)
-		if len(resp.Instances) < 1 {
+		response, _ := raw.(*ddoscoo.DescribeInstancesResponse)
+		if len(response.Instances) < 1 {
 			break
 		}
 
-		for _, item := range resp.Instances {
+		for _, item := range response.Instances {
 			if nameRegex != nil {
 				if !nameRegex.MatchString(item.Remark) {
 					continue
@@ -120,7 +120,7 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 			instances = append(instances, item)
 		}
 
-		if len(resp.Instances) < PageSizeLarge {
+		if len(response.Instances) < PageSizeLarge {
 			break
 		}
 
@@ -136,7 +136,7 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 	}
 
 	// describe instance spec filtered by instanceids
-	var nameMap map[string]string = make(map[string]string)
+	nameMap := make(map[string]string)
 	var instanceIds []string
 	for _, instance := range instances {
 		instanceIds = append(instanceIds, instance.InstanceId)
@@ -159,10 +159,10 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddoscoo_instances", specReq.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(specReq.GetActionName(), raw)
-	resp, _ := raw.(*ddoscoo.DescribeInstanceSpecsResponse)
+	addDebug(specReq.GetActionName(), raw, specReq.RpcRequest, specReq)
+	response, _ := raw.(*ddoscoo.DescribeInstanceSpecsResponse)
 
-	return WrapError(extractDdoscooInstance(d, nameMap, resp.InstanceSpecs))
+	return WrapError(extractDdoscooInstance(d, nameMap, response.InstanceSpecs))
 }
 
 func extractDdoscooInstance(d *schema.ResourceData, nameMap map[string]string, instanceSpecs []ddoscoo.InstanceSpec) error {

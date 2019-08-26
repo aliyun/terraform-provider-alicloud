@@ -60,6 +60,7 @@ The following attributes are exported:
 
 ## Import
 RAM Group membership can be imported using the id, e.g.
+
 ```
 $ terraform import alicloud_ram_group_membership.example my-group
 ```
