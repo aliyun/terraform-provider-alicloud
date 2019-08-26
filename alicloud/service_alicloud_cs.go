@@ -113,3 +113,59 @@ func (s *CsService) WaitForContainerApplication(clusterName, appName string, sta
 	}
 	return nil
 }
+
+func (s *CsService) DescribeCsManagedKubernetes(id string) (cluster cs.KubernetesCluster, err error) {
+	var requestInfo *cs.Client
+	invoker := NewInvoker()
+	var response interface{}
+
+	if err := invoker.Run(func() error {
+		raw, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			requestInfo = csClient
+			return csClient.DescribeKubernetesCluster(id)
+		})
+		response = raw
+		return err
+	}); err != nil {
+		if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
+			return cluster, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return cluster, WrapErrorf(err, DefaultErrorMsg, id, "DescribeKubernetesCluster", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["Id"] = id
+		addDebug("DescribeKubernetesCluster", response, requestInfo, requestMap, map[string]interface{}{"Id": id})
+	}
+	cluster, _ = response.(cs.KubernetesCluster)
+	if cluster.ClusterID != id {
+		return cluster, WrapErrorf(Error(GetNotFoundMessage("CSManagedKubernetes", id)), NotFoundMsg, ProviderERROR)
+	}
+	return
+
+}
+
+func (s *CsService) WaitForCSManagedKubernetes(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		object, err := s.DescribeCsManagedKubernetes(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.ClusterID == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ClusterID, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+
+	}
+}
