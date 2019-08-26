@@ -3,8 +3,10 @@ package alicloud
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"time"
 )
 
 func resourceAlicloudOnsTopic() *schema.Resource {
@@ -67,13 +69,23 @@ func resourceAlicloudOnsTopicCreate(d *schema.ResourceData, meta interface{}) er
 		request.Remark = v.(string)
 	}
 
-	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsTopicCreate(request)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
+			return onsClient.OnsTopicCreate(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{OnsThrottlingUser}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ons_topic", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	d.SetId(instanceId + ":" + topic)
 
 	if err = onsService.WaitForOnsTopic(d.Id(), Available, DefaultTimeout); err != nil {
@@ -154,8 +166,19 @@ func resourceAlicloudOnsTopicDelete(d *schema.ResourceData, meta interface{}) er
 	request.InstanceId = instanceId
 	request.PreventCache = onsService.GetPreventCache()
 
-	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsTopicDelete(request)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
+			return onsClient.OnsTopicDelete(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{OnsThrottlingUser}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{AuthResourceOwnerError}) {
@@ -163,7 +186,6 @@ func resourceAlicloudOnsTopicDelete(d *schema.ResourceData, meta interface{}) er
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(onsService.WaitForOnsTopic(d.Id(), Deleted, DefaultTimeoutMedium))
 }

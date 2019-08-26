@@ -329,6 +329,7 @@ const (
 	OnsInstanceNotExist    = "INSTANCE_NOT_FOUND"
 	OnsInstanceNotEmpty    = "INSTANCE_NOT_EMPTY"
 	AuthResourceOwnerError = "AUTH_RESOURCE_OWNER_ERROR"
+	OnsThrottlingUser      = "Throttling.User"
 
 	//HaVip
 	InvalidHaVipIdNotFound = "InvalidHaVipId.NotFound"
