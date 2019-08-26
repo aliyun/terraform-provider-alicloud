@@ -288,20 +288,26 @@ func dataSourceAlicloudCSKubernetesClustersRead(d *schema.ResourceData, meta int
 	client := meta.(*connectivity.AliyunClient)
 
 	var allClusterTypes []cs.ClusterType
+	var requestInfo *cs.Client
 
 	invoker := NewInvoker()
+	var response interface{}
 	if err := invoker.Run(func() error {
-		raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			requestInfo = csClient
 			return csClient.DescribeClusters("")
 		})
-		if e != nil {
-			return fmt.Errorf("Describing cluster failed, error message: %#v.", e)
-		}
-		allClusterTypes, _ = raw.([]cs.ClusterType)
-		return nil
-	}); err != nil {
+		response = raw
 		return err
+	}); err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "DescribeClusters", DenverdinoAliyungo)
 	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["NameFilter"] = ""
+		addDebug("DescribeClusters", response, requestInfo, requestMap)
+	}
+	allClusterTypes, _ = response.([]cs.ClusterType)
 
 	var filteredClusterTypes []cs.ClusterType
 	for _, v := range allClusterTypes {
@@ -338,19 +344,22 @@ func dataSourceAlicloudCSKubernetesClustersRead(d *schema.ResourceData, meta int
 	for _, v := range filteredClusterTypes {
 		var kubernetesCluster cs.KubernetesCluster
 
-		invoker := NewInvoker()
 		if err := invoker.Run(func() error {
-			raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				requestInfo = csClient
 				return csClient.DescribeKubernetesCluster(v.ClusterID)
 			})
-			if e != nil {
-				return fmt.Errorf("Describing kubernetes cluster %#v failed, error message: %#v. Please check cluster in the console,", v.ClusterID, e)
-			}
-			kubernetesCluster = raw.(cs.KubernetesCluster)
-			return nil
-		}); err != nil {
+			response = raw
 			return err
+		}); err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "DescribeKubernetesCluster", DenverdinoAliyungo)
 		}
+		if debugOn() {
+			requestMap := make(map[string]interface{})
+			requestMap["Id"] = v.ClusterID
+			addDebug("DescribeKubernetesCluster", response, requestInfo, requestMap)
+		}
+		kubernetesCluster = response.(cs.KubernetesCluster)
 
 		if az, ok := d.GetOk("availability_zone"); ok && az != kubernetesCluster.ZoneId {
 			continue
@@ -395,13 +404,13 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		}
 
 		if size, err := strconv.Atoi(ct.Parameters.MasterSystemDiskSize); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+			return WrapError(err)
 		} else {
 			mapping["master_disk_size"] = size
 		}
 
 		if size, err := strconv.Atoi(ct.Parameters.WorkerSystemDiskSize); err != nil {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+			return WrapError(err)
 		} else {
 			mapping["worker_disk_size"] = size
 		}
@@ -409,7 +418,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		if ct.Parameters.MasterInstanceChargeType == string(PrePaid) {
 			mapping["master_instance_charge_type"] = string(PrePaid)
 			if period, err := strconv.Atoi(ct.Parameters.MasterPeriod); err != nil {
-				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+				return WrapError(err)
 			} else {
 				mapping["master_period"] = period
 			}
@@ -418,7 +427,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 				mapping["master_auto_renew"] = *ct.Parameters.MasterAutoRenew
 			}
 			if period, err := strconv.Atoi(ct.Parameters.MasterAutoRenewPeriod); err != nil {
-				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+				return WrapError(err)
 			} else {
 				mapping["master_auto_renew_period"] = period
 			}
@@ -429,7 +438,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		if ct.Parameters.WorkerInstanceChargeType == string(PrePaid) {
 			mapping["worker_instance_charge_type"] = string(PrePaid)
 			if period, err := strconv.Atoi(ct.Parameters.WorkerPeriod); err != nil {
-				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+				return WrapError(err)
 			} else {
 				mapping["worker_period"] = period
 			}
@@ -438,7 +447,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 				mapping["worker_auto_renew"] = *ct.Parameters.WorkerAutoRenew
 			}
 			if period, err := strconv.Atoi(ct.Parameters.WorkerAutoRenewPeriod); err != nil {
-				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+				return WrapError(err)
 			} else {
 				mapping["worker_auto_renew_period"] = period
 			}
@@ -449,12 +458,12 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		if cidrMask, err := strconv.Atoi(ct.Parameters.NodeCIDRMask); err == nil {
 			mapping["node_cidr_mask"] = cidrMask
 		} else {
-			return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+			return WrapError(err)
 		}
 
 		if ct.Parameters.WorkerDataDisk != nil && *ct.Parameters.WorkerDataDisk {
 			if size, err := strconv.Atoi(ct.Parameters.WorkerDataDiskSize); err != nil {
-				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+				return WrapError(err)
 			} else {
 				mapping["worker_data_disk_size"] = size
 			}
@@ -476,15 +485,15 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		if ct.MetaData.MultiAZ || ct.MetaData.SubClass == "3az" {
 			numOfNodeA, err := strconv.Atoi(ct.Parameters.NumOfNodesA)
 			if err != nil {
-				return fmt.Errorf("error convert NumOfNodesA %s to int: %s", ct.Parameters.NumOfNodesA, err.Error())
+				return WrapError(err)
 			}
 			numOfNodeB, err := strconv.Atoi(ct.Parameters.NumOfNodesB)
 			if err != nil {
-				return fmt.Errorf("error convert NumOfNodesB %s to int: %s", ct.Parameters.NumOfNodesB, err.Error())
+				return WrapError(err)
 			}
 			numOfNodeC, err := strconv.Atoi(ct.Parameters.NumOfNodesC)
 			if err != nil {
-				return fmt.Errorf("error convert NumOfNodesC %s to int: %s", ct.Parameters.NumOfNodesC, err.Error())
+				return WrapError(err)
 			}
 			mapping["worker_numbers"] = []int{numOfNodeA, numOfNodeB, numOfNodeC}
 			mapping["vswitch_ids"] = []string{ct.Parameters.VSwitchIdA, ct.Parameters.VSwitchIdB, ct.Parameters.VSwitchIdC}
@@ -510,51 +519,64 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		for {
 			var result []cs.KubernetesNodeType
 			var pagination *cs.PaginationResult
-
+			var requestInfo *cs.Client
+			var response interface{}
 			if err := invoker.Run(func() error {
-				raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+					requestInfo = csClient
 					nodes, paginationResult, err := csClient.GetKubernetesClusterNodes(ct.ClusterID, common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
 					return []interface{}{nodes, paginationResult}, err
 				})
-				if e != nil {
-					return e
-				}
-				result, _ = raw.([]interface{})[0].([]cs.KubernetesNodeType)
-				pagination, _ = raw.([]interface{})[1].(*cs.PaginationResult)
-				return nil
+				response = raw
+				return err
 			}); err != nil {
-				return fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "GetKubernetesClusterNodes", DenverdinoAliyungo)
 			}
+			if debugOn() {
+				requestMap := make(map[string]interface{})
+				requestMap["Id"] = ct.ClusterID
+				requestMap["Pagination"] = common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}
+				addDebug("GetKubernetesClusterNodes", response, requestInfo, requestMap)
+			}
+			result, _ = response.([]interface{})[0].([]cs.KubernetesNodeType)
+			pagination, _ = response.([]interface{})[1].(*cs.PaginationResult)
 
 			if pageNumber == 1 && (len(result) == 0 || result[0].InstanceId == "") {
 				err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 					if err := invoker.Run(func() error {
-						raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+						raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+							requestInfo = csClient
 							nodes, _, err := csClient.GetKubernetesClusterNodes(ct.ClusterID, common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
 							return nodes, err
 						})
-						if e != nil {
-							return e
-						}
-						tmp, _ := raw.([]cs.KubernetesNodeType)
-						if len(tmp) > 0 && tmp[0].InstanceId != "" {
-							result = tmp
-						}
-						return nil
+						response = raw
+						return err
 					}); err != nil {
-						return resource.NonRetryableError(fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err))
+						return resource.NonRetryableError(err)
 					}
+					tmp, _ := response.([]cs.KubernetesNodeType)
+					if len(tmp) > 0 && tmp[0].InstanceId != "" {
+						result = tmp
+					}
+
 					for _, stableState := range cs.NodeStableClusterState {
 						// If cluster is in NodeStableClusteState, node list will not change
+						if debugOn() {
+							requestMap := make(map[string]interface{})
+							requestMap["Id"] = ct.ClusterID
+							requestMap["Pagination"] = common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}
+							addDebug("GetKubernetesClusterNodes", response, requestInfo, requestMap)
+						}
 						if ct.State == stableState {
 							return nil
 						}
 					}
 					time.Sleep(5 * time.Second)
-					return resource.RetryableError(fmt.Errorf("[ERROR] There is no any nodes in kubernetes cluster %s.", d.Id()))
+					return resource.RetryableError(Error("[ERROR] There is no any nodes in kubernetes cluster %s.", d.Id()))
 				})
 				if err != nil {
-					return err
+					return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "GetKubernetesClusterNodes", DenverdinoAliyungo)
+
 				}
 
 			}
@@ -580,38 +602,45 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		mapping["master_nodes"] = masterNodes
 		mapping["worker_nodes"] = workerNodes
 
+		var requestInfo *cs.Client
+		var response interface{}
 		if err := invoker.Run(func() error {
-			rawEndpoints, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				requestInfo = csClient
 				endpoints, err := csClient.GetClusterEndpoints(ct.ClusterID)
 				return endpoints, err
 			})
-			if e != nil {
-				return e
-			}
-			connection := make(map[string]string)
-			if endpoints, ok := rawEndpoints.(cs.ClusterEndpoints); ok && endpoints.ApiServerEndpoint != "" {
-				connection["api_server_internet"] = endpoints.ApiServerEndpoint
-				connection["master_public_ip"] = strings.TrimSuffix(strings.TrimPrefix(endpoints.ApiServerEndpoint, "https://"), ":6443")
-			}
-			if endpoints, ok := rawEndpoints.(cs.ClusterEndpoints); ok && endpoints.IntranetApiServerEndpoint != "" {
-				connection["api_server_intranet"] = endpoints.IntranetApiServerEndpoint
-			}
-			connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", ct.ClusterID, ct.RegionID)
-
-			mapping["connections"] = connection
-			return nil
+			response = raw
+			return err
 		}); err != nil {
-			return fmt.Errorf("[ERROR] GetKubernetesClusterNodes got an error: %#v.", err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "GetClusterEndpoints", DenverdinoAliyungo)
 		}
+		if debugOn() {
+			requestMap := make(map[string]interface{})
+			requestMap["Id"] = ct.ClusterID
+			addDebug("GetClusterEndpoints", response, requestInfo, requestMap)
+		}
+		connection := make(map[string]string)
+		if endpoints, ok := response.(cs.ClusterEndpoints); ok && endpoints.ApiServerEndpoint != "" {
+			connection["api_server_internet"] = endpoints.ApiServerEndpoint
+			connection["master_public_ip"] = strings.TrimSuffix(strings.TrimPrefix(endpoints.ApiServerEndpoint, "https://"), ":6443")
+		}
+		if endpoints, ok := response.(cs.ClusterEndpoints); ok && endpoints.IntranetApiServerEndpoint != "" {
+			connection["api_server_intranet"] = endpoints.IntranetApiServerEndpoint
+		}
+		connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", ct.ClusterID, ct.RegionID)
 
-		req := vpc.CreateDescribeNatGatewaysRequest()
-		req.VpcId = ct.VPCID
+		mapping["connections"] = connection
+
+		request := vpc.CreateDescribeNatGatewaysRequest()
+		request.VpcId = ct.VPCID
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeNatGateways(req)
+			return vpcClient.DescribeNatGateways(request)
 		})
 		if err != nil {
-			return fmt.Errorf("[ERROR] DescribeNatGateways by VPC Id %s: %#v.", ct.VPCID, err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
 		if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
 			mapping["nat_gateway_id"] = nat.NatGateways.NatGateway[0].NatGatewayId
