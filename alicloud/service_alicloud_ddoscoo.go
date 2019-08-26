@@ -20,30 +20,25 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance,
 	request.PageNo = "1"
 	request.PageSize = "10"
 
-	invoker := NewInvoker()
-	err = invoker.Run(func() error {
-		raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-			return ddoscooClient.DescribeInstances(request)
-		})
-
-		if err != nil {
-			if IsExceptedErrors(err, []string{DdoscooInstanceNotFound}) {
-				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-			}
-
-			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		resp, _ := raw.(*ddoscoo.DescribeInstancesResponse)
-		if resp == nil || len(resp.Instances) == 0 || resp.Instances[0].InstanceId != id {
-			return WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
-		}
-
-		v = resp.Instances[0]
-		return nil
+	raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+		return ddoscooClient.DescribeInstances(request)
 	})
 
-	return v, WrapError(err)
+	if err != nil {
+		if IsExceptedErrors(err, []string{DdoscooInstanceNotFound}) {
+			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+
+		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*ddoscoo.DescribeInstancesResponse)
+	if len(response.Instances) == 0 || response.Instances[0].InstanceId != id {
+		return v, WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	v = response.Instances[0]
+	return
 }
 
 func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (v ddoscoo.InstanceSpec, err error) {
@@ -51,29 +46,24 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (v ddoscoo.Insta
 	request.RegionId = s.client.RegionId
 	request.InstanceIds = "[\"" + id + "\"]"
 
-	invoker := NewInvoker()
-	err = invoker.Run(func() error {
-		raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-			return ddoscooClient.DescribeInstanceSpecs(request)
-		})
-
-		if err != nil {
-			if IsExceptedErrors(err, []string{DdoscooInstanceNotFound, InvalidDdoscooInstance}) {
-				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-			}
-
-			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		resp, _ := raw.(*ddoscoo.DescribeInstanceSpecsResponse)
-		if resp == nil || len(resp.InstanceSpecs) == 0 || resp.InstanceSpecs[0].InstanceId != id {
-			return WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
-		}
-
-		v = resp.InstanceSpecs[0]
-		return nil
+	raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+		return ddoscooClient.DescribeInstanceSpecs(request)
 	})
 
+	if err != nil {
+		if IsExceptedErrors(err, []string{DdoscooInstanceNotFound, InvalidDdoscooInstance}) {
+			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+
+		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	resp, _ := raw.(*ddoscoo.DescribeInstanceSpecsResponse)
+	if len(resp.InstanceSpecs) == 0 || resp.InstanceSpecs[0].InstanceId != id {
+		return v, WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	v = resp.InstanceSpecs[0]
 	return v, WrapError(err)
 }
 
@@ -126,9 +116,9 @@ func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	resp, _ := raw.(*bssopenapi.ModifyInstanceResponse)
-	if !resp.Success {
-		return WrapError(Error(resp.Message))
+	response, _ := raw.(*bssopenapi.ModifyInstanceResponse)
+	if !response.Success {
+		return WrapError(Error(response.Message))
 	}
 	return nil
 }

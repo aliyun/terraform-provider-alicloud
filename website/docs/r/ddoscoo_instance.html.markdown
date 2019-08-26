@@ -54,3 +54,11 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the instance resource of Ddoscoo.
+
+## Import
+
+Ddoscoo instance can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_ddoscoo_instance.example ddoscoo-cn-123456
+```
