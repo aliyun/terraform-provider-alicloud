@@ -267,29 +267,45 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 
 	args, err := buildManagedKubernetesArgs(d, meta)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
+	var requestInfo *cs.Client
+	var response interface{}
 	if err := invoker.Run(func() error {
 		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			requestInfo = csClient
 			return csClient.CreateKubernetesCluster(common.Region(client.RegionId), args)
 		})
-		if err != nil {
-			return err
-		}
-		cluster, _ := raw.(cs.ClusterCreationResponse)
-		d.SetId(cluster.ClusterID)
-		return nil
-	}); err != nil {
-		return fmt.Errorf("Creating ManagedKubernetes Cluster got an error: %#v", err)
-	}
-
-	if err := invoker.Run(func() error {
-		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
-		})
+		response = raw
 		return err
 	}); err != nil {
-		return fmt.Errorf("Waitting for ManagedKubernetes cluster %#v got an error: %#v", cs.Running, err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_managed_kubernetes", "CreateKubernetesCluster", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["RegionId"] = common.Region(client.RegionId)
+		requestMap["Args"] = args
+		addDebug("CreateKubernetesCluster", response, requestInfo, requestMap)
+	}
+	cluster, _ := response.(cs.ClusterCreationResponse)
+	d.SetId(cluster.ClusterID)
+
+	if err := invoker.Run(func() error {
+		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			requestInfo = csClient
+			return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
+		})
+		response = raw
+		return err
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "WaitForClusterAsyn", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		waitRequestMap := make(map[string]interface{})
+		waitRequestMap["ClusterId"] = d.Id()
+		waitRequestMap["Status"] = cs.Running
+		waitRequestMap["TimeOut"] = 3600
+		addDebug("WaitForClusterAsyn", response, requestInfo, waitRequestMap)
 	}
 
 	return resourceAlicloudCSManagedKubernetesRead(d, meta)
@@ -339,22 +355,41 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 			args.WorkerDataDisk = true
 		}
 
+		var requestInfo *cs.Client
+		var response interface{}
 		if err := invoker.Run(func() error {
-			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				requestInfo = csClient
 				return nil, csClient.ScaleKubernetesCluster(d.Id(), args)
 			})
+			response = raw
 			return err
 		}); err != nil {
-			return fmt.Errorf("Scale Cluster got an error: %#v", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ScaleKubernetesCluster", DenverdinoAliyungo)
+		}
+		if debugOn() {
+			requestMap := make(map[string]interface{})
+			requestMap["ClusterId"] = d.Id()
+			requestMap["Args"] = args
+			addDebug("ScaleKubernetesCluster", response, requestInfo, requestMap)
 		}
 
 		if err := invoker.Run(func() error {
-			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				requestInfo = csClient
 				return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
 			})
+			response = raw
 			return err
 		}); err != nil {
-			return fmt.Errorf("Waitting for container Cluster %#v got an error: %#v", cs.Running, err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "WaitForClusterAsyn", DenverdinoAliyungo)
+		}
+		if debugOn() {
+			waitRequestMap := make(map[string]interface{})
+			waitRequestMap["ClusterId"] = d.Id()
+			waitRequestMap["Status"] = cs.Running
+			waitRequestMap["TimeOut"] = 3600
+			addDebug("WaitForClusterAsyn", response, requestInfo, waitRequestMap)
 		}
 		d.SetPartial("worker_number")
 	}
@@ -366,16 +401,24 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 		} else {
 			clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
 		}
+		var requestInfo *cs.Client
+		var response interface{}
 		if err := invoker.Run(func() error {
-			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				requestInfo = csClient
 				return nil, csClient.ModifyClusterName(d.Id(), clusterName)
 			})
-			if err != nil && !IsExceptedError(err, ErrorClusterNameAlreadyExist) {
-				return err
-			}
-			return nil
-		}); err != nil {
-			return fmt.Errorf("Modify Cluster Name got an error: %#v", err)
+			response = raw
+			return err
+		}); err != nil && !IsExceptedError(err, ErrorClusterNameAlreadyExist) {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterName", DenverdinoAliyungo)
+		}
+
+		if debugOn() {
+			requestMap := make(map[string]interface{})
+			requestMap["ClusterId"] = d.Id()
+			requestMap["ClusterName"] = clusterName
+			addDebug("ModifyClusterName", response, requestInfo, requestMap)
 		}
 		d.SetPartial("name")
 		d.SetPartial("name_prefix")
@@ -387,82 +430,87 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 
 func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	var cluster cs.KubernetesCluster
+	csService := CsService{client}
 	invoker := NewInvoker()
-	if err := invoker.Run(func() error {
-		raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return csClient.DescribeKubernetesCluster(d.Id())
-		})
-		if e != nil {
-			return e
-		}
-		cluster, _ = raw.(cs.KubernetesCluster)
-		return nil
-	}); err != nil {
-		if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
+	object, err := csService.DescribeCsManagedKubernetes(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Describing kubernetes cluster %#v failed, error message: %#v. Please check cluster in the console,", d.Id(), err)
 	}
 
-	d.Set("name", cluster.Name)
-	d.Set("vpc_id", cluster.VPCID)
-	d.Set("security_group_id", cluster.SecurityGroupID)
-	d.Set("availability_zone", cluster.ZoneId)
+	d.Set("name", object.Name)
+	d.Set("vpc_id", object.VPCID)
+	d.Set("security_group_id", object.SecurityGroupID)
+	d.Set("availability_zone", object.ZoneId)
 
 	var workerNodes []map[string]interface{}
-
+	var response interface{}
 	pageNumber := 1
 	for {
 		var result []cs.KubernetesNodeType
 		var pagination *cs.PaginationResult
 
+		var requestInfo *cs.Client
+
 		if err := invoker.Run(func() error {
-			raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				requestInfo = csClient
 				nodes, paginationResult, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
 				return []interface{}{nodes, paginationResult}, err
 			})
-			if e != nil {
-				return e
-			}
-			result, _ = raw.([]interface{})[0].([]cs.KubernetesNodeType)
-			pagination, _ = raw.([]interface{})[1].(*cs.PaginationResult)
-			return nil
+			response = raw
+			return err
 		}); err != nil {
-			return fmt.Errorf("[ERROR] GetManagedKubernetesClusterNodes got an error: %#v.", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
 		}
+		if debugOn() {
+			requestMap := make(map[string]interface{})
+			requestMap["ClusterId"] = d.Id()
+			requestMap["Pagination"] = common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}
+			addDebug("GetKubernetesClusterNodes", response, requestInfo, requestMap)
+		}
+		result, _ = response.([]interface{})[0].([]cs.KubernetesNodeType)
+		pagination, _ = response.([]interface{})[1].(*cs.PaginationResult)
 
 		if pageNumber == 1 && (len(result) == 0 || result[0].InstanceId == "") {
+			var requestInfo *cs.Client
+
 			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 				if err := invoker.Run(func() error {
-					raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+					raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+						requestInfo = csClient
 						nodes, _, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
 						return nodes, err
 					})
-					if e != nil {
-						return e
-					}
-					tmp, _ := raw.([]cs.KubernetesNodeType)
-					if len(tmp) > 0 && tmp[0].InstanceId != "" {
-						result = tmp
-					}
-					return nil
+					response = raw
+					return err
 				}); err != nil {
-					return resource.NonRetryableError(fmt.Errorf("[ERROR] GetManagedKubernetesClusterNodes got an error: %#v.", err))
+					return resource.NonRetryableError(err)
 				}
+				tmp, _ := response.([]cs.KubernetesNodeType)
+				if len(tmp) > 0 && tmp[0].InstanceId != "" {
+					result = tmp
+				}
+
 				for _, stableState := range cs.NodeStableClusterState {
 					// If cluster is in NodeStableClusteState, node list will not change
-					if cluster.State == stableState {
+					if object.State == stableState {
+						if debugOn() {
+							requestMap := make(map[string]interface{})
+							requestMap["ClusterId"] = d.Id()
+							requestMap["Pagination"] = common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}
+							addDebug("GetKubernetesClusterNodes", response, requestInfo, requestMap)
+						}
 						return nil
 					}
 				}
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(fmt.Errorf("[ERROR] There is no any nodes in ManagedKubernetes cluster %s.", d.Id()))
+				return resource.RetryableError(Error("[ERROR] There is no any nodes in ManagedKubernetes cluster %s.", d.Id()))
 			})
 			if err != nil {
-				return err
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
 			}
 
 		}
@@ -483,98 +531,99 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 	}
 	d.Set("worker_nodes", workerNodes)
 
+	var requestInfo *cs.Client
+
 	if err := invoker.Run(func() error {
 		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			requestInfo = csClient
 			return csClient.GetClusterCerts(d.Id())
 		})
-		if err != nil {
-			return err
-		}
-		cert, _ := raw.(cs.ClusterCerts)
-		if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
-			if err := writeToFile(ce.(string), cert.Cert); err != nil {
-				return err
-			}
-		}
-		if key, ok := d.GetOk("client_key"); ok && key.(string) != "" {
-			if err := writeToFile(key.(string), cert.Key); err != nil {
-				return err
-			}
-		}
-		if ca, ok := d.GetOk("cluster_ca_cert"); ok && ca.(string) != "" {
-			if err := writeToFile(ca.(string), cert.CA); err != nil {
-				return err
-			}
-		}
-		return nil
+		response = raw
+		return err
 	}); err != nil {
-		return fmt.Errorf("Get Cluster %s Certs got an error: %#v.", d.Id(), err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterCerts", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = d.Id()
+		addDebug("GetClusterCerts", response, requestInfo, requestMap)
+	}
+	cert, _ := response.(cs.ClusterCerts)
+	if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
+		if err := writeToFile(ce.(string), cert.Cert); err != nil {
+			return WrapError(err)
+		}
+	}
+	if key, ok := d.GetOk("client_key"); ok && key.(string) != "" {
+		if err := writeToFile(key.(string), cert.Key); err != nil {
+			return WrapError(err)
+		}
+	}
+	if ca, ok := d.GetOk("cluster_ca_cert"); ok && ca.(string) != "" {
+		if err := writeToFile(ca.(string), cert.CA); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	var config cs.ClusterConfig
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
+		var requestInfo *cs.Client
+
 		if err := invoker.Run(func() error {
-			raw, e := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				requestInfo = csClient
 				return csClient.GetClusterConfig(d.Id())
 			})
-			if e != nil {
-				return e
-			}
-			config, _ = raw.(cs.ClusterConfig)
-			return nil
-		}); err != nil {
-			return fmt.Errorf("GetClusterConfig got an error: %#v.", err)
-		}
-		if err := writeToFile(file.(string), config.Config); err != nil {
+			response = raw
 			return err
+		}); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterConfig", DenverdinoAliyungo)
+		}
+		if debugOn() {
+			requestMap := make(map[string]interface{})
+			requestMap["ClusterId"] = d.Id()
+			addDebug("GetClusterConfig", response, requestInfo, requestMap)
+		}
+		config, _ = response.(cs.ClusterConfig)
+
+		if err := writeToFile(file.(string), config.Config); err != nil {
+			return WrapError(err)
 		}
 	}
-
 	return nil
 }
 
 func resourceAlicloudCSManagedKubernetesDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
+	var requestInfo *cs.Client
 	invoker := NewInvoker()
-	var cluster cs.ClusterType
-	return resource.Retry(30*time.Minute, func() *resource.RetryError {
-		if err := invoker.Run(func() error {
-			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				return nil, csClient.DeleteCluster(d.Id())
-			})
-			return err
-		}); err != nil {
-			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
-				return nil
-			}
-			return resource.RetryableError(fmt.Errorf("Delete ManagedKubernetes Cluster timeout and get an error: %#v.", err))
-		}
+	var response interface{}
 
+	err := resource.Retry(30*time.Minute, func() *resource.RetryError {
 		if err := invoker.Run(func() error {
 			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				return csClient.DescribeCluster(d.Id())
+				return nil, csClient.DeleteCluster(d.Id())
 			})
-			if err != nil {
-				return err
-			}
-			cluster, _ = raw.(cs.ClusterType)
-			return nil
+			response = raw
+			return err
 		}); err != nil {
-			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
-				return nil
-			}
-			return resource.NonRetryableError(fmt.Errorf("Describing ManagedKubernetes Cluster got an error: %#v", err))
+			return resource.NonRetryableError(err)
 		}
-		if cluster.ClusterID == "" {
+		if debugOn() {
+			requestMap := make(map[string]interface{})
+			requestMap["ClusterId"] = d.Id()
+			addDebug("DeleteCluster", response, requestInfo, requestMap)
+		}
+		return nil
+	})
+	if err != nil {
+		if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
 			return nil
 		}
-
-		if string(cluster.State) == string(Deleting) {
-			time.Sleep(10 * time.Second)
-		}
-
-		return resource.RetryableError(fmt.Errorf("Delete ManagedKubernetes Cluster timeout."))
-	})
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteCluster", DenverdinoAliyungo)
+	}
+	return WrapError(csService.WaitForCSManagedKubernetes(d.Id(), Deleted, DefaultLongTimeout))
 }
 
 func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.KubernetesCreationArgs, error) {
