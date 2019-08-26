@@ -255,6 +255,13 @@ func rdsPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 	return true
 }
 
+func rdsPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if rds.DBPayType(d.Get("instance_charge_type").(string)) == rds.Prepaid && d.Get("auto_renew").(bool) {
+		return false
+	}
+	return true
+}
+
 func ecsSpotStrategyDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if d.Get("instance_charge_type").(string) == string(PostPaid) {
 		return false

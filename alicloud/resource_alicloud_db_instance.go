@@ -97,7 +97,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ValidateFunc:     validateIntegerInRange(1, 12),
 				Optional:         true,
 				Default:          1,
-				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: rdsPostPaidAndRenewDiffSuppressFunc,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -323,7 +323,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
-	if !d.IsNewResource() && (d.HasChange("instance_charge_type") || d.HasChange("period")) {
+	if !d.IsNewResource() && (d.HasChange("instance_charge_type")) {
 		prePaidRequest := rds.CreateModifyDBInstancePayTypeRequest()
 		prePaidRequest.RegionId = client.RegionId
 		prePaidRequest.DBInstanceId = d.Id()
