@@ -10,7 +10,7 @@ import (
 func TestAccAlicloudOnsGroupsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_ons_groups.default"
-	name := fmt.Sprintf("GID-tf-testacc%sonsgroup%v", defaultRegionToTest, rand)
+	name := fmt.Sprintf("GID-tf-testacconsgroup%v", rand)
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceOnsGroupsConfigDependence)
 
@@ -29,7 +29,7 @@ func TestAccAlicloudOnsGroupsDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                       "1",
 			"groups.#":                    "1",
-			"groups.0.id":                 fmt.Sprintf("GID-tf-testacc%sonsgroup%v", defaultRegionToTest, rand),
+			"groups.0.id":                 fmt.Sprintf("GID-tf-testacconsgroup%v", rand),
 			"groups.0.independent_naming": "true",
 			"groups.0.remark":             "alicloud_ons_group_remark",
 		}
