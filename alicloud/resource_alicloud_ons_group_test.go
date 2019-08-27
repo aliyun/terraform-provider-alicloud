@@ -112,7 +112,7 @@ func TestAccAlicloudOnsGroup_basic(t *testing.T) {
 
 	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("GID-tf-testacc%sonsgroupbasic%v", defaultRegionToTest, rand)
+	name := fmt.Sprintf("GID-tf-testacconsgroupbasic%v", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOnsGroupConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -132,7 +132,7 @@ func TestAccAlicloudOnsGroup_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"group_id": fmt.Sprintf("GID-tf-testacc%sonsgroupbasic%v", defaultRegionToTest, rand),
+						"group_id": fmt.Sprintf("GID-tf-testacconsgroupbasic%v", rand),
 						"remark":   "alicloud_ons_group_remark",
 					}),
 				),
@@ -150,7 +150,7 @@ func TestAccAlicloudOnsGroup_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"group_id": fmt.Sprintf("GID-tf-testacc%sonsgroupbasic%v_change", defaultRegionToTest, rand)}),
+						"group_id": fmt.Sprintf("GID-tf-testacconsgroupbasic%v_change", rand)}),
 				),
 			},
 
@@ -161,7 +161,7 @@ func TestAccAlicloudOnsGroup_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"group_id": fmt.Sprintf("GID-tf-testacc%sonsgroupbasic%v", defaultRegionToTest, rand),
+						"group_id": fmt.Sprintf("GID-tf-testacconsgroupbasic%v", rand),
 						"remark":   "alicloud_ons_group_remark",
 					}),
 				),
