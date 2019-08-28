@@ -110,7 +110,7 @@ func TestAccAlicloudOnsGroup_basic(t *testing.T) {
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
 
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000000, 9999999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("GID-tf-testacconsgroupbasic%v", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOnsGroupConfigDependence)

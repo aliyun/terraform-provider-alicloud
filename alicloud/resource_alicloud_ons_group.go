@@ -3,8 +3,10 @@ package alicloud
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"time"
 )
 
 func resourceAlicloudOnsGroup() *schema.Resource {
@@ -58,14 +60,25 @@ func resourceAlicloudOnsGroupCreate(d *schema.ResourceData, meta interface{}) er
 	if v, ok := d.GetOk("remark"); ok {
 		request.Remark = v.(string)
 	}
-
-	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsGroupCreate(request)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
+			return onsClient.OnsGroupCreate(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{OnsThrottlingUser}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ons_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	d.SetId(instanceId + ":" + groupId)
 
 	if err = onsService.WaitForOnsGroup(d.Id(), Available, DefaultTimeout); err != nil {
@@ -145,16 +158,27 @@ func resourceAlicloudOnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 	request.GroupId = groupId
 	request.PreventCache = onsService.GetPreventCache()
 
-	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsGroupDelete(request)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
+			return onsClient.OnsGroupDelete(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{OnsThrottlingUser}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		if IsExceptedErrors(err, []string{AuthResourceOwnerError}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(onsService.WaitForOnsGroup(d.Id(), Deleted, DefaultTimeoutMedium))
 }
