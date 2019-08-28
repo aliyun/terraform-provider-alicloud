@@ -305,6 +305,39 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+						"Updated": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "3",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+						"tags.Updated": "TF",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"domain_name":        name,
 					"cdn_type":           "web",
 					"scope":              REMOVEKEY,
@@ -315,6 +348,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 							"type":    "oss",
 						},
 					},
+					"tags": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -328,6 +362,11 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 						"certificate_config.0.force_set":                 REMOVEKEY,
 						"certificate_config.0.cert_name":                 REMOVEKEY,
 						"certificate_config.0.cert_type":                 REMOVEKEY,
+
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+						"tags.Updated": REMOVEKEY,
 					}),
 				),
 			},

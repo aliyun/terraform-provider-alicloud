@@ -5,6 +5,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"regexp"
@@ -42,6 +44,15 @@ func setTags(client *connectivity.AliyunClient, resourceType TagResourceType, d 
 	if d.HasChange("tags") {
 		oraw, nraw := d.GetChange("tags")
 		return updateTags(client, []string{d.Id()}, resourceType, oraw, nraw)
+	}
+
+	return nil
+}
+
+func setCdnTags(client *connectivity.AliyunClient, resourceType TagResourceType, d *schema.ResourceData) error {
+	if d.HasChange("tags") {
+		oraw, nraw := d.GetChange("tags")
+		return updateCdnTags(client, []string{d.Id()}, resourceType, oraw, nraw)
 	}
 
 	return nil
@@ -128,6 +139,58 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 	return nil
 }
 
+func updateCdnTags(client *connectivity.AliyunClient, ids []string, resourceType TagResourceType, oraw, nraw interface{}) error {
+	o := oraw.(map[string]interface{})
+	n := nraw.(map[string]interface{})
+	create, remove := diffTags(tagsFromMap(o), tagsFromMap(n))
+
+	// Set tags
+	if len(remove) > 0 {
+		log.Printf("[DEBUG] Removing tags: %#v from %#v", remove, ids)
+		args := cdn.CreateUntagResourcesRequest()
+		args.ResourceType = string(resourceType)
+		args.ResourceId = &ids
+
+		var tagsKey []string
+		for _, t := range remove {
+			tagsKey = append(tagsKey, t.Key)
+		}
+		args.TagKey = &tagsKey
+
+		_, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
+			return cdnClient.UntagResources(args)
+		})
+		if err != nil {
+			return fmt.Errorf("Remove tags got error: %s", err)
+		}
+	}
+
+	if len(create) > 0 {
+		log.Printf("[DEBUG] Creating tags: %s for %#v", create, ids)
+		args := cdn.CreateTagResourcesRequest()
+		args.ResourceType = string(resourceType)
+		args.ResourceId = &ids
+
+		var tags []cdn.TagResourcesTag
+		for _, t := range create {
+			tags = append(tags, cdn.TagResourcesTag{
+				Key:   t.Key,
+				Value: t.Value,
+			})
+		}
+		args.Tag = &tags
+
+		_, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
+			return cdnClient.TagResources(args)
+		})
+		if err != nil {
+			return fmt.Errorf("Creating tags got error: %s", err)
+		}
+	}
+
+	return nil
+}
+
 // diffTags takes our tags locally and the ones remotely and returns
 // the set of tags that must be created, and the set of tags that must
 // be destroyed.
@@ -169,6 +232,17 @@ func tagsToMap(tags []ecs.Tag) map[string]string {
 	for _, t := range tags {
 		if !ecsTagIgnored(t) {
 			result[t.TagKey] = t.TagValue
+		}
+	}
+
+	return result
+}
+
+func cdnTagsToMap(tags []cdn.TagItem) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !cdnTagIgnored(t) {
+			result[t.Key] = t.Value
 		}
 	}
 
@@ -248,6 +322,19 @@ func ecsTagIgnored(t ecs.Tag) bool {
 // tagIgnored compares a tag against a list of strings and checks if it should be ignored or not
 func essTagIgnored(t ess.Tag) bool {
 	filter := []string{"^aliyun", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
+		ok, _ := regexp.MatchString(v, t.Key)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.Key, t.Value)
+			return true
+		}
+	}
+	return false
+}
+
+func cdnTagIgnored(t cdn.TagItem) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
 		ok, _ := regexp.MatchString(v, t.Key)
