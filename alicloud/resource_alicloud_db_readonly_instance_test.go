@@ -102,12 +102,15 @@ func TestAccAlicloudDBReadonlyInstance_update(t *testing.T) {
 					"zone_id":               "${alicloud_db_instance.default.zone_id}",
 					"engine_version":        "${alicloud_db_instance.default.engine_version}",
 					"instance_type":         "${alicloud_db_instance.default.instance_type}",
-					"instance_storage":      "${alicloud_db_instance.default.instance_storage}",
+					"instance_storage":      "${alicloud_db_instance.default.instance_storage + 2*data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
 					"instance_name":         "${var.name}",
 					"vswitch_id":            "${alicloud_vswitch.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(DBReadonlyMap),
+					testAccCheck(map[string]string{
+						"instance_name":    name,
+						"instance_storage": "15",
+					}),
 				),
 			},
 		},
