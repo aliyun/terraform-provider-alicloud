@@ -168,7 +168,7 @@ func resourceAlicloudCdnDomainCreateNew(d *schema.ResourceData, meta interface{}
 
 	d.SetId(request.DomainName)
 
-	err = cdnService.WaitForCdnDomain(d.Id(), Online, DefaultTimeoutMedium)
+	err = cdnService.WaitForCdnDomain(d.Id(), Online, DefaultLongTimeout)
 	if err != nil {
 		return WrapError(err)
 	}
