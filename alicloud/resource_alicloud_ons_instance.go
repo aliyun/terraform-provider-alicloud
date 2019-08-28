@@ -63,17 +63,27 @@ func resourceAlicloudOnsInstanceCreate(d *schema.ResourceData, meta interface{})
 		request.Remark = v.(string)
 	}
 
-	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsInstanceCreate(request)
+	var response *ons.OnsInstanceCreateResponse
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
+			return onsClient.OnsInstanceCreate(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{OnsThrottlingUser}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*ons.OnsInstanceCreateResponse)
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ons_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	var response *ons.OnsInstanceCreateResponse
-	response, _ = raw.(*ons.OnsInstanceCreateResponse)
 	d.SetId(response.Data.InstanceId)
 
 	return resourceAlicloudOnsInstanceRead(d, meta)
@@ -159,6 +169,10 @@ func resourceAlicloudOnsInstanceDelete(d *schema.ResourceData, meta interface{})
 		})
 		if err != nil {
 			if IsExceptedError(err, OnsInstanceNotEmpty) {
+				return resource.RetryableError(err)
+			}
+			if IsExceptedErrors(err, []string{OnsThrottlingUser}) {
+				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
