@@ -124,3 +124,26 @@ func (c *CdnService) WaitForServerCertificateNew(id string, serverCertificate st
 	}
 	return nil
 }
+
+func (c *CdnService) DescribeTags(resourceId string, resourceType TagResourceType) (tags []cdn.TagItem, err error) {
+	request := cdn.CreateDescribeTagResourcesRequest()
+	request.RegionId = c.client.RegionId
+	request.ResourceType = string(resourceType)
+	request.ResourceId = &[]string{resourceId}
+	raw, err := c.client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
+		return cdnClient.DescribeTagResources(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*cdn.DescribeTagResourcesResponse)
+	if len(response.TagResources) < 1 {
+		return
+	}
+	for _, t := range response.TagResources {
+		tags = append(tags, t.Tag...)
+	}
+	return
+}

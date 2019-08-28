@@ -127,6 +127,7 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateCdnScope,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -225,6 +226,10 @@ func resourceAlicloudCdnDomainUpdateNew(d *schema.ResourceData, meta interface{}
 		}
 	}
 
+	if err := setCdnTags(client, TagResourceCdn, d); err != nil {
+		return WrapError(err)
+	}
+
 	d.Partial(false)
 	return resourceAlicloudCdnDomainReadNew(d, meta)
 }
@@ -291,6 +296,12 @@ func resourceAlicloudCdnDomainReadNew(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.Set("certificate_config", config)
+
+	tags, err := cdnService.DescribeTags(d.Id(), TagResourceCdn)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", cdnTagsToMap(tags))
 
 	return nil
 }
