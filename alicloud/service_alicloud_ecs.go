@@ -510,7 +510,7 @@ func (s *EcsService) DescribeDiskAttachment(id string) (disk ecs.Disk, err error
 		return disk, WrapError(err)
 	}
 
-	if disk.InstanceId != parts[1] {
+	if disk.InstanceId != parts[1] && disk.Status != string(InUse) {
 		err = WrapErrorf(Error(GetNotFoundMessage("DiskAttachment", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
