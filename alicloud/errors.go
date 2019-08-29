@@ -366,6 +366,9 @@ const (
 	//Actiontrail
 	InvalidTrailNotFound  = "TrailNotFoundException"
 	TrailNeedRamAuthorize = "NeedRamAuthorize"
+
+	//emr
+	ClusterNotFound = "ClusterId.NotFound"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}

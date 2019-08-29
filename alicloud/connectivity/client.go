@@ -20,6 +20,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/emr"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
@@ -106,6 +107,7 @@ type AliyunClient struct {
 	ddoscooconn                  *ddoscoo.Client
 	ddosbgpconn                  *ddosbgp.Client
 	bssopenapiconn               *bssopenapi.Client
+	emrconn                      *emr.Client
 }
 
 type ApiVersion string
@@ -1357,4 +1359,22 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 	}
 
 	return do(client.alikafkaconn)
+}
+
+func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	if client.emrconn == nil {
+		emrConn, err := emr.NewClientWithOptions(client.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %#v", err)
+		}
+		emrConn.AppendUserAgent(Terraform, terraformVersion)
+		emrConn.AppendUserAgent(Provider, providerVersion)
+		emrConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.emrconn = emrConn
+	}
+
+	return do(client.emrconn)
 }
