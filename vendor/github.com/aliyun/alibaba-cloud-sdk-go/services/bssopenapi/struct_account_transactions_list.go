@@ -17,5 +17,5 @@ package bssopenapi
 
 // AccountTransactionsList is a nested struct in bssopenapi response
 type AccountTransactionsList struct {
-	AccountTransactionsListItem []AccountTransactionsListItem `json:"AccountTransactionsListItem" xml:"AccountTransactionsListItem"`
+	AccountTransactionsListItem []AccountTransactionsListItem `json:"AccountTransactionsList" xml:"AccountTransactionsList"`
 }
