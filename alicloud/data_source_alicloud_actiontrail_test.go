@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"testing"
 
 	"strings"
@@ -48,7 +49,10 @@ func TestAccAlicloudActiontrailDataSource(t *testing.T) {
 		fakeMapFunc:  fakeActiontrailMapFunc,
 	}
 
-	actiontrailCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.ActiontrailNoSkipRegions)
+	}
+	actiontrailCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 
 }
 

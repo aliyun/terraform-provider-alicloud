@@ -50,6 +50,14 @@ var SlbGuaranteedSupportedRegions = []Region{Qingdao, Beijing, Hangzhou, Shangha
 var DrdsSupportedRegions = []Region{Beijing, Shenzhen, Hangzhou, Qingdao, Hongkong, Shanghai, Huhehaote, Zhangjiakou}
 var DrdsClassicNoSupportedRegions = []Region{Hongkong}
 var GpdbSupportedRegions = []Region{Beijing, Shenzhen, Hangzhou, Shanghai, Hongkong}
+
+// Some Ram resources only one can be owned by one account at the same time,
+// skipped here to avoid multi regions concurrency conflict.
+var RamNoSkipRegions = []Region{Hangzhou, EUCentral1, APSouth1}
+
+// Actiontrail only one can be owned by one account at the same time,
+// skipped here to avoid multi regions concurrency conflict.
+var ActiontrailNoSkipRegions = []Region{Hangzhou, EUCentral1, APSouth1}
 var FcNoSupportedRegions = []Region{Zhangjiakou, Huhehaote, APSouthEast3, APSouthEast5, EUWest1, USEast1, MEEast1}
 var DatahubSupportedRegions = []Region{Beijing, Hangzhou, Shanghai, Shenzhen, APSouthEast1}
 var RdsClassicNoSupportedRegions = []Region{APSouth1, APSouthEast2, APSouthEast3, APNorthEast1, EUCentral1, EUWest1, MEEast1}

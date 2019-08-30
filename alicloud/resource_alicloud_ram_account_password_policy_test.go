@@ -23,6 +23,8 @@ func TestAccAlicloudRamAccountPasswordPolicy_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.RamNoSkipRegions)
+
 		},
 
 		// module name

@@ -2,13 +2,18 @@ package alicloud
 
 import (
 	"testing"
+
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudRamAccountAliasDataSource(t *testing.T) {
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccAlicloudRamAccountAliasDataSourceConfig(),
 	}
-	accountAliasCheckInfo.dataSourceTestCheck(t, -1, basicConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.RamNoSkipRegions)
+	}
+	accountAliasCheckInfo.dataSourceTestCheckWithPreCheck(t, -1, preCheck, basicConf)
 }
 
 func testAccAlicloudRamAccountAliasDataSourceConfig() string {
