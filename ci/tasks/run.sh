@@ -81,38 +81,6 @@ echo -e "TF_ACC=1 go test ./alicloud -v -run=TestAccAlicloud${TEST_CASE_CODE} -t
 
 PASSED=100%
 
-# ActionTrail only one can be owned by one account at the same time.
-# There needs to sleep some time to avoid some needless error
-# The actiontrail runs by sequence cn-hangzhou, cn-beijing, cn-shanghai
-if [[ ${TEST_CASE_CODE} == "ActionTrail" ]]; then
-    if [[ ${ALICLOUD_REGION} == "cn-beijing" ]]; then
-        echo -e "Waiting 5 minute when region is ${ALICLOUD_REGION}..."
-        sleep 5m
-    elif [[ ${ALICLOUD_REGION} == "cn-shanghai" ]]; then
-        echo -e "Waiting 10 minute when region is ${ALICLOUD_REGION}..."
-        sleep 10m
-    else
-        echo -e "Skip the unscheduled region ${ALICLOUD_REGION}"
-        echo -e "Total: $TOTAL_COUNT; Failed: $FAILED_COUNT; Skipped: $SKIP_COUNT; Passed: $PASS_COUNT; PassedRate: $PASSED.\n"
-    fi
-fi
-
-# Ram Alias only one can be owned by one account at the same time.
-# There needs to sleep some time to avoid some needless error
-# The ram runs by sequence cn-shanghai, cn-hangzhou, cn-beijing
-if [[ ${TEST_CASE_CODE} == "Ram" ]]; then
-    if [[ ${ALICLOUD_REGION} == "cn-hangzhou" ]]; then
-        echo -e "Waiting 1 minute when region is ${ALICLOUD_REGION}..."
-        sleep 1m
-    elif [[ ${ALICLOUD_REGION} == "cn-beijing" ]]; then
-        echo -e "Waiting 10 minute when region is ${ALICLOUD_REGION}..."
-        sleep 2m
-    else
-        echo -e "Skip the unscheduled region ${ALICLOUD_REGION}"
-        echo -e "Total: $TOTAL_COUNT; Failed: $FAILED_COUNT; Skipped: $SKIP_COUNT; Passed: $PASS_COUNT; PassedRate: $PASSED\n"
-    fi
-fi
-
 FILE_NAME=${ALICLOUD_REGION}-${TEST_CASE_CODE}
 FAIL_FLAG=false
 
