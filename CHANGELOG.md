@@ -1,25 +1,25 @@
-## 1.55.2 (Unreleased)
+## 1.55.2 (August 30, 2019)
 
 IMPROVEMENTS:
 
-- imporve(elasticsearch): modified availability zone of elasticsearch instance. [GH-1617]
-- improve(ram & actiontrail): added precheck for resources testcases. [GH-1616]
-- improve(cdn): cdn domain supported tags. [GH-1609]
-- improve(db_readonly_instance):improve db_readonly_instance testcase [GH-1607]
-- imporve(cdn) modified wait time of cdn domain creation. [GH-1606]
-- improve(drds): modified drds supported regions [GH-1605]
-- improve(CI): change sweeper time [GH-1600]
-- improve(rds): fix db_instance apply error after import [GH-1599]
-- improve(ons_topic):retry when Throttling.User [GH-1598]
-- Improve(ddoscoo): Improve its resource and datasource use common method [GH-1591]
-- Improve(slb):slb support set AddressIpVersion [GH-1587]
-- Improve(cs_kubernetes): Improve its resource and datasource use common method [GH-1584]
-- Improve(cs_managed_kubernetes): Improve its resource and datasource use common method [GH-1581]
+- imporve(elasticsearch): modified availability zone of elasticsearch instance. ([#1617](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1617))
+- improve(ram & actiontrail): added precheck for resources testcases. ([#1616](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1616))
+- improve(cdn): cdn domain supported tags. ([#1609](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1609))
+- improve(db_readonly_instance):improve db_readonly_instance testcase ([#1607](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1607))
+- imporve(cdn) modified wait time of cdn domain creation. ([#1606](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1606))
+- improve(drds): modified drds supported regions ([#1605](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1605))
+- improve(CI): change sweeper time ([#1600](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1600))
+- improve(rds): fix db_instance apply error after import ([#1599](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1599))
+- improve(ons_topic):retry when Throttling.User ([#1598](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1598))
+- Improve(ddoscoo): Improve its resource and datasource use common method ([#1591](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1591))
+- Improve(slb):slb support set AddressIpVersion ([#1587](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1587))
+- Improve(cs_kubernetes): Improve its resource and datasource use common method ([#1584](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1584))
+- Improve(cs_managed_kubernetes): Improve its resource and datasource use common method ([#1581](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1581))
 
 BUG FIXES:
 
-- fix(ons):fix ons error Throttling.User [GH-1608]
-- fix(ons): fix the create group error in testcase [GH-1604]
+- fix(ons):fix ons error Throttling.User ([#1608](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1608))
+- fix(ons): fix the create group error in testcase ([#1604](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1604))
 
 ## 1.55.1 (August 23, 2019)
 
