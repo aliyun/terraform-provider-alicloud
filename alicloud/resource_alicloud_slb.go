@@ -252,6 +252,13 @@ func resourceAliyunSlb() *schema.Resource {
 				Computed: true,
 			},
 
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
 			"delete_protection": {
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -310,6 +317,9 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 		request.SlaveZoneId = v.(string)
 	}
 
+	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+		request.ResourceGroupId = v.(string)
+	}
 	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) != "" {
 		request.PayType = v.(string)
 		if request.PayType == string(PrePaid) {
@@ -400,6 +410,7 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("master_zone_id", object.MasterZoneId)
 	d.Set("slave_zone_id", object.SlaveZoneId)
 	d.Set("address_ip_version", object.AddressIPVersion)
+	d.Set("resource_group_id", object.ResourceGroupId)
 	if object.PayType == "PrePay" {
 		d.Set("instance_charge_type", PrePaid)
 	} else {
