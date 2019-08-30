@@ -2,7 +2,11 @@
 
 IMPROVEMENTS:
 
+- imporve(elasticsearch): modified availability zone of elasticsearch instance. [GH-1617]
+- improve(ram & actiontrail): added precheck for resources testcases. [GH-1616]
+- improve(cdn): cdn domain supported tags. [GH-1609]
 - improve(db_readonly_instance):improve db_readonly_instance testcase [GH-1607]
+- imporve(cdn) modified wait time of cdn domain creation. [GH-1606]
 - improve(drds): modified drds supported regions [GH-1605]
 - improve(CI): change sweeper time [GH-1600]
 - improve(rds): fix db_instance apply error after import [GH-1599]
