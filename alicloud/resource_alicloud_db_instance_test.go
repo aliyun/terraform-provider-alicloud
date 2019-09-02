@@ -215,6 +215,45 @@ func TestAccAlicloudDBInstance_mysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"created": "tf",
+						"for":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.created": "tf",
+						"tags.for":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       REMOVEKEY,
+						"tags.created": REMOVEKEY,
+						"tags.for":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"engine":               "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}",
 					"engine_version":       "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
 					"instance_type":        "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
