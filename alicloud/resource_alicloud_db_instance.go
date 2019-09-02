@@ -268,7 +268,28 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 			},
 
-			"tags": tagsSchema(),
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				// Because of the API TagKey and TagValue are not case sensitive, diff suppress here if contain uppercase letters.
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					ov, nv := d.GetChange("tags")
+					oMap, nMap := ov.(map[string]interface{}), nv.(map[string]interface{})
+					if len(oMap) != len(nMap) {
+						return false
+					}
+					for nvk, nvv := range nMap {
+						if ovv, ok := oMap[strings.ToLower(nvk)]; !ok {
+							return false
+						} else {
+							if strings.ToLower(ovv.(string)) != strings.ToLower(nvv.(string)) {
+								return false
+							}
+						}
+					}
+					return true
+				},
+			},
 		},
 	}
 }
