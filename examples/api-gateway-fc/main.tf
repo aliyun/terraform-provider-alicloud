@@ -27,19 +27,24 @@ resource "alicloud_fc_function" "foo" {
 resource "alicloud_ram_policy" "policy" {
   name = "${var.ram_policy_name}"
 
-  statement = [
-    {
-      effect = "Allow"
-
-      action = [
-        "fc:InvokeFunction"
-      ]
-
-      resource = [
-        "*"
-      ]
-    },
-  ]
+  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": [
+				"oss:ListObjects",
+				"oss:ListObjects"
+			  ],
+			  "Effect": "Deny",
+			  "Resource": [
+				"acs:oss:*:*:mybucket",
+				"acs:oss:*:*:mybucket/*"
+			  ]
+			}
+		  ],
+			"Version": "1"
+		}
+  EOF
 
   description = "this is a policy test"
   force       = true
@@ -86,7 +91,7 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
   description = "description"
   auth_type   = "APP"
 
-  request_config = {
+  request_config {
     protocol = "HTTP"
     method   = "POST"
     path     = "/test/path2"
@@ -96,7 +101,7 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
 
   service_type = "FunctionCompute"
 
-  fc_service_config = {
+  fc_service_config {
     region        = "${var.fc_region}"
     function_name = "${alicloud_fc_function.foo.name}"
     service_name  = "${alicloud_fc_service.foo.name}"
@@ -104,16 +109,14 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
     timeout       = 10
   }
 
-  request_parameters = [
-    {
+  request_parameters {
       name         = "aa"
       type         = "STRING"
       required     = "REQUIRED"
       in           = "QUERY"
       in_service   = "QUERY"
       name_service = "testparams"
-    },
-  ]
+    }
 
   stage_names = [
     "RELEASE",

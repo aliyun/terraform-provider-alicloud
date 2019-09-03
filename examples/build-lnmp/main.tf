@@ -76,7 +76,7 @@ resource "alicloud_instance" "webserver" {
 data "template_file" "shell" {
   template = "${file("userdata.sh")}"
 
-  vars {
+  vars = {
     db_name     = "${var.db_name}"
     db_user     = "${var.db_user}"
     db_pwd      = "${var.db_password}"

@@ -111,9 +111,9 @@ resource "alicloud_disk_attachment" "disk_attach" {
 }
 
 // Attach key pair to instances for Module
-resource "alicloud_key_pair_attchment" "default" {
+resource "alicloud_key_pair_attachment" "default" {
   count = "${var.number_of_instances > 0 && var.key_name != "" ? 1 : 0}"
 
   key_name     = "${var.key_name}"
-  instance_ids = ["${alicloud_instance.instances.*.id}"]
+  instance_ids = "${alicloud_instance.instances.*.id}"
 }

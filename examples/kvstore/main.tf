@@ -15,14 +15,14 @@ resource "alicloud_vswitch" "vswitch" {
   availability_zone = "${var.availability_zone == "" ? data.alicloud_zones.default.zones.0.id : var.availability_zone}"
   name              = "${var.vswitch_name}"
   cidr_block        = "${var.vswitch_cidr}"
-  vpc_id            = "${var.vpc_id == "" ? alicloud_vpc.vpc.id : var.vpc_id}"
+  vpc_id            = "${var.vpc_id == "" ? alicloud_vpc.vpc.0.id : var.vpc_id}"
 }
 
 resource "alicloud_kvstore_instance" "myredis" {
   instance_class = "${var.instance_class}"
   instance_name  = "${var.instance_name}"
   password       = "${var.password}"
-  vswitch_id     = "${var.vswitch_id == "" ? alicloud_vswitch.vswitch.id : var.vswitch_id}"
+  vswitch_id     = "${var.vswitch_id == "" ? alicloud_vswitch.vswitch.0.id : var.vswitch_id}"
   security_ips   = ["1.1.1.1", "2.2.2.2", "3.3.3.3"]
   vpc_auth_mode  = "Close"
 

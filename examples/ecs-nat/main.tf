@@ -43,7 +43,7 @@ resource "alicloud_instance" "nat" {
 data "template_file" "shell" {
   template = "${file("userdata.sh")}"
 
-  vars {
+  vars = {
     worker_private_ip = "${alicloud_instance.worker.private_ip}"
     vswitch_cidr      = "${var.vswitch_cidr}"
   }

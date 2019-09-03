@@ -26,7 +26,7 @@ variable "data_node_disk_type" {
   default = "cloud_ssd"
 }
 
-variable "version" {
+variable "es_version" {
   default = "6.3_with_X-Pack"
 }
 

@@ -38,15 +38,15 @@ resource "alicloud_eip" "default" {
 
 resource "alicloud_eip_association" "default" {
   count         = "${var.new_nat_gateway == "true" ? 1 : 0}"
-  allocation_id = "${alicloud_eip.default.id}"
-  instance_id   = "${alicloud_nat_gateway.default.id}"
+  allocation_id = "${alicloud_eip.default.0.id}"
+  instance_id   = "${alicloud_nat_gateway.default.0.id}"
 }
 
 resource "alicloud_snat_entry" "default" {
   count             = "${var.new_nat_gateway == "false" ? 0 : length(var.vswitch_ids) > 0 ? length(var.vswitch_ids) : length(var.vswitch_cidrs)}"
-  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids}"
+  snat_table_id     = "${alicloud_nat_gateway.default.0.snat_table_ids}"
   source_vswitch_id = "${length(var.vswitch_ids) > 0 ? element(split(",", join(",", var.vswitch_ids)), count.index%length(split(",", join(",", var.vswitch_ids)))) : length(var.vswitch_cidrs) < 1 ? "" : element(split(",", join(",", alicloud_vswitch.vswitches.*.id)), count.index%length(split(",", join(",", alicloud_vswitch.vswitches.*.id))))}"
-  snat_ip           = "${alicloud_eip.default.ip_address}"
+  snat_ip           = "${alicloud_eip.default.0.ip_address}"
 }
 
 resource "alicloud_cs_kubernetes" "k8s" {

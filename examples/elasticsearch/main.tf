@@ -6,7 +6,7 @@ resource "alicloud_elasticsearch_instance" "instance" {
   data_node_disk_type  = "${var.data_node_disk_type}"
   vswitch_id           = "${var.vswitch_id}"
   password             = "${var.password}"
-  version              = "${var.version}"
+  version              = "${var.es_version}"
   description          = "${var.description}"
   zone_count           = "${var.zone_count}"
   master_node_spec     = "${var.master_node_spec}"

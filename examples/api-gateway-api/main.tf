@@ -9,7 +9,7 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
   description = "description"
   auth_type   = "APP"
 
-  request_config = {
+  request_config {
     protocol = "HTTP"
     method   = "GET"
     path     = "/test/path1"
@@ -27,13 +27,13 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
   }
 
   request_parameters {
-      name         = "aa"
-      type         = "STRING"
-      required     = "REQUIRED"
-      in           = "QUERY"
-      in_service   = "QUERY"
-      name_service = "testparams"
-    }
+    name         = "aa"
+    type         = "STRING"
+    required     = "REQUIRED"
+    in           = "QUERY"
+    in_service   = "QUERY"
+    name_service = "testparams"
+  }
 
   stage_names = [
     "RELEASE",

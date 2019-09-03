@@ -118,7 +118,7 @@ resource "alicloud_disk_attachment" "disk_attach" {
 }
 
 // Attach key pair to instances for Module
-resource "alicloud_key_pair_attchment" "default" {
+resource "alicloud_key_pair_attachment" "default" {
   count = "${var.number_of_instances > 0 && var.key_name != "" ? 1 : 0}"
 
   key_name     = "${var.key_name}"
@@ -136,13 +136,11 @@ resource "alicloud_ram_role" "role" {
 resource "alicloud_ram_policy" "policy" {
   name = "${var.ram_policy_name}"
 
-  statement = [
-    {
+  statement {
       effect   = "${var.ram_policy_statement_effect}"
       action   = "${var.ram_policy_statement_action}"
       resource = "${var.ram_policy_statement_resource}"
-    },
-  ]
+  }
 
   force = "${var.ram_policy_terminate_force}"
 }

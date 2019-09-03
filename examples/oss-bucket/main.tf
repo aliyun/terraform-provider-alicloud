@@ -15,7 +15,7 @@ resource "alicloud_oss_bucket" "bucket-attr" {
 
   bucket = "${var.bucket-attr}"
 
-  website = {
+  website {
     index_document = "${var.index-doc}"
     error_document = "${var.error-doc}"
   }

@@ -2,14 +2,14 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 
-data "alicloud_instance_types" "1c2g" {
+data "alicloud_instance_types" "default" {
   cpu_core_count       = 1
   memory_size          = 2
   instance_type_family = "ecs.n4"
 }
 
 data "alicloud_zones" "default" {
-  available_instance_type = "${data.alicloud_instance_types.1c2g.instance_types.0.id}"
+  available_instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   available_disk_category  = "${var.disk_category}"
 }
 

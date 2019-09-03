@@ -44,7 +44,7 @@ resource "alicloud_instance" "instance" {
   instance_type              = "${data.alicloud_instance_types.default.instance_types.0.id}"
   instance_name              = "${var.name}"
   count                      = "3"
-  security_groups            = ["${alicloud_security_group.group.*.id}"]
+  security_groups            = "${alicloud_security_group.group.*.id}"
   internet_charge_type       = "PayByTraffic"
   internet_max_bandwidth_out = "10"
   availability_zone          = "${data.alicloud_zones.default.zones.0.id}"

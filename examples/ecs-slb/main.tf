@@ -46,7 +46,7 @@ resource "alicloud_instance" "instance" {
   image_id                   = "${var.image_id}"
   instance_type              = "${var.ecs_type}"
   count                      = "${var.number}"
-  security_groups            = ["${alicloud_security_group.group.*.id}"]
+  security_groups            = "${alicloud_security_group.group.*.id}"
   internet_charge_type       = "${var.internet_charge_type}"
   internet_max_bandwidth_out = "${var.internet_max_bandwidth_out}"
   password                   = "${var.ecs_password}"
@@ -76,5 +76,5 @@ resource "alicloud_slb_listener" "listener" {
 
 resource "alicloud_slb_attachment" "default" {
   load_balancer_id = "${alicloud_slb.instance.id}"
-  instance_ids     = ["${alicloud_instance.instance.*.id}"]
+  instance_ids     = "${alicloud_instance.instance.*.id}"
 }
