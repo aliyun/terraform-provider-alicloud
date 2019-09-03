@@ -1,5 +1,5 @@
 data "alicloud_dns_domains" "domain" {
-  domain_name_regex = "^hegu"
+  domain_name_regex = "^*."
 }
 
 data "alicloud_dns_groups" "group" {
@@ -21,7 +21,7 @@ resource "alicloud_dns_group" "group" {
 
 resource "alicloud_dns" "dns" {
   name     = "${var.domain_name}"
-  group_id = "${element(alicloud_dns_group.group.*.id, count.index)}"
+  group_id = "${element(alicloud_dns_group.group.*.id, length(alicloud_dns_group.group))}"
 }
 
 resource "alicloud_dns_record" "record" {

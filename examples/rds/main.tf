@@ -18,7 +18,7 @@ resource "alicloud_vswitch" "vswitch" {
   availability_zone = "${var.availability_zone == "" ? data.alicloud_zones.default.zones.0.id : var.availability_zone}"
   name              = "${var.vswitch_name}"
   cidr_block        = "${var.vswitch_cidr}"
-  vpc_id            = "${var.vpc_id == "" ? alicloud_vpc.vpc.id : var.vpc_id}"
+  vpc_id            = "${var.vpc_id == "" ? alicloud_vpc.vpc.0.id : var.vpc_id}"
 }
 
 resource "alicloud_db_instance" "instance" {
@@ -26,7 +26,7 @@ resource "alicloud_db_instance" "instance" {
   engine_version   = "${var.engine_version}"
   instance_type    = "${var.instance_class}"
   instance_storage = "${var.storage}"
-  vswitch_id       = "${var.vswitch_id == "" ? alicloud_vswitch.vswitch.id : var.vswitch_id}"
+  vswitch_id       = "${var.vswitch_id == "" ? alicloud_vswitch.vswitch.0.id : var.vswitch_id}"
 
   tags = {
     role = "${var.role}"

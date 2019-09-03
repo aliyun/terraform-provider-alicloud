@@ -56,7 +56,7 @@ resource "alicloud_instance" "instance" {
   instance_type     = "${var.ecs_type}"
   count             = "${var.number}"
   availability_zone = "${var.availability_zones}"
-  security_groups   = ["${alicloud_security_group.group.*.id}"]
+  security_groups   = "${alicloud_security_group.group.*.id}"
 
   internet_charge_type       = "${var.internet_charge_type}"
   internet_max_bandwidth_out = "${var.internet_max_bandwidth_out}"

@@ -20,7 +20,7 @@ resource "alicloud_vpc" "vpc" {
 // According to the vswitch cidr blocks to launch several vswitches
 resource "alicloud_vswitch" "vswitch" {
   count             = "${var.vswitch_id == "" ? 1 : 0}"
-  vpc_id            = "${var.vpc_id != "" ? var.vpc_id : alicloud_vpc.vpc.id}"
+  vpc_id            = "${var.vpc_id != "" ? var.vpc_id : alicloud_vpc.vpc.0.id}"
   cidr_block        = "${var.vswitch_cidr}"
   availability_zone = "${var.availability_zone == "" ? data.alicloud_zones.default.zones.0.id : var.availability_zone}"
   name              = "${var.vswitch_name}"
@@ -29,7 +29,7 @@ resource "alicloud_vswitch" "vswitch" {
 
 resource "alicloud_security_group" "sg" {
   name        = "${var.security_group_name}"
-  vpc_id      = "${var.vpc_id == "" ? alicloud_vpc.vpc.id : var.vpc_id}"
+  vpc_id      = "${var.vpc_id == "" ? alicloud_vpc.vpc.0.id : var.vpc_id}"
   description = "tf-sg"
 }
 
@@ -49,7 +49,7 @@ resource "alicloud_ess_scaling_group" "scaling" {
   max_size           = "${var.scaling_max_size}"
   scaling_group_name = "tf-example-scaling"
   removal_policies   = "${var.removal_policies}"
-  vswitch_ids        = ["${var.vswitch_id == "" ? alicloud_vswitch.vswitch.id : var.vswitch_id}"]
+  vswitch_ids        = ["${var.vswitch_id == "" ? alicloud_vswitch.vswitch.0.id : var.vswitch_id}"]
 }
 
 resource "alicloud_ess_scaling_configuration" "config" {
@@ -70,21 +70,44 @@ resource "alicloud_key_pair" "key" {
 
 resource "alicloud_ram_role" "role" {
   name        = "EcsRamRoleTest"
-  services    = ["ecs.aliyuncs.com"]
+  document = <<EOF
+  {
+    "Statement": [
+      {
+        "Action": "sts:AssumeRole",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": [
+            "ecs.aliyuncs.com"
+          ]
+        }
+      }
+    ],
+    "Version": "1"
+  }
+  EOF
   description = "New role for ECS."
   force       = true
 }
 
 resource "alicloud_ram_policy" "policy" {
   name = "EcsRamRolePolicyTest"
-
-  statement = [
+  document = <<EOF
     {
-      effect   = "Allow"
-      action   = ["ecs:*"]
-      resource = ["*"]
-    },
-  ]
+      "Statement": [
+        {
+          "Action": [
+            "ecs:*"
+          ],
+          "Effect": "Allow",
+          "Resource": [
+            "*"
+          ]
+        }
+      ],
+        "Version": "1"
+    }
+  EOF
 
   description = "New role policy for ECS."
   force       = true

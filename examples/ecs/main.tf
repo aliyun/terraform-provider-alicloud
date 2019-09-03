@@ -71,20 +71,18 @@ resource "alicloud_instance" "instance" {
   system_disk_category          = "cloud_efficiency"
   security_enhancement_strategy = "Deactive"
 
-  data_disks = [
-    {
+  data_disks {
       name        = "disk1"
       size        = "20"
       category    = "cloud"
       description = "disk1"
-    },
-    {
+  }
+  data_disks {
       name        = "disk2"
       size        = "20"
       category    = "cloud"
       description = "disk2"
-    },
-  ]
+  }
 
   tags = {
     role = "${var.role}"

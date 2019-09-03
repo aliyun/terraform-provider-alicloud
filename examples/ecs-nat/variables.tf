@@ -7,7 +7,7 @@ variable "vswitch_cidr" {
 }
 
 variable "zone" {
-  default = "cn-beijing-c"
+  default = "cn-hangzhou-i"
 }
 
 variable "image" {

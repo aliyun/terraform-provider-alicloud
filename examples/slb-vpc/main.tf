@@ -16,7 +16,7 @@ resource "alicloud_vswitch" "main" {
 
 resource "alicloud_slb" "instance" {
   name                 = "${var.name}"
-  vswitch_id           = "${alicloud_vswitch.main.id}"
+  vswitch_id           = "${alicloud_vswitch.main.0.id}"
   internet_charge_type = "${var.internet_charge_type}"
 }
 

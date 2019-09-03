@@ -14,6 +14,6 @@ output "instance_id" {
   value = "${alicloud_network_interface_attachment.at.instance_id}"
 }
 
-output "enis.0.id" {
-  value = "${data.alicloud_network_interfaces.enis.0.interfaces.0.id}"
+output "enis_0_id" {
+  value = "${data.alicloud_network_interfaces.enis.interfaces.0.id}"
 }

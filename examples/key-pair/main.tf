@@ -54,7 +54,7 @@ resource "alicloud_instance" "instance" {
   instance_type     = "${data.alicloud_instance_types.instance_type.instance_types.0.id}"
   count             = "${var.number}"
   availability_zone = "${var.availability_zones}"
-  security_groups   = ["${alicloud_security_group.group.*.id}"]
+  security_groups   = "${alicloud_security_group.group.*.id}"
 
   internet_charge_type       = "${var.internet_charge_type}"
   internet_max_bandwidth_out = "${var.internet_max_bandwidth_out}"
@@ -82,7 +82,7 @@ resource "alicloud_disk" "disk" {
 resource "alicloud_disk_attachment" "instance-attachment" {
   count       = "${var.disk_count}"
   disk_id     = "${element(alicloud_disk.disk.*.id, count.index)}"
-  instance_id = "${element(alicloud_instance.instance.*.id, count.index%var.count)}"
+  instance_id = "${element(alicloud_instance.instance.*.id, count.index%var.number)}"
 }
 
 resource "alicloud_key_pair" "key_pair" {
@@ -92,5 +92,5 @@ resource "alicloud_key_pair" "key_pair" {
 
 resource "alicloud_key_pair_attachment" "key_pair_attachment" {
   key_name     = "${alicloud_key_pair.key_pair.id}"
-  instance_ids = ["${alicloud_instance.instance.*.id}"]
+  instance_ids = "${alicloud_instance.instance.*.id}"
 }
