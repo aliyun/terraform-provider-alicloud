@@ -343,10 +343,13 @@ const (
 	TagResourceSecurityGroup = TagResourceType("securitygroup")
 	TagResourceEni           = TagResourceType("eni")
 	TagResourceCdn           = TagResourceType("DOMAIN")
-
-	TagResourcePlugin   = TagResourceType("plugin")
-	TagResourceApiGroup = TagResourceType("apiGroup")
-	TagResourceApp      = TagResourceType("app")
+	TagResourceVpc           = TagResourceType("VPC")
+	TagResourceVSwitch       = TagResourceType("VSWITCH")
+	TagResourceRouteTable    = TagResourceType("ROUTETABLE")
+	TagResourceEip           = TagResourceType("EIP")
+	TagResourcePlugin        = TagResourceType("plugin")
+	TagResourceApiGroup      = TagResourceType("apiGroup")
+	TagResourceApp           = TagResourceType("app")
 )
 
 type KubernetesNodeType string

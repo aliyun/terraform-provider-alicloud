@@ -39,6 +39,7 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The vpc_id of the route table, the field can't be changed.
 * `name` - (Optional) The name of the route table.
 * `description` - (Optional) The description of the route table instance.
+* `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 

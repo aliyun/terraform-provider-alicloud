@@ -55,6 +55,7 @@ func resourceAliyunVpc() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validateStringLengthInRange(2, 256),
 			},
+			"tags": tagsSchema(),
 			"router_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -108,7 +109,7 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 
-	return resourceAliyunVpcRead(d, meta)
+	return resourceAliyunVpcUpdate(d, meta)
 }
 
 func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
@@ -129,7 +130,11 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("description", object.Description)
 	d.Set("router_id", object.VRouterId)
 	d.Set("resource_group_id", object.ResourceGroupId)
-
+	tags, err := vpcService.DescribeTags(d.Id(), TagResourceVpc)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", vpcService.tagsToMap(tags))
 	// Retrieve all route tables and filter to get system
 	request := vpc.CreateDescribeRouteTablesRequest()
 	request.RegionId = client.RegionId
@@ -180,7 +185,14 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	vpcService := VpcService{client}
+	if err := vpcService.setInstanceTags(d, TagResourceVpc); err != nil {
+		return WrapError(err)
+	}
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAliyunVpcRead(d, meta)
+	}
 	attributeUpdate := false
 	request := vpc.CreateModifyVpcAttributeRequest()
 	request.RegionId = client.RegionId

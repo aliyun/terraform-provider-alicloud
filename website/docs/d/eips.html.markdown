@@ -27,6 +27,7 @@ The following arguments are supported:
 
 * `ids` - (Optional) A list of EIP IDs.
 * `ip_addresses` - (Optional) A list of EIP public IP addresses.
+* `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 * `in_use` - (Deprecated) Deprecated since the version 1.8.0 of this provider.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

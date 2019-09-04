@@ -46,6 +46,21 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 		}),
 	}
 
+	tagsConfig := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"tags": `{
+							Created = "TF"
+							For 	= "acceptance test"
+					  }`,
+		}),
+		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"tags": `{
+							Created = "TF-fake"
+							For 	= "acceptance test"
+					  }`,
+		}),
+	}
+
 	allConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
 			"name_regex": `"${alicloud_route_table.default.name}"`,
@@ -59,7 +74,7 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 		}),
 	}
 
-	routeTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConfig, vpcIdConfig, idsConfig, allConfig)
+	routeTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConfig, vpcIdConfig, idsConfig, tagsConfig, allConfig)
 }
 
 func testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand int, attrMap map[string]string) string {
@@ -82,6 +97,10 @@ resource "alicloud_route_table" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   name = "${var.name}"
   description = "${var.name}_description"
+  tags 		= {
+		Created = "TF"
+		For 	= "acceptance test"
+  }
 }
 
 data "alicloud_route_tables" "default" {

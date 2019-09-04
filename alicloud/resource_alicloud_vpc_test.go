@@ -203,11 +203,24 @@ func TestAccAlicloudVpcBasic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccCheckVpcConfig_tags(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
 				Config: testAccCheckVpcConfig_all(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf_testAccVpcConfigName%d_all", rand),
-						"description": fmt.Sprintf("tf_testAccVpcConfigName%d_decription_all", rand),
+						"name":         fmt.Sprintf("tf_testAccVpcConfigName%d_all", rand),
+						"description":  fmt.Sprintf("tf_testAccVpcConfigName%d_decription_all", rand),
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -289,6 +302,25 @@ resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
 	name = "${var.name}_change"
 	description = "${var.name}_decription"
+}
+`, rand)
+}
+
+func testAccCheckVpcConfig_tags(rand int) string {
+	return fmt.Sprintf(
+		`
+variable "name" {
+	default = "tf_testAccVpcConfigName%d"
+}
+
+resource "alicloud_vpc" "default" {
+	cidr_block = "172.16.0.0/12"
+	name = "${var.name}_change"
+	description = "${var.name}_decription"
+	tags 		= {
+		Created = "TF"
+		For 	= "acceptance test"
+	}
 }
 `, rand)
 }

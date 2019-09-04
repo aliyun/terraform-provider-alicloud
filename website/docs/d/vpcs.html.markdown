@@ -33,6 +33,7 @@ The following arguments are supported:
 * `name_regex` - (Optional) A regex string to filter VPCs by name.
 * `is_default` - (Optional, type: bool) Indicate whether the VPC is the default one in the specified region.
 * `vswitch_id` - (Optional) Filter results by the specified VSwitch.
+* `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `ids` - (Optional, Available in 1.52.0+) A list of VPC IDs.
 

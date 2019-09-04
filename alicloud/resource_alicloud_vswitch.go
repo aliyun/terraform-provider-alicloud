@@ -44,6 +44,7 @@ func resourceAliyunSubnet() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -81,7 +82,7 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 	if err := vpcService.WaitForVSwitch(vswitchID, Available, DefaultTimeoutMedium); err != nil {
 		return WrapError(err)
 	}
-	return resourceAliyunSwitchRead(d, meta)
+	return resourceAliyunSwitchUpdate(d, meta)
 }
 
 func resourceAliyunSwitchRead(d *schema.ResourceData, meta interface{}) error {
@@ -101,13 +102,24 @@ func resourceAliyunSwitchRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("cidr_block", vswitch.CidrBlock)
 	d.Set("name", vswitch.VSwitchName)
 	d.Set("description", vswitch.Description)
-
+	tags, err := vpcService.DescribeTags(d.Id(), TagResourceVSwitch)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", vpcService.tagsToMap(tags))
 	return nil
 }
 
 func resourceAliyunSwitchUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	vpcService := VpcService{client}
+	if err := vpcService.setInstanceTags(d, TagResourceVSwitch); err != nil {
+		return WrapError(err)
+	}
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAliyunSwitchRead(d, meta)
+	}
 	update := false
 	request := vpc.CreateModifyVSwitchAttributeRequest()
 	request.RegionId = client.RegionId

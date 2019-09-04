@@ -225,11 +225,24 @@ func TestAccAlicloudVSwitchBasic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccVSwitchConfig_tags(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
 				Config: testAccVSwitchConfig_all(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAccVswitchConfig%d_all", rand),
-						"description": fmt.Sprintf("tf-testAccVswitchConfig%d_description_all", rand),
+						"name":         fmt.Sprintf("tf-testAccVswitchConfig%d_all", rand),
+						"description":  fmt.Sprintf("tf-testAccVswitchConfig%d_description_all", rand),
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -339,6 +352,34 @@ resource "alicloud_vswitch" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   name = "${var.name}_change"
   description = "${var.name}_description"
+}
+`, rand)
+}
+
+func testAccVSwitchConfig_tags(rand int) string {
+	return fmt.Sprintf(
+		`
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
+}
+variable "name" {
+  default = "tf-testAccVswitchConfig%d"
+}
+resource "alicloud_vpc" "default" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}_change"
+  description = "${var.name}_description"
+  tags 		= {
+		Created = "TF"
+		For 	= "acceptance test"
+  }
 }
 `, rand)
 }

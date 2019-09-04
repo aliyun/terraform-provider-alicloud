@@ -40,6 +40,7 @@ func dataSourceAlicloudVpcs() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -113,6 +114,7 @@ func dataSourceAlicloudVpcs() *schema.Resource {
 }
 func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	request := vpc.CreateDescribeVpcsRequest()
 	request.RegionId = string(client.Region)
@@ -191,6 +193,19 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 
 		if vswitchId, ok := d.GetOk("vswitch_id"); ok && !vpcVswitchIdListContains(v.VSwitchIds.VSwitchId, vswitchId.(string)) {
 			continue
+		}
+
+		if value, ok := d.GetOk("tags"); ok {
+			tags, err := vpcService.DescribeTags(v.VpcId, TagResourceVpc)
+			if err != nil {
+				return WrapError(err)
+			}
+			if vmap, ok := value.(map[string]interface{}); ok && len(vmap) > 0 {
+				if !tagsMapEqual(vmap, vpcService.tagsToMap(tags)) {
+					continue
+				}
+			}
+
 		}
 
 		request := vpc.CreateDescribeVRoutersRequest()

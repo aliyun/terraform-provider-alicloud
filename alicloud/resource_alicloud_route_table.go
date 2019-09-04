@@ -47,6 +47,7 @@ func resourceAliyunRouteTable() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -77,7 +78,7 @@ func resourceAliyunRouteTableCreate(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	return resourceAliyunRouteTableRead(d, meta)
+	return resourceAliyunRouteTableUpdate(d, meta)
 }
 
 func resourceAliyunRouteTableRead(d *schema.ResourceData, meta interface{}) error {
@@ -94,12 +95,24 @@ func resourceAliyunRouteTableRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("vpc_id", object.VpcId)
 	d.Set("name", object.RouteTableName)
 	d.Set("description", object.Description)
+	tags, err := vpcService.DescribeTags(d.Id(), TagResourceRouteTable)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", vpcService.tagsToMap(tags))
 	return nil
 }
 
 func resourceAliyunRouteTableUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	vpcService := VpcService{client}
+	if err := vpcService.setInstanceTags(d, TagResourceRouteTable); err != nil {
+		return WrapError(err)
+	}
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAliyunRouteTableRead(d, meta)
+	}
 	request := vpc.CreateModifyRouteTableAttributesRequest()
 	request.RegionId = client.RegionId
 	request.RouteTableId = d.Id()
