@@ -206,6 +206,16 @@ func TestAccAlicloudKVStoreRedisInstance_classictest(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccKVStoreInstance_classicUpdateTags(string(KVStoreRedis), redisInstanceClassForTestUpdateClass, string(KVStore4Dot0)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
 				Config: testAccKVStoreInstance_classicUpdateAll(string(KVStoreRedis), redisInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -213,6 +223,9 @@ func TestAccAlicloudKVStoreRedisInstance_classictest(t *testing.T) {
 						"instance_class": redisInstanceClassForTest,
 						"engine_version": string(KVStore4Dot0),
 						"security_ips.#": "2",
+						"tags.%":         REMOVEKEY,
+						"tags.Created":   REMOVEKEY,
+						"tags.For":       REMOVEKEY,
 					}),
 				),
 			},
@@ -808,6 +821,30 @@ func testAccKVStoreInstance_classicUpdateAttr(instanceType, instanceClass, engin
 		instance_type = "%s"
 		instance_class = "%s"
 		engine_version = "%s"
+	}
+	`, instanceType, instanceClass, engineVersion)
+}
+func testAccKVStoreInstance_classicUpdateTags(instanceType, instanceClass, engineVersion string) string {
+	return fmt.Sprintf(`
+	data "alicloud_zones" "default" {
+		available_resource_creation = "KVStore"
+	}
+	variable "name" {
+		default = "tf-testAccKVStoreInstance_classic"
+	}
+
+	resource "alicloud_kvstore_instance" "default" {
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+		password = "Yourpassword1234"
+		instance_name  = "${var.name}"
+		security_ips = ["10.0.0.1"]
+		instance_type = "%s"
+		instance_class = "%s"
+		engine_version = "%s"
+		tags = {
+			Created = "TF"
+			For		= "acceptance test"
+		}
 	}
 	`, instanceType, instanceClass, engineVersion)
 }

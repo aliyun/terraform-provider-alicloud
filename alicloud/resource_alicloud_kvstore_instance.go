@@ -115,7 +115,7 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"tags": tagsSchema(),
 			"security_ips": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -130,15 +130,15 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				ValidateFunc: validateAllowedStringValue([]string{"Open", "Close"}),
 			},
 
-			"parameters": &schema.Schema{
+			"parameters": {
 				Type: schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"name": &schema.Schema{
+						"name": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"value": &schema.Schema{
+						"value": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
@@ -190,6 +190,9 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	d.Partial(true)
 	stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging", "Changing"}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, kvstoreService.RdsKvstoreInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 
+	if err := kvstoreService.setInstanceTags(d); err != nil {
+		return WrapError(err)
+	}
 	if d.HasChange("parameters") {
 		config := make(map[string]interface{})
 		documented := d.Get("parameters").(*schema.Set).List()
@@ -433,6 +436,11 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("private_ip", object.PrivateIp)
 	d.Set("security_ips", strings.Split(object.SecurityIPList, COMMA_SEPARATED))
 	d.Set("vpc_auth_mode", object.VpcAuthMode)
+	tags, err := kvstoreService.DescribeTags(d.Id(), TagResourceInstance)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", kvstoreService.tagsToMap(tags))
 
 	if object.ChargeType == string(Prepaid) {
 		request := r_kvstore.CreateDescribeInstanceAutoRenewalAttributeRequest()
