@@ -33,6 +33,7 @@ func resourceAliyunApigatewayApp() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -65,14 +66,17 @@ func resourceAliyunApigatewayAppCreate(d *schema.ResourceData, meta interface{})
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_apigateway_app", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	return resourceAliyunApigatewayAppRead(d, meta)
+	return resourceAliyunApigatewayAppUpdate(d, meta)
 }
 
 func resourceAliyunApigatewayAppRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
-
+	tags, err := cloudApiService.DescribeTags(d.Id(), TagResourceApp)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", cloudApiService.tagsToMap(tags))
 	if err := resource.Retry(3*time.Second, func() *resource.RetryError {
 		object, err := cloudApiService.DescribeApiGatewayApp(d.Id())
 		if err != nil {
@@ -93,7 +97,14 @@ func resourceAliyunApigatewayAppRead(d *schema.ResourceData, meta interface{}) e
 
 func resourceAliyunApigatewayAppUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	cloudApiService := CloudApiService{client}
+	if err := cloudApiService.setInstanceTags(d, TagResourceApp); err != nil {
+		return WrapError(err)
+	}
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAliyunApigatewayAppRead(d, meta)
+	}
 	if d.HasChange("name") || d.HasChange("description") {
 		request := cloudapi.CreateModifyAppRequest()
 		request.RegionId = client.RegionId

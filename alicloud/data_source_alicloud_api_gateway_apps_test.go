@@ -31,14 +31,36 @@ func SkipTestAccAlicloudApigatewayAppsDataSource(t *testing.T) {
 			"ids": []string{"${alicloud_api_gateway_app.default.id}_fake"},
 		}),
 	}
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]interface{}{
+				"Created": "TF",
+				"For":     "acceptance test",
+			},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]interface{}{
+				"Created": "TF-fake",
+				"For":     "acceptance test",
+			},
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_api_gateway_app.default.name}",
 			"ids":        []string{"${alicloud_api_gateway_app.default.id}"},
+			"tags": map[string]interface{}{
+				"Created": "TF",
+				"For":     "acceptance test",
+			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_api_gateway_app.default.name}",
 			"ids":        []string{"${alicloud_api_gateway_app.default.id}_fake"},
+			"tags": map[string]interface{}{
+				"Created": "TF",
+				"For":     "acceptance test",
+			},
 		}),
 	}
 
@@ -67,7 +89,7 @@ func SkipTestAccAlicloudApigatewayAppsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeApiGatewayAppsMapFunc,
 	}
 
-	apiGatewayAppsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
+	apiGatewayAppsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, tagsConf, allConf)
 }
 
 func dataSourceApiGatewayAppsConfigDependence(name string) string {
@@ -84,6 +106,10 @@ variable "description" {
 resource "alicloud_api_gateway_app" "default" {
   name = "${var.name}"
   description = "${var.description}"
+  tags 		= {
+		Created = "TF"
+		For 	= "acceptance test"
+  }
 }
 
 `, name)
