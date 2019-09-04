@@ -28,6 +28,7 @@ func dataSourceAlicloudGpdbInstances() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -168,6 +169,13 @@ func dataSourceAlicloudGpdbInstancesRead(d *schema.ResourceData, meta interface{
 			// filter by vSwitchId
 			if vSwitchId != "" && vSwitchId != string(item.VSwitchId) {
 				continue
+			}
+			if v, ok := d.GetOk("tags"); ok {
+				if vmap, ok := v.(map[string]interface{}); ok && len(vmap) > 0 {
+					if !tagsMapEqual(vmap, gpdbService.tagsToMap(item.Tags.Tag)) {
+						continue
+					}
+				}
 			}
 
 			// describe instance

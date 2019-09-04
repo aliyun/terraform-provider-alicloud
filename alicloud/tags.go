@@ -5,6 +5,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -214,11 +216,43 @@ func diffTags(oldTags, newTags []Tag) ([]Tag, []Tag) {
 	return tagsFromMap(create), remove
 }
 
+func diffGpdbTags(oldTags, newTags []gpdb.TagResourcesTag) ([]gpdb.TagResourcesTag, []gpdb.TagResourcesTag) {
+	// First, we're creating everything we have
+	create := make(map[string]interface{})
+	for _, t := range newTags {
+		create[t.Key] = t.Value
+	}
+
+	// Build the list of what to remove
+	var remove []gpdb.TagResourcesTag
+	for _, t := range oldTags {
+		old, ok := create[t.Key]
+		if !ok || old != t.Value {
+			// Delete it!
+			remove = append(remove, t)
+		}
+	}
+
+	return gpdbTagsFromMap(create), remove
+}
+
 // tagsFromMap returns the tags for the given map of data.
 func tagsFromMap(m map[string]interface{}) []Tag {
 	result := make([]Tag, 0, len(m))
 	for k, v := range m {
 		result = append(result, Tag{
+			Key:   k,
+			Value: v.(string),
+		})
+	}
+
+	return result
+}
+
+func gpdbTagsFromMap(m map[string]interface{}) []gpdb.TagResourcesTag {
+	result := make([]gpdb.TagResourcesTag, 0, len(m))
+	for k, v := range m {
+		result = append(result, gpdb.TagResourcesTag{
 			Key:   k,
 			Value: v.(string),
 		})

@@ -77,6 +77,7 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -111,6 +112,7 @@ func resourceAlicloudGpdbInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("security_ip_list", security_ips)
 	d.Set("create_time", instance.CreationTime)
 	d.Set("instance_charge_type", instance.PayType)
+	d.Set("tags", gpdbService.tagsToMap(instance.Tags.Tag))
 
 	return nil
 }
@@ -186,6 +188,10 @@ func resourceAlicloudGpdbInstanceUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		d.SetPartial("security_ip_list")
+	}
+
+	if err := gpdbService.setInstanceTags(d); err != nil {
+		return WrapError(err)
 	}
 
 	// Finish Update

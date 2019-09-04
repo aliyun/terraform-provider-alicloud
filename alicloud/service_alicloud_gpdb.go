@@ -1,8 +1,12 @@
 package alicloud
 
 import (
+	"log"
+	"regexp"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/schema"
 
 	"github.com/hashicorp/terraform/helper/resource"
 
@@ -176,4 +180,71 @@ func (s *GpdbService) WaitForGpdbConnection(id string, status Status, timeout in
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ConnectionString, id, ProviderERROR)
 		}
 	}
+}
+
+func (s *GpdbService) setInstanceTags(d *schema.ResourceData) error {
+	oraw, nraw := d.GetChange("tags")
+	o := oraw.(map[string]interface{})
+	n := nraw.(map[string]interface{})
+	create, remove := diffGpdbTags(gpdbTagsFromMap(o), gpdbTagsFromMap(n))
+
+	if len(remove) > 0 {
+		var tagKey []string
+		for _, v := range remove {
+			tagKey = append(tagKey, v.Key)
+		}
+		request := gpdb.CreateUntagResourcesRequest()
+		request.ResourceId = &[]string{d.Id()}
+		request.ResourceType = string(TagResourceInstance)
+		request.TagKey = &tagKey
+		request.RegionId = s.client.RegionId
+		raw, err := s.client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
+			return client.UntagResources(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	}
+
+	if len(create) > 0 {
+		request := gpdb.CreateTagResourcesRequest()
+		request.ResourceId = &[]string{d.Id()}
+		request.Tag = &create
+		request.ResourceType = string(TagResourceInstance)
+		request.RegionId = s.client.RegionId
+		raw, err := s.client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
+			return client.TagResources(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	}
+
+	d.SetPartial("tags")
+	return nil
+}
+
+func (s *GpdbService) tagsToMap(tags []gpdb.Tag) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !s.ignoreTag(t) {
+			result[t.Key] = t.Value
+		}
+	}
+	return result
+}
+
+func (s *GpdbService) ignoreTag(t gpdb.Tag) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
+		ok, _ := regexp.MatchString(v, t.Key)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.Key, t.Value)
+			return true
+		}
+	}
+	return false
 }

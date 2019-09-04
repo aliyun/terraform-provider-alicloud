@@ -66,6 +66,7 @@ If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of 
 The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
 * `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
+* `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 
 ### Timeouts
 

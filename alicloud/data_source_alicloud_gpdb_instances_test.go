@@ -53,19 +53,42 @@ func TestAccAlicloudGpdbInstancesDataSource(t *testing.T) {
 		}),
 	}
 
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_gpdb_instance.default.id}"},
+			"tags": map[string]interface{}{
+				"Created": "TF",
+				"For":     "acceptance test",
+			},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_gpdb_instance.default.id}"},
+			"tags": map[string]interface{}{
+				"Created": "TF-fake",
+				"For":     "acceptance test",
+			},
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids":               []string{"${alicloud_gpdb_instance.default.id}"},
 			"name_regex":        "${alicloud_gpdb_instance.default.description}",
 			"availability_zone": "${data.alicloud_zones.default.zones.0.id}",
 			"vswitch_id":        "${alicloud_gpdb_instance.default.vswitch_id}",
-		}),
+			"tags": map[string]interface{}{
+				"Created": "TF",
+				"For":     "acceptance test",
+			}}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":               []string{"${alicloud_gpdb_instance.default.id}_fake"},
 			"name_regex":        "${alicloud_gpdb_instance.default.description}_fake",
 			"availability_zone": "${data.alicloud_zones.default.zones.0.id}",
 			"vswitch_id":        "unknow",
-		}),
+			"tags": map[string]interface{}{
+				"Created": "TF",
+				"For":     "acceptance test",
+			}}),
 	}
 
 	var existMapFunc = func(rand int) map[string]string {
@@ -100,7 +123,7 @@ func TestAccAlicloudGpdbInstancesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeMapFunc,
 	}
 
-	CheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, availabilityZoneConf, vSwitchIdConf, allConf)
+	CheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, availabilityZoneConf, vSwitchIdConf, tagsConf, allConf)
 }
 
 func dataSourceGpdbConfigDependence(name string) string {
@@ -128,5 +151,9 @@ func dataSourceGpdbConfigDependence(name string) string {
             instance_class       = "gpdb.group.segsdx2"
             instance_group_count = "2"
             description          = "${var.name}"
+			tags 				 = {
+				Created = "TF"
+				For 	= "acceptance test"
+			}
         }`, name)
 }
