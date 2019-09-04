@@ -58,6 +58,7 @@ func resourceAliyunCommonBandwidthPackage() *schema.Resource {
 			"ratio": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				ForceNew:     true,
 				Default:      100,
 				ValidateFunc: validateRatio,
 			},
