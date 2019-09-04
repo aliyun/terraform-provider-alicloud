@@ -155,6 +155,7 @@ func dataSourceAlicloudKVStoreInstances() *schema.Resource {
 
 func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	kvstoreService := KvstoreService{client}
 
 	request := r_kvstore.CreateDescribeInstancesRequest()
 	request.RegionId = client.RegionId
@@ -203,6 +204,18 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 					continue
 				}
 			}
+			if v, ok := d.GetOk("tags"); ok {
+				tags, err := kvstoreService.DescribeTags(item.InstanceId, TagResourceInstance)
+				if err != nil {
+					return WrapError(err)
+				}
+				if vmap, ok := v.(map[string]interface{}); ok && len(vmap) > 0 {
+					if !tagsMapEqual(vmap, kvstoreService.tagsToMap(tags)) {
+						continue
+					}
+				}
+
+			}
 			dbi = append(dbi, item)
 		}
 
@@ -221,6 +234,7 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 }
 
 func kvstoreInstancesDescription(d *schema.ResourceData, dbi []r_kvstore.KVStoreInstance) error {
+
 	var ids []string
 	var names []string
 	var s []map[string]interface{}

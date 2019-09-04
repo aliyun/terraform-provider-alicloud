@@ -1,7 +1,11 @@
 package alicloud
 
 import (
+	"log"
+	"regexp"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/schema"
 
 	"github.com/hashicorp/terraform/helper/resource"
 
@@ -149,4 +153,124 @@ func (s *KvstoreService) ModifyInstanceConfig(id string, config string) error {
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
+}
+
+func (s *KvstoreService) setInstanceTags(d *schema.ResourceData) error {
+	if d.HasChange("tags") {
+		oraw, nraw := d.GetChange("tags")
+		o := oraw.(map[string]interface{})
+		n := nraw.(map[string]interface{})
+		create, remove := s.diffTags(s.tagsFromMap(o), s.tagsFromMap(n))
+
+		if len(remove) > 0 {
+			var tagKey []string
+			for _, v := range remove {
+				tagKey = append(tagKey, v.Key)
+			}
+			request := r_kvstore.CreateUntagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.ResourceType = string(TagResourceInstance)
+			request.TagKey = &tagKey
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+				return client.UntagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+
+		if len(create) > 0 {
+			request := r_kvstore.CreateTagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.Tag = &create
+			request.ResourceType = string(TagResourceInstance)
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+				return client.TagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+
+		d.SetPartial("tags")
+	}
+
+	return nil
+}
+
+func (s *KvstoreService) tagsToMap(tags []r_kvstore.TagResource) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !s.ignoreTag(t) {
+			result[t.TagKey] = t.TagValue
+		}
+	}
+	return result
+}
+
+func (s *KvstoreService) tagsFromMap(m map[string]interface{}) []r_kvstore.TagResourcesTag {
+	result := make([]r_kvstore.TagResourcesTag, 0, len(m))
+	for k, v := range m {
+		result = append(result, r_kvstore.TagResourcesTag{
+			Key:   k,
+			Value: v.(string),
+		})
+	}
+
+	return result
+}
+
+func (s *KvstoreService) ignoreTag(t r_kvstore.TagResource) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
+		ok, _ := regexp.MatchString(v, t.TagValue)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
+}
+
+func (s *KvstoreService) diffTags(oldTags, newTags []r_kvstore.TagResourcesTag) ([]r_kvstore.TagResourcesTag, []r_kvstore.TagResourcesTag) {
+	// First, we're creating everything we have
+	create := make(map[string]interface{})
+	for _, t := range newTags {
+		create[t.Key] = t.Value
+	}
+
+	// Build the list of what to remove
+	var remove []r_kvstore.TagResourcesTag
+	for _, t := range oldTags {
+		old, ok := create[t.Key]
+		if !ok || old != t.Value {
+			// Delete it!
+			remove = append(remove, t)
+		}
+	}
+
+	return s.tagsFromMap(create), remove
+}
+
+func (s *KvstoreService) DescribeTags(resourceId string, resourceType TagResourceType) (tags []r_kvstore.TagResource, err error) {
+	request := r_kvstore.CreateListTagResourcesRequest()
+	request.RegionId = s.client.RegionId
+	request.ResourceType = string(resourceType)
+	request.ResourceId = &[]string{resourceId}
+	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+		return rkvClient.ListTagResources(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*r_kvstore.ListTagResourcesResponse)
+
+	return response.TagResources.TagResource, nil
 }
