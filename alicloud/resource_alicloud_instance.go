@@ -90,15 +90,13 @@ func resourceAliyunInstance() *schema.Resource {
 			"internet_max_bandwidth_in": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				ValidateFunc:     validateIntegerInRange(1, 200),
 				Computed:         true,
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 			},
 			"internet_max_bandwidth_out": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Default:      0,
-				ValidateFunc: validateIntegerInRange(0, 100),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  0,
 			},
 			"host_name": {
 				Type:     schema.TypeString,
