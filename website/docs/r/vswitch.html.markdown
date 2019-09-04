@@ -35,6 +35,7 @@ The following arguments are supported:
 * `cidr_block` - (Required, ForceNew) The CIDR block for the switch.
 * `name` - (Optional) The name of the switch. Defaults to null.
 * `description` - (Optional) The switch description. Defaults to null.
+* `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 

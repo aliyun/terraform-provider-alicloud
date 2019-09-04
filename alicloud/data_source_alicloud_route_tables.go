@@ -29,6 +29,7 @@ func dataSourceAlicloudRouteTables() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"tags": tagsSchema(),
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -80,6 +81,7 @@ func dataSourceAlicloudRouteTables() *schema.Resource {
 }
 func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	request := vpc.CreateDescribeRouteTableListRequest()
 	request.RegionId = string(client.Region)
@@ -132,6 +134,18 @@ func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{})
 				if _, ok := idsMap[tables.RouteTableId]; !ok {
 					continue
 				}
+			}
+			if value, ok := d.GetOk("tags"); ok {
+				tags, err := vpcService.DescribeTags(tables.RouteTableId, TagResourceRouteTable)
+				if err != nil {
+					return WrapError(err)
+				}
+				if vmap, ok := value.(map[string]interface{}); ok && len(vmap) > 0 {
+					if !tagsMapEqual(vmap, vpcService.tagsToMap(tags)) {
+						continue
+					}
+				}
+
 			}
 			allRouteTables = append(allRouteTables, tables)
 		}

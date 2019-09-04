@@ -71,7 +71,20 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 			"vswitch_id": `"${alicloud_vswitch.default.id}_fake"`,
 		}),
 	}
-
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
+			"tags": `{
+							Created = "TF"
+							For 	= "acceptance test"
+					  }`,
+		}),
+		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
+			"tags": `{
+							Created = "TF-fake"
+							For 	= "acceptance test"
+					  }`,
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${var.name}"`,
@@ -91,7 +104,7 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 		}),
 	}
 
-	vpcsCheckInfo.dataSourceTestCheck(t, rand, initVswitchConf, nameRegexConf, idsConf, cidrBlockConf, statusConf, idDefaultConf, vswitchIdConf, allConf)
+	vpcsCheckInfo.dataSourceTestCheck(t, rand, initVswitchConf, nameRegexConf, idsConf, cidrBlockConf, statusConf, idDefaultConf, vswitchIdConf, tagsConf, allConf)
 }
 
 func testAccCheckAlicloudVpcsDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -108,6 +121,10 @@ variable "name" {
 resource "alicloud_vpc" "default" {
   name = "${var.name}"
   cidr_block = "172.16.0.0/12"
+  tags 		= {
+		Created = "TF"
+		For 	= "acceptance test"
+  }
 }
 
 data "alicloud_zones" "default" {

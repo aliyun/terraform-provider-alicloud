@@ -44,6 +44,7 @@ The following arguments are supported:
 * `name_regex` - (Optional) A regex string to filter results by name.
 * `is_default` - (Optional, type: bool) Indicate whether the VSwitch is created by the system.
 * `vpc_id` - (Optional) ID of the VPC that owns the VSwitch.
+* `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `ids` - (Optional, Available in 1.52.0+) A list of VSwitch IDs.
 

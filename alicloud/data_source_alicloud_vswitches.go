@@ -41,6 +41,7 @@ func dataSourceAlicloudVSwitches() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -106,6 +107,7 @@ func dataSourceAlicloudVSwitches() *schema.Resource {
 }
 func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	request := vpc.CreateDescribeVSwitchesRequest()
 	request.RegionId = string(client.Region)
@@ -173,6 +175,18 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 				if !nameRegex.MatchString(vsw.VSwitchName) {
 					continue
 				}
+			}
+			if value, ok := d.GetOk("tags"); ok {
+				tags, err := vpcService.DescribeTags(vsw.VSwitchId, TagResourceVSwitch)
+				if err != nil {
+					return WrapError(err)
+				}
+				if vmap, ok := value.(map[string]interface{}); ok && len(vmap) > 0 {
+					if !tagsMapEqual(vmap, vpcService.tagsToMap(tags)) {
+						continue
+					}
+				}
+
 			}
 			allVSwitches = append(allVSwitches, vsw)
 		}

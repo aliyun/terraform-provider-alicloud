@@ -28,18 +28,43 @@ func TestAccAlicloudEipsDataSourceBasic(t *testing.T) {
 		}),
 	}
 
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
+			"ids": `[ "${alicloud_eip.default.0.id}" ]`,
+			"tags": `{
+							Created = "TF"
+							For 	= "acceptance test"
+					  }`,
+		}),
+		fakeConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
+			"ids": `[ "${alicloud_eip.default.0.id}" ]`,
+			"tags": `{
+							Created = "TF-fake"
+							For 	= "acceptance test"
+					  }`,
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
 			"ids":          `[ "${alicloud_eip.default.0.id}" ]`,
 			"ip_addresses": `[ "${alicloud_eip.default.0.ip_address}" ]`,
+			"tags": `{
+							Created = "TF"
+							For 	= "acceptance test"
+					  }`,
 		}),
 		fakeConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
 			"ids":          `[ "${alicloud_eip.default.0.id}" ]`,
 			"ip_addresses": `[ "${alicloud_eip.default.0.ip_address}_fake" ]`,
+			"tags": `{
+							Created = "TF"
+							For 	= "acceptance test"
+					  }`,
 		}),
 	}
 
-	dnsEipsCheckInfo.dataSourceTestCheck(t, rand, idsConf, ipsConf, allConf)
+	dnsEipsCheckInfo.dataSourceTestCheck(t, rand, idsConf, ipsConf, tagsConf, allConf)
 
 }
 
@@ -54,6 +79,10 @@ resource "alicloud_eip" "default" {
   name = "tf-testAccCheckAlicloudEipsDataSourceConfig%d"
   count = 2
   bandwidth = 5
+  tags 		= {
+		Created = "TF"
+		For 	= "acceptance test"
+  }
 }
 data "alicloud_eips" "default" {
   %s

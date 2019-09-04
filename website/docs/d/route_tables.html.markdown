@@ -46,6 +46,7 @@ The following arguments are supported:
 * `ids` - (Optional) A list of Route Tables IDs.
 * `name_regex` - (Optional) A regex string to filter route tables by name.
 * `vpc_id` - (Optional) Vpc id of the route table.
+* `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

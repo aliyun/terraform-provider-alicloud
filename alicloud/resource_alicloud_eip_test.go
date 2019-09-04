@@ -207,11 +207,24 @@ func TestAccAlicloudEipBasic_PayByBandwidth(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccCheckEipConfig_tags(rand, "PayByBandwidth"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
 				Config: testAccCheckEipConfig_all(rand, "PayByBandwidth"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcceEipName%d_all", rand),
-						"description": fmt.Sprintf("tf-testAcceEipName%d_description_all", rand),
+						"name":         fmt.Sprintf("tf-testAcceEipName%d_all", rand),
+						"description":  fmt.Sprintf("tf-testAcceEipName%d_description_all", rand),
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -378,6 +391,27 @@ resource "alicloud_eip" "default" {
 	period = "1"
 	name = "${var.name}"
     description = "${var.name}_description"
+}
+`, rand, internet_charge_type)
+}
+
+func testAccCheckEipConfig_tags(rand int, internet_charge_type string) string {
+	return fmt.Sprintf(`
+variable "name"{
+	default = "tf-testAcceEipName%d"
+}
+
+resource "alicloud_eip" "default" {
+	instance_charge_type = "PostPaid"
+	internet_charge_type = "%s"
+	bandwidth = "10"
+	period = "1"
+	name = "${var.name}"
+    description = "${var.name}_description"
+	tags 		= {
+		Created = "TF"
+		For 	= "acceptance test"
+	}
 }
 `, rand, internet_charge_type)
 }

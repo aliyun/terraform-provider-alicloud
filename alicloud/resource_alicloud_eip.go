@@ -59,6 +59,7 @@ func resourceAliyunEip() *schema.Resource {
 				ValidateFunc:     validateEipChargeTypePeriod,
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
+			"tags": tagsSchema(),
 			"ip_address": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -140,12 +141,22 @@ func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("isp", object.ISP)
 	d.Set("ip_address", object.IpAddress)
 	d.Set("status", object.Status)
+	tags, err := vpcService.DescribeTags(d.Id(), TagResourceEip)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", vpcService.tagsToMap(tags))
 
 	return nil
 }
 
 func resourceAliyunEipUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
+	if err := vpcService.setInstanceTags(d, TagResourceEip); err != nil {
+		return WrapError(err)
+	}
+
 	update := false
 	request := vpc.CreateModifyEipAddressAttributeRequest()
 	request.RegionId = client.RegionId

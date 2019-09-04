@@ -31,6 +31,7 @@ func dataSourceAlicloudEips() *schema.Resource {
 				ForceNew: true,
 				MinItems: 1,
 			},
+			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -86,6 +87,7 @@ func dataSourceAlicloudEips() *schema.Resource {
 }
 func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 
 	request := vpc.CreateDescribeEipAddressesRequest()
 	request.RegionId = string(client.Region)
@@ -133,6 +135,18 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 				if _, ok := ipsMap[e.IpAddress]; !ok {
 					continue
 				}
+			}
+			if value, ok := d.GetOk("tags"); ok {
+				tags, err := vpcService.DescribeTags(e.AllocationId, TagResourceEip)
+				if err != nil {
+					return WrapError(err)
+				}
+				if vmap, ok := value.(map[string]interface{}); ok && len(vmap) > 0 {
+					if !tagsMapEqual(vmap, vpcService.tagsToMap(tags)) {
+						continue
+					}
+				}
+
 			}
 			allEips = append(allEips, e)
 		}
