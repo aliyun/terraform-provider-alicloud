@@ -97,32 +97,6 @@ func testSweepSecurityGroups(region string) error {
 	return nil
 }
 
-func testAccCheckSecurityGroupExists(n string, sg *ecs.DescribeSecurityGroupAttributeResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No SecurityGroup ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		ecsService := EcsService{client}
-		d, err := ecsService.DescribeSecurityGroup(rs.Primary.ID)
-
-		log.Printf("[WARN] security group id %#v", rs.Primary.ID)
-
-		if err != nil {
-			return WrapError(err)
-		}
-		*sg = d
-
-		return nil
-	}
-}
-
 func testAccCheckSecurityGroupDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
@@ -178,7 +152,8 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 				Config: testAccCheckSecurityGroupConfig_innerAccess,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"inner_access": "false",
+						"inner_access":        "false",
+						"inner_access_policy": "Drop",
 					}),
 				),
 			},
@@ -260,7 +235,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
-  inner_access = true
+  inner_access_policy = "Accept"
   name = "${var.name}"
   description = "${var.name}_describe"
   tags = {
@@ -283,7 +258,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
-  inner_access = false
+  inner_access_policy = "Drop"
   name = "${var.name}"
   description = "${var.name}_describe"
   tags = {
@@ -389,11 +364,12 @@ resource "alicloud_security_group" "default" {
 `
 
 var testAccCheckSecurityBasicMap = map[string]string{
-	"vpc_id":       CHECKSET,
-	"inner_access": "true",
-	"name":         "tf-testAccCheckSecurityGroupName",
-	"description":  "tf-testAccCheckSecurityGroupName_describe",
-	"tags.%":       "2",
-	"tags.foo":     "foo",
-	"tags.Test":    "Test",
+	"vpc_id":              CHECKSET,
+	"inner_access":        "true",
+	"inner_access_policy": "Accept",
+	"name":                "tf-testAccCheckSecurityGroupName",
+	"description":         "tf-testAccCheckSecurityGroupName_describe",
+	"tags.%":              "2",
+	"tags.foo":            "foo",
+	"tags.Test":           "Test",
 }

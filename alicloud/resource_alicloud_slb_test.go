@@ -129,6 +129,27 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                 name,
+						"address_type":         "internet",
+						"internet_charge_type": "PayByTraffic",
+						"bandwidth":            CHECKSET,
+						"specification":        "",
+						"address":              CHECKSET,
+						"master_zone_id":       CHECKSET,
+						"slave_zone_id":        CHECKSET,
+						"address_ip_version":   "ipv4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":         name,
+					"internet":     REMOVEKEY,
+					"address_type": "intranet",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"address_type":         "intranet",
 						"internet_charge_type": "PayByTraffic",
 						"bandwidth":            CHECKSET,
 						"specification":        "",
@@ -178,16 +199,21 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
-						"tag_a": "1",
-						"tag_b": "2",
-						"tag_c": "3",
-						"tag_d": "4",
-						"tag_e": "5",
+						"tag_A1": "value_A1",
+						"tag_B2": "value_B2",
+						"tag_C3": "value_C3",
+						"tag_D4": "value_D4",
+						"tag_E5": "value_E5",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%": "5",
+						"tags.%":      "5",
+						"tags.tag_A1": "value_A1",
+						"tags.tag_B2": "value_B2",
+						"tags.tag_C3": "value_C3",
+						"tags.tag_D4": "value_D4",
+						"tags.tag_E5": "value_E5",
 					}),
 				),
 			},
@@ -195,11 +221,13 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":          name,
 					"specification": "slb.s2.small",
+					"address_type":  REMOVEKEY,
 					"internet":      "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                 name,
+						"address_type":         "internet",
 						"internet_charge_type": "PayByTraffic",
 						"bandwidth":            CHECKSET,
 						"specification":        "slb.s2.small",
@@ -207,6 +235,11 @@ func TestAccAlicloudSlb_classictest(t *testing.T) {
 						"master_zone_id":       CHECKSET,
 						"slave_zone_id":        CHECKSET,
 						"tags.%":               REMOVEKEY,
+						"tags.tag_A1":          REMOVEKEY,
+						"tags.tag_B2":          REMOVEKEY,
+						"tags.tag_C3":          REMOVEKEY,
+						"tags.tag_D4":          REMOVEKEY,
+						"tags.tag_E5":          REMOVEKEY,
 					}),
 				),
 			},
@@ -305,16 +338,21 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
-						"tag_a": "1",
-						"tag_b": "2",
-						"tag_c": "3",
-						"tag_d": "4",
-						"tag_e": "5",
+						"tag_A1": "value_A1",
+						"tag_B2": "value_B2",
+						"tag_C3": "value_C3",
+						"tag_D4": "value_D4",
+						"tag_E5": "value_E5",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%": "5",
+						"tags.%":      "5",
+						"tags.tag_A1": "value_A1",
+						"tags.tag_B2": "value_B2",
+						"tags.tag_C3": "value_C3",
+						"tags.tag_D4": "value_D4",
+						"tags.tag_E5": "value_E5",
 					}),
 				),
 			},
@@ -384,11 +422,11 @@ func TestAccAlicloudSlb_vpcmulti(t *testing.T) {
 					"specification": "slb.s2.small",
 					"vswitch_id":    "${alicloud_vswitch.default.id}",
 					"tags": map[string]string{
-						"tag_a": "1",
-						"tag_b": "2",
-						"tag_c": "3",
-						"tag_d": "4",
-						"tag_e": "5",
+						"tag_A1": "value_A1",
+						"tag_B2": "value_B2",
+						"tag_C3": "value_C3",
+						"tag_D4": "value_D4",
+						"tag_E5": "value_E5",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -398,6 +436,11 @@ func TestAccAlicloudSlb_vpcmulti(t *testing.T) {
 						"bandwidth":            CHECKSET,
 						"specification":        "slb.s2.small",
 						"tags.%":               "5",
+						"tags.tag_A1":          "value_A1",
+						"tags.tag_B2":          "value_B2",
+						"tags.tag_C3":          "value_C3",
+						"tags.tag_D4":          "value_D4",
+						"tags.tag_E5":          "value_E5",
 						"address":              CHECKSET,
 						"master_zone_id":       CHECKSET,
 						"slave_zone_id":        CHECKSET,

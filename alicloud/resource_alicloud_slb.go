@@ -29,10 +29,20 @@ func resourceAliyunSlb() *schema.Resource {
 			},
 
 			"internet": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-				Default:  false,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				ForceNew:   true,
+				Computed:   true,
+				Deprecated: "Field 'internet' has been deprecated from provider version 1.55.3. Use 'address_type' replaces it.",
+			},
+
+			"address_type": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Computed:      true,
+				ConflictsWith: []string{"internet"},
+				ValidateFunc:  validateAllowedStringValue([]string{"internet", "intranet"}),
 			},
 
 			"vswitch_id": {
@@ -282,8 +292,13 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	request.InternetChargeType = strings.ToLower(string(PayByTraffic))
 	request.ClientToken = buildClientToken(request.GetActionName())
 
-	if d.Get("internet").(bool) {
-		request.AddressType = strings.ToLower(string(Internet))
+	if v, ok := d.GetOk("address_type"); ok && v.(string) != "" {
+		request.AddressType = strings.ToLower(v.(string))
+	} else if v, ok := d.GetOk("internet"); ok {
+		request.AddressType = strings.ToLower(string(Intranet))
+		if v.(bool) {
+			request.AddressType = strings.ToLower(string(Internet))
+		}
 	}
 
 	if v, ok := d.GetOk("internet_charge_type"); ok && v.(string) != "" {
@@ -382,11 +397,9 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("name", object.LoadBalancerName)
 
-	if object.AddressType == strings.ToLower(string(Internet)) {
-		d.Set("internet", true)
-	} else {
-		d.Set("internet", false)
-	}
+	d.Set("internet", object.AddressType == strings.ToLower(string(Internet)))
+	d.Set("address_type", object.AddressType)
+
 	if object.InternetChargeType == strings.ToLower(string(PayByTraffic)) {
 		d.Set("internet_charge_type", PayByTraffic)
 	} else {
