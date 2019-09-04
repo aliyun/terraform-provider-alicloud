@@ -26,6 +26,7 @@ func dataSourceAlicloudApiGatewayApps() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -69,6 +70,7 @@ func dataSourceAlicloudApiGatewayApps() *schema.Resource {
 }
 func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	cloudApiService := CloudApiService{client}
 
 	request := cloudapi.CreateDescribeAppAttributesRequest()
 	request.RegionId = client.RegionId
@@ -123,6 +125,18 @@ func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface
 			if _, ok := idsMap[strconv.FormatInt(app.AppId, 10)]; !ok {
 				continue
 			}
+		}
+		if value, ok := d.GetOk("tags"); ok {
+			tags, err := cloudApiService.DescribeTags(strconv.FormatInt(app.AppId, 10), TagResourceApp)
+			if err != nil {
+				return WrapError(err)
+			}
+			if vmap, ok := value.(map[string]interface{}); ok && len(vmap) > 0 {
+				if !tagsMapEqual(vmap, cloudApiService.tagsToMap(tags)) {
+					continue
+				}
+			}
+
 		}
 
 		filteredAppsTemp = append(filteredAppsTemp, app)

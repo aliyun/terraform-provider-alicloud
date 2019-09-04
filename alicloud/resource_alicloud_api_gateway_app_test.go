@@ -156,13 +156,32 @@ func SkipTestAccAlicloudApigatewayApp_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${var.name}",
-					"description": "${var.description}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        name,
-						"description": "tf_testAcc api gateway description",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${var.name}",
+					"description": "${var.description}",
+					"tags":        REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":         name,
+						"description":  "tf_testAcc api gateway description",
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
