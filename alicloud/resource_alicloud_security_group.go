@@ -38,9 +38,17 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 				ForceNew: true,
 			},
 			"inner_access": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'inner_access' has been deprecated from provider version 1.55.3. Use 'inner_access_policy' replaces it.",
+			},
+			"inner_access_policy": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"inner_access"},
+				ValidateFunc:  validateAllowedStringValue([]string{"Accept", "Drop"}),
 			},
 			"tags": tagsSchema(),
 		},
@@ -94,6 +102,7 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("description", object.Description)
 	d.Set("vpc_id", object.VpcId)
 	d.Set("inner_access", object.InnerAccessPolicy == string(GroupInnerAccept))
+	d.Set("inner_access_policy", object.InnerAccessPolicy)
 
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceSecurityGroup)
 	if err != nil && !NotFoundError(err) {
@@ -117,27 +126,29 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("tags")
 	}
 
-	if d.HasChange("inner_access") || d.IsNewResource() {
-		if !(d.Get("inner_access").(bool) && d.IsNewResource()) {
-			policy := GroupInnerAccept
-			if !d.Get("inner_access").(bool) {
-				policy = GroupInnerDrop
-			}
-			request := ecs.CreateModifySecurityGroupPolicyRequest()
-			request.RegionId = client.RegionId
-			request.SecurityGroupId = d.Id()
-			request.InnerAccessPolicy = string(policy)
-			request.ClientToken = buildClientToken(request.GetActionName())
-
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.ModifySecurityGroupPolicy(request)
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			d.SetPartial("inner_access")
+	if d.HasChange("inner_access_policy") || d.HasChange("inner_access") {
+		policy := GroupInnerAccept
+		if v, ok := d.GetOk("inner_access_policy"); ok && v.(string) != "" {
+			policy = GroupInnerAccessPolicy(v.(string))
+		} else if !d.Get("inner_access").(bool) {
+			policy = GroupInnerDrop
 		}
+
+		request := ecs.CreateModifySecurityGroupPolicyRequest()
+		request.RegionId = client.RegionId
+		request.SecurityGroupId = d.Id()
+		request.InnerAccessPolicy = string(policy)
+		request.ClientToken = buildClientToken(request.GetActionName())
+
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifySecurityGroupPolicy(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("inner_access")
+		d.SetPartial("inner_access_policy")
 	}
 
 	if d.IsNewResource() {
