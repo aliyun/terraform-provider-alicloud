@@ -96,7 +96,7 @@ func TestAccAlicloudImagesDataSource_basic(t *testing.T) {
 			"images.0.state":                  "Available",
 			"images.0.status":                 "Available",
 			"images.0.usage":                  CHECKSET,
-			"images.0.tags.%":                 "0",
+			"images.0.tags.%":                 CHECKSET,
 		}
 	}
 
@@ -153,7 +153,7 @@ func TestAccAlicloudImagesDataSource_win(t *testing.T) {
 			"images.0.state":                  "Available",
 			"images.0.status":                 "Available",
 			"images.0.usage":                  "instance",
-			"images.0.tags.%":                 "0",
+			"images.0.tags.%":                 CHECKSET,
 		}
 	}
 
@@ -287,7 +287,7 @@ func TestAccAlicloudImagesDataSource_linux(t *testing.T) {
 			"images.0.state":                  "Available",
 			"images.0.status":                 "Available",
 			"images.0.usage":                  "instance",
-			"images.0.tags.%":                 "0",
+			"images.0.tags.%":                 CHECKSET,
 		}
 	}
 
