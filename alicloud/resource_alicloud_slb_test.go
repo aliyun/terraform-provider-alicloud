@@ -37,6 +37,7 @@ func testSweepSLBs(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
+	k8sPrefix := "kubernetes"
 
 	var slbs []slb.LoadBalancer
 	req := slb.CreateDescribeLoadBalancersRequest()
@@ -69,6 +70,7 @@ func testSweepSLBs(region string) error {
 
 	service := SlbService{client}
 	vpcService := VpcService{client}
+	csService := CsService{client}
 	for _, loadBalancer := range slbs {
 		name := loadBalancer.LoadBalancerName
 		id := loadBalancer.LoadBalancerId
@@ -83,6 +85,18 @@ func testSweepSLBs(region string) error {
 		if skip {
 			if need, err := vpcService.needSweepVpc(loadBalancer.VpcId, loadBalancer.VSwitchId); err == nil {
 				skip = !need
+			}
+
+		}
+		// If a slb tag key has prefix "kubernetes", this is a slb for k8s cluster and it should be deleted if cluster not exist.
+		if skip {
+			for _, t := range loadBalancer.Tags.Tag {
+				if strings.HasPrefix(strings.ToLower(t.TagKey), strings.ToLower(k8sPrefix)) {
+					if _, err := csService.DescribeCsKubernetes(name); NotFoundError(err) {
+						skip = false
+					}
+					break
+				}
 			}
 		}
 		if skip {
