@@ -1,11 +1,11 @@
 resource "alicloud_api_gateway_group" "apiGatewayGroup" {
-  name        = "${var.apigateway_group_name}"
-  description = "${var.apigateway_group_description}"
+  name        = var.apigateway_group_name
+  description = var.apigateway_group_description
 }
 
 resource "alicloud_api_gateway_api" "apiGatewayApi" {
   name        = "terraformapi"
-  group_id    = "${alicloud_api_gateway_group.apiGatewayGroup.id}"
+  group_id    = alicloud_api_gateway_group.apiGatewayGroup.id
   description = "description"
   auth_type   = "APP"
 
@@ -43,13 +43,14 @@ resource "alicloud_api_gateway_api" "apiGatewayApi" {
 }
 
 resource "alicloud_api_gateway_app" "apiGatewayApp" {
-  name        = "${var.apigateway_app_name_test}"
-  description = "${var.apigateway_app_description_test}"
+  name        = var.apigateway_app_name_test
+  description = var.apigateway_app_description_test
 }
 
 resource "alicloud_api_gateway_app_attachment" "foo" {
-  api_id     = "${alicloud_api_gateway_api.apiGatewayApi.api_id}"
-  group_id   = "${alicloud_api_gateway_group.apiGatewayGroup.id}"
+  api_id     = alicloud_api_gateway_api.apiGatewayApi.api_id
+  group_id   = alicloud_api_gateway_group.apiGatewayGroup.id
   stage_name = "PRE"
-  app_id     = "${alicloud_api_gateway_app.apiGatewayApp.id}"
+  app_id     = alicloud_api_gateway_app.apiGatewayApp.id
 }
+

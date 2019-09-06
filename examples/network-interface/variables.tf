@@ -21,3 +21,4 @@ variable "image_owners" {
 variable "name_regex" {
   default = "^centos_6\\w{1,5}[64].*"
 }
+

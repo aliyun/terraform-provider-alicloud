@@ -1,7 +1,7 @@
 resource "alicloud_slb" "instance" {
-  name                 = "${var.slb_name}"
-  internet_charge_type = "${var.internet_charge_type}"
-  internet             = "${var.internet}"
+  name                 = var.slb_name
+  internet_charge_type = var.internet_charge_type
+  internet             = var.internet
   specification        = "slb.s2.small"
 
   tags = {
@@ -19,7 +19,7 @@ resource "alicloud_slb" "instance" {
 }
 
 resource "alicloud_slb_listener" "tcp" {
-  load_balancer_id          = "${alicloud_slb.instance.id}"
+  load_balancer_id          = alicloud_slb.instance.id
   backend_port              = "22"
   frontend_port             = "22"
   protocol                  = "tcp"
@@ -35,12 +35,12 @@ resource "alicloud_slb_listener" "tcp" {
   health_check_uri          = "/console"
   acl_status                = "off"
   acl_type                  = "white"
-  acl_id                    = "${alicloud_slb_acl.acl.id}"
+  acl_id                    = alicloud_slb_acl.acl.id
   established_timeout       = 600
 }
 
 resource "alicloud_slb_listener" "udp" {
-  load_balancer_id          = "${alicloud_slb.instance.id}"
+  load_balancer_id          = alicloud_slb.instance.id
   backend_port              = 2001
   frontend_port             = 2001
   protocol                  = "udp"
@@ -53,11 +53,11 @@ resource "alicloud_slb_listener" "udp" {
   health_check_connect_port = 20
   acl_status                = "on"
   acl_type                  = "white"
-  acl_id                    = "${alicloud_slb_acl.acl.id}"
+  acl_id                    = alicloud_slb_acl.acl.id
 }
 
 resource "alicloud_slb_listener" "http" {
-  load_balancer_id          = "${alicloud_slb.instance.id}"
+  load_balancer_id          = alicloud_slb.instance.id
   backend_port              = 80
   frontend_port             = 80
   protocol                  = "http"
@@ -76,7 +76,7 @@ resource "alicloud_slb_listener" "http" {
   bandwidth                 = 10
   acl_status                = "on"
   acl_type                  = "black"
-  acl_id                    = "${alicloud_slb_acl.acl.id}"
+  acl_id                    = alicloud_slb_acl.acl.id
   request_timeout           = 80
   idle_timeout              = 30
 }
@@ -86,32 +86,32 @@ resource "alicloud_slb_acl" "acl" {
   ip_version = "ipv4"
 
   entry_list {
-      entry   = "10.10.10.0/24"
-      comment = "first"
-    }
+    entry   = "10.10.10.0/24"
+    comment = "first"
+  }
   entry_list {
-      entry   = "168.10.10.0/24"
-      comment = "second"
-    }
+    entry   = "168.10.10.0/24"
+    comment = "second"
+  }
   entry_list {
-      entry   = "172.10.10.0/24"
-      comment = "third"
-    }
+    entry   = "172.10.10.0/24"
+    comment = "third"
+  }
 }
 
 data "alicloud_slb_acls" "slb_acls" {
-  ids         = ["${alicloud_slb_acl.acl.id}"]
+  ids         = [alicloud_slb_acl.acl.id]
   output_file = "${path.module}/acl.json"
 }
 
 resource "alicloud_slb_server_certificate" "foo-file" {
   name               = "tf-testAccSlbServerCertificate-file"
-  server_certificate = "${file("${path.module}/server_certificate.pem")}"
-  private_key        = "${file("${path.module}/private_key.pem")}"
+  server_certificate = file("${path.module}/server_certificate.pem")
+  private_key        = file("${path.module}/private_key.pem")
 }
 
 resource "alicloud_slb_listener" "https-file" {
-  load_balancer_id          = "${alicloud_slb.instance.id}"
+  load_balancer_id          = alicloud_slb.instance.id
   backend_port              = 80
   frontend_port             = 8443
   protocol                  = "https"
@@ -128,7 +128,7 @@ resource "alicloud_slb_listener" "https-file" {
   health_check_interval     = 5
   health_check_http_code    = "http_2xx,http_3xx"
   bandwidth                 = 10
-  ssl_certificate_id        = "${alicloud_slb_server_certificate.foo-file.id}"
+  ssl_certificate_id        = alicloud_slb_server_certificate.foo-file.id
   request_timeout           = 80
   idle_timeout              = 30
   enable_http2              = "on"
@@ -142,3 +142,4 @@ data "alicloud_slbs" "balancers" {
     tag_a = 1
   }
 }
+

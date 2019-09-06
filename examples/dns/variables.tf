@@ -9,3 +9,4 @@ variable "group_name" {
 variable "domain_name" {
   default = "starmove.com"
 }
+

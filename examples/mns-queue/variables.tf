@@ -27,3 +27,4 @@ variable "polling_wait_seconds" {
   description = "Long polling is measured in seconds. When this attribute is set to 0, long polling is disabled. When it is not set to 0, long polling is enabled and message dequeue requests will be processed only when valid messages are received or when long polling times out. The value range is 0-30 seconds."
   default     = 0
 }
+

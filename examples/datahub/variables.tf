@@ -9,3 +9,4 @@ variable "project_name" {
 variable "topic_name" {
   default = "tf_test_datahub_topic_example"
 }
+

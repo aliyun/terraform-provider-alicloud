@@ -42,3 +42,4 @@ variable "instance_class" {
 variable "instance_group_count" {
   default = 2
 }
+

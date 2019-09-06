@@ -100,3 +100,4 @@ variable "confirm_blue_green" {
   description = "Confirm a application release which in blue_green."
   default     = true
 }
+

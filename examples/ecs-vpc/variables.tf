@@ -90,3 +90,4 @@ variable "sg_name" {
   description = "The security group name used to launch a new security group when sg is not set."
   default     = "TF_Security_Group"
 }
+

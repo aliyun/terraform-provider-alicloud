@@ -69,37 +69,37 @@ variable "sg_name" {
 
 variable "rule_directions" {
   description = "The security group rules direction used to set one or more rules."
-  type        = "list"
+  type        = list(string)
   default     = ["ingress"]
 }
 
 variable "ip_protocols" {
   description = "The security group rules ip protocol used to set one or more rules."
-  type        = "list"
+  type        = list(string)
   default     = []
 }
 
 variable "policies" {
   description = "The security group policy used to set one or more rules."
-  type        = "list"
+  type        = list(string)
   default     = ["accept"]
 }
 
 variable "port_ranges" {
   description = "The security group rules port range used to set one or more rules."
-  type        = "list"
+  type        = list(string)
   default     = ["-1/-1"]
 }
 
 variable "priorities" {
   description = "The security group rules priority used to set one or more rules."
-  type        = "list"
+  type        = list(string)
   default     = [1]
 }
 
 variable "cidr_ips" {
   description = "The security group rules cidr_ip used to set one or more rules."
-  type        = "list"
+  type        = list(string)
   default     = ["0.0.0.0/0"]
 }
 
@@ -127,7 +127,7 @@ variable "disk_size" {
 
 variable "disk_tags" {
   description = "Used to mark specified ecs data disks."
-  type        = "map"
+  type        = map(string)
 
   default = {
     created_by   = "Terraform"
@@ -198,7 +198,7 @@ variable "period" {
 
 variable "instance_tags" {
   description = "Used to mark specified ecs instance."
-  type        = "map"
+  type        = map(string)
 
   default = {
     created_by   = "Terraform"
@@ -218,13 +218,13 @@ variable "ram_role_name" {
 
 variable "ram_role_ram_users" {
   description = "The RAM users of assuming RAM role document"
-  type        = "list"
+  type        = list(string)
   default     = []
 }
 
 variable "ram_role_services" {
   description = "The services of assuming RAM role document"
-  type        = "list"
+  type        = list(string)
   default     = ["ecs.aliyuncs.com"]
 }
 
@@ -245,13 +245,13 @@ variable "ram_policy_statement_effect" {
 
 variable "ram_policy_statement_action" {
   description = "The statement action of RAM policy document."
-  type        = "list"
+  type        = list(string)
   default     = ["ecs:*"]
 }
 
 variable "ram_policy_statement_resource" {
   description = "The statement resource of RAM policy document."
-  type        = "list"
+  type        = list(string)
   default     = ["acs:ecs:*:*:*"]
 }
 
@@ -259,3 +259,4 @@ variable "ram_policy_terminate_force" {
   description = "Whether release relationship forcibly when deleting RAM role."
   default     = true
 }
+

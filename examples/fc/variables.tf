@@ -52,3 +52,4 @@ variable "trigger_name" {
   description = "The Function Compute trigger name.."
   default     = "trigger-for-fc"
 }
+

@@ -21,3 +21,4 @@ variable "image" {
 variable "ecs_type" {
   default = "ecs.n4.large"
 }
+

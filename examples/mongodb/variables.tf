@@ -46,3 +46,4 @@ variable "availability_zone" {
   description = "The available zone to launch ecs instance and other resources."
   default     = ""
 }
+

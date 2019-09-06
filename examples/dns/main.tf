@@ -7,7 +7,7 @@ data "alicloud_dns_groups" "group" {
 }
 
 data "alicloud_dns_records" "record" {
-  domain_name       = "${data.alicloud_dns_domains.domain.domains.0.domain_name}"
+  domain_name       = data.alicloud_dns_domains.domain.domains[0].domain_name
   is_locked         = false
   type              = "A"
   host_record_regex = "^@"
@@ -15,18 +15,19 @@ data "alicloud_dns_records" "record" {
 }
 
 resource "alicloud_dns_group" "group" {
-  name  = "${var.group_name}"
-  count = "${var.number}"
+  name  = var.group_name
+  count = var.number
 }
 
 resource "alicloud_dns" "dns" {
-  name     = "${var.domain_name}"
-  group_id = "${element(alicloud_dns_group.group.*.id, length(alicloud_dns_group.group))}"
+  name = var.domain_name
+  group_id = alicloud_dns_group.group.*.id[length(alicloud_dns_group.group)]
 }
 
 resource "alicloud_dns_record" "record" {
-  name        = "${alicloud_dns.dns.name}"
+  name        = alicloud_dns.dns.name
   host_record = "alimailskajdh"
   type        = "CNAME"
   value       = "mail.mxhichind.com"
 }
+

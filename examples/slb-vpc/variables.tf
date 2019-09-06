@@ -7,7 +7,7 @@ variable "name" {
 }
 
 variable "cidr_blocks" {
-  type = "map"
+  type = map(string)
 
   default = {
     az0 = "10.1.1.0/24"
@@ -31,3 +31,4 @@ variable "vpc_cidr" {
 variable "region" {
   default = "cn-beijing"
 }
+

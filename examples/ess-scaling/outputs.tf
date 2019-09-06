@@ -4,4 +4,3 @@
 //output "configuration_id" {
 //  value = "${alicloud_ess_scaling_configuration.config.id}"
 //}
-

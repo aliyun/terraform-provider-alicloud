@@ -46,3 +46,4 @@ variable "vswitch_cidr" {
   description = "The cidr block used to launch a new vswitch when 'vswitch_id' is not specified."
   default     = "172.16.0.0/16"
 }
+

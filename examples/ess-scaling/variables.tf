@@ -19,7 +19,7 @@ variable "enable" {
 }
 
 variable "removal_policies" {
-  type    = "list"
+  type    = list(string)
   default = ["OldestInstance", "NewestInstance"]
 }
 
@@ -68,3 +68,4 @@ variable "vswitch_description" {
   description = "The vswitch description used to launch a new vswitch when 'vswitch_id' is not specified."
   default     = "New VSwitch created by Terrafrom module tf-alicloud-vpc-cluster."
 }
+

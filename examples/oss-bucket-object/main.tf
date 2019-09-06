@@ -4,12 +4,13 @@ provider "alicloud" {
 }
 
 resource "alicloud_oss_bucket" "bucket-new" {
-  bucket = "${var.bucket-new}"
-  acl    = "${var.acl}"
+  bucket = var.bucket-new
+  acl    = var.acl
 }
 
 resource "alicloud_oss_bucket_object" "content" {
-  bucket  = "${alicloud_oss_bucket.bucket-new.bucket}"
-  key     = "${var.object-key}"
-  content = "${var.object-content}"
+  bucket  = alicloud_oss_bucket.bucket-new.bucket
+  key     = var.object-key
+  content = var.object-content
 }
+

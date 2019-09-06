@@ -13,3 +13,4 @@ variable "object-key" {
 variable "object-content" {
   default = "This is my object content in May 22, 2017"
 }
+

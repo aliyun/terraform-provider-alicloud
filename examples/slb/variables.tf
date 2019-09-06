@@ -9,3 +9,4 @@ variable "internet_charge_type" {
 variable "internet" {
   default = true
 }
+

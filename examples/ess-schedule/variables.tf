@@ -15,7 +15,7 @@ variable "enable" {
 }
 
 variable "removal_policies" {
-  type    = "list"
+  type    = list(string)
   default = ["OldestInstance", "NewestInstance"]
 }
 
@@ -30,3 +30,4 @@ variable "rule_adjust_size" {
 variable "schedule_launch_time" {
   default = "2018-04-23T02:33Z"
 }
+
