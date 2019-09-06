@@ -20,6 +20,7 @@ const (
 	RDSCode           = ServiceCode("RDS")
 	OSSCode           = ServiceCode("OSS")
 	ONSCode           = ServiceCode("ONS")
+	ALIKAFKACode      = ServiceCode("ALIKAFKA")
 	CONTAINCode       = ServiceCode("CS")
 	CRCode            = ServiceCode("CR")
 	DOMAINCode        = ServiceCode("DOMAIN")
