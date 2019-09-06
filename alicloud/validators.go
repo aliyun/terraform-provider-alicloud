@@ -852,6 +852,24 @@ func validateOnsGroupRemark(v interface{}, k string) (ws []string, errors []erro
 	return
 }
 
+func validateAlikafkaStringLen(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) == 0 {
+		errors = append(errors, fmt.Errorf("%q cannot be empty", k))
+	} else if len(value) > 64 {
+		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters", k))
+	}
+	return
+}
+
+func validateAlikafkaPartitionNum(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(int)
+	if value <= 0 || value >= 48 {
+		errors = append(errors, fmt.Errorf("%q should not less than 1 or greater than 48", k))
+	}
+	return
+}
+
 func validateDomainRecordType(v interface{}, k string) (ws []string, errors []error) {
 	// Valid Record types
 	// A, NS, MX, TXT, CNAME, SRV, AAAA, CAA, REDIRECT_URL, FORWORD_URL
