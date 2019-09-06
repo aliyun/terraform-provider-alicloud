@@ -20,3 +20,4 @@ variable "topic_remark" {
   description = "This attribute is a concise description of topic. The length cannot exceed 128."
   default     = "tf-example-ons-topic-remark"
 }
+

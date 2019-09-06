@@ -25,3 +25,4 @@ variable "image_id" {
 variable "internet_charge_type" {
   default = "PayByTraffic"
 }
+

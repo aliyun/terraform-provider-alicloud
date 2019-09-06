@@ -3,3 +3,4 @@ resource "alicloud_nas_file_system" "main" {
   storage_type  = "Performance"
   description   = "Create_FileSystem"
 }
+

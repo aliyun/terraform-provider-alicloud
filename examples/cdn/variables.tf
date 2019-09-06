@@ -7,7 +7,7 @@ variable "cdn_type" {
 }
 
 variable "sources" {
-  type = "list"
+  type = list(string)
 
   default = [
     "xxx.com",
@@ -37,7 +37,7 @@ variable "auth_type" {
 }
 
 variable "block_ips" {
-  type = "list"
+  type = list(string)
 
   default = [
     "1.2.3.4",
@@ -46,7 +46,7 @@ variable "block_ips" {
 }
 
 variable "hash_key_args" {
-  type = "list"
+  type = list(string)
 
   default = [
     "youyouyou",
@@ -55,10 +55,11 @@ variable "hash_key_args" {
 }
 
 variable "refer_list" {
-  type = "list"
+  type = list(string)
 
   default = [
     "www.xxxx.com",
     "www.xxxx.net",
   ]
 }
+

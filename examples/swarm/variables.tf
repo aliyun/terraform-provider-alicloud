@@ -53,3 +53,4 @@ variable "disk_category" {
 variable "disk_size" {
   default = 40
 }
+

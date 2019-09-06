@@ -25,3 +25,4 @@ variable "instance_worker_type" {
 variable "instance_pwd" {
   default = "Test123456"
 }
+

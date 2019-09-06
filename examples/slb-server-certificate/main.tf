@@ -5,13 +5,13 @@ resource "alicloud_slb_server_certificate" "foo" {
 }
 
 resource "alicloud_slb" "instance" {
-  name                 = "${var.slb_name}"
-  internet_charge_type = "${var.internet_charge_type}"
-  internet             = "${var.internet}"
+  name                 = var.slb_name
+  internet_charge_type = var.internet_charge_type
+  internet             = var.internet
 }
 
 resource "alicloud_slb_listener" "https" {
-  load_balancer_id          = "${alicloud_slb.instance.id}"
+  load_balancer_id          = alicloud_slb.instance.id
   backend_port              = 80
   frontend_port             = 443
   protocol                  = "https"
@@ -28,18 +28,18 @@ resource "alicloud_slb_listener" "https" {
   health_check_interval     = 5
   health_check_http_code    = "http_2xx,http_3xx"
   bandwidth                 = 10
-  ssl_certificate_id        = "${alicloud_slb_server_certificate.foo.id}"
+  ssl_certificate_id        = alicloud_slb_server_certificate.foo.id
 }
 
 ## another way: server certificate uploaded by file
 resource "alicloud_slb_server_certificate" "foo-file" {
   name               = "tf-testAccSlbServerCertificate-file"
-  server_certificate = "${file("${path.module}/server_certificate.pem")}"
-  private_key        = "${file("${path.module}/private_key.pem")}"
+  server_certificate = file("${path.module}/server_certificate.pem")
+  private_key        = file("${path.module}/private_key.pem")
 }
 
 resource "alicloud_slb_listener" "https-file" {
-  load_balancer_id          = "${alicloud_slb.instance.id}"
+  load_balancer_id          = alicloud_slb.instance.id
   backend_port              = 80
   frontend_port             = 8443
   protocol                  = "https"
@@ -56,7 +56,9 @@ resource "alicloud_slb_listener" "https-file" {
   health_check_interval     = 5
   health_check_http_code    = "http_2xx,http_3xx"
   bandwidth                 = 10
-  ssl_certificate_id        = "${alicloud_slb_server_certificate.foo-file.id}"
+  ssl_certificate_id        = alicloud_slb_server_certificate.foo-file.id
 }
 
-data "alicloud_slb_server_certificates" "slb_server_certificates" {}
+data "alicloud_slb_server_certificates" "slb_server_certificates" {
+}
+

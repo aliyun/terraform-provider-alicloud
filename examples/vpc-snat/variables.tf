@@ -21,3 +21,4 @@ variable "image_id" {
 variable "disk_category" {
   default = "cloud_efficiency"
 }
+

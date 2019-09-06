@@ -1,11 +1,11 @@
 data "alicloud_images" "ecs_image" {
-  most_recent = "${var.most_recent}"
-  owners      = "${var.image_owners}"
-  name_regex  = "${var.name_regex}"
+  most_recent = var.most_recent
+  owners      = var.image_owners
+  name_regex  = var.name_regex
 }
 
 resource "alicloud_security_group" "group" {
-  name        = "${var.short_name}"
+  name        = var.short_name
   description = "New security group"
 }
 
@@ -16,7 +16,7 @@ resource "alicloud_security_group_rule" "http-in" {
   policy            = "accept"
   port_range        = "80/80"
   priority          = 1
-  security_group_id = "${alicloud_security_group.group.id}"
+  security_group_id = alicloud_security_group.group.id
   cidr_ip           = "0.0.0.0/0"
 }
 
@@ -27,7 +27,7 @@ resource "alicloud_security_group_rule" "https-in" {
   policy            = "accept"
   port_range        = "443/443"
   priority          = 1
-  security_group_id = "${alicloud_security_group.group.id}"
+  security_group_id = alicloud_security_group.group.id
   cidr_ip           = "0.0.0.0/0"
 }
 
@@ -38,42 +38,43 @@ resource "alicloud_security_group_rule" "ssh-in" {
   policy            = "accept"
   port_range        = "22/22"
   priority          = 1
-  security_group_id = "${alicloud_security_group.group.id}"
+  security_group_id = alicloud_security_group.group.id
   cidr_ip           = "0.0.0.0/0"
 }
 
 resource "alicloud_disk" "disk" {
-  availability_zone = "${var.availability_zones}"
-  category          = "${var.disk_category}"
-  size              = "${var.disk_size}"
-  count             = "${var.number}"
+  availability_zone = var.availability_zones
+  category          = var.disk_category
+  size              = var.disk_size
+  count             = var.number
 }
 
 resource "alicloud_instance" "instance" {
-  instance_name     = "${var.short_name}-${var.role}-${format(var.count_format, count.index+1)}"
-  host_name         = "${var.short_name}-${var.role}-${format(var.count_format, count.index+1)}"
-  image_id          = "${data.alicloud_images.ecs_image.images.0.id}"
-  instance_type     = "${var.ecs_type}"
-  count             = "${var.number}"
-  availability_zone = "${var.availability_zones}"
-  security_groups   = "${alicloud_security_group.group.*.id}"
+  instance_name     = "${var.short_name}-${var.role}-${format(var.count_format, count.index + 1)}"
+  host_name         = "${var.short_name}-${var.role}-${format(var.count_format, count.index + 1)}"
+  image_id          = data.alicloud_images.ecs_image.images[0].id
+  instance_type     = var.ecs_type
+  count             = var.number
+  availability_zone = var.availability_zones
+  security_groups   = alicloud_security_group.group.*.id
 
-  internet_charge_type       = "${var.internet_charge_type}"
-  internet_max_bandwidth_out = "${var.internet_max_bandwidth_out}"
+  internet_charge_type       = var.internet_charge_type
+  internet_max_bandwidth_out = var.internet_max_bandwidth_out
 
-  password = "${var.ecs_password}"
+  password = var.ecs_password
 
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
 
   tags = {
-    role = "${var.role}"
-    dc   = "${var.datacenter}"
+    role = var.role
+    dc   = var.datacenter
   }
 }
 
 resource "alicloud_disk_attachment" "instance-attachment" {
-  count       = "${var.number}"
-  disk_id     = "${element(alicloud_disk.disk.*.id, count.index)}"
-  instance_id = "${element(alicloud_instance.instance.*.id, count.index)}"
+  count       = var.number
+  disk_id     = alicloud_disk.disk.*.id[count.index]
+  instance_id = alicloud_instance.instance.*.id[count.index]
 }
+

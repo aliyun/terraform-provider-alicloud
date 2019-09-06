@@ -15,3 +15,4 @@ variable "group_remark" {
   description = "This attribute is a concise description of group. The length cannot exceed 256."
   default     = "tf-example-ons-group-remark"
 }
+

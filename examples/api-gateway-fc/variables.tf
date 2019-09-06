@@ -78,3 +78,4 @@ variable "ram_policy_name" {
   description = "The Function Compute trigger name.."
   default     = "AliyunApiGatewayAccessingFCRolePolicyTest"
 }
+

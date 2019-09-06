@@ -5,3 +5,4 @@ variable "project_name" {
 variable "logstore_name" {
   default = "tf-log-store"
 }
+

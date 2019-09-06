@@ -48,13 +48,13 @@ variable "vswitch_name_prefix" {
 
 variable "vswitch_ids" {
   description = "List of existing vswitch id."
-  type        = "list"
+  type        = list(string)
   default     = []
 }
 
 variable "vswitch_cidrs" {
   description = "List of cidr blocks used to create several new vswitches when 'vswitch_ids' is not specified."
-  type        = "list"
+  type        = list(string)
   default     = ["10.1.2.0/24"]
 }
 
@@ -124,3 +124,4 @@ variable "k8s_service_cidr" {
   description = "The kubernetes service cidr block. It cannot be equals to vpc's or vswitch's or pod's and cannot be in them."
   default     = "172.21.0.0/20"
 }
+

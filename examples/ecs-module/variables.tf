@@ -57,3 +57,4 @@ variable "region" {
 variable "availability_zones" {
   default = "cn-beijing-d"
 }
+

@@ -33,3 +33,4 @@ variable "db_password" {
 variable "db_root_password" {
   default = "123456"
 }
+

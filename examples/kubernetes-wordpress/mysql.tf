@@ -2,7 +2,7 @@ resource "kubernetes_service" "mysql" {
   metadata {
     name = "wordpress-mysql"
 
-    labels {
+    labels = {
       app = "wordpress"
     }
   }
@@ -12,9 +12,9 @@ resource "kubernetes_service" "mysql" {
       port = 3306
     }
 
-    selector {
+    selector = {
       app  = "wordpress"
-      tier = "${kubernetes_replication_controller.mysql.spec.0.selector.tier}"
+      tier = kubernetes_replication_controller.mysql.spec[0].selector.tier
     }
 
     cluster_ip = "None"
@@ -25,7 +25,7 @@ resource "kubernetes_persistent_volume_claim" "mysql" {
   metadata {
     name = "mysql-pv-claim"
 
-    labels {
+    labels = {
       app = "wordpress"
     }
   }
@@ -34,12 +34,12 @@ resource "kubernetes_persistent_volume_claim" "mysql" {
     access_modes = ["ReadWriteOnce"]
 
     resources {
-      requests {
+      requests = {
         storage = "20Gi"
       }
     }
 
-    volume_name = "${kubernetes_persistent_volume.mysql.metadata.0.name}"
+    volume_name = kubernetes_persistent_volume.mysql.metadata[0].name
   }
 }
 
@@ -48,8 +48,8 @@ resource "kubernetes_secret" "mysql" {
     name = "mysql-pass"
   }
 
-  data {
-    password = "${var.mysql_password}"
+  data = {
+    password = var.mysql_password
   }
 }
 
@@ -57,13 +57,13 @@ resource "kubernetes_replication_controller" "mysql" {
   metadata {
     name = "wordpress-mysql"
 
-    labels {
+    labels = {
       app = "wordpress"
     }
   }
 
   spec {
-    selector {
+    selector = {
       app  = "wordpress"
       tier = "mysql"
     }
@@ -78,7 +78,7 @@ resource "kubernetes_replication_controller" "mysql" {
 
           value_from {
             secret_key_ref {
-              name = "${kubernetes_secret.mysql.metadata.0.name}"
+              name = kubernetes_secret.mysql.metadata[0].name
               key  = "password"
             }
           }
@@ -99,9 +99,10 @@ resource "kubernetes_replication_controller" "mysql" {
         name = "mysql-persistent-storage"
 
         persistent_volume_claim {
-          claim_name = "${kubernetes_persistent_volume_claim.mysql.metadata.0.name}"
+          claim_name = kubernetes_persistent_volume_claim.mysql.metadata[0].name
         }
       }
     }
   }
 }
+

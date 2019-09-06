@@ -11,6 +11,7 @@ resource "alicloud_nas_access_group" "main" {
 }
 
 resource "alicloud_nas_mount_target" "main" {
-  file_system_id    = "${alicloud_nas_file_system.main.id}"
-  access_group_name = "${alicloud_nas_access_group.main.id}"
+  file_system_id    = alicloud_nas_file_system.main.id
+  access_group_name = alicloud_nas_access_group.main.id
 }
+

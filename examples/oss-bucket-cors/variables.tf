@@ -33,3 +33,4 @@ variable "expose_headers" {
 variable "max_age_seconds" {
   default = 100
 }
+

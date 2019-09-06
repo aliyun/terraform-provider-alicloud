@@ -40,3 +40,4 @@ variable "publish_vpc" {
 variable "route_dest" {
   default = "10.0.0.0/24"
 }
+

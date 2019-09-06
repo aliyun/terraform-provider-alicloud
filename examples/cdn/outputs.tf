@@ -1,3 +1,4 @@
 output "domain" {
-  value = "${alicloud_cdn_domain.domain.id}"
+  value = alicloud_cdn_domain.domain.id
 }
+

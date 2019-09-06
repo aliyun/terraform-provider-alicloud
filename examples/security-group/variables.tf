@@ -9,3 +9,4 @@ variable "security_group_name" {
 variable "nic_type" {
   default = "internet"
 }
+

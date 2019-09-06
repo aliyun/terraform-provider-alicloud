@@ -11,3 +11,4 @@ variable "mysql_version" {
   description = "The version of mysql which wordpress used. Default to 5.6."
   default     = "5.6"
 }
+

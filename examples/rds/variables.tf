@@ -74,3 +74,4 @@ variable "vswitch_cidr" {
 variable "role" {
   default = "worder"
 }
+

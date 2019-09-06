@@ -57,3 +57,4 @@ variable "slb_name" {
 variable "internet" {
   default = true
 }
+

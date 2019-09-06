@@ -54,37 +54,37 @@ variable "sg_name" {
 
 variable "rule_directions" {
   description = "The security group rules direction used to set one or more rules."
-  type        = "list"
+  type        = list(string)
   default     = ["ingress"]
 }
 
 variable "ip_protocols" {
   description = "The security group rules ip protocol used to set one or more rules."
-  type        = "list"
+  type        = list(string)
   default     = []
 }
 
 variable "policies" {
   description = "The security group policy used to set one or more rules."
-  type        = "list"
+  type        = list(string)
   default     = ["accept"]
 }
 
 variable "port_ranges" {
   description = "The security group rules port range used to set one or more rules."
-  type        = "list"
+  type        = list(string)
   default     = ["-1/-1"]
 }
 
 variable "priorities" {
   description = "The security group rules priority used to set one or more rules."
-  type        = "list"
+  type        = list(string)
   default     = [1]
 }
 
 variable "cidr_ips" {
   description = "The security group rules cidr_ip used to set one or more rules."
-  type        = "list"
+  type        = list(string)
   default     = ["0.0.0.0/0"]
 }
 
@@ -112,7 +112,7 @@ variable "disk_size" {
 
 variable "disk_tags" {
   description = "Used to mark specified ecs data disks."
-  type        = "map"
+  type        = map(string)
 
   default = {
     created_by   = "Terraform"
@@ -183,7 +183,7 @@ variable "period" {
 
 variable "instance_tags" {
   description = "Used to mark specified ecs instance."
-  type        = "map"
+  type        = map(string)
 
   default = {
     created_by   = "Terraform"
@@ -195,3 +195,4 @@ variable "number_of_instances" {
   description = "The number of launching instances one time."
   default     = 2
 }
+

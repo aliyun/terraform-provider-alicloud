@@ -57,3 +57,4 @@ variable "private_key_file" {
 variable "key_name" {
   default = "key-pair-from-terraform"
 }
+
