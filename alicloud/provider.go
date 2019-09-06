@@ -148,6 +148,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ons_instances":                  dataSourceAlicloudOnsInstances(),
 			"alicloud_ons_topics":                     dataSourceAlicloudOnsTopics(),
 			"alicloud_ons_groups":                     dataSourceAlicloudOnsGroups(),
+			"alicloud_alikafka_topics":                dataSourceAlicloudAlikafkaTopics(),
 			"alicloud_fc_functions":                   dataSourceAlicloudFcFunctions(),
 			"alicloud_fc_services":                    dataSourceAlicloudFcServices(),
 			"alicloud_fc_triggers":                    dataSourceAlicloudFcTriggers(),
@@ -271,6 +272,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ons_instance":                  resourceAlicloudOnsInstance(),
 			"alicloud_ons_topic":                     resourceAlicloudOnsTopic(),
 			"alicloud_ons_group":                     resourceAlicloudOnsGroup(),
+			"alicloud_alikafka_topic":                resourceAlicloudAlikafkaTopic(),
 			"alicloud_dns_record":                    resourceAlicloudDnsRecord(),
 			"alicloud_dns":                           resourceAlicloudDns(),
 			"alicloud_dns_group":                     resourceAlicloudDnsGroup(),
@@ -457,6 +459,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EssEndpoint = strings.TrimSpace(endpoints["ess"].(string))
 		config.OssEndpoint = strings.TrimSpace(endpoints["oss"].(string))
 		config.OssEndpoint = strings.TrimSpace(endpoints["ons"].(string))
+		config.AlikafkaEndpoint = strings.TrimSpace(endpoints["alikafka"].(string))
 		config.DnsEndpoint = strings.TrimSpace(endpoints["dns"].(string))
 		config.RamEndpoint = strings.TrimSpace(endpoints["ram"].(string))
 		config.CsEndpoint = strings.TrimSpace(endpoints["cs"].(string))
@@ -559,6 +562,8 @@ func init() {
 		"oss_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom OSS endpoints.",
 
 		"ons_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ONS endpoints.",
+
+		"alikafka_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ALIKAFKA endpoints.",
 
 		"dns_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DNS endpoints.",
 
@@ -702,6 +707,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["ons_endpoint"],
+				},
+				"alikafka": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["alikafka_endpoint"],
 				},
 				"dns": {
 					Type:        schema.TypeString,
@@ -882,6 +893,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["ess"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["oss"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ons"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["alikafka"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dns"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ram"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cs"].(string)))

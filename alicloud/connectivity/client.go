@@ -6,6 +6,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
@@ -73,6 +74,7 @@ type AliyunClient struct {
 	nasconn                      *nas.Client
 	slbconn                      *slb.Client
 	onsconn                      *ons.Client
+	alikafkaconn                 *alikafka.Client
 	ossconn                      *oss.Client
 	dnsconn                      *alidns.Client
 	ramconn                      *ram.Client
@@ -1255,4 +1257,28 @@ func (client *AliyunClient) WithOnsClient(do func(*ons.Client) (interface{}, err
 	}
 
 	return do(client.onsconn)
+}
+
+func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the ons client if necessary
+	if client.onsconn == nil {
+		endpoint := client.config.AlikafkaEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, ALIKAFKACode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(ALIKAFKACode), endpoint)
+		}
+		alikafkaconn, err := alikafka.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the ALIKAFKA client: %#v", err)
+		}
+		alikafkaconn.AppendUserAgent(Terraform, version)
+		client.alikafkaconn = alikafkaconn
+	}
+
+	return do(client.alikafkaconn)
 }
