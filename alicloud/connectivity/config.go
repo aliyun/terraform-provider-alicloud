@@ -41,6 +41,7 @@ type Config struct {
 	EssEndpoint           string
 	OssEndpoint           string
 	OnsEndpoint           string
+	AlikafkaEndpoint      string
 	DnsEndpoint           string
 	RamEndpoint           string
 	CsEndpoint            string

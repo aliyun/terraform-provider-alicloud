@@ -136,3 +136,10 @@ func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
 		t.Skipped()
 	}
 }
+
+func testAccPreCheckWithAlikafkaInstanceSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_INSTANCE_ID")); v == "" {
+		t.Skipf("Skipping the test case with no alikafka instance id setting")
+		t.Skipped()
+	}
+}
