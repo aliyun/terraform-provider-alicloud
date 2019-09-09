@@ -1,20 +1,20 @@
-## 1.55.3 (Unreleased)
+## 1.55.3 (September 09, 2019)
 
 IMPROVEMENTS:
 
-- improve(slb): midified the sweep rules of slb [GH-1631]
-- improve(slb): add new field resource_group_id [GH-1629]
-- improve(example): update the examples to the format of the new version [GH-1625]
-- improve(api gateway): api gateway app supported tags [GH-1622]
-- improve(vpc): vpc resources and datasources supported tags [GH-1621]
-- improve(kvstore): kvstore instance supported tags [GH-1619]
-- update example to support for snat's creation with multi eips [GH-1554]
+- improve(slb): midified the sweep rules of slb ([#1631](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1631))
+- improve(slb): add new field resource_group_id ([#1629](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1629))
+- improve(example): update the examples to the format of the new version ([#1625](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1625))
+- improve(api gateway): api gateway app supported tags ([#1622](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1622))
+- improve(vpc): vpc resources and datasources supported tags ([#1621](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1621))
+- improve(kvstore): kvstore instance supported tags ([#1619](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1619))
+- update example to support for snat's creation with multi eips ([#1554](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1554))
 
 BUG FIXES:
 
-- fix(common_bandwidth_package):make ratio ForceNew [GH-1626]
-- fix(disk):fix disk detach bug [GH-1610]
-- fix:resource security_group 'inner_access_policy' replaces 'inner_access',resource slb 'address_type' replaces 'internet' [GH-1594]
+- fix(common_bandwidth_package):make ratio ForceNew ([#1626](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1626))
+- fix(disk):fix disk detach bug ([#1610](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1610))
+- fix:resource security_group 'inner_access_policy' replaces 'inner_access',resource slb 'address_type' replaces 'internet' ([#1594](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1594))
 
 ## 1.55.2 (August 30, 2019)
 
