@@ -1,4 +1,21 @@
 ## 1.55.4 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve(provider): add the provider verison in the useragent [GH-1651]
+- improve(images): modified the testcase of images datasource [GH-1648]
+- improve(security_group_id):update description to support for modify [GH-1647]
+- impove(slb):add new allowed spec for slb [GH-1646]
+- improve(provider):support ecs_role_name + assume_role [GH-1639]
+- improve(example): update the examples to the format of terraform version 0.12 [GH-1633]
+- improve(instance):remove bandwidth limit [GH-1630]
+- improve(gpdb): gpdb instance supported tags [GH-1615]
+
+BUG FIXES:
+
+- fix(security_group):fix security_group bug [GH-1640]
+- fix(rds): add diffsuppressfunc to rds tags [GH-1602]
+
 ## 1.55.3 (September 09, 2019)
 
 IMPROVEMENTS:
