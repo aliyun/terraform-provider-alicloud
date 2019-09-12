@@ -86,6 +86,7 @@ const (
 	S3Small  = "slb.s3.small"
 	S3Medium = "slb.s3.medium"
 	S3Large  = "slb.s3.large"
+	S4Large  = "slb.s4.large"
 )
 
 type ListenerErr struct {
