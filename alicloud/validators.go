@@ -421,7 +421,7 @@ func validateSlbInternetChargeType(v interface{}, k string) (ws []string, errors
 func validateSlbInstanceSpecType(v interface{}, k string) (ws []string, errors []error) {
 	if value := v.(string); value != "" {
 		specType := LoadBalancerSpecType(value)
-		validLoadBalancerSpec := []LoadBalancerSpecType{S1Small, S2Small, S2Medium, S3Small, S3Medium, S3Large}
+		validLoadBalancerSpec := []LoadBalancerSpecType{S1Small, S2Small, S2Medium, S3Small, S3Medium, S3Large, S4Large}
 
 		for _, s := range validLoadBalancerSpec {
 			if s == specType {
