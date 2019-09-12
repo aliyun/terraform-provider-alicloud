@@ -354,19 +354,14 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 			endpoint = fmt.Sprintf("%s://%s", schma, endpoint)
 		}
 
-		log.Printf("[DEBUG] Instantiate OSS client using endpoint: %#v", endpoint)
-		accessKey, secretKey, securityToken, err := client.config.getAuthCredentialByEcsRoleName()
-		if err != nil {
-			return nil, err
-		}
 		clientOptions := []oss.ClientOption{oss.UserAgent(client.getUserAgent()),
-			oss.SecurityToken(securityToken)}
+			oss.SecurityToken(client.config.SecurityToken)}
 		proxyUrl := client.getHttpProxyUrl()
 		if proxyUrl != nil {
 			clientOptions = append(clientOptions, oss.Proxy(proxyUrl.String()))
 		}
 
-		ossconn, err := oss.New(endpoint, accessKey, secretKey, clientOptions...)
+		ossconn, err := oss.New(endpoint, client.config.AccessKey, client.config.SecretKey, clientOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the OSS client: %#v", err)
 		}
@@ -446,11 +441,7 @@ func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error
 
 	// Initialize the CS client if necessary
 	if client.csconn == nil {
-		accessKey, secretKey, securityToken, err := client.config.getAuthCredentialByEcsRoleName()
-		if err != nil {
-			return nil, err
-		}
-		csconn := cs.NewClientForAussumeRole(accessKey, secretKey, securityToken)
+		csconn := cs.NewClientForAussumeRole(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
 		csconn.SetUserAgent(client.getUserAgent())
 		endpoint := client.config.CsEndpoint
 		if endpoint == "" {
@@ -501,14 +492,10 @@ func (client *AliyunClient) WithCdnClient(do func(*cdn.CdnClient) (interface{}, 
 
 	// Initialize the CDN client if necessary
 	if client.cdnconn == nil {
-		accessKey, secretKey, securityToken, err := client.config.getAuthCredentialByEcsRoleName()
-		if err != nil {
-			return nil, err
-		}
-		cdnconn := cdn.NewClient(accessKey, secretKey)
+		cdnconn := cdn.NewClient(client.config.AccessKey, client.config.SecretKey)
 		cdnconn.SetBusinessInfo(businessInfoKey)
 		cdnconn.SetUserAgent(client.getUserAgent())
-		cdnconn.SetSecurityToken(securityToken)
+		cdnconn.SetSecurityToken(client.config.SecurityToken)
 		endpoint := client.config.CdnEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, CDNCode)
@@ -681,15 +668,11 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 		if !strings.HasPrefix(endpoint, "http") {
 			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
 		}
-		accessKey, secretKey, securityToken, err := client.config.getAuthCredentialByEcsRoleName()
-		if err != nil {
-			return nil, err
-		}
 		client.logconn = &sls.Client{
-			AccessKeyID:     accessKey,
-			AccessKeySecret: secretKey,
+			AccessKeyID:     client.config.AccessKey,
+			AccessKeySecret: client.config.SecretKey,
 			Endpoint:        endpoint,
-			SecurityToken:   securityToken,
+			SecurityToken:   client.config.SecurityToken,
 			UserAgent:       client.getUserAgent(),
 		}
 	}
@@ -819,14 +802,11 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 		if err != nil {
 			return nil, err
 		}
-		accessKey, secretKey, securityToken, err := client.config.getAuthCredentialByEcsRoleName()
-		if err != nil {
-			return nil, err
-		}
+
 		config := client.getSdkConfig()
-		clientOptions := []fc.ClientOption{fc.WithSecurityToken(securityToken), fc.WithTransport(config.HttpTransport),
+		clientOptions := []fc.ClientOption{fc.WithSecurityToken(client.config.SecurityToken), fc.WithTransport(config.HttpTransport),
 			fc.WithTimeout(30), fc.WithRetryCount(DefaultClientRetryCountSmall)}
-		fcconn, err := fc.NewClient(fmt.Sprintf("https://%s.%s", accountId, endpoint), string(ApiVersion20160815), accessKey, secretKey, clientOptions...)
+		fcconn, err := fc.NewClient(fmt.Sprintf("https://%s.%s", accountId, endpoint), string(ApiVersion20160815), client.config.AccessKey, client.config.SecretKey, clientOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
 		}
@@ -884,11 +864,8 @@ func (client *AliyunClient) WithDataHubClient(do func(*datahub.DataHub) (interfa
 		if !strings.HasPrefix(endpoint, "http") {
 			endpoint = fmt.Sprintf("https://%s", endpoint)
 		}
-		accessKey, secretKey, securityToken, err := client.config.getAuthCredentialByEcsRoleName()
-		if err != nil {
-			return nil, err
-		}
-		account := datahub.NewStsCredential(accessKey, secretKey, securityToken)
+
+		account := datahub.NewStsCredential(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
 		config := &datahub.Config{
 			UserAgent: client.getUserAgent(),
 		}
@@ -993,11 +970,8 @@ func (client *AliyunClient) WithTableStoreClient(instanceName string, do func(*t
 		if !strings.HasPrefix(endpoint, "https") && !strings.HasPrefix(endpoint, "http") {
 			endpoint = fmt.Sprintf("https://%s", endpoint)
 		}
-		accessKey, secretKey, securityToken, err := client.config.getAuthCredentialByEcsRoleName()
-		if err != nil {
-			return nil, err
-		}
-		tableStoreClient = tablestore.NewClientWithConfig(endpoint, instanceName, accessKey, secretKey, securityToken, tablestore.NewDefaultTableStoreConfig())
+
+		tableStoreClient = tablestore.NewClientWithConfig(endpoint, instanceName, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, tablestore.NewDefaultTableStoreConfig())
 		client.tablestoreconnByInstanceName[instanceName] = tableStoreClient
 	}
 

@@ -11,6 +11,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
+
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/mutexkv"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -382,7 +385,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	ecsRoleName := getProviderConfig(d.Get("ecs_role_name").(string), "ram_role_name")
 
-	config := connectivity.Config{
+	config := &connectivity.Config{
 		AccessKey:            strings.TrimSpace(accessKey),
 		SecretKey:            strings.TrimSpace(secretKey),
 		EcsRoleName:          strings.TrimSpace(ecsRoleName),
@@ -429,6 +432,17 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 		log.Printf("[INFO] assume_role configuration set: (RamRoleArn: %q, RamRoleSessionName: %q, RamRolePolicy: %q, RamRoleSessionExpiration: %d)",
 			config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration)
+	}
+
+	if err := config.MakeConfigByEcsRoleName(); err != nil {
+		return nil, err
+	}
+
+	if config.RamRoleArn != "" {
+		config.AccessKey, config.SecretKey, config.SecurityToken, err = getAssumeRoleAK(config.AccessKey, config.SecretKey, config.SecurityToken, region, config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	endpointsSet := d.Get("endpoints").(*schema.Set)
@@ -960,4 +974,32 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 	}
 
 	return providerConfig[ProfileKey], nil
+}
+
+func getAssumeRoleAK(accessKey, secretKey, stsToken, region, roleArn, sessionName, policy string, sessionExpiration int) (string, string, string, error) {
+	request := sts.CreateAssumeRoleRequest()
+	request.RoleArn = roleArn
+	request.RoleSessionName = sessionName
+	request.DurationSeconds = requests.NewInteger(sessionExpiration)
+	request.Policy = policy
+	request.Scheme = "https"
+
+	var client *sts.Client
+	var err error
+	if stsToken == "" {
+		client, err = sts.NewClientWithAccessKey(region, accessKey, secretKey)
+	} else {
+		client, err = sts.NewClientWithStsToken(region, accessKey, secretKey, stsToken)
+	}
+
+	if err != nil {
+		return "", "", "", err
+	}
+
+	response, err := client.AssumeRole(request)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	return response.Credentials.AccessKeyId, response.Credentials.AccessKeySecret, response.Credentials.SecurityToken, nil
 }
