@@ -92,14 +92,14 @@ func (c *Config) validateRegion() error {
 
 func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {
 	if c.AccessKey != "" && c.SecretKey != "" {
+		if stsSupported && c.SecurityToken != "" {
+			return credentials.NewStsTokenCredential(c.AccessKey, c.SecretKey, c.SecurityToken)
+		}
 		if c.RamRoleArn != "" {
 			log.Printf("[INFO] Assume RAM Role specified in provider block assume_role { ... }")
 			return credentials.NewRamRoleArnWithPolicyCredential(
 				c.AccessKey, c.SecretKey, c.RamRoleArn,
 				c.RamRoleSessionName, c.RamRolePolicy, c.RamRoleSessionExpiration)
-		}
-		if stsSupported {
-			return credentials.NewStsTokenCredential(c.AccessKey, c.SecretKey, c.SecurityToken)
 		}
 		return credentials.NewAccessKeyCredential(c.AccessKey, c.SecretKey)
 	}
@@ -183,4 +183,13 @@ func (c *Config) getAuthCredentialByEcsRoleName() (accessKey, secretKey, token s
 	}
 
 	return accessKeyId.(string), accessKeySecret.(string), securityToken.(string), nil
+}
+
+func (c *Config) MakeConfigByEcsRoleName() error {
+	accessKey, secretKey, token, err := c.getAuthCredentialByEcsRoleName()
+	if err != nil {
+		return err
+	}
+	c.AccessKey, c.SecretKey, c.SecurityToken = accessKey, secretKey, token
+	return nil
 }
