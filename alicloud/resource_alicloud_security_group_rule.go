@@ -17,6 +17,7 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunSecurityGroupRuleCreate,
 		Read:   resourceAliyunSecurityGroupRuleRead,
+		Update: resourceAliyunSecurityGroupRuleUpdate,
 		Delete: resourceAliyunSecurityGroupRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -98,7 +99,6 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 		},
 	}
@@ -208,6 +208,42 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 		d.Set("source_group_owner_account", object.DestGroupOwnerAccount)
 	}
 	return nil
+}
+
+func resourceAliyunSecurityGroupRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	policy := parseSecurityRuleId(d, meta, 6)
+	strPriority := parseSecurityRuleId(d, meta, 7)
+	var priority int
+	if policy == "" || strPriority == "" {
+		policy = d.Get("policy").(string)
+		priority = d.Get("priority").(int)
+		d.SetId(d.Id() + ":" + policy + ":" + strconv.Itoa(priority))
+	} else {
+		prior, err := strconv.Atoi(strPriority)
+		if err != nil {
+			return WrapError(err)
+		}
+		priority = prior
+	}
+
+	request, err := buildAliyunSGRuleRequest(d, meta)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	request.ApiName = "ModifySecurityGroupRule"
+	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.ProcessCommonRequest(request)
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw, request.Headers, request)
+	return resourceAliyunSecurityGroupRuleRead(d, meta)
 }
 
 func deleteSecurityGroupRule(d *schema.ResourceData, meta interface{}) error {
