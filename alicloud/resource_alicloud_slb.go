@@ -301,7 +301,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("address_type"); ok && v.(string) != "" {
 		request.AddressType = strings.ToLower(v.(string))
-	} else if v, ok := d.GetOk("internet"); ok {
+	} else if v, ok := d.GetOkExists("internet"); ok {
 		request.AddressType = strings.ToLower(string(Intranet))
 		if v.(bool) {
 			request.AddressType = strings.ToLower(string(Internet))

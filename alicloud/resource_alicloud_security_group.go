@@ -126,11 +126,11 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("tags")
 	}
 
-	if d.HasChange("inner_access_policy") || d.HasChange("inner_access") {
+	if d.HasChange("inner_access_policy") || d.HasChange("inner_access") || d.IsNewResource() {
 		policy := GroupInnerAccept
 		if v, ok := d.GetOk("inner_access_policy"); ok && v.(string) != "" {
 			policy = GroupInnerAccessPolicy(v.(string))
-		} else if !d.Get("inner_access").(bool) {
+		} else if v, ok := d.GetOkExists("inner_access"); ok && !v.(bool) {
 			policy = GroupInnerDrop
 		}
 

@@ -152,8 +152,8 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 				Config: testAccCheckSecurityGroupConfig_innerAccess,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"inner_access":        "false",
-						"inner_access_policy": "Drop",
+						"inner_access":        "true",
+						"inner_access_policy": "Accept",
 					}),
 				),
 			},
@@ -185,7 +185,7 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 			},
 
 			{
-				Config: testAccCheckSecurityGroupConfigBasic,
+				Config: testAccCheckSecurityGroupConfigAll,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(testAccCheckSecurityBasicMap),
 				),
@@ -235,7 +235,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
-  inner_access_policy = "Accept"
+  inner_access = false
   name = "${var.name}"
   description = "${var.name}_describe"
   tags = {
@@ -258,7 +258,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
-  inner_access_policy = "Drop"
+  inner_access_policy = "Accept"
   name = "${var.name}"
   description = "${var.name}_describe"
   tags = {
@@ -282,7 +282,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
-  inner_access = false
+  inner_access = true
   name = "${var.name}_change"
   description = "${var.name}_describe"
   tags = {
@@ -306,7 +306,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
-  inner_access = false
+  inner_access = true
   name = "${var.name}_change"
   description = "${var.name}_describe_change"
   tags = {
@@ -330,7 +330,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
-  inner_access = false
+  inner_access = true
   name = "${var.name}_change"
   description = "${var.name}_describe_change"
   tags = {
@@ -338,6 +338,30 @@ resource "alicloud_security_group" "default" {
   }
 }
 `
+
+const testAccCheckSecurityGroupConfigAll = `
+variable "name" {
+  default = "tf-testAccCheckSecurityGroupName"
+}
+
+
+resource "alicloud_vpc" "default" {
+  name = "${var.name}_vpc"
+  cidr_block = "10.1.0.0/21"
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  inner_access_policy = "Drop"
+  name = "${var.name}"
+  description = "${var.name}_describe"
+  tags = {
+		foo  = "foo"
+        Test = "Test"
+  }
+}
+`
+
 const testAccCheckSecurityGroupConfig_multi = `
 
 variable "name" {
@@ -353,7 +377,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_security_group" "default" {
   count = 10
   vpc_id = "${alicloud_vpc.default.id}"
-  inner_access = true
+  inner_access = false
   name = "${var.name}"
   description = "${var.name}_describe"
   tags = {
@@ -365,8 +389,8 @@ resource "alicloud_security_group" "default" {
 
 var testAccCheckSecurityBasicMap = map[string]string{
 	"vpc_id":              CHECKSET,
-	"inner_access":        "true",
-	"inner_access_policy": "Accept",
+	"inner_access":        "false",
+	"inner_access_policy": "Drop",
 	"name":                "tf-testAccCheckSecurityGroupName",
 	"description":         "tf-testAccCheckSecurityGroupName_describe",
 	"tags.%":              "2",
