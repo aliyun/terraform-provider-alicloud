@@ -45,4 +45,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `compact_topic` - whether the current topic is kafka compact topic or not.
   * `partition_num` - Partition number of the topic.
   * `remark` - Remark of the topic.
-  * `status` - The current status code of the topic.
+  * `status` - The current status code of the topic. There are three values to describe the topic status: 0 stand for the topic is in service, 1 stand for freezing and 2 stand for pause. 
