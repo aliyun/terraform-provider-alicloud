@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "/NwsgJd6OxPtWcOccfTU60RviTA=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/ddosbgp",
+			"revision": "91319473073821eb6e786ee8c0d0067dd3cecc38",
+			"revisionTime": "2019-09-03T11:58:57Z"
+		}
+	],
+	"rootPath": "github.com/terraform-providers/terraform-provider-alicloud"
+}
