@@ -11,10 +11,10 @@ type AlikafkaService struct {
 	client *connectivity.AliyunClient
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId string, regionId string) (alikafkaInstance *alikafka.InstanceVO, err error) {
+func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId string) (alikafkaInstance *alikafka.InstanceVO, err error) {
 
 	instanceListReq := alikafka.CreateGetInstanceListRequest()
-	instanceListReq.RegionId = regionId
+	instanceListReq.RegionId = alikafkaService.client.RegionId
 
 	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 		return alikafkaClient.GetInstanceList(instanceListReq)

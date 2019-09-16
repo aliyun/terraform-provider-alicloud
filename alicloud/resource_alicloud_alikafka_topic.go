@@ -2,9 +2,11 @@ package alicloud
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -82,17 +84,29 @@ func resourceAlicloudAlikafkaTopicCreate(d *schema.ResourceData, meta interface{
 		request.Remark = v.(string)
 	}
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-		return alikafkaClient.CreateTopic(request)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			return alikafkaClient.CreateTopic(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{AlikafkaThrottlingUser}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		createTopicResp, _ := raw.(*alikafka.CreateTopicResponse)
+		if createTopicResp.Code != 200 {
+			return resource.NonRetryableError(Error(createTopicResp.Message))
+		}
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_topic", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	createTopicResp, _ := raw.(*alikafka.CreateTopicResponse)
-	if createTopicResp.Code != 200 {
-		return WrapError(Error(createTopicResp.Message))
-	}
+
 	d.SetId(instanceId + ":" + topic)
 	return resourceAlicloudAlikafkaTopicRead(d, meta)
 }
@@ -139,13 +153,23 @@ func resourceAlicloudAlikafkaTopicDelete(d *schema.ResourceData, meta interface{
 	request.InstanceId = instanceId
 	request.RegionId = client.RegionId
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-		return alikafkaClient.DeleteTopic(request)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			return alikafkaClient.DeleteTopic(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{AlikafkaThrottlingUser}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(alikafkaService.WaitForAlikafkaTopic(d.Id(), Deleted, DefaultTimeoutMedium))
 }

@@ -39,7 +39,6 @@ func TestAccAlicloudAlikafkaTopicsDataSource(t *testing.T) {
 			"topics.0.partition_num": "12",
 			"topics.0.remark":        "alicloud_alikafka_topic_remark",
 			"topics.0.status":        "0",
-			"topics.0.status_name":   "服务中",
 		}
 	}
 
