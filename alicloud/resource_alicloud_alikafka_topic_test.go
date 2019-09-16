@@ -240,7 +240,7 @@ func shouldSkipLocalAndCompact(instanceId string) skipLocalAndCompactFunc {
 		client := rawClient.(*connectivity.AliyunClient)
 		alikafkaService := AlikafkaService{client}
 
-		instance, err := alikafkaService.DescribeAlikafkaInstance(instanceId, defaultRegionToTest)
+		instance, err := alikafkaService.DescribeAlikafkaInstance(instanceId)
 		if err != nil {
 			return false, err
 		}

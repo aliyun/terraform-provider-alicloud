@@ -46,4 +46,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `partition_num` - Partition number of the topic.
   * `remark` - Remark of the topic.
   * `status` - The current status code of the topic.
-  * `status_name` - The current status description of the topic.

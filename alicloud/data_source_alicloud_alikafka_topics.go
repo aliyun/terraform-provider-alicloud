@@ -69,10 +69,6 @@ func dataSourceAlicloudAlikafkaTopics() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
-						"status_name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 					},
 				},
 			},
@@ -130,7 +126,6 @@ func alikafkaTopicsDecriptionAttributes(d *schema.ResourceData, topicsInfo []ali
 			"partition_num": item.PartitionNum,
 			"remark":        item.Remark,
 			"status":        item.Status,
-			"status_name":   item.StatusName,
 		}
 
 		names = append(names, item.Topic)

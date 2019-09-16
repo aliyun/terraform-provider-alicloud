@@ -331,6 +331,9 @@ const (
 	AuthResourceOwnerError = "AUTH_RESOURCE_OWNER_ERROR"
 	OnsThrottlingUser      = "Throttling.User"
 
+	// ALIKAFKA
+	AlikafkaThrottlingUser = "Throttling.User"
+
 	//HaVip
 	InvalidHaVipIdNotFound = "InvalidHaVipId.NotFound"
 	InvalidVipStatus       = "InvalidVip.Status"
