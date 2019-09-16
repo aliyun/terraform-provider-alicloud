@@ -66,6 +66,7 @@ type Config struct {
 	ActionTrailEndpoint   string
 	BssOpenApiEndpoint    string
 	DdoscooEndpoint       string
+	DdosbgpEndpoint       string
 
 	SkipRegionValidation bool
 }

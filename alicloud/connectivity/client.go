@@ -13,6 +13,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddosbgp"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
@@ -101,6 +102,7 @@ type AliyunClient struct {
 	actiontrailconn              *actiontrail.Client
 	casconn                      *cas.Client
 	ddoscooconn                  *ddoscoo.Client
+	ddosbgpconn                  *ddosbgp.Client
 	bssopenapiconn               *bssopenapi.Client
 }
 
@@ -1204,6 +1206,23 @@ func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interfac
 	}
 
 	return do(client.ddoscooconn)
+}
+
+func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the ddosbgp client if necessary
+	if client.ddosbgpconn == nil {
+		ddosbgpconn, err := ddosbgp.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the DDOSBGP client: %#v", err)
+		}
+
+		client.ddosbgpconn = ddosbgpconn
+	}
+
+	return do(client.ddosbgpconn)
 }
 
 func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (interface{}, error)) (interface{}, error) {
