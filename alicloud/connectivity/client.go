@@ -120,7 +120,9 @@ const DefaultClientRetryCountLarge = 15
 const Terraform = "HashiCorp-Terraform"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
-var version = strings.TrimSuffix(terraform.VersionString(), "-dev")
+// The main version number that is being run at the moment.
+var providerVersion = "1.55.4"
+var version = strings.TrimSuffix(terraform.VersionString(), "-dev") + "-" + providerVersion
 
 // Client for AliyunClient
 func (c *Config) Client() (*AliyunClient, error) {
