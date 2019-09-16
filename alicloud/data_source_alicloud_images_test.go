@@ -24,12 +24,6 @@ func TestAccAlicloudImagesDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	mostRecentConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"most_recent": "true",
-		}),
-	}
-
 	ownerConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"owners": "system",
@@ -113,7 +107,7 @@ func TestAccAlicloudImagesDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeImagesMapFunc,
 	}
 
-	imagesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, mostRecentConf, ownerConf, recentNameRegexconf, ownerNameRegexConf, ownerRecentConf, allConf)
+	imagesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, ownerConf, recentNameRegexconf, ownerNameRegexConf, ownerRecentConf, allConf)
 }
 
 func TestAccAlicloudImagesDataSource_win(t *testing.T) {
