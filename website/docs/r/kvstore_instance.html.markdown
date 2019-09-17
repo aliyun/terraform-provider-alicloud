@@ -50,7 +50,7 @@ resource "alicloud_kvstore_instance" "default" {
 The following arguments are supported:
 
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
-* `password`- (Optional) The password of the DB instance. The password is a string of 8 to 30 characters and must contain uppercase letters, lowercase letters, and numbers.
+* `password`- (Optional, Sensitive) The password of the DB instance. The password is a string of 8 to 30 characters and must contain uppercase letters, lowercase letters, and numbers.
 * `instance_class` - (Required) Type of the applied ApsaraDB for Redis instance.
 For more information, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/61135.htm).
 * `availability_zone` - (Optional, ForceNew) The Zone to launch the DB instance.
