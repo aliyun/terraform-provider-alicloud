@@ -38,6 +38,7 @@ func resourceAliyunSnatEntry() *schema.Resource {
 			"snat_ip": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"source_cidr": {
 				Type:          schema.TypeString,
@@ -148,10 +149,6 @@ func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) err
 	request.SnatTableId = parts[0]
 	request.SnatEntryId = parts[1]
 	update := false
-	if d.HasChange("snat_ip") {
-		update = true
-		request.SnatIp = d.Get("snat_ip").(string)
-	}
 
 	if d.HasChange("snat_entry_name") {
 		update = true

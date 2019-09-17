@@ -31,7 +31,193 @@ const (
 	RamInstanceNotFound   = "Forbidden.InstanceNotFound"
 	AliyunGoClientFailure = "AliyunGoClientFailure"
 
-	LogClientTimeout = "Client.Timeout exceeded while awaiting headers"
+	// dns
+	RecordForbiddenDNSChange    = "RecordForbidden.DNSChange"
+	FobiddenNotEmptyGroup       = "Fobidden.NotEmptyGroup"
+	DomainRecordNotBelongToUser = "DomainRecordNotBelongToUser"
+	InvalidDomainNotFound       = "InvalidDomain.NotFound"
+	InvalidDomainNameNoExist    = "InvalidDomainName.NoExist"
+	DnsInternalError            = "InternalError"
+
+	// ram user
+	DeleteConflictUserGroup        = "DeleteConflict.User.Group"
+	DeleteConflictUserAccessKey    = "DeleteConflict.User.AccessKey"
+	DeleteConflictUserLoginProfile = "DeleteConflict.User.LoginProfile"
+	DeleteConflictUserMFADevice    = "DeleteConflict.User.MFADevice"
+	DeleteConflictUserPolicy       = "DeleteConflict.User.Policy"
+
+	// ram mfa
+	DeleteConflictVirtualMFADeviceUser = "DeleteConflict.VirtualMFADevice.User"
+
+	// ram group
+	DeleteConflictGroupUser   = "DeleteConflict.Group.User"
+	DeleteConflictGroupPolicy = "DeleteConflict.Group.Policy"
+
+	// ram role
+	DeleteConflictRolePolicy = "DeleteConflict.Role.Policy"
+	EntityNotExistRole       = "EntityNotExist.Role"
+
+	// ram policy
+	DeleteConflictPolicyUser    = "DeleteConflict.Policy.User"
+	DeleteConflictPolicyGroup   = "DeleteConflict.Policy.Group"
+	DeleteConflictPolicyVersion = "DeleteConflict.Policy.Version"
+
+	//unknown Error
+	UnknownError = "UnknownError"
+
+	// Keypair error
+	KeyPairNotFound           = "InvalidKeyPair.NotFound"
+	KeyPairServiceUnavailable = "ServiceUnavailable"
+
+	// Container
+	ErrorClusterNotFound = "ErrorClusterNotFound"
+
+	// cr
+	ErrorNamespaceNotExist = "NAMESPACE_NOT_EXIST"
+	ErrorRepoNotExist      = "REPO_NOT_EXIST"
+
+	// cdn
+	ServiceBusy = "ServiceBusy"
+
+	// KMS
+	ForbiddenKeyNotFound = "Forbidden.KeyNotFound"
+	// RAM
+	InvalidRamRoleNotFound       = "InvalidRamRole.NotFound"
+	RoleAttachmentUnExpectedJson = "unexpected end of JSON input"
+	InvalidInstanceIdNotFound    = "InvalidInstanceId.NotFound"
+
+	RouterInterfaceIncorrectStatus                        = "IncorrectStatus"
+	DependencyViolationRouterInterfaceReferedByRouteEntry = "DependencyViolation.RouterInterfaceReferedByRouteEntry"
+
+	// CS
+	ErrorClusterNameAlreadyExist = "ErrorClusterNameAlreadyExist"
+	ApplicationNotFound          = "Not Found"
+	ApplicationErrorIgnore       = "Unable to reach primary cluster manager"
+	ApplicationConfirmConflict   = "Conflicts with unconfirmed updates for operation"
+
+	// privatezone
+	ZoneNotExists         = "Zone.NotExists"
+	ZoneVpcNotExists      = "ZoneVpc.NotExists.VpcId"
+	ZoneVpcExists         = "Zone.VpcExists"
+	RecordInvalidConflict = "Record.Invalid.Conflict"
+	PvtzInternalError     = "InternalError"
+	PvtzThrottlingUser    = "Throttling.User"
+	PvtzSystemBusy        = "System.Busy"
+
+	// log
+	ProjectNotExist      = "ProjectNotExist"
+	IndexConfigNotExist  = "IndexConfigNotExist"
+	IndexAlreadyExist    = "IndexAlreadyExist"
+	LogStoreNotExist     = "LogStoreNotExist"
+	InternalServerError  = "InternalServerError"
+	GroupNotExist        = "GroupNotExist"
+	MachineGroupNotExist = "MachineGroupNotExist"
+	LogClientTimeout     = "Client.Timeout exceeded while awaiting headers"
+	LogRequestTimeout    = "RequestTimeout"
+	LogConfigNotExist    = "ConfigNotExist"
+	// OTS
+	OTSObjectNotExist        = "OTSObjectNotExist"
+	SuffixNoSuchHost         = "no such host"
+	OTSStorageServerBusy     = "OTSStorageServerBusy"
+	OTSQuotaExhausted        = "OTSQuotaExhausted"
+	OTSQuotaFrequentMsg      = "Too frequent table operations."
+	OTSInternalServerError   = "OTSInternalServerError"
+	OTSServerBusy            = "OTSServerBusy"
+	OTSPartitionUnavailable  = "OTSPartitionUnavailable"
+	OTSTimeout               = "OTSTimeout"
+	OTSServerUnavailable     = "OTSServerUnavailable"
+	OTSRowOperationConflict  = "OTSRowOperationConflict"
+	OTSTableNotReady         = "OTSTableNotReady"
+	OTSNotEnoughCapacityUnit = "OTSNotEnoughCapacityUnit"
+
+	// FC
+	ServiceNotFound  = "ServiceNotFound"
+	FunctionNotFound = "FunctionNotFound"
+	TriggerNotFound  = "TriggerNotFound"
+	AccessDenied     = "AccessDenied"
+
+	// Vpn
+	VpnNotFound              = "InvalidVpnGatewayInstanceId.NotFound"
+	VpnForbidden             = "Forbidden"
+	VpnForbiddenRelease      = "ForbiddenRelease"
+	VpnForbiddenSubUser      = "Forbbiden.SubUser"
+	CgwNotFound              = "InvalidCustomerGatewayInstanceId.NotFound"
+	ResQuotaFull             = "Resource.QuotaFull"
+	VpnConnNotFound          = "InvalidVpnConnectionInstanceId.NotFound"
+	InvalidIpAddress         = "InvalidIpAddress.AlreadyExist"
+	SslVpnServerNotFound     = "InvalidSslVpnServerId.NotFound"
+	SslVpnClientCertNotFound = "InvalidSslVpnClientCertId.NotFound"
+	VpnConfiguring           = "VpnGateway.Configuring"
+	VpnInvalidSpec           = "InvalidSpec.NotFound"
+	VpnEnable                = "enable"
+	// CEN
+	OperationBlocking                = "Operation.Blocking"
+	ParameterCenInstanceIdNotExist   = "ParameterCenInstanceId"
+	CenQuotaExceeded                 = "QuotaExceeded.CenCountExceeded"
+	InvalidCenInstanceStatus         = "InvalidOperation.CenInstanceStatus"
+	InvalidChildInstanceStatus       = "InvalidOperation.ChildInstanceStatus"
+	ParameterInstanceIdNotExist      = "ParameterInstanceId"
+	ForbiddenRelease                 = "Forbidden.Release"
+	InvalidCenBandwidthLimitsNotZero = "InvalidOperation.CenBandwidthLimitsNotZero"
+	ParameterBwpInstanceId           = "ParameterBwpInstanceId"
+	InvalidBwpInstanceStatus         = "InvalidOperation.BwpInstanceStatus"
+	InvalidBwpBusinessStatus         = "InvalidOperation.BwpBusinessStatus"
+	ParameterIllegal                 = "ParameterIllegal"
+	ParameterIllegalCenInstanceId    = "ParameterIllegal.CenInstanceId"
+	InstanceNotExist                 = "Instance.NotExist"
+	NotFoundRoute                    = "InvalidOperation.NotFoundRoute"
+	InvalidStateForOperationMsg      = "not in a valid state for the operation"
+	InstanceNotExistMsg              = "The instance is not exist"
+	CenThrottlingUser                = "Throttling.User"
+
+	// snapshot
+	SnapshotNotFound = "InvalidSnapshotId.NotFound"
+
+	// kv-store
+	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
+	// MNS
+	QueueNotExist        = "QueueNotExist"
+	TopicNotExist        = "TopicNotExist"
+	SubscriptionNotExist = "SubscriptionNotExist"
+
+	// ONS
+	OnsInstanceNotExist    = "INSTANCE_NOT_FOUND"
+	OnsInstanceNotEmpty    = "INSTANCE_NOT_EMPTY"
+	AuthResourceOwnerError = "AUTH_RESOURCE_OWNER_ERROR"
+	OnsThrottlingUser      = "Throttling.User"
+
+	//HaVip
+	InvalidHaVipIdNotFound = "InvalidHaVipId.NotFound"
+	InvalidVipStatus       = "InvalidVip.Status"
+	IncorrectHaVipStatus   = "IncorrectHaVipStatus"
+
+	//Cas
+	CertNotExist = "CertNotExist"
+
+	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
+
+	// Elasticsearch
+	InstanceActivating         = "InstanceActivating"
+	ESInstanceNotFound         = "InstanceNotFound"
+	ESMustChangeOneResource    = "MustChangeOneResource"
+	ESCssCheckUpdowngradeError = "CssCheckUpdowngradeError"
+
+	// Ddoscoo
+	DdoscooInstanceNotFound = "InstanceNotFound"
+	InvalidDdoscooInstance  = "ddos_coop3301"
+
+	//nacl
+	NetworkAclNotFound = "InvalidNetworkAcl.NotFound"
+
+	//Actiontrail
+	InvalidTrailNotFound  = "TrailNotFoundException"
+	TrailNeedRamAuthorize = "NeedRamAuthorize"
+
+	//Bgp
+	BgpNotFound                = "InvalidRegionId.NotFound"
+	BgpInternalError           = "InternalError"
+	BgpInvalidStatus           = "InvalidStatus.CannotOperate"
+	BgpPeerDependencyViolation = "DependencyViolation"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
