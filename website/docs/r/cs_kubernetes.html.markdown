@@ -208,7 +208,7 @@ You can get the available kubetnetes master node instance types by [datasource i
 * `worker_instance_types` - (Required, ForceNew) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
 You can get the available kubetnetes master node instance types by [datasource instance_types](https://www.terraform.io/docs/providers/alicloud/d/instance_types.html#kubernetes_node_role)
 * `worker_number` - (Required) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
-* `password` - (Optional, ForceNew) The password of ssh login cluster node. You have to specify one of `password` and `key_name` fields.
+* `password` - (Optional, ForceNew, Sensitive) The password of ssh login cluster node. You have to specify one of `password` and `key_name` fields.
 * `key_name` - (Optional, ForceNew) The keypair of ssh login cluster node, you have to create it first.
 * `user_ca` - (Optional, ForceNew) The path of customized CA cert, you can use this CA to sign client certs to connect your cluster.
 * `cluster_network_type` - (Required, ForceNew) The network that cluster uses, use `flannel` or `terway`.
