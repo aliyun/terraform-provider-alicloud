@@ -20,6 +20,8 @@ BUG FIXES:
 
 IMPROVEMENTS:
 
+- improve(table store): set primary key to forcenew ([#1654](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1654))
+- improve(docs): Added sensitive tag for the doc which has password ([#1653](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1653))
 - improve(slb): midified the sweep rules of slb ([#1631](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1631))
 - improve(slb): add new field resource_group_id ([#1629](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1629))
 - improve(example): update the examples to the format of the new version ([#1625](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1625))
