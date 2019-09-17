@@ -58,8 +58,8 @@ The following arguments are supported:
 * `instance_name` - (Required, ForceNew) The name of the OTS instance in which table will located.
 * `table_name` - (Required, ForceNew) The table name of the OTS instance. If changed, a new table would be created.
 * `primary_key` - (Required, ForceNew) The property of `TableMeta` which indicates the structure information of a table. It describes the attribute value of primary key. The number of `primary_key` should not be less than one and not be more than four.
-    * `name` - (Required) Name for primary key.
-    * `type` - (Required, Type: list) Type for primary key. Only `Integer`, `String` or `Binary` is allowed.
+    * `name` - (Required, ForceNew) Name for primary key.
+    * `type` - (Required, ForceNew) Type for primary key. Only `Integer`, `String` or `Binary` is allowed.
 * `time_to_live` - (Required) The retention time of data stored in this table (unit: second). The value maximum is 2147483647 and -1 means never expired.
 * `max_version` - (Required) The maximum number of versions stored in this table. The valid value is 1-2147483647.
 * `deviation_cell_version_in_sec` - (Optional, Available in 1.42.0+) The max version offset of the table. The valid value is 1-9223372036854775807. Defaults to 86400.
