@@ -550,6 +550,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oos_template":                        resourceAlicloudOosTemplate(),
 			"alicloud_edas_k8s_cluster":                    resourceAlicloudEdasK8sCluster(),
 			"alicloud_oos_execution":                       resourceAlicloudOosExecution(),
+			"alicloud_bgp_group":                           resourceAliyunBgpGroup(),
+			"alicloud_bgp_peer":                            resourceAliyunBgpPeer(),
+			"alicloud_bgp_network":                         resourceAliyunBgpNetwork(),
 		},
 
 		ConfigureFunc: providerConfigure,
