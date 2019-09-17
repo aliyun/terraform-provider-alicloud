@@ -1,22 +1,22 @@
-## 1.55.4 (Unreleased)
+## 1.55.4 (September 17, 2019)
 
 IMPROVEMENTS:
 
-- improve(table store): set primary key to forcenew [GH-1654]
-- improve(docs): Added sensitive tag for the doc which has password [GH-1653]
-- improve(provider): add the provider verison in the useragent [GH-1651]
-- improve(images): modified the testcase of images datasource [GH-1648]
-- improve(security_group_id):update description to support for modify [GH-1647]
-- impove(slb):add new allowed spec for slb [GH-1646]
-- improve(provider):support ecs_role_name + assume_role [GH-1639]
-- improve(example): update the examples to the format of terraform version 0.12 [GH-1633]
-- improve(instance):remove bandwidth limit [GH-1630]
-- improve(gpdb): gpdb instance supported tags [GH-1615]
+- improve(table store): set primary key to forcenew ([#1654](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1654))
+- improve(docs): Added sensitive tag for the doc which has password ([#1653](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1653))
+- improve(provider): add the provider verison in the useragent ([#1651](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1651))
+- improve(images): modified the testcase of images datasource ([#1648](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1648))
+- improve(security_group_id):update description to support for modify ([#1647](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1647))
+- impove(slb):add new allowed spec for slb ([#1646](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1646))
+- improve(provider):support ecs_role_name + assume_role ([#1639](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1639))
+- improve(example): update the examples to the format of terraform version 0.12 ([#1633](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1633))
+- improve(instance):remove bandwidth limit ([#1630](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1630))
+- improve(gpdb): gpdb instance supported tags ([#1615](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1615))
 
 BUG FIXES:
 
-- fix(security_group):fix security_group bug [GH-1640]
-- fix(rds): add diffsuppressfunc to rds tags [GH-1602]
+- fix(security_group):fix security_group bug ([#1640](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1640))
+- fix(rds): add diffsuppressfunc to rds tags ([#1602](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1602))
 
 ## 1.55.3 (September 09, 2019)
 
