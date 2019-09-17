@@ -151,12 +151,12 @@ func (s *SlbService) DescribeSlbBackendServer(id string) (*slb.DescribeLoadBalan
 	return response, err
 }
 
-func (s *SlbService) DescribeSlbListener(id string, protocol Protocol) (listener map[string]interface{}, err error) {
-	parts, err := ParseResourceId(id, 2)
+func (s *SlbService) DescribeSlbListener(id string) (listener map[string]interface{}, err error) {
+	parts, err := ParseSlbListenerId(id)
 	if err != nil {
 		return nil, WrapError(err)
 	}
-
+	protocol := parts[1]
 	request, err := s.BuildSlbCommonRequest()
 	request.RegionId = s.client.RegionId
 	if err != nil {
@@ -165,9 +165,8 @@ func (s *SlbService) DescribeSlbListener(id string, protocol Protocol) (listener
 	}
 	request.ApiName = fmt.Sprintf("DescribeLoadBalancer%sListenerAttribute", strings.ToUpper(string(protocol)))
 	request.QueryParams["LoadBalancerId"] = parts[0]
-	port, _ := strconv.Atoi(parts[1])
+	port, _ := strconv.Atoi(parts[2])
 	request.QueryParams["ListenerPort"] = string(requests.NewInteger(port))
-
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.ProcessCommonRequest(request)
@@ -194,22 +193,6 @@ func (s *SlbService) DescribeSlbListener(id string, protocol Protocol) (listener
 	})
 
 	return
-}
-
-func (s *SlbService) DescribeSlbHttpListener(id string) (listener map[string]interface{}, err error) {
-	return s.DescribeSlbListener(id, Protocol("http"))
-}
-
-func (s *SlbService) DescribeSlbHttpsListener(id string) (listener map[string]interface{}, err error) {
-	return s.DescribeSlbListener(id, Protocol("https"))
-}
-
-func (s *SlbService) DescribeSlbTcpListener(id string) (listener map[string]interface{}, err error) {
-	return s.DescribeSlbListener(id, Protocol("tcp"))
-}
-
-func (s *SlbService) DescribeSlbUdpListener(id string) (listener map[string]interface{}, err error) {
-	return s.DescribeSlbListener(id, Protocol("udp"))
 }
 
 func (s *SlbService) DescribeSlbAcl(id string) (response *slb.DescribeAccessControlListAttributeResponse, err error) {
@@ -280,10 +263,10 @@ func (s *SlbService) WaitForSlb(id string, status Status, timeout int) error {
 	return nil
 }
 
-func (s *SlbService) WaitForSlbListener(id string, protocol Protocol, status Status, timeout int) error {
+func (s *SlbService) WaitForSlbListener(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		object, err := s.DescribeSlbListener(id, protocol)
+		object, err := s.DescribeSlbListener(id)
 		if err != nil && !IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
 			if NotFoundError(err) {
 				if status == Deleted {

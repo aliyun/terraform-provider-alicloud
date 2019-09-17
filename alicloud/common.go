@@ -698,6 +698,14 @@ func ParseResourceId(id string, length int) (parts []string, err error) {
 	return parts, err
 }
 
+func ParseSlbListenerId(id string) (parts []string, err error) {
+	parts = strings.Split(id, ":")
+	if len(parts) != 2 && len(parts) != 3 {
+		err = WrapError(fmt.Errorf("Invalid alicloud_slb_listener Id %s. Expected Id format is <slb id>:<protocol>:< frontend>.", id))
+	}
+	return parts, err
+}
+
 func GetCenChildInstanceType(id string) (c string, e error) {
 	if strings.HasPrefix(id, "vpc") {
 		return ChildInstanceTypeVpc, nil
