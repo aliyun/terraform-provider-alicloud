@@ -871,3 +871,101 @@ resource "alicloud_security_group" "default" {
     vpc_id = "${alicloud_vpc.default.id}"
 }
 `
+
+const SlbListenerCommonTestCase = `
+variable "ip_version" {
+  default = "ipv4"
+}	
+resource "alicloud_slb" "default" {
+  name = "${var.name}"
+  internet_charge_type = "PayByTraffic"
+  address_type = "internet"
+  specification = "slb.s1.small"
+}
+resource "alicloud_slb_acl" "default" {
+  name = "${var.name}"
+  ip_version = "${var.ip_version}"
+  entry_list {
+      entry="10.10.10.0/24"
+      comment="first"
+  }
+  entry_list {
+      entry="168.10.10.0/24"
+      comment="second"
+  }
+}
+`
+const SlbListenerVserverCommonTestCase = `
+data "alicloud_zones" "default" {
+  available_disk_category = "cloud_efficiency"
+  available_resource_creation= "VSwitch"
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+data "alicloud_images" "default" {
+  name_regex = "^ubuntu_18.*_64"
+  most_recent = true
+  owners = "system"
+}
+
+resource "alicloud_vpc" "default" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/16"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_security_group" "default" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_instance" "default" {
+  image_id = "${data.alicloud_images.default.images.0.id}"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  instance_name = "${var.name}"
+  count = "2"
+  security_groups = "${alicloud_security_group.default.*.id}"
+  internet_charge_type = "PayByTraffic"
+  internet_max_bandwidth_out = "10"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  instance_charge_type = "PostPaid"
+  system_disk_category = "cloud_efficiency"
+  vswitch_id = "${alicloud_vswitch.default.id}"
+}
+
+resource "alicloud_slb" "default" {
+  name = "${var.name}"
+  vswitch_id = "${alicloud_vswitch.default.id}"
+}
+
+resource "alicloud_slb_server_group" "default" {
+  load_balancer_id = "${alicloud_slb.default.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_slb_master_slave_server_group" "default" {
+  load_balancer_id = "${alicloud_slb.default.id}"
+  name = "${var.name}"
+  servers {
+      server_id = "${alicloud_instance.default.0.id}"
+      port = 80
+      weight = 100
+      server_type = "Master"
+  }
+  servers {
+      server_id = "${alicloud_instance.default.1.id}"
+      port = 80
+      weight = 100
+      server_type = "Slave"
+  }
+}
+`
