@@ -498,6 +498,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_private_zone":                    resourceAlicloudCenPrivateZone(),
 			"alicloud_resource_manager_policy":             resourceAlicloudResourceManagerPolicy(),
 			"alicloud_resource_manager_account":            resourceAlicloudResourceManagerAccount(),
+			"alicloud_bgp_network":                         resourceAliyunBgpNetwork(),
 		},
 
 		ConfigureFunc: providerConfigure,
