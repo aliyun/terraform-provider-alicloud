@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/hashicorp/terraform/helper/resource"
+
 	"github.com/hashicorp/terraform/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -1029,14 +1031,28 @@ func (s *VpcService) DescribeTags(resourceId string, resourceType TagResourceTyp
 	request.RegionId = s.client.RegionId
 	request.ResourceType = string(resourceType)
 	request.ResourceId = &[]string{resourceId}
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.ListTagResources(request)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var raw interface{}
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.ListTagResources(request)
+		})
+		if err != nil {
+			if IsExceptedError(err, Throttling) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*vpc.ListTagResourcesResponse)
 
 	return response.TagResources.TagResource, nil
