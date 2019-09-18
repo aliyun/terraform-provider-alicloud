@@ -151,6 +151,18 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+
+			"maintain_start_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+
+			"maintain_end_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -320,6 +332,24 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("auto_renew_period")
 	}
 
+	if d.HasChange("maintain_start_time") || d.HasChange("maintain_end_time") {
+		request := r_kvstore.CreateModifyInstanceMaintainTimeRequest()
+		request.RegionId = client.RegionId
+		request.InstanceId = d.Id()
+		request.MaintainStartTime = d.Get("maintain_start_time").(string)
+		request.MaintainEndTime = d.Get("maintain_end_time").(string)
+
+		raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+			return client.ModifyInstanceMaintainTime(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("maintain_start_time")
+		d.SetPartial("maintain_end_time")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudKVStoreInstanceRead(d, meta)
@@ -436,6 +466,8 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("private_ip", object.PrivateIp)
 	d.Set("security_ips", strings.Split(object.SecurityIPList, COMMA_SEPARATED))
 	d.Set("vpc_auth_mode", object.VpcAuthMode)
+	d.Set("maintain_start_time", object.MaintainStartTime)
+	d.Set("maintain_end_time", object.MaintainEndTime)
 	tags, err := kvstoreService.DescribeTags(d.Id(), TagResourceInstance)
 	if err != nil {
 		return WrapError(err)
