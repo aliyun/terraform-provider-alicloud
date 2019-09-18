@@ -1,5 +1,5 @@
 provider "alicloud" {
-  source_name = "examples/vpc"
+  configuration_source = "terraform-provider-alicloud/examples/vpc"
 }
 
 resource "alicloud_vpc" "main" {

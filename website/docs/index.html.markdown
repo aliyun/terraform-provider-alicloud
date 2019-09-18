@@ -185,7 +185,8 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 
 * `skip_region_validation` - (Optional, Available in 1.52.0+) Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).
 
-* `source_name` - (Optional, Available in 1.56.0+) Use a name to mark a template. It can be a source or a specifial usage scenario, like `terraform-alicloud-modules/ram/alicloud` or `examples/vpc`.
+* `configuration_source` - (Optional, Available in 1.56.0+) Use a string to mark a configuration file source, like `terraform-alicloud-modules/terraform-alicloud-ecs-instance` or `terraform-provider-alicloud/examples/vpc`.
+The length should not more than 64.
 
 The nested `assume_role` block supports the following:
 
