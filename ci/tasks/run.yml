@@ -24,4 +24,5 @@ params:
   DING_TALK_TOKEN:       ""
   BUCKET_NAME:           "terraform-ci"
   BUCKET_REGION:         "cn-beijing"
+  ALICLOUD_INSTANCE_ID:  ""
 
