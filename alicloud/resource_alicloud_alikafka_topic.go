@@ -96,10 +96,6 @@ func resourceAlicloudAlikafkaTopicCreate(d *schema.ResourceData, meta interface{
 			return resource.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		createTopicResp, _ := raw.(*alikafka.CreateTopicResponse)
-		if createTopicResp.Code != 200 {
-			return resource.NonRetryableError(Error(createTopicResp.Message))
-		}
 		return nil
 	})
 

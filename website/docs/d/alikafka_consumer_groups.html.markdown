@@ -22,7 +22,7 @@ data "alicloud_alikafka_consumer_groups" "consumer_groups_ds" {
 }
 
 output "first_group_name" {
-  value = "${data.alicloud_alikafka_consumer_groups.consumer_groups_ds.consumer_groups.0.consumer_id}"
+  value = "${data.alicloud_alikafka_consumer_groups.consumer_groups_ds.consumer_ids.0}"
 }
 ```
 
@@ -38,6 +38,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of consumer group ids.
-* `consumer_groups` - A list of consumer groups. Each element contains the following attributes:
-  * `consumer_id` - The consumer id of the group.
+* `consumer_ids` - A list of consumer group ids.

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"os"
 	"testing"
 
@@ -31,16 +32,14 @@ func TestAccAlicloudAlikafkaConsumerGroupsDataSource(t *testing.T) {
 
 	var existAlikafkaConsumerGroupsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                         "1",
-			"consumer_groups.#":             "1",
-			"consumer_groups.0.consumer_id": fmt.Sprintf("tf-testacc-alikafkaconsumer%v", rand),
+			"consumer_ids.#":                         "1",
+			"consumer_ids.0": fmt.Sprintf("tf-testacc-alikafkaconsumer%v", rand),
 		}
 	}
 
 	var fakeAlikafkaConsumerGroupsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"consumer_groups.#": "0",
-			"ids.#":             "0",
+			"consumer_ids.#": "0",
 		}
 	}
 
@@ -49,8 +48,10 @@ func TestAccAlicloudAlikafkaConsumerGroupsDataSource(t *testing.T) {
 		existMapFunc: existAlikafkaConsumerGroupsMapFunc,
 		fakeMapFunc:  fakeAlikafkaConsumerGroupsMapFunc,
 	}
-
-	alikafkaConsumerGroupsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
+	}
+	alikafkaConsumerGroupsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
 
 func dataSourceAlikafkaConsumerGroupsConfigDependence(name string) string {
