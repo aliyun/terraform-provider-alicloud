@@ -73,6 +73,8 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 	request.ClientToken = buildClientToken(request.GetActionName())
 
 	var response *cbn.CreateCenResponse
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		req := *request
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
@@ -80,6 +82,7 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{OperationBlocking, UnknownError}) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
