@@ -73,6 +73,7 @@ type Client struct {
 	EndpointMap    map[string]string
 	EndpointType   string
 	Network        string
+	Domain         string
 
 	debug     bool
 	isRunning bool
@@ -337,6 +338,15 @@ func (client *Client) buildRequestWithSigner(request requests.AcsRequest, signer
 
 	// resolve endpoint
 	endpoint := request.GetDomain()
+
+	if endpoint == "" && client.Domain != "" {
+		endpoint = client.Domain
+	}
+
+	if endpoint == "" {
+		endpoint = endpoints.GetEndpointFromMap(regionId, request.GetProduct())
+	}
+
 	if endpoint == "" && client.EndpointType != "" && request.GetProduct() != "Sts" {
 		if client.EndpointMap != nil && client.Network == "" || client.Network == "public" {
 			endpoint = client.EndpointMap[regionId]
@@ -584,7 +594,7 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 			}
 		}
 		//  if status code >= 500 or timeout, will trigger retry
-		if client.config.AutoRetry && (err != nil || isServerError(httpResponse)) {
+		if client.config.AutoRetry && (err != nil || isServerError(httpResponse)) && !isCertificateError(err) {
 			client.setTimeout(request)
 			// rewrite signatureNonce and signature
 			httpRequest, err = client.buildRequestWithSigner(request, signer)
@@ -607,6 +617,13 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 		err = errors.WrapServerError(serverErr, wrapInfo)
 	}
 	return
+}
+
+func isCertificateError(err error) bool {
+	if err != nil && strings.Contains(err.Error(), "x509: certificate signed by unknown authority") {
+		return true
+	}
+	return false
 }
 
 func putMsgToMap(fieldMap map[string]string, request *http.Request) {

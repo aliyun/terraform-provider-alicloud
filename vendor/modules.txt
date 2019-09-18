@@ -10,12 +10,13 @@ cloud.google.com/go/compute/metadata
 github.com/Sirupsen/logrus
 # github.com/agext/levenshtein v1.2.2
 github.com/agext/levenshtein
-# github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190909094631-44ff19b8cdcb
+# github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190918062653-0c71178b218a
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses
 github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail
 github.com/aliyun/alibaba-cloud-sdk-go/services/alidns
+github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka
 github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi
 github.com/aliyun/alibaba-cloud-sdk-go/services/cas
 github.com/aliyun/alibaba-cloud-sdk-go/services/cbn
@@ -39,13 +40,13 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore
 github.com/aliyun/alibaba-cloud-sdk-go/services/ram
 github.com/aliyun/alibaba-cloud-sdk-go/services/rds
 github.com/aliyun/alibaba-cloud-sdk-go/services/slb
+github.com/aliyun/alibaba-cloud-sdk-go/services/sts
 github.com/aliyun/alibaba-cloud-sdk-go/services/vpc
 github.com/aliyun/alibaba-cloud-sdk-go/sdk
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints
 github.com/aliyun/alibaba-cloud-sdk-go/services/location
-github.com/aliyun/alibaba-cloud-sdk-go/services/sts
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials/provider
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/signers
