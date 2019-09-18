@@ -30,22 +30,10 @@ func dataSourceAlicloudAlikafkaConsumerGroups() *schema.Resource {
 				ForceNew: true,
 			},
 			// Computed values
-			"ids": {
+			"consumer_ids": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-			"consumer_groups": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"consumer_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-					},
-				},
 			},
 		},
 	}
@@ -90,29 +78,21 @@ func dataSourceAlicloudAlikafkaConsumerGroupsRead(d *schema.ResourceData, meta i
 
 func alikafkaConsumerGroupsDecriptionAttributes(d *schema.ResourceData, consumerGroupsInfo []alikafka.ConsumerVO, meta interface{}) error {
 	var ids []string
-	var s []map[string]interface{}
 
 	for _, item := range consumerGroupsInfo {
-		mapping := map[string]interface{}{
-			"consumer_id": item.ConsumerId,
-		}
 
 		ids = append(ids, item.ConsumerId)
-		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 
-	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
-	}
-	if err := d.Set("consumer_groups", s); err != nil {
+	if err := d.Set("consumer_ids", ids); err != nil {
 		return WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		writeToFile(output.(string), ids)
 	}
 	return nil
 

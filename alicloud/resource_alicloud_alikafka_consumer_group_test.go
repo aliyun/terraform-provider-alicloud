@@ -31,7 +31,7 @@ func testSweepAlikafkaConsumerGroup(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf-testacc",
+		"tf_testacc",
 	}
 
 	instanceListReq := alikafka.CreateGetInstanceListRequest()
@@ -123,6 +123,7 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 			testAccPreCheckWithAlikafkaInstanceSetting(t)
 		},
@@ -148,14 +149,48 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
+		},
+	})
 
+}
+
+func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
+
+	var v *alikafka.ConsumerVO
+	resourceId := "alicloud_alikafka_consumer_group.default.4"
+	ra := resourceAttrInit(resourceId, alikafkaConsumerGroupBasicMap)
+	serviceFunc := func() interface{} {
+		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testacc-alikafkaconsumerbasic%v", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaConsumerGroupConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
+			testAccPreCheck(t)
+			testAccPreCheckWithAlikafkaInstanceSetting(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"consumer_id": "modified_consumer_id",
+					"count":       "5",
+					"instance_id": os.Getenv("ALICLOUD_INSTANCE_ID"),
+					"consumer_id": "${var.consumer_id}-${count.index}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"consumer_id": "modified_consumer_id"}),
+						"consumer_id": fmt.Sprintf("tf-testacc-alikafkaconsumerbasic%v-4", rand),
+					}),
 				),
 			},
 		},

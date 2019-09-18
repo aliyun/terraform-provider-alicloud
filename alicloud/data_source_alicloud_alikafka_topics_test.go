@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"os"
 	"testing"
 
@@ -54,8 +55,10 @@ func TestAccAlicloudAlikafkaTopicsDataSource(t *testing.T) {
 		existMapFunc: existAlikafkaTopicsMapFunc,
 		fakeMapFunc:  fakeAlikafkaTopicsMapFunc,
 	}
-
-	alikafkaTopicsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
+	}
+	alikafkaTopicsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
 
 func dataSourceAlikafkaTopicsConfigDependence(name string) string {

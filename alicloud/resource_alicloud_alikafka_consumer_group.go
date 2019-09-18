@@ -59,10 +59,6 @@ func resourceAlicloudAlikafkaConsumerGroupCreate(d *schema.ResourceData, meta in
 			return resource.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		createConsumerGroupResp, _ := raw.(*alikafka.CreateConsumerGroupResponse)
-		if createConsumerGroupResp.Code != 200 {
-			return resource.NonRetryableError(Error(createConsumerGroupResp.Message))
-		}
 		return nil
 	})
 

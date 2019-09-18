@@ -12,6 +12,9 @@ Provides an ALIKAFKA consumer group resource.
 
 -> **NOTE:** Available in 1.56.0+
 
+-> **NOTE:**  Only the following regions support create alikafka consumer group.
+[`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`ap-southeast-1`,`ap-south-1`,`ap-southeast-5`]
+
 ## Example Usage
 
 Basic Usage
@@ -36,7 +39,7 @@ resource "alicloud_alikafka_consumer_group" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) ID of the ALIKAFKA Instance that owns the groups.
-* `consumer_id` - (Required, ForceNew) Id of the consumer group.
+* `consumer_id` - (Required, ForceNew) ID of the consumer group. The length cannot exceed 64 characters..
 
 ## Attributes Reference
 

@@ -31,7 +31,7 @@ func testSweepAlikafkaTopic(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf-testacc",
+		"tf_testacc",
 	}
 
 	instanceListReq := alikafka.CreateGetInstanceListRequest()
@@ -124,6 +124,7 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 			testAccPreCheckWithAlikafkaInstanceSetting(t)
 		},
@@ -218,6 +219,58 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 						"local_topic":   "false",
 						"compact_topic": "false",
 						"partition_num": "12",
+						"remark":        "alicloud_alikafka_topic_remark",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudAlikafkaTopic_multi(t *testing.T) {
+
+	var v *alikafka.TopicVO
+	resourceId := "alicloud_alikafka_topic.default.4"
+	ra := resourceAttrInit(resourceId, alikafkaTopicBasicMap)
+	serviceFunc := func() interface{} {
+		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testacc-alikafkatopicbasic%v", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaTopicConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
+			testAccPreCheck(t)
+			testAccPreCheckWithAlikafkaInstanceSetting(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"count":         "5",
+					"instance_id":   os.Getenv("ALICLOUD_INSTANCE_ID"),
+					"topic":         "${var.topic}-${count.index}",
+					"local_topic":   "false",
+					"compact_topic": "false",
+					"partition_num": "6",
+					"remark":        "alicloud_alikafka_topic_remark",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"topic":         fmt.Sprintf("tf-testacc-alikafkatopicbasic%v-4", rand),
+						"local_topic":   "false",
+						"compact_topic": "false",
+						"partition_num": "6",
 						"remark":        "alicloud_alikafka_topic_remark",
 					}),
 				),
