@@ -120,11 +120,13 @@ const DefaultClientRetryCountSmall = 5
 const DefaultClientRetryCountMedium = 10
 const DefaultClientRetryCountLarge = 15
 const Terraform = "HashiCorp-Terraform"
+const Provider = "Terraform-Provider"
+const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.55.4"
-var version = strings.TrimSuffix(terraform.VersionString(), "-dev") + "-" + providerVersion
+var providerVersion = "1.56.0"
+var terraformVersion = strings.TrimSuffix(terraform.VersionString(), "-dev")
 
 // Client for AliyunClient
 func (c *Config) Client() (*AliyunClient, error) {
@@ -172,7 +174,9 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		if _, err := ecsconn.DescribeRegions(ecs.CreateDescribeRegionsRequest()); err != nil {
 			return nil, err
 		}
-		ecsconn.AppendUserAgent(Terraform, version)
+		ecsconn.AppendUserAgent(Terraform, terraformVersion)
+		ecsconn.AppendUserAgent(Provider, providerVersion)
+		ecsconn.AppendUserAgent(Module, client.config.SourceName)
 		client.ecsconn = ecsconn
 	}
 
@@ -197,7 +201,9 @@ func (client *AliyunClient) WithRdsClient(do func(*rds.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the RDS client: %#v", err)
 		}
 
-		rdsconn.AppendUserAgent(Terraform, version)
+		rdsconn.AppendUserAgent(Terraform, terraformVersion)
+		rdsconn.AppendUserAgent(Provider, providerVersion)
+		rdsconn.AppendUserAgent(Module, client.config.SourceName)
 		client.rdsconn = rdsconn
 	}
 
@@ -222,7 +228,9 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the SLB client: %#v", err)
 		}
 
-		slbconn.AppendUserAgent(Terraform, version)
+		slbconn.AppendUserAgent(Terraform, terraformVersion)
+		slbconn.AppendUserAgent(Provider, providerVersion)
+		slbconn.AppendUserAgent(Module, client.config.SourceName)
 		client.slbconn = slbconn
 	}
 
@@ -247,7 +255,9 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
 		}
 
-		vpcconn.AppendUserAgent(Terraform, version)
+		vpcconn.AppendUserAgent(Terraform, terraformVersion)
+		vpcconn.AppendUserAgent(Provider, providerVersion)
+		vpcconn.AppendUserAgent(Module, client.config.SourceName)
 		client.vpcconn = vpcconn
 	}
 
@@ -268,7 +278,9 @@ func (client *AliyunClient) WithNasClient(do func(*nas.Client) (interface{}, err
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the NAS client: %#v", err)
 		}
-		nasconn.AppendUserAgent(Terraform, version)
+		nasconn.AppendUserAgent(Terraform, terraformVersion)
+		nasconn.AppendUserAgent(Provider, providerVersion)
+		nasconn.AppendUserAgent(Module, client.config.SourceName)
 		client.nasconn = nasconn
 	}
 
@@ -293,7 +305,9 @@ func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the CEN client: %#v", err)
 		}
 
-		cenconn.AppendUserAgent(Terraform, version)
+		cenconn.AppendUserAgent(Terraform, terraformVersion)
+		cenconn.AppendUserAgent(Provider, providerVersion)
+		cenconn.AppendUserAgent(Module, client.config.SourceName)
 		client.cenconn = cenconn
 	}
 
@@ -318,7 +332,9 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the ESS client: %#v", err)
 		}
 
-		essconn.AppendUserAgent(Terraform, version)
+		essconn.AppendUserAgent(Terraform, terraformVersion)
+		essconn.AppendUserAgent(Provider, providerVersion)
+		essconn.AppendUserAgent(Module, client.config.SourceName)
 		client.essconn = essconn
 	}
 
@@ -404,7 +420,9 @@ func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, 
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the DNS client: %#v", err)
 		}
-		dnsconn.AppendUserAgent(Terraform, version)
+		dnsconn.AppendUserAgent(Terraform, terraformVersion)
+		dnsconn.AppendUserAgent(Provider, providerVersion)
+		dnsconn.AppendUserAgent(Module, client.config.SourceName)
 		client.dnsconn = dnsconn
 	}
 
@@ -432,7 +450,9 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
 		}
-		ramconn.AppendUserAgent(Terraform, version)
+		ramconn.AppendUserAgent(Terraform, terraformVersion)
+		ramconn.AppendUserAgent(Provider, providerVersion)
+		ramconn.AppendUserAgent(Module, client.config.SourceName)
 		client.ramconn = ramconn
 	}
 
@@ -483,7 +503,9 @@ func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the CR client: %#v", err)
 		}
-		crconn.AppendUserAgent(Terraform, version)
+		crconn.AppendUserAgent(Terraform, terraformVersion)
+		crconn.AppendUserAgent(Provider, providerVersion)
+		crconn.AppendUserAgent(Module, client.config.SourceName)
 		client.crconn = crconn
 	}
 
@@ -530,7 +552,9 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 			return nil, fmt.Errorf("unable to initialize the CDN client: %#v", err)
 		}
 
-		cdnconn.AppendUserAgent(Terraform, version)
+		cdnconn.AppendUserAgent(Terraform, terraformVersion)
+		cdnconn.AppendUserAgent(Provider, providerVersion)
+		cdnconn.AppendUserAgent(Module, client.config.SourceName)
 		client.cdnconn_new = cdnconn
 	}
 
@@ -555,7 +579,9 @@ func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, err
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the kms client: %#v", err)
 		}
-		kmsconn.AppendUserAgent(Terraform, version)
+		kmsconn.AppendUserAgent(Terraform, terraformVersion)
+		kmsconn.AppendUserAgent(Provider, providerVersion)
+		kmsconn.AppendUserAgent(Module, client.config.SourceName)
 		client.kmsconn = kmsconn
 	}
 	return do(client.kmsconn)
@@ -579,7 +605,9 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the OTS client: %#v", err)
 		}
 
-		otsconn.AppendUserAgent(Terraform, version)
+		otsconn.AppendUserAgent(Terraform, terraformVersion)
+		otsconn.AppendUserAgent(Provider, providerVersion)
+		otsconn.AppendUserAgent(Module, client.config.SourceName)
 		client.otsconn = otsconn
 	}
 
@@ -597,7 +625,9 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
 		}
 
-		cmsconn.AppendUserAgent(Terraform, version)
+		cmsconn.AppendUserAgent(Terraform, terraformVersion)
+		cmsconn.AppendUserAgent(Provider, providerVersion)
+		cmsconn.AppendUserAgent(Module, client.config.SourceName)
 		client.cmsconn = cmsconn
 	}
 
@@ -624,7 +654,9 @@ func (client *AliyunClient) WithPvtzClient(do func(*pvtz.Client) (interface{}, e
 			return nil, fmt.Errorf("unable to initialize the PVTZ client: %#v", err)
 		}
 
-		pvtzconn.AppendUserAgent(Terraform, version)
+		pvtzconn.AppendUserAgent(Terraform, terraformVersion)
+		pvtzconn.AppendUserAgent(Provider, providerVersion)
+		pvtzconn.AppendUserAgent(Module, client.config.SourceName)
 		client.pvtzconn = pvtzconn
 	}
 
@@ -649,7 +681,9 @@ func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the STS client: %#v", err)
 		}
 
-		stsconn.AppendUserAgent(Terraform, version)
+		stsconn.AppendUserAgent(Terraform, terraformVersion)
+		stsconn.AppendUserAgent(Provider, providerVersion)
+		stsconn.AppendUserAgent(Module, client.config.SourceName)
 		client.stsconn = stsconn
 	}
 
@@ -704,7 +738,9 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 
 		}
 
-		drdsconn.AppendUserAgent(Terraform, version)
+		drdsconn.AppendUserAgent(Terraform, terraformVersion)
+		drdsconn.AppendUserAgent(Provider, providerVersion)
+		drdsconn.AppendUserAgent(Module, client.config.SourceName)
 		client.drdsconn = drdsconn
 	}
 
@@ -729,7 +765,9 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the DDS client: %#v", err)
 		}
 
-		ddsconn.AppendUserAgent(Terraform, version)
+		ddsconn.AppendUserAgent(Terraform, terraformVersion)
+		ddsconn.AppendUserAgent(Provider, providerVersion)
+		ddsconn.AppendUserAgent(Module, client.config.SourceName)
 		client.ddsconn = ddsconn
 	}
 
@@ -754,7 +792,9 @@ func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, e
 			return nil, fmt.Errorf("unable to initialize the GPDB client: %#v", err)
 		}
 
-		gpdbconn.AppendUserAgent(Terraform, version)
+		gpdbconn.AppendUserAgent(Terraform, terraformVersion)
+		gpdbconn.AppendUserAgent(Provider, providerVersion)
+		gpdbconn.AppendUserAgent(Module, client.config.SourceName)
 		client.gpdbconn = gpdbconn
 	}
 
@@ -779,7 +819,9 @@ func (client *AliyunClient) WithRkvClient(do func(*r_kvstore.Client) (interface{
 			return nil, fmt.Errorf("unable to initialize the RKV client: %#v", err)
 		}
 
-		rkvconn.AppendUserAgent(Terraform, version)
+		rkvconn.AppendUserAgent(Terraform, terraformVersion)
+		rkvconn.AppendUserAgent(Provider, providerVersion)
+		rkvconn.AppendUserAgent(Module, client.config.SourceName)
 		client.rkvconn = rkvconn
 	}
 
@@ -841,7 +883,9 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 			return nil, fmt.Errorf("unable to initialize the CloudAPI client: %#v", err)
 		}
 
-		cloudapiconn.AppendUserAgent(Terraform, version)
+		cloudapiconn.AppendUserAgent(Terraform, terraformVersion)
+		cloudapiconn.AppendUserAgent(Provider, providerVersion)
+		cloudapiconn.AppendUserAgent(Module, client.config.SourceName)
 		client.cloudapiconn = cloudapiconn
 	}
 
@@ -929,7 +973,9 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 			return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %#v", err)
 		}
 
-		elasticsearchconn.AppendUserAgent(Terraform, version)
+		elasticsearchconn.AppendUserAgent(Terraform, terraformVersion)
+		elasticsearchconn.AppendUserAgent(Provider, providerVersion)
+		elasticsearchconn.AppendUserAgent(Module, client.config.SourceName)
 		client.elasticsearchconn = elasticsearchconn
 	}
 
@@ -1058,7 +1104,7 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 }
 
 func (client *AliyunClient) getUserAgent() string {
-	return fmt.Sprintf("HashiCorp-Terraform-v%s", version)
+	return fmt.Sprintf("%s/%s %s/%s %s/%s", Terraform, terraformVersion, Provider, providerVersion, Module, client.config.SourceName)
 }
 
 func (client *AliyunClient) getTransport() *http.Transport {
@@ -1111,7 +1157,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (*loc
 		return nil, fmt.Errorf("Unable to initialize the location client: %#v", err)
 
 	}
-	locationClient.AppendUserAgent(Terraform, version)
+	locationClient.AppendUserAgent(Terraform, terraformVersion)
 	endpointsResponse, err := locationClient.DescribeEndpoints(args)
 	if err != nil {
 		return nil, fmt.Errorf("Describe %s endpoint using region: %#v got an error: %#v.", serviceCode, client.RegionId, err)
@@ -1141,7 +1187,7 @@ func (client *AliyunClient) getCallerIdentity() (*sts.GetCallerIdentityResponse,
 		return nil, fmt.Errorf("unable to initialize the STS client: %#v", err)
 	}
 
-	stsClient.AppendUserAgent(Terraform, version)
+	stsClient.AppendUserAgent(Terraform, terraformVersion)
 	identity, err := stsClient.GetCallerIdentity(args)
 	if err != nil {
 		return nil, err
@@ -1168,7 +1214,9 @@ func (client *AliyunClient) WithActionTrailClient(do func(*actiontrail.Client) (
 			return nil, fmt.Errorf("unable to initialize the ACTIONTRAIL client: %#v", err)
 		}
 
-		actiontrailconn.AppendUserAgent(Terraform, version)
+		actiontrailconn.AppendUserAgent(Terraform, terraformVersion)
+		actiontrailconn.AppendUserAgent(Provider, providerVersion)
+		actiontrailconn.AppendUserAgent(Module, client.config.SourceName)
 		client.actiontrailconn = actiontrailconn
 	}
 
@@ -1186,7 +1234,9 @@ func (client *AliyunClient) WithCasClient(do func(*cas.Client) (interface{}, err
 			return nil, fmt.Errorf("unable to initialize the CAS client: %#v", err)
 		}
 
-		casconn.AppendUserAgent(Terraform, version)
+		casconn.AppendUserAgent(Terraform, terraformVersion)
+		casconn.AppendUserAgent(Provider, providerVersion)
+		casconn.AppendUserAgent(Module, client.config.SourceName)
 		client.casconn = casconn
 	}
 
@@ -1252,7 +1302,9 @@ func (client *AliyunClient) WithOnsClient(do func(*ons.Client) (interface{}, err
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the ONS client: %#v", err)
 		}
-		onsconn.AppendUserAgent(Terraform, version)
+		onsconn.AppendUserAgent(Terraform, terraformVersion)
+		onsconn.AppendUserAgent(Provider, providerVersion)
+		onsconn.AppendUserAgent(Module, client.config.SourceName)
 		client.onsconn = onsconn
 	}
 
@@ -1276,7 +1328,9 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the ALIKAFKA client: %#v", err)
 		}
-		alikafkaconn.AppendUserAgent(Terraform, version)
+		alikafkaconn.AppendUserAgent(Terraform, terraformVersion)
+		alikafkaconn.AppendUserAgent(Provider, providerVersion)
+		alikafkaconn.AppendUserAgent(Module, client.config.SourceName)
 		client.alikafkaconn = alikafkaconn
 	}
 

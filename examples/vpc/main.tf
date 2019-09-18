@@ -1,3 +1,7 @@
+provider "alicloud" {
+  source_name = "examples/vpc"
+}
+
 resource "alicloud_vpc" "main" {
   name       = var.long_name
   cidr_block = var.vpc_cidr
@@ -25,4 +29,3 @@ resource "alicloud_eip_association" "foo" {
   allocation_id = alicloud_eip.foo.id
   instance_id   = alicloud_nat_gateway.main.id
 }
-

@@ -100,6 +100,12 @@ func Provider() terraform.ResourceProvider {
 				Default:     false,
 				Description: descriptions["skip_region_validation"],
 			},
+			"source_name": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "",
+				Description: descriptions["source_name"],
+			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 
@@ -394,6 +400,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		Region:               connectivity.Region(strings.TrimSpace(region)),
 		RegionId:             strings.TrimSpace(region),
 		SkipRegionValidation: d.Get("skip_region_validation").(bool),
+		SourceName:           d.Get("source_name").(string),
 	}
 
 	token := getProviderConfig(d.Get("security_token").(string), "sts_token")
@@ -546,6 +553,8 @@ func init() {
 		"assume_role_session_expiration": "The time after which the established session for assuming role expires. Valid value range: [900-3600] seconds. Default to 0 (in this case Alicloud use own default value).",
 
 		"skip_region_validation": "Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).",
+
+		"source_name": "Use this to mark a terraform template or module source.",
 
 		"ecs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.",
 

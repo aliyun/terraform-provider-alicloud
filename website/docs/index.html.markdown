@@ -185,6 +185,8 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 
 * `skip_region_validation` - (Optional, Available in 1.52.0+) Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).
 
+* `source_name` - (Optional, Available in 1.56.0+) Use a name to mark a template. It can be a source or a specifial usage scenario, like `terraform-alicloud-modules/ram/alicloud` or `examples/vpc`.
+
 The nested `assume_role` block supports the following:
 
 * `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching. It supports environment variable `ALICLOUD_ASSUME_ROLE_ARN`.
