@@ -36,6 +36,7 @@ func TestAccAlicloudVpnGatewaysDataSourceBasic(t *testing.T) {
 		existConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
 			"vpc_id": `"${alicloud_vpn_gateway.default.vpc_id}"`,
 		}),
+
 		fakeConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
 			"vpc_id": `"${alicloud_vpn_gateway.default.vpc_id}_fake"`,
 		}),
@@ -117,6 +118,7 @@ resource "alicloud_vpn_gateway" "default" {
 	enable_ssl = true
 	instance_charge_type = "PostPaid"
 	description = "${var.name}"
+	vswitch_id = "${alicloud_vswitch.default.id}"
 }
 
 data "alicloud_vpn_gateways" "default" {

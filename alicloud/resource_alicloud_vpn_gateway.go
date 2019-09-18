@@ -81,6 +81,12 @@ func resourceAliyunVpnGateway() *schema.Resource {
 				ValidateFunc: validateVpnDescription,
 			},
 
+			"vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"internet_ip": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -107,6 +113,10 @@ func resourceAliyunVpnGatewayCreate(d *schema.ResourceData, meta interface{}) er
 
 	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
 		request.Name = d.Get("name").(string)
+	}
+
+	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
+		request.VSwitchId = d.Get("vswitch_id").(string)
 	}
 
 	request.VpcId = d.Get("vpc_id").(string)
@@ -177,6 +187,7 @@ func resourceAliyunVpnGatewayRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("vpc_id", object.VpcId)
 	d.Set("internet_ip", object.InternetIp)
 	d.Set("status", object.Status)
+	d.Set("vswitch_id", object.VSwitchId)
 	if strings.ToLower(VpnEnable) == strings.ToLower(object.IpsecVpn) {
 		d.Set("enable_ipsec", true)
 	} else {

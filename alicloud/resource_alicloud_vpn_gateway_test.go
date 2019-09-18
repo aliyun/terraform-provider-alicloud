@@ -258,6 +258,7 @@ resource "alicloud_vpn_gateway" "default" {
 	bandwidth = "10"
 	enable_ssl = false
 	instance_charge_type = "PostPaid"
+	vswitch_id = "${alicloud_vswitch.default.id}"
 }
 `, rand)
 }
@@ -290,6 +291,7 @@ resource "alicloud_vpn_gateway" "default" {
 	bandwidth = "10"
 	enable_ssl = false
 	instance_charge_type = "PostPaid"
+	vswitch_id = "${alicloud_vswitch.default.id}"
 }
 `, rand)
 }
@@ -321,6 +323,7 @@ resource "alicloud_vpn_gateway" "default" {
 	bandwidth = "10"
 	enable_ssl = false
 	instance_charge_type = "PostPaid"
+	vswitch_id = "${alicloud_vswitch.default.id}"
 }
 `, rand)
 }
@@ -352,6 +355,7 @@ resource "alicloud_vpn_gateway" "default" {
 	enable_ssl = false
 	instance_charge_type = "PostPaid"
 	description = "${var.name}_description"
+	vswitch_id = "${alicloud_vswitch.default.id}"
 }
 `, rand)
 }
@@ -384,6 +388,7 @@ resource "alicloud_vpn_gateway" "default" {
 	enable_ssl = false
 	instance_charge_type = "PostPaid"
 	description = "${var.name}"
+	vswitch_id = "${alicloud_vswitch.default.id}"
 }
 `, rand)
 }
@@ -394,4 +399,5 @@ var testAccVpnGatewayCheckMap = map[string]string{
 	"enable_ssl":   "false",
 	"enable_ipsec": "true",
 	"description":  "",
+	"vswitch_id":   CHECKSET,
 }

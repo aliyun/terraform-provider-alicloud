@@ -76,24 +76,24 @@ func (client *Client) CreateResourcePackageWithCallback(request *CreateResourceP
 // CreateResourcePackageRequest is the request struct for api CreateResourcePackage
 type CreateResourcePackageRequest struct {
 	*requests.RpcRequest
-	Duration      requests.Integer `position:"Query" name:"Duration"`
 	ProductCode   string           `position:"Query" name:"ProductCode"`
 	Specification string           `position:"Query" name:"Specification"`
 	OwnerId       requests.Integer `position:"Query" name:"OwnerId"`
-	PackageType   string           `position:"Query" name:"PackageType"`
 	EffectiveDate string           `position:"Query" name:"EffectiveDate"`
+	Duration      requests.Integer `position:"Query" name:"Duration"`
+	PackageType   string           `position:"Query" name:"PackageType"`
 	PricingCycle  string           `position:"Query" name:"PricingCycle"`
 }
 
 // CreateResourcePackageResponse is the response struct for api CreateResourcePackage
 type CreateResourcePackageResponse struct {
 	*responses.BaseResponse
-	RequestId string                      `json:"RequestId" xml:"RequestId"`
-	OrderId   int64                       `json:"OrderId" xml:"OrderId"`
-	Success   bool                        `json:"Success" xml:"Success"`
-	Code      string                      `json:"Code" xml:"Code"`
-	Message   string                      `json:"Message" xml:"Message"`
-	Data      DataInCreateResourcePackage `json:"Data" xml:"Data"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	OrderId   int64  `json:"OrderId" xml:"OrderId"`
+	Success   bool   `json:"Success" xml:"Success"`
+	Code      string `json:"Code" xml:"Code"`
+	Message   string `json:"Message" xml:"Message"`
+	Data      Data   `json:"Data" xml:"Data"`
 }
 
 // CreateCreateResourcePackageRequest creates a request to invoke CreateResourcePackage API
@@ -101,7 +101,7 @@ func CreateCreateResourcePackageRequest() (request *CreateResourcePackageRequest
 	request = &CreateResourcePackageRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "CreateResourcePackage", "", "")
+	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "CreateResourcePackage", "bssopenapi", "openAPI")
 	return
 }
 
