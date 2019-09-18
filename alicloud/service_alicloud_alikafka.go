@@ -36,6 +36,39 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId stri
 	return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", instanceId)), NotFoundMsg, ProviderERROR)
 }
 
+func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string) (alikafkaConsumerGroup *alikafka.ConsumerVO, err error) {
+
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	instanceId := parts[0]
+	consumerId := parts[1]
+
+	request := alikafka.CreateGetConsumerListRequest()
+	request.InstanceId = instanceId
+	request.RegionId = alikafkaService.client.RegionId
+
+	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+		return alikafkaClient.GetConsumerList(request)
+	})
+
+	if err != nil {
+		return alikafkaConsumerGroup, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	consumerListResp, _ := raw.(*alikafka.GetConsumerListResponse)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	for _, v := range consumerListResp.ConsumerList.ConsumerVO {
+		if v.ConsumerId == consumerId {
+			alikafkaConsumerGroup = &v
+			return
+		}
+	}
+	return alikafkaConsumerGroup, WrapErrorf(Error(GetNotFoundMessage("AlikafkaConsumerGroup", id)), NotFoundMsg, ProviderERROR)
+}
+
 func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (alikafkaTopic *alikafka.TopicVO, err error) {
 
 	parts, err := ParseResourceId(id, 2)
@@ -67,6 +100,31 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (alikaf
 		}
 	}
 	return alikafkaTopic, WrapErrorf(Error(GetNotFoundMessage("AlikafkaTopic", id)), NotFoundMsg, ProviderERROR)
+}
+
+func (s *AlikafkaService) WaitForAlikafkaConsumerGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeAlikafkaConsumerGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		if object.InstanceId+":"+object.ConsumerId == id && status != Deleted {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.InstanceId+":"+object.ConsumerId, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
 }
 
 func (s *AlikafkaService) WaitForAlikafkaTopic(id string, status Status, timeout int) error {
