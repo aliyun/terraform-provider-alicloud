@@ -69,7 +69,7 @@ type Config struct {
 	DdoscooEndpoint       string
 
 	SkipRegionValidation bool
-	SourceName           string
+	ConfigurationSource  string
 }
 
 func (c *Config) loadAndValidate() error {
