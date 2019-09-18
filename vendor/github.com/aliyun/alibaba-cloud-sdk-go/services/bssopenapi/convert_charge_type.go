@@ -78,20 +78,20 @@ type ConvertChargeTypeRequest struct {
 	*requests.RpcRequest
 	Period           requests.Integer `position:"Query" name:"Period"`
 	ProductCode      string           `position:"Query" name:"ProductCode"`
-	InstanceId       string           `position:"Query" name:"InstanceId"`
 	SubscriptionType string           `position:"Query" name:"SubscriptionType"`
 	OwnerId          requests.Integer `position:"Query" name:"OwnerId"`
 	ProductType      string           `position:"Query" name:"ProductType"`
+	InstanceId       string           `position:"Query" name:"InstanceId"`
 }
 
 // ConvertChargeTypeResponse is the response struct for api ConvertChargeType
 type ConvertChargeTypeResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
-	Code      string `json:"Code" xml:"Code"`
-	Message   string `json:"Message" xml:"Message"`
-	Data      Data   `json:"Data" xml:"Data"`
+	RequestId string                  `json:"RequestId" xml:"RequestId"`
+	Success   bool                    `json:"Success" xml:"Success"`
+	Code      string                  `json:"Code" xml:"Code"`
+	Message   string                  `json:"Message" xml:"Message"`
+	Data      DataInConvertChargeType `json:"Data" xml:"Data"`
 }
 
 // CreateConvertChargeTypeRequest creates a request to invoke ConvertChargeType API
@@ -99,7 +99,7 @@ func CreateConvertChargeTypeRequest() (request *ConvertChargeTypeRequest) {
 	request = &ConvertChargeTypeRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "ConvertChargeType", "", "")
+	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "ConvertChargeType", "bssopenapi", "openAPI")
 	return
 }
 

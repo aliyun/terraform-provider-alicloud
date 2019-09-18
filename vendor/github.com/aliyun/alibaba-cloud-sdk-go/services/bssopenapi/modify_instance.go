@@ -77,13 +77,13 @@ func (client *Client) ModifyInstanceWithCallback(request *ModifyInstanceRequest,
 type ModifyInstanceRequest struct {
 	*requests.RpcRequest
 	ProductCode      string                     `position:"Query" name:"ProductCode"`
-	InstanceId       string                     `position:"Query" name:"InstanceId"`
 	ClientToken      string                     `position:"Query" name:"ClientToken"`
 	SubscriptionType string                     `position:"Query" name:"SubscriptionType"`
-	ModifyType       string                     `position:"Query" name:"ModifyType"`
-	Parameter        *[]ModifyInstanceParameter `position:"Query" name:"Parameter"  type:"Repeated"`
 	OwnerId          requests.Integer           `position:"Query" name:"OwnerId"`
 	ProductType      string                     `position:"Query" name:"ProductType"`
+	InstanceId       string                     `position:"Query" name:"InstanceId"`
+	ModifyType       string                     `position:"Query" name:"ModifyType"`
+	Parameter        *[]ModifyInstanceParameter `position:"Query" name:"Parameter"  type:"Repeated"`
 }
 
 // ModifyInstanceParameter is a repeated param struct in ModifyInstanceRequest
@@ -95,11 +95,11 @@ type ModifyInstanceParameter struct {
 // ModifyInstanceResponse is the response struct for api ModifyInstance
 type ModifyInstanceResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
-	Code      string `json:"Code" xml:"Code"`
-	Message   string `json:"Message" xml:"Message"`
-	Data      Data   `json:"Data" xml:"Data"`
+	RequestId string               `json:"RequestId" xml:"RequestId"`
+	Success   bool                 `json:"Success" xml:"Success"`
+	Code      string               `json:"Code" xml:"Code"`
+	Message   string               `json:"Message" xml:"Message"`
+	Data      DataInModifyInstance `json:"Data" xml:"Data"`
 }
 
 // CreateModifyInstanceRequest creates a request to invoke ModifyInstance API
@@ -107,7 +107,7 @@ func CreateModifyInstanceRequest() (request *ModifyInstanceRequest) {
 	request = &ModifyInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "ModifyInstance", "", "")
+	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "ModifyInstance", "bssopenapi", "openAPI")
 	return
 }
 

@@ -80,11 +80,11 @@ type CreateInstanceRequest struct {
 	Period           requests.Integer           `position:"Query" name:"Period"`
 	ClientToken      string                     `position:"Query" name:"ClientToken"`
 	SubscriptionType string                     `position:"Query" name:"SubscriptionType"`
+	OwnerId          requests.Integer           `position:"Query" name:"OwnerId"`
+	ProductType      string                     `position:"Query" name:"ProductType"`
 	RenewPeriod      requests.Integer           `position:"Query" name:"RenewPeriod"`
 	Parameter        *[]CreateInstanceParameter `position:"Query" name:"Parameter"  type:"Repeated"`
 	RenewalStatus    string                     `position:"Query" name:"RenewalStatus"`
-	OwnerId          requests.Integer           `position:"Query" name:"OwnerId"`
-	ProductType      string                     `position:"Query" name:"ProductType"`
 }
 
 // CreateInstanceParameter is a repeated param struct in CreateInstanceRequest
@@ -96,11 +96,11 @@ type CreateInstanceParameter struct {
 // CreateInstanceResponse is the response struct for api CreateInstance
 type CreateInstanceResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
-	Code      string `json:"Code" xml:"Code"`
-	Message   string `json:"Message" xml:"Message"`
-	Data      Data   `json:"Data" xml:"Data"`
+	RequestId string               `json:"RequestId" xml:"RequestId"`
+	Success   bool                 `json:"Success" xml:"Success"`
+	Code      string               `json:"Code" xml:"Code"`
+	Message   string               `json:"Message" xml:"Message"`
+	Data      DataInCreateInstance `json:"Data" xml:"Data"`
 }
 
 // CreateCreateInstanceRequest creates a request to invoke CreateInstance API
@@ -108,7 +108,7 @@ func CreateCreateInstanceRequest() (request *CreateInstanceRequest) {
 	request = &CreateInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "CreateInstance", "", "")
+	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "CreateInstance", "bssopenapi", "openAPI")
 	return
 }
 

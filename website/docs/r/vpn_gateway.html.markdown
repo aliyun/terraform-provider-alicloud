@@ -19,13 +19,25 @@ Provides a VPN gateway resource.
 Basic Usage
 
 ```
+resource "alicloud_vpc" "vpc" {
+  name       = "tf_test_foo"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "vsw" {
+  vpc_id            = "${alicloud_vpc.vpc.id}"
+  cidr_block        = "172.16.0.0/21"
+  availability_zone = "cn-beijing-b"
+}
+
 resource "alicloud_vpn_gateway" "foo" {
   name                 = "vpnGatewayConfig"
-  vpc_id               = "vpc-fakeid"
+  vpc_id               = "${alicloud_vpc.vpc.id}"
   bandwidth            = "10"
   enable_ssl           = true
   instance_charge_type = "PostPaid"
   description          = "test_create_description"
+  vswitch_id           = "${alicloud_vswitch.vsw.id}"
 }
 ```
 ## Argument Reference
@@ -42,6 +54,7 @@ The following arguments are supported:
 * `enable_ssl`  - (Optional) Enable or Disable SSL VPN.  At least one type of VPN should be enabled.
 * `ssl_connections` - (Optional) The max connections of SSL VPN. Default to 5. This field is ignored when enable_ssl is false.
 * `description` - (Optional) The description of the VPN instance.
+* `vswitch_id` - (Optional, ForceNew, Available in v1.56.0+) The VPN belongs the vswitch_id, the field can't be changed.
 
 ## Attributes Reference
 

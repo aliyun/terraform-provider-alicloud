@@ -76,10 +76,10 @@ func (client *Client) DescribeInstanceCrossBackupPolicyWithCallback(request *Des
 // DescribeInstanceCrossBackupPolicyRequest is the request struct for api DescribeInstanceCrossBackupPolicy
 type DescribeInstanceCrossBackupPolicyRequest struct {
 	*requests.RpcRequest
-	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
-	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 }
 
 // DescribeInstanceCrossBackupPolicyResponse is the response struct for api DescribeInstanceCrossBackupPolicy
@@ -105,6 +105,8 @@ type DescribeInstanceCrossBackupPolicyResponse struct {
 	RetentType            int    `json:"RetentType" xml:"RetentType"`
 	Retention             int    `json:"Retention" xml:"Retention"`
 	LockMode              string `json:"LockMode" xml:"LockMode"`
+	RelService            string `json:"RelService" xml:"RelService"`
+	RelServiceId          string `json:"RelServiceId" xml:"RelServiceId"`
 }
 
 // CreateDescribeInstanceCrossBackupPolicyRequest creates a request to invoke DescribeInstanceCrossBackupPolicy API
