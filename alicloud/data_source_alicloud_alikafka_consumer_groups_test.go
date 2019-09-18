@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"os"
 	"testing"
+
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform/helper/acctest"
 )
@@ -32,7 +33,7 @@ func TestAccAlicloudAlikafkaConsumerGroupsDataSource(t *testing.T) {
 
 	var existAlikafkaConsumerGroupsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"consumer_ids.#":                         "1",
+			"consumer_ids.#": "1",
 			"consumer_ids.0": fmt.Sprintf("tf-testacc-alikafkaconsumer%v", rand),
 		}
 	}
