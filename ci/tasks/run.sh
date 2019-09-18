@@ -25,6 +25,8 @@ export DEBUG=terraform
 
 if [[ ${ALICLOUD_REGION} == "cn-shanghai" ]]; then
     export ALICLOUD_INSTANCE_ID=${ALICLOUD_INSTANCE_ID}
+else
+    export ALICLOUD_INSTANCE_ID=""
 fi
 
 echo -e "Account Site: ${ALICLOUD_ACCOUNT_SITE}"
