@@ -290,6 +290,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 					return true
 				},
 			},
+
+			"maintain_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -422,6 +428,23 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	}
+
+	if d.HasChange("maintain_time") {
+		request := rds.CreateModifyDBInstanceMaintainTimeRequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		request.MaintainTime = d.Get("maintain_time").(string)
+		request.ClientToken = buildClientToken(request.GetActionName())
+
+		raw, err := client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+			return client.ModifyDBInstanceMaintainTime(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("maintain_time")
 	}
 
 	if d.IsNewResource() {
@@ -557,6 +580,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("vswitch_id", instance.VSwitchId)
 	d.Set("connection_string", instance.ConnectionString)
 	d.Set("instance_name", instance.DBInstanceDescription)
+	d.Set("maintain_time", instance.MaintainTime)
 
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
 		return WrapError(err)

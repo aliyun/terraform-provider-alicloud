@@ -157,6 +157,16 @@ func TestAccAlicloudDBInstance_mysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"maintain_time": "22:00Z-02:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_time": "22:00Z-02:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_storage": "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
 				}),
 				Check: resource.ComposeTestCheckFunc(

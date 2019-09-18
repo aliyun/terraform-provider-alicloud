@@ -67,6 +67,10 @@ For more information, see [Instance type table](https://www.alibabacloud.com/hel
 * `vpc_auth_mode`- (Optional) Only meaningful if instance_type is `Redis` and network type is VPC. Valid values are `Close`, `Open`. Defaults to `Open`.  `Close` means the redis instance can be accessed without authentication. `Open` means authentication is required.
 * `parameters` - (Optional) Set of parameters needs to be set after instance was launched. Available parameters can refer to the latest docs [Instance configurations table](https://www.alibabacloud.com/help/doc-detail/61209.htm) .
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
+* `maintain_start_time` - (Optional, Available in v1.56.0+) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
+* `maintain_end_time` - (Optional, Available in v1.56.0+) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
+
+-> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
 ## Attributes Reference
 

@@ -114,6 +114,17 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
+			"maintain_start_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+
+			"maintain_end_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -241,6 +252,8 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("instance_charge_type", instance.ChargeType)
 	d.Set("vswitch_id", instance.VSwitchId)
 	d.Set("storage_engine", instance.StorageEngine)
+	d.Set("maintain_start_time", instance.MaintainStartTime)
+	d.Set("maintain_end_time", instance.MaintainEndTime)
 
 	if replication_factor, err := strconv.Atoi(instance.ReplicationFactor); err == nil {
 		d.Set("replication_factor", replication_factor)
@@ -261,6 +274,24 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		d.SetPartial("backup_time")
 		d.SetPartial("backup_period")
+	}
+
+	if d.HasChange("maintain_start_time") || d.HasChange("maintain_end_time") {
+		request := dds.CreateModifyDBInstanceMaintainTimeRequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		request.MaintainStartTime = d.Get("maintain_start_time").(string)
+		request.MaintainEndTime = d.Get("maintain_end_time").(string)
+
+		raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
+			return client.ModifyDBInstanceMaintainTime(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("maintain_start_time")
+		d.SetPartial("maintain_end_time")
 	}
 
 	if d.IsNewResource() {

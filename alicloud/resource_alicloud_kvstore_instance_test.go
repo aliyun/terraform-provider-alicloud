@@ -216,16 +216,27 @@ func TestAccAlicloudKVStoreRedisInstance_classictest(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccKVStoreInstance_classicUpdateMaintainStartTime(string(KVStoreRedis), redisInstanceClassForTestUpdateClass, string(KVStore4Dot0)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_start_time": "02:00Z",
+						"maintain_end_time":   "03:00Z",
+					}),
+				),
+			},
+			{
 				Config: testAccKVStoreInstance_classicUpdateAll(string(KVStoreRedis), redisInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name":  "tf-testAccKVStoreInstance_classicUpdateAll",
-						"instance_class": redisInstanceClassForTest,
-						"engine_version": string(KVStore4Dot0),
-						"security_ips.#": "2",
-						"tags.%":         REMOVEKEY,
-						"tags.Created":   REMOVEKEY,
-						"tags.For":       REMOVEKEY,
+						"instance_name":       "tf-testAccKVStoreInstance_classicUpdateAll",
+						"instance_class":      redisInstanceClassForTest,
+						"engine_version":      string(KVStore4Dot0),
+						"security_ips.#":      "2",
+						"tags.%":              REMOVEKEY,
+						"tags.Created":        REMOVEKEY,
+						"tags.For":            REMOVEKEY,
+						"maintain_start_time": REMOVEKEY,
+						"maintain_end_time":   REMOVEKEY,
 					}),
 				),
 			},
@@ -841,6 +852,32 @@ func testAccKVStoreInstance_classicUpdateTags(instanceType, instanceClass, engin
 		instance_type = "%s"
 		instance_class = "%s"
 		engine_version = "%s"
+		tags = {
+			Created = "TF"
+			For		= "acceptance test"
+		}
+	}
+	`, instanceType, instanceClass, engineVersion)
+}
+func testAccKVStoreInstance_classicUpdateMaintainStartTime(instanceType, instanceClass, engineVersion string) string {
+	return fmt.Sprintf(`
+	data "alicloud_zones" "default" {
+		available_resource_creation = "KVStore"
+	}
+	variable "name" {
+		default = "tf-testAccKVStoreInstance_classic"
+	}
+
+	resource "alicloud_kvstore_instance" "default" {
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+		password = "Yourpassword1234"
+		instance_name  = "${var.name}"
+		security_ips = ["10.0.0.1"]
+		instance_type = "%s"
+		instance_class = "%s"
+		engine_version = "%s"
+		maintain_start_time = "02:00Z"
+		maintain_end_time = "03:00Z"
 		tags = {
 			Created = "TF"
 			For		= "acceptance test"
