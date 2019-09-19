@@ -233,7 +233,20 @@ func resourceAliyunSecurityGroupRuleUpdate(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
-	request.ApiName = "ModifySecurityGroupRule"
+	direction := d.Get("type").(string)
+
+	if direction == string(DirectionIngress) {
+		request.ApiName = "ModifySecurityGroupRule"
+		_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ProcessCommonRequest(request)
+		})
+	} else {
+		request.ApiName = "ModifySecurityGroupEgressRule"
+		_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ProcessCommonRequest(request)
+		})
+	}
+
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.ProcessCommonRequest(request)
 	})
