@@ -465,7 +465,7 @@ func listValueMapChild(indentation int, key string, val reflect.Value) string {
 	var valList []string
 	for i := 0; i < val.Len(); i++ {
 		valList = append(valList, addIndentation(indentation)+key+" "+
-			mapValue(indentation, val.Index(i)))
+			mapValue(indentation, getRealValueType(val.Index(i))))
 	}
 
 	return fmt.Sprintf("%s\n%s", strings.Join(valList, "\n"), addIndentation(indentation))
