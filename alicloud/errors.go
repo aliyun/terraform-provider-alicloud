@@ -349,6 +349,7 @@ const (
 	ESInstanceNotFound         = "InstanceNotFound"
 	ESMustChangeOneResource    = "MustChangeOneResource"
 	ESCssCheckUpdowngradeError = "CssCheckUpdowngradeError"
+	ESConcurrencyConflictError = "ConcurrencyUpdateInstanceConflict"
 
 	// Ddoscoo
 	DdoscooInstanceNotFound = "InstanceNotFound"
