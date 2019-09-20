@@ -1,9 +1,6 @@
 ## 1.55.5 (Unreleased)
 ## 1.55.4 (September 17, 2019)
 
-- fix(ess_alarm):The 'ForceNew' attribute of input parameter 'scaling_group_id' is set 'True'.
-
-
 IMPROVEMENTS:
 
 - improve(table store): set primary key to forcenew ([#1654](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1654))
