@@ -46,6 +46,7 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 			"scaling_group_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"metric_type": {
 				Type:     schema.TypeString,
