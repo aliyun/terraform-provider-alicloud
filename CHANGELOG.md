@@ -1,4 +1,26 @@
-## 1.55.5 (Unreleased)
+## 1.56.0 (Unreleased)
+
+- **New Resource:** `alicloud_alikafka_consumer_group` [GH-1658]
+- **New Data Source:** `alicloud_alikafka_consumer_groups` [GH-1658]
+- **New Resource:** `alicloud_alikafka_topic` [GH-1642]
+- **New Data Source:** `alicloud_alikafka_topics` [GH-1642]
+
+IMPROVEMENTS:
+
+- improve: rds,redis,mongodb support modify maintain time [GH-1665]
+- add missing field ALICLOUD_INSTANCE_ID [GH-1664]
+- improve(sdk): update sdk to v1.60.164 [GH-1663]
+- improve(ci): add ci test for alikafka [GH-1662]
+- improve(provider): rename source_name to configuration_source [GH-1661]
+- improve(cen): Added wait time to avoid CreateCen Operation.Blocking error [GH-1660]
+- improve(provider): add a new field source_name to mark template [GH-1657]
+- improve(vpc): Added retry to avoid ListTagResources Throttling error [GH-1652]
+- update VPNgateway resource vswitchId field [GH-1643]
+
+BUG FIXES:
+
+- fix(testCommon):fix test common bug [GH-1666]
+
 ## 1.55.4 (September 17, 2019)
 
 IMPROVEMENTS:
