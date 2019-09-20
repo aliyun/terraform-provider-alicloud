@@ -1,3 +1,4 @@
+## 1.56.1 (Unreleased)
 ## 1.56.0 (September 20, 2019)
 
 - **New Resource:** `alicloud_alikafka_consumer_group` ([#1658](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1658))
