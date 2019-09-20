@@ -7,6 +7,8 @@
 
 IMPROVEMENTS:
 
+- improve(elasticsearch): Added retry to avoid UpdateInstance ConcurrencyUpdateInstanceConflict error. [GH-1669]
+- fix(security_group_rule):fix description bug  [GH-1668]
 - improve: rds,redis,mongodb support modify maintain time [GH-1665]
 - add missing field ALICLOUD_INSTANCE_ID [GH-1664]
 - improve(sdk): update sdk to v1.60.164 [GH-1663]
@@ -19,6 +21,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix(ess_alarm):The 'ForceNew' attribute of input parameter 'scaling_group_id' is set 'True'. [GH-1671]
 - fix(testCommon):fix test common bug [GH-1666]
 
 ## 1.55.4 (September 17, 2019)
