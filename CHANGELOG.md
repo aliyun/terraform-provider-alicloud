@@ -1,28 +1,28 @@
-## 1.56.0 (Unreleased)
+## 1.56.0 (September 20, 2019)
 
-- **New Resource:** `alicloud_alikafka_consumer_group` [GH-1658]
-- **New Data Source:** `alicloud_alikafka_consumer_groups` [GH-1658]
-- **New Resource:** `alicloud_alikafka_topic` [GH-1642]
-- **New Data Source:** `alicloud_alikafka_topics` [GH-1642]
+- **New Resource:** `alicloud_alikafka_consumer_group` ([#1658](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1658))
+- **New Data Source:** `alicloud_alikafka_consumer_groups` ([#1658](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1658))
+- **New Resource:** `alicloud_alikafka_topic` ([#1642](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1642))
+- **New Data Source:** `alicloud_alikafka_topics` ([#1642](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1642))
 
 IMPROVEMENTS:
 
-- improve(elasticsearch): Added retry to avoid UpdateInstance ConcurrencyUpdateInstanceConflict error. [GH-1669]
-- fix(security_group_rule):fix description bug  [GH-1668]
-- improve: rds,redis,mongodb support modify maintain time [GH-1665]
-- add missing field ALICLOUD_INSTANCE_ID [GH-1664]
-- improve(sdk): update sdk to v1.60.164 [GH-1663]
-- improve(ci): add ci test for alikafka [GH-1662]
-- improve(provider): rename source_name to configuration_source [GH-1661]
-- improve(cen): Added wait time to avoid CreateCen Operation.Blocking error [GH-1660]
-- improve(provider): add a new field source_name to mark template [GH-1657]
-- improve(vpc): Added retry to avoid ListTagResources Throttling error [GH-1652]
-- update VPNgateway resource vswitchId field [GH-1643]
+- improve(elasticsearch): Added retry to avoid UpdateInstance ConcurrencyUpdateInstanceConflict error. ([#1669](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1669))
+- fix(security_group_rule):fix description bug  ([#1668](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1668))
+- improve: rds,redis,mongodb support modify maintain time ([#1665](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1665))
+- add missing field ALICLOUD_INSTANCE_ID ([#1664](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1664))
+- improve(sdk): update sdk to v1.60.164 ([#1663](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1663))
+- improve(ci): add ci test for alikafka ([#1662](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1662))
+- improve(provider): rename source_name to configuration_source ([#1661](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1661))
+- improve(cen): Added wait time to avoid CreateCen Operation.Blocking error ([#1660](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1660))
+- improve(provider): add a new field source_name to mark template ([#1657](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1657))
+- improve(vpc): Added retry to avoid ListTagResources Throttling error ([#1652](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1652))
+- update VPNgateway resource vswitchId field ([#1643](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1643))
 
 BUG FIXES:
 
-- fix(ess_alarm):The 'ForceNew' attribute of input parameter 'scaling_group_id' is set 'True'. [GH-1671]
-- fix(testCommon):fix test common bug [GH-1666]
+- fix(ess_alarm):The 'ForceNew' attribute of input parameter 'scaling_group_id' is set 'True'. ([#1671](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1671))
+- fix(testCommon):fix test common bug ([#1666](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1666))
 
 ## 1.55.4 (September 17, 2019)
 
