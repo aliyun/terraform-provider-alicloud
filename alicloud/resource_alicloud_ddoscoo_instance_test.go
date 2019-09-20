@@ -165,11 +165,11 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"base_bandwidth": "70",
+					"base_bandwidth": "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"base_bandwidth": "70",
+						"base_bandwidth": "60",
 					}),
 				),
 			},
