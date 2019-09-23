@@ -76,6 +76,7 @@ type Config struct {
 	MarketEndpoint        string
 	HBaseEndpoint         string
 	AdbEndpoint           string
+	MaxComputeEndpoint    string
 
 	SkipRegionValidation bool
 	ConfigurationSource  string

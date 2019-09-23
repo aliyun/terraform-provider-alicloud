@@ -29,6 +29,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -125,6 +126,7 @@ type AliyunClient struct {
 	adbconn                      *adb.Client
 	cbnConn                      *cbn.Client
 	kmsConn                      *kms.Client
+	maxcomputeconn               *maxcompute.Client
 }
 
 type ApiVersion string
@@ -1578,4 +1580,36 @@ func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, err
 		client.cbnConn = cbnConn
 	}
 	return do(client.cbnConn)
+}
+
+func (client *AliyunClient) WithMaxComputeClient(do func(*maxcompute.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the MaxCompute client if necessary
+	if client.maxcomputeconn == nil {
+		endpoint := client.config.MaxComputeEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, MAXCOMPUTECode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint == "" {
+			endpoint = "maxcompute.aliyuncs.com"
+		}
+
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(MAXCOMPUTECode), endpoint)
+		}
+		maxcomputeconn, err := maxcompute.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(false))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the MaxCompute client: %#v", err)
+		}
+
+		maxcomputeconn.AppendUserAgent(Terraform, terraformVersion)
+		client.maxcomputeconn = maxcomputeconn
+	}
+
+	return do(client.maxcomputeconn)
 }
