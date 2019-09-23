@@ -464,6 +464,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_account":                         resourceAlicloudAdbAccount(),
 			"alicloud_cen_flowlog":                         resourceAlicloudCenFlowlog(),
 			"alicloud_kms_secret":                          resourceAlicloudKmsSecret(),
+			"alicloud_maxcompute_project":                  resourceAlicloudMaxComputeProject(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -592,6 +593,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.MarketEndpoint = strings.TrimSpace(endpoints["market"].(string))
 		config.AdbEndpoint = strings.TrimSpace(endpoints["adb"].(string))
 		config.CbnEndpoint = strings.TrimSpace(endpoints["cbn"].(string))
+		config.MaxComputeEndpoint = strings.TrimSpace(endpoints["maxcompute"].(string))
 	}
 
 	if config.RamRoleArn != "" {
