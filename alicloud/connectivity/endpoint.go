@@ -47,6 +47,7 @@ const (
 	ACTIONTRAILCode   = ServiceCode("ACTIONTRAIL")
 	BSSOPENAPICode    = ServiceCode("BSSOPENAPI")
 	DDOSCOOCode       = ServiceCode("DDOSCOO")
+	DDOSBGPCode       = ServiceCode("DDOSBGP")
 )
 
 //xml
