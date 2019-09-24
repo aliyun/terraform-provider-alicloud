@@ -49,6 +49,20 @@ const (
 	Postpaid = PayType("Postpaid")
 )
 
+type DdosbgpInsatnceType string
+
+const (
+	Enterprise   = DdosbgpInsatnceType("Enterprise")
+	Professional = DdosbgpInsatnceType("Professional")
+)
+
+type DdosbgpInstanceIpType string
+
+const (
+	IPv4 = DdosbgpInstanceIpType("IPv4")
+	IPv6 = DdosbgpInstanceIpType("IPv6")
+)
+
 type NetType string
 
 const (

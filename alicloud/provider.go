@@ -208,6 +208,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_snat_entries":                   dataSourceAlicloudSnatEntries(),
 			"alicloud_forward_entries":                dataSourceAlicloudForwardEntries(),
 			"alicloud_ddoscoo_instances":              dataSourceAlicloudDdoscooInstances(),
+			"alicloud_ddosbgp_instances":              dataSourceAlicloudDdosbgpInstances(),
 			"alicloud_ess_scaling_groups":             dataSourceAlicloudEssScalingGroups(),
 			"alicloud_ess_scaling_rules":              dataSourceAlicloudEssScalingRules(),
 			"alicloud_ess_scaling_configurations":     dataSourceAlicloudEssScalingConfigurations(),
@@ -364,6 +365,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_actiontrail":                         resourceAlicloudActiontrail(),
 			"alicloud_cas_certificate":                     resourceAlicloudCasCertificate(),
 			"alicloud_ddoscoo_instance":                    resourceAlicloudDdoscooInstance(),
+			"alicloud_ddosbgp_instance":                    resourceAlicloudDdosbgpInstance(),
 			"alicloud_network_acl":                         resourceAliyunNetworkAcl(),
 			"alicloud_network_acl_attachment":              resourceAliyunNetworkAclAttachment(),
 			"alicloud_network_acl_entries":                 resourceAliyunNetworkAclEntries(),
@@ -495,6 +497,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ActionTrailEndpoint = strings.TrimSpace(endpoints["actiontrail"].(string))
 		config.BssOpenApiEndpoint = strings.TrimSpace(endpoints["bssopenapi"].(string))
 		config.DdoscooEndpoint = strings.TrimSpace(endpoints["ddoscoo"].(string))
+		config.DdosbgpEndpoint = strings.TrimSpace(endpoints["ddosbgp"].(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
@@ -628,6 +631,8 @@ func init() {
 		"bssopenapi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom BSSOPENAPI endpoints.",
 
 		"ddoscoo_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DDOSCOO endpoints.",
+
+		"ddosbgp_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DDOSBGP endpoints.",
 	}
 }
 
@@ -888,6 +893,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["ddoscoo_endpoint"],
 				},
+				"ddosbgp": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ddosbgp_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -931,6 +942,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cas"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["bssopenapi"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ddoscoo"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ddosbgp"].(string)))
 	return hashcode.String(buf.String())
 }
 

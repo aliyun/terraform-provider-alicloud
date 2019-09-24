@@ -3,6 +3,8 @@ package alicloud
 import (
 	"strings"
 
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+
 	"fmt"
 
 	"log"
@@ -10,7 +12,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
-	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/common"
@@ -354,6 +355,10 @@ const (
 	// Ddoscoo
 	DdoscooInstanceNotFound = "InstanceNotFound"
 	InvalidDdoscooInstance  = "ddos_coop3301"
+	InvalidDdosbgpInstance  = "InvalidInstance"
+
+	// Ddosbgp
+	DdosbgpInstanceNotFound = "InstanceNotFound"
 
 	//nacl
 	NetworkAclNotFound = "InvalidNetworkAcl.NotFound"

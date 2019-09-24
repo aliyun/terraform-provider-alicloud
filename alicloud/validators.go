@@ -1625,6 +1625,11 @@ func validateDdoscooInstanceName(v interface{}, k string) (ws []string, errors [
 	return
 }
 
+func validateDdosbgpInstanceName(v interface{}, k string) (ws []string, errors []error) {
+	validateStringLengthInRange(1, 64)
+	return
+}
+
 func validateLaunchTemplateVersionDescription(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) < 2 || len(value) > 256 {

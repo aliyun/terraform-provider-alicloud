@@ -60,7 +60,7 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (v ddoscoo.Insta
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ddoscoo.DescribeInstanceSpecsResponse)
 	if len(resp.InstanceSpecs) == 0 || resp.InstanceSpecs[0].InstanceId != id {
-		return v, WrapErrorf(Error(GetNotFoundMessage("Ddoscoo Instance", id)), NotFoundMsg, ProviderERROR)
+		return v, WrapErrorf(Error(GetNotFoundMessage("DdoscooInstanceSpec", id)), NotFoundMsg, ProviderERROR)
 	}
 
 	v = resp.InstanceSpecs[0]
