@@ -27,7 +27,7 @@ data "alicloud_instance_types" "type" {
   memory_size       = 2
 }
 data "alicloud_images" "images" {
-  name_regex  = "^ubuntu_14.*_64"
+  name_regex  = "^ubuntu_18.*_64"
   most_recent = true
   owners      = "system"
 }
