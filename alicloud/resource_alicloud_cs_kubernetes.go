@@ -22,7 +22,8 @@ const (
 	KubernetesClusterNetworkTypeFlannel = "flannel"
 	KubernetesClusterNetworkTypeTerway  = "terway"
 
-	KubernetesClusterLoggingTypeSLS = "SLS"
+	KubernetesClusterLoggingTypeSLS       = "SLS"
+	KubernetesClusterLoggingTypeLogtailDS = "logtail-ds"
 )
 
 var (
@@ -1142,6 +1143,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		creationArgs.WorkerDataDiskCategory = v.(string)
 		creationArgs.WorkerDataDisk = true
 		creationArgs.WorkerDataDiskSize = int64(d.Get("worker_data_disk_size").(int))
+		creationArgs.WorkerDataDiskCategory = d.Get("worker_data_disk_category").(string)
 	}
 
 	if v, ok := d.GetOk("master_instance_charge_type"); ok {
@@ -1184,7 +1186,7 @@ func parseKubernetesClusterLogConfig(d *schema.ResourceData) (string, string, er
 		if ok && config != nil {
 			loggingType = config["type"].(string)
 			switch loggingType {
-			case KubernetesClusterLoggingTypeSLS:
+			case KubernetesClusterLoggingTypeSLS, KubernetesClusterLoggingTypeLogtailDS:
 				if config["project"].(string) == "" {
 					return "", "", WrapError(Error("SLS project name must be provided when choosing SLS as log_config."))
 				}
@@ -1192,6 +1194,8 @@ func parseKubernetesClusterLogConfig(d *schema.ResourceData) (string, string, er
 					return "", "", WrapError(Error("SLS project name must not be `None`."))
 				}
 				slsProjectName = config["project"].(string)
+				//rename log controller name
+				loggingType = KubernetesClusterLoggingTypeLogtailDS
 				break
 			default:
 				break

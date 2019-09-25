@@ -229,6 +229,26 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"log_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:         schema.TypeString,
+							ValidateFunc: validateAllowedStringValue([]string{KubernetesClusterLoggingTypeSLS}),
+							Required:     true,
+						},
+						"project": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+				DiffSuppressFunc: csForceUpdateSuppressFunc,
+			},
 			"worker_nodes": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -353,6 +373,8 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 		}
 		if _, ok := d.GetOk("worker_data_disk_category"); ok {
 			args.WorkerDataDisk = true
+			args.WorkerDataDiskCategory = d.Get("worker_data_disk_category").(string)
+			args.WorkerDataDiskSize = int64(d.Get("worker_data_disk_size").(int))
 		}
 
 		var requestInfo *cs.Client
@@ -661,6 +683,11 @@ func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		}
 	}
 
+	loggingType, slsProjectName, err := parseKubernetesClusterLogConfig(d)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
 	creationArgs := &cs.KubernetesCreationArgs{
 		Name:                     clusterName,
 		ClusterType:              "ManagedKubernetes",
@@ -684,12 +711,15 @@ func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		CloudMonitorFlags:        d.Get("install_cloud_monitor").(bool),
 		PublicSLB:                d.Get("slb_internet_enabled").(bool),
 		ZoneId:                   zoneId,
+		LoggingType:              loggingType,
+		SLSProjectName:           slsProjectName,
 	}
 
 	if v, ok := d.GetOk("worker_data_disk_category"); ok {
 		creationArgs.WorkerDataDiskCategory = v.(string)
 		creationArgs.WorkerDataDisk = true
 		creationArgs.WorkerDataDiskSize = int64(d.Get("worker_data_disk_size").(int))
+		creationArgs.WorkerDataDiskCategory = d.Get("worker_data_disk_category").(string)
 	}
 
 	if v, ok := d.GetOk("worker_instance_charge_type"); ok {
