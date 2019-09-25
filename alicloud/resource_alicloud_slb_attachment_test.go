@@ -183,7 +183,7 @@ data "alicloud_instance_types" "default" {
 	memory_size       = 2
 }
 data "alicloud_images" "default" {
-    name_regex = "^ubuntu_14.*_64"
+    name_regex = "^ubuntu_18.*_64"
 	most_recent = true
 	owners = "system"
 }
@@ -244,7 +244,7 @@ data "alicloud_instance_types" "default" {
 	memory_size       = 2
 }
 data "alicloud_images" "default" {
-    name_regex = "^ubuntu_14.*_64"
+    name_regex = "^ubuntu_18.*_64"
 	most_recent = true
 	owners = "system"
 }
@@ -304,7 +304,7 @@ data "alicloud_instance_types" "default" {
 	memory_size       = 2
 }
 data "alicloud_images" "default" {
-    name_regex = "^ubuntu_14.*_64"
+    name_regex = "^ubuntu_18.*_64"
 	most_recent = true
 	owners = "system"
 }
@@ -364,7 +364,7 @@ data "alicloud_instance_types" "default" {
 	memory_size       = 2
 }
 data "alicloud_images" "default" {
-    name_regex = "^ubuntu_14.*_64"
+    name_regex = "^ubuntu_18.*_64"
 	most_recent = true
 	owners = "system"
 }
@@ -426,7 +426,7 @@ data "alicloud_instance_types" "default" {
 	memory_size       = 2
 }
 data "alicloud_images" "default" {
-    name_regex = "^ubuntu_14.*_64"
+    name_regex = "^ubuntu_18.*_64"
 	most_recent = true
 	owners = "system"
 }
@@ -486,7 +486,7 @@ data "alicloud_instance_types" "default" {
 	memory_size       = 2
 }
 data "alicloud_images" "default" {
-    name_regex = "^ubuntu_14.*_64"
+    name_regex = "^ubuntu_18.*_64"
 	most_recent = true
 	owners = "system"
 }
@@ -546,7 +546,7 @@ data "alicloud_instance_types" "default" {
 	memory_size       = 2
 }
 data "alicloud_images" "default" {
-    name_regex = "^ubuntu_14.*_64"
+    name_regex = "^ubuntu_18.*_64"
 	most_recent = true
 	owners = "system"
 }

@@ -18,7 +18,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^ubuntu_14",
+		"image_id":          REGEXMATCH + "^ubuntu_18",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -266,7 +266,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 						"scaling_group_id":                 CHECKSET,
 						"instance_type":                    CHECKSET,
 						"security_group_id":                CHECKSET,
-						"image_id":                         REGEXMATCH + "^ubuntu_14",
+						"image_id":                         REGEXMATCH + "^ubuntu_18",
 						"override":                         "true",
 					}),
 				),
@@ -283,7 +283,7 @@ func TestAccAlicloudEssScalingConfigurationMulti(t *testing.T) {
 		"scaling_group_id":  CHECKSET,
 		"instance_type":     CHECKSET,
 		"security_group_id": CHECKSET,
-		"image_id":          REGEXMATCH + "^ubuntu_14",
+		"image_id":          REGEXMATCH + "^ubuntu_18",
 		"override":          "false",
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
