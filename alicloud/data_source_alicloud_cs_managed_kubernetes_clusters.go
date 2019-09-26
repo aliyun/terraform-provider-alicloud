@@ -434,6 +434,17 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 		}
 		mapping["worker_nodes"] = workerNodes
 
+		if ct.Parameters.LoggingType != "None" {
+			logConfig := map[string]interface{}{}
+			logConfig["type"] = ct.Parameters.LoggingType
+			if ct.Parameters.SLSProjectName == "None" {
+				logConfig["project"] = ""
+			} else {
+				logConfig["project"] = ct.Parameters.SLSProjectName
+			}
+			mapping["log_config"] = []map[string]interface{}{logConfig}
+		}
+
 		var response interface{}
 		if err := invoker.Run(func() error {
 			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {

@@ -137,7 +137,7 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                            name,
+						"name": name,
 						"http_service_config.0.address":   "http://apigateway-backend.alicloudapi.com:8080",
 						"http_service_config.0.method":    "GET",
 						"http_service_config.0.path":      "/web/cloudapi",
@@ -316,7 +316,7 @@ func TestAccAlicloudApigatewayApi_vpc(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                                name,
+						"name": name,
 						"http_vpc_service_config.0.name":      name,
 						"http_vpc_service_config.0.method":    "GET",
 						"http_vpc_service_config.0.path":      "/web/cloudapi/vpc",
@@ -383,7 +383,7 @@ func TestAccAlicloudApigatewayApi_fc(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                              name,
+						"name": name,
 						"fc_service_config.0.region":        defaultRegionToTest,
 						"fc_service_config.0.function_name": name + "Func",
 						"fc_service_config.0.service_name":  name,

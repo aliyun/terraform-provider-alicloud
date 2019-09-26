@@ -199,8 +199,8 @@ func scalingGroupsDescriptionAttribute(d *schema.ResourceData, scalingGroups []e
 	var s = make([]map[string]interface{}, 0)
 	for _, scalingGroup := range scalingGroups {
 		mapping := map[string]interface{}{
-			"id":                           scalingGroup.ScalingGroupId,
-			"name":                         scalingGroup.ScalingGroupName,
+			"id":   scalingGroup.ScalingGroupId,
+			"name": scalingGroup.ScalingGroupName,
 			"active_scaling_configuration": scalingGroup.ActiveScalingConfigurationId,
 			"launch_template_id":           scalingGroup.LaunchTemplateId,
 			"launch_template_version":      scalingGroup.LaunchTemplateVersion,

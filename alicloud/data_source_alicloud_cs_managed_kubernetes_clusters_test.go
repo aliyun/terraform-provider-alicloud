@@ -14,7 +14,7 @@ func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 	resourceId := "data.alicloud_cs_managed_kubernetes_clusters.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
-		fmt.Sprintf("tf-testAccManagedK8s-%d", rand),
+		fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
 		dataSourceCSManagedKubernetesClustersConfigDependence)
 
 	idsConf := dataSourceTestAccConfig{
@@ -57,10 +57,10 @@ func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 			"ids.#":                        "1",
 			"ids.0":                        CHECKSET,
 			"names.#":                      "1",
-			"names.0":                      REGEXMATCH + fmt.Sprintf("tf-testAccManagedK8s-%d", rand),
+			"names.0":                      REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
 			"clusters.#":                   "1",
 			"clusters.0.id":                CHECKSET,
-			"clusters.0.name":              REGEXMATCH + fmt.Sprintf("tf-testAccManagedK8s-%d", rand),
+			"clusters.0.name":              REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
 			"clusters.0.availability_zone": CHECKSET,
 			"clusters.0.security_group_id": CHECKSET,
 			"clusters.0.nat_gateway_id":    CHECKSET,
@@ -131,6 +131,10 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   install_cloud_monitor = true
   slb_internet_enabled = true
   worker_disk_category  = "cloud_efficiency"
+  log_config {
+    type = "SLS"
+    project = "${var.name}-sls"
+  }
 }
 `, name)
 }
