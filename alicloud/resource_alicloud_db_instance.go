@@ -35,10 +35,9 @@ func resourceAlicloudDBInstance() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"engine": {
-				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{string(MySQL), string(SQLServer), string(PostgreSQL), string(PPAS)}),
-				ForceNew:     true,
-				Required:     true,
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Required: true,
 			},
 			"engine_version": {
 				Type: schema.TypeString,
