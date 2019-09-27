@@ -346,11 +346,12 @@ const (
 	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
 
 	// Elasticsearch
-	InstanceActivating         = "InstanceActivating"
-	ESInstanceNotFound         = "InstanceNotFound"
-	ESMustChangeOneResource    = "MustChangeOneResource"
-	ESCssCheckUpdowngradeError = "CssCheckUpdowngradeError"
-	ESConcurrencyConflictError = "ConcurrencyUpdateInstanceConflict"
+	InstanceActivating             = "InstanceActivating"
+	ESInstanceNotFound             = "InstanceNotFound"
+	ESMustChangeOneResource        = "MustChangeOneResource"
+	ESCssCheckUpdowngradeError     = "CssCheckUpdowngradeError"
+	ESConcurrencyConflictError     = "ConcurrencyUpdateInstanceConflict"
+	ESNotSupportCurrentActionError = "InstanceStatusNotSupportCurrentAction"
 
 	// Ddoscoo
 	DdoscooInstanceNotFound = "InstanceNotFound"
