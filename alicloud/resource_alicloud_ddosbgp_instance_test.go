@@ -128,7 +128,7 @@ func TestAccAlicloudDdosbgpInstance_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":           name,
 					"base_bandwidth": "20",
-					"bandwidth":      "101",
+					"bandwidth":      "201",
 					"ip_count":       "100",
 					"ip_type":        "IPv4",
 				}),
@@ -161,7 +161,7 @@ func TestAccAlicloudDdosbgpInstance_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":           name,
 					"base_bandwidth": "20",
-					"bandwidth":      "101",
+					"bandwidth":      "201",
 					"ip_count":       "100",
 					"ip_type":        "IPv4",
 				}),
@@ -169,7 +169,7 @@ func TestAccAlicloudDdosbgpInstance_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":           name,
 						"base_bandwidth": "20",
-						"bandwidth":      "101",
+						"bandwidth":      "201",
 						"ip_count":       "100",
 						"ip_type":        "IPv4",
 					}),
@@ -211,7 +211,7 @@ func TestAccAlicloudDdosbgpInstance_multi(t *testing.T) {
 					"count":          "10",
 					"name":           name + "${count.index}",
 					"base_bandwidth": "20",
-					"bandwidth":      "101",
+					"bandwidth":      "201",
 					"ip_count":       "100",
 					"ip_type":        "IPv4",
 				}),
@@ -233,9 +233,8 @@ func resourceDdosbgpInstanceDependence(name string) string {
 }
 
 var ddosbgpInstanceBasicMap = map[string]string{
-	"name":           CHECKSET,
-	"base_bandwidth": "20",
-	"bandwidth":      "101",
-	"ip_count":       "100",
-	"ip_type":        "IPv4",
+	"name":      CHECKSET,
+	"bandwidth": "201",
+	"ip_count":  "100",
+	"ip_type":   "IPv4",
 }
