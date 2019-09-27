@@ -7,35 +7,35 @@ description: |-
 ---
 
 # alicloud\_emr\_cluster
+
 Provides a EMR Cluster resource. With this you can create, read, and release  EMR Cluster. 
 
 -> **NOTE:** Available in 1.57.0+.
 
 ## Example Usage
+
 #### 1. Create A Cluster
-***main.tf***
+
 ```
-// Zones data source for availability_zone
 data "alicloud_zones" "default" {
-    available_resource_creation = "emr"
+	available_resource_creation= "VSwitch"
 }
 
-resource "alicloud_vpc" "vpc" {
-    name       = "${var.vpc_name}"
-    cidr_block = "172.16.0.0/16"
+resource "alicloud_vpc" "default" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "default" {
-    name        = "${var.security_group_name}"
-    vpc_id      = "${alicloud_vpc.vpc.id}"
-}
-
-// VSwitch Resource for Module
-resource "alicloud_vswitch" "vswitch" {
-    availability_zone = "${var.availability_zone}"
-    name              = "${var.vswitch_name}"
-    cidr_block        = "${var.vswitch_cidr}"
-    vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
 resource "alicloud_emr_cluster" "default" {
@@ -83,11 +83,11 @@ resource "alicloud_emr_cluster" "default" {
 
     high_availability_enable = true
     option_software_list = ["HBASE","PRESTO",]
-    zone_id = "cn-huhehaote-a"
-    security_group_id = var.security_group_id == "" ? alicloud_security_group.default[0].id : var.security_group_id
+    zone_id = "${data.alicloud_zones.default.zones.0.id}"
+    security_group_id = "${alicloud_security_group.default.id}"
     is_open_public_ip = true
     charge_type = "PostPaid"
-    vswitch_id = var.vswitch_id == "" ? alicloud_vswitch.vswitch[0].id : var.vswitch_id
+    vswitch_id = "${alicloud_vswitch.default.id}"
     user_defined_emr_ecs_role = "EMRUserDefineRole-Role1"
     ssh_enable = true
     master_pwd = "ABCtest1234!"
@@ -98,34 +98,32 @@ resource "alicloud_emr_cluster" "default" {
 The hosts of EMR Cluster are orginized as host group. Scaling up/down is operating host group. 
 
 In the case of scaling up cluster, we should add the node_count of some host group. 
--> **NOTE:** 
-  * Scaling up is only applicable to CORE and TASK group.
-  * Cost time of scaling up will vary with the number of scaling-up nodes. 
-  * Scaling down is only applicable to TASK group. If you want to scale down CORE group, please submit tickets or contact EMR support team.
+
+-> **NOTE:** Scaling up is only applicable to CORE and TASK group. Cost time of scaling up will vary with the number of scaling-up nodes. 
+Scaling down is only applicable to TASK group. If you want to scale down CORE group, please submit tickets or contact EMR support team.
 
 As the following case, we scale up the TASK group 2 nodes by increasing host_group.node_count by 2.
+
 ```
-// Zones data source for availability_zone
 data "alicloud_zones" "default" {
-    available_resource_creation = "emr"
+	available_resource_creation= "VSwitch"
 }
 
-resource "alicloud_vpc" "vpc" {
-    name       = "${var.vpc_name}"
-    cidr_block = "172.16.0.0/16"
+resource "alicloud_vpc" "default" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "default" {
-    name        = "${var.security_group_name}"
-    vpc_id      = "${alicloud_vpc.vpc.id}"
-}
-
-// VSwitch Resource for Module
-resource "alicloud_vswitch" "vswitch" {
-    availability_zone = "${var.availability_zone}"
-    name              = "${var.vswitch_name}"
-    cidr_block        = "${var.vswitch_cidr}"
-    vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
 resource "alicloud_emr_cluster" "default" {
@@ -173,11 +171,11 @@ resource "alicloud_emr_cluster" "default" {
 
     high_availability_enable = true
     option_software_list = ["HBASE","PRESTO",]
-    zone_id = "cn-huhehaote-a"
-    security_group_id = var.security_group_id == "" ? alicloud_security_group.default[0].id : var.security_group_id
+    zone_id = "${data.alicloud_zones.default.zones.0.id}"
+    security_group_id = "${alicloud_security_group.default.id}"
     is_open_public_ip = true
     charge_type = "PostPaid"
-    vswitch_id = var.vswitch_id == "" ? alicloud_vswitch.vswitch[0].id : var.vswitch_id
+    vswitch_id = "${alicloud_vswitch.default.id}"
     user_defined_emr_ecs_role = "EMRUserDefineRole-Role1"
     ssh_enable = true
     master_pwd = "ABCtest1234!"
@@ -185,31 +183,31 @@ resource "alicloud_emr_cluster" "default" {
 ```
 
 #### 3. Scale Down
+
 In the case of scaling down a cluster, we need to specified the host group and the instance list. 
 
 The following is an example. We scale down the cluster by decreasing the node count by 2, and specifying the scale-down instance list.
+
 ```
-// Zones data source for availability_zone
 data "alicloud_zones" "default" {
-    available_resource_creation = "emr"
+	available_resource_creation= "VSwitch"
 }
 
-resource "alicloud_vpc" "vpc" {
-    name       = "${var.vpc_name}"
-    cidr_block = "172.16.0.0/16"
+resource "alicloud_vpc" "default" {
+  name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
 }
 
 resource "alicloud_security_group" "default" {
-    name        = "${var.security_group_name}"
-    vpc_id      = "${alicloud_vpc.vpc.id}"
-}
-
-// VSwitch Resource for Module
-resource "alicloud_vswitch" "vswitch" {
-    availability_zone = "${var.availability_zone}"
-    name              = "${var.vswitch_name}"
-    cidr_block        = "${var.vswitch_cidr}"
-    vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
 resource "alicloud_emr_cluster" "default" {
@@ -253,16 +251,16 @@ resource "alicloud_emr_cluster" "default" {
         disk_count = "4"
         sys_disk_type = "CLOUD_SSD"
         sys_disk_capacity = "80"
-        instance_list = "[\"instance_id1\", \"instance_id2\"]"
+        instance_list = "[\"instance_id1\",\"instance_id2\"]"
     }
 
     high_availability_enable = true
     option_software_list = ["HBASE","PRESTO",]
-    zone_id = "cn-huhehaote-a"
-    security_group_id = var.security_group_id == "" ? alicloud_security_group.default[0].id : var.security_group_id
+    zone_id = "${data.alicloud_zones.default.zones.0.id}"
+    security_group_id = "${alicloud_security_group.default.id}"
     is_open_public_ip = true
     charge_type = "PostPaid"
-    vswitch_id = var.vswitch_id == "" ? alicloud_vswitch.vswitch[0].id : var.vswitch_id
+    vswitch_id = "${alicloud_vswitch.default.id}"
     user_defined_emr_ecs_role = "EMRUserDefineRole-Role1"
     ssh_enable = true
     master_pwd = "ABCtest1234!"
@@ -271,6 +269,7 @@ resource "alicloud_emr_cluster" "default" {
 
 
 ## Argument Reference
+
 The following arguments are supported:
 
 * `name` - (Required) The name of emr cluster. The name length must be less than 64. Supported characters: chinese character, english character, number, "-", "_".
@@ -293,7 +292,9 @@ The following arguments are supported:
 * `host_group` - (Optional) Groups of Host, You can specify MASTER as a group, CORE as a group (just like the above example).
 
 #### Block host_group
+
 The host_group mapping supports the following: 
+
 * `host_group_name` - (Required, ForceNew) host group name.
 * `host_group_type` - (Required) host group type, supported value: MASTER, CORE or TASK.
 * `charge_type` - (Optional) Charge Type for this group of hosts: PostPaid or PrePaid. If this is not specified, charge type will follow global charge_type value.
