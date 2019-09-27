@@ -1451,7 +1451,9 @@ func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, err
 		}
 		emrConn.AppendUserAgent(Terraform, terraformVersion)
 		emrConn.AppendUserAgent(Provider, providerVersion)
-		emrConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		if client.config.ConfigurationSource != "" {
+			emrConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		}
 		client.emrconn = emrConn
 	}
 

@@ -3,10 +3,11 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/resource"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/hashicorp/terraform/helper/schema"
