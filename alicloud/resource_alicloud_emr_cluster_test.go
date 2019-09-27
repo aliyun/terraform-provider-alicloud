@@ -99,7 +99,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccEmrClusterConfig%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrClusterConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrClusterCommonConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -119,10 +119,10 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 					"high_availability_enable":  "true",
 					"option_software_list":      []string{"HBASE", "PRESTO"},
 					"zone_id":                   "cn-huhehaote-a",
-					"security_group_id":         "sg-hp39gm8n17f3u0iiv4e7",
+					"security_group_id":         "${alicloud_security_group.default.id}",
 					"is_open_public_ip":         "true",
 					"charge_type":               "PostPaid",
-					"vswitch_id":                "vsw-hp34pmwcw8i5was4sn07h",
+					"vswitch_id":                "${alicloud_vswitch.default.id}",
 					"user_defined_emr_ecs_role": "EMRUserDefineRole-Role1",
 					"ssh_enable":                "true",
 					"master_pwd":                "ABCtest1234!",
@@ -176,7 +176,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccEmrClusterConfig%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrClusterConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrClusterCommonConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -196,10 +196,10 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 					"high_availability_enable":  "true",
 					"option_software_list":      []string{"HBASE", "PRESTO"},
 					"zone_id":                   "cn-huhehaote-a",
-					"security_group_id":         "sg-hp39gm8n17f3u0iiv4e7",
+					"security_group_id":         "${alicloud_security_group.default.id}",
 					"is_open_public_ip":         "true",
 					"charge_type":               "PostPaid",
-					"vswitch_id":                "vsw-hp34pmwcw8i5was4sn07h",
+					"vswitch_id":                "${alicloud_vswitch.default.id}",
 					"user_defined_emr_ecs_role": "EMRUserDefineRole-Role1",
 					"ssh_enable":                "true",
 					"master_pwd":                "ABCtest1234!",
@@ -241,10 +241,11 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 	})
 }
 
-func resourceEmrClusterConfigDependence(name string) string {
+func resourceEmrClusterCommonConfigDependence(name string) string {
 	return fmt.Sprintf(`
+	%s
 	variable "name" {
 		default = "%s"
 	}
-	`, name)
+	`, EmrCommonTestCase, name)
 }
