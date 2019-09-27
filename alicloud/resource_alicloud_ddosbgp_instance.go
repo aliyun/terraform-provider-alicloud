@@ -36,12 +36,13 @@ func resourceAlicloudDdosbgpInstance() *schema.Resource {
 				ValidateFunc: validateDdosbgpInstanceName,
 			},
 			"base_bandwidth": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:     schema.TypeInt,
+				Optional: true,
 				ForceNew: true,
+				Default:  20,
 			},
 			"bandwidth": &schema.Schema{
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
 			},
@@ -52,15 +53,15 @@ func resourceAlicloudDdosbgpInstance() *schema.Resource {
 				ValidateFunc: validateAllowedStringValue([]string{string(IPv4), string(IPv6)}),
 			},
 			"ip_count": &schema.Schema{
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
 			},
 			"period": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validateAllowedIntValue([]int{1, 2, 3}),
+				ValidateFunc: validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:     true,
-				Default:      1,
+				Default:      12,
 				ForceNew:     true,
 			},
 		},
@@ -118,10 +119,10 @@ func resourceAlicloudDdosbgpInstanceRead(d *schema.ResourceData, meta interface{
 
 	d.Set("name", insInfo.Remark)
 	d.Set("region", specInfo.Region)
-	d.Set("bandwidth", strconv.Itoa(specInfo.PackConfig.PackAdvThre))
-	d.Set("base_bandwidth", strconv.Itoa(specInfo.PackConfig.PackBasicThre))
+	d.Set("bandwidth", specInfo.PackConfig.PackAdvThre)
+	d.Set("base_bandwidth", specInfo.PackConfig.PackBasicThre)
 	d.Set("ip_type", insInfo.IpType)
-	d.Set("ip_count", strconv.Itoa(specInfo.PackConfig.IpSpec))
+	d.Set("ip_count", specInfo.PackConfig.IpSpec)
 	d.Set("type", ddosbgpInstanceType)
 
 	return nil
@@ -185,6 +186,10 @@ func buildDdosbgpCreateRequest(region string, d *schema.ResourceData, meta inter
 		ddosbgpInstanceType = "0"
 	}
 
+	baseBandWidth := d.Get("base_bandwidth").(int)
+	bandWidth := d.Get("bandwidth").(int)
+	ipCount := d.Get("ip_count").(int)
+
 	ddosbgpInstanceIpType := "v4"
 	if d.Get("ip_type").(string) == string(IPv6) {
 		ddosbgpInstanceIpType = "v6"
@@ -205,15 +210,15 @@ func buildDdosbgpCreateRequest(region string, d *schema.ResourceData, meta inter
 		},
 		{
 			Code:  "BaseBandwidth",
-			Value: d.Get("base_bandwidth").(string),
+			Value: strconv.Itoa(baseBandWidth),
 		},
 		{
 			Code:  "Bandwidth",
-			Value: d.Get("bandwidth").(string),
+			Value: strconv.Itoa(bandWidth),
 		},
 		{
 			Code:  "IpCount",
-			Value: d.Get("ip_count").(string),
+			Value: strconv.Itoa(ipCount),
 		},
 	}
 
