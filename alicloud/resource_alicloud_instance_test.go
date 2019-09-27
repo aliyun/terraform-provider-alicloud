@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"testing"
 
 	"strings"
@@ -168,16 +169,18 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 					"spot_strategy":                 "NoSpot",
 					"spot_price_limit":              "0",
 					"security_enhancement_strategy": "Active",
+					"resource_group_id":             "${var.resource_group_id}",
 					// The specified parameter "UserData" only support the vpc and IoOptimized Instance.
 					//"user_data" :                    "I_am_user_data",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name": name,
-						"key_name":      name,
-						"role_name":     NOSET,
-						"vswitch_id":    REMOVEKEY,
-						"user_data":     REMOVEKEY,
+						"instance_name":     name,
+						"key_name":          name,
+						"role_name":         NOSET,
+						"vswitch_id":        REMOVEKEY,
+						"user_data":         REMOVEKEY,
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -1439,6 +1442,11 @@ data "alicloud_instance_types" "default" {
   cpu_core_count    = 1
   memory_size       = 2
 }
+
+variable "resource_group_id" {
+		default = "%s"
+	}
+
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu*"
   owners      = "system"
@@ -1468,7 +1476,7 @@ resource "alicloud_key_pair" "default" {
 	key_name = "${var.name}"
 }
 
-`, name)
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), name)
 }
 
 func resourceInstanceTypeConfigDependence(name string) string {

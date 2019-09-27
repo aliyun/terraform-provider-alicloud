@@ -181,7 +181,8 @@ func TestAccAlicloudKeyPairBasic(t *testing.T) {
 				Config: testAccKeyPairConfig_public_key(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"public_key": "ssh-rsa AAAAB3Nza12345678qwertyuudsfsg",
+						"public_key":        "ssh-rsa AAAAB3Nza12345678qwertyuudsfsg",
+						"resource_group_id": "",
 					}),
 				),
 			},
@@ -239,16 +240,17 @@ func TestAccAlicloudKeyPairMulti(t *testing.T) {
 }
 
 var testAccCheckKeyPairBasicMap = map[string]string{
-	"finger_print": CHECKSET,
-	"key_name":     CHECKSET,
+	"finger_print":      CHECKSET,
+	"key_name":          CHECKSET,
+	"resource_group_id": CHECKSET,
 }
 
 func testAccKeyPairConfigBasic(rand int) string {
 	return fmt.Sprintf(`
 resource "alicloud_key_pair" "default" {
-	
+	resource_group_id = "%s"
 }
-`)
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
 func testAccKeyPairConfig_public_key(rand int) string {
@@ -281,6 +283,7 @@ func testAccKeyPairConfigMulti(rand int) string {
 	return fmt.Sprintf(`
 resource "alicloud_key_pair" "default" {
 	count = 10
+	resource_group_id = "%s"
 }
-`)
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }

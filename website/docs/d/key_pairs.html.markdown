@@ -31,6 +31,7 @@ The following arguments are supported:
 * `ids` - (Optional, Available 1.52.1+) A list of key pair IDs.
 * `finger_print` - (Optional) A finger print used to retrieve specified key pair.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `resource_group_id` - (Optional, Available in 1.57.0+) The Id of resource group which the key pair belongs.
 
 ## Attributes Reference
 
@@ -48,3 +49,4 @@ The following attributes are exported in addition to the arguments listed above:
     * `vswitch_id` - The ID of the VSwitch attached to the ECS instance.
     * `public_ip` - The public IP address or EIP of the ECS instance.
     * `private_ip` - The private IP address of the ECS instance.
+    * `resource_group_id` - The Id of resource group.

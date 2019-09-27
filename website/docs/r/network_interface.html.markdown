@@ -63,6 +63,7 @@ The following arguments are supported:
 * `private_ips`  - (Optional) List of secondary private IPs to assign to the ENI. Don't use both private_ips and private_ips_count in the same ENI resource block.
 * `private_ips_count` - (Optional) Number of secondary private IPs to assign to the ENI. Don't use both private_ips and private_ips_count in the same ENI resource block.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `resource_group_id` - (ForceNew, Available in 1.57.0+) The Id of resource group which the network interface belongs.
 
 ## Attributes Reference
 
