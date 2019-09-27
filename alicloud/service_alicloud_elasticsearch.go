@@ -186,7 +186,7 @@ func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 			return elasticsearchClient.UpdateInstance(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, ESConcurrencyConflictError) {
+			if IsExceptedErrors(err, []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -240,7 +240,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 			return elasticsearchClient.UpdateInstance(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, ESConcurrencyConflictError) {
+			if IsExceptedErrors(err, []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -298,7 +298,7 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 			return elasticsearchClient.UpdateInstance(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, ESConcurrencyConflictError) {
+			if IsExceptedErrors(err, []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}) {
 				wait()
 				return resource.RetryableError(err)
 			}
