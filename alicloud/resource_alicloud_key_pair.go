@@ -38,6 +38,14 @@ func resourceAlicloudKeyPair() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateKeyPairPrefix,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("public_key").(string) != ""
+				},
+			},
 			"public_key": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -94,6 +102,9 @@ func resourceAlicloudKeyPairCreate(d *schema.ResourceData, meta interface{}) err
 		request := ecs.CreateCreateKeyPairRequest()
 		request.RegionId = client.RegionId
 		request.KeyPairName = keyName
+		if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+			request.ResourceGroupId = v.(string)
+		}
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.CreateKeyPair(request)
 		})
@@ -125,6 +136,7 @@ func resourceAlicloudKeyPairRead(d *schema.ResourceData, meta interface{}) error
 		return WrapError(err)
 	}
 	d.Set("key_name", keyPair.KeyPairName)
+	d.Set("resource_group_id", keyPair.ResourceGroupId)
 	d.Set("finger_print", keyPair.KeyPairFingerPrint)
 	return nil
 }

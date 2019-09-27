@@ -44,7 +44,7 @@ The following arguments are supported:
 * `delete_auto_snapshot` - (Optional Available in 1.53.0+) Indicates whether the automatic snapshot is deleted when the disk is released. Default value: false.
 * `delete_with_instance` - (Optional Available in 1.53.0+) Indicates whether the disk is released together with the instance: Default value: false.
 * `enable_auto_snapshot` - (Optional Available in 1.53.0+) Indicates whether to apply a created automatic snapshot policy to the disk. Default value: false.
-
+* `resource_group_id` - (ForceNew, Available in 1.57.0+) The Id of resource group which the disk belongs.
 -> **NOTE:** Disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
 ## Attributes Reference

@@ -74,6 +74,11 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validateInstanceName,
 			},
 
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -400,6 +405,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	d.Set("instance_name", instance.InstanceName)
+	d.Set("resource_group_id", instance.ResourceGroupId)
 	d.Set("description", instance.Description)
 	d.Set("status", instance.Status)
 	d.Set("availability_zone", instance.ZoneId)
@@ -814,6 +820,10 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 
 	if v := d.Get("instance_name").(string); v != "" {
 		request.InstanceName = v
+	}
+
+	if v := d.Get("resource_group_id").(string); v != "" {
+		request.ResourceGroupId = v
 	}
 
 	if v := d.Get("description").(string); v != "" {

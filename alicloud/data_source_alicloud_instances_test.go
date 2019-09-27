@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -81,6 +82,17 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 		}),
 	}
 
+	resourceGroupIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+			"resource_group_id": `"${var.resource_group_id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
+			"resource_group_id": `"${var.resource_group_id}_fake"`,
+		}),
+	}
+
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand, map[string]string{
 			"name_regex": fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
@@ -119,6 +131,7 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"`,
+			"resource_group_id": `"${var.resource_group_id}"`,
 		},
 			`tags = {
 				from = "datasource"
@@ -138,6 +151,7 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"`,
+			"resource_group_id": `"${var.resource_group_id}"`,
 		},
 			`tags = {
 				from = "datasource_fake"
@@ -152,7 +166,7 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 	}
 
 	instancesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, imageIdConf, statusConf,
-		vpcIdConf, vSwitchConf, availabilityZoneConf, tagsConf, allConf)
+		vpcIdConf, vSwitchConf, availabilityZoneConf, resourceGroupIdConf, tagsConf, allConf)
 }
 
 func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -163,6 +177,11 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 
 	config := fmt.Sprintf(`
 	%s
+
+	variable "resource_group_id" {
+		default = "%s"
+	}
+
 	variable "name" {
 		default = "tf-testAccCheckAlicloudInstancesDataSource%d"
 	}
@@ -176,6 +195,7 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 		instance_name = "${var.name}"
 		system_disk_category = "cloud_efficiency"
 		security_groups = ["${alicloud_security_group.default.id}"]
+		resource_group_id = "${var.resource_group_id}"
         tags = {
 			from = "datasource"
 			usage1 = "test"
@@ -190,7 +210,7 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 
 	data "alicloud_instances" "default" {
 		%s
-	}`, EcsInstanceCommonNoZonesTestCase, rand, strings.Join(pairs, "\n  "))
+	}`, EcsInstanceCommonNoZonesTestCase, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), rand, strings.Join(pairs, "\n  "))
 	return config
 }
 
@@ -202,6 +222,11 @@ func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[
 
 	config := fmt.Sprintf(`
 	%s
+
+	variable "resource_group_id" {
+		default = "%s"
+	}
+
 	variable "name" {
 		default = "tf-testAccCheckAlicloudInstancesDataSource%d"
 	}
@@ -215,6 +240,7 @@ func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[
 		instance_name = "${var.name}"
 		system_disk_category = "cloud_efficiency"
 		security_groups = ["${alicloud_security_group.default.id}"]
+		resource_group_id = "${var.resource_group_id}"
         tags = {
 			from = "datasource"
 			usage1 = "test"
@@ -230,7 +256,7 @@ func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[
 	data "alicloud_instances" "default" {
 		%s
 		%s
-	}`, EcsInstanceCommonNoZonesTestCase, rand, strings.Join(pairs, "\n  "), tags)
+	}`, EcsInstanceCommonNoZonesTestCase, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), rand, strings.Join(pairs, "\n  "), tags)
 	return config
 }
 
@@ -249,6 +275,7 @@ var existInstancesMapFunc = func(rand int) map[string]string {
 		"instances.0.vpc_id":                     CHECKSET,
 		"instances.0.vswitch_id":                 CHECKSET,
 		"instances.0.image_id":                   CHECKSET,
+		"instances.0.resource_group_id":          CHECKSET,
 		"instances.0.public_ip":                  "",
 		"instances.0.eip":                        "",
 		"instances.0.description":                "",

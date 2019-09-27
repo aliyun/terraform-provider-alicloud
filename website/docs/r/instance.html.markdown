@@ -88,6 +88,7 @@ On other OSs such as Linux, the host name can contain a maximum of 30 characters
 * `password` - (Optional, Sensitive) Password to an instance is a string of 8 to 30 characters. It must contain uppercase/lowercase letters and numerals, but cannot contain special symbols. When it is changed, the instance will reboot to make the change take effect.
 * `vswitch_id` - (Optional) The virtual switch ID to launch in VPC. This parameter must be set unless you can create classic network instances.
 * `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, The default is `PostPaid`.
+* `resource_group_id` - (ForceNew, Available in 1.57.0+) The Id of resource group which the instance belongs.
 * `period_unit` - (Optional) The duration unit that you will buy the resource. It is valid when `instance_charge_type` is 'PrePaid'. Valid value: ["Week", "Month"]. Default to "Month".
 * `period` - (Optional) The duration that you will buy the resource, in month. It is valid when `instance_charge_type` is `PrePaid`. Default to 1. Valid values:
     - [1-9, 12, 24, 36, 48, 60] when `period_unit` in "Month"

@@ -33,6 +33,11 @@ func dataSourceAlicloudInstances() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -83,6 +88,10 @@ func dataSourceAlicloudInstances() *schema.Resource {
 							Computed: true,
 						},
 						"availability_zone": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_group_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -203,6 +212,9 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
 		request.VSwitchId = v.(string)
 	}
+	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+		request.ResourceGroupId = v.(string)
+	}
 	if v, ok := d.GetOk("availability_zone"); ok && v.(string) != "" {
 		request.ZoneId = v.(string)
 	}
@@ -291,6 +303,7 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 			"image_id":                   inst.ImageId,
 			"description":                inst.Description,
 			"security_groups":            inst.SecurityGroupIds.SecurityGroupId,
+			"resource_group_id":          inst.ResourceGroupId,
 			"eip":                        inst.EipAddress.IpAddress,
 			"key_name":                   inst.KeyPairName,
 			"spot_strategy":              inst.SpotStrategy,
