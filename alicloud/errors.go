@@ -514,7 +514,7 @@ func IsExceptedErrors(err error, expectCodes []string) bool {
 		if e, ok := err.(*ProviderError); ok && (e.ErrorCode() == code || strings.Contains(e.Message(), code)) {
 			return true
 		}
-		if e, ok := err.(*sls.Error); ok && (e.Code == code || strings.Contains(e.Message, code)) {
+		if e, ok := err.(*sls.Error); ok && (e.Code == code || strings.Contains(e.Message, code) || strings.Contains(e.String(), code)) {
 			return true
 		}
 		if e, ok := err.(oss.ServiceError); ok && (e.Code == code || strings.Contains(e.Message, code)) {
