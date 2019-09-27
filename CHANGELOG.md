@@ -1,30 +1,30 @@
-## 1.57.0 (Unreleased)
+## 1.57.0 (September 27, 2019)
 
-- **New Resource:** `alicloud_ddosbgp_instance` [GH-1650]
-- **New Data Source:** `alicloud_ddosbgp_instances` [GH-1650]
-- **New Resource:** `alicloud_emr_cluster` [GH-1644]
-- **New Resource:** `alicloud_vpn_route_entry` [GH-1613]
+- **New Resource:** `alicloud_ddosbgp_instance` ([#1650](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1650))
+- **New Data Source:** `alicloud_ddosbgp_instances` ([#1650](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1650))
+- **New Resource:** `alicloud_emr_cluster` ([#1644](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1644))
+- **New Resource:** `alicloud_vpn_route_entry` ([#1613](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1613))
 
 IMPROVEMENTS:
 
-- improve(ci): add new job emr [GH-1695]
-- improve(elasticsearch): added retry setting to avoid InstanceStatusNotSupportCurrentAction and InstanceActivating error [GH-1693]
-- improve useragent setting [GH-1692]
-- improve(ecs):add resource_group_id to ecs [GH-1690]
-- improve(sls): improve sls notfounderror [GH-1689]
-- improve(kafka): added retry to aviod GetTopicList Throttling.User error [GH-1688]
-- improve(ci): add ddosbgp job [GH-1687]
-- improve: rds,redis,mongodb remove the enumeration [GH-1684]
-- Update the default period of the ddosbgp instance to 12, add the bandwidth value 201, and update the test case [GH-1683]
-- improve(elasticsearch): added wait setting for retry [GH-1678]
-- improve(provider): change the ubuntu version to 18 [GH-1677]
-- improve(provider): support provider test [GH-1675]
-- ddoscoo instance only support upgrade currently [GH-1673]
+- improve(ci): add new job emr ([#1695](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1695))
+- improve(elasticsearch): added retry setting to avoid InstanceStatusNotSupportCurrentAction and InstanceActivating error ([#1693](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1693))
+- improve useragent setting ([#1692](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1692))
+- improve(ecs):add resource_group_id to ecs ([#1690](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1690))
+- improve(sls): improve sls notfounderror ([#1689](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1689))
+- improve(kafka): added retry to aviod GetTopicList Throttling.User error ([#1688](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1688))
+- improve(ci): add ddosbgp job ([#1687](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1687))
+- improve: rds,redis,mongodb remove the enumeration ([#1684](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1684))
+- Update the default period of the ddosbgp instance to 12, add the bandwidth value 201, and update the test case ([#1683](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1683))
+- improve(elasticsearch): added wait setting for retry ([#1678](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1678))
+- improve(provider): change the ubuntu version to 18 ([#1677](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1677))
+- improve(provider): support provider test ([#1675](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1675))
+- ddoscoo instance only support upgrade currently ([#1673](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1673))
 
 BUG FIXES:
 
-- fix unsupport account site for test [GH-1696]
-- fix(ram user): supported backward compatible [GH-1685]
+- fix unsupport account site for test ([#1696](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1696))
+- fix(ram user): supported backward compatible ([#1685](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1685))
 
 ## 1.56.0 (September 20, 2019)
 
