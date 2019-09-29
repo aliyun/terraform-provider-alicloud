@@ -131,9 +131,11 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   install_cloud_monitor = true
   slb_internet_enabled = true
   worker_disk_category  = "cloud_efficiency"
+  worker_data_disk_category = "cloud_ssd"
+  worker_data_disk_size =  200
   log_config {
     type = "SLS"
-    project = "${var.name}-sls"
+    project = "${var.name}-managed-sls"
   }
 }
 `, name)

@@ -155,8 +155,8 @@ var existMountTargetMapCheck = func(rand int) map[string]string {
 		"targets.0.mount_target_domain": CHECKSET,
 		"targets.0.vswitch_id":          CHECKSET,
 		"targets.0.access_group_name":   fmt.Sprintf("tf-testAccNasConfig-%d", rand),
-		"ids.#": "1",
-		"ids.0": CHECKSET,
+		"ids.#":                         "1",
+		"ids.0":                         CHECKSET,
 	}
 }
 

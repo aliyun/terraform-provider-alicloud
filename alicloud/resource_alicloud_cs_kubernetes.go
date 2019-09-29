@@ -1143,6 +1143,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		creationArgs.WorkerDataDiskCategory = v.(string)
 		creationArgs.WorkerDataDisk = true
 		creationArgs.WorkerDataDiskSize = int64(d.Get("worker_data_disk_size").(int))
+		creationArgs.WorkerDataDiskCategory = d.Get("worker_data_disk_category").(string)
 	}
 
 	if v, ok := d.GetOk("master_instance_charge_type"); ok {

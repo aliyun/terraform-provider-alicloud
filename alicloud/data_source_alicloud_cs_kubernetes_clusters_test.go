@@ -14,7 +14,7 @@ func TestAccAlicloudCSKubernetesClustersDataSource(t *testing.T) {
 	resourceId := "data.alicloud_cs_kubernetes_clusters.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
-		fmt.Sprintf("tf-testAccKubernetes-%d", rand),
+		fmt.Sprintf("tf-testacckubernetes-%d", rand),
 		dataSourceCSKubernetesClustersConfigDependence)
 
 	idsConf := dataSourceTestAccConfig{
@@ -56,10 +56,10 @@ func TestAccAlicloudCSKubernetesClustersDataSource(t *testing.T) {
 			"ids.#":                                      "1",
 			"ids.0":                                      CHECKSET,
 			"names.#":                                    "1",
-			"names.0":                                    REGEXMATCH + fmt.Sprintf("tf-testAccKubernetes-%d", rand),
+			"names.0":                                    REGEXMATCH + fmt.Sprintf("tf-testacckubernetes-%d", rand),
 			"clusters.#":                                 "1",
 			"clusters.0.id":                              CHECKSET,
-			"clusters.0.name":                            REGEXMATCH + fmt.Sprintf("tf-testAccKubernetes-%d", rand),
+			"clusters.0.name":                            REGEXMATCH + fmt.Sprintf("tf-testacckubernetes-%d", rand),
 			"clusters.0.availability_zone":               CHECKSET,
 			"clusters.0.security_group_id":               CHECKSET,
 			"clusters.0.nat_gateway_id":                  CHECKSET,
@@ -146,7 +146,13 @@ resource "alicloud_cs_kubernetes" "default" {
   enable_ssh = true
   install_cloud_monitor = true
   worker_disk_category  = "cloud_ssd"
+  worker_data_disk_category = "cloud_ssd"
+  worker_data_disk_size =  200
   master_disk_size = 50
+  log_config {
+    type = "SLS"
+    project = "${var.name}-delicate-sls"
+  }
 }
 `, name)
 }

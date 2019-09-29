@@ -81,21 +81,21 @@ func TestAccAlicloudSlbsDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbDataSourceConfig(rand, map[string]string{
-			"name_regex":   `"${alicloud_slb.default.name}"`,
-			"ids":          `["${alicloud_slb.default.id}"]`,
-			"vswitch_id":   `"${alicloud_slb.default.vswitch_id}"`,
-			"vpc_id":       `"${alicloud_vpc.default.id}"`,
-			"network_type": `"vpc"`,
-			"tags":         `{tag_f = 6}`,
+			"name_regex":               `"${alicloud_slb.default.name}"`,
+			"ids":                      `["${alicloud_slb.default.id}"]`,
+			"vswitch_id":               `"${alicloud_slb.default.vswitch_id}"`,
+			"vpc_id":                   `"${alicloud_vpc.default.id}"`,
+			"network_type":             `"vpc"`,
+			"tags":                     `{tag_f = 6}`,
 			"master_availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbDataSourceConfig(rand, map[string]string{
-			"name_regex":   `"${alicloud_slb.default.name}_fake"`,
-			"ids":          `["${alicloud_slb.default.id}"]`,
-			"vswitch_id":   `"${alicloud_slb.default.vswitch_id}"`,
-			"vpc_id":       `"${alicloud_vpc.default.id}"`,
-			"network_type": `"vpc"`,
-			"tags":         `{tag_f = 6}`,
+			"name_regex":               `"${alicloud_slb.default.name}_fake"`,
+			"ids":                      `["${alicloud_slb.default.id}"]`,
+			"vswitch_id":               `"${alicloud_slb.default.vswitch_id}"`,
+			"vpc_id":                   `"${alicloud_vpc.default.id}"`,
+			"network_type":             `"vpc"`,
+			"tags":                     `{tag_f = 6}`,
 			"master_availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
 		}),
 	}
