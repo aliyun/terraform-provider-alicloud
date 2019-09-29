@@ -54,24 +54,19 @@ func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 
 	var existCSManagedKubernetesClustersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                                "1",
-			"ids.0":                                CHECKSET,
-			"names.#":                              "1",
-			"names.0":                              REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
-			"clusters.#":                           "1",
-			"clusters.0.id":                        CHECKSET,
-			"clusters.0.name":                      REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
-			"clusters.0.availability_zone":         CHECKSET,
-			"clusters.0.security_group_id":         CHECKSET,
-			"clusters.0.nat_gateway_id":            CHECKSET,
-			"clusters.0.vpc_id":                    CHECKSET,
-			"clusters.0.worker_nodes.#":            "2",
-			"clusters.0.log_config.#":              "1",
-			"clusters.0.log_config.0.type":         "SLS",
-			"clusters.0.log_config.0. project":     CHECKSET,
-			"clusters.0.worker_data_disk_category": "cloud_ssd",
-			"clusters.0.worker_data_disk_size":     "200",
-			"clusters.0.connections.%":             CHECKSET,
+			"ids.#":                        "1",
+			"ids.0":                        CHECKSET,
+			"names.#":                      "1",
+			"names.0":                      REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
+			"clusters.#":                   "1",
+			"clusters.0.id":                CHECKSET,
+			"clusters.0.name":              REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
+			"clusters.0.availability_zone": CHECKSET,
+			"clusters.0.security_group_id": CHECKSET,
+			"clusters.0.nat_gateway_id":    CHECKSET,
+			"clusters.0.vpc_id":            CHECKSET,
+			"clusters.0.worker_nodes.#":    "2",
+			"clusters.0.connections.%":     CHECKSET,
 		}
 	}
 
