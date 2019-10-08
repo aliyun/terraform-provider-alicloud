@@ -96,11 +96,10 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Optional: true,
 			},
 			"engine_version": {
-				Type:         schema.TypeString,
-				ForceNew:     true,
-				Optional:     true,
-				Default:      KVStore2Dot8,
-				ValidateFunc: validateAllowedStringValue([]string{string(KVStore2Dot8), string(KVStore4Dot0)}),
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Optional: true,
+				Default:  KVStore2Dot8,
 			},
 			"connection_domain": {
 				Type:     schema.TypeString,

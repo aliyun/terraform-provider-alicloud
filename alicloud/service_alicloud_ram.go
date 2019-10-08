@@ -214,7 +214,8 @@ func (s *RamService) DescribeRamUser(id string) (*ram.User, error) {
 		}
 	}
 	if userName == "" {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("RamUser", id)), NotFoundMsg, ProviderERROR)
+		// the d.Id() has changed from userName to userId since v1.44.0, add the logic for backward compatibility.
+		userName = id
 	}
 	getUserRequest := ram.CreateGetUserRequest()
 	getUserRequest.RegionId = s.client.RegionId

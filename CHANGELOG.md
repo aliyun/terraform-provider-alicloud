@@ -1,4 +1,58 @@
-## 1.55.5 (Unreleased)
+## 1.57.1 (Unreleased)
+## 1.57.0 (September 27, 2019)
+
+- **New Resource:** `alicloud_ddosbgp_instance` ([#1650](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1650))
+- **New Data Source:** `alicloud_ddosbgp_instances` ([#1650](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1650))
+- **New Resource:** `alicloud_emr_cluster` ([#1644](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1644))
+- **New Resource:** `alicloud_vpn_route_entry` ([#1613](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1613))
+
+IMPROVEMENTS:
+
+- improve(ci): add new job emr ([#1695](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1695))
+- improve(elasticsearch): added retry setting to avoid InstanceStatusNotSupportCurrentAction and InstanceActivating error ([#1693](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1693))
+- improve useragent setting ([#1692](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1692))
+- improve(ecs):add resource_group_id to ecs ([#1690](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1690))
+- improve(sls): improve sls notfounderror ([#1689](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1689))
+- improve(kafka): added retry to aviod GetTopicList Throttling.User error ([#1688](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1688))
+- improve(ci): add ddosbgp job ([#1687](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1687))
+- improve: rds,redis,mongodb remove the enumeration ([#1684](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1684))
+- Update the default period of the ddosbgp instance to 12, add the bandwidth value 201, and update the test case ([#1683](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1683))
+- improve(elasticsearch): added wait setting for retry ([#1678](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1678))
+- improve(provider): change the ubuntu version to 18 ([#1677](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1677))
+- improve(provider): support provider test ([#1675](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1675))
+- ddoscoo instance only support upgrade currently ([#1673](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1673))
+
+BUG FIXES:
+
+- fix unsupport account site for test ([#1696](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1696))
+- fix(ram user): supported backward compatible ([#1685](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1685))
+
+## 1.56.0 (September 20, 2019)
+
+- **New Resource:** `alicloud_alikafka_consumer_group` ([#1658](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1658))
+- **New Data Source:** `alicloud_alikafka_consumer_groups` ([#1658](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1658))
+- **New Resource:** `alicloud_alikafka_topic` ([#1642](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1642))
+- **New Data Source:** `alicloud_alikafka_topics` ([#1642](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1642))
+
+IMPROVEMENTS:
+
+- improve(elasticsearch): Added retry to avoid UpdateInstance ConcurrencyUpdateInstanceConflict error. ([#1669](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1669))
+- fix(security_group_rule):fix description bug  ([#1668](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1668))
+- improve: rds,redis,mongodb support modify maintain time ([#1665](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1665))
+- add missing field ALICLOUD_INSTANCE_ID ([#1664](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1664))
+- improve(sdk): update sdk to v1.60.164 ([#1663](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1663))
+- improve(ci): add ci test for alikafka ([#1662](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1662))
+- improve(provider): rename source_name to configuration_source ([#1661](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1661))
+- improve(cen): Added wait time to avoid CreateCen Operation.Blocking error ([#1660](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1660))
+- improve(provider): add a new field source_name to mark template ([#1657](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1657))
+- improve(vpc): Added retry to avoid ListTagResources Throttling error ([#1652](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1652))
+- update VPNgateway resource vswitchId field ([#1643](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1643))
+
+BUG FIXES:
+
+- fix(ess_alarm):The 'ForceNew' attribute of input parameter 'scaling_group_id' is set 'True'. ([#1671](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1671))
+- fix(testCommon):fix test common bug ([#1666](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1666))
+
 ## 1.55.4 (September 17, 2019)
 
 IMPROVEMENTS:

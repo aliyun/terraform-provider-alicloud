@@ -41,7 +41,7 @@ resource "alicloud_instance" "instance" {
   # series III
   instance_type              = "ecs.n4.large"
   system_disk_category       = "cloud_efficiency"
-  image_id                   = "ubuntu_140405_64_40G_cloudinit_20161115.vhd"
+  image_id                   = "ubuntu_18_04_64_20G_alibase_20190624.vhd"
   instance_name              = "test_foo"
   vswitch_id                 = "${alicloud_vswitch.vswitch.id}"
   internet_max_bandwidth_out = 10
@@ -86,8 +86,11 @@ Terraform will autogenerate a default name is `ECS-Instance`.
 * `host_name` - (Optional) Host name of the ECS, which is a string of at least two characters. “hostname” cannot start or end with “.” or “-“. In addition, two or more consecutive “.” or “-“ symbols are not allowed. On Windows, the host name can contain a maximum of 15 characters, which can be a combination of uppercase/lowercase letters, numerals, and “-“. The host name cannot contain dots (“.”) or contain only numeric characters.
 On other OSs such as Linux, the host name can contain a maximum of 30 characters, which can be segments separated by dots (“.”), where each segment can contain uppercase/lowercase letters, numerals, or “_“. When it is changed, the instance will reboot to make the change take effect.
 * `password` - (Optional, Sensitive) Password to an instance is a string of 8 to 30 characters. It must contain uppercase/lowercase letters and numerals, but cannot contain special symbols. When it is changed, the instance will reboot to make the change take effect.
+* `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to an instance. It is conflicted with `password`. When it is changed, the instance will reboot to make the change take effect.
+* `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating an instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `vswitch_id` - (Optional) The virtual switch ID to launch in VPC. This parameter must be set unless you can create classic network instances.
 * `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, The default is `PostPaid`.
+* `resource_group_id` - (ForceNew, Available in 1.57.0+) The Id of resource group which the instance belongs.
 * `period_unit` - (Optional) The duration unit that you will buy the resource. It is valid when `instance_charge_type` is 'PrePaid'. Valid value: ["Week", "Month"]. Default to "Month".
 * `period` - (Optional) The duration that you will buy the resource, in month. It is valid when `instance_charge_type` is `PrePaid`. Default to 1. Valid values:
     - [1-9, 12, 24, 36, 48, 60] when `period_unit` in "Month"

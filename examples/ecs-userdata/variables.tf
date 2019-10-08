@@ -15,7 +15,7 @@ variable "password" {
 }
 
 variable "image" {
-  default = "ubuntu_140405_32_40G_cloudinit_20161115.vhd"
+  default = "ubuntu_18_04_64_20G_alibase_20190624.vhd"
 }
 
 variable "ecs_type" {

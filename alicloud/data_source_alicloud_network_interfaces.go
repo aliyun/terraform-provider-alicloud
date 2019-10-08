@@ -29,6 +29,10 @@ func dataSourceAlicloudNetworkInterfaces() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -115,6 +119,10 @@ func dataSourceAlicloudNetworkInterfaces() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"instance_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -154,6 +162,10 @@ func dataSourceAlicloudNetworkInterfacesRead(d *schema.ResourceData, meta interf
 
 	if securityGroupId, ok := d.GetOk("security_group_id"); ok {
 		request.SecurityGroupId = securityGroupId.(string)
+	}
+
+	if resourceGroupId, ok := d.GetOk("resource_group_id"); ok {
+		request.ResourceGroupId = resourceGroupId.(string)
 	}
 
 	if typ, ok := d.GetOk("type"); ok {
@@ -229,21 +241,22 @@ func networkInterfaceDescriptionAttributes(d *schema.ResourceData, enis []ecs.Ne
 			ips = append(ips, ip.PrivateIpAddress)
 		}
 		mapping := map[string]interface{}{
-			"id":              eni.NetworkInterfaceId,
-			"name":            eni.NetworkInterfaceName,
-			"status":          eni.Status,
-			"vpc_id":          eni.VpcId,
-			"vswitch_id":      eni.VSwitchId,
-			"zone_id":         eni.ZoneId,
-			"public_ip":       eni.AssociatedPublicIp.PublicIpAddress,
-			"private_ip":      eni.PrivateIpAddress,
-			"private_ips":     ips,
-			"mac":             eni.MacAddress,
-			"security_groups": eni.SecurityGroupIds.SecurityGroupId,
-			"description":     eni.Description,
-			"instance_id":     eni.InstanceId,
-			"creation_time":   eni.CreationTime,
-			"tags":            tagsToMap(eni.Tags.Tag),
+			"id":                eni.NetworkInterfaceId,
+			"name":              eni.NetworkInterfaceName,
+			"status":            eni.Status,
+			"vpc_id":            eni.VpcId,
+			"vswitch_id":        eni.VSwitchId,
+			"zone_id":           eni.ZoneId,
+			"public_ip":         eni.AssociatedPublicIp.PublicIpAddress,
+			"private_ip":        eni.PrivateIpAddress,
+			"private_ips":       ips,
+			"mac":               eni.MacAddress,
+			"security_groups":   eni.SecurityGroupIds.SecurityGroupId,
+			"description":       eni.Description,
+			"instance_id":       eni.InstanceId,
+			"resource_group_id": eni.ResourceGroupId,
+			"creation_time":     eni.CreationTime,
+			"tags":              tagsToMap(eni.Tags.Tag),
 		}
 
 		ids = append(ids, eni.NetworkInterfaceId)

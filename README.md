@@ -80,6 +80,8 @@ cd $GOPATH/src/github.com/terraform-providers/terraform-provider-alicloud
 export ALICLOUD_ACCESS_KEY=xxx
 export ALICLOUD_SECRET_KEY=xxx
 export ALICLOUD_REGION=xxx
+export ALICLOUD_ACCOUNT_ID=xxx
+export ALICLOUD_RESOURCE_GROUP_ID=xxx
 export outfile=gotest.out
 TF_ACC=1 TF_LOG=INFO go test ./alicloud -v -run=TestAccAlicloud -timeout=1440m | tee $outfile
 go2xunit -input $outfile -output $GOPATH/tests.xml

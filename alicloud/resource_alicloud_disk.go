@@ -26,7 +26,11 @@ func resourceAliyunDisk() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -124,6 +128,10 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 		request.DiskName = v.(string)
 	}
 
+	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+		request.ResourceGroupId = v.(string)
+	}
+
 	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
 		request.Description = v.(string)
 	}
@@ -172,6 +180,7 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("delete_auto_snapshot", object.DeleteAutoSnapshot)
 	d.Set("delete_with_instance", object.DeleteWithInstance)
 	d.Set("enable_auto_snapshot", object.EnableAutoSnapshot)
+	d.Set("resource_group_id", object.ResourceGroupId)
 
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceDisk)
 	if err != nil && !NotFoundError(err) {

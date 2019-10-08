@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -92,6 +93,17 @@ func TestAccAlicloudNetworkInterfacesDataSourceBasic(t *testing.T) {
 		}),
 	}
 
+	resourceGroupIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
+			"ids":               `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"resource_group_id": `"${var.resource_group_id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
+			"ids":               `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"resource_group_id": `"${var.resource_group_id}_fake"`,
+		}),
+	}
+
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
 			"tags": fmt.Sprintf(`{
@@ -118,6 +130,7 @@ func TestAccAlicloudNetworkInterfacesDataSourceBasic(t *testing.T) {
 			"security_group_id": `"${alicloud_security_group.default.id}"`,
 			"type":              `"Secondary"`,
 			"instance_id":       `"${alicloud_instance.default.id}"`,
+			"resource_group_id": `"${var.resource_group_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
 			"ids":        `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
@@ -131,11 +144,12 @@ func TestAccAlicloudNetworkInterfacesDataSourceBasic(t *testing.T) {
 			"security_group_id": `"${alicloud_security_group.default.id}"`,
 			"type":              `"Primary"`,
 			"instance_id":       `"${alicloud_instance.default.id}"`,
+			"resource_group_id": `"${var.resource_group_id}"`,
 		}),
 	}
 
 	networkInterfacesCheckInfo.dataSourceTestCheck(t, rand, idsConf, instanceIdConf, nameRegexConf, vpcIdConf, vswitchIdConf, privateIpConf,
-		securityGroupIdConf, typeConf, tagsConf, allConf)
+		securityGroupIdConf, typeConf, tagsConf, resourceGroupIdConf, allConf)
 }
 
 func testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -145,6 +159,10 @@ func testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand int, attrMap map
 	}
 
 	config := fmt.Sprintf(`
+variable "resource_group_id" {
+	default = "%s"
+}
+
 variable "name" {
  default = "tf-testAccNetworkInterfacesBasic"
 }
@@ -179,6 +197,7 @@ resource "alicloud_network_interface" "default" {
 	tags = {
 		TF-VER = "0.11.3%d"
 	}
+	resource_group_id = "${var.resource_group_id}"
 }
 
 data "alicloud_instance_types" "default" {
@@ -187,7 +206,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_images" "default" {
-  	name_regex  = "^ubuntu_14.*_64"
+  	name_regex  = "^ubuntu_18.*_64"
   	most_recent = true
 	owners = "system"
 }
@@ -210,7 +229,7 @@ resource "alicloud_network_interface_attachment" "default" {
 
 data "alicloud_network_interfaces" "default"  {
 	%s
-}`, rand, rand, strings.Join(pairs, "\n  "))
+}`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), rand, rand, strings.Join(pairs, "\n  "))
 	return config
 }
 
@@ -229,6 +248,7 @@ var existNetworkInterfacesMapFunc = func(rand int) map[string]string {
 		"interfaces.0.private_ips.#":     "0",
 		"interfaces.0.security_groups.#": "1",
 		"interfaces.0.description":       "Basic test",
+		"interfaces.0.resource_group_id": CHECKSET,
 		"interfaces.0.instance_id":       CHECKSET,
 		"interfaces.0.creation_time":     CHECKSET,
 		"interfaces.0.tags.%":            "1",

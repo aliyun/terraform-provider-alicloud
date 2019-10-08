@@ -68,7 +68,7 @@ data "alicloud_zones" "default" {
 	available_resource_creation = "VSwitch"
 }
 data "alicloud_images" "default" {
-  name_regex = "^ubuntu_16.*_64"
+  name_regex = "^ubuntu_18.*_64"
   most_recent = true
   owners = "system"
 }

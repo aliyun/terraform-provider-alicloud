@@ -165,11 +165,11 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"base_bandwidth": "70",
+					"base_bandwidth": "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"base_bandwidth": "70",
+						"base_bandwidth": "60",
 					}),
 				),
 			},
@@ -206,20 +206,20 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":              name,
-					"bandwidth":         "30",
-					"base_bandwidth":    "30",
-					"service_bandwidth": "100",
-					"port_count":        "50",
-					"domain_count":      "50",
+					"bandwidth":         "60",
+					"base_bandwidth":    "60",
+					"service_bandwidth": "300",
+					"port_count":        "60",
+					"domain_count":      "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":              name,
-						"bandwidth":         "30",
-						"base_bandwidth":    "30",
-						"service_bandwidth": "100",
-						"port_count":        "50",
-						"domain_count":      "50",
+						"bandwidth":         "60",
+						"base_bandwidth":    "60",
+						"service_bandwidth": "300",
+						"port_count":        "60",
+						"domain_count":      "60",
 					}),
 				),
 			},

@@ -38,7 +38,7 @@ data "alicloud_instance_types" "default" {
   memory_size       = 2
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_14.*_64"
+  name_regex  = "^ubuntu_18.*_64"
   most_recent = true
   owners      = "system"
 }
@@ -125,7 +125,7 @@ resource "alicloud_slb_rule" "default" {
 The following arguments are supported:
 
 * `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch the new forwarding rule.
-* `name` - (Optional, ForceNew) Name of the forwarding rule. Our plugin provides a default name: "tf-slb-rule".
+* `name` - (Optional) Name of the forwarding rule. Our plugin provides a default name: "tf-slb-rule".
 * `frontend_port` - (Required, ForceNew) The listener frontend port which is used to launch the new forwarding rule. Valid range: [1-65535].
 * `domain` - (Optional, ForceNew) Domain name of the forwarding rule. It can contain letters a-z, numbers 0-9, hyphens (-), and periods (.),
 and wildcard characters. The following two domain name formats are supported:

@@ -3,6 +3,8 @@ package alicloud
 import (
 	"strings"
 
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+
 	"fmt"
 
 	"log"
@@ -10,7 +12,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
-	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/common"
@@ -345,14 +346,20 @@ const (
 	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
 
 	// Elasticsearch
-	InstanceActivating         = "InstanceActivating"
-	ESInstanceNotFound         = "InstanceNotFound"
-	ESMustChangeOneResource    = "MustChangeOneResource"
-	ESCssCheckUpdowngradeError = "CssCheckUpdowngradeError"
+	InstanceActivating             = "InstanceActivating"
+	ESInstanceNotFound             = "InstanceNotFound"
+	ESMustChangeOneResource        = "MustChangeOneResource"
+	ESCssCheckUpdowngradeError     = "CssCheckUpdowngradeError"
+	ESConcurrencyConflictError     = "ConcurrencyUpdateInstanceConflict"
+	ESNotSupportCurrentActionError = "InstanceStatusNotSupportCurrentAction"
 
 	// Ddoscoo
 	DdoscooInstanceNotFound = "InstanceNotFound"
 	InvalidDdoscooInstance  = "ddos_coop3301"
+	InvalidDdosbgpInstance  = "InvalidInstance"
+
+	// Ddosbgp
+	DdosbgpInstanceNotFound = "InstanceNotFound"
 
 	//nacl
 	NetworkAclNotFound = "InvalidNetworkAcl.NotFound"
@@ -360,6 +367,9 @@ const (
 	//Actiontrail
 	InvalidTrailNotFound  = "TrailNotFoundException"
 	TrailNeedRamAuthorize = "NeedRamAuthorize"
+
+	//emr
+	ClusterNotFound = "ClusterId.NotFound"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
@@ -508,7 +518,7 @@ func IsExceptedErrors(err error, expectCodes []string) bool {
 		if e, ok := err.(*ProviderError); ok && (e.ErrorCode() == code || strings.Contains(e.Message(), code)) {
 			return true
 		}
-		if e, ok := err.(*sls.Error); ok && (e.Code == code || strings.Contains(e.Message, code)) {
+		if e, ok := err.(*sls.Error); ok && (e.Code == code || strings.Contains(e.Message, code) || strings.Contains(e.String(), code)) {
 			return true
 		}
 		if e, ok := err.(oss.ServiceError); ok && (e.Code == code || strings.Contains(e.Message, code)) {

@@ -127,6 +127,36 @@ func (s *VpnGatewayService) DescribeSslVpnClientCert(id string) (v vpc.DescribeS
 	return *response, nil
 }
 
+func (s *VpnGatewayService) DescribeVpnRouteEntry(id string) (v vpc.VpnRouteEntry, err error) {
+	request := vpc.CreateDescribeVpnRouteEntriesRequest()
+
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return v, WrapError(err)
+	}
+	gatewayId := parts[0]
+
+	request.VpnGatewayId = gatewayId
+	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DescribeVpnRouteEntries(request)
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{VpnForbidden, VpnNotFound}) {
+			return v, WrapErrorf(Error(GetNotFoundMessage("VpnRouterEntry", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw)
+	response, _ := raw.(*vpc.DescribeVpnRouteEntriesResponse)
+
+	for _, routeEntry := range response.VpnRouteEntries.VpnRouteEntry {
+		if id == gatewayId+":"+routeEntry.NextHop+":"+routeEntry.RouteDest {
+			return routeEntry, nil
+		}
+	}
+	return v, WrapErrorf(Error(GetNotFoundMessage("VpnRouterEntry", id)), NotFoundMsg, ProviderERROR)
+}
+
 func (s *VpnGatewayService) WaitForVpnGateway(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
@@ -239,6 +269,35 @@ func (s *VpnGatewayService) WaitForSslVpnClientCert(id string, status Status, ti
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *VpnGatewayService) WaitForVpnRouteEntry(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeVpnRouteEntry(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		parts, err := ParseResourceId(id, 3)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		if object.NextHop == parts[1] && object.RouteDest == parts[2] && string(status) != string(Deleted) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, Null, string(status), ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}

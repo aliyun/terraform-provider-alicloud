@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"log"
 	"time"
 
@@ -55,4 +56,23 @@ func (k *KmsService) WaitForKmsKey(id string, status Status, timeout int) error 
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, id, status, ProviderERROR)
 		}
 	}
+}
+
+func (k *KmsService) Decrypt(ciphertextBlob string, encryptionContext map[string]interface{}) (*kms.DecryptResponse, error) {
+	context, err := json.Marshal(encryptionContext)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	request := kms.CreateDecryptRequest()
+	request.RegionId = k.client.RegionId
+	request.CiphertextBlob = ciphertextBlob
+	request.EncryptionContext = string(context[:])
+	raw, err := k.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+		return kmsClient.Decrypt(request)
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, context, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	response, _ := raw.(*kms.DecryptResponse)
+	return response, err
 }

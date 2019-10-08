@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/hashicorp/terraform/helper/resource"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -84,13 +86,28 @@ func dataSourceAlicloudAlikafkaTopicsRead(d *schema.ResourceData, meta interface
 	request.InstanceId = d.Get("instance_id").(string)
 	request.RegionId = client.RegionId
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-		return alikafkaClient.GetTopicList(request)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var raw interface{}
+	var err error
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			return alikafkaClient.GetTopicList(request)
+		})
+		if err != nil {
+			if IsExceptedError(err, AlikafkaThrottlingUser) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alikafka_topics", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*alikafka.GetTopicListResponse)
 
 	var filteredTopics []alikafka.TopicVO

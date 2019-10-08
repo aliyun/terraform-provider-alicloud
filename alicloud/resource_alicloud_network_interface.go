@@ -40,6 +40,11 @@ func resourceAliyunNetworkInterface() *schema.Resource {
 				Set:      schema.HashString,
 				MinItems: 1,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"private_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -88,6 +93,10 @@ func resourceAliyunNetworkInterfaceCreate(d *schema.ResourceData, meta interface
 
 	if primaryIpAddress, ok := d.GetOk("private_ip"); ok {
 		request.PrimaryIpAddress = primaryIpAddress.(string)
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request.ResourceGroupId = v.(string)
 	}
 
 	if name, ok := d.GetOk("name"); ok {
@@ -139,6 +148,7 @@ func resourceAliyunNetworkInterfaceRead(d *schema.ResourceData, meta interface{}
 			privateIps = append(privateIps, object.PrivateIpSets.PrivateIpSet[i].PrivateIpAddress)
 		}
 	}
+	d.Set("resource_group_id", object.ResourceGroupId)
 	d.Set("private_ips", privateIps)
 	d.Set("private_ips_count", len(privateIps))
 	d.Set("mac", object.MacAddress)

@@ -72,13 +72,11 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PostPaid"`,
-			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
 			"engine":               `"MySQL"`,
 			"engine_version":       `"5.6"`,
 		}),
 		fakeConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PostPaid"`,
-			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
 			"engine":               `"Fake"`,
 			"engine_version":       `"5.6"`,
 		}),

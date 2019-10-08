@@ -20,6 +20,11 @@ func dataSourceAlicloudKeyPairs() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateNameRegex,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -46,6 +51,10 @@ func dataSourceAlicloudKeyPairs() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_group_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -87,6 +96,9 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = client.RegionId
 	if fingerPrint, ok := d.GetOk("finger_print"); ok {
 		request.KeyPairFingerPrint = fingerPrint.(string)
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request.ResourceGroupId = v.(string)
 	}
 	request.PageNumber = requests.NewInteger(1)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
@@ -191,10 +203,11 @@ func keyPairsDescriptionAttributes(d *schema.ResourceData, keyPairs []ecs.KeyPai
 	var s []map[string]interface{}
 	for _, key := range keyPairs {
 		mapping := map[string]interface{}{
-			"id":           key.KeyPairName,
-			"key_name":     key.KeyPairName,
-			"finger_print": key.KeyPairFingerPrint,
-			"instances":    keyPairsAttach[key.KeyPairName],
+			"id":                key.KeyPairName,
+			"key_name":          key.KeyPairName,
+			"finger_print":      key.KeyPairFingerPrint,
+			"resource_group_id": key.ResourceGroupId,
+			"instances":         keyPairsAttach[key.KeyPairName],
 		}
 
 		names = append(names, string(key.KeyPairName))
