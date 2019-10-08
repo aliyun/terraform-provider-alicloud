@@ -76,6 +76,11 @@ func TestAccAlicloudCSKubernetesClustersDataSource(t *testing.T) {
 			"clusters.0.connections.api_server_internet": CHECKSET,
 			"clusters.0.connections.api_server_intranet": CHECKSET,
 			"clusters.0.connections.service_domain":      CHECKSET,
+			"clusters.0.log_config.#":                    "1",
+			"clusters.0.log_config.0.type":               CHECKSET,
+			"clusters.0.log_config.0.project":            NOSET,
+			"clusters.0.worker_data_disk_category":       CHECKSET,
+			"clusters.0.worker_data_disk_size":           NOSET,
 		}
 	}
 
