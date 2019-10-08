@@ -76,7 +76,7 @@ fi
 
 EXITCODE=0
 # Clear cache
-export GOCACHE=off
+go clean -cache -modcache -i -r
 ## Run test cases and restore the log
 RESULT="---  Terraform-${TEST_CASE_CODE}-CI-Test Result ($3) --- \n  Region       Total     Failed     Skipped     Passed     \n"
 
