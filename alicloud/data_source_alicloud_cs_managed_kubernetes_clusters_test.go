@@ -68,9 +68,9 @@ func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 			"clusters.0.worker_nodes.#":            "2",
 			"clusters.0.connections.%":             CHECKSET,
 			"clusters.0.log_config.#":              "1",
-			"clusters.0.log_config.0.type":         NOSET,
-			"clusters.0.log_config.0.project":      NOSET,
-			"clusters.0.worker_data_disk_category": NOSET,
+			"clusters.0.log_config.0.type":         "",
+			"clusters.0.log_config.0.project":      "",
+			"clusters.0.worker_data_disk_category": "",
 			"clusters.0.worker_data_disk_size":     CHECKSET,
 		}
 	}
