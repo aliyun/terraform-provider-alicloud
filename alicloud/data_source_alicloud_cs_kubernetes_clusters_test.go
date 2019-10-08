@@ -79,8 +79,8 @@ func TestAccAlicloudCSKubernetesClustersDataSource(t *testing.T) {
 			"clusters.0.log_config.#":                    "1",
 			"clusters.0.log_config.0.type":               "logtail-ds",
 			"clusters.0.log_config.0.project":            fmt.Sprintf("tf-testacckubernetes-%d-delicate-sls", rand),
-			"clusters.0.worker_data_disk_category":       "",
-			"clusters.0.worker_data_disk_size":           CHECKSET,
+			"clusters.0.worker_data_disk_category":       "",  // Because the API does not return  field 'worker_data_disk_category', the default value of empty is used
+			"clusters.0.worker_data_disk_size":           "0", // Because the API does not return  field 'worker_data_disk_size', the default value of 0 is used
 		}
 	}
 
