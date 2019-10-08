@@ -119,7 +119,7 @@ On other OSs such as Linux, the host name can contain a maximum of 30 characters
 * `include_data_disks` - (Optional) Whether to change instance disks charge type when changing instance charge type.
 * `dry_run` - (Optional) Whether to pre-detection. When it is true, only pre-detection and not actually modify the payment type operation. It is valid when `instance_charge_type` is 'PrePaid'. Default to false.
 * `private_ip` - (Optional) Instance private IP address can be specified when you creating new instance. It is valid when `vswitch_id` is specified.
-* `credit_specification` - (Optional) Performance mode of the t5 burstable instance. Valid values: 'Standard', 'Unlimited'.
+* `credit_specification` - (Optional, Available in 1.57.1+) Performance mode of the t5 burstable instance. Valid values: 'Standard', 'Unlimited'.
 * `spot_strategy` - (Optional, ForceNew) The spot strategy of a Pay-As-You-Go instance, and it takes effect only when parameter `instance_charge_type` is 'PostPaid'. Value range:
     - NoSpot: A regular Pay-As-You-Go instance.
     - SpotWithPriceLimit: A price threshold for a spot instance
