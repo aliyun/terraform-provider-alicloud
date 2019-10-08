@@ -68,10 +68,10 @@ func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 			"clusters.0.worker_nodes.#":            "2",
 			"clusters.0.connections.%":             CHECKSET,
 			"clusters.0.log_config.#":              "1",
-			"clusters.0.log_config.0.type":         "",
-			"clusters.0.log_config.0.project":      "",
-			"clusters.0.worker_data_disk_category": "",
-			"clusters.0.worker_data_disk_size":     CHECKSET,
+			"clusters.0.log_config.0.type":         "",  // Because the API does not return  field 'type', the default value of empty is used
+			"clusters.0.log_config.0.project":      "",  // Because the API does not return  field 'project', the default value of empty is used
+			"clusters.0.worker_data_disk_category": "",  // Because the API does not return  field 'worker_data_disk_category', the default value of empty is used
+			"clusters.0.worker_data_disk_size":     "0", // Because the API does not return  field 'worker_data_disk_size', the default value of 0 is used
 		}
 	}
 
