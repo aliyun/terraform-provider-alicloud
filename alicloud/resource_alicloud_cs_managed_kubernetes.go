@@ -375,8 +375,6 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 			args.WorkerDataDisk = true
 			args.WorkerDataDiskCategory = d.Get("worker_data_disk_category").(string)
 			args.WorkerDataDiskSize = int64(d.Get("worker_data_disk_size").(int))
-			args.WorkerDataDiskEncrypted = d.Get("worker_data_disk_encrypted").(string)
-			args.WorkerDataDiskKMSKeyId = d.Get("worker_data_disk_kms_key_id").(string)
 		}
 
 		var requestInfo *cs.Client
