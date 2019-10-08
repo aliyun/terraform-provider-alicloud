@@ -100,7 +100,7 @@ You can get the available kubetnetes master node instance types by [datasource i
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
-* `log_config` - (Optional, ForceNew) A list of one element containing information about the associated log store. It contains the following attributes:
+* `log_config` - (Optional, ForceNew, Available in 1.57.1+) A list of one element containing information about the associated log store. It contains the following attributes:
   * `type` - Type of collecting logs, only `SLS` are supported currently.
   * `project` - Log Service project name, cluster logs will output to this project.
 
