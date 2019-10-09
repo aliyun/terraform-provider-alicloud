@@ -71,7 +71,7 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.0.id}","${alicloud_instance.default.1.id}"},
+					"instance_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
 					"weight": "70",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -198,7 +198,7 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.0.id}","${alicloud_instance.default.1.id}"},
+					"instance_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
 					"weight": "70",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -225,7 +225,7 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 	})
 }
 
-func resourceSlbAttachmentBasicdependence(name string) string{
+func resourceSlbAttachmentBasicdependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "tf-testAccSlbAttachment"
@@ -276,7 +276,7 @@ resource "alicloud_slb" "default" {
 `)
 }
 
-func resourceSlbAttachmentMultidependence(name string) string{
+func resourceSlbAttachmentMultidependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "tf-testAccSlbAttachment"
