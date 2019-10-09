@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -80,6 +80,11 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 	})
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccSlbAclBasic%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSLBAclDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -88,10 +93,23 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckSlbAclDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlbAclBasicConfig,
+				Config: testAccConfig(map[string]interface{}{
+					"name":       "${var.name}",
+					"ip_version": "${var.ip_version}",
+					"entry_list": []map[string]interface{}{
+						{
+							"entry":   "10.10.10.0/24",
+							"comment": "80",
+						},
+						{
+							"entry":   "168.10.10.0/24",
+							"comment": "second",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         "tf-testAccSlbAcl",
@@ -106,7 +124,20 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccSlbAclBasicConfig_name,
+				Config: testAccConfig(map[string]interface{}{
+					"name":       "${var.basic_name}",
+					"ip_version": "${var.ip_version}",
+					"entry_list": []map[string]interface{}{
+						{
+							"entry":   "10.10.10.0/24",
+							"comment": "80",
+						},
+						{
+							"entry":   "168.10.10.0/24",
+							"comment": "second",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name": "tf-testAccSlbAcl_name",
@@ -114,7 +145,24 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbAclBasicConfig_entry_list,
+				Config: testAccConfig(map[string]interface{}{
+					"name":       "${var.basic_name}",
+					"ip_version": "${var.ip_version}",
+					"entry_list": []map[string]interface{}{
+						{
+							"entry":   "10.10.10.0/24",
+							"comment": "80",
+						},
+						{
+							"entry":   "168.10.10.0/24",
+							"comment": "second",
+						},
+						{
+							"entry":   "172.10.10.0/24",
+							"comment": "third",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"entry_list.#": "3",
@@ -122,7 +170,20 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbAclBasicConfig,
+				Config: testAccConfig(map[string]interface{}{
+					"name":       "${var.name}",
+					"ip_version": "${var.ip_version}",
+					"entry_list": []map[string]interface{}{
+						{
+							"entry":   "10.10.10.0/24",
+							"comment": "80",
+						},
+						{
+							"entry":   "168.10.10.0/24",
+							"comment": "second",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         "tf-testAccSlbAcl",
@@ -145,6 +206,11 @@ func TestAccAlicloudSlbAcl_muilt(t *testing.T) {
 	})
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccSlbAclMuilt%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSLBAclDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -153,10 +219,24 @@ func TestAccAlicloudSlbAcl_muilt(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckSlbAclDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlbAclBasicConfig_mulit,
+				Config: testAccConfig(map[string]interface{}{
+					"name":       "${var.name}-${count.index}",
+					"count":      "${var.number}",
+					"ip_version": "${var.ip_version}",
+					"entry_list": []map[string]interface{}{
+						{
+							"entry":   "10.10.10.0/24",
+							"comment": "80",
+						},
+						{
+							"entry":   "168.10.10.0/24",
+							"comment": "second",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         "tf-testAccSlbAcl-9",
@@ -169,123 +249,19 @@ func TestAccAlicloudSlbAcl_muilt(t *testing.T) {
 	})
 }
 
-func testAccCheckSlbAclDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_slb_acl" {
-			continue
-		}
-
-		req := slb.CreateDescribeAccessControlListAttributeRequest()
-		req.AclId = rs.Primary.ID
-		// Try to find the Slb server group
-		_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DescribeAccessControlListAttribute(req)
-		})
-		if err != nil {
-
-			if IsExceptedError(err, SlbAclNotExists) {
-				continue
-			}
-			return err
-		}
-		return fmt.Errorf("SLB Acl %s still exist", rs.Primary.ID)
-	}
-
-	return nil
-}
-
-const testAccSlbAclBasicConfig = `
+func resourceSLBAclDependence(name string) string {
+	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAccSlbAcl"
+  default = "tf-testAccSlbAcl"
 }
-variable "ip_version" {
-	default = "ipv4"
-}
-
-resource "alicloud_slb_acl" "default" {
-  name = "${var.name}"
-  ip_version = "${var.ip_version}"
-  entry_list {
-      entry="10.10.10.0/24"
-      comment="first"
-    }
-   entry_list {
-      entry="168.10.10.0/24"
-      comment="second"
-    }
-}
-`
-
-const testAccSlbAclBasicConfig_name = `
-variable "name" {
-	default = "tf-testAccSlbAcl_name"
-}
-variable "ip_version" {
-	default = "ipv4"
-}
-
-resource "alicloud_slb_acl" "default" {
-  name = "${var.name}"
-  ip_version = "${var.ip_version}"
-  entry_list {
-      entry="10.10.10.0/24"
-      comment="first"
-    }
-   entry_list {
-      entry="168.10.10.0/24"
-      comment="second"
-    }
-}
-`
-
-const testAccSlbAclBasicConfig_entry_list = `
-variable "name" {
-	default = "tf-testAccSlbAcl_name"
-}
-variable "ip_version" {
-	default = "ipv4"
-}
-
-resource "alicloud_slb_acl" "default" {
-  name = "${var.name}"
-  ip_version = "${var.ip_version}"
-  entry_list {
-      entry="10.10.10.0/24"
-      comment="first"
-    }
-  entry_list {
-		entry="168.10.10.0/24"
-		comment="second"
-	}
-  entry_list {		
-      entry="172.10.10.0/24"
-      comment="third"
-    }
-}
-`
-const testAccSlbAclBasicConfig_mulit = `
-variable "name" {
-	default = "tf-testAccSlbAcl"
-}
-variable "ip_version" {
-	default = "ipv4"
+variable "basic_name" {
+  default = "tf-testAccSlbAcl_name"
 }
 variable "number" {
-	default = "10"
+  default = "10"
 }
-resource "alicloud_slb_acl" "default" {
-	count = "${var.number}"
-  name = "${var.name}-${count.index}"
-  ip_version = "${var.ip_version}"
-  entry_list {
-      entry="10.10.10.0/24"
-      comment="first"
-    }
-   entry_list {
-      entry="168.10.10.0/24"
-      comment="second"
-    }
+variable "ip_version" {
+  default = "ipv4"
 }
-`
+`)
+}
