@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -97,16 +98,16 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.name}",
+					"name":       "${var.name}",
 					"ip_version": "${var.ip_version}",
 					"entry_list": []map[string]interface{}{
 						{
-							"entry": "10.10.10.0/24",
-							"comment":    "80",
+							"entry":   "10.10.10.0/24",
+							"comment": "80",
 						},
 						{
-							"entry":"168.10.10.0/24",
-							"comment":   "second",
+							"entry":   "168.10.10.0/24",
+							"comment": "second",
 						},
 					},
 				}),
@@ -125,16 +126,16 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.basic_name}",
+					"name":       "${var.basic_name}",
 					"ip_version": "${var.ip_version}",
 					"entry_list": []map[string]interface{}{
 						{
-							"entry": "10.10.10.0/24",
-							"comment":    "80",
+							"entry":   "10.10.10.0/24",
+							"comment": "80",
 						},
 						{
-							"entry":"168.10.10.0/24",
-							"comment":   "second",
+							"entry":   "168.10.10.0/24",
+							"comment": "second",
 						},
 					},
 				}),
@@ -146,20 +147,20 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.basic_name}",
+					"name":       "${var.basic_name}",
 					"ip_version": "${var.ip_version}",
 					"entry_list": []map[string]interface{}{
 						{
-							"entry": "10.10.10.0/24",
-							"comment":    "80",
+							"entry":   "10.10.10.0/24",
+							"comment": "80",
 						},
 						{
-							"entry":"168.10.10.0/24",
-							"comment":   "second",
+							"entry":   "168.10.10.0/24",
+							"comment": "second",
 						},
 						{
-							"entry":"172.10.10.0/24",
-							"comment":   "third",
+							"entry":   "172.10.10.0/24",
+							"comment": "third",
 						},
 					},
 				}),
@@ -171,16 +172,16 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.name}",
+					"name":       "${var.name}",
 					"ip_version": "${var.ip_version}",
 					"entry_list": []map[string]interface{}{
 						{
-							"entry": "10.10.10.0/24",
-							"comment":    "80",
+							"entry":   "10.10.10.0/24",
+							"comment": "80",
 						},
 						{
-							"entry":"168.10.10.0/24",
-							"comment":   "second",
+							"entry":   "168.10.10.0/24",
+							"comment": "second",
 						},
 					},
 				}),
@@ -223,17 +224,17 @@ func TestAccAlicloudSlbAcl_muilt(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.name}-${count.index}",
-					"count": "${var.number}",
+					"name":       "${var.name}-${count.index}",
+					"count":      "${var.number}",
 					"ip_version": "${var.ip_version}",
 					"entry_list": []map[string]interface{}{
 						{
-							"entry": "10.10.10.0/24",
-							"comment":    "80",
+							"entry":   "10.10.10.0/24",
+							"comment": "80",
 						},
 						{
-							"entry":"168.10.10.0/24",
-							"comment":   "second",
+							"entry":   "168.10.10.0/24",
+							"comment": "second",
 						},
 					},
 				}),
