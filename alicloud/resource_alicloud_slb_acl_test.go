@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform/helper/acctest"
 )
 
 func init() {
