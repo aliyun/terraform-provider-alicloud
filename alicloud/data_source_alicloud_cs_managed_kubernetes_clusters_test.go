@@ -14,7 +14,7 @@ func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 	resourceId := "data.alicloud_cs_managed_kubernetes_clusters.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
-		fmt.Sprintf("tf-testAccManagedK8s-%d", rand),
+		fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
 		dataSourceCSManagedKubernetesClustersConfigDependence)
 
 	idsConf := dataSourceTestAccConfig{
@@ -54,19 +54,24 @@ func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 
 	var existCSManagedKubernetesClustersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                        "1",
-			"ids.0":                        CHECKSET,
-			"names.#":                      "1",
-			"names.0":                      REGEXMATCH + fmt.Sprintf("tf-testAccManagedK8s-%d", rand),
-			"clusters.#":                   "1",
-			"clusters.0.id":                CHECKSET,
-			"clusters.0.name":              REGEXMATCH + fmt.Sprintf("tf-testAccManagedK8s-%d", rand),
-			"clusters.0.availability_zone": CHECKSET,
-			"clusters.0.security_group_id": CHECKSET,
-			"clusters.0.nat_gateway_id":    CHECKSET,
-			"clusters.0.vpc_id":            CHECKSET,
-			"clusters.0.worker_nodes.#":    "2",
-			"clusters.0.connections.%":     CHECKSET,
+			"ids.#":                                "1",
+			"ids.0":                                CHECKSET,
+			"names.#":                              "1",
+			"names.0":                              REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
+			"clusters.#":                           "1",
+			"clusters.0.id":                        CHECKSET,
+			"clusters.0.name":                      REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
+			"clusters.0.availability_zone":         CHECKSET,
+			"clusters.0.security_group_id":         CHECKSET,
+			"clusters.0.nat_gateway_id":            CHECKSET,
+			"clusters.0.vpc_id":                    CHECKSET,
+			"clusters.0.worker_nodes.#":            "2",
+			"clusters.0.connections.%":             CHECKSET,
+			"clusters.0.log_config.#":              "1",
+			"clusters.0.log_config.0.type":         "",  // Because the API does not return  field 'type', the default value of empty is used
+			"clusters.0.log_config.0.project":      "",  // Because the API does not return  field 'project', the default value of empty is used
+			"clusters.0.worker_data_disk_category": "",  // Because the API does not return  field 'worker_data_disk_category', the default value of empty is used
+			"clusters.0.worker_data_disk_size":     "0", // Because the API does not return  field 'worker_data_disk_size', the default value of 0 is used
 		}
 	}
 
@@ -131,6 +136,12 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   install_cloud_monitor = true
   slb_internet_enabled = true
   worker_disk_category  = "cloud_efficiency"
+  worker_data_disk_category = "cloud_ssd"
+  worker_data_disk_size =  200
+  log_config {
+    type = "SLS"
+    project = "${var.name}-managed-sls"
+  }
 }
 `, name)
 }
