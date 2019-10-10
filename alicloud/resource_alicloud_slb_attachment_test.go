@@ -7,8 +7,8 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
@@ -40,8 +40,8 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.0.id}"},
-					"weight": "90",
+					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
+					"weight":           "90",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -59,8 +59,8 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.0.id}"},
-					"weight": "70",
+					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
+					"weight":           "70",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -71,8 +71,8 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-					"weight": "70",
+					"instance_ids":     []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+					"weight":           "70",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -83,8 +83,8 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.0.id}"},
-					"weight": "90",
+					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
+					"weight":           "90",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -127,9 +127,9 @@ func TestAccAlicloudSlbAttachment_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.id}"},
-					"weight": "90",
-					"count": "10",
+					"instance_ids":     []string{"${alicloud_instance.default.id}"},
+					"weight":           "90",
+					"count":            "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -172,8 +172,8 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.0.id}"},
-					"weight": "90",
+					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
+					"weight":           "90",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -186,8 +186,8 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.0.id}"},
-					"weight": "70",
+					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
+					"weight":           "70",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -198,8 +198,8 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-					"weight": "70",
+					"instance_ids":     []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+					"weight":           "70",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -210,8 +210,8 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"instance_ids": []string{"${alicloud_instance.default.0.id}"},
-					"weight": "90",
+					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
+					"weight":           "90",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform/helper/acctest"
 )
 
 func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
@@ -39,12 +39,12 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name": "${var.name}",
+					"name":             "${var.name}",
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port": "100",
-							"weight": "10",
+							"port":       "100",
+							"weight":     "10",
 						},
 					},
 				}),
@@ -63,12 +63,12 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name": "${var.update_name}",
+					"name":             "${var.update_name}",
 					"servers": []map[string]interface{}{
 						{
-							"server_ids":[]string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port": "100",
-							"weight": "10",
+							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+							"port":       "100",
+							"weight":     "10",
 						},
 					},
 				}),
@@ -80,20 +80,20 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 			},
 			{
 				Config: testAccVpcUpdateServerConfig(map[string]interface{}{
-					"depends_on": []string{"alicloud_network_interface_attachment.default"},
+					"depends_on":       []string{"alicloud_network_interface_attachment.default"},
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name": "${var.name}",
+					"name":             "${var.name}",
 					"servers": []map[string]interface{}{
 						{
-							"server_ids":[]string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port": "100",
-							"weight": "10",
+							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+							"port":       "100",
+							"weight":     "10",
 						},
 						{
-							"server_ids":[]string{"${alicloud_network_interface.default.0.id}"},
-							"port": "70",
-							"weight": "10",
-							"type": "eni",
+							"server_ids": []string{"${alicloud_network_interface.default.0.id}"},
+							"port":       "70",
+							"weight":     "10",
+							"type":       "eni",
 						},
 					},
 				}),
@@ -114,12 +114,12 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name": "${var.name}",
+					"name":             "${var.name}",
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port": "100",
-							"weight": "10",
+							"port":       "100",
+							"weight":     "10",
 						},
 					},
 				}),
@@ -162,18 +162,18 @@ func TestAccAlicloudSlbServerGroup_multi_vpc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name": "${var.name}",
-					"count": "10",
+					"name":             "${var.name}",
+					"count":            "10",
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port": "100",
-							"weight": "10",
+							"port":       "100",
+							"weight":     "10",
 						},
 						{
 							"server_ids": "${alicloud_instance.default.*.id}",
-							"port": "80",
-							"weight": "100",
+							"port":       "80",
+							"weight":     "100",
 						},
 					},
 				}),
@@ -215,17 +215,17 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name": "${var.name}",
+					"name":             "${var.name}",
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port": "100",
-							"weight": "10",
+							"port":       "100",
+							"weight":     "10",
 						},
 						{
 							"server_ids": "${alicloud_instance.default.*.id}",
-							"port": "80",
-							"weight": "100",
+							"port":       "80",
+							"weight":     "100",
 						},
 					},
 				}),
@@ -244,17 +244,17 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name": "${var.update_name}",
+					"name":             "${var.update_name}",
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port": "100",
-							"weight": "10",
+							"port":       "100",
+							"weight":     "10",
 						},
 						{
 							"server_ids": "${alicloud_instance.default.*.id}",
-							"port": "80",
-							"weight": "100",
+							"port":       "80",
+							"weight":     "100",
 						},
 					},
 				}),
@@ -267,12 +267,12 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name": "${var.update_name}",
+					"name":             "${var.update_name}",
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port": "100",
-							"weight": "10",
+							"port":       "100",
+							"weight":     "10",
 						},
 					},
 				}),
@@ -285,17 +285,17 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name": "${var.name}",
+					"name":             "${var.name}",
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port": "100",
-							"weight": "10",
+							"port":       "100",
+							"weight":     "10",
 						},
 						{
 							"server_ids": "${alicloud_instance.default.*.id}",
-							"port": "80",
-							"weight": "100",
+							"port":       "80",
+							"weight":     "100",
 						},
 					},
 				}),
@@ -320,7 +320,7 @@ func buildservers(count int) string {
   }
   `
 	for i := 0; i < count; i++ {
-		result += fmt.Sprintf(temp, i, i + 1)
+		result += fmt.Sprintf(temp, i, i+1)
 	}
 	return result
 }

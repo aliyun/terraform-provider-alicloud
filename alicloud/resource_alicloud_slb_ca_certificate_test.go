@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform/helper/acctest"
 )
 
 func init() {
@@ -116,7 +116,7 @@ func TestAccAlicloudSlbCACertificate_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.update_name}",
+					"name":           "${var.update_name}",
 					"ca_certificate": "${var.ca_certificate}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -152,12 +152,12 @@ func TestAccAlicloudSlbCACertificate_multi(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:    rac.checkResourceDestroy(),
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.name}",
-					"count": "10",
+					"name":           "${var.name}",
+					"count":          "10",
 					"ca_certificate": "${var.ca_certificate}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
