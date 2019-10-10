@@ -1,0 +1,107 @@
+---
+layout: "alicloud"
+page_title: "Alicloud: alicloud_cs_serveless_kubernetes"
+sidebar_current: "docs-alicloud-resource-cs-serveless-kubernetes"
+description: |-
+  Provides a Alicloud resource to manage container serveless kubernetes cluster.
+---
+
+# alicloud\_cs\_serveless_kubernetes
+
+This resource will help you to manager a Serveless Kubernetes Cluster. The cluster is same as container service created by web console.
+
+
+-> **NOTE:** Serveless Kubernetes cluster only supports VPC network and it can access internet while creating kubernetes cluster.
+A Nat Gateway and configuring a SNAT for it can ensure one VPC network access internet. If there is no nat gateway in the
+VPC, you can set `new_nat_gateway` to "true" to create one automatically.
+
+-> **NOTE:** Creating serveless kubernetes cluster need to install several packages and it will cost about 5 minutes. Please be patient.
+
+-> **NOTE:** The provider supports to download kube config, client certificate, client key and cluster ca certificate
+after creating cluster successfully, and you can put them into the specified location, like '~/.kube/config'.
+
+-> **NOTE:** If you want to manage serveless Kubernetes, you can use [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html).
+
+-> **NOTE:** You need to activate several other products and confirm Authorization Policy used by Container Service before using this resource.
+Please refer to the `Authorization management` and `Cluster management` sections in the [Document Center](https://www.alibabacloud.com/help/doc-detail/86488.htm).
+
+-> **NOTE:** Available in 1.57.2+
+
+## Example Usage
+
+Basic Usage
+
+```
+variable "name" {
+  default = "my-first-k8s"
+}
+data "alicloud_zones" main {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  name = "${var.name}"
+  cidr_block = "10.1.0.0/21"
+}
+
+resource "alicloud_vswitch" "default" {
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "10.1.1.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_cs_serveless_kubernetes" "serveless" {
+  name_prefix = "${var.name}"
+  vpc_id = "${alicloud_vpc.default.id}"
+  vswitch_id = "${alicloud_vswitch.default.id}"
+  new_nat_gateway = true
+  enndpoint_public_access_enabled = true
+  private_zone = false
+  deletion_protection = false
+  tags = {
+		"k-aa":"v-aa"
+		"k-bb":"v-aa",
+  }
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+
+* `name` - (Optional) The kubernetes cluster's name. It is the only in one Alicloud account.
+* `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
+* `vpc_id` - (Required, ForceNew) The vpc where new kubernetes cluster will be located. Specify one vpc's id, if it is not specified, a new VPC  will be built.
+* `vswitch_id` - (Required, ForceNew) The vswitch where new kubernetes cluster will be located. Specify one vswitch's id, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
+* `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true.
+* `enndpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
+* `private_zone` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
+* `deletion_protection` - (Optional, ForceNew) Whether enable the deletion protection or not.
+    - true: Enable deletion protection.
+    - false: Disable deletion protection.
+* `force_update` - (Optional) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
+* `tags` - (Optional) Default nil, A map of tags assigned to the kubernetes cluster .
+* `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
+* `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
+* `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
+* `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
+
+## Attributes Reference
+
+The following attributes are exported:
+
+* `id` - The ID of the container cluster.
+* `name` - The name of the container cluster.
+* `vpc_id` - The ID of VPC where the current cluster is located.
+* `vswitch_id` - The ID of VSwicth where the current cluster is located.
+* `security_group_id` - The ID of security group where the current cluster worker node is located.
+* `deletion_protection` - Whether enable the deletion protection or not.
+
+## Import
+
+Serveless Kubernetes cluster can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_cs_serveless_kubernetes.main ce4273f9156874b46bb
+```

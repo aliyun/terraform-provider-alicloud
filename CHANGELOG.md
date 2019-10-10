@@ -1,4 +1,26 @@
-## 1.57.1 (Unreleased)
+## 1.57.2 (Unreleased)
+## 1.57.1 (October 11, 2019)
+
+IMPROVEMENTS:
+
+- improve:improve some resource support encrypt password ([#1727](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1727))
+- improve(sdk): updated sdk to v1.60.191 ([#1725](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1725))
+- update tablestore package ([#1719](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1719))
+- managekubernetes support sls ([#1718](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1718))
+- improve(instance): support encrypt password when creating or updating ecs instance ([#1711](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1711))
+- update golang image version ([#1709](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1709))
+- Added credit_specification to ECS instance resource ([#1705](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1705))
+- improve(slb_rule): remove `name` forcenew and make it can be updated ([#1703](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1703))
+- upgrade terraform package ([#1702](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1702))
+- improve emr test case, update document ([#1698](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1698))
+- improve emr test case ([#1697](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1697))
+- improve(provider): update go version to 1.12 ([#1686](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1686))
+- impove(slb_listener) slb listener support same port ([#1655](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1655))
+
+BUG FIXES:
+
+- fix go clean error in the ci ([#1710](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1710))
+
 ## 1.57.0 (September 27, 2019)
 
 - **New Resource:** `alicloud_ddosbgp_instance` ([#1650](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1650))

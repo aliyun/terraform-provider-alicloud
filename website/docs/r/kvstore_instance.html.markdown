@@ -51,6 +51,8 @@ The following arguments are supported:
 
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
 * `password`- (Optional, Sensitive) The password of the DB instance. The password is a string of 8 to 30 characters and must contain uppercase letters, lowercase letters, and numbers.
+* `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to a instance. It is conflicted with `password`.
+* `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `instance_class` - (Required) Type of the applied ApsaraDB for Redis instance.
 For more information, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/61135.htm).
 * `availability_zone` - (Optional, ForceNew) The Zone to launch the DB instance.

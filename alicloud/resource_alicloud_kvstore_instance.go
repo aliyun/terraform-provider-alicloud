@@ -44,6 +44,19 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Sensitive:    true,
 				ValidateFunc: validateRKVPassword,
 			},
+			"kms_encrypted_password": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"password"},
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
+			},
 			"instance_class": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -414,9 +427,23 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		update = true
 	}
 
-	if d.HasChange("password") {
-		request.NewPassword = d.Get("password").(string)
-		update = true
+	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
+		if v := d.Get("password").(string); v != "" {
+			d.SetPartial("password")
+			request.NewPassword = v
+			update = true
+		}
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
+			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
+			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			request.NewPassword = decryptResp.Plaintext
+			d.SetPartial("kms_encrypted_password")
+			d.SetPartial("kms_encryption_context")
+			update = true
+		}
 	}
 
 	if update {
@@ -547,7 +574,19 @@ func buildKVStoreCreateRequest(d *schema.ResourceData, meta interface{}) (*r_kvs
 	request.EngineVersion = Trim(d.Get("engine_version").(string))
 	request.InstanceClass = Trim(d.Get("instance_class").(string))
 	request.ChargeType = Trim(d.Get("instance_charge_type").(string))
-	request.Password = Trim(d.Get("password").(string))
+
+	request.Password = d.Get("password").(string)
+	if request.Password == "" {
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return request, WrapError(err)
+			}
+			request.Password = decryptResp.Plaintext
+		}
+	}
+
 	request.BackupId = Trim(d.Get("backup_id").(string))
 
 	if PayType(request.ChargeType) == PrePaid {
