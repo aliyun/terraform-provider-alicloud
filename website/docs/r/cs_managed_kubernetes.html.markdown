@@ -89,7 +89,7 @@ It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in
 * `force_update` - (Optional) Default false, when you want to change `worker_instance_types` and `vswitch_ids`, you have to set this field to true, then the cluster will be recreated.
 * `worker_numbers` - (Deprecated from version 1.53.0) The worker node number of the kubernetes cluster. Default to [3]. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
 * `worker_instance_types` - (Required, ForceNew) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
-You can get the available kubetnetes master node instance types by [datasource instance_types](https://www.terraform.io/docs/providers/alicloud/d/instance_types.html#kubernetes_node_role)
+You can get the available kubernetes master node instance types by [datasource instance_types](https://www.terraform.io/docs/providers/alicloud/d/instance_types.html#kubernetes_node_role)
 * `worker_instance_charge_type` - (Optional, ForceNew) Worker payment type. `PrePaid` or `PostPaid`, defaults to `PostPaid`.
 * `worker_period_unit` - (Optional) Worker payment period unit. `Month` or `Week`, defaults to `Month`.
 * `worker_period` - (Optional) Worker payment period. When period unit is `Month`, it can be one of { “1”, “2”, “3”, “4”, “5”, “6”, “7”, “8”, “9”, “12”, “24”, “36”,”48”,”60”}.  When period unit is `Week`, it can be one of {“1”, “2”, “3”, “4”}.
