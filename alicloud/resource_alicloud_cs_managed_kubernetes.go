@@ -98,13 +98,27 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional:      true,
 				ForceNew:      true,
 				Sensitive:     true,
-				ConflictsWith: []string{"key_name"},
+				ConflictsWith: []string{"key_name", "kms_encrypted_password"},
 			},
 			"key_name": {
 				Type:          schema.TypeString,
 				ForceNew:      true,
 				Optional:      true,
-				ConflictsWith: []string{"password"},
+				ConflictsWith: []string{"password", "kms_encrypted_password"},
+			},
+			"kms_encrypted_password": {
+				Type:          schema.TypeString,
+				ForceNew:      true,
+				Optional:      true,
+				ConflictsWith: []string{"password", "key_name"},
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
 			},
 			"pod_cidr": {
 				Type:     schema.TypeString,
@@ -363,8 +377,21 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 
 		// When cluster was created using keypair, LoginPassword will be ignored.
 		// When cluster was created using password, LoginPassword is required to resize.
+
+		password := d.Get("password").(string)
+		if password == "" {
+			if v := d.Get("kms_encrypted_password").(string); v != "" {
+				kmsService := KmsService{client}
+				decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+				if err != nil {
+					return WrapError(err)
+				}
+				password = decryptResp.Plaintext
+			}
+		}
+
 		args := &cs.KubernetesClusterScaleArgs{
-			LoginPassword:            d.Get("password").(string),
+			LoginPassword:            password,
 			KeyPair:                  d.Get("key_name").(string),
 			WorkerInstanceTypes:      workerInstanceTypes,
 			WorkerSystemDiskCategory: ecs.DiskCategory(d.Get("worker_disk_category").(string)),
@@ -688,6 +715,18 @@ func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		return nil, WrapError(err)
 	}
 
+	password := d.Get("password").(string)
+	if password == "" {
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			password = decryptResp.Plaintext
+		}
+	}
+
 	creationArgs := &cs.KubernetesCreationArgs{
 		Name:                     clusterName,
 		ClusterType:              "ManagedKubernetes",
@@ -697,7 +736,7 @@ func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		WorkerInstanceTypes:      workerInstanceTypes,
 		VPCID:                    vpcId,
 		VSwitchIds:               vswitchIds,
-		LoginPassword:            d.Get("password").(string),
+		LoginPassword:            password,
 		KeyPair:                  d.Get("key_name").(string),
 		ImageId:                  d.Get("image_id").(string),
 		Network:                  d.Get("cluster_network_type").(string),

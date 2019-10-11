@@ -36,10 +36,22 @@ func resourceAlicloudDBAccount() *schema.Resource {
 
 			"password": {
 				Type:      schema.TypeString,
-				Required:  true,
+				Optional:  true,
 				Sensitive: true,
 			},
-
+			"kms_encrypted_password": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"password"},
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
+			},
 			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -63,7 +75,24 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Get("instance_id").(string)
 	request.AccountName = d.Get("name").(string)
-	request.AccountPassword = d.Get("password").(string)
+
+	password := d.Get("password").(string)
+	kmsPassword := d.Get("kms_encrypted_password").(string)
+
+	if password == "" && kmsPassword == "" {
+		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+	}
+
+	if password != "" {
+		request.AccountPassword = password
+	} else {
+		kmsService := KmsService{client}
+		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		request.AccountPassword = decryptResp.Plaintext
+	}
 	request.AccountType = d.Get("type").(string)
 
 	// Description will not be set when account type is normal and it is a API bug
@@ -149,7 +178,7 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("description")
 	}
 
-	if d.HasChange("password") {
+	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
 		if err := rdsService.WaitForAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
@@ -157,7 +186,27 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		request.RegionId = client.RegionId
 		request.DBInstanceId = instanceId
 		request.AccountName = accountName
-		request.AccountPassword = d.Get("password").(string)
+
+		password := d.Get("password").(string)
+		kmsPassword := d.Get("kms_encrypted_password").(string)
+
+		if password == "" && kmsPassword == "" {
+			return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+		}
+
+		if password != "" {
+			d.SetPartial("password")
+			request.AccountPassword = password
+		} else {
+			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
+			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			request.AccountPassword = decryptResp.Plaintext
+			d.SetPartial("kms_encrypted_password")
+			d.SetPartial("kms_encryption_context")
+		}
 
 		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.ResetAccountPassword(request)

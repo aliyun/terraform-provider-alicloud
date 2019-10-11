@@ -140,15 +140,29 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:         true,
 				ForceNew:         true,
 				Sensitive:        true,
-				ConflictsWith:    []string{"key_name"},
+				ConflictsWith:    []string{"key_name", "kms_encrypted_password"},
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"key_name": {
 				Type:             schema.TypeString,
 				ForceNew:         true,
 				Optional:         true,
-				ConflictsWith:    []string{"password"},
+				ConflictsWith:    []string{"password", "kms_encrypted_password"},
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
+			},
+			"kms_encrypted_password": {
+				Type:          schema.TypeString,
+				ForceNew:      true,
+				Optional:      true,
+				ConflictsWith: []string{"password", "key_name"},
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
 			},
 			"user_ca": {
 				Type:             schema.TypeString,
@@ -562,10 +576,22 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		workerNumbers := expandIntList(d.Get("worker_numbers").([]interface{}))
 		workerInstanceTypes := expandStringList(d.Get("worker_instance_types").([]interface{}))
 
+		password := d.Get("password").(string)
+		if password == "" {
+			if v := d.Get("kms_encrypted_password").(string); v != "" {
+				kmsService := KmsService{client}
+				decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+				if err != nil {
+					return WrapError(err)
+				}
+				password = decryptResp.Plaintext
+			}
+		}
+
 		args := &cs.KubernetesClusterResizeArgs{
 			DisableRollback: true,
 			TimeoutMins:     60,
-			LoginPassword:   d.Get("password").(string),
+			LoginPassword:   password,
 		}
 
 		if len(workerNumbers) == 1 {
@@ -992,6 +1018,18 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		return nil, WrapError(err)
 	}
 
+	password := d.Get("password").(string)
+	if password == "" {
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			password = decryptResp.Plaintext
+		}
+	}
+
 	creationArgs := &cs.KubernetesCreationArgs{
 		Name:                     clusterName,
 		ClusterType:              "Kubernetes",
@@ -1001,7 +1039,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		WorkerInstanceType:       workerInstanceType,
 		VPCID:                    vpcId,
 		VSwitchId:                vswitchID,
-		LoginPassword:            d.Get("password").(string),
+		LoginPassword:            password,
 		KeyPair:                  d.Get("key_name").(string),
 		ImageId:                  d.Get("image_id").(string),
 		Network:                  d.Get("cluster_network_type").(string),
@@ -1101,6 +1139,18 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		return nil, WrapError(err)
 	}
 
+	password := d.Get("password").(string)
+	if password == "" {
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			password = decryptResp.Plaintext
+		}
+	}
+
 	creationArgs := &cs.KubernetesMultiAZCreationArgs{
 		Name:                     clusterName,
 		ClusterType:              "Kubernetes",
@@ -1113,7 +1163,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		WorkerInstanceTypeA:      workerInstanceTypes[0],
 		WorkerInstanceTypeB:      workerInstanceTypes[1],
 		WorkerInstanceTypeC:      workerInstanceTypes[2],
-		LoginPassword:            d.Get("password").(string),
+		LoginPassword:            password,
 		KeyPair:                  d.Get("key_name").(string),
 		VSwitchIdA:               vswitchIDs[0],
 		VSwitchIdB:               vswitchIDs[1],

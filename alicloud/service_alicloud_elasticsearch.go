@@ -359,7 +359,29 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 	elasticsearchService := ElasticsearchService{client}
 
 	content := make(map[string]interface{})
-	content["esAdminPassword"] = d.Get("password")
+
+	password := d.Get("password").(string)
+
+	kmsPassword := d.Get("kms_encrypted_password").(string)
+
+	if password == "" && kmsPassword == "" {
+		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+	}
+
+	if password != "" {
+		d.SetPartial("password")
+		content["esAdminPassword"] = password
+	} else {
+		kmsService := KmsService{meta.(*connectivity.AliyunClient)}
+		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		content["esAdminPassword"] = decryptResp.Plaintext
+		d.SetPartial("kms_encrypted_password")
+		d.SetPartial("kms_encryption_context")
+	}
+
 	data, err := json.Marshal(content)
 	if err != nil {
 		return WrapError(err)
