@@ -231,6 +231,20 @@ func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 	return true
 }
 
+func polardbPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("pay_type").(string) == "PrePaid" {
+		return false
+	}
+	return true
+}
+
+func polardbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("pay_type").(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
+		return false
+	}
+	return true
+}
+
 func ecsSpotStrategyDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if d.Get("instance_charge_type").(string) == string(PostPaid) {
 		return false
