@@ -1,4 +1,24 @@
 ## 1.57.1 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve(sdk): updated sdk to v1.60.191 [GH-1725]
+- update tablestore package [GH-1719]
+- managekubernetes support sls [GH-1718]
+- improve(instance): support encrypt password when creating or updating ecs instance [GH-1711]
+- update golang image version [GH-1709]
+- Added credit_specification to ECS instance resource [GH-1705]
+- improve(slb_rule): remove `name` forcenew and make it can be updated [GH-1703]
+- upgrade terraform package [GH-1702]
+- improve emr test case, update document [GH-1698]
+- improve emr test case [GH-1697]
+- improve(provider): update go version to 1.12 [GH-1686]
+- impove(slb_listener) slb listener support same port [GH-1655]
+
+BUG FIXES:
+
+- fix go clean error in the ci [GH-1710]
+
 ## 1.57.0 (September 27, 2019)
 
 - **New Resource:** `alicloud_ddosbgp_instance` ([#1650](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1650))
