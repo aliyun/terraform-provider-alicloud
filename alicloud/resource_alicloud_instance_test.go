@@ -304,6 +304,16 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 			},*/
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"credit_specification": "Unlimited",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"credit_specification": "Unlimited",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"volume_tags": map[string]string{
 						"tag1": "test",
 					},
@@ -350,6 +360,7 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 					"internet_max_bandwidth_in":  REMOVEKEY,
 					"host_name":                  REMOVEKEY,
 					"password":                   REMOVEKEY,
+					"credit_specification":       "Standard",
 
 					"system_disk_size": "70",
 					"volume_tags":      REMOVEKEY,
@@ -384,6 +395,8 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 						"password":         "",
 						"is_outdated":      NOSET,
 						"system_disk_size": "70",
+
+						"credit_specification": "Standard",
 
 						"private_ip": CHECKSET,
 						"public_ip":  CHECKSET,
@@ -550,6 +563,16 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"credit_specification": "Unlimited",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"credit_specification": "Unlimited",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"system_disk_size": "50",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -616,6 +639,7 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 					"internet_max_bandwidth_in":  REMOVEKEY,
 					"host_name":                  REMOVEKEY,
 					"password":                   REMOVEKEY,
+					"credit_specification":       "Standard",
 
 					"system_disk_size": "70",
 					"private_ip":       REMOVEKEY,
@@ -652,6 +676,8 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 						"password":         "",
 						"is_outdated":      NOSET,
 						"system_disk_size": "70",
+
+						"credit_specification": "Standard",
 
 						"private_ip": CHECKSET,
 						"public_ip":  "",
@@ -1574,6 +1600,7 @@ var testAccInstanceCheckMap = map[string]string{
 
 	"availability_zone":             CHECKSET,
 	"system_disk_category":          "cloud_efficiency",
+	"credit_specification":          "",
 	"spot_strategy":                 "NoSpot",
 	"spot_price_limit":              "0",
 	"security_enhancement_strategy": "Active",

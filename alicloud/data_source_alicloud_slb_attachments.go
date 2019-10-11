@@ -67,7 +67,7 @@ func dataSourceAlicloudSlbAttachmentsRead(d *schema.ResourceData, meta interface
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
-	var filteredBackendServersTemp []slb.BackendServer
+	var filteredBackendServersTemp []slb.BackendServerInDescribeLoadBalancerAttribute
 	if len(instanceIdsMap) > 0 {
 		for _, backendServer := range response.BackendServers.BackendServer {
 			if len(instanceIdsMap) > 0 {
@@ -85,7 +85,7 @@ func dataSourceAlicloudSlbAttachmentsRead(d *schema.ResourceData, meta interface
 	return slbAttachmentsDescriptionAttributes(d, filteredBackendServersTemp)
 }
 
-func slbAttachmentsDescriptionAttributes(d *schema.ResourceData, backendServers []slb.BackendServer) error {
+func slbAttachmentsDescriptionAttributes(d *schema.ResourceData, backendServers []slb.BackendServerInDescribeLoadBalancerAttribute) error {
 	var ids []string
 	var s []map[string]interface{}
 

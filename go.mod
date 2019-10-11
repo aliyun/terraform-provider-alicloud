@@ -2,7 +2,7 @@ module github.com/terraform-providers/terraform-provider-alicloud
 
 require (
 	github.com/Sirupsen/logrus v0.0.0-20181010200618-458213699411 // indirect
-	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190926111009-e12a36812fc2
+	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20191010082856-e76f4c50e182
 	github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
 	github.com/aliyun/aliyun-log-go-sdk v0.0.0-20181030123559-4e6c160e1ce5
 	github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190528142024-f8d6d645dc4b
@@ -10,7 +10,7 @@ require (
 	github.com/aliyun/fc-go-sdk v0.0.0-20190326033901-db3e654c23d6
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
 	github.com/cloudflare/golz4 v0.0.0-20150217214814-ef862a3cdc58 // indirect
-	github.com/denverdino/aliyungo v0.0.0-20190730233141-daf435c01246
+	github.com/denverdino/aliyungo v0.0.0-20190924033012-e8e08fe22cb2
 	github.com/dxh031/ali_mns v0.0.0-20180927082505-3ae5346f8cf9
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/gogap/errors v0.0.0-20160523102334-149c546090d0 // indirect

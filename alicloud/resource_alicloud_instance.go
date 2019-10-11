@@ -51,6 +51,15 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validateInstanceType,
 			},
 
+			"credit_specification": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(CreditSpecificationStandard),
+					string(CreditSpecificationUnlimited),
+				}),
+			},
+
 			"security_groups": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -432,6 +441,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("spot_price_limit", instance.SpotPriceLimit)
 	d.Set("internet_charge_type", instance.InternetChargeType)
 	d.Set("deletion_protection", instance.DeletionProtection)
+	d.Set("credit_specification", instance.CreditSpecification)
 
 	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
@@ -831,6 +841,10 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		request.InstanceName = v
 	}
 
+	if v := d.Get("credit_specification").(string); v != "" {
+		request.CreditSpecification = v
+	}
+
 	if v := d.Get("resource_group_id").(string); v != "" {
 		request.ResourceGroupId = v
 	}
@@ -1133,6 +1147,13 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	if d.HasChange("deletion_protection") {
 		d.SetPartial("deletion_protection")
 		request.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))
+		update = true
+	}
+
+	if d.HasChange("credit_specification") {
+		log.Printf("[DEBUG] ModifyInstanceAttribute credit_specification")
+		d.SetPartial("credit_specification")
+		request.CreditSpecification = d.Get("credit_specification").(string)
 		update = true
 	}
 

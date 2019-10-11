@@ -127,3 +127,10 @@ const (
 	ActiveSecurityEnhancementStrategy   = SecurityEnhancementStrategy("Active")
 	DeactiveSecurityEnhancementStrategy = SecurityEnhancementStrategy("Deactive")
 )
+
+type CreditSpecification string
+
+const (
+	CreditSpecificationStandard  = CreditSpecification("Standard")
+	CreditSpecificationUnlimited = CreditSpecification("Unlimited")
+)
