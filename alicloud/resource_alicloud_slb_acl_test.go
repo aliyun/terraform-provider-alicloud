@@ -173,6 +173,7 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         "tf-testAccSlbAcl",
+						"ip_version":   "ipv4",
 						"entry_list.#": "2",
 					}),
 				),
