@@ -167,6 +167,14 @@ const (
 	DBInternalError                        = "InternalError"
 	DBOperationDeniedOutofUsage            = "OperationDenied.OutofUsage"
 
+	// polarDB
+	InvalidDBClusterIdNotFound      = "InvalidDBClusterId.NotFound"
+	InvalidDBClusterNameNotFound    = "InvalidDBClusterName.NotFound"
+	InvalidDBClusterStatus          = "OperationDenied.DBClusterStatus"
+	EndpointStatusNotSupport        = "EndpointStatus.NotSupport"
+	InvalidPolarDBClusterStatus     = "OperationDenied.PolarDBClusterStatus"
+	InvalidReadPolarDBClusterStatus = "OperationDenied.ReadPolarDBClusterStatus"
+
 	// oss
 	OssBucketNotFound                 = "NoSuchBucket"
 	OssBodyNotFound                   = "404 Not Found"
@@ -378,7 +386,7 @@ var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "Ba
 var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotFound"}
 var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", InternalError, "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
-var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", "OperationDenied.DBInstanceStatus", DBInternalError, DBOperationDeniedOutofUsage}
+var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBClusterStatus", DBInternalError, DBOperationDeniedOutofUsage}
 var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatus", "OperationDenied.MasterDBInstanceState", "ReadDBInstance.Mismatch"}
 var NasNotFound = []string{InvalidMountTargetNotFound, InvalidFileSystemIDNotFound, ForbiddenNasNotFound, InvalidLBidNotFound, VolumeUnavailable}
 var SnapshotInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}

@@ -236,6 +236,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_yundun_dbaudit_instance":           dataSourceAlicloudDbauditInstances(),
 			"alicloud_yundun_bastionhost_instances":      dataSourceAlicloudBastionhostInstances(),
 			"alicloud_market_products":                   dataSourceAlicloudProducts(),
+			"alicloud_polardb_clusters":                  dataSourceAlicloudPolarDBClusters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -412,6 +413,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sag_client_user":                     resourceAlicloudSagClientUser(),
 			"alicloud_yundun_dbaudit_instance":             resourceAlicloudDbauditInstance(),
 			"alicloud_yundun_bastionhost_instance":         resourceAlicloudBastionhostInstance(),
+			"alicloud_polardb_cluster":                     resourceAlicloudPolarDBCluster(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -530,6 +532,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DdsEndpoint = strings.TrimSpace(endpoints["dds"].(string))
 		config.GpdbEnpoint = strings.TrimSpace(endpoints["gpdb"].(string))
 		config.KVStoreEndpoint = strings.TrimSpace(endpoints["kvstore"].(string))
+		config.PolarDBEndpoint = strings.TrimSpace(endpoints["polardb"].(string))
 		config.FcEndpoint = strings.TrimSpace(endpoints["fc"].(string))
 		config.ApigatewayEndpoint = strings.TrimSpace(endpoints["apigateway"].(string))
 		config.DatahubEndpoint = strings.TrimSpace(endpoints["datahub"].(string))
@@ -658,6 +661,8 @@ func init() {
 		"drds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DRDS endpoints.",
 
 		"dds_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MongoDB endpoints.",
+
+		"polardb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom PolarDB endpoints.",
 
 		"gpdb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom GPDB endpoints.",
 
@@ -872,6 +877,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["dds_endpoint"],
 				},
+				"polardb": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["polardb_endpoint"],
+				},
 				"gpdb": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1000,6 +1011,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["dds"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["gpdb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["kvstore"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["polardb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["fc"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["apigateway"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["datahub"].(string)))
