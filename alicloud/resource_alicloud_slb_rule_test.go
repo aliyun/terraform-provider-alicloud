@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -20,6 +20,10 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccSlbRuleUpdate%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbRuleBasicDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -28,10 +32,17 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckSlbRuleDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlbRuleBasic,
+				Config: testAccConfig(map[string]interface{}{
+					"name":             "${var.name}",
+					"load_balancer_id": "${alicloud_slb.default.id}",
+					"frontend_port":    "${alicloud_slb_listener.default.frontend_port}",
+					"domain":           "*.aliyun.com",
+					"url":              "/image",
+					"server_group_id":  "${alicloud_slb_server_group.default.id}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_id": CHECKSET,
@@ -49,13 +60,35 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccSlbRuleBasic_server_group_id,
+				Config: testAccConfig(map[string]interface{}{}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_health_check,
+				Config: testAccConfig(map[string]interface{}{
+					"name":                      "${var.name}",
+					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"frontend_port":             "${alicloud_slb_listener.default.frontend_port}",
+					"domain":                    "*.aliyun.com",
+					"url":                       "/image",
+					"server_group_id":           "${alicloud_slb_server_group.default.id}",
+					"cookie":                    "23ffsa",
+					"cookie_timeout":            "100",
+					"health_check_http_code":    "http_2xx",
+					"health_check_interval":     "10",
+					"health_check_uri":          "/test",
+					"health_check_connect_port": "80",
+					"health_check_timeout":      "10",
+					"healthy_threshold":         "3",
+					"unhealthy_threshold":       "3",
+					"sticky_session":            "on",
+					"sticky_session_type":       "server",
+					"listener_sync":             "off",
+					"scheduler":                 "rr",
+					"health_check_domain":       "test",
+					"health_check":              "on",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_id":          CHECKSET,
@@ -82,7 +115,9 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_health_check_http_code,
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_http_code": "http_3xx",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"health_check_http_code": "http_3xx",
@@ -90,7 +125,9 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_health_check_interval,
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_interval": "20",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"health_check_interval": "20",
@@ -98,7 +135,9 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_health_check_uri,
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_uri": "/test1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"health_check_uri": "/test1",
@@ -106,7 +145,9 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_health_check_connect_port,
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_connect_port": "90",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"health_check_connect_port": "90",
@@ -114,7 +155,9 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_health_check_time_out,
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_timeout": "20",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"health_check_timeout": "20",
@@ -122,7 +165,9 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_healthy_threshold,
+				Config: testAccConfig(map[string]interface{}{
+					"healthy_threshold": "5",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"healthy_threshold": "5",
@@ -130,7 +175,9 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_unhealthy_threshold,
+				Config: testAccConfig(map[string]interface{}{
+					"unhealthy_threshold": "5",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"unhealthy_threshold": "5",
@@ -138,7 +185,9 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_scheduler,
+				Config: testAccConfig(map[string]interface{}{
+					"scheduler": "wrr",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"scheduler": "wrr",
@@ -147,7 +196,9 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 			},
 
 			{
-				Config: testAccSlbRuleBasic_update_health_check_domain,
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_domain": "test1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"health_check_domain": "test1",
@@ -155,7 +206,9 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_cookie,
+				Config: testAccConfig(map[string]interface{}{
+					"cookie": "23ffsa1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cookie": "23ffsa1",
@@ -163,7 +216,10 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_sticky_session_type,
+				Config: testAccConfig(map[string]interface{}{
+					"cookie_timeout":      "100",
+					"sticky_session_type": "insert",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"sticky_session_type": "insert",
@@ -173,7 +229,9 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_cookie_timeout,
+				Config: testAccConfig(map[string]interface{}{
+					"cookie_timeout": "200",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cookie_timeout": "200",
@@ -181,7 +239,16 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_health_check,
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_http_code":    "http_2xx",
+					"health_check_interval":     "10",
+					"health_check_uri":          "/test",
+					"health_check_connect_port": "90",
+					"health_check_timeout":      "30",
+					"healthy_threshold":         "4",
+					"unhealthy_threshold":       "5",
+					"health_check":              "off",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"health_check":              "off",
@@ -197,7 +264,10 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_sticky_session,
+				Config: testAccConfig(map[string]interface{}{
+					"sticky_session":      "off",
+					"health_check_domain": "test",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"sticky_session":      "off",
@@ -207,7 +277,9 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_name,
+				Config: testAccConfig(map[string]interface{}{
+					"name": "${var.name}_change",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"sticky_session":      "off",
@@ -218,13 +290,20 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbRuleBasic_update_listener_sync,
+				Config: testAccConfig(map[string]interface{}{
+					"name":           "${var.name}",
+					"sticky_session": "off",
+					"listener_sync":  "on",
+					"scheduler":      "wrr",
+					"health_check":   "off",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"listener_sync":  "on",
 						"sticky_session": "",
 						"health_check":   "",
 						"scheduler":      "",
+						"name":           "tf-testAccSlbRuleBasic",
 					}),
 				),
 			},
@@ -232,41 +311,19 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 	})
 }
 
-func testAccCheckSlbRuleDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	slbService := SlbService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_slb_rule" {
-			continue
-		}
-
-		// Try to find the Slb server group
-		if _, err := slbService.DescribeSlbRule(rs.Primary.ID); err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return err
-		}
-		return fmt.Errorf("SLB Rule %s still exist", rs.Primary.ID)
-	}
-
-	return nil
-}
-
-const testAccSlbRuleBasic = `
+func resourceSlbRuleBasicDependence(name string) string {
+	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAccSlbRuleBasic"
+  default = "tf-testAccSlbRuleBasic"
 }
-
 data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
+  cpu_core_count    = 1
+  memory_size       = 2
 }
 data "alicloud_images" "default" {
         name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
+  most_recent = true
+  owners = "system"
 }
 
 resource "alicloud_vpc" "default" {
@@ -320,1618 +377,5 @@ resource "alicloud_slb_server_group" "default" {
       weight = 100
     }
 }
-
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
+`)
 }
-`
-
-const testAccSlbRuleBasic_server_group_id = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-    name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}_test"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-}
-`
-const testAccSlbRuleBasic_health_check = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 100
-  health_check_http_code = "http_2xx"
-  health_check_interval = 10
-  health_check_uri = "/test"
-  health_check_connect_port = 80
-  health_check_timeout = 10
-  healthy_threshold = 3
-  unhealthy_threshold = 3
-  sticky_session = "on"
-  sticky_session_type = "server"
-  listener_sync = "off"
-  scheduler = "rr"
-  health_check_domain = "test"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_health_check_http_code = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 100
-  health_check_http_code = "http_3xx"
-  health_check_interval = 10
-  health_check_uri = "/test"
-  health_check_connect_port = 80
-  health_check_timeout = 10
-  healthy_threshold = 3
-  unhealthy_threshold = 3
-  sticky_session = "on"
-  sticky_session_type = "server"
-  listener_sync = "off"
-  scheduler = "rr"
-  health_check_domain = "test"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_health_check_interval = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 100
-  health_check_http_code = "http_3xx"
-  health_check_interval = 20
-  health_check_uri = "/test"
-  health_check_connect_port = 80
-  health_check_timeout = 10
-  healthy_threshold = 3
-  unhealthy_threshold = 3
-  sticky_session = "on"
-  sticky_session_type = "server"
-  listener_sync = "off"
-  scheduler = "rr"
-  health_check_domain = "test"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_health_check_uri = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 100
-  health_check_http_code = "http_3xx"
-  health_check_interval = 20
-  health_check_uri = "/test1"
-  health_check_connect_port = 80
-  health_check_timeout = 10
-  healthy_threshold = 3
-  unhealthy_threshold = 3
-  sticky_session = "on"
-  sticky_session_type = "server"
-  listener_sync = "off"
-  scheduler = "rr"
-  health_check_domain = "test"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_health_check_connect_port = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 100
-  health_check_http_code = "http_3xx"
-  health_check_interval = 20
-  health_check_uri = "/test1"
-  health_check_connect_port = 90
-  health_check_timeout = 10
-  healthy_threshold = 3
-  unhealthy_threshold = 3
-  sticky_session = "on"
-  sticky_session_type = "server"
-  listener_sync = "off"
-  scheduler = "rr"
-  health_check_domain = "test"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_health_check_time_out = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 100
-  health_check_http_code = "http_3xx"
-  health_check_interval = 20
-  health_check_uri = "/test1"
-  health_check_connect_port = 90
-  health_check_timeout = 20
-  healthy_threshold = 3
-  unhealthy_threshold = 3
-  sticky_session = "on"
-  sticky_session_type = "server"
-  listener_sync = "off"
-  scheduler = "rr"
-  health_check_domain = "test"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_healthy_threshold = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 100
-  health_check_http_code = "http_3xx"
-  health_check_interval = 20
-  health_check_uri = "/test1"
-  health_check_connect_port = 90
-  health_check_timeout = 20
-  healthy_threshold = 5
-  unhealthy_threshold = 3
-  sticky_session = "on"
-  sticky_session_type = "server"
-  listener_sync = "off"
-  scheduler = "rr"
-  health_check_domain = "test"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_unhealthy_threshold = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 100
-  health_check_http_code = "http_3xx"
-  health_check_interval = 20
-  health_check_uri = "/test1"
-  health_check_connect_port = 90
-  health_check_timeout = 20
-  healthy_threshold = 5
-  unhealthy_threshold = 5
-  sticky_session = "on"
-  sticky_session_type = "server"
-  listener_sync = "off"
-  scheduler = "rr"
-  health_check_domain = "test"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_scheduler = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 100
-  health_check_http_code = "http_3xx"
-  health_check_interval = 20
-  health_check_uri = "/test1"
-  health_check_connect_port = 90
-  health_check_timeout = 20
-  healthy_threshold = 5
-  unhealthy_threshold = 5
-  sticky_session = "on"
-  sticky_session_type = "server"
-  listener_sync = "off"
-  scheduler = "wrr"
-  health_check_domain = "test"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_health_check_domain = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 100
-  health_check_http_code = "http_3xx"
-  health_check_interval = 20
-  health_check_uri = "/test1"
-  health_check_connect_port = 90
-  health_check_timeout = 20
-  healthy_threshold = 5
-  unhealthy_threshold = 5
-  sticky_session = "on"
-  sticky_session_type = "server"
-  listener_sync = "off"
-  scheduler = "wrr"
-  health_check_domain = "test1"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_cookie = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa1"
-  cookie_timeout = 100
-  health_check_http_code = "http_3xx"
-  health_check_interval = 20
-  health_check_uri = "/test1"
-  health_check_connect_port = 90
-  health_check_timeout = 20
-  healthy_threshold = 5
-  unhealthy_threshold = 5
-  sticky_session = "on"
-  sticky_session_type = "server"
-  listener_sync = "off"
-  scheduler = "wrr"
-  health_check_domain = "test1"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_sticky_session_type = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa1"
-  cookie_timeout = 100
-  health_check_http_code = "http_3xx"
-  health_check_interval = 20
-  health_check_uri = "/test1"
-  health_check_connect_port = 90
-  health_check_timeout = 20
-  healthy_threshold = 5
-  unhealthy_threshold = 5
-  sticky_session = "on"
-  sticky_session_type = "insert"
-  listener_sync = "off"
-  scheduler = "wrr"
-  health_check_domain = "test1"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_cookie_timeout = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa1"
-  cookie_timeout = 200
-  health_check_http_code = "http_3xx"
-  health_check_interval = 20
-  health_check_uri = "/test1"
-  health_check_connect_port = 90
-  health_check_timeout = 20
-  healthy_threshold = 5
-  unhealthy_threshold = 5
-  sticky_session = "on"
-  sticky_session_type = "insert"
-  listener_sync = "off"
-  scheduler = "wrr"
-  health_check_domain = "test1"
-  health_check = "on"
-}`
-
-const testAccSlbRuleBasic_update_health_check = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 200
-  health_check_http_code = "http_2xx"
-  health_check_interval = 10
-  health_check_uri = "/test"
-  health_check_connect_port = 90
-  health_check_timeout = 30
-  healthy_threshold = 4
-  unhealthy_threshold = 5
-  sticky_session = "on"
-  sticky_session_type = "insert"
-  listener_sync = "off"
-  scheduler = "wrr"
-  health_check_domain = "test"
-  health_check = "off"
-}`
-
-const testAccSlbRuleBasic_update_sticky_session = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 200
-  health_check_http_code = "http_2xx"
-  health_check_interval = 10
-  health_check_uri = "/test"
-  health_check_connect_port = 90
-  health_check_timeout = 30
-  healthy_threshold = 4
-  unhealthy_threshold = 5
-  sticky_session = "off"
-  sticky_session_type = "insert"
-  listener_sync = "off"
-  scheduler = "wrr"
-  health_check_domain = "test"
-  health_check = "off"
-}`
-
-const testAccSlbRuleBasic_update_name = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-        name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}_change"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 200
-  health_check_http_code = "http_2xx"
-  health_check_interval = 10
-  health_check_uri = "/test"
-  health_check_connect_port = 90
-  health_check_timeout = 30
-  healthy_threshold = 4
-  unhealthy_threshold = 5
-  sticky_session = "off"
-  sticky_session_type = "insert"
-  listener_sync = "off"
-  scheduler = "wrr"
-  health_check_domain = "test"
-  health_check = "off"
-}`
-
-const testAccSlbRuleBasic_update_listener_sync = `
-variable "name" {
-	default = "tf-testAccSlbRuleBasic"
-}
-
-data "alicloud_instance_types" "default" {
-	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-    name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  backend_port = 22
-  frontend_port = 22
-  protocol = "http"
-  bandwidth = 5
-  health_check_connect_port = "20"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-resource "alicloud_slb_rule" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  frontend_port = "${alicloud_slb_listener.default.frontend_port}"
-  name = "${var.name}_change"
-  domain = "*.aliyun.com"
-  url = "/image"
-  server_group_id = "${alicloud_slb_server_group.default.id}"
-  cookie = "23ffsa"
-  cookie_timeout = 200
-  health_check_http_code = "http_2xx"
-  health_check_interval = 10
-  health_check_uri = "/test"
-  health_check_connect_port = 90
-  health_check_timeout = 30
-  healthy_threshold = 4
-  unhealthy_threshold = 5
-  sticky_session = "off"
-  sticky_session_type = "insert"
-  listener_sync = "on"
-  scheduler = "wrr"
-  health_check_domain = "test"
-  health_check = "off"
-}`

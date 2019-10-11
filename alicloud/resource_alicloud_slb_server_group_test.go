@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -20,6 +20,12 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccSlbServerGroupVpc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbServerGroupDependence)
+	testAccVpcUpdateServerConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbServerGroupVpcUpdateServerDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -28,10 +34,20 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckSlbServerGroupDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlbServerGroupVpc,
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id": "${alicloud_slb.default.id}",
+					"name":             "${var.name}",
+					"servers": []map[string]interface{}{
+						{
+							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+							"port":       "100",
+							"weight":     "10",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":      "tf-testAccSlbServerGroupVpc",
@@ -45,7 +61,9 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccSlbServerGroupVpcUpdate,
+				Config: testAccConfig(map[string]interface{}{
+					"name": "${var.update_name}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name": "tf-testAccSlbServerGroupVpcUpdate",
@@ -53,7 +71,24 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbServerGroupVpcUpdateServer,
+				Config: testAccVpcUpdateServerConfig(map[string]interface{}{
+					"depends_on":       []string{"alicloud_network_interface_attachment.default"},
+					"load_balancer_id": "${alicloud_slb.default.id}",
+					"name":             "${var.name}",
+					"servers": []map[string]interface{}{
+						{
+							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+							"port":       "100",
+							"weight":     "10",
+						},
+						{
+							"server_ids": []string{"${alicloud_network_interface.default.0.id}"},
+							"port":       "70",
+							"weight":     "10",
+							"type":       "eni",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"servers.#": "2",
@@ -69,7 +104,16 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbServerGroupVpc,
+				Config: testAccConfig(map[string]interface{}{
+					"name": "${var.name}",
+					"servers": []map[string]interface{}{
+						{
+							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+							"port":       "100",
+							"weight":     "10",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":      "tf-testAccSlbServerGroupVpc",
@@ -91,6 +135,11 @@ func TestAccAlicloudSlbServerGroup_multi_vpc(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccSlbServerGroupMultiVpc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbServerGroupMultiVpcDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -99,10 +148,26 @@ func TestAccAlicloudSlbServerGroup_multi_vpc(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckSlbServerGroupDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlbServerGroupVpc_multi,
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id": "${alicloud_slb.default.id}",
+					"name":             "${var.name}",
+					"count":            "10",
+					"servers": []map[string]interface{}{
+						{
+							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+							"port":       "100",
+							"weight":     "10",
+						},
+						{
+							"server_ids": "${alicloud_instance.default.*.id}",
+							"port":       "80",
+							"weight":     "100",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":      "tf-testAccSlbServerGroupVpc",
@@ -122,8 +187,12 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	})
 	rac := resourceAttrCheckInit(rc, ra)
-
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccSlbServerGroupClassic%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceServerGroupClassicDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.SlbClassicNoSupportedRegions)
@@ -132,10 +201,25 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckSlbServerGroupDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlbServerGroupClassic,
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id": "${alicloud_slb.default.id}",
+					"name":             "${var.name}",
+					"servers": []map[string]interface{}{
+						{
+							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+							"port":       "100",
+							"weight":     "10",
+						},
+						{
+							"server_ids": "${alicloud_instance.default.*.id}",
+							"port":       "80",
+							"weight":     "100",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":      "tf-testAccSlbServerGroupClassic",
@@ -149,7 +233,22 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccSlbServerGroupClassicUpdateName,
+				Config: testAccConfig(map[string]interface{}{
+					//"load_balancer_id": "${alicloud_slb.default.id}",
+					"name": "${var.update_name}",
+					//"servers": []map[string]interface{}{
+					//	{
+					//		"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+					//		"port":       "100",
+					//		"weight":     "10",
+					//	},
+					//	{
+					//		"server_ids": "${alicloud_instance.default.*.id}",
+					//		"port":       "80",
+					//		"weight":     "100",
+					//	},
+					//},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name": "tf-testAccSlbServerGroupClassicUpdate",
@@ -157,7 +256,17 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbServerGroupClassicUpdateServer,
+				Config: testAccConfig(map[string]interface{}{
+					//"load_balancer_id": "${alicloud_slb.default.id}",
+					//"name":             "${var.update_name}",
+					"servers": []map[string]interface{}{
+						{
+							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+							"port":       "100",
+							"weight":     "10",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"servers.#": "1",
@@ -165,7 +274,22 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSlbServerGroupClassic,
+				Config: testAccConfig(map[string]interface{}{
+					//"load_balancer_id": "${alicloud_slb.default.id}",
+					"name": "${var.name}",
+					"servers": []map[string]interface{}{
+						{
+							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+							"port":       "100",
+							"weight":     "10",
+						},
+						{
+							"server_ids": "${alicloud_instance.default.*.id}",
+							"port":       "80",
+							"weight":     "100",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":      "tf-testAccSlbServerGroupClassic",
@@ -177,118 +301,44 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 	})
 }
 
-func testAccCheckSlbServerGroupDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	slbService := SlbService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_slb_server_group" {
-			continue
-		}
-
-		// Try to find the Slb server group
-		if _, err := slbService.DescribeSlbServerGroup(rs.Primary.ID); err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return err
-		}
-		return fmt.Errorf("SLB Server Group %s still exist.", rs.Primary.ID)
-	}
-
-	return nil
-}
 func buildservers(count int) string {
 	var result string
 	temp := `
-	servers {
-     	server_ids = ["${alicloud_instance.default.%d.id}"]
-		port       = %d
-		weight     = 10
-	}
-	`
+  servers {
+      server_ids = ["${alicloud_instance.default.%d.id}"]
+    port       = %d
+    weight     = 10
+  }
+  `
 	for i := 0; i < count; i++ {
 		result += fmt.Sprintf(temp, i, i+1)
 	}
 	return result
 }
 
-const testAccSlbServerGroupVpc = `
+func resourceSlbServerGroupDependence(name string) string {
+	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAccSlbServerGroupVpc"
+  default = "tf-testAccSlbServerGroupVpc"
+}
+
+variable "update_name" {
+  default = "tf-testAccSlbServerGroupVpcUpdate"
 }
 
 data "alicloud_instance_types" "default" {
- 	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-	name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  instance_name = "${var.name}"
-  count = "21"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  specification  = "slb.s2.small"
-}
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  name = "${var.name}"
-  servers {
-      server_ids = ["${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"]
-      port = 100
-      weight = 10
-    }
-}
-`
-const testAccSlbServerGroupVpcUpdate = `
-variable "name" {
-	default = "tf-testAccSlbServerGroupVpcUpdate"
-}
-
-data "alicloud_instance_types" "default" {
- 	cpu_core_count    = 1
-	memory_size       = 2
+  cpu_core_count    = 1
+  memory_size       = 2
 }
 data "alicloud_images" "default" {
   name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
+  most_recent = true
+  owners = "system"
 }
-
 resource "alicloud_vpc" "default" {
   name = "${var.name}"
   cidr_block = "172.16.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/16"
@@ -312,39 +362,32 @@ resource "alicloud_instance" "default" {
   system_disk_category = "cloud_efficiency"
   vswitch_id = "${alicloud_vswitch.default.id}"
 }
-
 resource "alicloud_slb" "default" {
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
   specification  = "slb.s2.small"
 }
 
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  name = "${var.name}"
-  servers {
-      server_ids = ["${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"]
-      port = 100
-      weight = 10
-    }
+  `)
 }
-`
-const testAccSlbServerGroupVpcUpdateServer = `
+
+func resourceSlbServerGroupVpcUpdateServerDependence(name string) string {
+	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAccSlbServerGroupVpcUpdate"
+  default = "tf-testAccSlbServerGroupVpcUpdate"
 }
 
 data "alicloud_instance_types" "default" {
- 	cpu_core_count    = 1
-	memory_size       = 2
+  cpu_core_count    = 1
+  memory_size       = 2
 }
 data "alicloud_instance_types" "new" {
-	eni_amount = 2
+  eni_amount = 2
 }
 data "alicloud_images" "default" {
         name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
+  most_recent = true
+  owners = "system"
 }
 
 resource "alicloud_vpc" "default" {
@@ -395,7 +438,7 @@ resource "alicloud_instance" "new" {
   vswitch_id = "${alicloud_vswitch.default.id}"
 }
 resource "alicloud_network_interface_attachment" "default" {
-	count = 1
+  count = 1
     instance_id = "${alicloud_instance.new.0.id}"
     network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
 }
@@ -405,42 +448,26 @@ resource "alicloud_slb" "default" {
   vswitch_id = "${alicloud_vswitch.default.id}"
   specification  = "slb.s2.small"
 }
-
-resource "alicloud_slb_server_group" "default" {
-  depends_on = ["alicloud_network_interface_attachment.default"]
-  load_balancer_id = "${alicloud_slb.default.id}"
-  name = "${var.name}"
-  servers {
-      server_ids = ["${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"]
-      port = 100
-      weight = 10
-    }
-     servers {
-         server_ids = ["${alicloud_network_interface.default.0.id}"]
-         port       = 70
-         weight     = 10
-         type = "eni"
-       }
+`)
 }
-`
 
 func testAccSlbServerGroupVpcUpdateServerSize(count int) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "tf-testAccSlbServerGroupVpcUpdate"
+  default = "tf-testAccSlbServerGroupVpcUpdate"
 }
 
 data "alicloud_instance_types" "default" {
- 	cpu_core_count    = 1
-	memory_size       = 2
+  cpu_core_count    = 1
+  memory_size       = 2
 }
 data "alicloud_instance_types" "new" {
-	eni_amount = 2
+  eni_amount = 2
 }
 data "alicloud_images" "default" {
         name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
+  most_recent = true
+  owners = "system"
 }
 
 resource "alicloud_vpc" "default" {
@@ -491,7 +518,7 @@ resource "alicloud_instance" "new" {
   vswitch_id = "${alicloud_vswitch.default.id}"
 }
 resource "alicloud_network_interface_attachment" "default" {
-	count = 1
+  count = 1
     instance_id = "${alicloud_instance.new.0.id}"
     network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
 }
@@ -510,19 +537,24 @@ resource "alicloud_slb_server_group" "default" {
 `, buildservers(count))
 }
 
-const testAccSlbServerGroupClassic = `
+func resourceServerGroupClassicDependence(name string) string {
+	return fmt.Sprintf(`
+
 variable "name" {
-	default = "tf-testAccSlbServerGroupClassic"
+  default = "tf-testAccSlbServerGroupClassic"
+}
+variable "update_name" {
+  default = "tf-testAccSlbServerGroupClassicUpdate"
 }
 
 data "alicloud_instance_types" "default" {
- 	cpu_core_count    = 1
-	memory_size       = 2
+  cpu_core_count    = 1
+  memory_size       = 2
 }
 data "alicloud_images" "default" {
   name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
+  most_recent = true
+  owners = "system"
 }
 
 resource "alicloud_vpc" "default" {
@@ -559,160 +591,25 @@ resource "alicloud_slb" "default" {
   name = "${var.name}"
 }
 
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  name = "${var.name}"
-  servers {
-      server_ids = ["${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"]
-      port = 100
-      weight = 10
-    }
-  servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-`
+`)
 
-const testAccSlbServerGroupClassicUpdateName = `
+}
+
+func resourceSlbServerGroupMultiVpcDependence(name string) string {
+	return fmt.Sprintf(`
+
 variable "name" {
-	default = "tf-testAccSlbServerGroupClassicUpdate"
+  default = "tf-testAccSlbServerGroupVpc"
 }
 
 data "alicloud_instance_types" "default" {
- 	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-  name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  instance_name = "${var.name}"
-  count = "2"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  name = "${var.name}"
-  servers {
-      server_ids = ["${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"]
-      port = 100
-      weight = 10
-    }
-servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
-}
-`
-
-const testAccSlbServerGroupClassicUpdateServer = `
-variable "name" {
-	default = "tf-testAccSlbServerGroupClassicUpdate"
-}
-
-data "alicloud_instance_types" "default" {
- 	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-  name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
-}
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
-
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  instance_name = "${var.name}"
-  count = "2"
-  security_groups = "${alicloud_security_group.default.*.id}"
-  internet_charge_type = "PayByTraffic"
-  internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_charge_type = "PostPaid"
-  system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-}
-
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  name = "${var.name}"
-  servers {
-      server_ids = ["${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"]
-      port = 100
-      weight = 10
-    }
-}
-`
-
-const testAccSlbServerGroupVpc_multi = `
-variable "name" {
-	default = "tf-testAccSlbServerGroupVpc"
-}
-
-data "alicloud_instance_types" "default" {
- 	cpu_core_count    = 1
-	memory_size       = 2
+  cpu_core_count    = 1
+  memory_size       = 2
 }
 data "alicloud_images" "default" {
         name_regex = "^ubuntu_18.*_64"
-	most_recent = true
-	owners = "system"
+  most_recent = true
+  owners = "system"
 }
 resource "alicloud_vpc" "default" {
   name = "${var.name}"
@@ -745,19 +642,6 @@ resource "alicloud_slb" "default" {
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
 }
-resource "alicloud_slb_server_group" "default" {
-	count = "10"
-  load_balancer_id = "${alicloud_slb.default.id}"
-  name = "${var.name}"
-  servers {
-      server_ids = ["${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"]
-      port = 100
-      weight = 10
-    }
-   servers {
-      server_ids = "${alicloud_instance.default.*.id}"
-      port = 80
-      weight = 100
-    }
+`)
+
 }
-`
