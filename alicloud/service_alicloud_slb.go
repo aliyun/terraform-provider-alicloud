@@ -789,3 +789,56 @@ func (s *SlbService) slbTagsToMap(tags []Tag) map[string]string {
 
 	return result
 }
+
+func (s *SlbService) DescribeDomainExtensionAttribute(domainExtensionId string) (*slb.DescribeDomainExtensionAttributeResponse, error) {
+	request := slb.CreateDescribeDomainExtensionAttributeRequest()
+	request.DomainExtensionId = domainExtensionId
+	var raw interface{}
+	var err error
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DescribeDomainExtensionAttribute(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidDomainExtensionIdNotFound, InvalidParameter}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, domainExtensionId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	response, _ := raw.(*slb.DescribeDomainExtensionAttributeResponse)
+	if response.DomainExtensionId != domainExtensionId {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("SLBDomainExtension", domainExtensionId)), NotFoundMsg, ProviderERROR)
+	}
+	return response, nil
+}
+
+func (s *SlbService) WaitForSlbDomainExtension(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		_, err := s.DescribeDomainExtensionAttribute(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, Null, string(status), ProviderERROR)
+		}
+	}
+	return nil
+}

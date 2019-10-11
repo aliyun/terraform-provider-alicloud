@@ -52,7 +52,8 @@ const (
 	InvalidRuleIdNotFound                 = "InvalidRuleId.NotFound"
 	RuleDomainExist                       = "DomainExist"
 	BackendServerConfiguring              = "BackendServer.configuring"
-
+	InvalidDomainExtensionIdNotFound      = "InvalidParameter.DomainExtensionId"
+	DomainExtensionProcessing             = "DomainExtensionProcessing"
 	// slb acl
 	SlbAclNumberOverLimit               = "AclNumberOverLimit"
 	SlbAclInvalidActionRegionNotSupport = "InvalidAction.RegionNotSupport"
