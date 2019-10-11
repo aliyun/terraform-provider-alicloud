@@ -53,9 +53,21 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"password": {
 				Type:      schema.TypeString,
 				Sensitive: true,
-				Required:  true,
+				Optional:  true,
 			},
-
+			"kms_encrypted_password": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"password"},
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
+			},
 			"version": {
 				Type:             schema.TypeString,
 				Required:         true,
@@ -321,7 +333,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("master_node_spec")
 	}
 
-	if d.HasChange("password") {
+	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -412,7 +424,24 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 
 	content["nodeAmount"] = d.Get("data_node_amount")
 	content["esVersion"] = d.Get("version")
-	content["esAdminPassword"] = d.Get("password")
+
+	password := d.Get("password").(string)
+	kmsPassword := d.Get("kms_encrypted_password").(string)
+
+	if password == "" && kmsPassword == "" {
+		return nil, WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+	}
+
+	if password != "" {
+		content["esAdminPassword"] = password
+	} else {
+		kmsService := KmsService{client}
+		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+		if err != nil {
+			return request, WrapError(err)
+		}
+		content["esAdminPassword"] = decryptResp.Plaintext
+	}
 
 	// Data node configuration
 	dataNodeSpec := make(map[string]interface{})
