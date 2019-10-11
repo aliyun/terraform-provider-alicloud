@@ -57,6 +57,7 @@ type Config struct {
 	DdsEndpoint           string
 	GpdbEnpoint           string
 	KVStoreEndpoint       string
+	PolarDBEndpoint       string
 	FcEndpoint            string
 	ApigatewayEndpoint    string
 	DatahubEndpoint       string

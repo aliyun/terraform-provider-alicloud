@@ -166,6 +166,7 @@ const (
 	ResourceTypeDisk          = ResourceType("Disk")
 	ResourceTypeVSwitch       = ResourceType("VSwitch")
 	ResourceTypeRds           = ResourceType("Rds")
+	ResourceTypePolarDB       = ResourceType("PolarDB")
 	IoOptimized               = ResourceType("IoOptimized")
 	ResourceTypeRkv           = ResourceType("KVStore")
 	ResourceTypeFC            = ResourceType("FunctionCompute")

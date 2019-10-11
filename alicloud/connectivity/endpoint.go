@@ -36,6 +36,7 @@ const (
 	STSCode           = ServiceCode("STS")
 	CENCode           = ServiceCode("CEN")
 	KVSTORECode       = ServiceCode("KVSTORE")
+	POLARDBCode       = ServiceCode("POLARDB")
 	DATAHUBCode       = ServiceCode("DATAHUB")
 	MNSCode           = ServiceCode("MNS")
 	CLOUDAPICode      = ServiceCode("APIGATEWAY")
