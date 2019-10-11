@@ -120,9 +120,7 @@ func TestAccAlicloudSlbServerCertificate_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":               "${var.update_name}",
-					"server_certificate": "${var.server_certificate}",
-					"private_key":        "${var.private_key}",
+					"name": "${var.update_name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					// the alicloud_certificate_id/alicloud_certificate_name depend on anothor alibaba cloud certificate product.

@@ -116,8 +116,7 @@ func TestAccAlicloudSlbCACertificate_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":           "${var.update_name}",
-					"ca_certificate": "${var.ca_certificate}",
+					"name": "${var.update_name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
