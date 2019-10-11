@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- improve:improve some resource support encrypt password [GH-1727]
 - improve(sdk): updated sdk to v1.60.191 [GH-1725]
 - update tablestore package [GH-1719]
 - managekubernetes support sls [GH-1718]
