@@ -40,6 +40,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(90 * time.Minute),
+			Update: schema.DefaultTimeout(60 * time.Minute),
+			Delete: schema.DefaultTimeout(60 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:          schema.TypeString,
@@ -493,6 +499,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 
 func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
 	invoker := NewInvoker()
 
 	if isMultiAZ, err := isMultiAZClusterAndCheck(d); err != nil {
@@ -548,27 +555,18 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 
 	}
 
-	var requestInfo *cs.Client
+	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
-	raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-		requestInfo = csClient
-		return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes", "WaitForClusterAsyn", DenverdinoAliyungo)
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["ClusterId"] = d.Id()
-		requestMap["Status"] = cs.Running
-		requestMap["TimeOut"] = 3600
-		addDebug("WaitForClusterAsyn", raw, requestInfo, requestMap)
-	}
+
 	return resourceAlicloudCSKubernetesUpdate(d, meta)
 }
 
 func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
 	d.Partial(true)
 	invoker := NewInvoker()
 	if d.HasChange("worker_numbers") && !d.IsNewResource() {
@@ -623,22 +621,11 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			resizeRequestMap["Args"] = args
 			addDebug("ResizeKubernetesCluster", resoponse, requestInfo, resizeRequestMap)
 		}
-		if err := invoker.Run(func() error {
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				requestInfo = csClient
-				return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
-			})
-			resoponse = raw
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "WaitForClusterAsyn", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			waitRequestMap := make(map[string]interface{})
-			waitRequestMap["ClusterId"] = d.Id()
-			waitRequestMap["Status"] = cs.Running
-			waitRequestMap["TimeOut"] = 3600
-			addDebug("WaitForClusterAsyn", resoponse, requestInfo, waitRequestMap)
+
+		stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("worker_number")
 	}
@@ -927,7 +914,12 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteCluster", DenverdinoAliyungo)
 	}
-	return WrapError(csService.WaitForCsKubernetes(d.Id(), Deleted, DefaultLongTimeout))
+	stateConf := BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }
 
 func isMultiAZClusterAndCheck(d *schema.ResourceData) (bool, error) {
