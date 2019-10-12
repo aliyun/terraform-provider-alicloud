@@ -43,6 +43,7 @@ The following arguments are supported:
 
 * `name` - (Optional) The name of the security group. Defaults to null.
 * `description` - (Optional, Forces new resource) The security group description. Defaults to null.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.57.1+) The Id of resource group which the security_group belongs.
 * `vpc_id` - (Optional, ForceNew) The VPC ID.
 * `inner_access` - (Deprecated) Field 'inner_access' has been deprecated from provider version 1.55.3. Use 'inner_access_policy' replaces it.
 * `inner_access_policy` - (Optional, Available in 1.55.3+) Whether to allow both machines to access each other on all ports in the same security group. Valid values: ["Accept", "Drop"]

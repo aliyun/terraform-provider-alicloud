@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"testing"
 
 	"strings"
@@ -183,11 +184,27 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 					}),
 				),
 			},
-
 			{
-				Config: testAccCheckSecurityGroupConfigAll,
+				Config: testAccCheckSecurityGroupConfig_resourceGroupId(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(testAccCheckSecurityBasicMap),
+					testAccCheck(map[string]string{
+						"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+					}),
+				),
+			},
+			{
+				Config: testAccCheckSecurityGroupConfigAll(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":              CHECKSET,
+						"inner_access":        "false",
+						"inner_access_policy": "Drop",
+						"name":                "tf-testAccCheckSecurityGroupName",
+						"description":         "tf-testAccCheckSecurityGroupName_describe",
+						"tags.%":              "2",
+						"tags.foo":            "foo",
+						"tags.Test":           "Test",
+					}),
 				),
 			},
 		},
@@ -339,7 +356,33 @@ resource "alicloud_security_group" "default" {
 }
 `
 
-const testAccCheckSecurityGroupConfigAll = `
+func testAccCheckSecurityGroupConfig_resourceGroupId() string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAccCheckSecurityGroupName"
+}
+
+
+resource "alicloud_vpc" "default" {
+  name = "${var.name}_vpc"
+  cidr_block = "10.1.0.0/21"
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  inner_access = true
+  name = "${var.name}_change"
+  description = "${var.name}_describe_change"
+  resource_group_id = "%s"
+  tags = {
+		foo  = "foo"
+  }
+}
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
+
+func testAccCheckSecurityGroupConfigAll() string {
+	return fmt.Sprintf(`
 variable "name" {
   default = "tf-testAccCheckSecurityGroupName"
 }
@@ -355,12 +398,14 @@ resource "alicloud_security_group" "default" {
   inner_access_policy = "Drop"
   name = "${var.name}"
   description = "${var.name}_describe"
+  resource_group_id = "%s"
   tags = {
 		foo  = "foo"
         Test = "Test"
   }
 }
-`
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
 
 const testAccCheckSecurityGroupConfig_multi = `
 
@@ -396,4 +441,5 @@ var testAccCheckSecurityBasicMap = map[string]string{
 	"tags.%":              "2",
 	"tags.foo":            "foo",
 	"tags.Test":           "Test",
+	"resource_group_id":   "",
 }

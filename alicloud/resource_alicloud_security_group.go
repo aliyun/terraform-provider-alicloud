@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -31,7 +32,11 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validateSecurityGroupDescription,
 			},
-
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -69,6 +74,10 @@ func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{})
 		request.Description = v
 	}
 
+	if v := d.Get("resource_group_id").(string); v != "" {
+		request.ResourceGroupId = v
+	}
+
 	if v := d.Get("vpc_id").(string); v != "" {
 		request.VpcId = v
 	}
@@ -103,6 +112,27 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("vpc_id", object.VpcId)
 	d.Set("inner_access", object.InnerAccessPolicy == string(GroupInnerAccept))
 	d.Set("inner_access_policy", object.InnerAccessPolicy)
+
+	request := ecs.CreateDescribeSecurityGroupsRequest()
+	request.RegionId = client.RegionId
+	request.VpcId = d.Get("vpc_id").(string)
+	request.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.SecurityGroupId = d.Id()
+
+	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeSecurityGroups(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*ecs.DescribeSecurityGroupsResponse)
+
+	if len(response.SecurityGroups.SecurityGroup) == 1 &&
+		response.SecurityGroups.SecurityGroup[0].SecurityGroupId == d.Id() {
+		d.Set("resource_group_id", response.SecurityGroups.SecurityGroup[0].ResourceGroupId)
+	}
 
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceSecurityGroup)
 	if err != nil && !NotFoundError(err) {
