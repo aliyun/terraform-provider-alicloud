@@ -36,7 +36,6 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":             "${var.name}",
 					"load_balancer_id": "${alicloud_slb.default.id}",
 					"frontend_port":    "${alicloud_slb_listener.default.frontend_port}",
 					"domain":           "*.aliyun.com",
@@ -47,7 +46,6 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 					testAccCheck(map[string]string{
 						"load_balancer_id": CHECKSET,
 						"frontend_port":    "22",
-						"name":             "tf-testAccSlbRuleBasic",
 						"domain":           "*.aliyun.com",
 						"url":              "/image",
 						"server_group_id":  CHECKSET,

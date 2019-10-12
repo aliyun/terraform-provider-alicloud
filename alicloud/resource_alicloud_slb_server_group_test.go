@@ -39,7 +39,6 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name":             "${var.name}",
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
@@ -50,7 +49,7 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":      "tf-testAccSlbServerGroupVpc",
+						"name":      "tf-server-group",
 						"servers.#": "1",
 					}),
 				),
@@ -206,7 +205,7 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name":             "${var.name}",
+					//"name":             "${var.name}",
 					"servers": []map[string]interface{}{
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
@@ -222,7 +221,7 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":      "tf-testAccSlbServerGroupClassic",
+						//"name":      "tf-testAccSlbServerGroupClassic",
 						"servers.#": "2",
 					}),
 				),

@@ -41,13 +41,12 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
 					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
-					"weight":           "90",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_id": CHECKSET,
-						"weight":           "90",
 						"instance_ids.#":   "1",
+						"backend_servers":  CHECKSET,
 					}),
 				),
 			},
@@ -72,7 +71,8 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_ids.#": "2",
+						"instance_ids.#":  "2",
+						"backend_servers": CHECKSET,
 					}),
 				),
 			},
@@ -87,6 +87,7 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 						"load_balancer_id": CHECKSET,
 						"weight":           "90",
 						"instance_ids.#":   "1",
+						"backend_servers":  CHECKSET,
 					}),
 				),
 			},
@@ -132,6 +133,7 @@ func TestAccAlicloudSlbAttachment_multi(t *testing.T) {
 						"load_balancer_id": CHECKSET,
 						"weight":           "90",
 						"instance_ids.#":   "1",
+						"backend_servers":  CHECKSET,
 					}),
 				),
 			},
@@ -169,13 +171,12 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
 					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
-					"weight":           "90",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_id": CHECKSET,
-						"weight":           "90",
 						"instance_ids.#":   "1",
+						"backend_servers":  CHECKSET,
 					}),
 				),
 			},
@@ -195,7 +196,8 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_ids.#": "2",
+						"instance_ids.#":  "2",
+						"backend_servers": CHECKSET,
 					}),
 				),
 			},
@@ -210,6 +212,7 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 						"load_balancer_id": CHECKSET,
 						"weight":           "90",
 						"instance_ids.#":   "1",
+						"backend_servers":  CHECKSET,
 					}),
 				),
 			},
