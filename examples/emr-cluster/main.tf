@@ -27,6 +27,30 @@ resource "alicloud_vswitch" "vswitch" {
     vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
 }
 
+// Ram role Resource for Module
+resource "alicloud_ram_role" "default" {
+	name = var.ram_name
+	document = <<EOF
+    {
+        "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+            "Service": [
+                "emr.aliyuncs.com", 
+                "ecs.aliyuncs.com"
+            ]
+            }
+        }
+        ],
+        "Version": "1"
+    }
+    EOF
+    description = "this is a role test."
+    force = true
+}
+
 resource "alicloud_emr_cluster" "default" {
     name = "terraform-resize-test-0926"
 
@@ -77,7 +101,7 @@ resource "alicloud_emr_cluster" "default" {
     is_open_public_ip = true
     charge_type = "PostPaid"
     vswitch_id = var.vswitch_id == "" ? alicloud_vswitch.vswitch[0].id : var.vswitch_id
-    user_defined_emr_ecs_role = "EMRUserDefineRole-Role1"
+    user_defined_emr_ecs_role = alicloud_ram_role.default.name
     ssh_enable = true
     master_pwd = "ABCtest1234!"
 }
