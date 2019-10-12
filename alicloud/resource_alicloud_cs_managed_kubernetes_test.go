@@ -84,11 +84,11 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway": "false",
+					"new_nat_gateway": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"new_nat_gateway": "false",
+						"new_nat_gateway": "true",
 					}),
 				),
 			},
