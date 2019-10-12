@@ -28,6 +28,12 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(90 * time.Minute),
+			Update: schema.DefaultTimeout(60 * time.Minute),
+			Delete: schema.DefaultTimeout(60 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:          schema.TypeString,
@@ -298,7 +304,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	invoker := NewInvoker()
-
+	csService := CsService{client}
 	args, err := buildManagedKubernetesArgs(d, meta)
 	if err != nil {
 		return WrapError(err)
@@ -324,22 +330,10 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 	cluster, _ := response.(cs.ClusterCreationResponse)
 	d.SetId(cluster.ClusterID)
 
-	if err := invoker.Run(func() error {
-		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			requestInfo = csClient
-			return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
-		})
-		response = raw
-		return err
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "WaitForClusterAsyn", DenverdinoAliyungo)
-	}
-	if debugOn() {
-		waitRequestMap := make(map[string]interface{})
-		waitRequestMap["ClusterId"] = d.Id()
-		waitRequestMap["Status"] = cs.Running
-		waitRequestMap["TimeOut"] = 3600
-		addDebug("WaitForClusterAsyn", response, requestInfo, waitRequestMap)
+	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, csService.CsManagedKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAlicloudCSManagedKubernetesRead(d, meta)
@@ -347,6 +341,7 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 
 func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
 	d.Partial(true)
 	invoker := NewInvoker()
 	if d.HasChange("worker_number") || d.HasChange("worker_numbers") {
@@ -423,22 +418,10 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 			addDebug("ScaleKubernetesCluster", response, requestInfo, requestMap)
 		}
 
-		if err := invoker.Run(func() error {
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				requestInfo = csClient
-				return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
-			})
-			response = raw
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "WaitForClusterAsyn", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			waitRequestMap := make(map[string]interface{})
-			waitRequestMap["ClusterId"] = d.Id()
-			waitRequestMap["Status"] = cs.Running
-			waitRequestMap["TimeOut"] = 3600
-			addDebug("WaitForClusterAsyn", response, requestInfo, waitRequestMap)
+		stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, csService.CsManagedKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("worker_number")
 	}
@@ -672,7 +655,12 @@ func resourceAlicloudCSManagedKubernetesDelete(d *schema.ResourceData, meta inte
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteCluster", DenverdinoAliyungo)
 	}
-	return WrapError(csService.WaitForCSManagedKubernetes(d.Id(), Deleted, DefaultLongTimeout))
+	stateConf := BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Minute, csService.CsManagedKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }
 
 func buildManagedKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.KubernetesCreationArgs, error) {

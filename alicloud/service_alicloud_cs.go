@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform/helper/resource"
+
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -222,5 +224,45 @@ func (s *CsService) WaitForCSManagedKubernetes(id string, status Status, timeout
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 
+	}
+}
+
+func (s *CsService) CsKubernetesInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCsKubernetes(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if string(object.State) == failState {
+				return object, string(object.State), WrapError(Error(FailedToReachTargetStatus, string(object.State)))
+			}
+		}
+		return object, string(object.State), nil
+	}
+}
+
+func (s *CsService) CsManagedKubernetesInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCsManagedKubernetes(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if string(object.State) == failState {
+				return object, string(object.State), WrapError(Error(FailedToReachTargetStatus, string(object.State)))
+			}
+		}
+		return object, string(object.State), nil
 	}
 }
