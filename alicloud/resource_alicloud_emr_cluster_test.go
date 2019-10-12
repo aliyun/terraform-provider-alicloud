@@ -123,7 +123,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 					"is_open_public_ip":         "true",
 					"charge_type":               "PostPaid",
 					"vswitch_id":                "${alicloud_vswitch.default.id}",
-					"user_defined_emr_ecs_role": "EMRUserDefineRole-Role1",
+					"user_defined_emr_ecs_role": "${alicloud_ram_role.default.name}",
 					"ssh_enable":                "true",
 					"master_pwd":                "ABCtest1234!",
 
@@ -200,7 +200,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 					"is_open_public_ip":         "true",
 					"charge_type":               "PostPaid",
 					"vswitch_id":                "${alicloud_vswitch.default.id}",
-					"user_defined_emr_ecs_role": "EMRUserDefineRole-Role1",
+					"user_defined_emr_ecs_role": "${alicloud_ram_role.default.name}",
 					"ssh_enable":                "true",
 					"master_pwd":                "ABCtest1234!",
 
