@@ -155,7 +155,7 @@ func buildMongoDBCreateRequest(d *schema.ResourceData, meta interface{}) (*dds.C
 
 	request.AccountPassword = d.Get("account_password").(string)
 	if request.AccountPassword == "" {
-		if v := d.Get("kms_encrypted_password").(string); v == "" {
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
 			kmsService := KmsService{client}
 			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
 			if err != nil {
@@ -358,8 +358,7 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		var accountPassword string
 		if accountPassword = d.Get("account_password").(string); accountPassword != "" {
 			d.SetPartial("account_password")
-		} else {
-			kmsPassword := d.Get("kms_encrypted_password").(string)
+		} else if kmsPassword := d.Get("kms_encrypted_password").(string); kmsPassword != "" {
 			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
 			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
 			if err != nil {
