@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -80,11 +79,8 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 	})
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccSlbAclBasic%d", rand)
+	name := fmt.Sprintf("tf-testAccSlbAcl_name")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSLBAclDependence)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -98,7 +94,7 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":       "${var.name}",
-					"ip_version": "${var.ip_version}",
+					"ip_version": "ipv4",
 					"entry_list": []map[string]interface{}{
 						{
 							"entry":   "10.10.10.0/24",
@@ -192,11 +188,8 @@ func TestAccAlicloudSlbAcl_muilt(t *testing.T) {
 	})
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccSlbAclMuilt%d", rand)
+	name := fmt.Sprintf("tf-testAccSlbAcl")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSLBAclDependence)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -210,8 +203,8 @@ func TestAccAlicloudSlbAcl_muilt(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":       "${var.name}-${count.index}",
-					"count":      "${var.number}",
-					"ip_version": "${var.ip_version}",
+					"count":      "10",
+					"ip_version": "ipv4",
 					"entry_list": []map[string]interface{}{
 						{
 							"entry":   "10.10.10.0/24",
@@ -241,13 +234,7 @@ variable "name" {
   default = "tf-testAccSlbAcl"
 }
 variable "basic_name" {
-  default = "tf-testAccSlbAcl_name"
+  default = "%s"
 }
-variable "number" {
-  default = "10"
-}
-variable "ip_version" {
-  default = "ipv4"
-}
-`)
+`, name)
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
@@ -23,8 +22,7 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccSlbAttachmentBasic%d", rand)
+	name := fmt.Sprintf("tf-testAccSlbAttachment")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbAttachmentBasicdependence)
 
 	resource.Test(t, resource.TestCase{
@@ -46,7 +44,6 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"load_balancer_id": CHECKSET,
 						"instance_ids.#":   "1",
-						"backend_servers":  CHECKSET,
 					}),
 				),
 			},
@@ -71,8 +68,7 @@ func TestAccAlicloudSlbAttachment_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_ids.#":  "2",
-						"backend_servers": CHECKSET,
+						"instance_ids.#": "2",
 					}),
 				),
 			},
@@ -107,8 +103,7 @@ func TestAccAlicloudSlbAttachment_multi(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccSlbAttachmentMulti%d", rand)
+	name := fmt.Sprintf("tf-testAccSlbAttachmentMulti")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbAttachmentMultidependence)
 
 	resource.Test(t, resource.TestCase{
@@ -153,8 +148,7 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccSlbAttachmentClassicBasic%d", rand)
+	name := fmt.Sprintf("tf-testAccSlbAttachment")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbAttachmentBasicdependence)
 
 	resource.Test(t, resource.TestCase{
@@ -176,7 +170,6 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"load_balancer_id": CHECKSET,
 						"instance_ids.#":   "1",
-						"backend_servers":  CHECKSET,
 					}),
 				),
 			},
@@ -196,8 +189,7 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_ids.#":  "2",
-						"backend_servers": CHECKSET,
+						"instance_ids.#": "2",
 					}),
 				),
 			},
@@ -223,7 +215,7 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 func resourceSlbAttachmentBasicdependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-  default = "tf-testAccSlbAttachment"
+  default = "%s"
 }
 data "alicloud_instance_types" "default" {
   cpu_core_count    = 1
@@ -268,13 +260,13 @@ resource "alicloud_slb" "default" {
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
 }
-`)
+`, name)
 }
 
 func resourceSlbAttachmentMultidependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-  default = "tf-testAccSlbAttachment"
+  default = "%s"
 }
 data "alicloud_instance_types" "default" {
   cpu_core_count    = 1
@@ -319,5 +311,5 @@ resource "alicloud_slb" "default" {
   name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
 }
-`)
+`, name)
 }

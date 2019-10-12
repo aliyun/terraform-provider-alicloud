@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -20,8 +19,7 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccSlbRuleUpdate%d", rand)
+	name := fmt.Sprintf("tf-testAccSlbRuleBasic")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbRuleBasicDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -312,7 +310,7 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 func resourceSlbRuleBasicDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-  default = "tf-testAccSlbRuleBasic"
+  default = "%s"
 }
 data "alicloud_instance_types" "default" {
   cpu_core_count    = 1
@@ -375,5 +373,5 @@ resource "alicloud_slb_server_group" "default" {
       weight = 100
     }
 }
-`)
+`, name)
 }
