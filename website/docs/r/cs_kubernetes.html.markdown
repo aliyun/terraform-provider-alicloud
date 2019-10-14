@@ -208,8 +208,10 @@ You can get the available kubetnetes master node instance types by [datasource i
 * `worker_instance_types` - (Required, ForceNew) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
 You can get the available kubetnetes master node instance types by [datasource instance_types](https://www.terraform.io/docs/providers/alicloud/d/instance_types.html#kubernetes_node_role)
 * `worker_number` - (Required) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
-* `password` - (Optional, ForceNew, Sensitive) The password of ssh login cluster node. You have to specify one of `password` and `key_name` fields.
+* `password` - (Optional, ForceNew, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `key_name` - (Optional, ForceNew) The keypair of ssh login cluster node, you have to create it first.
+* `kms_encrypted_password` - (Optional, ForceNew, Available in 1.57.1+) An KMS encrypts password used to a cs kubernetes. It is conflicted with `password` and `key_name`.
+* `kms_encryption_context` - (Optional, ForceNew, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `user_ca` - (Optional, ForceNew) The path of customized CA cert, you can use this CA to sign client certs to connect your cluster.
 * `cluster_network_type` - (Required, ForceNew) The network that cluster uses, use `flannel` or `terway`.
 * `pod_cidr` - (Optional, ForceNew) The CIDR block for the pod network. It will be allocated automatically when `vswitch_ids` is not specified.
@@ -246,6 +248,16 @@ Larger this number is, less pods can be allocated on each node. Default value is
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
+
+### Timeouts
+
+-> **NOTE:** Available in 1.57.2+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 90 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status). 
+* `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.
+* `delete` - (Defaults to 60 mins) Used when terminating the kubernetes cluster. 
 
 ## Attributes Reference
 

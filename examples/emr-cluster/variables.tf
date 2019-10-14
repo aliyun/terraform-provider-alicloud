@@ -46,3 +46,8 @@ variable "security_group_name" {
 variable "security_group_id" {
   default = ""
 }
+
+variable "ram_name" {
+  description = "The ram role name used to defined emr ecs role"
+  default     = "testrole"
+}

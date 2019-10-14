@@ -870,6 +870,29 @@ resource "alicloud_security_group" "default" {
     name = "${var.name}"
     vpc_id = "${alicloud_vpc.default.id}"
 }
+
+resource "alicloud_ram_role" "default" {
+	name = "${var.name}"
+	document = <<EOF
+    {
+        "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+            "Service": [
+                "emr.aliyuncs.com", 
+                "ecs.aliyuncs.com"
+            ]
+            }
+        }
+        ],
+        "Version": "1"
+    }
+    EOF
+    description = "this is a role test."
+    force = true
+}
 `
 
 const SlbListenerCommonTestCase = `

@@ -75,6 +75,19 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 				Optional:  true,
 				Sensitive: true,
 			},
+			"kms_encrypted_password": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"account_password"},
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
+			},
 			"backup_period": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -156,7 +169,19 @@ func buildMongoDBShardingCreateRequest(d *schema.ResourceData, meta interface{})
 	request.EngineVersion = Trim(d.Get("engine_version").(string))
 	request.Engine = "MongoDB"
 	request.DBInstanceDescription = d.Get("name").(string)
+
 	request.AccountPassword = d.Get("account_password").(string)
+	if request.AccountPassword == "" {
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return request, WrapError(err)
+			}
+			request.AccountPassword = decryptResp.Plaintext
+		}
+	}
+
 	request.ZoneId = d.Get("zone_id").(string)
 
 	shardList, ok := d.GetOk("shard_list")
@@ -373,8 +398,22 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		d.SetPartial("name")
 	}
 
-	if d.HasChange("account_password") {
-		err := ddsService.ResetAccountPassword(d, d.Get("account_password").(string))
+	if d.HasChange("account_password") || d.HasChange("kms_encrypted_password") {
+		var accountPassword string
+		if accountPassword = d.Get("account_password").(string); accountPassword != "" {
+			d.SetPartial("account_password")
+		} else if kmsPassword := d.Get("kms_encrypted_password").(string); kmsPassword != "" {
+			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
+			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			accountPassword = decryptResp.Plaintext
+			d.SetPartial("kms_encrypted_password")
+			d.SetPartial("kms_encryption_context")
+		}
+
+		err := ddsService.ResetAccountPassword(d, accountPassword)
 		if err != nil {
 			return WrapError(err)
 		}
