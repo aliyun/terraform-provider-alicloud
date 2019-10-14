@@ -1228,13 +1228,9 @@ func parseKubernetesClusterLogConfig(d *schema.ResourceData) (string, string, er
 			loggingType = config["type"].(string)
 			switch loggingType {
 			case KubernetesClusterLoggingTypeSLS, KubernetesClusterLoggingTypeLogtailDS:
-				if config["project"].(string) == "" {
-					return "", "", WrapError(Error("SLS project name must be provided when choosing SLS as log_config."))
+				if config["project"].(string) != "" && config["project"].(string) != "None" {
+					slsProjectName = config["project"].(string)
 				}
-				if config["project"].(string) == "None" {
-					return "", "", WrapError(Error("SLS project name must not be `None`."))
-				}
-				slsProjectName = config["project"].(string)
 				//rename log controller name
 				loggingType = KubernetesClusterLoggingTypeLogtailDS
 				break
