@@ -4,6 +4,14 @@ const UserId = "userId"
 const ScalingGroup = "scaling_group"
 const GroupId = "groupId"
 
+type ScalingRuleType string
+
+const (
+	SimpleScalingRule         = ScalingRuleType("SimpleScalingRule")
+	TargetTrackingScalingRule = ScalingRuleType("TargetTrackingScalingRule")
+	StepScalingRule           = ScalingRuleType("StepScalingRule")
+)
+
 type BatchSize int
 
 const (
