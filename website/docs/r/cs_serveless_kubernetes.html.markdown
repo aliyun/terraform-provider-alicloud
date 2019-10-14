@@ -25,6 +25,8 @@ after creating cluster successfully, and you can put them into the specified loc
 -> **NOTE:** You need to activate several other products and confirm Authorization Policy used by Container Service before using this resource.
 Please refer to the `Authorization management` and `Cluster management` sections in the [Document Center](https://www.alibabacloud.com/help/doc-detail/86488.htm).
 
+-> **NOTE:** Available in 1.57.2+
+
 ## Example Usage
 
 Basic Usage
@@ -94,7 +96,7 @@ The following attributes are exported:
 * `vpc_id` - The ID of VPC where the current cluster is located.
 * `vswitch_id` - The ID of VSwicth where the current cluster is located.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
-* `deletion_protection` - Whether enable the deletion protection or not..
+* `deletion_protection` - Whether enable the deletion protection or not.
 
 ## Import
 

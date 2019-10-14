@@ -10,7 +10,7 @@ description: |-
 
 This data source provides a list Container Service Serveless Kubernetes Clusters on Alibaba Cloud.
 
--> **NOTE:** Available in v1.35.0+
+-> **NOTE:** Available in 1.57.2
 
 ## Example Usage
 

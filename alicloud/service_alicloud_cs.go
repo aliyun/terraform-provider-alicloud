@@ -283,7 +283,7 @@ func (s *CsService) DescribeCsServelessKubernetes(id string) (cluster *cs.Server
 		return err
 	}); err != nil {
 		if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
-			return cluster, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return cluster, WrapErrorf(err, NotFoundMsg, DenverdinoAliyungo)
 		}
 		return cluster, WrapErrorf(err, DefaultErrorMsg, id, "DescribeServelessKubernetesCluster", DenverdinoAliyungo)
 	}
@@ -293,7 +293,7 @@ func (s *CsService) DescribeCsServelessKubernetes(id string) (cluster *cs.Server
 		addDebug("DescribeServelessKubernetesCluster", response, requestInfo, requestMap, map[string]interface{}{"Id": id})
 	}
 	cluster, _ = response.(*cs.ServerlessClusterResponse)
-	if cluster.ClusterId != id {
+	if cluster != nil && cluster.ClusterId != id {
 		return cluster, WrapErrorf(Error(GetNotFoundMessage("CSServelessKubernetes", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
