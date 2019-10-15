@@ -140,7 +140,6 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_data_disk_size =  200
   log_config {
     type = "SLS"
-    project = "${var.name}-managed-sls"
   }
 }
 `, name)
