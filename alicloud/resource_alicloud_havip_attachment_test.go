@@ -84,7 +84,7 @@ import (
 //}
 
 // At present, only white list users can operate HaVip Resource.
-func SkipTestAccAlicloudHaVipAttachment_basic(t *testing.T) {
+func SkipTestAccAlicloudHaVipAttachmentBasic(t *testing.T) {
 	resourceId := "alicloud_havip_attachment.foo"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

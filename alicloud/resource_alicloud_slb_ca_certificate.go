@@ -77,7 +77,8 @@ func resourceAlicloudSlbCACertificateRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	if err := d.Set("name", object.CACertificateName); err != nil {
+	err = d.Set("name", object.CACertificateName)
+	if err != nil {
 		return WrapError(err)
 	}
 
@@ -112,7 +113,7 @@ func resourceAlicloudSlbCACertificateDelete(d *schema.ResourceData, meta interfa
 	request.RegionId = client.RegionId
 	request.CACertificateId = d.Id()
 
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.DeleteCACertificate(request)
 		})
@@ -124,7 +125,8 @@ func resourceAlicloudSlbCACertificateDelete(d *schema.ResourceData, meta interfa
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		if IsExceptedError(err, SlbCACertificateIdNotFound) {
 			return nil
 		}

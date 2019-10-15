@@ -84,11 +84,11 @@ func testSweepVSwitches(region string) error {
 			break
 		}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+		page, err := getNextpageNumber(req.PageNumber)
+		if err != nil {
 			log.Printf("[ERROR] %s", err)
-		} else {
-			req.PageNumber = page
 		}
+		req.PageNumber = page
 	}
 	sweeped := false
 	service := VpcService{client}

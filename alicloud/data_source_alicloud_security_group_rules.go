@@ -157,11 +157,11 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 				"description":                item.Description,
 			}
 
-			if pri, err := strconv.Atoi(item.Priority); err != nil {
+			pri, err := strconv.Atoi(item.Priority)
+			if err != nil {
 				return WrapError(err)
-			} else {
-				mapping["priority"] = pri
 			}
+			mapping["priority"] = pri
 			rules = append(rules, mapping)
 		}
 

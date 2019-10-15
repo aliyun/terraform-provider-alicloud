@@ -135,11 +135,11 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 			break
 		}
 
-		if page, err := getNextpageNumber(request.Page); err != nil {
+		page, err := getNextpageNumber(request.Page)
+		if err != nil {
 			return WrapError(err)
-		} else {
-			request.Page = page
 		}
+		request.Page = page
 	}
 
 	var filteredInstances []elasticsearch.Instance

@@ -76,11 +76,11 @@ func testSweepElasticsearch(region string) error {
 			break
 		}
 
-		if page, err := getNextpageNumber(req.Page); err != nil {
+		page, err := getNextpageNumber(req.Page)
+		if err != nil {
 			return err
-		} else {
-			req.Page = page
 		}
+		req.Page = page
 	}
 
 	sweeped := false

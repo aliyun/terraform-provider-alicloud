@@ -1,4 +1,4 @@
-// common functions used by datahub
+// Package alicloud common functions used by datahub
 package alicloud
 
 import (

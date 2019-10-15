@@ -144,11 +144,11 @@ func dataSourceAlicloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) e
 			pvtzZoneBindVpcs[key.ZoneId] = vpcs
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			return WrapError(err)
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 
 	return pvtzZoneDescriptionAttributes(d, pvtzZones, pvtzZoneBindVpcs)

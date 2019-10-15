@@ -126,13 +126,14 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 	for {
 		var raw interface{}
 		var err error
-		if err = invoker.Run(func() error {
+		err = invoker.Run(func() error {
 			raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.DescribeVpcs(request)
 			})
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return err
-		}); err != nil {
+		})
+		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpcs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		response, _ := raw.(*vpc.DescribeVpcsResponse)
@@ -146,11 +147,11 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 			break
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			return WrapError(err)
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 
 	var filteredVpcs []vpc.Vpc

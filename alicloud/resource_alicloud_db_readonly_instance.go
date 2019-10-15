@@ -28,56 +28,56 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"engine_version": &schema.Schema{
+			"engine_version": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
 
-			"master_db_instance_id": &schema.Schema{
+			"master_db_instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"instance_name": &schema.Schema{
+			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateDBInstanceName,
 				Computed:     true,
 			},
 
-			"instance_type": &schema.Schema{
+			"instance_type": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"instance_storage": &schema.Schema{
+			"instance_storage": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
 
-			"zone_id": &schema.Schema{
+			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
 			},
 
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Optional: true,
 			},
 
-			"parameters": &schema.Schema{
+			"parameters": {
 				Type: schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"name": &schema.Schema{
+						"name": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"value": &schema.Schema{
+						"value": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
@@ -88,16 +88,16 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Computed: true,
 			},
 
-			"engine": &schema.Schema{
+			"engine": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"connection_string": &schema.Schema{
+			"connection_string": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 
-			"port": &schema.Schema{
+			"port": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -198,11 +198,12 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 	if update {
 		// wait instance status is running before modifying
 		stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
+		_, err := stateConf.WaitForState()
+		if err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 				return rdsClient.ModifyDBInstanceSpec(request)
 			})
@@ -223,7 +224,8 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		}
 
 		// wait instance status is running after modifying
-		if _, err := stateConf.WaitForState(); err != nil {
+		_, err = stateConf.WaitForState()
+		if err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}

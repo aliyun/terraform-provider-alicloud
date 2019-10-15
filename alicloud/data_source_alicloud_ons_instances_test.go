@@ -80,7 +80,7 @@ variable "name" {
 
 resource "alicloud_ons_instance" "default" {
   name = "${var.name}"
-  remark = "deafult-remark"
+  remark = "default-remark"
 }
 
 `, name)

@@ -210,11 +210,11 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 			break
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			return WrapError(err)
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 
 	var filteredDisksTemp []ecs.Disk

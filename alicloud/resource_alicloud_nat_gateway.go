@@ -92,7 +92,7 @@ func resourceAliyunNatGateway() *schema.Resource {
 				MaxItems: 4,
 				Optional: true,
 			},
-			"instance_charge_type": &schema.Schema{
+			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
@@ -100,7 +100,7 @@ func resourceAliyunNatGateway() *schema.Resource {
 				ValidateFunc: validateInstanceChargeType,
 			},
 
-			"period": &schema.Schema{
+			"period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				ForceNew:         true,

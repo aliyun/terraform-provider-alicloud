@@ -322,7 +322,8 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 				}
 			}
 
-			if err := ecsService.WaitForPrivateIpsCountChanged(d.Id(), newIpsCount.(int)); err != nil {
+			err := ecsService.WaitForPrivateIpsCountChanged(d.Id(), newIpsCount.(int))
+			if err != nil {
 				return WrapError(err)
 			}
 

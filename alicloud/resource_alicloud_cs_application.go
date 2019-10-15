@@ -295,12 +295,11 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 				return nil, csProjectClient.RollBackBlueGreenProject(parts[1], true)
 			})
 		}
-		if err != nil {
-			return fmt.Errorf("Rollbacking container application blue-green got an error: %#v", err)
-		}
-	} else if update {
+		return fmt.Errorf("Rollbacking container application blue-green got an error: %#v", err)
+	}
+	if update {
 		for {
-			if err := invoker.Run(func() error {
+			err := invoker.Run(func() error {
 				cluster, certs, err := csService.GetContainerClusterAndCertsByName(clusterName)
 				if err == nil {
 					_, err = client.WithCsProjectClient(cluster.ClusterID, cluster.MasterURL, *certs, func(csProjectClient *cs.ProjectClient) (interface{}, error) {
@@ -308,9 +307,10 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 					})
 				}
 				return err
-			}); err != nil {
+			})
+			if err != nil {
 				if IsExceptedError(err, ApplicationConfirmConflict) {
-					if err := invoker.Run(func() error {
+					err := invoker.Run(func() error {
 						cluster, certs, err := csService.GetContainerClusterAndCertsByName(clusterName)
 						if err == nil {
 							_, err = client.WithCsProjectClient(cluster.ClusterID, cluster.MasterURL, *certs, func(csProjectClient *cs.ProjectClient) (interface{}, error) {
@@ -318,23 +318,24 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 							})
 						}
 						return err
-					}); err != nil {
+					})
+					if err != nil {
 						return fmt.Errorf("Rollbacking container application blue-green got an error: %#v", err)
 					}
-					if err := csService.WaitForContainerApplication(parts[0], parts[1], Running, DefaultTimeoutMedium); err != nil {
+					err = csService.WaitForContainerApplication(parts[0], parts[1], Running, DefaultTimeoutMedium)
+					if err != nil {
 						return fmt.Errorf("After rolling back blue-green project, waitting for container application %#v got an error: %#v", Running, err)
 					}
 					continue
 				}
 				return fmt.Errorf("Updating container application got an error: %#v", err)
-			} else {
-				break
 			}
+			break
 		}
 	}
 
 	if d.Get("blue_green_confirm").(bool) {
-		if err := invoker.Run(func() error {
+		err := invoker.Run(func() error {
 			cluster, certs, err := csService.GetContainerClusterAndCertsByName(clusterName)
 			if err == nil {
 				_, err = client.WithCsProjectClient(cluster.ClusterID, cluster.MasterURL, *certs, func(csProjectClient *cs.ProjectClient) (interface{}, error) {
@@ -342,7 +343,8 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 				})
 			}
 			return err
-		}); err != nil {
+		})
+		if err != nil {
 			return fmt.Errorf("Confirmming container application blue-green got an error: %#v", err)
 		}
 	}

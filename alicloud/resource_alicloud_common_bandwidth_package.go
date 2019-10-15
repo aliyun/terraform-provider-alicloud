@@ -107,11 +107,11 @@ func resourceAliyunCommonBandwidthPackageRead(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 
-	if bandwidth, err := strconv.Atoi(object.Bandwidth); err != nil {
+	bandwidth, err := strconv.Atoi(object.Bandwidth)
+	if err != nil {
 		return WrapError(err)
-	} else {
-		d.Set("bandwidth", bandwidth)
 	}
+	d.Set("bandwidth", bandwidth)
 	d.Set("name", object.Name)
 	d.Set("description", object.Description)
 	d.Set("internet_charge_type", object.InternetChargeType)

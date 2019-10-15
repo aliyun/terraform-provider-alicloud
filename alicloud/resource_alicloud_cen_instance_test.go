@@ -60,11 +60,11 @@ func testSweepCenInstances(region string) error {
 			break
 		}
 
-		if page, err := getNextpageNumber(describeCensRequest.PageNumber); err != nil {
+		page, err := getNextpageNumber(describeCensRequest.PageNumber)
+		if err != nil {
 			return err
-		} else {
-			describeCensRequest.PageNumber = page
 		}
+		describeCensRequest.PageNumber = page
 	}
 
 	sweeped := false

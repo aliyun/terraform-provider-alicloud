@@ -20,9 +20,9 @@ func testAccCheckKeyPairAttachmentDestroy(s *terraform.State) error {
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 		ecsService := EcsService{client}
 
-		instance_ids := rs.Primary.Attributes["instance_ids"]
+		instanceIds := rs.Primary.Attributes["instance_ids"]
 
-		for _, inst := range instance_ids {
+		for _, inst := range instanceIds {
 			response, err := ecsService.DescribeInstance(string(inst))
 			if err != nil {
 				return err
