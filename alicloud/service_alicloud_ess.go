@@ -307,9 +307,8 @@ func (s *EssService) WaitForEssScalingRule(id string, status Status, timeout int
 				if status == Deleted {
 					return nil
 				}
-			} else {
-				return WrapError(err)
 			}
+			return WrapError(err)
 		}
 
 		if object.ScalingRuleId == id && status != Deleted {

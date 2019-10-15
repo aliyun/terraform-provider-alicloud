@@ -9,7 +9,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudLogtailAttachment_basic(t *testing.T) {
+func TestAccAlicloudLogtailAttachmentBasic(t *testing.T) {
 	var v string
 	resourceId := "alicloud_logtail_attachment.default"
 	ra := resourceAttrInit(resourceId, logtailAttachmentMap)
@@ -55,7 +55,7 @@ func TestAccAlicloudLogtailAttachment_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLogtailAttachment_multipleGroup(t *testing.T) {
+func TestAccAlicloudLogtailAttachmentMultipleGroup(t *testing.T) {
 	var v string
 	resourceId := "alicloud_logtail_attachment.default.1"
 	ra := resourceAttrInit(resourceId, logtailAttachmentMap)
@@ -67,7 +67,7 @@ func TestAccAlicloudLogtailAttachment_multipleGroup(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacclogtailattachment-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogtailAttachmentDependence_multipleGroup)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogtailAttachmentDependenceMultipleGroup)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -92,7 +92,7 @@ func TestAccAlicloudLogtailAttachment_multipleGroup(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLogtailAttachment_multipleConfig(t *testing.T) {
+func TestAccAlicloudLogtailAttachmentMultipleConfig(t *testing.T) {
 	var v string
 	resourceId := "alicloud_logtail_attachment.default.1"
 	ra := resourceAttrInit(resourceId, logtailAttachmentMap)
@@ -104,7 +104,7 @@ func TestAccAlicloudLogtailAttachment_multipleConfig(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacclogtailattachment-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogtailAttachmentDependence_multipleConfig)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogtailAttachmentDependenceMultipleConfig)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -176,7 +176,7 @@ resource "alicloud_logtail_config" "default"{
 `, name)
 }
 
-func resourceLogtailAttachmentDependence_multipleGroup(name string) string {
+func resourceLogtailAttachmentDependenceMultipleGroup(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
@@ -225,7 +225,7 @@ resource "alicloud_logtail_config" "default"{
 `, name)
 }
 
-func resourceLogtailAttachmentDependence_multipleConfig(name string) string {
+func resourceLogtailAttachmentDependenceMultipleConfig(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"

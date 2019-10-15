@@ -129,7 +129,7 @@ func SkipTestAccAlicloudCdnDomain_https(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCdnDomainDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCdnDomainHttpsConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCdnDomainExists("alicloud_cdn_domain.domain", &v),
@@ -159,7 +159,7 @@ func TestAccAlicloudCdnDomain_domestic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCdnDomainDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCdnDomainDomestic(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCdnDomainExists("alicloud_cdn_domain.domain", &v),

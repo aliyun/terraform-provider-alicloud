@@ -73,8 +73,8 @@ func resourceAlicloudLogtailConfigCreate(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	var inputConfigInputDetail = make(map[string]interface{})
 	data := d.Get("input_detail").(string)
-	if json_err := json.Unmarshal([]byte(data), &inputConfigInputDetail); json_err != nil {
-		return WrapError(json_err)
+	if jsonErr := json.Unmarshal([]byte(data), &inputConfigInputDetail); jsonErr != nil {
+		return WrapError(jsonErr)
 	}
 	var requestInfo *sls.Client
 	logconfig := &sls.LogConfig{
@@ -90,11 +90,11 @@ func resourceAlicloudLogtailConfigCreate(d *schema.ResourceData, meta interface{
 	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 		requestInfo = slsClient
 		sls.AddNecessaryInputConfigField(inputConfigInputDetail)
-		if covert_input, covert_err := assertInputDetailType(inputConfigInputDetail, logconfig); covert_err != nil {
-			return nil, WrapError(covert_err)
-		} else {
-			logconfig.InputDetail = covert_input
+		covertInput, covertErr := assertInputDetailType(inputConfigInputDetail, logconfig)
+		if covertErr != nil {
+			return nil, WrapError(covertErr)
 		}
+		logconfig.InputDetail = covertInput
 		return nil, slsClient.CreateConfig(d.Get("project").(string), logconfig)
 	})
 	if err != nil {
@@ -174,11 +174,11 @@ func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface
 			return WrapError(conver_err)
 		}
 		sls.AddNecessaryInputConfigField(inputConfigInputDetail)
-		if covert_input, covert_err := assertInputDetailType(inputConfigInputDetail, logconfig); covert_err != nil {
-			return WrapError(covert_err)
-		} else {
-			logconfig.InputDetail = covert_input
+		covertInput, covertErr := assertInputDetailType(inputConfigInputDetail, logconfig)
+		if covertErr != nil {
+			return WrapError(covertErr)
 		}
+		logconfig.InputDetail = covertInput
 
 		client := meta.(*connectivity.AliyunClient)
 		var requestInfo *sls.Client

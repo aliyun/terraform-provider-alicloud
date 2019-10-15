@@ -153,11 +153,11 @@ func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, m
 			break
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			return allCens, WrapError(err)
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 	return allCens, nil
 }
@@ -273,11 +273,11 @@ func censDescribeCenAttachedChildInstances(d *schema.ResourceData, cenId string,
 			break
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			return instanceIds, WrapError(err)
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 
 	return instanceIds, nil

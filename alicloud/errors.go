@@ -636,8 +636,8 @@ func (e *WrapErrorOld) Error() string {
 	return fmt.Sprintf("[ERROR] %s: %s %s:\n%s\n%s", e.errorPath, e.message, e.errorSource, e.originError.Error(), e.suggestion)
 }
 
-// ComplexError is a format error which inclouding origin error, extra error message, error occurred file and line
-// Cause: a error is a origin error that comes from SDK, some expections and so on
+// ComplexError is a format error which including origin error, extra error message, error occurred file and line
+// Cause: a error is a origin error that comes from SDK, some exceptions and so on
 // Err: a new error is built from extra message
 // Path: the file path of error occurred
 // Line: the file line of error occurred

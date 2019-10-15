@@ -139,9 +139,8 @@ func (s *CloudApiService) WaitForApiGatewayApi(id string, status Status, timeout
 				if status == Deleted {
 					return nil
 				}
-			} else {
-				return WrapError(err)
 			}
+			return WrapError(err)
 		}
 		respId := fmt.Sprintf("%s%s%s", object.GroupId, COLON_SEPARATED, object.ApiId)
 		if respId == id && status != Deleted {
@@ -186,11 +185,11 @@ func (s *CloudApiService) DescribeApiGatewayAppAttachment(id string) (*cloudapi.
 			break
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			return nil, WrapError(err)
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 
 	var filteredAppsTemp []cloudapi.AuthorizedApp
@@ -198,7 +197,6 @@ func (s *CloudApiService) DescribeApiGatewayAppAttachment(id string) (*cloudapi.
 		if app.AppId == appId {
 			filteredAppsTemp = append(filteredAppsTemp, app)
 		}
-
 	}
 
 	if len(filteredAppsTemp) < 1 {

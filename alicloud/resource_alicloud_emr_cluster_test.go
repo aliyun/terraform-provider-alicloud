@@ -128,7 +128,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 					"master_pwd":                "ABCtest1234!",
 
 					"host_group": []map[string]interface{}{
-						map[string]interface{}{
+						{
 							"host_group_type":   "MASTER",
 							"node_count":        "2",
 							"instance_type":     "ecs.g5.xlarge",
@@ -138,7 +138,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 							"sys_disk_type":     "cloud_ssd",
 							"sys_disk_capacity": "80",
 						},
-						map[string]interface{}{
+						{
 							"host_group_type":   "CORE",
 							"node_count":        "3",
 							"instance_type":     "ecs.g5.xlarge",
@@ -205,7 +205,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 					"master_pwd":                "ABCtest1234!",
 
 					"host_group": []map[string]interface{}{
-						map[string]interface{}{
+						{
 							"host_group_type":   "MASTER",
 							"node_count":        "2",
 							"instance_type":     "ecs.g5.xlarge",
@@ -215,7 +215,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 							"sys_disk_type":     "cloud_ssd",
 							"sys_disk_capacity": "80",
 						},
-						map[string]interface{}{
+						{
 							"host_group_type":   "CORE",
 							"node_count":        "3",
 							"instance_type":     "ecs.g5.xlarge",

@@ -209,11 +209,11 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 			break
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			return WrapError(err)
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 
 	var filteredImages []ecs.Image

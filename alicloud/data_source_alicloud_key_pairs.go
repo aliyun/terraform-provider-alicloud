@@ -132,11 +132,11 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 		if len(response.KeyPairs.KeyPair) < PageSizeLarge {
 			break
 		}
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			return WrapError(err)
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 
 	describeInstancesRequest := ecs.CreateDescribeInstancesRequest()
@@ -157,23 +157,23 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 		}
 		for _, inst := range object.Instances.Instance {
 			if _, ok := keyPairsAttach[inst.KeyPairName]; ok {
-				public_ip := inst.EipAddress.IpAddress
-				if public_ip == "" && len(inst.PublicIpAddress.IpAddress) > 0 {
-					public_ip = inst.PublicIpAddress.IpAddress[0]
+				publicIp := inst.EipAddress.IpAddress
+				if publicIp == "" && len(inst.PublicIpAddress.IpAddress) > 0 {
+					publicIp = inst.PublicIpAddress.IpAddress[0]
 				}
-				var private_ip string
+				var privateIp string
 				if len(inst.InnerIpAddress.IpAddress) > 0 {
-					private_ip = inst.InnerIpAddress.IpAddress[0]
+					privateIp = inst.InnerIpAddress.IpAddress[0]
 				} else if len(inst.VpcAttributes.PrivateIpAddress.IpAddress) > 0 {
-					private_ip = inst.VpcAttributes.PrivateIpAddress.IpAddress[0]
+					privateIp = inst.VpcAttributes.PrivateIpAddress.IpAddress[0]
 				}
 				mapping := map[string]interface{}{
 					"availability_zone": inst.ZoneId,
 					"instance_id":       inst.InstanceId,
 					"instance_name":     inst.InstanceName,
 					"vswitch_id":        inst.VpcAttributes.VSwitchId,
-					"public_ip":         public_ip,
-					"private_ip":        private_ip,
+					"public_ip":         publicIp,
+					"private_ip":        privateIp,
 				}
 				if val, ok := keyPairsAttach[inst.KeyPairName]; ok {
 					val = append(val, mapping)
@@ -187,11 +187,11 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 			break
 		}
 
-		if page, err := getNextpageNumber(describeInstancesRequest.PageNumber); err != nil {
+		page, err := getNextpageNumber(describeInstancesRequest.PageNumber)
+		if err != nil {
 			return WrapError(err)
-		} else {
-			describeInstancesRequest.PageNumber = page
 		}
+		describeInstancesRequest.PageNumber = page
 	}
 
 	return keyPairsDescriptionAttributes(d, keyPairs, keyPairsAttach)

@@ -17,7 +17,7 @@ func resourceAlicloudNasFileSystem() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"storage_type": &schema.Schema{
+			"storage_type": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -26,7 +26,7 @@ func resourceAlicloudNasFileSystem() *schema.Resource {
 					"Performance",
 				}),
 			},
-			"protocol_type": &schema.Schema{
+			"protocol_type": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -35,7 +35,7 @@ func resourceAlicloudNasFileSystem() *schema.Resource {
 					"SMB",
 				}),
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validateNASDescription,

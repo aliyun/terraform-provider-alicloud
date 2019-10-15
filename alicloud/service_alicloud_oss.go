@@ -8,6 +8,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
+// OssService *connectivity.AliyunClient
 type OssService struct {
 	client *connectivity.AliyunClient
 }

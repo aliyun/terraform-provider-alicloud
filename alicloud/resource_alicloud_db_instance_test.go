@@ -57,11 +57,11 @@ func testSweepDBInstances(region string) error {
 			break
 		}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+		page, err := getNextpageNumber(req.PageNumber)
+		if err != nil {
 			return err
-		} else {
-			req.PageNumber = page
 		}
+		req.PageNumber = page
 	}
 
 	sweeped := false
@@ -110,7 +110,7 @@ func testSweepDBInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDBInstance_mysql(t *testing.T) {
+func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 	var ips []map[string]interface{}
 
@@ -322,7 +322,7 @@ resource "alicloud_security_group" "default" {
 `, RdsCommonTestCase, name)
 }
 
-func TestAccAlicloudDBInstance_multi_instance(t *testing.T) {
+func TestAccAlicloudDBInstanceMultiInstance(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 
 	resourceId := "alicloud_db_instance.default.4"
@@ -368,7 +368,7 @@ func TestAccAlicloudDBInstance_multi_instance(t *testing.T) {
 }
 
 // Unknown current resource exists
-func TestAccAlicloudDBInstance_SQLServer(t *testing.T) {
+func TestAccAlicloudDBInstanceSQLServer(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 	var ips []map[string]interface{}
 
@@ -521,7 +521,7 @@ resource "alicloud_security_group" "default" {
 `, RdsCommonTestCase, name)
 }
 
-func TestAccAlicloudDBInstance_PostgreSQL(t *testing.T) {
+func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 	var ips []map[string]interface{}
 
@@ -678,7 +678,7 @@ resource "alicloud_security_group" "default" {
 }
 
 // Unknown current resource exists
-func TestAccAlicloudDBInstance_PPAS(t *testing.T) {
+func TestAccAlicloudDBInstancePPAS(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 	var ips []map[string]interface{}
 
@@ -842,7 +842,7 @@ resource "alicloud_security_group" "default" {
 }
 
 // Unknown current resource exists
-func TestAccAlicloudDBInstance_multiAZ(t *testing.T) {
+func TestAccAlicloudDBInstanceMultiAZ(t *testing.T) {
 	var instance = &rds.DBInstanceAttribute{}
 	resourceId := "alicloud_db_instance.default"
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
@@ -915,7 +915,7 @@ resource "alicloud_security_group" "default" {
 `, RdsCommonTestCase, name)
 }
 
-func TestAccAlicloudDBInstance_classic(t *testing.T) {
+func TestAccAlicloudDBInstanceClassic(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 
 	resourceId := "alicloud_db_instance.default"

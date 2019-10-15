@@ -81,7 +81,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 			request.ScalingGroupId = d.Id()
 			s := reflect.ValueOf(request).Elem()
 
-			if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 				for i, id := range add {
 					s.FieldByName(fmt.Sprintf("InstanceId%d", i+1)).Set(reflect.ValueOf(id))
 				}
@@ -136,11 +136,12 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
-			}); err != nil {
+			})
+			if err != nil {
 				return WrapError(err)
 			}
 
-			if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+			err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 
 				instances, err := essService.DescribeEssAttachment(d.Id(), add)
 				if err != nil {
@@ -156,7 +157,8 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 					}
 				}
 				return nil
-			}); err != nil {
+			})
+			if err != nil {
 				return WrapError(err)
 			}
 		}

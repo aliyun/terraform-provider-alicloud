@@ -57,7 +57,6 @@ import (
 	"time"
 )
 
-// AliyunClient of aliyun
 type AliyunClient struct {
 	Region   Region
 	RegionId string
@@ -121,10 +120,15 @@ const (
 const businessInfoKey = "Terraform"
 
 const DefaultClientRetryCountSmall = 5
+
 const DefaultClientRetryCountMedium = 10
+
 const DefaultClientRetryCountLarge = 15
+
 const Terraform = "HashiCorp-Terraform"
+
 const Provider = "Terraform-Provider"
+
 const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe

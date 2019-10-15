@@ -35,24 +35,24 @@ func resourceAlicloudDdosbgpInstance() *schema.Resource {
 				Required:     false,
 				ValidateFunc: validateDdosbgpInstanceName,
 			},
-			"base_bandwidth": &schema.Schema{
+			"base_bandwidth": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
 				Default:  20,
 			},
-			"bandwidth": &schema.Schema{
+			"bandwidth": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
 			},
-			"ip_type": &schema.Schema{
+			"ip_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateAllowedStringValue([]string{string(IPv4), string(IPv6)}),
 			},
-			"ip_count": &schema.Schema{
+			"ip_count": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,

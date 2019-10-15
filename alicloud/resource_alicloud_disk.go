@@ -198,11 +198,12 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	d.Partial(true)
 
-	if err := setTags(client, TagResourceDisk, d); err != nil {
+	err := setTags(client, TagResourceDisk, d)
+	if err != nil {
 		return WrapError(err)
-	} else {
-		d.SetPartial("tags")
 	}
+	d.SetPartial("tags")
+
 	update := false
 	request := ecs.CreateModifyDiskAttributeRequest()
 	request.RegionId = client.RegionId

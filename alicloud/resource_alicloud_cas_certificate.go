@@ -19,18 +19,18 @@ func resourceAlicloudCasCertificate() *schema.Resource {
 		Delete: resourceAlicloudCasDelete,
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validateCasName,
 			},
-			"cert": &schema.Schema{
+			"cert": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"key": &schema.Schema{
+			"key": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,

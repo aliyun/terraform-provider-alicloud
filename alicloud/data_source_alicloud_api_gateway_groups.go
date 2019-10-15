@@ -112,11 +112,11 @@ func dataSourceAlicloudApigatewayGroupsRead(d *schema.ResourceData, meta interfa
 			break
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			return WrapError(err)
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 
 	var filteredGroups []cloudapi.ApiGroupAttribute

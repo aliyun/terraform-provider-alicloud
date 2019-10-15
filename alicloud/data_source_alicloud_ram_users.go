@@ -83,13 +83,13 @@ func dataSourceAlicloudRamUsers() *schema.Resource {
 func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
-	allUsers := []interface{}{}
+	var allUsers []interface{}
 
 	allUsersMap := make(map[string]interface{})
 	groupFilterUsersMap := make(map[string]interface{})
 	policyFilterUsersMap := make(map[string]interface{})
 
-	dataMap := []map[string]interface{}{}
+	var dataMap []map[string]interface{}
 
 	groupName, groupNameOk := d.GetOk("group_name")
 	policyName, policyNameOk := d.GetOk("policy_name")
