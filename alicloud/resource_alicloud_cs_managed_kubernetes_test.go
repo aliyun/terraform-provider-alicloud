@@ -126,16 +126,14 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"log_config": []map[string]interface{}{
 						{
-							"type":    "SLS",
-							"project": fmt.Sprintf("%s-managed-sls", name),
+							"type": "SLS",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"log_config.#":         "1",
-						"log_config.0.type":    "SLS",
-						"log_config.0.project": CHECKSET,
+						"log_config.#":      "1",
+						"log_config.0.type": "SLS",
 					}),
 				),
 			},
