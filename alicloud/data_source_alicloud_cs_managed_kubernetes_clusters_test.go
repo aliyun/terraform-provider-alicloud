@@ -123,6 +123,11 @@ resource "alicloud_vswitch" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 
+resource "alicloud_log_project" "log" {
+  name        = "${var.name}-managed-sls"
+  description = "created by terraform for managedkubernetes cluster"
+}
+
 resource "alicloud_cs_managed_kubernetes" "default" {
   name_prefix = "${var.name}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
@@ -140,7 +145,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_data_disk_size =  200
   log_config {
     type = "SLS"
-    project = "${var.name}-managed-sls"
+    project = "${alicloud_log_project.log.name}"
   }
 }
 `, name)

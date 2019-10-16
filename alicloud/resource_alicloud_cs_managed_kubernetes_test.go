@@ -27,7 +27,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccManagedKubernetes-%d", rand)
+	name := fmt.Sprintf("tf-testaccmanagedkubernetes-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSManagedKubernetesConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -56,6 +56,12 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"worker_data_disk_category":   "cloud_ssd",
 					"worker_instance_charge_type": "PostPaid",
 					"slb_internet_enabled":        "true",
+					"log_config": []map[string]interface{}{
+						{
+							"type":    "SLS",
+							"project": "${alicloud_log_project.log.name}",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -69,6 +75,9 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 						"worker_data_disk_size":     "20",
 						"worker_data_disk_category": "cloud_ssd",
 						"slb_internet_enabled":      "true",
+						"log_config.#":              "1",
+						"log_config.0.type":         "SLS",
+						"log_config.0.project":      CHECKSET,
 					}),
 				),
 			},
@@ -80,7 +89,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"service_cidr", "password", "install_cloud_monitor", "slb_internet_enabled",
 					"vswitch_ids", "worker_instance_types", "worker_numbers", "worker_disk_category",
 					"worker_disk_size", "worker_instance_charge_type", "worker_number", "force_update",
-					"cluster_network_type", "worker_data_disk_category", "worker_data_disk_size"},
+					"cluster_network_type", "worker_data_disk_category", "worker_data_disk_size", "log_config"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -114,28 +123,11 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"force_update": "true",
+					"force_update": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"force_update": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"log_config": []map[string]interface{}{
-						{
-							"type":    "SLS",
-							"project": fmt.Sprintf("%s-managed-sls", name),
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"log_config.#":         "1",
-						"log_config.0.type":    "SLS",
-						"log_config.0.project": CHECKSET,
+						"force_update": "false",
 					}),
 				),
 			},
@@ -205,11 +197,11 @@ func TestAccAlicloudCSManagedKubernetes_multiAZ(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway": "false",
+					"new_nat_gateway": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"new_nat_gateway": "false",
+						"new_nat_gateway": "true",
 					}),
 				),
 			},
@@ -273,6 +265,11 @@ resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "10.1.1.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_log_project" "log" {
+  name        = "${var.name}"
+  description = "created by terraform for managedkubernetes cluster"
 }
 `, name)
 }
