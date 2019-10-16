@@ -92,10 +92,13 @@ func testSweepSLBs(region string) error {
 		if skip {
 			for _, t := range loadBalancer.Tags.Tag {
 				if strings.HasPrefix(strings.ToLower(t.TagKey), strings.ToLower(k8sPrefix)) {
-					if _, err := csService.DescribeCsKubernetes(name); NotFoundError(err) {
+					_, err := csService.DescribeCsKubernetes(name)
+					if NotFoundError(err) {
 						skip = false
+					} else {
+						skip = true
+						break
 					}
-					break
 				}
 			}
 		}
