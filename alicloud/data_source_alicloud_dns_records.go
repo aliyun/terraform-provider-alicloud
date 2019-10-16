@@ -38,10 +38,9 @@ func dataSourceAlicloudDnsRecords() *schema.Resource {
 				ValidateFunc: validateDomainRecordType,
 			},
 			"line": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateDomainRecordLine,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
