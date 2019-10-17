@@ -306,14 +306,14 @@ func parseVpcConfig(d *schema.ResourceData, meta interface{}) (config *fc.VPCCon
 			return
 		}
 		if conf != nil {
-			vswitch_ids := conf["vswitch_ids"].(*schema.Set).List()
-			vsw, e := vpcService.DescribeVSwitch(vswitch_ids[0].(string))
+			vswitchIds := conf["vswitch_ids"].(*schema.Set).List()
+			vsw, e := vpcService.DescribeVSwitch(vswitchIds[0].(string))
 			if e != nil {
 				err = WrapError(e)
 				return
 			}
 			config = &fc.VPCConfig{
-				VSwitchIDs:      expandStringList(vswitch_ids),
+				VSwitchIDs:      expandStringList(vswitchIds),
 				SecurityGroupID: StringPointer(conf["security_group_id"].(string)),
 				VPCID:           StringPointer(vsw.VpcId),
 			}

@@ -73,11 +73,11 @@ func testSweepVpcs(region string) error {
 			break
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			log.Printf("[ERROR] %s", WrapError(err))
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 
 	for _, v := range vpcs {

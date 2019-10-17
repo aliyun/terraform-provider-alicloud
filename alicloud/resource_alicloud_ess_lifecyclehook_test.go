@@ -11,7 +11,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudEssLifecycleHook_basic(t *testing.T) {
+func TestAccAlicloudEssLifecycleHookBasic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.LifecycleHook
 	resourceId := "alicloud_ess_lifecycle_hook.default"

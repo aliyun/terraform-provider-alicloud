@@ -100,7 +100,20 @@ The following arguments are supported:
     - TotalCapacity：[0, 100]
 * `scaling_rule_name` - (Optional) Name shown for the scaling rule, which is a string containing 2 to 40 English or Chinese characters.
 * `cooldown` - (Optional) Cool-down time of a scaling rule. Value range: [0, 86,400], in seconds. The default value is empty.
+* `scaling_rule_type` - (Optional, Available in 1.58.0+) The scaling rule type, either "SimpleScalingRule", "TargetTrackingScalingRule", "StepScalingRule". Default to "SimpleScalingRule".
+* `estimated_instance_warmup` - (Optional, Available in 1.58.0+) The estimated time, in seconds, until a newly launched instance will contribute CloudMonitor metrics. Default to 300.
+* `metric_name` - (Optional, Available in 1.58.0+) A CloudMonitor metric name.
+* `target_value` - (Optional, Available in 1.58.0+) The target value for the metric.
+* `disable_scale_in` - (Optional, Available in 1.58.0+) Indicates whether scale in by the target tracking policy is disabled. Default to false.
+* `step_adjustment` - (Optional, Available in 1.58.0+) Steps for StepScalingRule. See [Block stepAdjustment](#block-stepAdjustment) below for details.
 
+## Block stepAdjustment
+
+The stepAdjustment mapping supports the following:
+
+* `metric_interval_lower_bound` - (Optional) The lower bound of step.
+* `metric_interval_upper_bound` - (Optional) The upper bound of step.
+* `scaling_adjustment` - (Optional) The adjust value of step.
 
 ## Attributes Reference
 

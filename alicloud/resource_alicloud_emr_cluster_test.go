@@ -98,7 +98,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAccEmrClusterConfig%d", rand)
+	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrClusterCommonConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -128,7 +128,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 					"master_pwd":                "ABCtest1234!",
 
 					"host_group": []map[string]interface{}{
-						map[string]interface{}{
+						{
 							"host_group_type":   "MASTER",
 							"node_count":        "2",
 							"instance_type":     "ecs.g5.xlarge",
@@ -138,7 +138,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 							"sys_disk_type":     "cloud_ssd",
 							"sys_disk_capacity": "80",
 						},
-						map[string]interface{}{
+						{
 							"host_group_type":   "CORE",
 							"node_count":        "3",
 							"instance_type":     "ecs.g5.xlarge",
@@ -175,7 +175,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAccEmrClusterConfig%d", rand)
+	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrClusterCommonConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -205,7 +205,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 					"master_pwd":                "ABCtest1234!",
 
 					"host_group": []map[string]interface{}{
-						map[string]interface{}{
+						{
 							"host_group_type":   "MASTER",
 							"node_count":        "2",
 							"instance_type":     "ecs.g5.xlarge",
@@ -215,7 +215,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 							"sys_disk_type":     "cloud_ssd",
 							"sys_disk_capacity": "80",
 						},
-						map[string]interface{}{
+						{
 							"host_group_type":   "CORE",
 							"node_count":        "3",
 							"instance_type":     "ecs.g5.xlarge",

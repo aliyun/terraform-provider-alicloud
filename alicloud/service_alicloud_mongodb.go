@@ -139,10 +139,10 @@ func (s *MongoDBService) DescribeMongoDBSecurityIps(instanceId string) (ips []dd
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	respone, _ := raw.(*dds.DescribeSecurityIpsResponse)
+	response, _ := raw.(*dds.DescribeSecurityIpsResponse)
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	return respone.SecurityIpGroups.SecurityIpGroup, nil
+	return response.SecurityIpGroups.SecurityIpGroup, nil
 }
 
 func (s *MongoDBService) ModifyMongoDBSecurityIps(instanceId, ips string) error {

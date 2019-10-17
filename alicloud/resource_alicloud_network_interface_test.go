@@ -57,11 +57,11 @@ func testAlicloudNetworkInterface(region string) error {
 			break
 		}
 
-		if pageNumber, err := getNextpageNumber(req.PageNumber); err != nil {
+		pageNumber, err := getNextpageNumber(req.PageNumber)
+		if err != nil {
 			return err
-		} else {
-			req.PageNumber = pageNumber
 		}
+		req.PageNumber = pageNumber
 	}
 
 	prefixes := []string{

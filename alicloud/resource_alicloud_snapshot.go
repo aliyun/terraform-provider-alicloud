@@ -26,17 +26,17 @@ func resourceAliyunSnapshot() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"disk_id": &schema.Schema{
+			"disk_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,

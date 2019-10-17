@@ -145,7 +145,7 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	var routeTabls []vpc.RouteTable
 	for {
 		total := 0
-		if err = resource.Retry(6*time.Minute, func() *resource.RetryError {
+		err = resource.Retry(6*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.DescribeRouteTables(request)
 			})
@@ -158,7 +158,8 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 			routeTabls = append(routeTabls, response.RouteTables.RouteTable...)
 			total = len(response.RouteTables.RouteTable)
 			return resource.NonRetryableError(err)
-		}); err != nil {
+		})
+		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 

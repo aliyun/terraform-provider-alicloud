@@ -87,7 +87,7 @@ func TestAccAlicloudZonesDataSource_unitRegion(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudZonesDataSource_unitRegion,
+				Config: testAccCheckAlicloudZonesDataSourceUnitRegion,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_zones.foo"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.foo", "zones.#"),
@@ -112,7 +112,7 @@ func TestAccAlicloudZonesDataSource_multiZone(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudZonesDataSource_multiZone,
+				Config: testAccCheckAlicloudZonesDataSourceMultiZone,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_zones.default"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.#"),
@@ -140,7 +140,7 @@ func TestAccAlicloudZonesDataSource_chargeType(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudZonesDataSource_chargeType,
+				Config: testAccCheckAlicloudZonesDataSourceChargeType,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_zones.default"),
 					resource.TestCheckResourceAttrSet("data.alicloud_zones.default", "zones.#"),
@@ -281,21 +281,21 @@ data "alicloud_zones" "foo" {
 }
 `
 
-const testAccCheckAlicloudZonesDataSource_unitRegion = `
+const testAccCheckAlicloudZonesDataSourceUnitRegion = `
 data "alicloud_zones" "foo" {
 	available_resource_creation= "VSwitch"
 	enable_details = true
 }
 `
 
-const testAccCheckAlicloudZonesDataSource_multiZone = `
+const testAccCheckAlicloudZonesDataSourceMultiZone = `
 data "alicloud_zones" "default" {
   available_resource_creation= "Rds"
   multi = true
   enable_details = true
 }`
 
-const testAccCheckAlicloudZonesDataSource_chargeType = `
+const testAccCheckAlicloudZonesDataSourceChargeType = `
 data "alicloud_zones" "default" {
   instance_charge_type = "PrePaid"
   available_resource_creation= "Rds"

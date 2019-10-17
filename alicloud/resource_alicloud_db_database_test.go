@@ -9,7 +9,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDBDatabase_update(t *testing.T) {
+func TestAccAlicloudDBDatabaseUpdate(t *testing.T) {
 	var database *rds.Database
 	resourceId := "alicloud_db_database.default"
 

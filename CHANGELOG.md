@@ -1,4 +1,9 @@
-## 1.57.2 (Unreleased)
+## 1.58.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve(alicloud_ess_scaling_rule): support TargetTrackingScalingRule and StepScalingRule.
+
 ## 1.57.1 (October 11, 2019)
 
 IMPROVEMENTS:

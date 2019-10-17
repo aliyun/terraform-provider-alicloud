@@ -27,36 +27,36 @@ func resourceAlicloudDBReadWriteSplittingConnection() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"instance_id": &schema.Schema{
+			"instance_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
 			},
-			"connection_prefix": &schema.Schema{
+			"connection_prefix": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validateDBConnectionPrefix,
 			},
-			"distribution_type": &schema.Schema{
+			"distribution_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateAllowedStringValue([]string{"Standard", "Custom"}),
 			},
-			"weight": &schema.Schema{
+			"weight": {
 				Type:     schema.TypeMap,
 				Optional: true,
 			},
-			"max_delay_time": &schema.Schema{
+			"max_delay_time": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
 			},
-			"connection_string": &schema.Schema{
+			"connection_string": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"port": &schema.Schema{
+			"port": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,

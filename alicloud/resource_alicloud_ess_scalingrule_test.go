@@ -92,6 +92,136 @@ func TestAccAlicloudEssScalingRule_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudEssScalingRule_target_tracking_rule_basic(t *testing.T) {
+	var v ess.ScalingRule
+	rand := acctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_scaling_rule.default"
+	basicMap := map[string]string{
+		"scaling_group_id":          CHECKSET,
+		"scaling_rule_type":         "TargetTrackingScalingRule",
+		"metric_name":               "CpuUtilization",
+		"target_value":              "20.1",
+		"disable_scale_in":          "false",
+		"estimated_instance_warmup": "200",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEssTargetTrackingScalingRuleConfig(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccEssTargetTrackingScalingRuleUpdateDisableScaleIn(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disable_scale_in": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccEssTargetTrackingScalingRuleUpdateEstimatedInstanceWarmup(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"estimated_instance_warmup": "300",
+					}),
+				),
+			},
+			{
+				Config: testAccEssTargetTrackingScalingRuleUpdateTargetValue(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"target_value": "20.212",
+					}),
+				),
+			},
+			{
+				Config: testAccEssTargetTrackingScalingRuleUpdateMetricName(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"metric_name": "IntranetRx",
+					}),
+				),
+			},
+			{
+				Config: testAccEssTargetTrackingScalingRuleConfig(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(basicMap),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudEssScalingRule_step_rule_basic(t *testing.T) {
+	var v ess.ScalingRule
+	rand := acctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_scaling_rule.default"
+	basicMap := map[string]string{
+		"scaling_group_id":  CHECKSET,
+		"scaling_rule_type": "StepScalingRule",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEssStepScalingRuleConfig(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"step_adjustment"},
+			},
+			{
+				Config: testAccEssStepScalingRuleUpdate_step(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"step_adjustment.#": "3",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudEssScalingRuleMulti(t *testing.T) {
 	var v ess.ScalingRule
 	rand := acctest.RandIntRange(1000, 999999)
@@ -344,6 +474,200 @@ func testAccEssScalingRuleConfigMulti(common string, rand int) string {
 		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 1
+	}
+	`, common, rand)
+}
+
+func testAccEssTargetTrackingScalingRuleConfig(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssTargetTrackingScalingRuleConfig-%d"
+	}
+
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+
+	resource "alicloud_ess_scaling_rule" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_rule_type = "TargetTrackingScalingRule"
+		metric_name = "CpuUtilization"
+		target_value = 20.1
+		disable_scale_in = false
+		estimated_instance_warmup = 200
+	}
+	`, common, rand)
+}
+
+func testAccEssTargetTrackingScalingRuleUpdateDisableScaleIn(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssTargetTrackingScalingRuleConfig-%d"
+	}
+
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+
+	resource "alicloud_ess_scaling_rule" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_rule_type = "TargetTrackingScalingRule"
+		metric_name = "CpuUtilization"
+		target_value = 20.1
+		disable_scale_in = true
+		estimated_instance_warmup = 200
+	}
+	`, common, rand)
+}
+
+func testAccEssTargetTrackingScalingRuleUpdateEstimatedInstanceWarmup(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssTargetTrackingScalingRuleConfig-%d"
+	}
+
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+
+	resource "alicloud_ess_scaling_rule" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_rule_type = "TargetTrackingScalingRule"
+		metric_name = "CpuUtilization"
+		target_value = 20.1
+		disable_scale_in = true
+		estimated_instance_warmup = 300
+	}
+	`, common, rand)
+}
+
+func testAccEssTargetTrackingScalingRuleUpdateTargetValue(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssTargetTrackingScalingRuleConfig-%d"
+	}
+
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+
+	resource "alicloud_ess_scaling_rule" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_rule_type = "TargetTrackingScalingRule"
+		metric_name = "CpuUtilization"
+		target_value = 20.212
+		disable_scale_in = true
+		estimated_instance_warmup = 300
+	}
+	`, common, rand)
+}
+
+func testAccEssTargetTrackingScalingRuleUpdateMetricName(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssTargetTrackingScalingRuleConfig-%d"
+	}
+
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+
+	resource "alicloud_ess_scaling_rule" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_rule_type = "TargetTrackingScalingRule"
+		metric_name = "IntranetRx"
+		target_value = 20.212
+		disable_scale_in = true
+		estimated_instance_warmup = 300
+	}
+	`, common, rand)
+}
+
+func testAccEssStepScalingRuleConfig(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssStepScalingRuleConfig-%d"
+	}
+
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+
+	resource "alicloud_ess_scaling_rule" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_rule_type = "StepScalingRule"
+		adjustment_type = "TotalCapacity"
+		estimated_instance_warmup = 200
+		step_adjustment {
+			metric_interval_lower_bound = "10.3"
+			metric_interval_upper_bound = "20.1"
+			scaling_adjustment = 1
+		}
+		step_adjustment {
+			metric_interval_lower_bound = "20.1"
+			scaling_adjustment = "2"
+		}
+	}
+	`, common, rand)
+}
+
+func testAccEssStepScalingRuleUpdate_step(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssStepScalingRuleConfig-%d"
+	}
+
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+
+	resource "alicloud_ess_scaling_rule" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_rule_type = "StepScalingRule"
+		adjustment_type = "TotalCapacity"
+		estimated_instance_warmup = 200
+		step_adjustment {
+			metric_interval_lower_bound = "5.32"
+			metric_interval_upper_bound = "20.1"
+			scaling_adjustment = 1
+		}
+		step_adjustment {
+			metric_interval_lower_bound = "20.1"
+			metric_interval_upper_bound = "22.1"
+			scaling_adjustment = 2
+		}
+		step_adjustment {
+			metric_interval_lower_bound = "22.1"
+			scaling_adjustment = 3
+		}
 	}
 	`, common, rand)
 }

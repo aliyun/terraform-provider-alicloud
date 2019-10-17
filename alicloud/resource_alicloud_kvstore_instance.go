@@ -401,7 +401,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 		// There needs more time to sync instance class update
-		if err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 			object, err := kvstoreService.DescribeKVstoreInstance(d.Id())
 			if err != nil {
 				return resource.NonRetryableError(err)
@@ -411,7 +411,8 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 					object.InstanceClass, request.InstanceClass))
 			}
 			return nil
-		}); err != nil {
+		})
+		if err != nil {
 			return WrapError(err)
 		}
 

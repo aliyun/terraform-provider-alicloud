@@ -24,7 +24,6 @@ func String(v string) *string {
 	return &v
 }
 
-// tagsSchema returns the schema to use for tags.
 func tagsSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeMap,
@@ -149,29 +148,30 @@ func updateCdnTags(client *connectivity.AliyunClient, ids []string, resourceType
 	// Set tags
 	if len(remove) > 0 {
 		log.Printf("[DEBUG] Removing tags: %#v from %#v", remove, ids)
-		args := cdn.CreateUntagResourcesRequest()
-		args.ResourceType = string(resourceType)
-		args.ResourceId = &ids
+		request := cdn.CreateUntagResourcesRequest()
+		request.ResourceType = string(resourceType)
+		request.ResourceId = &ids
 
 		var tagsKey []string
 		for _, t := range remove {
 			tagsKey = append(tagsKey, t.Key)
 		}
-		args.TagKey = &tagsKey
+		request.TagKey = &tagsKey
 
-		_, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
-			return cdnClient.UntagResources(args)
+		raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
+			return cdnClient.UntagResources(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Remove tags got error: %s", err)
+			return WrapErrorf(err, DefaultErrorMsg, ids, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if len(create) > 0 {
 		log.Printf("[DEBUG] Creating tags: %s for %#v", create, ids)
-		args := cdn.CreateTagResourcesRequest()
-		args.ResourceType = string(resourceType)
-		args.ResourceId = &ids
+		request := cdn.CreateTagResourcesRequest()
+		request.ResourceType = string(resourceType)
+		request.ResourceId = &ids
 
 		var tags []cdn.TagResourcesTag
 		for _, t := range create {
@@ -180,14 +180,15 @@ func updateCdnTags(client *connectivity.AliyunClient, ids []string, resourceType
 				Value: t.Value,
 			})
 		}
-		args.Tag = &tags
+		request.Tag = &tags
 
-		_, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
-			return cdnClient.TagResources(args)
+		raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
+			return cdnClient.TagResources(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Creating tags got error: %s", err)
+			return WrapErrorf(err, DefaultErrorMsg, ids, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return nil

@@ -11,7 +11,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDBAccount_update(t *testing.T) {
+func TestAccAlicloudDBAccountUpdate(t *testing.T) {
 	var v *rds.DBInstanceAccount
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testAccdbaccount-%d", rand)
@@ -91,7 +91,6 @@ func TestAccAlicloudDBAccount_update(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func resourceDBAccountConfigDependence(name string) string {

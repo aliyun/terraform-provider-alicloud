@@ -61,11 +61,11 @@ func testSweepVPNCustomerGateways(region string) error {
 			break
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			return WrapError(err)
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 
 	sweeped := false

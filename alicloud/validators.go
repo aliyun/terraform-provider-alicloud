@@ -1461,7 +1461,7 @@ func validateVpnBandwidth(is []int) schema.SchemaValidateFunc {
 		}
 		if !existed {
 			errors = append(errors, fmt.Errorf(
-				"%q must contain a valid bandwith (prepaid user: 5|10|20|50|100|200|500|1000 ; postpaid user: 10|100|200|500|1000), got %q", k, string(value)))
+				"%q must contain a valid bandwidth (prepaid user: 5|10|20|50|100|200|500|1000 ; postpaid user: 10|100|200|500|1000), got %q", k, string(value)))
 		}
 		return
 

@@ -48,9 +48,8 @@ func testAccCheckCenInstanceAttachmentDestroy(s *terraform.State) error {
 				continue
 			}
 			return err
-		} else {
-			return fmt.Errorf("CEN %s child instance %s still attach", instance.CenId, instance.ChildInstanceId)
 		}
+		return fmt.Errorf("CEN %s child instance %s still attach", instance.CenId, instance.ChildInstanceId)
 	}
 
 	return nil

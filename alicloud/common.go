@@ -198,7 +198,7 @@ const (
 	SnapshotCreatingFailed       = Status("failed")
 
 	SnapshotPolicyCreating  = Status("Creating")
-	SnapshotPolicyAvaliable = Status("avaliable")
+	SnapshotPolicyAvailable = Status("available")
 	SnapshotPolicyNormal    = Status("Normal")
 )
 

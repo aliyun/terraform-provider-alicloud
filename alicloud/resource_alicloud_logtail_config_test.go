@@ -44,20 +44,20 @@ func testSweepLogConfigs(region string) error {
 		skip := true
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				cf_name_list, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-					cf_names, _, cf_err := slsClient.ListConfig(name, 0, 100)
-					return cf_names, cf_err
+				cfNameList, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+					cfNames, _, cfErr := slsClient.ListConfig(name, 0, 100)
+					return cfNames, cfErr
 				})
 				if err != nil {
 					log.Printf("[ERROR] Error retrieving Log config: %s", WrapError(err))
 				}
-				for _, cf_name := range cf_name_list.([]string) {
-					log.Printf("[INFO] Deleting Log config: %s", cf_name)
+				for _, cfName := range cfNameList.([]string) {
+					log.Printf("[INFO] Deleting Log config: %s", cfName)
 					_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-						return nil, slsClient.DeleteConfig(name, cf_name)
+						return nil, slsClient.DeleteConfig(name, cfName)
 					})
 					if err != nil {
-						log.Printf("[ERROR] Failed to delete Log Config (%s): %s", cf_name, err)
+						log.Printf("[ERROR] Failed to delete Log Config (%s): %s", cfName, err)
 					}
 				}
 				skip = false
