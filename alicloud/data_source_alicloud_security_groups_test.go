@@ -119,18 +119,19 @@ data "alicloud_security_groups" "default" {
 
 var existSecurityGroupsMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"ids.#":                  "1",
-		"names.#":                "1",
-		"groups.#":               "1",
-		"groups.0.vpc_id":        CHECKSET,
-		"groups.0.name":          fmt.Sprintf("tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig%d", rand),
-		"groups.0.tags.from":     "datasource",
-		"groups.0.tags.usage1":   "test",
-		"groups.0.tags.usage2":   "test",
-		"groups.0.inner_access":  "true",
-		"groups.0.creation_time": CHECKSET,
-		"groups.0.description":   "test security group",
-		"groups.0.id":            CHECKSET,
+		"ids.#":                        "1",
+		"names.#":                      "1",
+		"groups.#":                     "1",
+		"groups.0.vpc_id":              CHECKSET,
+		"groups.0.security_group_type": "normal",
+		"groups.0.name":                fmt.Sprintf("tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig%d", rand),
+		"groups.0.tags.from":           "datasource",
+		"groups.0.tags.usage1":         "test",
+		"groups.0.tags.usage2":         "test",
+		"groups.0.inner_access":        "true",
+		"groups.0.creation_time":       CHECKSET,
+		"groups.0.description":         "test security group",
+		"groups.0.id":                  CHECKSET,
 	}
 }
 

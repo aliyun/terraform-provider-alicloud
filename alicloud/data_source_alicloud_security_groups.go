@@ -10,9 +10,10 @@ import (
 )
 
 type SecurityGroup struct {
-	Attributes   ecs.DescribeSecurityGroupAttributeResponse
-	CreationTime string
-	Tags         ecs.TagsInDescribeSecurityGroups
+	Attributes        ecs.DescribeSecurityGroupAttributeResponse
+	CreationTime      string
+	SecurityGroupType string
+	Tags              ecs.TagsInDescribeSecurityGroups
 }
 
 func dataSourceAlicloudSecurityGroups() *schema.Resource {
@@ -64,6 +65,10 @@ func dataSourceAlicloudSecurityGroups() *schema.Resource {
 							Computed: true,
 						},
 						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"security_group_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -153,9 +158,10 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 
 			sg = append(sg,
 				SecurityGroup{
-					Attributes:   attr,
-					CreationTime: item.CreationTime,
-					Tags:         item.Tags,
+					Attributes:        attr,
+					CreationTime:      item.CreationTime,
+					SecurityGroupType: item.SecurityGroupType,
+					Tags:              item.Tags,
 				},
 			)
 		}
@@ -180,13 +186,14 @@ func securityGroupsDescription(d *schema.ResourceData, sg []SecurityGroup) error
 
 	for _, item := range sg {
 		mapping := map[string]interface{}{
-			"id":            item.Attributes.SecurityGroupId,
-			"name":          item.Attributes.SecurityGroupName,
-			"description":   item.Attributes.Description,
-			"vpc_id":        item.Attributes.VpcId,
-			"inner_access":  item.Attributes.InnerAccessPolicy == string(GroupInnerAccept),
-			"creation_time": item.CreationTime,
-			"tags":          tagsToMap(item.Tags.Tag),
+			"id":                  item.Attributes.SecurityGroupId,
+			"name":                item.Attributes.SecurityGroupName,
+			"description":         item.Attributes.Description,
+			"vpc_id":              item.Attributes.VpcId,
+			"security_group_type": item.SecurityGroupType,
+			"inner_access":        item.Attributes.InnerAccessPolicy == string(GroupInnerAccept),
+			"creation_time":       item.CreationTime,
+			"tags":                tagsToMap(item.Tags.Tag),
 		}
 
 		ids = append(ids, string(item.Attributes.SecurityGroupId))

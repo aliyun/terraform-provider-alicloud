@@ -108,7 +108,7 @@ You can get the available kubernetes master node instance types by [datasource i
 
 ### Timeouts
 
--> **NOTE:** Available in 1.57.2+.
+-> **NOTE:** Available in 1.58.0+.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

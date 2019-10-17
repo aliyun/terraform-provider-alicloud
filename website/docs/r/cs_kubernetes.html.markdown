@@ -251,7 +251,7 @@ Larger this number is, less pods can be allocated on each node. Default value is
 
 ### Timeouts
 
--> **NOTE:** Available in 1.57.2+.
+-> **NOTE:** Available in 1.58.0+.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
