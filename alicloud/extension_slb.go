@@ -99,13 +99,13 @@ func (e *ListenerErr) Error() string {
 
 }
 
-func expandBackendServersToString(list []interface{}, weight int) string {
+func expandBackendServersToString(list []interface{}, weight int, server_type string) string {
 	if len(list) < 1 {
 		return ""
 	}
 	var items []string
 	for _, id := range list {
-		items = append(items, fmt.Sprintf("{'ServerId':'%s','Weight':'%d'}", id, weight))
+		items = append(items, fmt.Sprintf("{'ServerId':'%s','Weight':'%d', 'Type': '%s'}", id, weight, strings.Trim(server_type, " ")))
 	}
 	return fmt.Sprintf("[%s]", strings.Join(items, COMMA_SEPARATED))
 }

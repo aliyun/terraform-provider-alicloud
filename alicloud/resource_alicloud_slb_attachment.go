@@ -58,6 +58,13 @@ func resourceAliyunSlbAttachment() *schema.Resource {
 				ValidateFunc: validateIntegerInRange(0, 100),
 			},
 
+			"server_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      string(ECS),
+				ValidateFunc: validateAllowedStringValue([]string{string(ENI), string(ECS)}),
+			},
+
 			"backend_servers": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -94,8 +101,10 @@ func resourceAliyunSlbAttachmentRead(d *schema.ResourceData, meta interface{}) e
 	servers := object.BackendServers.BackendServer
 	instanceIds := make([]string, 0, len(servers))
 	var weight int
+	var server_type string
 	if len(servers) > 0 {
 		weight = servers[0].Weight
+		server_type = servers[0].Type
 		for _, e := range servers {
 			instanceIds = append(instanceIds, e.ServerId)
 		}
@@ -104,6 +113,7 @@ func resourceAliyunSlbAttachmentRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("load_balancer_id", object.LoadBalancerId)
 	d.Set("instance_ids", instanceIds)
 	d.Set("weight", weight)
+	d.Set("server_type", server_type)
 	d.Set("backend_servers", strings.Join(instanceIds, ","))
 
 	return nil
@@ -114,7 +124,13 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	update := false
 	weight := d.Get("weight").(int)
+	old_server_type, _ := d.GetChange("server_type")
+	server_type := d.Get("server_type").(string)
 
+	if d.HasChange("server_type") {
+		update = true
+		d.SetPartial("server_type")
+	}
 	if d.HasChange("weight") {
 		update = true
 		d.SetPartial("weight")
@@ -130,7 +146,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 			request := slb.CreateAddBackendServersRequest()
 			request.RegionId = client.RegionId
 			request.LoadBalancerId = d.Id()
-			request.BackendServers = expandBackendServersToString(ns.Difference(os).List(), weight)
+			request.BackendServers = expandBackendServersToString(ns.Difference(os).List(), weight, server_type)
 			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 					return slbClient.AddBackendServers(request)
@@ -151,7 +167,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 			request := slb.CreateRemoveBackendServersRequest()
 			request.RegionId = client.RegionId
 			request.LoadBalancerId = d.Id()
-			request.BackendServers = expandBackendServersToString(os.Difference(ns).List(), weight)
+			request.BackendServers = expandBackendServersToString(os.Difference(ns).List(), weight, old_server_type.(string))
 			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 					return slbClient.RemoveBackendServers(request)
@@ -179,7 +195,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 		request := slb.CreateSetBackendServersRequest()
 		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
-		request.BackendServers = expandBackendServersToString(d.Get("instance_ids").(*schema.Set).List(), weight)
+		request.BackendServers = expandBackendServersToString(d.Get("instance_ids").(*schema.Set).List(), weight, server_type)
 		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 				return slbClient.SetBackendServers(request)
@@ -205,11 +221,13 @@ func resourceAliyunSlbAttachmentDelete(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 	instanceSet := d.Get("instance_ids").(*schema.Set)
+	weight := d.Get("weight").(int)
+	server_type := d.Get("server_type").(string)
 	if len(instanceSet.List()) > 0 {
 		request := slb.CreateRemoveBackendServersRequest()
 		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
-		request.BackendServers = convertListToJsonString(instanceSet.List())
+		request.BackendServers = expandBackendServersToString(d.Get("instance_ids").(*schema.Set).List(), weight, server_type)
 		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 				return slbClient.RemoveBackendServers(request)
