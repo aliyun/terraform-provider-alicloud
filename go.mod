@@ -10,7 +10,7 @@ require (
 	github.com/aliyun/fc-go-sdk v0.0.0-20190326033901-db3e654c23d6
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
 	github.com/cloudflare/golz4 v0.0.0-20150217214814-ef862a3cdc58 // indirect
-	github.com/denverdino/aliyungo v0.0.0-20190924033012-e8e08fe22cb2
+	github.com/denverdino/aliyungo v0.0.0-20191010065753-a958e056d9da
 	github.com/dxh031/ali_mns v0.0.0-20180927082505-3ae5346f8cf9
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/gogap/errors v0.0.0-20160523102334-149c546090d0 // indirect
