@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"os"
 	"fmt"
 	"strconv"
 	"strings"
@@ -21,6 +22,8 @@ func init() {
 		F:    testSweepEmrCluster,
 	})
 }
+
+var AvailableZoneID string
 
 func testSweepEmrCluster(region string) error {
 	rawClient, err := sharedClientForRegion(region)
@@ -88,7 +91,12 @@ func testSweepEmrCluster(region string) error {
 }
 
 func TestAccAlicloudEmrCluster_basic(t *testing.T) {
-	var v *emr.DescribeClusterV2Response
+	var (
+		v *emr.DescribeClusterV2Response
+		emrVersion string
+		ableZoneID string
+		instType string
+	)
 	resourceId := "alicloud_emr_cluster.default"
 	ra := resourceAttrInit(resourceId, nil)
 	rc := resourceCheckInit(resourceId, &v, func() interface{} {
@@ -99,6 +107,9 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", defaultRegionToTest, rand)
+	emrVersion = getAvailableMainEmrVersionOfSpecificUser()
+	ableZoneID, instType = getAvailableZoneIDAndInstanceTypeOfSpecificUser()
+	AvailableZoneID = ableZoneID
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrClusterCommonConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -113,12 +124,12 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                      name,
-					"emr_ver":                   "EMR-3.22.0",
+					"emr_ver":                   emrVersion,
 					"cluster_type":              "HADOOP",
 					"deposit_type":              "HALF_MANAGED",
 					"high_availability_enable":  "true",
 					"option_software_list":      []string{"HBASE", "PRESTO"},
-					"zone_id":                   "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":                   AvailableZoneID,
 					"security_group_id":         "${alicloud_security_group.default.id}",
 					"is_open_public_ip":         "true",
 					"charge_type":               "PostPaid",
@@ -131,7 +142,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 						{
 							"host_group_type":   "MASTER",
 							"node_count":        "2",
-							"instance_type":     "ecs.g5.xlarge",
+							"instance_type":     instType,
 							"disk_type":         "cloud_ssd",
 							"disk_capacity":     "80",
 							"disk_count":        "1",
@@ -141,7 +152,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 						{
 							"host_group_type":   "CORE",
 							"node_count":        "3",
-							"instance_type":     "ecs.g5.xlarge",
+							"instance_type":     instType,
 							"disk_type":         "cloud_ssd",
 							"disk_capacity":     "80",
 							"disk_count":        "4",
@@ -153,7 +164,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         name,
-						"emr_ver":      "EMR-3.22.0",
+						"emr_ver":      emrVersion,
 						"cluster_type": "HADOOP",
 						"charge_type":  "PostPaid",
 						"zone_id":      CHECKSET,
@@ -165,7 +176,12 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 }
 
 func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
-	var v *emr.DescribeClusterV2Response
+	var (
+		v *emr.DescribeClusterV2Response
+		emrVersion string
+		ableZoneID string
+		instType string
+	)
 	resourceId := "alicloud_emr_cluster.default.4"
 	ra := resourceAttrInit(resourceId, nil)
 	rc := resourceCheckInit(resourceId, &v, func() interface{} {
@@ -176,6 +192,9 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", defaultRegionToTest, rand)
+	emrVersion = getAvailableMainEmrVersionOfSpecificUser()
+	ableZoneID, instType = getAvailableZoneIDAndInstanceTypeOfSpecificUser()
+	AvailableZoneID = ableZoneID
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrClusterCommonConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -190,12 +209,12 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"count":                     "5",
 					"name":                      name,
-					"emr_ver":                   "EMR-3.22.0",
+					"emr_ver":                   emrVersion,
 					"cluster_type":              "HADOOP",
 					"deposit_type":              "HALF_MANAGED",
 					"high_availability_enable":  "true",
 					"option_software_list":      []string{"HBASE", "PRESTO"},
-					"zone_id":                   "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":                   AvailableZoneID,
 					"security_group_id":         "${alicloud_security_group.default.id}",
 					"is_open_public_ip":         "true",
 					"charge_type":               "PostPaid",
@@ -208,7 +227,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 						{
 							"host_group_type":   "MASTER",
 							"node_count":        "2",
-							"instance_type":     "ecs.g5.xlarge",
+							"instance_type":     instType,
 							"disk_type":         "cloud_ssd",
 							"disk_capacity":     "80",
 							"disk_count":        "1",
@@ -218,7 +237,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 						{
 							"host_group_type":   "CORE",
 							"node_count":        "3",
-							"instance_type":     "ecs.g5.xlarge",
+							"instance_type":     instType,
 							"disk_type":         "cloud_ssd",
 							"disk_capacity":     "80",
 							"disk_count":        "4",
@@ -230,7 +249,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         name,
-						"emr_ver":      "EMR-3.22.0",
+						"emr_ver":      emrVersion,
 						"cluster_type": "HADOOP",
 						"charge_type":  "PostPaid",
 						"zone_id":      CHECKSET,
@@ -247,5 +266,39 @@ func resourceEmrClusterCommonConfigDependence(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-	`, EmrCommonTestCase, name)
+	variable "zone_id" {
+		default = "%s"
+	}
+	`, EmrCommonTestCase, name, AvailableZoneID)
+}
+
+func getAvailableMainEmrVersionOfSpecificUser() string {
+	client, _ := emr.NewClientWithAccessKey(os.Getenv("ALICLOUD_REGION"), os.Getenv("ALICLOUD_ACCESS_KEY"), os.Getenv("ALICLOUD_SECRET_KEY"))
+
+	request := emr.CreateDescribeEmrMainVersionRequest()
+	request.Scheme = "https"
+
+	response, _ := client.DescribeEmrMainVersion(request)
+	return response.EmrMainVersion.EmrVersion
+}
+
+func getAvailableZoneIDAndInstanceTypeOfSpecificUser() (zoneID string, instType string) {
+	client, _ := emr.NewClientWithAccessKey(os.Getenv("ALICLOUD_REGION"), os.Getenv("ALICLOUD_ACCESS_KEY"), os.Getenv("ALICLOUD_SECRET_KEY"))
+
+	request := emr.CreateListEmrAvailableResourceRequest()
+	request.Scheme = "https"
+	request.DestinationResource = "InstanceType"
+	request.ClusterType = "HADOOP"
+	request.InstanceChargeType = "PostPaid"
+
+	response, _ := client.ListEmrAvailableResource(request)
+	if len(response.EmrZoneInfoList.EmrZoneInfo) > 0 {
+		headZone := response.EmrZoneInfoList.EmrZoneInfo[0]
+		zoneID = headZone.ZoneId
+		res := headZone.EmrResourceInfoList.EmrResourceInfo
+		if len(res) > 0 && len(res[0].SupportedResourceList.SupportedResource) > 0 {
+			instType = res[0].SupportedResourceList.SupportedResource[0].Value
+		}
+	}
+	return
 }
