@@ -34,6 +34,7 @@ The following arguments are supported:
 * `ids` - (Optional) A list of Common Bandwidth Packages IDs.
 * `name_regex` - (Optional) A regex string to filter results by name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `resource_group_id` - (Optional, Available in 1.58.0+) The Id of resource group which the common bandwidth package belongs.
 
 ## Attributes Reference
 
@@ -51,7 +52,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `isp` - ISP of the Common Bandwidth Package.
   * `creation_time` - Time of creation.
   * `public_ip_addresses` - Public ip addresses that in the Common Bandwidth Pakcage.
-  
+  * `resource_group_id` - The Id of resource group which the common bandwidth package belongs.
 ## Public ip addresses Block
   
   The public ip addresses mapping supports the following:
