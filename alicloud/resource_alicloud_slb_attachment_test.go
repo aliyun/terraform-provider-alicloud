@@ -218,7 +218,7 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 					"load_balancer_id": "${alicloud_slb.default.id}",
 					"instance_ids":     []string{"${alicloud_instance.default.0.id}"},
 					"weight":           "90",
-					"server_type":  "ecs",
+					"server_type":      "ecs",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -226,7 +226,7 @@ func TestAccAlicloudSlbAttachment_classic_basic(t *testing.T) {
 						"weight":           "90",
 						"instance_ids.#":   "1",
 						"backend_servers":  CHECKSET,
-						"server_type":  "ecs",
+						"server_type":      "ecs",
 					}),
 				),
 			},
