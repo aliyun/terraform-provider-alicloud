@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -49,6 +50,7 @@ func TestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
 	}
 	preCheck := func() {
 		testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 	}
 	cenBandwidthPackagesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idConf, nameRegexConf, idsConf, allConf)
 }
