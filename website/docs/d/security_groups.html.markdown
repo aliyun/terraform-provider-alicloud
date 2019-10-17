@@ -62,6 +62,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `name` - The name of the security group.
   * `description` - The description of the security group.
   * `vpc_id` - The ID of the VPC that owns the security group.
+  * `security_group_type` - The type of the security group.
   * `inner_access` - Whether to allow inner network access.
   * `creation_time` - Creation time of the security group.
   * `tags` - A map of tags assigned to the ECS instance.

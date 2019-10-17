@@ -393,6 +393,7 @@ var testAccCheckSecurityBasicMap = map[string]string{
 	"inner_access_policy": "Drop",
 	"name":                "tf-testAccCheckSecurityGroupName",
 	"description":         "tf-testAccCheckSecurityGroupName_describe",
+	"security_group_type": "normal",
 	"tags.%":              "2",
 	"tags.foo":            "foo",
 	"tags.Test":           "Test",
