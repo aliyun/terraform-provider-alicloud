@@ -5,6 +5,7 @@
 
 IMPROVEMENTS:
 
+- Make `resource_group_id` to computed [GH-1771]
 - Add tag for `resource_group_id` in the docs [GH-1770]
 - add resource_group_id to vpc, slb resources and data sources and revise corresponding docs [GH-1769]
 - improve(security_group):make security_group support resource_group_id [GH-1762]
