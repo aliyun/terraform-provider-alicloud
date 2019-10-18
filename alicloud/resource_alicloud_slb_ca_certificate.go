@@ -29,6 +29,11 @@ func resourceAlicloudSlbCACertificate() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -42,6 +47,10 @@ func resourceAlicloudSlbCACertificateCreate(d *schema.ResourceData, meta interfa
 
 	if val, ok := d.GetOk("name"); ok && val.(string) != "" {
 		request.CACertificateName = val.(string)
+	}
+
+	if val, ok := d.GetOk("resource_group_id"); ok && val.(string) != "" {
+		request.ResourceGroupId = val.(string)
 	}
 
 	if val, ok := d.GetOk("ca_certificate"); ok && val.(string) != "" {
@@ -78,6 +87,7 @@ func resourceAlicloudSlbCACertificateRead(d *schema.ResourceData, meta interface
 	}
 
 	err = d.Set("name", object.CACertificateName)
+	err = d.Set("resource_group_id", object.ResourceGroupId)
 	if err != nil {
 		return WrapError(err)
 	}
