@@ -1,37 +1,37 @@
-## 1.58.0 (Unreleased)
+## 1.58.0 (October 18, 2019)
 
-- **New Data Source:** `alicloud_cs_serverless_kubernetes_clusters` [GH-1746]
-- **New Resource:** `alicloud_cs_serverless_kubernetes` [GH-1746]
+- **New Data Source:** `alicloud_cs_serverless_kubernetes_clusters` ([#1746](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1746))
+- **New Resource:** `alicloud_cs_serverless_kubernetes` ([#1746](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1746))
 
 IMPROVEMENTS:
 
-- Make `resource_group_id` to computed [GH-1771]
-- Add tag for `resource_group_id` in the docs [GH-1770]
-- add resource_group_id to vpc, slb resources and data sources and revise corresponding docs [GH-1769]
-- improve(security_group):make security_group support resource_group_id [GH-1762]
-- Add resource_group_id to common_bandwidth_package(resource&data_source) [GH-1761]
-- improve(cen): added precheck for testcases [GH-1759]
-- improve(security_group):support security_group_type [GH-1755]
-- Add missing routing rules for alicloud_dns_record [GH-1754]
-- improve(slb): updated slb serverCertificate testcase [GH-1751]
-- improve(slb): updated slb rule testcase [GH-1748]
-- Improve(alicloud_ess_scaling_rule): support TargetTrackingScalingRule and StepScalingRule [GH-1744]
-- improve(cdn): added adddebug for tags APIs [GH-1741]
-- improve(slb): updated slb ca_certificate testcase [GH-1740]
-- improve(slb): updated slb acl testcase [GH-1739]
-- improve(slb): updated slb slb_attachment testcase [GH-1738]
-- use a new ram role instead of hardcode name about emr unit test case and example [GH-1732]
-- Revision of goReportCard.com suggestions [GH-1729]
-- improve(cs): resources supports timeouts setting [GH-1679]
+- Make `resource_group_id` to computed ([#1771](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1771))
+- Add tag for `resource_group_id` in the docs ([#1770](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1770))
+- add resource_group_id to vpc, slb resources and data sources and revise corresponding docs ([#1769](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1769))
+- improve(security_group):make security_group support resource_group_id ([#1762](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1762))
+- Add resource_group_id to common_bandwidth_package(resource&data_source) ([#1761](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1761))
+- improve(cen): added precheck for testcases ([#1759](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1759))
+- improve(security_group):support security_group_type ([#1755](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1755))
+- Add missing routing rules for alicloud_dns_record ([#1754](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1754))
+- improve(slb): updated slb serverCertificate testcase ([#1751](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1751))
+- improve(slb): updated slb rule testcase ([#1748](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1748))
+- Improve(alicloud_ess_scaling_rule): support TargetTrackingScalingRule and StepScalingRule ([#1744](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1744))
+- improve(cdn): added adddebug for tags APIs ([#1741](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1741))
+- improve(slb): updated slb ca_certificate testcase ([#1740](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1740))
+- improve(slb): updated slb acl testcase ([#1739](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1739))
+- improve(slb): updated slb slb_attachment testcase ([#1738](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1738))
+- use a new ram role instead of hardcode name about emr unit test case and example ([#1732](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1732))
+- Revision of goReportCard.com suggestions ([#1729](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1729))
+- improve(cs): resources supports timeouts setting ([#1679](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1679))
 
 BUG FIXES:
 
-- fix(instance):fix instance test bug [GH-1768]
-- fix slb sweep bug and add region for role test [GH-1752]
-- fix (cs) : log_config support create new project [GH-1745]
-- fix(cs): modify the new_nat_gateway field in testcase to avoid InstanceRouterEntryNotExist error [GH-1733]
-- fix(mongodb):fix password encrypt bug [GH-1730]
-- fix typo in worker_instance_types description [GH-1726]
+- fix(instance):fix instance test bug ([#1768](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1768))
+- fix slb sweep bug and add region for role test ([#1752](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1752))
+- fix (cs) : log_config support create new project ([#1745](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1745))
+- fix(cs): modify the new_nat_gateway field in testcase to avoid InstanceRouterEntryNotExist error ([#1733](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1733))
+- fix(mongodb):fix password encrypt bug ([#1730](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1730))
+- fix typo in worker_instance_types description ([#1726](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1726))
 
 ## 1.57.1 (October 11, 2019)
 
