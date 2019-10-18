@@ -40,7 +40,7 @@ The following arguments are supported:
 * `ids` - (Optional, Available 1.52.0+) A list of Security Group IDs.
 * `name_regex` - (Optional) A regex string to filter the resulting security groups by their names.
 * `vpc_id` - (Optional) Used to retrieve security groups that belong to the specified VPC ID.
-* `resource_group_id` - (Optional, Available in 1.58.0+) The Id of resource group which the security_group belongs.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the security_group belongs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `tags` - (Optional) A map of tags assigned to the ECS instances. It must be in the format:
   ```

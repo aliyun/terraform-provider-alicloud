@@ -30,7 +30,7 @@ The following arguments are supported:
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 * `in_use` - (Deprecated) Deprecated since the version 1.8.0 of this provider.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, Available in 1.58.0+) The Id of resource group which the eips belongs.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the eips belongs.
 
 ## Attributes Reference
 

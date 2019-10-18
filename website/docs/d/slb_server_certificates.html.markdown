@@ -27,7 +27,7 @@ The following arguments are supported:
 * `ids` - (Optional) A list of server certificates IDs to filter results.
 * `name_regex` - (Optional) A regex string to filter results by server certificate name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional) The Id of resource group which the slb server certificates belongs.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the slb server certificates belongs.
 
 ## Attributes Reference
 

@@ -42,7 +42,7 @@ The following arguments are supported:
 
 * `name` - (Optional) Name of the CA Certificate.
 * `ca_certificate` - (Required, ForceNew) the content of the CA certificate.
-* `resource_group_id` - (Optional, ForceNew) The Id of resource group which the slb_ca certificate belongs.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the slb_ca certificate belongs.
 
 ## Attributes Reference
 

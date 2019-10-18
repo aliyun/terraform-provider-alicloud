@@ -34,7 +34,7 @@ The following arguments are supported:
 * `ids` - (Optional) A list of Common Bandwidth Packages IDs.
 * `name_regex` - (Optional) A regex string to filter results by name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, Available in 1.58.0+) The Id of resource group which the common bandwidth package belongs.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the common bandwidth package belongs.
 
 ## Attributes Reference
 
