@@ -82,6 +82,11 @@ func dataSourceAlicloudEips() *schema.Resource {
 					},
 				},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -93,6 +98,7 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 	request.RegionId = string(client.Region)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 
 	idsMap := make(map[string]string)
 	ipsMap := make(map[string]string)
