@@ -5,6 +5,8 @@
 
 IMPROVEMENTS:
 
+- Add tag for `resource_group_id` in the docs [GH-1770]
+- add resource_group_id to vpc, slb resources and data sources and revise corresponding docs [GH-1769]
 - improve(security_group):make security_group support resource_group_id [GH-1762]
 - Add resource_group_id to common_bandwidth_package(resource&data_source) [GH-1761]
 - improve(cen): added precheck for testcases [GH-1759]
@@ -23,6 +25,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix(instance):fix instance test bug [GH-1768]
 - fix slb sweep bug and add region for role test [GH-1752]
 - fix (cs) : log_config support create new project [GH-1745]
 - fix(cs): modify the new_nat_gateway field in testcase to avoid InstanceRouterEntryNotExist error [GH-1733]
