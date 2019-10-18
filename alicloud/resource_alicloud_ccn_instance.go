@@ -132,12 +132,13 @@ func resourceAlicloudCcnInstanceUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 	}
 	if update {
-		_, err := client.WithSagClient(func(ccnClient *smartag.Client) (interface{}, error) {
+		raw, err := client.WithSagClient(func(ccnClient *smartag.Client) (interface{}, error) {
 			return ccnClient.ModifyCloudConnectNetwork(request)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if d.Get("total_count") == "1" {
@@ -145,22 +146,25 @@ func resourceAlicloudCcnInstanceUpdate(d *schema.ResourceData, meta interface{})
 		requestGrant.CcnInstanceId = d.Id()
 		requestGrant.CenInstanceId = d.Get("cen_id").(string)
 		requestGrant.CenUid = d.Get("cen_uid").(string)
-		_, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
+		raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.GrantInstanceToCbn(requestGrant)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), requestGrant.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(requestGrant.GetActionName(), raw, requestGrant.RpcRequest, requestGrant)
+
 	} else if d.Get("total_count") == "0" {
 		requestRevoke := smartag.CreateRevokeInstanceFromCbnRequest()
 		requestRevoke.CcnInstanceId = d.Id()
 		requestRevoke.CenInstanceId = d.Get("cen_id").(string)
-		_, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
+		raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.RevokeInstanceFromCbn(requestRevoke)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), requestRevoke.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(requestRevoke.GetActionName(), raw, requestRevoke.RpcRequest, requestRevoke)
 	}
 	return resourceAlicloudCcnInstanceRead(d, meta)
 }
