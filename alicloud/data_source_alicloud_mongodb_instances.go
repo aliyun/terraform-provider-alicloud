@@ -224,34 +224,34 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 		}
 
 		for _, item := range response.DBInstances.DBInstance {
-			if nameRegex != nil {
+			switch {
+			case nameRegex != nil:
 				if !nameRegex.MatchString(item.DBInstanceDescription) {
 					continue
 				}
-			}
-			if len(instClass) > 0 && instClass != strings.ToLower(string(item.DBInstanceClass)) {
+			case len(instClass) > 0 && instClass != strings.ToLower(string(item.DBInstanceClass)):
 				continue
-			}
-			if len(az) > 0 && az != strings.ToLower(string(item.ZoneId)) {
+			case len(az) > 0 && az != strings.ToLower(string(item.ZoneId)):
 				continue
-			}
-			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.DBInstanceId]; !ok {
+			case len(idsMap) > 0:
+				_, ok := idsMap[item.DBInstanceId]
+				if !ok {
 					continue
 				}
+			default:
+				dbi = append(dbi, item)
 			}
-			dbi = append(dbi, item)
 		}
 
 		if len(response.DBInstances.DBInstance) < PageSizeLarge {
 			break
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			return WrapError(err)
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 
 	var ids []string

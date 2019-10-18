@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -93,15 +94,10 @@ func TestAccAlicloudDisksDataSource(t *testing.T) {
 		}),
 	}
 
-	allConfig := dataSourceTestAccConfig{
+	resourceGroupIdConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDisksDataSourceConfigWithCommon(rand, map[string]string{
-			"ids":         `[ "${alicloud_disk.default.id}" ]`,
-			"name_regex":  `"${alicloud_disk.default.name}"`,
-			"type":        `"data"`,
-			"category":    `"cloud_efficiency"`,
-			"encrypted":   `"off"`,
-			"tags":        `"${alicloud_disk.default.tags}"`,
-			"instance_id": `"${alicloud_disk_attachment.default.instance_id}"`,
+			"instance_id":       `"${alicloud_disk_attachment.default.instance_id}"`,
+			"resource_group_id": `"${var.resource_group_id}"`,
 		}),
 		existChangMap: map[string]string{
 			"disks.0.instance_id":   CHECKSET,
@@ -109,18 +105,41 @@ func TestAccAlicloudDisksDataSource(t *testing.T) {
 			"disks.0.status":        "In_use",
 		},
 		fakeConfig: testAccCheckAlicloudDisksDataSourceConfigWithCommon(rand, map[string]string{
-			"ids":         `[ "${alicloud_disk.default.id}" ]`,
-			"name_regex":  `"${alicloud_disk.default.name}"`,
-			"type":        `"data"`,
-			"category":    `"cloud_efficiency"`,
-			"encrypted":   `"on"`,
-			"tags":        `"${alicloud_disk.default.tags}"`,
-			"instance_id": `"${alicloud_disk_attachment.default.instance_id}"`,
+			"instance_id":       `"${alicloud_disk_attachment.default.instance_id}_fake"`,
+			"resource_group_id": `"${var.resource_group_id}_fake"`,
+		}),
+	}
+
+	allConfig := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDisksDataSourceConfigWithCommon(rand, map[string]string{
+			"ids":               `[ "${alicloud_disk.default.id}" ]`,
+			"name_regex":        `"${alicloud_disk.default.name}"`,
+			"type":              `"data"`,
+			"category":          `"cloud_efficiency"`,
+			"encrypted":         `"off"`,
+			"tags":              `"${alicloud_disk.default.tags}"`,
+			"instance_id":       `"${alicloud_disk_attachment.default.instance_id}"`,
+			"resource_group_id": `"${var.resource_group_id}"`,
+		}),
+		existChangMap: map[string]string{
+			"disks.0.instance_id":   CHECKSET,
+			"disks.0.attached_time": CHECKSET,
+			"disks.0.status":        "In_use",
+		},
+		fakeConfig: testAccCheckAlicloudDisksDataSourceConfigWithCommon(rand, map[string]string{
+			"ids":               `[ "${alicloud_disk.default.id}" ]`,
+			"name_regex":        `"${alicloud_disk.default.name}"`,
+			"type":              `"data"`,
+			"category":          `"cloud_efficiency"`,
+			"encrypted":         `"on"`,
+			"tags":              `"${alicloud_disk.default.tags}"`,
+			"instance_id":       `"${alicloud_disk_attachment.default.instance_id}"`,
+			"resource_group_id": `"${var.resource_group_id}"`,
 		}),
 	}
 
 	disksCheckInfo.dataSourceTestCheck(t, rand, idsConfig, nameRegexConfig, typeConfig, categoryConfig, encryptedConfig,
-		tagsConfig, instanceIdConfig, allConfig)
+		tagsConfig, instanceIdConfig, resourceGroupIdConfig, allConfig)
 }
 
 func testAccCheckAlicloudDisksDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -130,6 +149,10 @@ func testAccCheckAlicloudDisksDataSourceConfig(rand int, attrMap map[string]stri
 	}
 
 	config := fmt.Sprintf(`
+variable "resource_group_id" {
+	default = "%s"
+}
+
 variable "name" {
 	default = "tf-testAccCheckAlicloudDisksDataSource_ids-%d"
 }
@@ -148,12 +171,13 @@ resource "alicloud_disk" "default" {
 		Name = "TerraformTest"
 		Name1 = "TerraformTest"
 	}
+	resource_group_id = "${var.resource_group_id}"
 }
 
 data "alicloud_disks" "default" {
 	%s
 }
-	`, rand, strings.Join(pairs, "\n	"))
+	`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), rand, strings.Join(pairs, "\n	"))
 	return config
 }
 
@@ -165,6 +189,11 @@ func testAccCheckAlicloudDisksDataSourceConfigWithCommon(rand int, attrMap map[s
 
 	config := fmt.Sprintf(`
 %s
+
+variable "resource_group_id" {
+	default = "%s"
+}
+
 variable "name" {
 	default = "tf-testAccCheckAlicloudDisksDataSource_ids-%d"
 }
@@ -179,6 +208,7 @@ resource "alicloud_disk" "default" {
 		Name1 = "TerraformTest"
 	}
 	size = "20"
+	resource_group_id = "${var.resource_group_id}"
 }
 
 resource "alicloud_instance" "default" {
@@ -199,7 +229,7 @@ resource "alicloud_disk_attachment" "default" {
 data "alicloud_disks" "default" {
 	%s
 }
-`, EcsInstanceCommonTestCase, rand, strings.Join(pairs, "\n	"))
+`, EcsInstanceCommonTestCase, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), rand, strings.Join(pairs, "\n	"))
 	return config
 }
 
@@ -223,6 +253,7 @@ var existDisksMapFunc = func(rand int) map[string]string {
 		"disks.0.attached_time":     "",
 		"disks.0.detached_time":     "",
 		"disks.0.tags.%":            "2",
+		"disks.0.resource_group_id": CHECKSET,
 	}
 }
 

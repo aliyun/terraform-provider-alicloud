@@ -59,8 +59,22 @@ func testSweepAlikafkaTopic(region string) error {
 		request.InstanceId = instanceId
 		request.RegionId = defaultRegionToTest
 
-		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-			return alikafkaClient.GetTopicList(request)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		var raw interface{}
+
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+				return alikafkaClient.GetTopicList(request)
+			})
+			if err != nil {
+				if IsExceptedError(err, AlikafkaThrottlingUser) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve alikafka topics on instance (%s): %s", instanceId, err)

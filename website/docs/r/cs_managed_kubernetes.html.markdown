@@ -72,7 +72,9 @@ The following arguments are supported:
 * `availability_zone` - (Optional, ForceNew) The Zone where new kubernetes cluster will be located. If it is not be specified, the `vswitch_ids` should be set, the value will be vswitch's zone.
 * `vswitch_ids` - (Optional, ForceNew) The vswitch where new kubernetes cluster will be located. Specify one vswitch's id, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true.
-* `password` - (Required, ForceNew, Sensitive) The password of ssh login cluster node. You have to specify one of `password` and `key_name` fields.
+* `password` - (Required, ForceNew, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
+* `kms_encrypted_password` - (Optional, ForceNew, Available in 1.57.1+) An KMS encrypts password used to a cs managed kubernetes. It is conflicted with `password` and `key_name`.
+* `kms_encryption_context` - (Optional, ForceNew, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs managed kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `key_name` - (Required, ForceNew) The keypair of ssh login cluster node, you have to create it first.
 * `pod_cidr` - (Optional, ForceNew) The CIDR block for the pod network. It will be allocated automatically when `vswitch_ids` is not specified.
 It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
@@ -89,7 +91,7 @@ It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in
 * `force_update` - (Optional) Default false, when you want to change `worker_instance_types` and `vswitch_ids`, you have to set this field to true, then the cluster will be recreated.
 * `worker_numbers` - (Deprecated from version 1.53.0) The worker node number of the kubernetes cluster. Default to [3]. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
 * `worker_instance_types` - (Required, ForceNew) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
-You can get the available kubetnetes master node instance types by [datasource instance_types](https://www.terraform.io/docs/providers/alicloud/d/instance_types.html#kubernetes_node_role)
+You can get the available kubernetes master node instance types by [datasource instance_types](https://www.terraform.io/docs/providers/alicloud/d/instance_types.html#kubernetes_node_role)
 * `worker_instance_charge_type` - (Optional, ForceNew) Worker payment type. `PrePaid` or `PostPaid`, defaults to `PostPaid`.
 * `worker_period_unit` - (Optional) Worker payment period unit. `Month` or `Week`, defaults to `Month`.
 * `worker_period` - (Optional) Worker payment period. When period unit is `Month`, it can be one of { “1”, “2”, “3”, “4”, “5”, “6”, “7”, “8”, “9”, “12”, “24”, “36”,”48”,”60”}.  When period unit is `Week`, it can be one of {“1”, “2”, “3”, “4”}.
@@ -100,6 +102,20 @@ You can get the available kubetnetes master node instance types by [datasource i
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
+* `log_config` - (Optional, ForceNew, Available in 1.57.1+) A list of one element containing information about the associated log store. It contains the following attributes:
+  * `type` - Type of collecting logs, only `SLS` are supported currently.
+  * `project` - Log Service project name, cluster logs will output to this project.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.58.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 90 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status). 
+* `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.
+* `delete` - (Defaults to 60 mins) Used when terminating the kubernetes cluster. 
+
 
 ## Attributes Reference
 

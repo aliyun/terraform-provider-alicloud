@@ -54,6 +54,7 @@ var GpdbSupportedRegions = []Region{Beijing, Shenzhen, Hangzhou, Shanghai, Hongk
 // Some Ram resources only one can be owned by one account at the same time,
 // skipped here to avoid multi regions concurrency conflict.
 var RamNoSkipRegions = []Region{Hangzhou, EUCentral1, APSouth1}
+var CenNoSkipRegions = []Region{Shanghai, EUCentral1, APSouth1}
 
 // Actiontrail only one can be owned by one account at the same time,
 // skipped here to avoid multi regions concurrency conflict.
@@ -70,7 +71,8 @@ var OtsCapacityNoSupportedRegions = []Region{APSouthEast1, USWest1, USEast1}
 var PrivateIpNoSupportedRegions = []Region{Beijing, Hangzhou, Shenzhen}
 var SwarmSupportedRegions = []Region{Qingdao, Beijing, Zhangjiakou, Huhehaote, Hangzhou, Shanghai, Shenzhen, Hongkong, APNorthEast1, APSouthEast1, APSouthEast2,
 	APSouthEast3, USWest1, USEast1, EUCentral1}
-var ManagedKubernetesSupportedRegions = []Region{Beijing, Hangzhou, Shanghai, APSouthEast1, APSouthEast3, APSouthEast5, APSouth1}
+var ManagedKubernetesSupportedRegions = []Region{Beijing, Hangzhou, Shanghai, Shenzhen, ChengDu, Hongkong, APSouthEast1, APSouthEast2, USWest1}
+var ServelessKubernetesSupportedRegions = []Region{Beijing, Hangzhou, Shanghai, APSouthEast1, APSouthEast3, APSouthEast5, APSouth1}
 var KubernetesSupportedRegions = []Region{Beijing, Zhangjiakou, Huhehaote, Hangzhou, Shanghai, Shenzhen, Hongkong, APNorthEast1, APSouthEast1,
 	APSouthEast2, APSouthEast3, APSouthEast5, APSouth1, USEast1, USWest1, EUWest1, MEEast1, EUCentral1}
 var NasClassicSupportedRegions = []Region{Hangzhou, Qingdao, Beijing, Hongkong, Shenzhen, Shanghai, Zhangjiakou, Huhehaote, ShenZhenFinance, ShanghaiFinance}

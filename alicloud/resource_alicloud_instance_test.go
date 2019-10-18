@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"testing"
 
 	"strings"
@@ -61,11 +62,11 @@ func testSweepInstances(region string) error {
 			break
 		}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+		page, err := getNextpageNumber(req.PageNumber)
+		if err != nil {
 			return err
-		} else {
-			req.PageNumber = page
 		}
+		req.PageNumber = page
 	}
 
 	sweeped := false
@@ -168,16 +169,18 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 					"spot_strategy":                 "NoSpot",
 					"spot_price_limit":              "0",
 					"security_enhancement_strategy": "Active",
+					"resource_group_id":             "${var.resource_group_id}",
 					// The specified parameter "UserData" only support the vpc and IoOptimized Instance.
 					//"user_data" :                    "I_am_user_data",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name": name,
-						"key_name":      name,
-						"role_name":     NOSET,
-						"vswitch_id":    REMOVEKEY,
-						"user_data":     REMOVEKEY,
+						"instance_name":     name,
+						"key_name":          name,
+						"role_name":         NOSET,
+						"vswitch_id":        REMOVEKEY,
+						"user_data":         REMOVEKEY,
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -301,6 +304,16 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 			},*/
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"credit_specification": "Unlimited",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"credit_specification": "Unlimited",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"volume_tags": map[string]string{
 						"tag1": "test",
 					},
@@ -347,6 +360,7 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 					"internet_max_bandwidth_in":  REMOVEKEY,
 					"host_name":                  REMOVEKEY,
 					"password":                   REMOVEKEY,
+					"credit_specification":       "Standard",
 
 					"system_disk_size": "70",
 					"volume_tags":      REMOVEKEY,
@@ -381,6 +395,8 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 						"password":         "",
 						"is_outdated":      NOSET,
 						"system_disk_size": "70",
+
+						"credit_specification": "Standard",
 
 						"private_ip": CHECKSET,
 						"public_ip":  CHECKSET,
@@ -547,6 +563,16 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"credit_specification": "Unlimited",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"credit_specification": "Unlimited",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"system_disk_size": "50",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -613,6 +639,7 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 					"internet_max_bandwidth_in":  REMOVEKEY,
 					"host_name":                  REMOVEKEY,
 					"password":                   REMOVEKEY,
+					"credit_specification":       "Standard",
 
 					"system_disk_size": "70",
 					"private_ip":       REMOVEKEY,
@@ -649,6 +676,8 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 						"password":         "",
 						"is_outdated":      NOSET,
 						"system_disk_size": "70",
+
+						"credit_specification": "Standard",
 
 						"private_ip": CHECKSET,
 						"public_ip":  "",
@@ -1439,6 +1468,11 @@ data "alicloud_instance_types" "default" {
   cpu_core_count    = 1
   memory_size       = 2
 }
+
+variable "resource_group_id" {
+		default = "%s"
+	}
+
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu*"
   owners      = "system"
@@ -1468,7 +1502,7 @@ resource "alicloud_key_pair" "default" {
 	key_name = "${var.name}"
 }
 
-`, name)
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), name)
 }
 
 func resourceInstanceTypeConfigDependence(name string) string {
@@ -1566,6 +1600,7 @@ var testAccInstanceCheckMap = map[string]string{
 
 	"availability_zone":             CHECKSET,
 	"system_disk_category":          "cloud_efficiency",
+	"credit_specification":          "",
 	"spot_strategy":                 "NoSpot",
 	"spot_price_limit":              "0",
 	"security_enhancement_strategy": "Active",

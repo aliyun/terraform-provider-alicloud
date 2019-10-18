@@ -10,7 +10,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudEssAlarm_basic(t *testing.T) {
+func TestAccAlicloudEssAlarmBasic(t *testing.T) {
 	var v ess.Alarm
 	rand := acctest.RandIntRange(10000, 999999)
 	var basicMap = map[string]string{
@@ -238,7 +238,7 @@ func TestAccAlicloudEssAlarm_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEssAlarm_multi(t *testing.T) {
+func TestAccAlicloudEssAlarmMulti(t *testing.T) {
 	var v ess.Alarm
 	rand := acctest.RandIntRange(10000, 999999)
 	var basicMap = map[string]string{

@@ -376,9 +376,9 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_listener", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request, request.QueryParams)
-	d.SetId(lb_id + ":" + strconv.Itoa(frontend))
+	d.SetId(lb_id + ":" + protocol + ":" + strconv.Itoa(frontend))
 
-	if err := slbService.WaitForSlbListener(d.Id(), Protocol(protocol), Stopped, DefaultTimeout); err != nil {
+	if err := slbService.WaitForSlbListener(d.Id(), Stopped, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
 
@@ -386,6 +386,7 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 	startLoadBalancerListenerRequest.RegionId = client.RegionId
 	startLoadBalancerListenerRequest.LoadBalancerId = lb_id
 	startLoadBalancerListenerRequest.ListenerPort = requests.NewInteger(frontend)
+	startLoadBalancerListenerRequest.ListenerProtocol = protocol
 	raw, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.StartLoadBalancerListener(startLoadBalancerListenerRequest)
 	})
@@ -393,7 +394,7 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_listener", startLoadBalancerListenerRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(startLoadBalancerListenerRequest.GetActionName(), raw, startLoadBalancerListenerRequest.RpcRequest, startLoadBalancerListenerRequest)
-	if err = slbService.WaitForSlbListener(d.Id(), Protocol(protocol), Running, DefaultTimeout); err != nil {
+	if err = slbService.WaitForSlbListener(d.Id(), Running, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
 	if httpForward {
@@ -406,7 +407,7 @@ func resourceAliyunSlbListenerRead(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
-	lb_id, protocol, _, err := parseListenerId(d, meta)
+	lb_id, protocol, port, err := parseListenerId(d, meta)
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -417,9 +418,10 @@ func resourceAliyunSlbListenerRead(d *schema.ResourceData, meta interface{}) err
 
 	d.Set("protocol", protocol)
 	d.Set("load_balancer_id", lb_id)
-
+	d.Set("frontend_port", port)
+	d.SetId(lb_id + ":" + protocol + ":" + strconv.Itoa(port))
 	return resource.Retry(5*time.Minute, func() *resource.RetryError {
-		object, err := slbService.DescribeSlbListener(d.Id(), Protocol(protocol))
+		object, err := slbService.DescribeSlbListener(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
 				d.SetId("")
@@ -441,10 +443,13 @@ func resourceAliyunSlbListenerRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) error {
+	proto := d.Get("protocol").(string)
+	lb_id := d.Get("load_balancer_id").(string)
+	frontend := d.Get("frontend_port").(int)
+	d.SetId(lb_id + ":" + proto + ":" + strconv.Itoa(frontend))
 
 	client := meta.(*connectivity.AliyunClient)
 	protocol := Protocol(d.Get("protocol").(string))
-
 	commonRequest, err := buildListenerCommonArgs(d, meta)
 	if err != nil {
 		return WrapError(err)
@@ -703,6 +708,7 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 	request.RegionId = client.RegionId
 	request.LoadBalancerId = lb_id
 	request.ListenerPort = requests.NewInteger(port)
+	request.ListenerProtocol = protocol
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.DeleteLoadBalancerListener(request)
@@ -720,7 +726,7 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(slbService.WaitForSlbListener(d.Id(), Protocol(protocol), Deleted, DefaultTimeoutMedium))
+	return WrapError(slbService.WaitForSlbListener(d.Id(), Deleted, DefaultTimeoutMedium))
 }
 
 func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) (*requests.CommonRequest, error) {
@@ -835,11 +841,21 @@ func parseListenerId(d *schema.ResourceData, meta interface{}) (string, string, 
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := ParseSlbListenerId(d.Id())
 	if err != nil {
 		return "", "", 0, WrapError(err)
 	}
-	port, err := strconv.Atoi(parts[1])
+	protocol := ""
+	port := 0
+	if len(parts) == 3 {
+		protocol = parts[1]
+		port, err = strconv.Atoi(parts[2])
+	} else {
+		if v, ok := d.GetOk("protocol"); ok && v.(string) != "" {
+			protocol = v.(string)
+		}
+		port, err = strconv.Atoi(parts[1])
+	}
 	if err != nil {
 		return "", "", 0, WrapError(err)
 	}
@@ -847,9 +863,20 @@ func parseListenerId(d *schema.ResourceData, meta interface{}) (string, string, 
 	if err != nil {
 		return "", "", 0, WrapError(err)
 	}
-	for _, portAndProtocol := range loadBalancer.ListenerPortsAndProtocol.ListenerPortAndProtocol {
-		if portAndProtocol.ListenerPort == port {
-			return loadBalancer.LoadBalancerId, portAndProtocol.ListenerProtocol, port, nil
+	if protocol != "" {
+		for _, portAndProtocol := range loadBalancer.ListenerPortsAndProtocol.ListenerPortAndProtocol {
+			if portAndProtocol.ListenerPort == port && portAndProtocol.ListenerProtocol == protocol {
+				return loadBalancer.LoadBalancerId, portAndProtocol.ListenerProtocol, port, nil
+			}
+		}
+	} else {
+		if len(loadBalancer.ListenerPortsAndProtocol.ListenerPortAndProtocol) > 1 {
+			return "", "", 0, WrapError(Error("More than one listener was with with the same id: %s, please specify protocol.", d.Id()))
+		}
+		for _, portAndProtocol := range loadBalancer.ListenerPortsAndProtocol.ListenerPortAndProtocol {
+			if portAndProtocol.ListenerPort == port {
+				return loadBalancer.LoadBalancerId, portAndProtocol.ListenerProtocol, port, nil
+			}
 		}
 	}
 	return "", "", 0, GetNotFoundErrorFromString(GetNotFoundMessage("Listener", d.Id()))

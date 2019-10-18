@@ -62,6 +62,11 @@ func resourceAliyunCommonBandwidthPackage() *schema.Resource {
 				Default:      100,
 				ValidateFunc: validateRatio,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -76,6 +81,7 @@ func resourceAliyunCommonBandwidthPackageCreate(d *schema.ResourceData, meta int
 	request.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
 	request.Name = d.Get("name").(string)
 	request.Description = d.Get("description").(string)
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	request.InternetChargeType = d.Get("internet_charge_type").(string)
 	request.Ratio = requests.NewInteger(d.Get("ratio").(int))
 	request.ClientToken = buildClientToken(request.GetActionName())
@@ -107,15 +113,16 @@ func resourceAliyunCommonBandwidthPackageRead(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 
-	if bandwidth, err := strconv.Atoi(object.Bandwidth); err != nil {
+	bandwidth, err := strconv.Atoi(object.Bandwidth)
+	if err != nil {
 		return WrapError(err)
-	} else {
-		d.Set("bandwidth", bandwidth)
 	}
+	d.Set("bandwidth", bandwidth)
 	d.Set("name", object.Name)
 	d.Set("description", object.Description)
 	d.Set("internet_charge_type", object.InternetChargeType)
 	d.Set("ratio", object.Ratio)
+	d.Set("resource_group_id", object.ResourceGroupId)
 	return nil
 }
 

@@ -198,7 +198,7 @@ const (
 	SnapshotCreatingFailed       = Status("failed")
 
 	SnapshotPolicyCreating  = Status("Creating")
-	SnapshotPolicyAvaliable = Status("avaliable")
+	SnapshotPolicyAvailable = Status("available")
 	SnapshotPolicyNormal    = Status("Normal")
 )
 
@@ -694,6 +694,14 @@ func ParseResourceId(id string, length int) (parts []string, err error) {
 
 	if len(parts) != length {
 		err = WrapError(fmt.Errorf("Invalid Resource Id %s. Expected parts' length %d, got %d", id, length, len(parts)))
+	}
+	return parts, err
+}
+
+func ParseSlbListenerId(id string) (parts []string, err error) {
+	parts = strings.Split(id, ":")
+	if len(parts) != 2 && len(parts) != 3 {
+		err = WrapError(fmt.Errorf("Invalid alicloud_slb_listener Id %s. Expected Id format is <slb id>:<protocol>:< frontend>.", id))
 	}
 	return parts, err
 }

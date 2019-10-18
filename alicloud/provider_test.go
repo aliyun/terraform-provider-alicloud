@@ -209,8 +209,8 @@ func TestAccAlicloudProviderEcs(t *testing.T) {
 
 func TestAccAlicloudProviderFC(t *testing.T) {
 	var v *fc.GetFunctionOutput
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testaccalicloudfcfunction-%d", rand)
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%salicloudfcfunction-%d", defaultRegionToTest, rand)
 	var basicMap = map[string]string{
 		"service":     CHECKSET,
 		"name":        name,
@@ -269,8 +269,8 @@ func TestAccAlicloudProviderOss(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc-bucket-%d", rand)
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%sbucket-%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
 		return providerCommon + resourceOssBucketConfigDependence(name)
 	})
@@ -308,8 +308,8 @@ func TestAccAlicloudProviderLog(t *testing.T) {
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacclogproject-%d", rand)
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%slogproject-%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
 		return providerCommon + resourceLogProjectConfigDependence(name)
 	})

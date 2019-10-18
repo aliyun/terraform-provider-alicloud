@@ -346,11 +346,12 @@ const (
 	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
 
 	// Elasticsearch
-	InstanceActivating         = "InstanceActivating"
-	ESInstanceNotFound         = "InstanceNotFound"
-	ESMustChangeOneResource    = "MustChangeOneResource"
-	ESCssCheckUpdowngradeError = "CssCheckUpdowngradeError"
-	ESConcurrencyConflictError = "ConcurrencyUpdateInstanceConflict"
+	InstanceActivating             = "InstanceActivating"
+	ESInstanceNotFound             = "InstanceNotFound"
+	ESMustChangeOneResource        = "MustChangeOneResource"
+	ESCssCheckUpdowngradeError     = "CssCheckUpdowngradeError"
+	ESConcurrencyConflictError     = "ConcurrencyUpdateInstanceConflict"
+	ESNotSupportCurrentActionError = "InstanceStatusNotSupportCurrentAction"
 
 	// Ddoscoo
 	DdoscooInstanceNotFound = "InstanceNotFound"
@@ -366,6 +367,9 @@ const (
 	//Actiontrail
 	InvalidTrailNotFound  = "TrailNotFoundException"
 	TrailNeedRamAuthorize = "NeedRamAuthorize"
+
+	//emr
+	ClusterNotFound = "ClusterId.NotFound"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
@@ -514,7 +518,7 @@ func IsExceptedErrors(err error, expectCodes []string) bool {
 		if e, ok := err.(*ProviderError); ok && (e.ErrorCode() == code || strings.Contains(e.Message(), code)) {
 			return true
 		}
-		if e, ok := err.(*sls.Error); ok && (e.Code == code || strings.Contains(e.Message, code)) {
+		if e, ok := err.(*sls.Error); ok && (e.Code == code || strings.Contains(e.Message, code) || strings.Contains(e.String(), code)) {
 			return true
 		}
 		if e, ok := err.(oss.ServiceError); ok && (e.Code == code || strings.Contains(e.Message, code)) {
@@ -632,8 +636,8 @@ func (e *WrapErrorOld) Error() string {
 	return fmt.Sprintf("[ERROR] %s: %s %s:\n%s\n%s", e.errorPath, e.message, e.errorSource, e.originError.Error(), e.suggestion)
 }
 
-// ComplexError is a format error which inclouding origin error, extra error message, error occurred file and line
-// Cause: a error is a origin error that comes from SDK, some expections and so on
+// ComplexError is a format error which including origin error, extra error message, error occurred file and line
+// Cause: a error is a origin error that comes from SDK, some exceptions and so on
 // Err: a new error is built from extra message
 // Path: the file path of error occurred
 // Line: the file line of error occurred

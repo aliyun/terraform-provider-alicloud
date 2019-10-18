@@ -61,11 +61,11 @@ func testSweepSLBs(region string) error {
 			break
 		}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+		page, err := getNextpageNumber(req.PageNumber)
+		if err != nil {
 			return err
-		} else {
-			req.PageNumber = page
 		}
+		req.PageNumber = page
 	}
 
 	service := SlbService{client}
@@ -92,10 +92,13 @@ func testSweepSLBs(region string) error {
 		if skip {
 			for _, t := range loadBalancer.Tags.Tag {
 				if strings.HasPrefix(strings.ToLower(t.TagKey), strings.ToLower(k8sPrefix)) {
-					if _, err := csService.DescribeCsKubernetes(name); NotFoundError(err) {
+					_, err := csService.DescribeCsKubernetes(name)
+					if NotFoundError(err) {
 						skip = false
+					} else {
+						skip = true
+						break
 					}
-					break
 				}
 			}
 		}

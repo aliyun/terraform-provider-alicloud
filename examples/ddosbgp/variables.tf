@@ -7,7 +7,7 @@ variable "base_bandwidth" {
 }
 
 variable "bandwidth" {
-  default = "101"
+  default = "201"
 }
 
 variable "ip_type" {

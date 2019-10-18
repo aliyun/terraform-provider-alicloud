@@ -2,8 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"regexp"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/resource"
 
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -223,4 +227,143 @@ func (s *CsService) WaitForCSManagedKubernetes(id string, status Status, timeout
 		time.Sleep(DefaultIntervalShort * time.Second)
 
 	}
+}
+
+func (s *CsService) CsKubernetesInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCsKubernetes(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if string(object.State) == failState {
+				return object, string(object.State), WrapError(Error(FailedToReachTargetStatus, string(object.State)))
+			}
+		}
+		return object, string(object.State), nil
+	}
+}
+
+func (s *CsService) CsManagedKubernetesInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCsManagedKubernetes(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if string(object.State) == failState {
+				return object, string(object.State), WrapError(Error(FailedToReachTargetStatus, string(object.State)))
+			}
+		}
+		return object, string(object.State), nil
+	}
+}
+
+func (s *CsService) CsServerlessKubernetesInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCsServerlessKubernetes(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if string(object.State) == failState {
+				return object, string(object.State), WrapError(Error(FailedToReachTargetStatus, string(object.State)))
+			}
+		}
+		return object, string(object.State), nil
+	}
+}
+
+func (s *CsService) DescribeCsServerlessKubernetes(id string) (cluster *cs.ServerlessClusterResponse, err error) {
+	var requestInfo *cs.Client
+	invoker := NewInvoker()
+	var response interface{}
+
+	if err := invoker.Run(func() error {
+		raw, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			requestInfo = csClient
+			return csClient.DescribeServelessKubernetesCluster(id)
+		})
+		response = raw
+		return err
+	}); err != nil {
+		if IsExceptedError(err, ErrorClusterNotFound) {
+			return cluster, WrapErrorf(err, NotFoundMsg, DenverdinoAliyungo)
+		}
+		return cluster, WrapErrorf(err, DefaultErrorMsg, id, "DescribeServerlessKubernetesCluster", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["Id"] = id
+		addDebug("DescribeServerlessKubernetesCluster", response, requestInfo, requestMap, map[string]interface{}{"Id": id})
+	}
+	cluster, _ = response.(*cs.ServerlessClusterResponse)
+	if cluster != nil && cluster.ClusterId != id {
+		return cluster, WrapErrorf(Error(GetNotFoundMessage("CSServerlessKubernetes", id)), NotFoundMsg, ProviderERROR)
+	}
+	return
+
+}
+
+func (s *CsService) WaitForCSServerlessKubernetes(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		object, err := s.DescribeCsServerlessKubernetes(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.ClusterId == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ClusterId, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+
+	}
+}
+
+func (s *CsService) tagsToMap(tags []cs.Tag) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !s.ignoreTag(t) {
+			result[t.Key] = t.Value
+		}
+	}
+	return result
+}
+
+func (s *CsService) ignoreTag(t cs.Tag) bool {
+	filter := []string{"^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
+		ok, _ := regexp.MatchString(v, t.Key)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.Key, t.Value)
+			return true
+		}
+	}
+	return false
 }

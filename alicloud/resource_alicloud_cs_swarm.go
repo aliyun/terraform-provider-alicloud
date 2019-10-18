@@ -350,26 +350,25 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 				"private_ip": node.IP,
 				"status":     node.Status,
 			}
-			if inst, err := ecsService.DescribeInstance(node.InstanceId); err != nil {
+			inst, err := ecsService.DescribeInstance(node.InstanceId)
+			if err != nil {
 				return fmt.Errorf("[ERROR] QueryInstancesById %s: %#v.", node.InstanceId, err)
-			} else {
-				mapping["eip"] = inst.EipAddress.IpAddress
-				oneNode = inst
 			}
-
+			mapping["eip"] = inst.EipAddress.IpAddress
+			oneNode = inst
 			nodes = append(nodes, mapping)
 		}
 
 		d.Set("nodes", nodes)
 
 		d.Set("instance_type", oneNode.InstanceType)
-		if disks, err := ecsService.DescribeDisksByType(oneNode.InstanceId, DiskTypeData); err != nil {
+		disks, err := ecsService.DescribeDisksByType(oneNode.InstanceId, DiskTypeData)
+		if err != nil {
 			return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", resp[0].InstanceId, err)
-		} else {
-			for _, disk := range disks {
-				d.Set("disk_size", disk.Size)
-				d.Set("disk_category", disk.Category)
-			}
+		}
+		for _, disk := range disks {
+			d.Set("disk_size", disk.Size)
+			d.Set("disk_category", disk.Category)
 		}
 	} else {
 		d.Set("nodes", []map[string]interface{}{})

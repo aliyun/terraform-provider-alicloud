@@ -60,11 +60,11 @@ func testSweepCenInstances(region string) error {
 			break
 		}
 
-		if page, err := getNextpageNumber(describeCensRequest.PageNumber); err != nil {
+		page, err := getNextpageNumber(describeCensRequest.PageNumber)
+		if err != nil {
 			return err
-		} else {
-			describeCensRequest.PageNumber = page
 		}
+		describeCensRequest.PageNumber = page
 	}
 
 	sweeped := false
@@ -144,6 +144,7 @@ func TestAccAlicloudCenInstance_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 
 		// module name
@@ -200,6 +201,7 @@ func TestAccAlicloudCenInstance_multi(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 
 		// module name

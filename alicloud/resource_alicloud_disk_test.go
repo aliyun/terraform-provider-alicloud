@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -137,7 +138,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 		CheckDestroy: testAccCheckDiskDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDiskConfig_basic,
+				Config: testAccDiskConfig_basic(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
@@ -148,7 +149,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccDiskConfig_size,
+				Config: testAccDiskConfig_size(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"size": "70",
@@ -156,7 +157,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDiskConfig_name,
+				Config: testAccDiskConfig_name(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name": "tf-testAccDiskConfig",
@@ -164,7 +165,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDiskConfig_description,
+				Config: testAccDiskConfig_description(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": "tf-testAccDiskConfig_description",
@@ -172,7 +173,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDiskConfig_tags,
+				Config: testAccDiskConfig_tags(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":     "3",
@@ -183,7 +184,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDiskConfig_delete_auto_snapshot,
+				Config: testAccDiskConfig_delete_auto_snapshot(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"delete_auto_snapshot": "true",
@@ -191,7 +192,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDiskConfig_delete_with_instance,
+				Config: testAccDiskConfig_delete_with_instance(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"delete_with_instance": "true",
@@ -199,7 +200,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDiskConfig_enable_auto_snapshot,
+				Config: testAccDiskConfig_enable_auto_snapshot(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_auto_snapshot": "true",
@@ -207,7 +208,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDiskConfig_all,
+				Config: testAccDiskConfig_all(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":               "0",
@@ -249,7 +250,7 @@ func TestAccAlicloudDisk_multi(t *testing.T) {
 		CheckDestroy: testAccCheckDiskDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDiskConfig_multi,
+				Config: testAccDiskConfig_multi(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":        "tf-testAccDiskConfig_multi",
@@ -262,7 +263,8 @@ func TestAccAlicloudDisk_multi(t *testing.T) {
 
 }
 
-const testAccDiskConfig_basic = `
+func testAccDiskConfig_basic() string {
+	return fmt.Sprintf(`
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
@@ -270,10 +272,13 @@ data "alicloud_zones" "default" {
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   	size = "50"
+	resource_group_id = "%s"
 }
-`
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
 
-const testAccDiskConfig_size = `
+func testAccDiskConfig_size() string {
+	return fmt.Sprintf(`
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
@@ -282,9 +287,13 @@ data "alicloud_zones" "default" {
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   	size = "70"
+	resource_group_id = "%s"
 }
-`
-const testAccDiskConfig_name = `
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
+
+func testAccDiskConfig_name() string {
+	return fmt.Sprintf(`
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
@@ -298,10 +307,13 @@ resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   	size = "70"
 	name = "${var.name}"
+	resource_group_id = "%s"
 }
-`
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
 
-const testAccDiskConfig_description = `
+func testAccDiskConfig_description() string {
+	return fmt.Sprintf(`
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
@@ -316,10 +328,13 @@ resource "alicloud_disk" "default" {
   	size = "70"
 	name = "${var.name}"
 	description = "${var.name}_description"
+	resource_group_id = "%s"
 }
-`
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
 
-const testAccDiskConfig_tags = `
+func testAccDiskConfig_tags() string {
+	return fmt.Sprintf(`
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
@@ -341,10 +356,13 @@ resource "alicloud_disk" "default" {
 		Name2 = "Name2"
 		name3 = "name3"
 			}
+	resource_group_id = "%s"
 }
-`
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
 
-const testAccDiskConfig_delete_auto_snapshot = `
+func testAccDiskConfig_delete_auto_snapshot() string {
+	return fmt.Sprintf(`
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
@@ -367,10 +385,13 @@ resource "alicloud_disk" "default" {
 		name3 = "name3"
 			}
 	delete_auto_snapshot = "true"
+	resource_group_id = "%s"
 }
-`
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
 
-const testAccDiskConfig_delete_with_instance = `
+func testAccDiskConfig_delete_with_instance() string {
+	return fmt.Sprintf(`
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
@@ -394,10 +415,13 @@ resource "alicloud_disk" "default" {
 			}
 	delete_auto_snapshot = "true"
 	delete_with_instance = "true"
+	resource_group_id = "%s"
 }
-`
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
 
-const testAccDiskConfig_enable_auto_snapshot = `
+func testAccDiskConfig_enable_auto_snapshot() string {
+	return fmt.Sprintf(`
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
@@ -422,10 +446,13 @@ resource "alicloud_disk" "default" {
 	delete_auto_snapshot = "true"
 	delete_with_instance = "true"
 	enable_auto_snapshot = "true"
+	resource_group_id = "%s"
 }
-`
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
 
-const testAccDiskConfig_all = `
+func testAccDiskConfig_all() string {
+	return fmt.Sprintf(`
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
@@ -444,10 +471,13 @@ resource "alicloud_disk" "default" {
 	delete_auto_snapshot = "false"
 	delete_with_instance = "false"
 	enable_auto_snapshot = "false"
+	resource_group_id = "%s"
 }
-`
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
 
-const testAccDiskConfig_multi = `
+func testAccDiskConfig_multi() string {
+	return fmt.Sprintf(`
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
@@ -464,11 +494,14 @@ resource "alicloud_disk" "default" {
 	description = "nothing"
 	category = "cloud_efficiency"
 	encrypted = "false"
+	resource_group_id = "%s"
 }
-`
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
 
 var testAccCheckResourceDiskBasicMap = map[string]string{
 	"availability_zone":    CHECKSET,
+	"resource_group_id":    CHECKSET,
 	"size":                 "50",
 	"name":                 "",
 	"description":          "",

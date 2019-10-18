@@ -22,7 +22,8 @@ const (
 	KubernetesClusterNetworkTypeFlannel = "flannel"
 	KubernetesClusterNetworkTypeTerway  = "terway"
 
-	KubernetesClusterLoggingTypeSLS = "SLS"
+	KubernetesClusterLoggingTypeSLS       = "SLS"
+	KubernetesClusterLoggingTypeLogtailDS = "logtail-ds"
 )
 
 var (
@@ -37,6 +38,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 		Delete: resourceAlicloudCSKubernetesDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(90 * time.Minute),
+			Update: schema.DefaultTimeout(60 * time.Minute),
+			Delete: schema.DefaultTimeout(60 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -139,15 +146,29 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:         true,
 				ForceNew:         true,
 				Sensitive:        true,
-				ConflictsWith:    []string{"key_name"},
+				ConflictsWith:    []string{"key_name", "kms_encrypted_password"},
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"key_name": {
 				Type:             schema.TypeString,
 				ForceNew:         true,
 				Optional:         true,
-				ConflictsWith:    []string{"password"},
+				ConflictsWith:    []string{"password", "kms_encrypted_password"},
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
+			},
+			"kms_encrypted_password": {
+				Type:          schema.TypeString,
+				ForceNew:      true,
+				Optional:      true,
+				ConflictsWith: []string{"password", "key_name"},
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
 			},
 			"user_ca": {
 				Type:             schema.TypeString,
@@ -478,6 +499,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 
 func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
 	invoker := NewInvoker()
 
 	if isMultiAZ, err := isMultiAZClusterAndCheck(d); err != nil {
@@ -533,27 +555,18 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 
 	}
 
-	var requestInfo *cs.Client
+	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
-	raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-		requestInfo = csClient
-		return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes", "WaitForClusterAsyn", DenverdinoAliyungo)
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["ClusterId"] = d.Id()
-		requestMap["Status"] = cs.Running
-		requestMap["TimeOut"] = 3600
-		addDebug("WaitForClusterAsyn", raw, requestInfo, requestMap)
-	}
+
 	return resourceAlicloudCSKubernetesUpdate(d, meta)
 }
 
 func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
 	d.Partial(true)
 	invoker := NewInvoker()
 	if d.HasChange("worker_numbers") && !d.IsNewResource() {
@@ -561,10 +574,22 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		workerNumbers := expandIntList(d.Get("worker_numbers").([]interface{}))
 		workerInstanceTypes := expandStringList(d.Get("worker_instance_types").([]interface{}))
 
+		password := d.Get("password").(string)
+		if password == "" {
+			if v := d.Get("kms_encrypted_password").(string); v != "" {
+				kmsService := KmsService{client}
+				decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+				if err != nil {
+					return WrapError(err)
+				}
+				password = decryptResp.Plaintext
+			}
+		}
+
 		args := &cs.KubernetesClusterResizeArgs{
 			DisableRollback: true,
 			TimeoutMins:     60,
-			LoginPassword:   d.Get("password").(string),
+			LoginPassword:   password,
 		}
 
 		if len(workerNumbers) == 1 {
@@ -596,22 +621,11 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			resizeRequestMap["Args"] = args
 			addDebug("ResizeKubernetesCluster", resoponse, requestInfo, resizeRequestMap)
 		}
-		if err := invoker.Run(func() error {
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				requestInfo = csClient
-				return nil, csClient.WaitForClusterAsyn(d.Id(), cs.Running, 3600)
-			})
-			resoponse = raw
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "WaitForClusterAsyn", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			waitRequestMap := make(map[string]interface{})
-			waitRequestMap["ClusterId"] = d.Id()
-			waitRequestMap["Status"] = cs.Running
-			waitRequestMap["TimeOut"] = 3600
-			addDebug("WaitForClusterAsyn", resoponse, requestInfo, waitRequestMap)
+
+		stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("worker_number")
 	}
@@ -900,7 +914,12 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteCluster", DenverdinoAliyungo)
 	}
-	return WrapError(csService.WaitForCsKubernetes(d.Id(), Deleted, DefaultLongTimeout))
+	stateConf := BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }
 
 func isMultiAZClusterAndCheck(d *schema.ResourceData) (bool, error) {
@@ -991,6 +1010,18 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		return nil, WrapError(err)
 	}
 
+	password := d.Get("password").(string)
+	if password == "" {
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			password = decryptResp.Plaintext
+		}
+	}
+
 	creationArgs := &cs.KubernetesCreationArgs{
 		Name:                     clusterName,
 		ClusterType:              "Kubernetes",
@@ -1000,7 +1031,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Kubernet
 		WorkerInstanceType:       workerInstanceType,
 		VPCID:                    vpcId,
 		VSwitchId:                vswitchID,
-		LoginPassword:            d.Get("password").(string),
+		LoginPassword:            password,
 		KeyPair:                  d.Get("key_name").(string),
 		ImageId:                  d.Get("image_id").(string),
 		Network:                  d.Get("cluster_network_type").(string),
@@ -1100,6 +1131,18 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		return nil, WrapError(err)
 	}
 
+	password := d.Get("password").(string)
+	if password == "" {
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			password = decryptResp.Plaintext
+		}
+	}
+
 	creationArgs := &cs.KubernetesMultiAZCreationArgs{
 		Name:                     clusterName,
 		ClusterType:              "Kubernetes",
@@ -1112,7 +1155,7 @@ func buildKubernetesMultiAZArgs(d *schema.ResourceData, meta interface{}) (*cs.K
 		WorkerInstanceTypeA:      workerInstanceTypes[0],
 		WorkerInstanceTypeB:      workerInstanceTypes[1],
 		WorkerInstanceTypeC:      workerInstanceTypes[2],
-		LoginPassword:            d.Get("password").(string),
+		LoginPassword:            password,
 		KeyPair:                  d.Get("key_name").(string),
 		VSwitchIdA:               vswitchIDs[0],
 		VSwitchIdB:               vswitchIDs[1],
@@ -1184,14 +1227,12 @@ func parseKubernetesClusterLogConfig(d *schema.ResourceData) (string, string, er
 		if ok && config != nil {
 			loggingType = config["type"].(string)
 			switch loggingType {
-			case KubernetesClusterLoggingTypeSLS:
-				if config["project"].(string) == "" {
-					return "", "", WrapError(Error("SLS project name must be provided when choosing SLS as log_config."))
+			case KubernetesClusterLoggingTypeSLS, KubernetesClusterLoggingTypeLogtailDS:
+				if config["project"].(string) != "" && config["project"].(string) != "None" {
+					slsProjectName = config["project"].(string)
 				}
-				if config["project"].(string) == "None" {
-					return "", "", WrapError(Error("SLS project name must not be `None`."))
-				}
-				slsProjectName = config["project"].(string)
+				//rename log controller name
+				loggingType = KubernetesClusterLoggingTypeLogtailDS
 				break
 			default:
 				break

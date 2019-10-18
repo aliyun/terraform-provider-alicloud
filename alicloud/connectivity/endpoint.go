@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// Load endpoints from endpoints.xml or environment variables to meet specified application scenario, like private cloud.
+// ServiceCode Load endpoints from endpoints.xml or environment variables to meet specified application scenario, like private cloud.
 type ServiceCode string
 
 const (
@@ -50,7 +50,6 @@ const (
 	DDOSBGPCode       = ServiceCode("DDOSBGP")
 )
 
-//xml
 type Endpoints struct {
 	Endpoint []Endpoint `xml:"Endpoint"`
 }

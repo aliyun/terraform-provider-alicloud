@@ -34,7 +34,7 @@ The following arguments are supported:
 * `host_record_regex` - (Optional) Host record regex. 
 * `value_regex` - (Optional) Host record value regex. 
 * `type` - (Optional) Record type. Valid items are `A`, `NS`, `MX`, `TXT`, `CNAME`, `SRV`, `AAAA`, `REDIRECT_URL`, `FORWORD_URL` .
-* `line` - (Optional) ISP line. Valid items are `default`, `telecom`, `unicom`, `mobile`, `oversea`, `edu`.
+* `line` - (Optional) ISP line. Valid items are `default`, `telecom`, `unicom`, `mobile`, `oversea`, `edu`, `drpeng`, `btvn`, .etc. For checking all resolution lines enumeration please visit [Alibaba Cloud DNS doc](https://www.alibabacloud.com/help/doc-detail/34339.htm) 
 * `status` - (Optional) Record status. Valid items are `ENABLE` and `DISABLE`.
 * `is_locked` - (Optional, type: bool) Whether the record is locked or not.
 * `ids` - (Optional, Available 1.52.2+) A list of record IDs.

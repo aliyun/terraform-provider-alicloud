@@ -16,10 +16,6 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-const (
-	DefaultStopInstanceTimeout = 300
-)
-
 func resourceAliyunInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunInstanceCreate,
@@ -55,6 +51,15 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validateInstanceType,
 			},
 
+			"credit_specification": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ValidateFunc: validateAllowedStringValue([]string{
+					string(CreditSpecificationStandard),
+					string(CreditSpecificationUnlimited),
+				}),
+			},
+
 			"security_groups": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -74,6 +79,11 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validateInstanceName,
 			},
 
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -107,6 +117,19 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:      schema.TypeString,
 				Optional:  true,
 				Sensitive: true,
+			},
+			"kms_encrypted_password": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"password"},
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password") == ""
+				},
+				Elem: schema.TypeString,
 			},
 			"io_optimized": {
 				Type:       schema.TypeString,
@@ -400,6 +423,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	d.Set("instance_name", instance.InstanceName)
+	d.Set("resource_group_id", instance.ResourceGroupId)
 	d.Set("description", instance.Description)
 	d.Set("status", instance.Status)
 	d.Set("availability_zone", instance.ZoneId)
@@ -408,7 +432,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("instance_type", instance.InstanceType)
 	d.Set("system_disk_category", disk.Category)
 	d.Set("system_disk_size", disk.Size)
-	d.Set("password", d.Get("password"))
+	d.Set("password", d.Get("password").(string))
 	d.Set("internet_max_bandwidth_out", instance.InternetMaxBandwidthOut)
 	d.Set("internet_max_bandwidth_in", instance.InternetMaxBandwidthIn)
 	d.Set("instance_charge_type", instance.InstanceChargeType)
@@ -417,6 +441,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("spot_price_limit", instance.SpotPriceLimit)
 	d.Set("internet_charge_type", instance.InternetChargeType)
 	d.Set("deletion_protection", instance.DeletionProtection)
+	d.Set("credit_specification", instance.CreditSpecification)
 
 	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
@@ -816,6 +841,14 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		request.InstanceName = v
 	}
 
+	if v := d.Get("credit_specification").(string); v != "" {
+		request.CreditSpecification = v
+	}
+
+	if v := d.Get("resource_group_id").(string); v != "" {
+		request.ResourceGroupId = v
+	}
+
 	if v := d.Get("description").(string); v != "" {
 		request.Description = v
 	}
@@ -836,6 +869,15 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 
 	if v := d.Get("password").(string); v != "" {
 		request.Password = v
+	}
+
+	if v := d.Get("kms_encrypted_password").(string); v != "" {
+		kmsService := KmsService{client}
+		decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+		if err != nil {
+			return request, WrapError(err)
+		}
+		request.Password = decryptResp.Plaintext
 	}
 
 	vswitchValue := d.Get("subnet_id").(string)
@@ -1063,39 +1105,55 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	request.InstanceId = d.Id()
 
 	if d.HasChange("instance_name") {
-		log.Printf("[DEBUG] ModifyInstanceAttribute instance_name")
 		d.SetPartial("instance_name")
 		request.InstanceName = d.Get("instance_name").(string)
 		update = true
 	}
 
 	if d.HasChange("description") {
-		log.Printf("[DEBUG] ModifyInstanceAttribute description")
 		d.SetPartial("description")
 		request.Description = d.Get("description").(string)
 		update = true
 	}
 
 	if d.HasChange("host_name") {
-		log.Printf("[DEBUG] ModifyInstanceAttribute host_name")
 		d.SetPartial("host_name")
 		request.HostName = d.Get("host_name").(string)
 		update = true
 		reboot = true
 	}
 
-	if d.HasChange("password") {
-		log.Printf("[DEBUG] ModifyInstanceAttribute password")
-		d.SetPartial("password")
-		request.Password = d.Get("password").(string)
-		update = true
-		reboot = true
+	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
+		if v := d.Get("password").(string); v != "" {
+			d.SetPartial("password")
+			request.Password = v
+			update = true
+			reboot = true
+		}
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
+			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
+			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return reboot, WrapError(err)
+			}
+			request.Password = decryptResp.Plaintext
+			d.SetPartial("kms_encrypted_password")
+			d.SetPartial("kms_encryption_context")
+			update = true
+			reboot = true
+		}
 	}
 
 	if d.HasChange("deletion_protection") {
-		log.Printf("[DEBUG] ModifyInstanceAttribute deletion_protection")
 		d.SetPartial("deletion_protection")
 		request.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))
+		update = true
+	}
+
+	if d.HasChange("credit_specification") {
+		log.Printf("[DEBUG] ModifyInstanceAttribute credit_specification")
+		d.SetPartial("credit_specification")
+		request.CreditSpecification = d.Get("credit_specification").(string)
 		update = true
 	}
 

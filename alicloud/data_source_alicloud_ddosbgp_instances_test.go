@@ -53,7 +53,7 @@ func TestAccAlicloudDdosbgpInstanceDataSource_basic(t *testing.T) {
 			"instances.0.name":           fmt.Sprintf("tf_testAcc%d", rand),
 			"instances.0.type":           string(Enterprise),
 			"instances.0.base_bandwidth": "20",
-			"instances.0.bandwidth":      "101",
+			"instances.0.bandwidth":      "201",
 			"instances.0.ip_count":       "100",
 			"instances.0.ip_type":        "IPv4",
 			"instances.0.region":         "cn-hangzhou",
@@ -90,8 +90,7 @@ func dataSourceDdosbgpInstanceConfigDependence(name string) string {
 
 	resource "alicloud_ddosbgp_instance" "default" {
       name                    = "%s"
-      base_bandwidth          = "20"	
-      bandwidth               = "101"
+      bandwidth               = "201"
       ip_count                = "100"
       ip_type                 = "IPv4"
       type                    = "Enterprise"

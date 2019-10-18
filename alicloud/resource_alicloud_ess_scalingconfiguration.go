@@ -758,7 +758,7 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 func activeSubstituteScalingConfiguration(d *schema.ResourceData, meta interface{}) (configures []ess.ScalingConfiguration, err error) {
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
-	substitute_id, ok := d.GetOk("substitute")
+	substituteId, ok := d.GetOk("substitute")
 
 	c, err := essService.DescribeEssScalingConfiguration(d.Id())
 	if err != nil {
@@ -783,7 +783,7 @@ func activeSubstituteScalingConfiguration(d *schema.ResourceData, meta interface
 		return
 	}
 
-	if !ok || substitute_id.(string) == "" {
+	if !ok || substituteId.(string) == "" {
 
 		if len(response.ScalingConfigurations.ScalingConfiguration) == 1 {
 			return configures, WrapError(Error("Current scaling configuration %s is the last configuration for the scaling group %s, and it can't be inactive.", d.Id(), c.ScalingGroupId))
@@ -800,10 +800,10 @@ func activeSubstituteScalingConfiguration(d *schema.ResourceData, meta interface
 
 	}
 
-	err = essService.ActiveEssScalingConfiguration(c.ScalingGroupId, substitute_id.(string))
+	err = essService.ActiveEssScalingConfiguration(c.ScalingGroupId, substituteId.(string))
 	if err != nil {
 		return configures, WrapError(Error("Inactive scaling configuration %s err: %#v. Substitute scaling configuration ID: %s",
-			d.Id(), err, substitute_id.(string)))
+			d.Id(), err, substituteId.(string)))
 	}
 
 	return response.ScalingConfigurations.ScalingConfiguration, nil

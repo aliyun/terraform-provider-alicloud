@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"testing"
 
 	"strings"
@@ -60,11 +61,11 @@ func testSweepSecurityGroups(region string) error {
 			break
 		}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+		page, err := getNextpageNumber(req.PageNumber)
+		if err != nil {
 			return err
-		} else {
-			req.PageNumber = page
 		}
+		req.PageNumber = page
 	}
 
 	vpcService := VpcService{client}
@@ -138,7 +139,7 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckSecurityGroupConfigBasic,
+				Config: testAccCheckSecurityGroupConfigBasic(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
@@ -149,7 +150,7 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccCheckSecurityGroupConfig_innerAccess,
+				Config: testAccCheckSecurityGroupConfigInnerAccess(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"inner_access":        "true",
@@ -158,7 +159,7 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccCheckSecurityGroupConfig_name,
+				Config: testAccCheckSecurityGroupConfigName(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name": "tf-testAccCheckSecurityGroupName_change",
@@ -167,7 +168,7 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 			},
 
 			{
-				Config: testAccCheckSecurityGroupConfig_describe,
+				Config: testAccCheckSecurityGroupConfigDescribe(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": "tf-testAccCheckSecurityGroupName_describe_change",
@@ -175,7 +176,7 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccCheckSecurityGroupConfig_tags,
+				Config: testAccCheckSecurityGroupConfigTags(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":    "1",
@@ -185,7 +186,7 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 			},
 
 			{
-				Config: testAccCheckSecurityGroupConfigAll,
+				Config: testAccCheckSecurityGroupConfigAll(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(testAccCheckSecurityBasicMap),
 				),
@@ -213,7 +214,7 @@ func TestAccAlicloudSecurityGroupMulti(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckSecurityGroupConfig_multi,
+				Config: testAccCheckSecurityGroupConfigMulti(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
@@ -222,7 +223,8 @@ func TestAccAlicloudSecurityGroupMulti(t *testing.T) {
 	})
 }
 
-const testAccCheckSecurityGroupConfigBasic = `
+func testAccCheckSecurityGroupConfigBasic() string {
+	return fmt.Sprintf(`
 variable "name" {
   default = "tf-testAccCheckSecurityGroupName"
 }
@@ -235,6 +237,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
+  resource_group_id = "%s"
   inner_access = false
   name = "${var.name}"
   description = "${var.name}_describe"
@@ -243,9 +246,11 @@ resource "alicloud_security_group" "default" {
         Test = "Test"
   }
 }
-`
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
 
-const testAccCheckSecurityGroupConfig_innerAccess = `
+func testAccCheckSecurityGroupConfigInnerAccess() string {
+	return fmt.Sprintf(`
 variable "name" {
   default = "tf-testAccCheckSecurityGroupName"
 }
@@ -258,6 +263,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
+  resource_group_id = "%s"
   inner_access_policy = "Accept"
   name = "${var.name}"
   description = "${var.name}_describe"
@@ -265,10 +271,11 @@ resource "alicloud_security_group" "default" {
 		foo  = "foo"
         Test = "Test"
   }
+}`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
-`
 
-const testAccCheckSecurityGroupConfig_name = `
+func testAccCheckSecurityGroupConfigName() string {
+	return fmt.Sprintf(`
 
 variable "name" {
   default = "tf-testAccCheckSecurityGroupName"
@@ -282,6 +289,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
+  resource_group_id = "%s"
   inner_access = true
   name = "${var.name}_change"
   description = "${var.name}_describe"
@@ -289,10 +297,11 @@ resource "alicloud_security_group" "default" {
 		foo  = "foo"
         Test = "Test"
   }
+}`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
-`
 
-const testAccCheckSecurityGroupConfig_describe = `
+func testAccCheckSecurityGroupConfigDescribe() string {
+	return fmt.Sprintf(`
 
 variable "name" {
   default = "tf-testAccCheckSecurityGroupName"
@@ -306,6 +315,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
+  resource_group_id = "%s"
   inner_access = true
   name = "${var.name}_change"
   description = "${var.name}_describe_change"
@@ -313,10 +323,10 @@ resource "alicloud_security_group" "default" {
 		foo  = "foo"
         Test = "Test"
   }
+}`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
-`
-
-const testAccCheckSecurityGroupConfig_tags = `
+func testAccCheckSecurityGroupConfigTags() string {
+	return fmt.Sprintf(`
 
 variable "name" {
   default = "tf-testAccCheckSecurityGroupName"
@@ -330,16 +340,18 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
+  resource_group_id = "%s"
   inner_access = true
   name = "${var.name}_change"
   description = "${var.name}_describe_change"
   tags = {
 		foo  = "foo"
   }
+}`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
-`
 
-const testAccCheckSecurityGroupConfigAll = `
+func testAccCheckSecurityGroupConfigAll() string {
+	return fmt.Sprintf(`
 variable "name" {
   default = "tf-testAccCheckSecurityGroupName"
 }
@@ -352,6 +364,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
+  resource_group_id = "%s"
   inner_access_policy = "Drop"
   name = "${var.name}"
   description = "${var.name}_describe"
@@ -359,10 +372,11 @@ resource "alicloud_security_group" "default" {
 		foo  = "foo"
         Test = "Test"
   }
+}`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
-`
 
-const testAccCheckSecurityGroupConfig_multi = `
+func testAccCheckSecurityGroupConfigMulti() string {
+	return fmt.Sprintf(`
 
 variable "name" {
   default = "tf-testAccCheckSecurityGroupName"
@@ -377,6 +391,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_security_group" "default" {
   count = 10
   vpc_id = "${alicloud_vpc.default.id}"
+  resource_group_id = "%s"
   inner_access = false
   name = "${var.name}"
   description = "${var.name}_describe"
@@ -384,15 +399,17 @@ resource "alicloud_security_group" "default" {
 		foo  = "foo"
         Test = "Test"
   }
+}`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
-`
 
 var testAccCheckSecurityBasicMap = map[string]string{
 	"vpc_id":              CHECKSET,
+	"resource_group_id":   os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 	"inner_access":        "false",
 	"inner_access_policy": "Drop",
 	"name":                "tf-testAccCheckSecurityGroupName",
 	"description":         "tf-testAccCheckSecurityGroupName_describe",
+	"security_group_type": "normal",
 	"tags.%":              "2",
 	"tags.foo":            "foo",
 	"tags.Test":           "Test",

@@ -101,6 +101,7 @@ const (
 	DiskCloudESSD       = DiskCategory("cloud_essd")
 	DiskCloudEfficiency = DiskCategory("cloud_efficiency")
 	DiskCloudSSD        = DiskCategory("cloud_ssd")
+	DiskLocalDisk       = DiskCategory("local_disk")
 )
 
 type DiskResizeType string
@@ -125,4 +126,11 @@ type SecurityEnhancementStrategy string
 const (
 	ActiveSecurityEnhancementStrategy   = SecurityEnhancementStrategy("Active")
 	DeactiveSecurityEnhancementStrategy = SecurityEnhancementStrategy("Deactive")
+)
+
+type CreditSpecification string
+
+const (
+	CreditSpecificationStandard  = CreditSpecification("Standard")
+	CreditSpecificationUnlimited = CreditSpecification("Unlimited")
 )

@@ -35,10 +35,9 @@ func resourceAlicloudDBInstance() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"engine": {
-				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{string(MySQL), string(SQLServer), string(PostgreSQL), string(PPAS)}),
-				ForceNew:     true,
-				Required:     true,
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Required: true,
 			},
 			"engine_version": {
 				Type: schema.TypeString,
@@ -249,15 +248,15 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Deprecated: "Field 'db_mappings' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_database' replaces it.",
 			},
 
-			"parameters": &schema.Schema{
+			"parameters": {
 				Type: schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"name": &schema.Schema{
+						"name": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"value": &schema.Schema{
+						"value": {
 							Type:     schema.TypeString,
 							Required: true,
 						},

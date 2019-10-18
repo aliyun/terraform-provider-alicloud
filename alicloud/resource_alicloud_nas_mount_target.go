@@ -19,21 +19,21 @@ func resourceAlicloudNasMountTarget() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"file_system_id": &schema.Schema{
+			"file_system_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"vswitch_id": &schema.Schema{
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"access_group_name": &schema.Schema{
+			"access_group_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"status": &schema.Schema{
+			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,

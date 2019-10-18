@@ -75,9 +75,8 @@ func dataSourceAlicloudCenBandwidthLimitsRead(d *schema.ResourceData, meta inter
 		tmpAllCenBwLimits, err := getCenBandwidthLimits(instanceId, meta)
 		if err != nil {
 			return WrapError(err)
-		} else {
-			allCenBwLimits = append(allCenBwLimits, tmpAllCenBwLimits...)
 		}
+		allCenBwLimits = append(allCenBwLimits, tmpAllCenBwLimits...)
 	}
 
 	return cenInterRegionBandwidthLimitsAttributes(d, allCenBwLimits)
@@ -123,11 +122,11 @@ func getCenBandwidthLimits(instanceId string, meta interface{}) ([]cbn.CenInterR
 			break
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
 			return allCenBwLimits, WrapError(err)
-		} else {
-			request.PageNumber = page
 		}
+		request.PageNumber = page
 	}
 
 	return allCenBwLimits, nil
