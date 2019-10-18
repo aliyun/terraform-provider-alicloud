@@ -20,8 +20,30 @@ Provides an ALIKAFKA topic resource.
 Basic Usage
 
 ```
-variable "instance_id" {
-  default = "yourInstanceId"
+
+data "alicloud_zones" "default" {
+    available_resource_creation= "VSwitch"
+}
+resource "alicloud_vpc" "default" {
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_alikafka_instance" "default" {
+  name = "tf-testacc-alikafkainstance"
+  topic_quota = "50"
+  disk_type = "1"
+  disk_size = "500"
+  deploy_type = "5"
+  io_max = "20"
+  vpc_id = "${alicloud_vpc.default.id}"
+  vswitch_id = "${alicloud_vswitch.default.id}"
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
 }
 
 variable "topic" {
@@ -29,7 +51,7 @@ variable "topic" {
 }
 
 resource "alicloud_alikafka_topic" "default" {
-  instance_id = "${var.instance_id}"
+  instance_id = "${alicloud_alikafka_instance.default.id}"
   topic = "${var.topic}"
   local_topic = "false"
   compact_topic = "false"

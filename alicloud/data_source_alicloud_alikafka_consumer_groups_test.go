@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -12,8 +11,6 @@ import (
 
 func TestAccAlicloudAlikafkaConsumerGroupsDataSource(t *testing.T) {
 
-	testAccPreCheckWithAlikafkaInstanceSetting(t)
-
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_alikafka_consumer_groups.default"
 	name := fmt.Sprintf("tf-testacc-alikafkaconsumer%v", rand)
@@ -22,11 +19,11 @@ func TestAccAlicloudAlikafkaConsumerGroupsDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id":       os.Getenv("ALICLOUD_INSTANCE_ID"),
+			"instance_id":       "${alicloud_alikafka_instance.default.id}",
 			"consumer_id_regex": "${alicloud_alikafka_consumer_group.default.consumer_id}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id":       os.Getenv("ALICLOUD_INSTANCE_ID"),
+			"instance_id":       "${alicloud_alikafka_instance.default.id}",
 			"consumer_id_regex": "fake_tf-testacc*",
 		}),
 	}
@@ -60,10 +57,35 @@ func dataSourceAlikafkaConsumerGroupsConfigDependence(name string) string {
 		variable "consumer_id" {
 		 default = "%v"
 		}
+
+		data "alicloud_zones" "default" {
+			available_resource_creation= "VSwitch"
+		}
+		resource "alicloud_vpc" "default" {
+		  cidr_block = "172.16.0.0/12"
+		}
 		
+		resource "alicloud_vswitch" "default" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.0.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		}
+
+		resource "alicloud_alikafka_instance" "default" {
+          name = "tf-testacc-alikafkainstance"
+		  topic_quota = "50"
+		  disk_type = "1"
+		  disk_size = "500"
+		  deploy_type = "5"
+		  io_max = "20"
+		  vpc_id = "${alicloud_vpc.default.id}"
+          vswitch_id = "${alicloud_vswitch.default.id}"
+          zone_id = "${data.alicloud_zones.default.zones.0.id}"
+		}
+
 		resource "alicloud_alikafka_consumer_group" "default" {
-		  instance_id = "%v"
+		  instance_id = "${alicloud_alikafka_instance.default.id}"
 		  consumer_id = "${var.consumer_id}"
 		}
-		`, name, os.Getenv("ALICLOUD_INSTANCE_ID"))
+		`, name)
 }

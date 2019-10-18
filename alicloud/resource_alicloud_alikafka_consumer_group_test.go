@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -125,7 +124,6 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithAlikafkaInstanceSetting(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -134,7 +132,7 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": os.Getenv("ALICLOUD_INSTANCE_ID"),
+					"instance_id": "${alicloud_alikafka_instance.default.id}",
 					"consumer_id": "${var.consumer_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -174,7 +172,6 @@ func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithAlikafkaInstanceSetting(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -184,7 +181,7 @@ func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":       "5",
-					"instance_id": os.Getenv("ALICLOUD_INSTANCE_ID"),
+					"instance_id": "${alicloud_alikafka_instance.default.id}",
 					"consumer_id": "${var.consumer_id}-${count.index}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -202,6 +199,31 @@ func resourceAlikafkaConsumerGroupConfigDependence(name string) string {
 	return fmt.Sprintf(`
 		variable "consumer_id" {
  			default = "%v"
+		}
+
+		data "alicloud_zones" "default" {
+			available_resource_creation= "VSwitch"
+		}
+		resource "alicloud_vpc" "default" {
+		  cidr_block = "172.16.0.0/12"
+		}
+		
+		resource "alicloud_vswitch" "default" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.0.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		}
+
+		resource "alicloud_alikafka_instance" "default" {
+          name = "tf-testacc-alikafkainstance"
+		  topic_quota = "50"
+		  disk_type = "1"
+		  disk_size = "500"
+		  deploy_type = "5"
+		  io_max = "20"
+		  vpc_id = "${alicloud_vpc.default.id}"
+          vswitch_id = "${alicloud_vswitch.default.id}"
+          zone_id = "${data.alicloud_zones.default.zones.0.id}"
 		}
 		`, name)
 }
