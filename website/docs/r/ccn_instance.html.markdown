@@ -12,6 +12,8 @@ Provides a CCN instance resource. Cloud Enterprise Network (CCN) is a service th
 
 For information about CCN and how to use it, see [What is Cloud Enterprise Network](https://www.alibabacloud.com/help/doc-detail/93667.htm).
 
+-> **NOTE:** Available in 1.59.0+
+
 ## Example Usage
 
 Basic Usage
@@ -34,25 +36,15 @@ The following arguments are supported:
 * `is_default` - (Required) The IsDefault of the CCN instance.
 
 
-### Timeouts
-
--> **NOTE:** Available in 1.48.0+.
-
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 5 mins) Used when creating the ccn instance (until it reaches the initial `Active` status). 
-* `delete` - (Defaults to 3 mins) Used when terminating the ccn instance. 
-
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The CcnId of the CCN instance.
-* `name` - The name of the CCN instance.
-* `description` - The description of the CCN instance.
+* `name` - The Name of the CCN instance.
+* `description` - The Description of the CCN instance.
 * `cidr_block` - The CidrBlock of the CCN instance.
 * `status` - The Status of the CCN instance.
-
 
 
 ## Import

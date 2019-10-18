@@ -10,16 +10,15 @@ description: |-
 
 This data source provides CCN instances available to the user.
 
+-> **NOTE:** Available in 1.59.0+
+
 ## Example Usage
 
 ```
-data "alicloud_ccn_instances" "ccn_instances_ds" {
-  ids        = ["ccn-id1"]
-  name_regex = "^foo"
-}
-
-output "first_ccn_instance_id" {
-  value = "${data.alicloud_ccn_instances.ccn_instances_ds.instances.0.id}"
+data "alicloud_ccn_instances" "foo" {
+  ids               = ["fake-de-id"]
+  name_regex        = "^foo"
+  output_file       = "/tmp/ccndomainextension"
 }
 ```
 
