@@ -1,8 +1,33 @@
 ## 1.58.0 (Unreleased)
 
+- **New Data Source:** `alicloud_cs_serverless_kubernetes_clusters` [GH-1746]
+- **New Resource:** `alicloud_cs_serverless_kubernetes` [GH-1746]
+
 IMPROVEMENTS:
 
-- improve(alicloud_ess_scaling_rule): support TargetTrackingScalingRule and StepScalingRule.
+- improve(security_group):make security_group support resource_group_id [GH-1762]
+- Add resource_group_id to common_bandwidth_package(resource&data_source) [GH-1761]
+- improve(cen): added precheck for testcases [GH-1759]
+- improve(security_group):support security_group_type [GH-1755]
+- Add missing routing rules for alicloud_dns_record [GH-1754]
+- improve(slb): updated slb serverCertificate testcase [GH-1751]
+- improve(slb): updated slb rule testcase [GH-1748]
+- Improve(alicloud_ess_scaling_rule): support TargetTrackingScalingRule and StepScalingRule [GH-1744]
+- improve(cdn): added adddebug for tags APIs [GH-1741]
+- improve(slb): updated slb ca_certificate testcase [GH-1740]
+- improve(slb): updated slb acl testcase [GH-1739]
+- improve(slb): updated slb slb_attachment testcase [GH-1738]
+- use a new ram role instead of hardcode name about emr unit test case and example [GH-1732]
+- Revision of goReportCard.com suggestions [GH-1729]
+- improve(cs): resources supports timeouts setting [GH-1679]
+
+BUG FIXES:
+
+- fix slb sweep bug and add region for role test [GH-1752]
+- fix (cs) : log_config support create new project [GH-1745]
+- fix(cs): modify the new_nat_gateway field in testcase to avoid InstanceRouterEntryNotExist error [GH-1733]
+- fix(mongodb):fix password encrypt bug [GH-1730]
+- fix typo in worker_instance_types description [GH-1726]
 
 ## 1.57.1 (October 11, 2019)
 
