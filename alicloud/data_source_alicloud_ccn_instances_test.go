@@ -41,22 +41,22 @@ func TestAccAlicloudCcnInstancesDataSource_basic(t *testing.T) {
 
 	var existDnsRecordsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instances.#":                "1",
-			"ids.#":                      "1",
-			"names.#":                    "1",
-			"instances.0.ccn_id":         CHECKSET,
-			"instances.0.name":           fmt.Sprintf("tf-testAccCcnInstanceDataSourceBisic-%d", rand),
-			"instances.0.description":    "tf-testAccCcnInstanceDescription",
-			"instances.0.cidr_block":     "192.168.0.0/24,192.168.1.0/24",
-			"instances.0.is_default":     "true",
+			"instances.#":             "1",
+			"ids.#":                   "1",
+			"names.#":                 "1",
+			"instances.0.ccn_id":      CHECKSET,
+			"instances.0.name":        fmt.Sprintf("tf-testAccCcnInstanceDataSourceBisic-%d", rand),
+			"instances.0.description": "tf-testAccCcnInstanceDescription",
+			"instances.0.cidr_block":  "192.168.0.0/24,192.168.1.0/24",
+			"instances.0.is_default":  "true",
 		}
 	}
 
 	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instances.#":  "0",
-			"ids.#":   "0",
-			"names.#": "0",
+			"instances.#": "0",
+			"ids.#":       "0",
+			"names.#":     "0",
 		}
 	}
 
@@ -72,7 +72,7 @@ func TestAccAlicloudCcnInstancesDataSource_basic(t *testing.T) {
 func testAccCheckAlicloudCcnInstancesDataSourceConfig(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
-		pairs = append(pairs, k + " = " + v)
+		pairs = append(pairs, k+" = "+v)
 	}
 
 	config := fmt.Sprintf(`

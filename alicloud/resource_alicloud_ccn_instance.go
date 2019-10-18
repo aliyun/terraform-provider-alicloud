@@ -19,13 +19,13 @@ func resourceAlicloudCcnInstance() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
 				ValidateFunc: validateInstanceName,
 			},
 			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
 				ValidateFunc: validateInstanceDescription,
 			},
 			"is_default": {
@@ -33,8 +33,8 @@ func resourceAlicloudCcnInstance() *schema.Resource {
 				Required: true,
 			},
 			"cidr_block": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
 				ValidateFunc: validateVpnCIDRNetworkAddress,
 			},
 			"total_count": {

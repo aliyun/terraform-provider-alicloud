@@ -1,10 +1,11 @@
 package alicloud
 
 import (
-	"time"
 	"strings"
-	"github.com/hashicorp/terraform/helper/resource"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -12,16 +13,15 @@ type SagService struct {
 	client *connectivity.AliyunClient
 }
 
-
 // Flattens an array of SagInstances into a []map[string]string
 func (s *SagService) FlattenSagInstancesMappings(list []smartag.SmartAccessGateway) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(list))
 
 	for _, i := range list {
 		l := map[string]interface{}{
-			"smartag_id": i.SmartAGId,
-			"name":   i.Name,
-			"description":  i.Description,
+			"smartag_id":  i.SmartAGId,
+			"name":        i.Name,
+			"description": i.Description,
 		}
 		result = append(result, l)
 	}
@@ -134,7 +134,6 @@ func (s *SagService) DescribeCcnGrantRule(id string) (c smartag.GrantRule, err e
 	return c, nil
 }
 
-
 func (s *SagService) DescribeSagGrantRules(id string) (c smartag.GrantRule, err error) {
 	request := smartag.CreateDescribeGrantSagRulesRequest()
 	request.RegionId = s.client.RegionId
@@ -163,13 +162,12 @@ func (s *SagService) DescribeSagGrantRules(id string) (c smartag.GrantRule, err 
 	}
 
 	response, _ := raw.(*smartag.DescribeGrantSagRulesResponse)
-	if len(response.GrantRules.GrantRule) <= 0{
+	if len(response.GrantRules.GrantRule) <= 0 {
 		return c, WrapErrorf(Error(GetNotFoundMessage("Grant sag rule", id)), NotFoundMsg, ProviderERROR)
 	}
 	c = response.GrantRules.GrantRule[0]
 	return c, nil
 }
-
 
 func (s *SagService) DescribeSagAcl(id string) (c smartag.Acl, err error) {
 	request := smartag.CreateDescribeACLsRequest()
@@ -211,7 +209,7 @@ func (s *SagService) DescribeSagAclRule(id string) (c smartag.Acr, err error) {
 	acl_id := ""
 	if len(parts_) != 2 {
 		acl_id = id
-	}else {
+	} else {
 		parts, _ := ParseResourceId(id, 2)
 		acl_id = parts[0]
 	}
@@ -242,7 +240,7 @@ func (s *SagService) DescribeSagAclRule(id string) (c smartag.Acr, err error) {
 	}
 
 	response, _ := raw.(*smartag.DescribeACLAttributeResponse)
-	if len(response.Acrs.Acr) <= 0{
+	if len(response.Acrs.Acr) <= 0 {
 		return c, WrapErrorf(Error(GetNotFoundMessage("Sag Acl Rule", id)), NotFoundMsg, ProviderERROR)
 	}
 	c = response.Acrs.Acr[0]
@@ -512,7 +510,7 @@ func (s *SagService) DescribeSagQosPolicy(id string) (c smartag.QosPolicy, err e
 	qospy_id := ""
 	if len(parts_) != 2 {
 		qos_id = id
-	}else {
+	} else {
 		parts, _ := ParseResourceId(id, 2)
 		qos_id = parts[0]
 		qospy_id = parts[1]
@@ -545,7 +543,7 @@ func (s *SagService) DescribeSagQosPolicy(id string) (c smartag.QosPolicy, err e
 	}
 
 	response, _ := raw.(*smartag.DescribeQosPoliciesResponse)
-	if len(response.QosPolicies.QosPolicy) <= 0{
+	if len(response.QosPolicies.QosPolicy) <= 0 {
 		return c, WrapErrorf(Error(GetNotFoundMessage("Sag Qos Policy", id)), NotFoundMsg, ProviderERROR)
 	}
 	c = response.QosPolicies.QosPolicy[0]

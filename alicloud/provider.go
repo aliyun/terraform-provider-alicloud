@@ -374,7 +374,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_network_acl_attachment":              resourceAliyunNetworkAclAttachment(),
 			"alicloud_network_acl_entries":                 resourceAliyunNetworkAclEntries(),
 			"alicloud_emr_cluster":                         resourceAlicloudEmrCluster(),
-			"alicloud_ccn_instance":			resourceAlicloudCcnInstance(),
+			"alicloud_ccn_instance":                        resourceAlicloudCcnInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,

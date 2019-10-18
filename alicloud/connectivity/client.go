@@ -33,6 +33,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
@@ -44,8 +45,6 @@ import (
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
-
 
 	"fmt"
 	"log"
@@ -110,7 +109,6 @@ type AliyunClient struct {
 	bssopenapiconn               *bssopenapi.Client
 	emrconn                      *emr.Client
 	sagconn                      *smartag.Client
-
 }
 
 type ApiVersion string

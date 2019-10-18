@@ -129,11 +129,11 @@ func ccnInstancesDescriptionAttributes(d *schema.ResourceData, ccns []smartag.Cl
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*smartag.DescribeCloudConnectNetworksResponse)
 		mapping := map[string]interface{}{
-			"ccn_id":       response.CloudConnectNetworks.CloudConnectNetwork[0].CcnId,
-			"name":         response.CloudConnectNetworks.CloudConnectNetwork[0].Name,
-			"description":  response.CloudConnectNetworks.CloudConnectNetwork[0].Description,
-			"cidr_block":   response.CloudConnectNetworks.CloudConnectNetwork[0].CidrBlock,
-			"is_default":   response.CloudConnectNetworks.CloudConnectNetwork[0].IsDefault,
+			"ccn_id":      response.CloudConnectNetworks.CloudConnectNetwork[0].CcnId,
+			"name":        response.CloudConnectNetworks.CloudConnectNetwork[0].Name,
+			"description": response.CloudConnectNetworks.CloudConnectNetwork[0].Description,
+			"cidr_block":  response.CloudConnectNetworks.CloudConnectNetwork[0].CidrBlock,
+			"is_default":  response.CloudConnectNetworks.CloudConnectNetwork[0].IsDefault,
 		}
 
 		ids = append(ids, response.CloudConnectNetworks.CloudConnectNetwork[0].CcnId)

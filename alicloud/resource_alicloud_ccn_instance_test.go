@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -50,7 +50,7 @@ func TestAccAlicloudCcnInstance_basic(t *testing.T) {
 				Config: testAccCcnInstanceConfigBasicUpdateName(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc%sCcnConfig-%d-New", defaultRegionToTest, rand),
+						"name": fmt.Sprintf("tf-testAcc%sCcnConfig-%d-New", defaultRegionToTest, rand),
 					}),
 				),
 			},
@@ -58,7 +58,7 @@ func TestAccAlicloudCcnInstance_basic(t *testing.T) {
 				Config: testAccCcnInstanceConfigBasicUpdateDescription(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":        "tf-testAccCcnConfigDescription-New",
+						"description": "tf-testAccCcnConfigDescription-New",
 					}),
 				),
 			},
@@ -66,7 +66,7 @@ func TestAccAlicloudCcnInstance_basic(t *testing.T) {
 				Config: testAccCcnInstanceConfigBasicUpdateCidrblock(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cidr_block":        "192.168.1.0/24,192.168.2.0/24",
+						"cidr_block": "192.168.1.0/24,192.168.2.0/24",
 					}),
 				),
 			},
@@ -187,4 +187,3 @@ func testAccCcnInstanceConfigBasicUpdateRevoke(rand int) string {
 }
 `, defaultRegionToTest, rand)
 }
-
