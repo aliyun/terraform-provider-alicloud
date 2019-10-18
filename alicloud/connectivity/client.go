@@ -44,6 +44,8 @@ import (
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
+
 
 	"fmt"
 	"log"
@@ -107,6 +109,8 @@ type AliyunClient struct {
 	ddosbgpconn                  *ddosbgp.Client
 	bssopenapiconn               *bssopenapi.Client
 	emrconn                      *emr.Client
+	sagconn                      *smartag.Client
+
 }
 
 type ApiVersion string
@@ -1462,4 +1466,33 @@ func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, err
 	}
 
 	return do(client.emrconn)
+}
+
+func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the SAG client if necessary
+	if client.sagconn == nil {
+		endpoint := client.config.SagEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, SAGCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(SAGCode), endpoint)
+		}
+		sagconn, err := smartag.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the SAG client: %#v", err)
+		}
+
+		sagconn.AppendUserAgent(Terraform, terraformVersion)
+		sagconn.AppendUserAgent(Provider, providerVersion)
+		if client.config.ConfigurationSource != "" {
+			sagconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		}
+		client.sagconn = sagconn
+	}
+
+	return do(client.sagconn)
 }

@@ -33,6 +33,9 @@ const (
 
 	ShenZhenFinance = Region("cn-shenzhen-finance-1")
 	ShanghaiFinance = Region("cn-shanghai-finance-1")
+
+	HangzhouTest306 = Region("cn-hangzhou-test-306")
+
 )
 
 var ValidRegions = []Region{
@@ -42,6 +45,7 @@ var ValidRegions = []Region{
 	APSouth1,
 	MEEast1,
 	EUCentral1, EUWest1,
+	HangzhouTest306,
 }
 
 var EcsClassicSupportedRegions = []Region{Shenzhen, Shanghai, Beijing, Qingdao, Hangzhou, Hongkong, USWest1, APSouthEast1}
@@ -54,6 +58,7 @@ var GpdbSupportedRegions = []Region{Beijing, Shenzhen, Hangzhou, Shanghai, Hongk
 // Some Ram resources only one can be owned by one account at the same time,
 // skipped here to avoid multi regions concurrency conflict.
 var RamNoSkipRegions = []Region{Hangzhou, EUCentral1, APSouth1}
+var CenNoSkipRegions = []Region{Shanghai, EUCentral1, APSouth1}
 
 // Actiontrail only one can be owned by one account at the same time,
 // skipped here to avoid multi regions concurrency conflict.
