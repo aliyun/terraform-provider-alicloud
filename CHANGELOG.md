@@ -1,4 +1,9 @@
 ## 1.58.1 (Unreleased)
+
+BUG FIXES:
+
+- fix(common_bandwidth_package): fix common bandwidth package resource_group_id forcenew bug [GH-1772]
+
 ## 1.58.0 (October 18, 2019)
 
 - **New Data Source:** `alicloud_cs_serverless_kubernetes_clusters` ([#1746](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1746))
