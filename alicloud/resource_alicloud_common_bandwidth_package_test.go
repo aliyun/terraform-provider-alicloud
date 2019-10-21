@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -106,6 +107,7 @@ func TestAccAlicloudCommonBandwidthPackage_PayByTraffic(t *testing.T) {
 		"description":          "",
 		"internet_charge_type": "PayByTraffic",
 		"ratio":                "100",
+		"resource_group_id":    os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 	})
 	serviceFunc := func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -182,6 +184,7 @@ func TestAccAlicloudCommonBandwidthPackage_PayByBandwidth(t *testing.T) {
 		"description":          "",
 		"internet_charge_type": "PayByBandwidth",
 		"ratio":                "100",
+		"resource_group_id":    os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 	})
 	serviceFunc := func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -258,6 +261,7 @@ func TestAccAlicloudCommonBandwidthPackage_Multi(t *testing.T) {
 		"description":          "",
 		"internet_charge_type": "PayByBandwidth",
 		"ratio":                "100",
+		"resource_group_id":    os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 	})
 	serviceFunc := func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -313,9 +317,10 @@ variable "name" {
 resource "alicloud_common_bandwidth_package" "default" {
   internet_charge_type = "%s"
   bandwidth = "10"
+  resource_group_id = "%s"
   name = "${var.name}"
 }
-`, rand, internetChargeType)
+`, rand, internetChargeType, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 func testAccCommonBandwidthPackageName(rand int, internetChargeType string) string {
 	return fmt.Sprintf(
@@ -326,10 +331,11 @@ variable "name" {
 
 resource "alicloud_common_bandwidth_package" "default" {
   internet_charge_type = "%s"
+  resource_group_id = "%s"
   bandwidth = "10"
   name = "${var.name}_change"
 }
-`, rand, internetChargeType)
+`, rand, internetChargeType, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 func testAccCommonBandwidthPackageDescription(rand int, internetChargeType string) string {
 	return fmt.Sprintf(
@@ -340,11 +346,12 @@ variable "name" {
 
 resource "alicloud_common_bandwidth_package" "default" {
   internet_charge_type = "%s"
+  resource_group_id = "%s"
   bandwidth = "10"
   name = "${var.name}_change"
   description = "${var.name}_description"
 }
-`, rand, internetChargeType)
+`, rand, internetChargeType, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
 func testAccCommonBandwidthPackageBandwidth(rand int, internetChargeType string) string {
@@ -356,11 +363,12 @@ variable "name" {
 
 resource "alicloud_common_bandwidth_package" "default" {
   internet_charge_type = "%s"
+  resource_group_id = "%s"
   bandwidth = "20"
   name = "${var.name}_change"
   description = "${var.name}_description"
 }
-`, rand, internetChargeType)
+`, rand, internetChargeType, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
 func testAccCommonBandwidthPackageAll(rand int, internetChargeType string) string {
@@ -372,11 +380,12 @@ variable "name" {
 
 resource "alicloud_common_bandwidth_package" "default" {
   internet_charge_type = "%s"
+  resource_group_id = "%s"
   bandwidth = "20"
   name = "${var.name}_all"
   description = "${var.name}_all"
 }
-`, rand, internetChargeType)
+`, rand, internetChargeType, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
 func testAccCommonBandwidthPackageMulti(rand int, internetChargeType string) string {
@@ -389,8 +398,9 @@ variable "name" {
 resource "alicloud_common_bandwidth_package" "default" {
   count = 10
   internet_charge_type = "%s"
+  resource_group_id = "%s"
   bandwidth = "10"
   name = "${var.name}"
 }
-`, rand, internetChargeType)
+`, rand, internetChargeType, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }

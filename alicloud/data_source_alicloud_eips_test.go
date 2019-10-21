@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -79,6 +80,7 @@ resource "alicloud_eip" "default" {
   name = "tf-testAccCheckAlicloudEipsDataSourceConfig%d"
   count = 2
   bandwidth = 5
+  resource_group_id = "%s"
   tags 		= {
 		Created = "TF"
 		For 	= "acceptance test"
@@ -86,7 +88,7 @@ resource "alicloud_eip" "default" {
 }
 data "alicloud_eips" "default" {
   %s
-}`, rand, strings.Join(pairs, "\n  "))
+}`, rand, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), strings.Join(pairs, "\n  "))
 }
 
 var existEipsMapFunc = func(rand int) map[string]string {

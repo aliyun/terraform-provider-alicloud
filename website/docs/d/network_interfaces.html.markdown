@@ -104,7 +104,7 @@ The following arguments are supported:
 * `instance_id` - (Optional) The ECS instance ID that the ENI is attached to.
 * `tags` - (Optional) A map of tags assigned to ENIs.
 * `output_file` - (Optional) The name of output file that saves the filter results.
-* `resource_group_id` - (Optional, Available in 1.57.0+) The Id of resource group which the network interface belongs.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.57.0+) The Id of resource group which the network interface belongs.
 
 ## Attributes Reference
 

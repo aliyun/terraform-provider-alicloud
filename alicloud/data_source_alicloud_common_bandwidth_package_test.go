@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -57,12 +58,13 @@ resource "alicloud_common_bandwidth_package" "default" {
   bandwidth = "2"
   name = "${var.name}"
   description = "${var.name}_description"
+  resource_group_id = "%s"
 }
 
 data "alicloud_common_bandwidth_packages" "default"  {
   %s
 }
-`, rand, strings.Join(pairs, "\n  "))
+`, rand, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), strings.Join(pairs, "\n  "))
 	return config
 }
 

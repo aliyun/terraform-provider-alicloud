@@ -37,6 +37,11 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"security_group_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -85,6 +90,9 @@ func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{})
 	if v := d.Get("vpc_id").(string); v != "" {
 		request.VpcId = v
 	}
+
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
+
 	request.ClientToken = buildClientToken(request.GetActionName())
 
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
@@ -133,6 +141,7 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 		return WrapErrorf(Error(GetNotFoundMessage("SecurityGroup", d.Id())), NotFoundMsg, ProviderERROR)
 	}
 	d.Set("security_group_type", response.SecurityGroups.SecurityGroup[0].SecurityGroupType)
+	d.Set("resource_group_id", response.SecurityGroups.SecurityGroup[0].ResourceGroupId)
 
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceSecurityGroup)
 	if err != nil && !NotFoundError(err) {

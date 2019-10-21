@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform/helper/acctest"
 
 	"fmt"
@@ -39,8 +41,10 @@ func TestAccAlicloudCenInstancesDataSource(t *testing.T) {
 			"name_regex": `"${alicloud_cen_instance.default.name}_fake"`,
 		}),
 	}
-
-	CenInstancesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
+	}
+	CenInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 
 func TestAccAlicloudCenInstancesDataSource_multi(t *testing.T) {
