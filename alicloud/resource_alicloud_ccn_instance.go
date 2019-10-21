@@ -45,10 +45,6 @@ func resourceAlicloudCcnInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"cen_uid": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 		},
 	}
 }
@@ -106,7 +102,6 @@ func resourceAlicloudCcnInstanceRead(d *schema.ResourceData, meta interface{}) e
 			return WrapError(err)
 		}
 		d.Set("cen_id", object.CenInstanceId)
-		d.Set("cen_uid", object.CenUid)
 	}
 
 	return nil
@@ -114,6 +109,7 @@ func resourceAlicloudCcnInstanceRead(d *schema.ResourceData, meta interface{}) e
 
 func resourceAlicloudCcnInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	cen_uid, _ := client.AccountId()
 
 	update := false
 	request := smartag.CreateModifyCloudConnectNetworkRequest()
@@ -145,7 +141,7 @@ func resourceAlicloudCcnInstanceUpdate(d *schema.ResourceData, meta interface{})
 		requestGrant := smartag.CreateGrantInstanceToCbnRequest()
 		requestGrant.CcnInstanceId = d.Id()
 		requestGrant.CenInstanceId = d.Get("cen_id").(string)
-		requestGrant.CenUid = d.Get("cen_uid").(string)
+		requestGrant.CenUid = cen_uid
 		raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
 			return sagClient.GrantInstanceToCbn(requestGrant)
 		})

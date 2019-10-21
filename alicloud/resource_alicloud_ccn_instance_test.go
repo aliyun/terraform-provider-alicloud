@@ -85,13 +85,11 @@ func TestAccAlicloudCcnInstance_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cen_id":      "${alicloud_cen_instance.default.id}",
-					"cen_uid":     "${var.cen_uid}",
 					"total_count": "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cen_id":      CHECKSET,
-						"cen_uid":     "1688401595963306",
 						"total_count": "1",
 					}),
 				),
@@ -99,13 +97,11 @@ func TestAccAlicloudCcnInstance_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cen_id":      "${alicloud_cen_instance.default.id}",
-					"cen_uid":     "${var.cen_uid}",
 					"total_count": "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cen_id":      CHECKSET,
-						"cen_uid":     "1688401595963306",
 						"total_count": "0",
 					}),
 				),
@@ -132,13 +128,9 @@ func TestAccAlicloudCcnInstance_basic(t *testing.T) {
 
 func resourceCcnBasicDependence(name string) string {
 	return fmt.Sprintf(`
-variable "cen_uid" {
-  default = "1688401595963306"
-}
 resource "alicloud_cen_instance" "default" {
  name = "tf-testAccCenConfigName"
  description = "tf-testAccCenConfigDescription"
 }
 	`)
-
 }
