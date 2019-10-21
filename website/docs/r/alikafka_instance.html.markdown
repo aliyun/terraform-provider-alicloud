@@ -12,7 +12,7 @@ Provides an ALIKAFKA instance resource.
 
 -> **NOTE:** Available in 1.59.0+
 
--> **NOTE:** ALIKAFKA instance resource creation or modification may took about 10-40 minutes.
+-> **NOTE:** ALIKAFKA instance resource only support create post pay instance. Creation or modification may took about 10-40 minutes.
 
 -> **NOTE:** Only the following regions support create alikafka instance.
 [`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`ap-southeast-1`,`ap-south-1`,`ap-southeast-5`]

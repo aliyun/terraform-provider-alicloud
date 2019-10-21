@@ -118,14 +118,6 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":        fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
-						"topic_quota": "50",
-						"disk_type":   "1",
-						"disk_size":   "500",
-						"deploy_type": "5",
-						"io_max":      "20",
-						"vpc_id":      CHECKSET,
-						"vswitch_id":  CHECKSET,
-						"zone_id":     CHECKSET,
 					}),
 				),
 			},
@@ -266,17 +258,7 @@ func TestAccAlicloudAlikafkaInstance_multi(t *testing.T) {
 					"zone_id":     "${data.alicloud_zones.default.zones.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testacc-alikafkainstancebasic%v-1", rand),
-						"topic_quota": "50",
-						"disk_type":   "1",
-						"disk_size":   "500",
-						"deploy_type": "5",
-						"io_max":      "20",
-						"vpc_id":      CHECKSET,
-						"vswitch_id":  CHECKSET,
-						"zone_id":     CHECKSET,
-					}),
+					testAccCheck(nil),
 				),
 			},
 		},
@@ -311,12 +293,12 @@ func resourceAlikafkaInstanceConfigDependence(name string) string {
 }
 
 var alikafkaInstanceBasicMap = map[string]string{
-	"topic_quota": "50",
-	"disk_type":   "1",
-	"disk_size":   "500",
-	"deploy_type": "5",
-	"io_max":      "20",
-	"vpc_id":      "${alicloud_vpc.default.id}",
-	"vswitch_id":  "${alicloud_vswitch.default.id}",
-	"zone_id":     "${data.alicloud_zones.default.zones.0.id}",
+	"topic_quota": CHECKSET,
+	"disk_type":   CHECKSET,
+	"disk_size":   CHECKSET,
+	"deploy_type": CHECKSET,
+	"io_max":      CHECKSET,
+	"vpc_id":      CHECKSET,
+	"vswitch_id":  CHECKSET,
+	"zone_id":     CHECKSET,
 }

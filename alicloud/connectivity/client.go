@@ -1420,11 +1420,11 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
-	// Initialize the ons client if necessary
-	if client.onsconn == nil {
+	// Initialize the alikafka client if necessary
+	if client.alikafkaconn == nil {
 		endpoint := client.config.AlikafkaEndpoint
 		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, ALIKAFKACode)
+			endpoint = "alikafka.aliyuncs.com"
 		}
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(ALIKAFKACode), endpoint)

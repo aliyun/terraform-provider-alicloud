@@ -193,29 +193,31 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 				),
 			},
 
-			{
-				SkipFunc: shouldSkipLocalAndCompact("${alicloud_alikafka_instance.default.id}"),
-				Config: testAccConfig(map[string]interface{}{
-					"local_topic": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"local_topic": "true",
-					}),
-				),
-			},
+			// alicloud_alikafka_instance only support create post pay instance.
+			// Post pay instance does not support create local or compact topic, so skip the following two test case temporarily.
+			//{
+			//	SkipFunc: shouldSkipLocalAndCompact("${alicloud_alikafka_instance.default.id}"),
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"local_topic": "true",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"local_topic": "true",
+			//		}),
+			//	),
+			//},
 
-			{
-				SkipFunc: shouldSkipLocalAndCompact("${alicloud_alikafka_instance.default.id}"),
-				Config: testAccConfig(map[string]interface{}{
-					"compact_topic": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"compact_topic": "true",
-					}),
-				),
-			},
+			//{
+			//	SkipFunc: shouldSkipLocalAndCompact("${alicloud_alikafka_instance.default.id}"),
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"compact_topic": "true",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"compact_topic": "true",
+			//		}),
+			//	),
+			//},
 
 			{
 				Config: testAccConfig(map[string]interface{}{

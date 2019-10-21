@@ -121,22 +121,10 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_instance", createOrderReq.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	var alikafkaInstanceVO *alikafka.InstanceVO
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		v, err := alikafkaService.DescribeAlikafkaInstanceByOrderId(createOrderResp.OrderId)
-		if err != nil {
-			if IsExceptedErrors(err, []string{AlikafkaThrottlingUser}) || NotFoundError(err) {
-				time.Sleep(3 * time.Second)
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		alikafkaInstanceVO = v
-		return nil
-	})
+	alikafkaInstanceVO, err := alikafkaService.DescribeAlikafkaInstanceByOrderId(createOrderResp.OrderId, 60)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_instance", "getInstanceByOrderId", AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
 
 	instanceId := alikafkaInstanceVO.InstanceId
@@ -180,7 +168,7 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	err = alikafkaService.WaitForAlikafkaInstance(d.Id(), Running, DefaultLongTimeout)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_instance", "WaitForAlikafkaInstanceStartUp", AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
 
 	return resourceAlicloudAlikafkaInstanceRead(d, meta)
@@ -299,13 +287,13 @@ func resourceAlicloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		d.Get("disk_size").(int), d.Get("io_max").(int), eipMax, DefaultTimeoutMedium)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "WaitInstanceUpdated", AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
 
 	err = alikafkaService.WaitForAlikafkaInstance(d.Id(), Running, 2000)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_instance", "WaitForAlikafkaInstanceUpdated", AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
 
 	return resourceAlicloudAlikafkaInstanceRead(d, meta)

@@ -26,6 +26,26 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 		}),
 	}
 
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_alikafka_instance.default.id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_alikafka_instance.default.id}_fake"},
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":        []string{"${alicloud_alikafka_instance.default.id}"},
+			"name_regex": "${alicloud_alikafka_instance.default.name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":        []string{"${alicloud_alikafka_instance.default.id}_fake"},
+			"name_regex": "${alicloud_alikafka_instance.default.name}",
+		}),
+	}
+
 	var existAlikafkaInstancesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                   "1",
@@ -54,7 +74,7 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 	}
-	alikafkaInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
+	alikafkaInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceAlikafkaInstancesConfigDependence(name string) string {
@@ -83,9 +103,9 @@ func dataSourceAlikafkaInstancesConfigDependence(name string) string {
 		  disk_size = "500"
 		  deploy_type = "5"
 		  io_max = "20"
-		  vpc_id = "${data.alicloud_vswitches.default.vswitches.0.vpc_id}"
-          vswitch_id = "${data.alicloud_vswitches.default.vswitches.0.id}"
-          zone_id = "${data.alicloud_vswitches.default.vswitches.0.zone_id}"
+		  vpc_id = "${alicloud_vpc.default.id}"
+          vswitch_id = "${alicloud_vswitch.default.id}"
+          zone_id = "${data.alicloud_zones.default.zones.0.id}"
 		}
 		`, name)
 }

@@ -40,28 +40,34 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId stri
 	return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", instanceId)), NotFoundMsg, ProviderERROR)
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderId string) (alikafkaInstance *alikafka.InstanceVO, err error) {
+func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderId string, timeout int) (alikafkaInstance *alikafka.InstanceVO, err error) {
 
 	instanceListReq := alikafka.CreateGetInstanceListRequest()
 	instanceListReq.RegionId = alikafkaService.client.RegionId
 	instanceListReq.OrderId = orderId
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-		return alikafkaClient.GetInstanceList(instanceListReq)
-	})
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			return alikafkaClient.GetInstanceList(instanceListReq)
+		})
 
-	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, orderId, instanceListReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		if err != nil {
+			return nil, WrapErrorf(err, DefaultErrorMsg, orderId, instanceListReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+
+		instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
+		addDebug(instanceListReq.GetActionName(), raw, instanceListReq.RpcRequest, instanceListReq)
+
+		for _, v := range instanceListResp.InstanceList.InstanceVO {
+			alikafkaInstance = &v
+			return alikafkaInstance, nil
+		}
+		if time.Now().After(deadline) {
+			return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", orderId)), NotFoundMsg, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
 	}
-
-	instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
-	addDebug(instanceListReq.GetActionName(), raw, instanceListReq.RpcRequest, instanceListReq)
-
-	for _, v := range instanceListResp.InstanceList.InstanceVO {
-		alikafkaInstance = &v
-		return
-	}
-	return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", orderId)), NotFoundMsg, ProviderERROR)
 }
 
 func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string) (alikafkaConsumerGroup *alikafka.ConsumerVO, err error) {
