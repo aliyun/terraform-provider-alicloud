@@ -31,6 +31,7 @@ func TestAccAlicloudCenInstanceGrant_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithMultipleAccount(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 
 		// module name

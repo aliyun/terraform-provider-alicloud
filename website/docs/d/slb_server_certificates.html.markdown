@@ -27,6 +27,7 @@ The following arguments are supported:
 * `ids` - (Optional) A list of server certificates IDs to filter results.
 * `name_regex` - (Optional) A regex string to filter results by server certificate name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the slb server certificates belongs.
 
 ## Attributes Reference
 
@@ -47,3 +48,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `alicloud_certificate_id` - Id of server certificate issued by alibaba cloud.
   * `alicloud_certificate_name`- Name of server certificate issued by alibaba cloud.
   * `is_alicloud_certificate`- Is server certificate issued by alibaba cloud or not.
+  * `resource_group_id` - The Id of resource group which the slb server certificates belongs.

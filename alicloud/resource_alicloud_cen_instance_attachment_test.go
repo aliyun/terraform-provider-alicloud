@@ -30,6 +30,7 @@ func TestAccAlicloudCenInstanceAttachment_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 
 		// module name
@@ -65,6 +66,7 @@ func TestAccAlicloudCenInstanceAttachment_multi_same_region(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 
 		// module name

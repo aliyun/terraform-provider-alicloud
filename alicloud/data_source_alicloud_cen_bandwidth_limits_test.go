@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform/helper/acctest"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -39,6 +41,7 @@ func TestAccAlicloudCenBandwidthLimitsDataSource(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 
 		// module name

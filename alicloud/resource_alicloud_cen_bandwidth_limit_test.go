@@ -31,6 +31,7 @@ func TestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 
 		// module name
@@ -76,6 +77,7 @@ func TestAccAlicloudCenBandwidthLimit_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 
 		// module name
