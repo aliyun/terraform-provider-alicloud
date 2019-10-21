@@ -41,9 +41,9 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The CcnId of the CCN instance. For example "ccn-xxx".
-* `name` - (Optional) The name of the CCN instance. The name can contain 2 to 128 characters including a-z, A-Z, 0-9, periods, underlines, and hyphens. The name must start with an English letter, but cannot start with http:// or https://.
-* `description` - (Optional) The description of the CCN instance. The description can contain 2 to 256 characters. The description must start with English letters, but cannot start with http:// or https://.
-* `cidr_block` - (Optional) The CidrBlock of the CCN instance. Defaults to null.
+* `name` - The name of the CCN instance. 
+* `description` - The description of the CCN instance.
+* `cidr_block` - The CidrBlock of the CCN instance.
 * `status` - The Status of the CCN instance. For example "Active"
 
 
