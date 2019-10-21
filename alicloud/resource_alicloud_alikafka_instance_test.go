@@ -117,7 +117,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
+						"name": fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
 					}),
 				),
 			},
