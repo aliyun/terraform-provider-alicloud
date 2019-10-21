@@ -3,9 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"testing"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -19,8 +17,9 @@ func TestAccAlicloudCcnInstance_basic(t *testing.T) {
 	}
 	rc := resourceCheckInit(resourceId, &ccn, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
-	rand := acctest.RandIntRange(1000000, 9999999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccCcnConfigName")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCcnBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -29,12 +28,18 @@ func TestAccAlicloudCcnInstance_basic(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCcnInstanceConfigBasic(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"description": "tf-testAccCcnConfigDescription",
+					"cidr_block":  "192.168.0.0/24",
+					"is_default":  "true",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc%sCcnConfig-%d", defaultRegionToTest, rand),
+						"name":        name,
 						"description": "tf-testAccCcnConfigDescription",
 						"cidr_block":  "192.168.0.0/24",
 						"is_default":  "true",
@@ -47,63 +52,76 @@ func TestAccAlicloudCcnInstance_basic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccCcnInstanceConfigBasicUpdateName(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "tf-testAccCcnConfigName-Update",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf-testAcc%sCcnConfig-%d-New", defaultRegionToTest, rand),
+						"name":       "tf-testAccCcnConfigName-Update",
 					}),
 				),
 			},
 			{
-				Config: testAccCcnInstanceConfigBasicUpdateDescription(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"description":        "tf-testAccCcnConfigDescription-Update",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "tf-testAccCcnConfigDescription-New",
+						"description":       "tf-testAccCcnConfigDescription-Update",
 					}),
 				),
 			},
 			{
-				Config: testAccCcnInstanceConfigBasicUpdateCidrblock(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"cidr_block":        "192.168.1.0/24,192.168.2.0/24",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cidr_block": "192.168.1.0/24,192.168.2.0/24",
+						"cidr_block":        "192.168.1.0/24,192.168.2.0/24",
 					}),
 				),
 			},
 			{
-				Config: testAccCcnInstanceConfigBasicUpdateConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"cen_id":	"${alicloud_cen_instance.default.id}",
+					"cen_uid":	 "${var.cen_uid}",
+					"total_count":	"1",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc%sCcnConfig-%d-New", defaultRegionToTest, rand),
-						"description": "tf-testAccCcnConfigDescription-New",
-						"cidr_block":  "192.168.1.0/24,192.168.2.0/24",
-						"is_default":  "true",
-					}),
-				),
-			},
-			{
-				Config: testAccCcnInstanceConfigBasicUpdateGrant(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc%sCcnConfig-%d-New", defaultRegionToTest, rand),
-						"description": "tf-testAccCcnConfigDescription-New",
-						"cidr_block":  "192.168.1.0/24,192.168.2.0/24",
-						"is_default":  "true",
-						"cen_id":      "cen-4vdgx1tyhjisjyjyy2",
-						"cen_uid":     "1688401595963306",
+						"cen_id":      CHECKSET,
+						"cen_uid":	 "1688401595963306",
 						"total_count": "1",
 					}),
 				),
 			},
 			{
-				Config: testAccCcnInstanceConfigBasicUpdateRevoke(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"cen_id":	"${alicloud_cen_instance.default.id}",
+					"cen_uid":	 "${var.cen_uid}",
+					"total_count":	 "0",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc%sCcnConfig-%d-New", defaultRegionToTest, rand),
-						"description": "tf-testAccCcnConfigDescription-New",
-						"cidr_block":  "192.168.1.0/24,192.168.2.0/24",
+						"cen_id":      CHECKSET,
+						"cen_uid":	 "1688401595963306",
+						"total_count":  "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"description": "tf-testAccCcnConfigDescription",
+					"cidr_block":  "192.168.0.0/24",
+					"is_default":  "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        name,
+						"description": "tf-testAccCcnConfigDescription",
+						"cidr_block":  "192.168.0.0/24",
 						"is_default":  "true",
-						"total_count": "0",
 					}),
 				),
 			},
@@ -111,79 +129,17 @@ func TestAccAlicloudCcnInstance_basic(t *testing.T) {
 	})
 }
 
-func testAccCcnInstanceConfigBasic(rand int) string {
+func resourceCcnBasicDependence(name string) string {
 	return fmt.Sprintf(`
-	resource "alicloud_ccn_instance" "default" {
-		name = "tf-testAcc%sCcnConfig-%d"
-		description = "tf-testAccCcnConfigDescription"
-		cidr_block = "192.168.0.0/24"
-		is_default = true
+variable "cen_uid" {
+  default = "1688401595963306"
 }
-`, defaultRegionToTest, rand)
+resource "alicloud_cen_instance" "default" {
+ name = "tf-testAccCenConfigName"
+ description = "tf-testAccCenConfigDescription"
 }
-func testAccCcnInstanceConfigBasicUpdateName(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ccn_instance" "default" {
-		name = "tf-testAcc%sCcnConfig-%d-New"
-		description = "tf-testAccCcnConfigDescription"
-		cidr_block = "192.168.0.0/24"
-		is_default = true
+	`)
+
 }
-`, defaultRegionToTest, rand)
-}
-func testAccCcnInstanceConfigBasicUpdateDescription(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ccn_instance" "default" {
-		name = "tf-testAcc%sCcnConfig-%d-New"
-		description = "tf-testAccCcnConfigDescription-New"
-		cidr_block = "192.168.0.0/24"
-		is_default = true
-}
-`, defaultRegionToTest, rand)
-}
-func testAccCcnInstanceConfigBasicUpdateCidrblock(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ccn_instance" "default" {
-		name = "tf-testAcc%sCcnConfig-%d-New"
-		description = "tf-testAccCcnConfigDescription-New"
-		cidr_block = "192.168.1.0/24,192.168.2.0/24"
-		is_default = true
-}
-`, defaultRegionToTest, rand)
-}
-func testAccCcnInstanceConfigBasicUpdateConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ccn_instance" "default" {
-		name = "tf-testAcc%sCcnConfig-%d-New"
-		description = "tf-testAccCcnConfigDescription-New"
-		cidr_block = "192.168.1.0/24,192.168.2.0/24"
-		is_default = true
-}
-`, defaultRegionToTest, rand)
-}
-func testAccCcnInstanceConfigBasicUpdateGrant(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ccn_instance" "default" {
-		name = "tf-testAcc%sCcnConfig-%d-New"
-		description = "tf-testAccCcnConfigDescription-New"
-		cidr_block = "192.168.1.0/24,192.168.2.0/24"
-		is_default = true
-		cen_id = "cen-4vdgx1tyhjisjyjyy2"
-		cen_uid = "1688401595963306"
-		total_count = "1"
-}
-`, defaultRegionToTest, rand)
-}
-func testAccCcnInstanceConfigBasicUpdateRevoke(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ccn_instance" "default" {
-		name = "tf-testAcc%sCcnConfig-%d-New"
-		description = "tf-testAccCcnConfigDescription-New"
-		cidr_block = "192.168.1.0/24,192.168.2.0/24"
-		is_default = true
-		cen_id = "cen-4vdgx1tyhjisjyjyy2"
-		cen_uid = "1688401595963306"
-		total_count = "0"
-}
-`, defaultRegionToTest, rand)
-}
+
+

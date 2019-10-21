@@ -57,7 +57,7 @@ var GpdbSupportedRegions = []Region{Beijing, Shenzhen, Hangzhou, Shanghai, Hongk
 // Some Ram resources only one can be owned by one account at the same time,
 // skipped here to avoid multi regions concurrency conflict.
 var RamNoSkipRegions = []Region{Hangzhou, EUCentral1, APSouth1}
-var CenNoSkipRegions = []Region{Shanghai, EUCentral1, APSouth1}
+var CenNoSkipRegions = []Region{Shanghai, EUCentral1, APSouth1, HangzhouTest306}
 
 // Actiontrail only one can be owned by one account at the same time,
 // skipped here to avoid multi regions concurrency conflict.
