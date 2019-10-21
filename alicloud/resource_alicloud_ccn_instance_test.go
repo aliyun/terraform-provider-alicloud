@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"testing"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -53,59 +54,59 @@ func TestAccAlicloudCcnInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "tf-testAccCcnConfigName-Update",
+					"name": "tf-testAccCcnConfigName-Update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":       "tf-testAccCcnConfigName-Update",
+						"name": "tf-testAccCcnConfigName-Update",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":        "tf-testAccCcnConfigDescription-Update",
+					"description": "tf-testAccCcnConfigDescription-Update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":       "tf-testAccCcnConfigDescription-Update",
+						"description": "tf-testAccCcnConfigDescription-Update",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cidr_block":        "192.168.1.0/24,192.168.2.0/24",
+					"cidr_block": "192.168.1.0/24,192.168.2.0/24",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cidr_block":        "192.168.1.0/24,192.168.2.0/24",
+						"cidr_block": "192.168.1.0/24,192.168.2.0/24",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cen_id":	"${alicloud_cen_instance.default.id}",
-					"cen_uid":	 "${var.cen_uid}",
-					"total_count":	"1",
+					"cen_id":      "${alicloud_cen_instance.default.id}",
+					"cen_uid":     "${var.cen_uid}",
+					"total_count": "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cen_id":      CHECKSET,
-						"cen_uid":	 "1688401595963306",
+						"cen_uid":     "1688401595963306",
 						"total_count": "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cen_id":	"${alicloud_cen_instance.default.id}",
-					"cen_uid":	 "${var.cen_uid}",
-					"total_count":	 "0",
+					"cen_id":      "${alicloud_cen_instance.default.id}",
+					"cen_uid":     "${var.cen_uid}",
+					"total_count": "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cen_id":      CHECKSET,
-						"cen_uid":	 "1688401595963306",
-						"total_count":  "0",
+						"cen_uid":     "1688401595963306",
+						"total_count": "0",
 					}),
 				),
 			},
@@ -141,5 +142,3 @@ resource "alicloud_cen_instance" "default" {
 	`)
 
 }
-
-
