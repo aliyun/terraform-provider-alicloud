@@ -341,12 +341,13 @@ func buildAlicloudRamPolicyUpdateArgs(d *schema.ResourceData, meta interface{}) 
 	request.SetAsDefault = "true"
 	request.PolicyName = d.Id()
 
-	if d.HasChange("document") {
-		d.SetPartial("document")
-		request.PolicyDocument = d.Get("document").(string)
+	if document, ok := d.GetOk("document"); ok {
+		if d.HasChange("document") {
+			d.SetPartial("document")
+		}
 
-	} else if d.HasChange("statement") || d.HasChange("version") {
-
+		request.PolicyDocument = document.(string)
+	} else {
 		if d.HasChange("statement") {
 			d.SetPartial("statement")
 		}
@@ -358,6 +359,7 @@ func buildAlicloudRamPolicyUpdateArgs(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return &ram.CreatePolicyVersionRequest{}, err
 		}
+
 		request.PolicyDocument = document
 	}
 
