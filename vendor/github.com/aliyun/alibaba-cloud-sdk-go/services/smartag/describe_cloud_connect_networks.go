@@ -81,10 +81,10 @@ type DescribeCloudConnectNetworksRequest struct {
 	OwnerAccount         string                             `position:"Query" name:"OwnerAccount"`
 	Name                 string                             `position:"Query" name:"Name"`
 	CcnId                string                             `position:"Query" name:"CcnId"`
-	PageSize             string                             `position:"Query" name:"PageSize"`
+	PageSize             requests.Integer                   `position:"Query" name:"PageSize"`
 	Tag                  *[]DescribeCloudConnectNetworksTag `position:"Query" name:"Tag"  type:"Repeated"`
 	OwnerId              requests.Integer                   `position:"Query" name:"OwnerId"`
-	PageNumber           string                             `position:"Query" name:"PageNumber"`
+	PageNumber           requests.Integer                   `position:"Query" name:"PageNumber"`
 }
 
 // DescribeCloudConnectNetworksTag is a repeated param struct in DescribeCloudConnectNetworksRequest

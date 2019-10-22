@@ -8,34 +8,34 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 )
 
-func TestAccAlicloudCcnInstancesDataSource_basic(t *testing.T) {
+func TestAccAlicloudCloudConnectNetworkDataSource_basic(t *testing.T) {
 	rand := acctest.RandInt()
 	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCcnInstancesDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_ccn_instance.default.name}"`,
+		existConfig: testAccCheckAlicloudCloudConnectNetworkDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_cloud_connect_network.default.name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCcnInstancesDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_ccn_instance.default.name}_fake"`,
+		fakeConfig: testAccCheckAlicloudCloudConnectNetworkDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_cloud_connect_network.default.name}_fake"`,
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCcnInstancesDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_ccn_instance.default.id}"]`,
+		existConfig: testAccCheckAlicloudCloudConnectNetworkDataSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_cloud_connect_network.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudCcnInstancesDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_ccn_instance.default.id}_fake"]`,
+		fakeConfig: testAccCheckAlicloudCloudConnectNetworkDataSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_cloud_connect_network.default.id}_fake"]`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCcnInstancesDataSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_ccn_instance.default.id}"]`,
-			"name_regex": `"${alicloud_ccn_instance.default.name}"`,
+		existConfig: testAccCheckAlicloudCloudConnectNetworkDataSourceConfig(rand, map[string]string{
+			"ids":        `["${alicloud_cloud_connect_network.default.id}"]`,
+			"name_regex": `"${alicloud_cloud_connect_network.default.name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCcnInstancesDataSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_ccn_instance.default.id}_fake"]`,
-			"name_regex": `"${alicloud_ccn_instance.default.name}"`,
+		fakeConfig: testAccCheckAlicloudCloudConnectNetworkDataSourceConfig(rand, map[string]string{
+			"ids":        `["${alicloud_cloud_connect_network.default.id}_fake"]`,
+			"name_regex": `"${alicloud_cloud_connect_network.default.name}"`,
 		}),
 	}
 
@@ -44,7 +44,7 @@ func TestAccAlicloudCcnInstancesDataSource_basic(t *testing.T) {
 			"instances.#":             "1",
 			"ids.#":                   "1",
 			"names.#":                 "1",
-			"instances.0.ccn_id":      CHECKSET,
+			"instances.0.id":          CHECKSET,
 			"instances.0.name":        fmt.Sprintf("tf-testAccCcnInstanceDataSourceBisic-%d", rand),
 			"instances.0.description": "tf-testAccCcnInstanceDescription",
 			"instances.0.cidr_block":  "192.168.0.0/24,192.168.1.0/24",
@@ -61,7 +61,7 @@ func TestAccAlicloudCcnInstancesDataSource_basic(t *testing.T) {
 	}
 
 	var ccnInstancesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_ccn_instances.default",
+		resourceId:   "data.alicloud_cloud_connect_networks.default",
 		existMapFunc: existDnsRecordsMapFunc,
 		fakeMapFunc:  fakeDnsRecordsMapFunc,
 	}
@@ -69,7 +69,7 @@ func TestAccAlicloudCcnInstancesDataSource_basic(t *testing.T) {
 	ccnInstancesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 }
 
-func testAccCheckAlicloudCcnInstancesDataSourceConfig(rand int, attrMap map[string]string) string {
+func testAccCheckAlicloudCloudConnectNetworkDataSourceConfig(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
@@ -79,14 +79,14 @@ func testAccCheckAlicloudCcnInstancesDataSourceConfig(rand int, attrMap map[stri
 		variable "name" {
 			default = "tf-testAccCcnInstanceDataSourceBisic-%d"
 		}
-		resource "alicloud_ccn_instance" "default" {
+		resource "alicloud_cloud_connect_network" "default" {
 			name = "${var.name}"
 			description = "tf-testAccCcnInstanceDescription"
 			cidr_block = "192.168.0.0/24,192.168.1.0/24"
 			is_default = true
 		}
 
-		data "alicloud_ccn_instances" "default" {
+		data "alicloud_cloud_connect_networks" "default" {
 		  %s
 		}
 `, rand, strings.Join(pairs, "\n  "))

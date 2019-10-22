@@ -64,7 +64,7 @@ func (s *SagService) DescribeSagInstance(id string) (c smartag.SmartAccessGatewa
 	return c, nil
 }
 
-func (s *SagService) DescribeCcnInstance(id string) (c smartag.CloudConnectNetwork, err error) {
+func (s *SagService) DescribeCloudConnectNetwork(id string) (c smartag.CloudConnectNetwork, err error) {
 	request := smartag.CreateDescribeCloudConnectNetworksRequest()
 	request.RegionId = s.client.RegionId
 	request.CcnId = id

@@ -7,12 +7,12 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func resourceAlicloudCcnInstance() *schema.Resource {
+func resourceAlicloudCloudConnectNetwork() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCcnInstanceCreate,
-		Read:   resourceAlicloudCcnInstanceRead,
-		Update: resourceAlicloudCcnInstanceUpdate,
-		Delete: resourceAlicloudCcnInstanceDelete,
+		Create: resourceAlicloudCloudConnectNetworkCreate,
+		Read:   resourceAlicloudCloudConnectNetworkRead,
+		Update: resourceAlicloudCloudConnectNetworkUpdate,
+		Delete: resourceAlicloudCloudConnectNetworkDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -37,25 +37,18 @@ func resourceAlicloudCcnInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validateVpnCIDRNetworkAddress,
 			},
-			"total_count": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"cen_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 		},
 	}
 }
 
-func resourceAlicloudCcnInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCloudConnectNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := smartag.CreateCreateCloudConnectNetworkRequest()
 
-	request.Name = d.Get("name").(string)
 	request.IsDefault = requests.NewBoolean(d.Get("is_default").(bool))
-
+	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
+		request.Name = v.(string)
+	}
 	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
 		request.Description = v.(string)
 	}
@@ -67,19 +60,19 @@ func resourceAlicloudCcnInstanceCreate(d *schema.ResourceData, meta interface{})
 		return sagClient.CreateCloudConnectNetwork(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ccn_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_connect_network", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*smartag.CreateCloudConnectNetworkResponse)
 	d.SetId(response.CcnId)
 
-	return resourceAlicloudCcnInstanceRead(d, meta)
+	return resourceAlicloudCloudConnectNetworkRead(d, meta)
 }
 
-func resourceAlicloudCcnInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCloudConnectNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	ccnService := SagService{meta.(*connectivity.AliyunClient)}
-	object, err := ccnService.DescribeCcnInstance(d.Id())
+	object, err := ccnService.DescribeCloudConnectNetwork(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -92,24 +85,11 @@ func resourceAlicloudCcnInstanceRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("cidr_block", object.CidrBlock)
 	d.Set("is_default", object.IsDefault)
 
-	if d.Get("total_count") == "1" {
-		object, err := ccnService.DescribeCcnGrantRule(d.Id())
-		if err != nil {
-			if NotFoundError(err) {
-				d.SetId("")
-				return nil
-			}
-			return WrapError(err)
-		}
-		d.Set("cen_id", object.CenInstanceId)
-	}
-
 	return nil
 }
 
-func resourceAlicloudCcnInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCloudConnectNetworkUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cen_uid, _ := client.AccountId()
 
 	update := false
 	request := smartag.CreateModifyCloudConnectNetworkRequest()
@@ -136,36 +116,10 @@ func resourceAlicloudCcnInstanceUpdate(d *schema.ResourceData, meta interface{})
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
-
-	if d.Get("total_count") == "1" {
-		requestGrant := smartag.CreateGrantInstanceToCbnRequest()
-		requestGrant.CcnInstanceId = d.Id()
-		requestGrant.CenInstanceId = d.Get("cen_id").(string)
-		requestGrant.CenUid = cen_uid
-		raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
-			return sagClient.GrantInstanceToCbn(requestGrant)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), requestGrant.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(requestGrant.GetActionName(), raw, requestGrant.RpcRequest, requestGrant)
-
-	} else if d.Get("total_count") == "0" {
-		requestRevoke := smartag.CreateRevokeInstanceFromCbnRequest()
-		requestRevoke.CcnInstanceId = d.Id()
-		requestRevoke.CenInstanceId = d.Get("cen_id").(string)
-		raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
-			return sagClient.RevokeInstanceFromCbn(requestRevoke)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), requestRevoke.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(requestRevoke.GetActionName(), raw, requestRevoke.RpcRequest, requestRevoke)
-	}
-	return resourceAlicloudCcnInstanceRead(d, meta)
+	return resourceAlicloudCloudConnectNetworkRead(d, meta)
 }
 
-func resourceAlicloudCcnInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudCloudConnectNetworkDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := smartag.CreateDeleteCloudConnectNetworkRequest()
 	request.CcnId = d.Id()

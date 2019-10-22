@@ -1,0 +1,49 @@
+---
+layout: "alicloud"
+page_title: "Alicloud: alicloud_cloud_connect_networks"
+sidebar_current: "docs-alicloud-datasource-cloud-connect-networks"
+description: |-
+    Provides a list of CCN(Cloud Enterprise Network) instances owned by an Alibaba Cloud account.
+---
+
+# alicloud\_cloud\_connect\_networks
+
+This data source provides Cloud Connect Networks available to the user.
+
+-> **NOTE:** Available in 1.59.0+
+
+## Example Usage
+
+```
+data "alicloud_cloud_connect_networks" "foo" {
+  ids        = ["${alicloud_cloud_connect_networks.foo.id}"]
+  name_regex = "^tf-testAcc.*"
+  output_file       = "/tmp/ccndomainextension"
+}
+resource "alicloud_cloud_connect_network" "foo" {
+  name        = "tf-testAccCloudConnectNetworkName"
+  description = "tf-testAccCloudConnectNetworkDescription"
+  cidr_block  = "192.168.0.0/24"
+  is_default  = true
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+
+* `ids` - (Optional) A list of CCN instances IDs.
+* `name_regex` - (Optional) A regex string to filter CCN instances by name.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+
+## Attributes Reference
+
+The following attributes are exported in addition to the arguments listed above:
+
+* `ids` - A list of CCN instances IDs.
+* `names` - A list of CCN instances names. 
+* `instances` - A list of CCN instances. Each element contains the following attributes:
+  * `id` - ID of the CCN instance.
+  * `name` - Name of the CCN instance.
+  * `cidr_block` - CidrBlock of the CCN instance.
+  * `is_default` - IsDefault of the CCN instance.
