@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
@@ -61,18 +60,18 @@ func setCdnTags(client *connectivity.AliyunClient, resourceType TagResourceType,
 
 func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceType, d *schema.ResourceData) error {
 	if d.HasChange("volume_tags") {
-		resp, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			req := ecs.CreateDescribeDisksRequest()
-			req.InstanceId = d.Id()
-			return ecsClient.DescribeDisks(req)
+		request := ecs.CreateDescribeDisksRequest()
+		request.InstanceId = d.Id()
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeDisks(request)
 		})
 		if err != nil {
-			return fmt.Errorf("describe disk for %s failed, %#v", d.Id(), err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		disks := resp.(*ecs.DescribeDisksResponse)
+		disks := raw.(*ecs.DescribeDisksResponse)
 		if len(disks.Disks.Disk) == 0 {
-			return fmt.Errorf("no specified system disk")
+			return WrapError(Error("no specified system disk"))
 		}
 
 		var ids []string
@@ -95,30 +94,31 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 	// Set tags
 	if len(remove) > 0 {
 		log.Printf("[DEBUG] Removing tags: %#v from %#v", remove, ids)
-		args := ecs.CreateUntagResourcesRequest()
-		args.ResourceType = string(resourceType)
-		args.ResourceId = &ids
+		request := ecs.CreateUntagResourcesRequest()
+		request.ResourceType = string(resourceType)
+		request.ResourceId = &ids
 
 		var tagsKey []string
 		for _, t := range remove {
 			tagsKey = append(tagsKey, t.Key)
 		}
-		args.TagKey = &tagsKey
-		args.All = requests.NewBoolean(true)
+		request.TagKey = &tagsKey
+		request.All = requests.NewBoolean(true)
 
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.UntagResources(args)
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.UntagResources(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Remove tags got error: %s", err)
+			return WrapErrorf(err, DefaultErrorMsg, ids, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if len(create) > 0 {
 		log.Printf("[DEBUG] Creating tags: %s for %#v", create, ids)
-		args := ecs.CreateTagResourcesRequest()
-		args.ResourceType = string(resourceType)
-		args.ResourceId = &ids
+		request := ecs.CreateTagResourcesRequest()
+		request.ResourceType = string(resourceType)
+		request.ResourceId = &ids
 
 		var tags []ecs.TagResourcesTag
 		for _, t := range create {
@@ -127,14 +127,15 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 				Value: t.Value,
 			})
 		}
-		args.Tag = &tags
+		request.Tag = &tags
 
-		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.TagResources(args)
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.TagResources(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Creating tags got error: %s", err)
+			return WrapErrorf(err, DefaultErrorMsg, ids, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return nil

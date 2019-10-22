@@ -44,6 +44,7 @@ The following arguments are supported:
 * `name` - (Optional) The name of the security group. Defaults to null.
 * `description` - (Optional, Forces new resource) The security group description. Defaults to null.
 * `vpc_id` - (Optional, ForceNew) The VPC ID.	
+* `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the security_group belongs.
 * `security_group_type` - (Optional, ForceNew, Available in 1.58.0+) The type of the security group. Valid values:
     `normal`: basic security group.
     `enterprise`: advanced security group For more information.

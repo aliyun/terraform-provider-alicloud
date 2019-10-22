@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform/helper/acctest"
 
 	"fmt"
@@ -23,8 +25,10 @@ func TestAccAlicloudCenRouteEntriesDataSource(t *testing.T) {
 			"cidr_block":     `"11.1.0.0/16"`,
 		}),
 	}
-
-	CenRouteEntriesCheckInfo.dataSourceTestCheck(t, rand, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
+	}
+	CenRouteEntriesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
 }
 
 func testAccAlicloudCenRouteEntriesDataSourceConfig(rand int, attrMap map[string]string) string {

@@ -133,7 +133,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.57.1"
+var providerVersion = "1.58.1"
 var terraformVersion = strings.TrimSuffix(terraform.VersionString(), "-dev")
 
 // Client for AliyunClient

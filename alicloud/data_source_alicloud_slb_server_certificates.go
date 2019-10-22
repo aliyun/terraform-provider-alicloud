@@ -35,6 +35,11 @@ func dataSourceAlicloudSlbServerCertificates() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			// Computed values
 			"certificates": {
 				Type:     schema.TypeList,
@@ -91,6 +96,11 @@ func dataSourceAlicloudSlbServerCertificates() *schema.Resource {
 						"is_alicloud_certificate": {
 							Type:     schema.TypeBool,
 							Computed: true,
+						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
 						},
 					},
 				},
@@ -169,6 +179,7 @@ func slbServerCertificatesDescriptionAttributes(d *schema.ResourceData, certific
 			"alicloud_certificate_id":   certificate.AliCloudCertificateId,
 			"alicloud_certificate_name": certificate.AliCloudCertificateName,
 			"is_alicloud_certificate":   certificate.IsAliCloudCertificate == 1,
+			"resource_group_id":         certificate.ResourceGroupId,
 		}
 		ids = append(ids, certificate.ServerCertificateId)
 		names = append(names, certificate.ServerCertificateName)

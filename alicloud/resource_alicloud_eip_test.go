@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -347,8 +348,9 @@ resource "alicloud_eip" "default" {
 	bandwidth = "5"
 	period = "1"
     isp = "BGP"
+	resource_group_id = "%s"
 }
-`, internet_charge_type)
+`, internet_charge_type, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
 func testAccCheckEipConfig_bandwidth(rand int, internet_charge_type string) string {
@@ -358,8 +360,9 @@ resource "alicloud_eip" "default" {
 	internet_charge_type = "%s"
 	bandwidth = "10"
 	period = "1"
+	resource_group_id = "%s"
 }
-`, internet_charge_type)
+`, internet_charge_type, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
 func testAccCheckEipConfig_name(rand int, internet_charge_type string) string {
@@ -374,8 +377,9 @@ resource "alicloud_eip" "default" {
 	bandwidth = "10"
 	period = "1"
 	name = "${var.name}"
+	resource_group_id = "%s"
 }
-`, rand, internet_charge_type)
+`, rand, internet_charge_type, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
 func testAccCheckEipConfig_description(rand int, internet_charge_type string) string {
@@ -391,8 +395,9 @@ resource "alicloud_eip" "default" {
 	period = "1"
 	name = "${var.name}"
     description = "${var.name}_description"
+	resource_group_id = "%s"
 }
-`, rand, internet_charge_type)
+`, rand, internet_charge_type, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
 func testAccCheckEipConfig_tags(rand int, internet_charge_type string) string {
@@ -412,8 +417,9 @@ resource "alicloud_eip" "default" {
 		Created = "TF"
 		For 	= "acceptance test"
 	}
+	resource_group_id = "%s"
 }
-`, rand, internet_charge_type)
+`, rand, internet_charge_type, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
 func testAccCheckEipConfig_all(rand int, internet_charge_type string) string {
@@ -429,8 +435,9 @@ resource "alicloud_eip" "default" {
 	period = "1"
 	name = "${var.name}_all"
     description = "${var.name}_description_all"
+	resource_group_id = "%s"
 }
-`, rand, internet_charge_type)
+`, rand, internet_charge_type, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
 func testAccCheckEipConfig_multi(rand int) string {
@@ -441,8 +448,9 @@ resource "alicloud_eip" "default" {
 	internet_charge_type = "PayByBandwidth"
 	bandwidth = "5"
 	period = "1"
+	resource_group_id = "%s"
 }
-`)
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
 var testAccCheckEipCheckMap = map[string]string{

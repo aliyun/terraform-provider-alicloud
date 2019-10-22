@@ -45,6 +45,12 @@ func resourceAlicloudSlbServerCertificate() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -73,6 +79,10 @@ func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta int
 
 	if val, ok := d.GetOk("alicloud_certificate_name"); ok && val != "" {
 		request.AliCloudCertificateName = val.(string)
+	}
+
+	if val, ok := d.GetOk("resource_group_id"); ok && val != "" {
+		request.ResourceGroupId = val.(string)
 	}
 
 	// check server_certificate and private_key
@@ -124,6 +134,12 @@ func resourceAlicloudSlbServerCertificateRead(d *schema.ResourceData, meta inter
 
 	if serverCertificate.AliCloudCertificateName != "" {
 		if err := d.Set("alicloud_certificate_name", serverCertificate.AliCloudCertificateName); err != nil {
+			return WrapError(err)
+		}
+	}
+
+	if serverCertificate.ResourceGroupId != "" {
+		if err := d.Set("resource_group_id", serverCertificate.ResourceGroupId); err != nil {
 			return WrapError(err)
 		}
 	}
