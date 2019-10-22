@@ -54,6 +54,7 @@ func resourceAliyunInstance() *schema.Resource {
 			"credit_specification": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ValidateFunc: validateAllowedStringValue([]string{
 					string(CreditSpecificationStandard),
 					string(CreditSpecificationUnlimited),
