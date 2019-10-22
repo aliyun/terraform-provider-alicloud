@@ -1,5 +1,9 @@
 ## 1.58.1 (Unreleased)
 
+IMPROVEMENTS:
+
+- add missing resource ddosbgp_instance docs index [GH-1775]
+
 BUG FIXES:
 
 - fix(common_bandwidth_package): fix common bandwidth package resource_group_id forcenew bug [GH-1772]
