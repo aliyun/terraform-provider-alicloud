@@ -37,7 +37,7 @@ func dataSourceAlicloudCloudConnectNetworks() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"instances": {
+			"networks": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -151,7 +151,7 @@ func cloudConnectNetworkAttributes(d *schema.ResourceData, ccnInstances []smarta
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("instances", s); err != nil {
+	if err := d.Set("networks", s); err != nil {
 		return WrapError(err)
 	}
 	if err := d.Set("ids", ids); err != nil {

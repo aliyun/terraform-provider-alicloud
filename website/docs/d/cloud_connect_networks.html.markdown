@@ -15,12 +15,11 @@ This data source provides Cloud Connect Networks available to the user.
 ## Example Usage
 
 ```
-data "alicloud_cloud_connect_networks" "foo" {
-  ids        = ["${alicloud_cloud_connect_networks.foo.id}"]
+data "alicloud_cloud_connect_networks" "default" {
+  ids        = ["${alicloud_cloud_connect_networks.default.id}"]
   name_regex = "^tf-testAcc.*"
-  output_file       = "/tmp/ccndomainextension"
 }
-resource "alicloud_cloud_connect_network" "foo" {
+resource "alicloud_cloud_connect_network" "default" {
   name        = "tf-testAccCloudConnectNetworkName"
   description = "tf-testAccCloudConnectNetworkDescription"
   cidr_block  = "192.168.0.0/24"
@@ -42,7 +41,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of CCN instances IDs.
 * `names` - A list of CCN instances names. 
-* `instances` - A list of CCN instances. Each element contains the following attributes:
+* `networks` - A list of CCN instances. Each element contains the following attributes:
   * `id` - ID of the CCN instance.
   * `name` - Name of the CCN instance.
   * `cidr_block` - CidrBlock of the CCN instance.

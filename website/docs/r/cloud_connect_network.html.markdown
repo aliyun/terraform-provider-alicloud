@@ -8,9 +8,9 @@ description: |-
 
 # alicloud\_cloud_connect_network
 
-Provides a cloud connect network resource. Cloud Enterprise Network (cloud connect network) is a service that allows you to create a global network for rapidly building a distributed business system with a hybrid cloud computing solution. CCN enables you to build a secure, private, and enterprise-class interconnected network between VPCs in different regions and your local data centers. CCN provides enterprise-class scalability that automatically responds to your dynamic computing requirements.
+Provides a cloud connect network resource. Cloud Connect Network (CCN) is another important component of Smart Access Gateway. It is a device access matrix composed of Alibaba Cloud distributed access gateways. You can add multiple Smart Access Gateway (SAG) devices to a CCN instance and then attach the CCN instance to a Cloud Enterprise Network (CEN) instance to connect the local branches to the Alibaba Cloud.
 
-For information about cloud connect network and how to use it, see [What is Cloud Enterprise Network](https://www.alibabacloud.com/help/doc-detail/93667.htm).
+For information about cloud connect network and how to use it, see [What is Cloud Connect Network](https://www.alibabacloud.com/help/doc-detail/93667.htm).
 
 -> **NOTE:** Available in 1.59.0+
 
@@ -19,7 +19,7 @@ For information about cloud connect network and how to use it, see [What is Clou
 Basic Usage
 
 ```
-resource "alicloud_cloud_connect_network" "foo" {
+resource "alicloud_cloud_connect_network" "default" {
   name        = "tf-testAccCloudConnectNetworkName"
   description = "tf-testAccCloudConnectNetworkDescription"
   cidr_block  = "192.168.0.0/24"
@@ -41,11 +41,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The CcnId of the CCN instance. For example "ccn-xxx".
-* `name` - The name of the CCN instance. 
-* `description` - The description of the CCN instance.
-* `cidr_block` - The CidrBlock of the CCN instance.
-* `status` - The Status of the CCN instance. For example "Active"
-
 
 ## Import
 

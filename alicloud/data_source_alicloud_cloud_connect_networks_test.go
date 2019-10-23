@@ -41,22 +41,22 @@ func TestAccAlicloudCloudConnectNetworkDataSource_basic(t *testing.T) {
 
 	var existDnsRecordsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instances.#":             "1",
-			"ids.#":                   "1",
-			"names.#":                 "1",
-			"instances.0.id":          CHECKSET,
-			"instances.0.name":        fmt.Sprintf("tf-testAccCcnInstanceDataSourceBisic-%d", rand),
-			"instances.0.description": "tf-testAccCcnInstanceDescription",
-			"instances.0.cidr_block":  "192.168.0.0/24,192.168.1.0/24",
-			"instances.0.is_default":  "true",
+			"networks.#":             "1",
+			"ids.#":                  "1",
+			"names.#":                "1",
+			"networks.0.id":          CHECKSET,
+			"networks.0.name":        fmt.Sprintf("tf-testAccCcnInstanceDataSourceBisic-%d", rand),
+			"networks.0.description": "tf-testAccCcnInstanceDescription",
+			"networks.0.cidr_block":  "192.168.0.0/24,192.168.1.0/24",
+			"networks.0.is_default":  "true",
 		}
 	}
 
 	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instances.#": "0",
-			"ids.#":       "0",
-			"names.#":     "0",
+			"networks.#": "0",
+			"ids.#":      "0",
+			"names.#":    "0",
 		}
 	}
 
