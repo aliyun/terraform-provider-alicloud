@@ -3,7 +3,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_cloud_connect_networks"
 sidebar_current: "docs-alicloud-datasource-cloud-connect-networks"
 description: |-
-    Provides a list of CCN(Cloud Enterprise Network) instances owned by an Alibaba Cloud account.
+    Provides a list of CCN(Cloud Connect Network) instances owned by an Alibaba Cloud account.
 ---
 
 # alicloud\_cloud\_connect\_networks
@@ -33,7 +33,6 @@ The following arguments are supported:
 
 * `ids` - (Optional) A list of CCN instances IDs.
 * `name_regex` - (Optional) A regex string to filter CCN instances by name.
-* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
