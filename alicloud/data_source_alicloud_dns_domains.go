@@ -53,6 +53,11 @@ func dataSourceAlicloudDnsDomains() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			// Computed values
 			"domains": {
 				Type:     schema.TypeList,
@@ -112,6 +117,7 @@ func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) 
 	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	for {
 		raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
 			return dnsClient.DescribeDomains(request)
