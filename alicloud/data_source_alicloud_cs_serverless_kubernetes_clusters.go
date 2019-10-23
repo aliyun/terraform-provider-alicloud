@@ -10,9 +10,9 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func dataSourceAlicloudCSServelessKubernetesClusters() *schema.Resource {
+func dataSourceAlicloudCSServerlessKubernetesClusters() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCSServelessKubernetesClustersRead,
+		Read: dataSourceAlicloudCSServerlessKubernetesClustersRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -115,7 +115,7 @@ func dataSourceAlicloudCSServelessKubernetesClusters() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudCSServelessKubernetesClustersRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudCSServerlessKubernetesClustersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var allClusterTypes []*cs.ServerlessClusterResponse
@@ -126,22 +126,22 @@ func dataSourceAlicloudCSServelessKubernetesClustersRead(d *schema.ResourceData,
 	if err := invoker.Run(func() error {
 		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 			requestInfo = csClient
-			return csClient.DescribeServelessKubernetesClusters()
+			return csClient.DescribeServerlessKubernetesClusters()
 		})
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "DescribeServelessKubernetesClusters", DenverdinoAliyungo)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "DescribeServerlessKubernetesClusters", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
-		addDebug("DescribeServelessKubernetesClusters", response, requestInfo, requestMap)
+		addDebug("DescribeServerlessKubernetesClusters", response, requestInfo, requestMap)
 	}
 	allClusterTypes, _ = response.([]*cs.ServerlessClusterResponse)
 
 	var filteredClusterTypes []*cs.ServerlessClusterResponse
 	for _, v := range allClusterTypes {
-		if v.ClusterType != cs.ClusterTypeServelessKubernetes {
+		if v.ClusterType != cs.ClusterTypeServerlessKubernetes {
 			continue
 		}
 		if nameRegex, ok := d.GetOk("name_regex"); ok {
@@ -168,31 +168,31 @@ func dataSourceAlicloudCSServelessKubernetesClustersRead(d *schema.ResourceData,
 	var filteredKubernetesCluster []*cs.ServerlessClusterResponse
 
 	for _, v := range filteredClusterTypes {
-		var servelessCluster *cs.ServerlessClusterResponse
+		var serverlessCluster *cs.ServerlessClusterResponse
 
 		if err := invoker.Run(func() error {
 			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 				requestInfo = csClient
-				return csClient.DescribeServelessKubernetesCluster(v.ClusterId)
+				return csClient.DescribeServerlessKubernetesCluster(v.ClusterId)
 			})
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "DescribeServelessKubernetesCluster", DenverdinoAliyungo)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "DescribeServerlessKubernetesCluster", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
 			requestMap["Id"] = v.ClusterId
-			addDebug("DescribeServelessKubernetesCluster", response, requestInfo, requestMap)
+			addDebug("DescribeServerlessKubernetesCluster", response, requestInfo, requestMap)
 		}
-		servelessCluster = response.(*cs.ServerlessClusterResponse)
+		serverlessCluster = response.(*cs.ServerlessClusterResponse)
 
-		filteredKubernetesCluster = append(filteredKubernetesCluster, servelessCluster)
+		filteredKubernetesCluster = append(filteredKubernetesCluster, serverlessCluster)
 	}
-	return csServelessKubernetesClusterDescriptionAttributes(d, filteredClusterTypes, meta)
+	return csServerlessKubernetesClusterDescriptionAttributes(d, filteredClusterTypes, meta)
 }
 
-func csServelessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusters []*cs.ServerlessClusterResponse, meta interface{}) error {
+func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusters []*cs.ServerlessClusterResponse, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	csService := CsService{client}
 

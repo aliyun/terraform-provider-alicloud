@@ -119,7 +119,7 @@ github.com/bmatcuk/doublestar
 github.com/cenkalti/backoff
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/denverdino/aliyungo v0.0.0-20191010065753-a958e056d9da
+# github.com/denverdino/aliyungo v0.0.0-20191022013454-4ab91810e8f4
 github.com/denverdino/aliyungo/cdn
 github.com/denverdino/aliyungo/common
 github.com/denverdino/aliyungo/cs

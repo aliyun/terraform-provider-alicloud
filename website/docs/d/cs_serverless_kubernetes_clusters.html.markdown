@@ -1,14 +1,14 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cs_serverless_kubernetes_clusters"
-sidebar_current: "docs-alicloud-datasource-cs-serveless-kubernetes-clusters"
+sidebar_current: "docs-alicloud-datasource-cs-serverless-kubernetes-clusters"
 description: |-
-  Provides a list of Container Service Serveless Kubernetes Clusters to be used by the alicloud_cs_serverless_kubernetes_clusters resource.
+  Provides a list of Container Service Serverless Kubernetes Clusters to be used by the alicloud_cs_serverless_kubernetes_clusters resource.
 ---
 
-# alicloud\_cs\_serveless\_kubernetes\_clusters
+# alicloud\_cs\_serverless\_kubernetes\_clusters
 
-This data source provides a list Container Service Serveless Kubernetes Clusters on Alibaba Cloud.
+This data source provides a list Container Service Serverless Kubernetes Clusters on Alibaba Cloud.
 
 -> **NOTE:** Available in 1.58.0+
 
@@ -49,7 +49,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `security_group_id` - The ID of security group where the current cluster  is located.
   * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
   * `deletion_protection` - Whether the cluster support delete protection.  
-  * `connections` - Map of serveless cluster connection information. It contains several attributes to `Block Connections`.
+  * `connections` - Map of serverless cluster connection information. It contains several attributes to `Block Connections`.
 
 ### Block Connections
 

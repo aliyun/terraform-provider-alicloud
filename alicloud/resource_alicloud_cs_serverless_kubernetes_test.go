@@ -12,11 +12,11 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudCSServelessKubernetes_basic(t *testing.T) {
+func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 	var v *cs.ServerlessClusterResponse
 
 	resourceId := "alicloud_cs_serverless_kubernetes.default"
-	ra := resourceAttrInit(resourceId, csServelessKubernetesBasicMap)
+	ra := resourceAttrInit(resourceId, csServerlessKubernetesBasicMap)
 
 	serviceFunc := func() interface{} {
 		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -27,13 +27,13 @@ func TestAccAlicloudCSServelessKubernetes_basic(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testaccservelesskubernetes-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSServelessKubernetesConfigDependence)
+	name := fmt.Sprintf("tf-testaccserverlesskubernetes-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSServerlessKubernetesConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ServelessKubernetesSupportedRegions)
+			testAccPreCheckWithRegions(t, true, connectivity.ServerlessKubernetesSupportedRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -59,7 +59,7 @@ func TestAccAlicloudCSServelessKubernetes_basic(t *testing.T) {
 	})
 }
 
-func resourceCSServelessKubernetesConfigDependence(name string) string {
+func resourceCSServerlessKubernetesConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
@@ -83,7 +83,7 @@ resource "alicloud_vswitch" "default" {
 `, name)
 }
 
-var csServelessKubernetesBasicMap = map[string]string{
+var csServerlessKubernetesBasicMap = map[string]string{
 	"new_nat_gateway":                 "true",
 	"deletion_protection":             "false",
 	"enndpoint_public_access_enabled": "true",

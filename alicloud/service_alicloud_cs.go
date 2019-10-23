@@ -297,7 +297,7 @@ func (s *CsService) DescribeCsServerlessKubernetes(id string) (cluster *cs.Serve
 	if err := invoker.Run(func() error {
 		raw, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 			requestInfo = csClient
-			return csClient.DescribeServelessKubernetesCluster(id)
+			return csClient.DescribeServerlessKubernetesCluster(id)
 		})
 		response = raw
 		return err

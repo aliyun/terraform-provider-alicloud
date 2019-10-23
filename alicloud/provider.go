@@ -184,7 +184,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_region_route_entries":          dataSourceAlicloudCenRegionRouteEntries(),
 			"alicloud_cs_kubernetes_clusters":            dataSourceAlicloudCSKubernetesClusters(),
 			"alicloud_cs_managed_kubernetes_clusters":    dataSourceAlicloudCSManagerKubernetesClusters(),
-			"alicloud_cs_serverless_kubernetes_clusters": dataSourceAlicloudCSServelessKubernetesClusters(),
+			"alicloud_cs_serverless_kubernetes_clusters": dataSourceAlicloudCSServerlessKubernetesClusters(),
 			"alicloud_cr_namespaces":                     dataSourceAlicloudCRNamespaces(),
 			"alicloud_cr_repos":                          dataSourceAlicloudCRRepos(),
 			"alicloud_mns_queues":                        dataSourceAlicloudMNSQueues(),

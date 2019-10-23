@@ -1,26 +1,26 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cs_serverless_kubernetes"
-sidebar_current: "docs-alicloud-resource-cs-serveless-kubernetes"
+sidebar_current: "docs-alicloud-resource-cs-serverless-kubernetes"
 description: |-
-  Provides a Alicloud resource to manage container serveless kubernetes cluster.
+  Provides a Alicloud resource to manage container serverless kubernetes cluster.
 ---
 
-# alicloud\_cs\_serveless_kubernetes
+# alicloud\_cs\_serverless_kubernetes
 
-This resource will help you to manager a Serveless Kubernetes Cluster. The cluster is same as container service created by web console.
+This resource will help you to manager a Serverless Kubernetes Cluster. The cluster is same as container service created by web console.
 
 
--> **NOTE:** Serveless Kubernetes cluster only supports VPC network and it can access internet while creating kubernetes cluster.
+-> **NOTE:** Serverless Kubernetes cluster only supports VPC network and it can access internet while creating kubernetes cluster.
 A Nat Gateway and configuring a SNAT for it can ensure one VPC network access internet. If there is no nat gateway in the
 VPC, you can set `new_nat_gateway` to "true" to create one automatically.
 
--> **NOTE:** Creating serveless kubernetes cluster need to install several packages and it will cost about 5 minutes. Please be patient.
+-> **NOTE:** Creating serverless kubernetes cluster need to install several packages and it will cost about 5 minutes. Please be patient.
 
 -> **NOTE:** The provider supports to download kube config, client certificate, client key and cluster ca certificate
 after creating cluster successfully, and you can put them into the specified location, like '~/.kube/config'.
 
--> **NOTE:** If you want to manage serveless Kubernetes, you can use [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html).
+-> **NOTE:** If you want to manage serverless Kubernetes, you can use [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html).
 
 -> **NOTE:** You need to activate several other products and confirm Authorization Policy used by Container Service before using this resource.
 Please refer to the `Authorization management` and `Cluster management` sections in the [Document Center](https://www.alibabacloud.com/help/doc-detail/86488.htm).
@@ -51,7 +51,7 @@ resource "alicloud_vswitch" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 
-resource "alicloud_cs_serverless_kubernetes" "serveless" {
+resource "alicloud_cs_serverless_kubernetes" "serverless" {
   name_prefix = "${var.name}"
   vpc_id = "${alicloud_vpc.default.id}"
   vswitch_id = "${alicloud_vswitch.default.id}"
@@ -111,7 +111,7 @@ The following attributes are exported:
 
 ## Import
 
-Serveless Kubernetes cluster can be imported using the id, e.g.
+Serverless Kubernetes cluster can be imported using the id, e.g.
 
 ```
 $ terraform import alicloud_cs_serverless_kubernetes.main ce4273f9156874b46bb

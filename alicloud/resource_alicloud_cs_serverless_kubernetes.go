@@ -139,7 +139,7 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 
 	args := &cs.ServerlessCreationArgs{
 		Name:                 clusterName,
-		ClusterType:          cs.ClusterTypeServelessKubernetes,
+		ClusterType:          cs.ClusterTypeServerlessKubernetes,
 		RegionId:             client.RegionId,
 		VpcId:                d.Get("vpc_id").(string),
 		VSwitchId:            d.Get("vswitch_id").(string),
@@ -159,7 +159,7 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 	if err := invoker.Run(func() error {
 		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 			requestInfo = csClient
-			return csClient.CreateServelessKubernetesCluster(args)
+			return csClient.CreateServerlessKubernetesCluster(args)
 		})
 		response = raw
 		return err

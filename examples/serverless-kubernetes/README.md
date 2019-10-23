@@ -1,7 +1,7 @@
 Alibaba Cloud terraform example for kubernetes cluster
 ======================================================
 
-A terraform example to launching a serveless kubernetes cluster in alibaba cloud.
+A terraform example to launching a serverless kubernetes cluster in alibaba cloud.
 
 These types of the module resource are supported:
 
@@ -17,7 +17,7 @@ This example can specify the following arguments to create user-defined kubernte
 * alicloud_access_key: The Alicloud Access Key ID
 * alicloud_secret_key: The Alicloud Access Secret Key
 * region: The ID of region in which launching resources
-* serveless_cluster_name: The name  of serveless cluster
+* serverless_cluster_name: The name  of serverless cluster
 * Other kubernetes cluster arguments
 
 **Note:** In order to avoid some needless error, you had better to set `new_nat_gateway` to `true`.
