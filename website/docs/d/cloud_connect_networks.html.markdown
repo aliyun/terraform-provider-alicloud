@@ -15,12 +15,12 @@ This data source provides Cloud Connect Networks available to the user.
 ## Example Usage
 
 ```
-data "alicloud_cloud_connect_networks" "foo" {
-  ids        = ["${alicloud_cloud_connect_networks.foo.id}"]
+data "alicloud_cloud_connect_networks" "default" {
+  ids        = ["${alicloud_cloud_connect_networks.default.id}"]
   name_regex = "^tf-testAcc.*"
   output_file       = "/tmp/ccndomainextension"
 }
-resource "alicloud_cloud_connect_network" "foo" {
+resource "alicloud_cloud_connect_network" "default" {
   name        = "tf-testAccCloudConnectNetworkName"
   description = "tf-testAccCloudConnectNetworkDescription"
   cidr_block  = "192.168.0.0/24"
