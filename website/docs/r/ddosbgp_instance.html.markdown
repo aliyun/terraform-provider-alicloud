@@ -3,8 +3,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_ddosbgp_instance"
 sidebar_current: "docs-alicloud-resource-ddosbgp-instance"
 description: |-
-  Provides a Alicloud 
-Anti-DDoS Advanced(Ddosbgp) Instance Resource.
+  Provides a Alicloud Anti-DDoS Advanced(Ddosbgp) Instance Resource.
 ---
 
 # alicloud_ddoscoo_instance
