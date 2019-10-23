@@ -42,7 +42,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of CCN instances IDs.
 * `names` - A list of CCN instances names. 
-* `instances` - A list of CCN instances. Each element contains the following attributes:
+* `networks` - A list of CCN instances. Each element contains the following attributes:
   * `id` - ID of the CCN instance.
   * `name` - Name of the CCN instance.
   * `cidr_block` - CidrBlock of the CCN instance.

@@ -13,57 +13,6 @@ type SagService struct {
 	client *connectivity.AliyunClient
 }
 
-// Flattens an array of SagInstances into a []map[string]string
-func (s *SagService) FlattenSagInstancesMappings(list []smartag.SmartAccessGateway) []map[string]interface{} {
-	result := make([]map[string]interface{}, 0, len(list))
-
-	for _, i := range list {
-		l := map[string]interface{}{
-			"smartag_id":  i.SmartAGId,
-			"name":        i.Name,
-			"description": i.Description,
-		}
-		result = append(result, l)
-	}
-
-	return result
-}
-
-func (s *SagService) DescribeSagInstance(id string) (c smartag.SmartAccessGateway, err error) {
-	request := smartag.CreateDescribeSmartAccessGatewaysRequest()
-	request.RegionId = s.client.RegionId
-	request.SmartAGId = id
-
-	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
-			return sagClient.DescribeSmartAccessGateways(request)
-		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		return nil
-	})
-	if err != nil {
-		if IsExceptedError(err, "SagNotExist") {
-			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
-		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
-	response, _ := raw.(*smartag.DescribeSmartAccessGatewaysResponse)
-	if len(response.SmartAccessGateways.SmartAccessGateway) <= 0 || response.SmartAccessGateways.SmartAccessGateway[0].SmartAGId != id {
-		return c, WrapErrorf(Error(GetNotFoundMessage("Sag Instance", id)), NotFoundMsg, ProviderERROR)
-	}
-	c = response.SmartAccessGateways.SmartAccessGateway[0]
-	return c, nil
-}
-
 func (s *SagService) DescribeCloudConnectNetwork(id string) (c smartag.CloudConnectNetwork, err error) {
 	request := smartag.CreateDescribeCloudConnectNetworksRequest()
 	request.RegionId = s.client.RegionId
@@ -76,7 +25,7 @@ func (s *SagService) DescribeCloudConnectNetwork(id string) (c smartag.CloudConn
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -93,25 +42,27 @@ func (s *SagService) DescribeCloudConnectNetwork(id string) (c smartag.CloudConn
 
 	response, _ := raw.(*smartag.DescribeCloudConnectNetworksResponse)
 	if len(response.CloudConnectNetworks.CloudConnectNetwork) <= 0 || response.CloudConnectNetworks.CloudConnectNetwork[0].CcnId != id {
-		return c, WrapErrorf(Error(GetNotFoundMessage("Ccn Instance", id)), NotFoundMsg, ProviderERROR)
+		return c, WrapErrorf(Error(GetNotFoundMessage("CloudConnectNetwork ", id)), NotFoundMsg, ProviderERROR)
 	}
 	c = response.CloudConnectNetworks.CloudConnectNetwork[0]
 	return c, nil
 }
 
-func (s *SagService) DescribeCcnGrantRule(id string) (c smartag.GrantRule, err error) {
+func (s *SagService) DescribeCloudConnectNetworkAttachment(id string) (c smartag.GrantRule, err error) {
+	parts, _ := ParseResourceId(id, 2)
+	ccn_id := parts[0]
 	request := smartag.CreateDescribeGrantRulesRequest()
 	request.RegionId = s.client.RegionId
-	request.AssociatedCcnId = id
+	request.AssociatedCcnId = ccn_id
 
 	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
-			return sagClient.DescribeGrantRules(request)
+		raw, err = s.client.WithSagClient(func(ccnClient *smartag.Client) (interface{}, error) {
+			return ccnClient.DescribeGrantRules(request)
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -120,15 +71,15 @@ func (s *SagService) DescribeCcnGrantRule(id string) (c smartag.GrantRule, err e
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "GrantRuleNotExist") {
+		if IsExceptedError(err, "CcnNotExist") {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	response, _ := raw.(*smartag.DescribeGrantRulesResponse)
-	if len(response.GrantRules.GrantRule) <= 0 || response.GrantRules.GrantRule[0].CcnInstanceId != id {
-		return c, WrapErrorf(Error(GetNotFoundMessage("ccn Grant rule", id)), NotFoundMsg, ProviderERROR)
+	if len(response.GrantRules.GrantRule) <= 0 {
+		return c, WrapErrorf(Error(GetNotFoundMessage("GrantRule", id)), NotFoundMsg, ProviderERROR)
 	}
 	c = response.GrantRules.GrantRule[0]
 	return c, nil
@@ -146,7 +97,7 @@ func (s *SagService) DescribeSagGrantRules(id string) (c smartag.GrantRule, err 
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -181,7 +132,7 @@ func (s *SagService) DescribeSagAcl(id string) (c smartag.Acl, err error) {
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -224,7 +175,7 @@ func (s *SagService) DescribeSagAclRule(id string) (c smartag.Acr, err error) {
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -259,7 +210,7 @@ func (s *SagService) DescribeSagNetworkopt(id string) (c smartag.NetworkOptimiza
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -297,7 +248,7 @@ func (s *SagService) DescribeSagNetworkoptSetting(id string) (c smartag.Setting,
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -332,7 +283,7 @@ func (s *SagService) DescribeNetworkoptSags(id string) (c smartag.SmartAccessGat
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -370,7 +321,7 @@ func (s *SagService) DescribeSagClientUser(id string) (c smartag.User, err error
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -408,7 +359,7 @@ func (s *SagService) DescribeSagSnatEntry(id string) (c smartag.SnatEntry, err e
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -446,7 +397,7 @@ func (s *SagService) DescribeSagDnatEntry(id string) (c smartag.DnatEntry, err e
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -481,7 +432,7 @@ func (s *SagService) DescribeSagQos(id string) (c smartag.Qos, err error) {
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -527,7 +478,7 @@ func (s *SagService) DescribeSagQosPolicy(id string) (c smartag.QosPolicy, err e
 		})
 		if err != nil {
 			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(10 * time.Second)
+				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

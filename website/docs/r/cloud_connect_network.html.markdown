@@ -41,11 +41,9 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The CcnId of the CCN instance. For example "ccn-xxx".
-* `name` - The name of the CCN instance. 
-* `description` - The description of the CCN instance.
-* `cidr_block` - The CidrBlock of the CCN instance.
-* `status` - The Status of the CCN instance. For example "Active"
-
+* `name` - 
+* `description` - 
+* `cidr_block` - 
 
 ## Import
 
