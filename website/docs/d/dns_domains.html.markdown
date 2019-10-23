@@ -34,6 +34,7 @@ The following arguments are supported:
 * `version_code` - (Optional) Cloud analysis version code.
 * `ids` (Optional, Available in 1.53.0+) - A list of domain IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `resource_group_id` - (Optional, ForceNew, Available in 1.59.0+) The Id of resource group which the dns belongs.
 
 ## Attributes Reference
 
@@ -51,3 +52,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `version_code` - Cloud analysis version code of the domain.
   * `puny_code` - Punycode of the Chinese domain.
   * `dns_servers` - DNS list of the domain in the analysis system.
+  * `resource_group_id` - The Id of resource group which the dns belongs.

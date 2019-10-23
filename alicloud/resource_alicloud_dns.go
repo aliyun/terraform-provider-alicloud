@@ -41,6 +41,11 @@ func resourceAlicloudDns() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -51,6 +56,7 @@ func resourceAlicloudDnsCreate(d *schema.ResourceData, meta interface{}) error {
 	request := alidns.CreateAddDomainRequest()
 	request.RegionId = client.RegionId
 	request.DomainName = d.Get("name").(string)
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 
 	raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
 		return dnsClient.AddDomain(request)

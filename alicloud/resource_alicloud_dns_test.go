@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -106,7 +107,8 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.dnsName}",
+					"name":              "${var.dnsName}",
+					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -116,9 +118,10 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"resource_group_id"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
