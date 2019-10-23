@@ -41,9 +41,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The CcnId of the CCN instance. For example "ccn-xxx".
-* `name` - 
-* `description` - 
-* `cidr_block` - 
 
 ## Import
 
