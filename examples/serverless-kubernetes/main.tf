@@ -15,8 +15,8 @@ resource "alicloud_vswitch" "default" {
   availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
-resource "alicloud_cs_serverless_kubernetes" "serveless" {
-  name = var.serveless_cluster_name
+resource "alicloud_cs_serverless_kubernetes" "serverless" {
+  name = var.serverless_cluster_name
   vpc_id = alicloud_vpc.default.id
   vswitch_id = alicloud_vswitch.default.id
   new_nat_gateway = true

@@ -3,15 +3,15 @@ variable "region" {
   default = "cn-beijing"
 }
 
-variable "serveless_cluster_name" {
-  default = "tf-serveless-demo-0001"
+variable "serverless_cluster_name" {
+  default = "tf-serverless-demo-0001"
 }
 
 
 # VPC variables
 variable "vpc_name" {
   description = "The vpc name used to create a new vpc when 'vpc_id' is not specified. Default to variable `example_name`"
-  default     = "tf-serveless-vpc"
+  default     = "tf-serverless-vpc"
 }
 
 variable "vpc_id" {
@@ -31,7 +31,7 @@ variable "vswitch_id" {
 
 variable "vswitch_name" {
   description = "The vswitch name used to launch a new vswitch when vswitch_id is not set."
-  default = "tf-serveless-vswitch"
+  default = "tf-serverless-vswitch"
 }
 variable "vswitch_cidr" {
   description = "The cidr block used to launch a new vswitch when vswitch_id is not set."

@@ -9,13 +9,13 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 )
 
-func TestAccAlicloudCSServelessKubernetesClustersDataSource(t *testing.T) {
+func TestAccAlicloudCSServerlessKubernetesClustersDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_cs_serverless_kubernetes_clusters.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
-		fmt.Sprintf("tf-testaccservelessk8s-%d", rand),
-		dataSourceCSServelessKubernetesClustersConfigDependence)
+		fmt.Sprintf("tf-testaccserverlessk8s-%d", rand),
+		dataSourceCSServerlessKubernetesClustersConfigDependence)
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -52,15 +52,15 @@ func TestAccAlicloudCSServelessKubernetesClustersDataSource(t *testing.T) {
 		}),
 	}
 
-	var existCSServelessKubernetesClustersMapFunc = func(rand int) map[string]string {
+	var existCSServerlessKubernetesClustersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                          "1",
 			"ids.0":                          CHECKSET,
 			"names.#":                        "1",
-			"names.0":                        REGEXMATCH + fmt.Sprintf("tf-testaccservelessk8s-%d", rand),
+			"names.0":                        REGEXMATCH + fmt.Sprintf("tf-testaccserverlessk8s-%d", rand),
 			"clusters.#":                     "1",
 			"clusters.0.id":                  CHECKSET,
-			"clusters.0.name":                REGEXMATCH + fmt.Sprintf("tf-testaccservelessk8s-%d", rand),
+			"clusters.0.name":                REGEXMATCH + fmt.Sprintf("tf-testaccserverlessk8s-%d", rand),
 			"clusters.0.security_group_id":   CHECKSET,
 			"clusters.0.nat_gateway_id":      CHECKSET,
 			"clusters.0.vpc_id":              CHECKSET,
@@ -72,7 +72,7 @@ func TestAccAlicloudCSServelessKubernetesClustersDataSource(t *testing.T) {
 		}
 	}
 
-	var fakeCSServelessKubernetesClustersMapFunc = func(rand int) map[string]string {
+	var fakeCSServerlessKubernetesClustersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":      "0",
 			"names.#":    "0",
@@ -80,18 +80,18 @@ func TestAccAlicloudCSServelessKubernetesClustersDataSource(t *testing.T) {
 		}
 	}
 
-	var csServelessKubernetesClustersCheckInfo = dataSourceAttr{
+	var csServerlessKubernetesClustersCheckInfo = dataSourceAttr{
 		resourceId:   resourceId,
-		existMapFunc: existCSServelessKubernetesClustersMapFunc,
-		fakeMapFunc:  fakeCSServelessKubernetesClustersMapFunc,
+		existMapFunc: existCSServerlessKubernetesClustersMapFunc,
+		fakeMapFunc:  fakeCSServerlessKubernetesClustersMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.ServelessKubernetesSupportedRegions)
+		testAccPreCheckWithRegions(t, true, connectivity.ServerlessKubernetesSupportedRegions)
 	}
-	csServelessKubernetesClustersCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	csServerlessKubernetesClustersCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 
-func dataSourceCSServelessKubernetesClustersConfigDependence(name string) string {
+func dataSourceCSServerlessKubernetesClustersConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
