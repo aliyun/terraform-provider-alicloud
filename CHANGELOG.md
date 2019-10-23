@@ -1,12 +1,13 @@
-## 1.58.1 (Unreleased)
+## 1.58.2 (Unreleased)
+## 1.58.1 (October 22, 2019)
 
 IMPROVEMENTS:
 
-- add missing resource ddosbgp_instance docs index [GH-1775]
+- add missing resource ddosbgp_instance docs index ([#1775](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1775))
 
 BUG FIXES:
 
-- fix(common_bandwidth_package): fix common bandwidth package resource_group_id forcenew bug [GH-1772]
+- fix(common_bandwidth_package): fix common bandwidth package resource_group_id forcenew bug ([#1772](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1772))
 
 ## 1.58.0 (October 18, 2019)
 
