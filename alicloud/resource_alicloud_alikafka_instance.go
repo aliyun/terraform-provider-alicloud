@@ -308,6 +308,7 @@ func resourceAlicloudAlikafkaInstanceDelete(d *schema.ResourceData, meta interfa
 	request.InstanceId = d.Id()
 	request.RegionId = client.RegionId
 	request.ReleaseIgnoreTime = requests.NewBoolean(true)
+	request.ForceDeleteInstance = requests.NewBoolean(true)
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
@@ -327,5 +328,5 @@ func resourceAlicloudAlikafkaInstanceDelete(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	return WrapError(alikafkaService.WaitForAlikafkaInstance(d.Id(), Deleted, DefaultTimeoutMedium))
+	return WrapError(alikafkaService.WaitForAllAlikafkaNodeRelease(d.Id(), DefaultTimeoutMedium))
 }

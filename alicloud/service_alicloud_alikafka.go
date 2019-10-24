@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -38,6 +39,27 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId stri
 		}
 	}
 	return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", instanceId)), NotFoundMsg, ProviderERROR)
+}
+
+func (alikafkaService *AlikafkaService) DescribeAlikafkaNodeStatus(instanceId string) (alikafkaStatusList *alikafka.StatusList, err error) {
+
+	describeNodeStatusReq := alikafka.CreateDescribeNodeStatusRequest()
+	describeNodeStatusReq.RegionId = alikafkaService.client.RegionId
+	describeNodeStatusReq.InstanceId = instanceId
+
+	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+		return alikafkaClient.DescribeNodeStatus(describeNodeStatusReq)
+	})
+
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, describeNodeStatusReq.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	describeNodeStatusResp, _ := raw.(*alikafka.DescribeNodeStatusResponse)
+	addDebug(describeNodeStatusReq.GetActionName(), raw, describeNodeStatusReq.RpcRequest, describeNodeStatusReq)
+
+	alikafkaStatusList = &describeNodeStatusResp.StatusList
+	return
 }
 
 func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderId string, timeout int) (alikafkaInstance *alikafka.InstanceVO, err error) {
@@ -208,6 +230,36 @@ func (s *AlikafkaService) WaitForAlikafkaInstance(id string, status Status, time
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.InstanceId, id, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *AlikafkaService) WaitForAllAlikafkaNodeRelease(id string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeAlikafkaNodeStatus(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		// Process wait for all node become released.
+		allReleased := true
+		for _, v := range object.Status {
+			if !strings.EqualFold("released", v) {
+				allReleased = false
+			}
+		}
+		if allReleased {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalMedium * time.Second)
 	}
 }
 
