@@ -48,6 +48,7 @@ const (
 	BSSOPENAPICode    = ServiceCode("BSSOPENAPI")
 	DDOSCOOCode       = ServiceCode("DDOSCOO")
 	DDOSBGPCode       = ServiceCode("DDOSBGP")
+	SAGCode           = ServiceCode("SAG")
 )
 
 type Endpoints struct {
