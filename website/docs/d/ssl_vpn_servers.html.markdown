@@ -36,7 +36,7 @@ The following attributes are exported:
 
 * `ids` - A list of SSL-VPN server IDs.
 * `names` - A list of SSL-VPN server names.
-* `ssl_vpn_servers` - A list of SSL-VPN servers. Each element contains the following attributes:
+* `servers` - A list of SSL-VPN servers. Each element contains the following attributes:
   * `vpn_gateway_id` - The ID of the VPN gateway instance.
   * `id` - The ID of the SSL-VPN server.
   * `name` - The name of the SSL-VPN server.
