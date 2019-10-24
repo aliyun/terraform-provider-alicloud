@@ -216,6 +216,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ots_instances":                     dataSourceAlicloudOtsInstances(),
 			"alicloud_ots_instance_attachments":          dataSourceAlicloudOtsInstanceAttachments(),
 			"alicloud_ots_tables":                        dataSourceAlicloudOtsTables(),
+			"alicloud_cloud_connect_networks":            dataSourceAlicloudCloudConnectNetworks(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -373,6 +374,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_network_acl_attachment":              resourceAliyunNetworkAclAttachment(),
 			"alicloud_network_acl_entries":                 resourceAliyunNetworkAclEntries(),
 			"alicloud_emr_cluster":                         resourceAlicloudEmrCluster(),
+			"alicloud_cloud_connect_network":               resourceAlicloudCloudConnectNetwork(),
 		},
 
 		ConfigureFunc: providerConfigure,

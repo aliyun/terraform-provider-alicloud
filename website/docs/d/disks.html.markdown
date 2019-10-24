@@ -32,7 +32,7 @@ The following arguments are supported:
 * `category` - (Optional) Disk category. Possible values: `cloud` (basic cloud disk), `cloud_efficiency` (ultra cloud disk), `ephemeral_ssd` (local SSD cloud disk), `cloud_ssd` (SSD cloud disk), and `cloud_essd` (ESSD cloud disk).
 * `encrypted` - (Optional) Indicate whether the disk is encrypted or not. Possible values: `on` and `off`.
 * `instance_id` - (Optional) Filter the results by the specified ECS instance ID.
-* `resource_group_id` - (Optional, Available in 1.57.0+) The Id of resource group which the disk belongs.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.57.0+) The Id of resource group which the disk belongs.
 * `tags` - (Optional) A map of tags assigned to the disks. It must be in the format:
   ```
   data "alicloud_disks" "disks_ds" {

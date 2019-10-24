@@ -38,7 +38,7 @@ The following arguments are supported:
 * `vpc_id` - (Optional) ID of the VPC linked to the instances.
 * `vswitch_id` - (Optional) ID of the VSwitch linked to the instances.
 * `availability_zone` - (Optional) Availability zone where instances are located.
-* `resource_group_id` - (Optional, Available in 1.57.0+) The Id of resource group which the instance belongs.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.57.0+) The Id of resource group which the instance belongs.
 * `tags` - (Optional) A map of tags assigned to the ECS instances. It must be in the format:
   ```
   data "alicloud_instances" "taggedInstances" {

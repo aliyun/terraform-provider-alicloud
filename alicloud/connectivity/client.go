@@ -33,6 +33,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
@@ -107,6 +108,7 @@ type AliyunClient struct {
 	ddosbgpconn                  *ddosbgp.Client
 	bssopenapiconn               *bssopenapi.Client
 	emrconn                      *emr.Client
+	sagconn                      *smartag.Client
 }
 
 type ApiVersion string
@@ -133,7 +135,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.57.1"
+var providerVersion = "1.58.1"
 var terraformVersion = strings.TrimSuffix(terraform.VersionString(), "-dev")
 
 // Client for AliyunClient
@@ -1462,4 +1464,33 @@ func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, err
 	}
 
 	return do(client.emrconn)
+}
+
+func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the SAG client if necessary
+	if client.sagconn == nil {
+		endpoint := client.config.SagEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, SAGCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(SAGCode), endpoint)
+		}
+		sagconn, err := smartag.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the SAG client: %#v", err)
+		}
+
+		sagconn.AppendUserAgent(Terraform, terraformVersion)
+		sagconn.AppendUserAgent(Provider, providerVersion)
+		if client.config.ConfigurationSource != "" {
+			sagconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		}
+		client.sagconn = sagconn
+	}
+
+	return do(client.sagconn)
 }

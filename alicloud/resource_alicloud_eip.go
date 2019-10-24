@@ -74,6 +74,12 @@ func resourceAliyunEip() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -87,6 +93,7 @@ func resourceAliyunEipCreate(d *schema.ResourceData, meta interface{}) error {
 	request.Bandwidth = strconv.Itoa(d.Get("bandwidth").(int))
 	request.InternetChargeType = d.Get("internet_charge_type").(string)
 	request.InstanceChargeType = d.Get("instance_charge_type").(string)
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	request.ISP = d.Get("isp").(string)
 	if request.InstanceChargeType == string(PrePaid) {
 		period := d.Get("period").(int)
@@ -141,6 +148,7 @@ func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("isp", object.ISP)
 	d.Set("ip_address", object.IpAddress)
 	d.Set("status", object.Status)
+	d.Set("resource_group_id", object.ResourceGroupId)
 	tags, err := vpcService.DescribeTags(d.Id(), TagResourceEip)
 	if err != nil {
 		return WrapError(err)

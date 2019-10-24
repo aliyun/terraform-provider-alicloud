@@ -29,7 +29,7 @@ The following arguments are supported:
 * `cidr_block` - (Required, ForceNew) The CIDR block for the VPC.
 * `name` - (Optional) The name of the VPC. Defaults to null.
 * `description` - (Optional) The VPC description. Defaults to null.
-* `resource_group_id` - (Optional, Available in 1.40.0+) The Id of resource group which the VPC belongs.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.40.0+) The Id of resource group which the VPC belongs.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
