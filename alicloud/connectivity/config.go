@@ -68,6 +68,7 @@ type Config struct {
 	BssOpenApiEndpoint    string
 	DdoscooEndpoint       string
 	DdosbgpEndpoint       string
+	SagEndpoint           string
 
 	SkipRegionValidation bool
 	ConfigurationSource  string
