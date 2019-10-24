@@ -428,3 +428,13 @@ func slbAddressDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool
 	}
 	return false
 }
+
+func kmsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("password"); ok && v.(string) != "" {
+		return true
+	}
+	if v, ok := d.GetOk("account_password"); ok && v.(string) != "" {
+		return true
+	}
+	return false
+}
