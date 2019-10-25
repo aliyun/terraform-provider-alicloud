@@ -1,11 +1,17 @@
 ## 1.59.0 (Unreleased)
 
-- **New Data Source:** `alicloud_cloud_connect_networks` [GH-1784]
 - **New Resource:** `alicloud_cloud_connect_network` [GH-1784]
+- **New Resource:** `alicloud_alikafka_instance` [GH-1764]
+- **New Data Source:** `alicloud_cloud_connect_networks` [GH-1784]
+- **New Data Source:** `alicloud_emr_instance_types` [GH-1773]
+- **New Data Source:** `alicloud_emr_main_versions` [GH-1773] 
+- **New Data Source:** `alicloud_alikafka_instances` [GH-1764]
 - **New Data Source:** `alicloud_file_crc64_checksum` [GH-1722]
 
 IMPROVEMENTS:
 
+- improve(slb_listener):add retry for StartLoadBalancerListener [GH-1794]
+- improve(fc_trigger):change testcase dependence resource cdn_domain to new [GH-1793]
 - improve(zones): using describeAvailableResource instead of DescribeZones for RKvstore [GH-1789]
 - Update ssl_vpn_server.html.markdown [GH-1786]
 - add resource_group_id to dns [GH-1781]
@@ -17,6 +23,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix(slb): address_type diff bug [GH-1795]
 - fix(ddosbgp): the docs error [GH-1782]
 - fix(instance):fix credit_specification bug [GH-1778]
 

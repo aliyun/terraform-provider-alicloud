@@ -9,7 +9,6 @@
 # access_ci_user_name=
 # access_ci_password=
 # ding_talk_token=
-# alicloud_alikafka_instance_id=
 
 fly -t terraform sp -p alicloud-provider \
   -c pipeline.yml \

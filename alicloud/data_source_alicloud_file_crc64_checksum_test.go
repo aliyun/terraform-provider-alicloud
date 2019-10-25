@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 	"os"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccAlicloudFileCRC64DataSourceBasic(t *testing.T) {

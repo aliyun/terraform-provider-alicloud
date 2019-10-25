@@ -15,7 +15,6 @@ set -e
 : ${DING_TALK_TOKEN:=""}
 : ${BUCKET_NAME:=?}
 : ${BUCKET_REGION:=?}
-: ${ALICLOUD_INSTANCE_ID:=""}
 : ${ALICLOUD_RESOURCE_GROUP_ID:=""}
 
 
@@ -26,12 +25,6 @@ export ALICLOUD_ACCOUNT_SITE=${ALICLOUD_ACCOUNT_SITE}
 export ALICLOUD_ASSUME_ROLE_ARN=acs:ram::${ALICLOUD_ACCOUNT_ID}:role/terraform-provider-assume-role
 export ALICLOUD_RESOURCE_GROUP_ID=${ALICLOUD_RESOURCE_GROUP_ID}
 export DEBUG=terraform
-
-if [[ ${ALICLOUD_REGION} == "cn-shanghai" ]]; then
-    export ALICLOUD_INSTANCE_ID=${ALICLOUD_INSTANCE_ID}
-else
-    export ALICLOUD_INSTANCE_ID=""
-fi
 
 echo -e "Account Site: ${ALICLOUD_ACCOUNT_SITE}"
 

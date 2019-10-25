@@ -290,7 +290,6 @@ shared:
       ACCESS_USER_NAME: {{access_ci_user_name}}
       ACCESS_PASSWORD: {{access_ci_password}}
       DING_TALK_TOKEN: {{ding_talk_token}}
-      ALICLOUD_INSTANCE_ID: {{alicloud_alikafka_instance_id}}
       ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
       ALICLOUD_RESOURCE_GROUP_ID: {{alicloud_resource_group_id}}
 
