@@ -10,7 +10,8 @@
 
 IMPROVEMENTS:
 
-- improve(slb_listener):add retry for StartLoadBalancerListener [GH-1794]
+- improve(slb): improve slb docs [GH-1796]
+- improve(slb_listener): add retry for StartLoadBalancerListener [GH-1794]
 - improve(fc_trigger):change testcase dependence resource cdn_domain to new [GH-1793]
 - improve(zones): using describeAvailableResource instead of DescribeZones for RKvstore [GH-1789]
 - Update ssl_vpn_server.html.markdown [GH-1786]
