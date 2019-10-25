@@ -218,6 +218,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ots_instance_attachments":          dataSourceAlicloudOtsInstanceAttachments(),
 			"alicloud_ots_tables":                        dataSourceAlicloudOtsTables(),
 			"alicloud_cloud_connect_networks":            dataSourceAlicloudCloudConnectNetworks(),
+			"alicloud_emr_instance_types":                dataSourceAlicloudEmrInstanceTypes(),
+			"alicloud_emr_main_versions":                 dataSourceAlicloudEmrMainVersions(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
