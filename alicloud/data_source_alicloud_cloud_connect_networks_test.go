@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudCloudConnectNetworkDataSource_basic(t *testing.T) {
@@ -66,7 +67,11 @@ func TestAccAlicloudCloudConnectNetworkDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeDnsRecordsMapFunc,
 	}
 
-	ccnInstancesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.SmartagSupportedRegions)
+	}
+
+	ccnInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
 
 func testAccCheckAlicloudCloudConnectNetworkDataSourceConfig(rand int, attrMap map[string]string) string {
