@@ -131,7 +131,10 @@ func dnsPriorityDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 }
 
 func slbInternetDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if internet, ok := d.GetOk("internet"); ok && internet.(bool) {
+	if internet, ok := d.GetOkExists("internet"); ok && internet.(bool) {
+		return true
+	}
+	if internet, ok := d.GetOkExists("address_type"); ok && internet.(string) == "internet" {
 		return true
 	}
 	return false

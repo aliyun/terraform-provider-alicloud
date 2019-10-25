@@ -348,9 +348,7 @@ func resourceAlikafkaTopicConfigDependence(name string) string {
 		  disk_size = "500"
 		  deploy_type = "5"
 		  io_max = "20"
-		  vpc_id = "${alicloud_vpc.default.id}"
           vswitch_id = "${alicloud_vswitch.default.id}"
-          zone_id = "${data.alicloud_zones.default.zones.0.id}"
 		}
 		`, name)
 }

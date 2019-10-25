@@ -2,8 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
 	"hash/crc64"
+
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func dataSourceAlicloudFileCRC64Checksum() *schema.Resource {
