@@ -25,6 +25,7 @@ func TestAccAlicloudCloudConnectNetwork_basic(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, nameString, resourceCcnBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.SmartagSupportedRegions)
 			testAccPreCheck(t)
 		},
 
