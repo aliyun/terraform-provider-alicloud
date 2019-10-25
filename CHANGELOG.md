@@ -10,6 +10,7 @@
 
 IMPROVEMENTS:
 
+- improve(slb_listener): deprecate ssl_certificate_id and use server_certificate_id instead [GH-1797]
 - improve(slb): improve slb docs [GH-1796]
 - improve(slb_listener): add retry for StartLoadBalancerListener [GH-1794]
 - improve(fc_trigger):change testcase dependence resource cdn_domain to new [GH-1793]
