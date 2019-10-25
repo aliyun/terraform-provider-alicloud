@@ -850,8 +850,13 @@ resource "alicloud_vswitch" "default" {
 `
 
 const EmrCommonTestCase = `
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
+data "alicloud_emr_main_versions" "default" {
+}
+
+data "alicloud_emr_instance_types" "default" {
+    destination_resource = "InstanceType"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    instance_charge_type = "PostPaid"
 }
 
 resource "alicloud_vpc" "default" {
@@ -862,7 +867,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = "${data.alicloud_emr_instance_types.default.types.0.zone_id}"
   name = "${var.name}"
 }
 

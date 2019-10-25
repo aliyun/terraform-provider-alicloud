@@ -113,12 +113,12 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                      name,
-					"emr_ver":                   "EMR-3.22.0",
-					"cluster_type":              "HADOOP",
+					"emr_ver":                   "${data.alicloud_emr_main_versions.default.main_versions.0.emr_version}",
+					"cluster_type":              "${data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0}",
 					"deposit_type":              "HALF_MANAGED",
 					"high_availability_enable":  "true",
 					"option_software_list":      []string{"HBASE", "PRESTO"},
-					"zone_id":                   "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":                   "${data.alicloud_emr_instance_types.default.types.0.zone_id}",
 					"security_group_id":         "${alicloud_security_group.default.id}",
 					"is_open_public_ip":         "true",
 					"charge_type":               "PostPaid",
@@ -131,7 +131,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 						{
 							"host_group_type":   "MASTER",
 							"node_count":        "2",
-							"instance_type":     "ecs.g5.xlarge",
+							"instance_type":     "${data.alicloud_emr_instance_types.default.types.0.id}",
 							"disk_type":         "cloud_ssd",
 							"disk_capacity":     "80",
 							"disk_count":        "1",
@@ -141,7 +141,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 						{
 							"host_group_type":   "CORE",
 							"node_count":        "3",
-							"instance_type":     "ecs.g5.xlarge",
+							"instance_type":     "${data.alicloud_emr_instance_types.default.types.0.id}",
 							"disk_type":         "cloud_ssd",
 							"disk_capacity":     "80",
 							"disk_count":        "4",
@@ -153,8 +153,8 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         name,
-						"emr_ver":      "EMR-3.22.0",
-						"cluster_type": "HADOOP",
+						"emr_ver":      CHECKSET,
+						"cluster_type": CHECKSET,
 						"charge_type":  "PostPaid",
 						"zone_id":      CHECKSET,
 					}),
@@ -190,12 +190,12 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"count":                     "5",
 					"name":                      name,
-					"emr_ver":                   "EMR-3.22.0",
-					"cluster_type":              "HADOOP",
+					"emr_ver":                   "${data.alicloud_emr_main_versions.default.main_versions.0.emr_version}",
+					"cluster_type":              "${data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0}",
 					"deposit_type":              "HALF_MANAGED",
 					"high_availability_enable":  "true",
 					"option_software_list":      []string{"HBASE", "PRESTO"},
-					"zone_id":                   "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":                   "${data.alicloud_emr_instance_types.default.types.0.zone_id}",
 					"security_group_id":         "${alicloud_security_group.default.id}",
 					"is_open_public_ip":         "true",
 					"charge_type":               "PostPaid",
@@ -208,7 +208,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 						{
 							"host_group_type":   "MASTER",
 							"node_count":        "2",
-							"instance_type":     "ecs.g5.xlarge",
+							"instance_type":     "${data.alicloud_emr_instance_types.default.types.0.id}",
 							"disk_type":         "cloud_ssd",
 							"disk_capacity":     "80",
 							"disk_count":        "1",
@@ -218,7 +218,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 						{
 							"host_group_type":   "CORE",
 							"node_count":        "3",
-							"instance_type":     "ecs.g5.xlarge",
+							"instance_type":     "${data.alicloud_emr_instance_types.default.types.0.id}",
 							"disk_type":         "cloud_ssd",
 							"disk_capacity":     "80",
 							"disk_count":        "4",
@@ -230,8 +230,8 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         name,
-						"emr_ver":      "EMR-3.22.0",
-						"cluster_type": "HADOOP",
+						"emr_ver":      CHECKSET,
+						"cluster_type": CHECKSET,
 						"charge_type":  "PostPaid",
 						"zone_id":      CHECKSET,
 					}),
