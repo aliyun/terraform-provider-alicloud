@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -140,7 +139,6 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithAlikafkaInstanceSetting(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -149,7 +147,7 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":   os.Getenv("ALICLOUD_INSTANCE_ID"),
+					"instance_id":   "${alicloud_alikafka_instance.default.id}",
 					"topic":         "${var.topic}",
 					"local_topic":   "false",
 					"compact_topic": "false",
@@ -195,29 +193,31 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 				),
 			},
 
-			{
-				SkipFunc: shouldSkipLocalAndCompact(os.Getenv("ALICLOUD_INSTANCE_ID")),
-				Config: testAccConfig(map[string]interface{}{
-					"local_topic": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"local_topic": "true",
-					}),
-				),
-			},
+			// alicloud_alikafka_instance only support create post pay instance.
+			// Post pay instance does not support create local or compact topic, so skip the following two test case temporarily.
+			//{
+			//	SkipFunc: shouldSkipLocalAndCompact("${alicloud_alikafka_instance.default.id}"),
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"local_topic": "true",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"local_topic": "true",
+			//		}),
+			//	),
+			//},
 
-			{
-				SkipFunc: shouldSkipLocalAndCompact(os.Getenv("ALICLOUD_INSTANCE_ID")),
-				Config: testAccConfig(map[string]interface{}{
-					"compact_topic": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"compact_topic": "true",
-					}),
-				),
-			},
+			//{
+			//	SkipFunc: shouldSkipLocalAndCompact("${alicloud_alikafka_instance.default.id}"),
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"compact_topic": "true",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"compact_topic": "true",
+			//		}),
+			//	),
+			//},
 
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -262,7 +262,6 @@ func TestAccAlicloudAlikafkaTopic_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithAlikafkaInstanceSetting(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -272,7 +271,7 @@ func TestAccAlicloudAlikafkaTopic_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":         "5",
-					"instance_id":   os.Getenv("ALICLOUD_INSTANCE_ID"),
+					"instance_id":   "${alicloud_alikafka_instance.default.id}",
 					"topic":         "${var.topic}-${count.index}",
 					"local_topic":   "false",
 					"compact_topic": "false",
@@ -327,6 +326,31 @@ func resourceAlikafkaTopicConfigDependence(name string) string {
 	return fmt.Sprintf(`
 		variable "topic" {
  			default = "%v"
+		}
+
+		data "alicloud_zones" "default" {
+			available_resource_creation= "VSwitch"
+		}
+		resource "alicloud_vpc" "default" {
+		  cidr_block = "172.16.0.0/12"
+		}
+		
+		resource "alicloud_vswitch" "default" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.0.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		}
+
+		resource "alicloud_alikafka_instance" "default" {
+          name = "tf-testacc-alikafkainstance"
+		  topic_quota = "50"
+		  disk_type = "1"
+		  disk_size = "500"
+		  deploy_type = "5"
+		  io_max = "20"
+		  vpc_id = "${alicloud_vpc.default.id}"
+          vswitch_id = "${alicloud_vswitch.default.id}"
+          zone_id = "${data.alicloud_zones.default.zones.0.id}"
 		}
 		`, name)
 }

@@ -145,13 +145,6 @@ func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
 	}
 }
 
-func testAccPreCheckWithAlikafkaInstanceSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no alikafka instance id setting")
-		t.Skipped()
-	}
-}
-
 var providerCommon = `
 provider "alicloud" {
 	assume_role {}

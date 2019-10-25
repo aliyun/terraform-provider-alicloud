@@ -28,5 +28,12 @@ type InstanceVO struct {
 	DeployType               int                      `json:"DeployType" xml:"DeployType"`
 	SslEndPoint              string                   `json:"SslEndPoint" xml:"SslEndPoint"`
 	Name                     string                   `json:"Name" xml:"Name"`
+	IoMax                    int                      `json:"IoMax" xml:"IoMax"`
+	EipMax                   int                      `json:"EipMax" xml:"EipMax"`
+	DiskType                 int                      `json:"DiskType" xml:"DiskType"`
+	DiskSize                 int                      `json:"DiskSize" xml:"DiskSize"`
+	MsgRetain                int                      `json:"MsgRetain" xml:"MsgRetain"`
+	TopicNumLimit            int                      `json:"TopicNumLimit" xml:"TopicNumLimit"`
+	ZoneId                   string                   `json:"ZoneId" xml:"ZoneId"`
 	UpgradeServiceDetailInfo UpgradeServiceDetailInfo `json:"UpgradeServiceDetailInfo" xml:"UpgradeServiceDetailInfo"`
 }
