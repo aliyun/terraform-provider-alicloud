@@ -1,3 +1,4 @@
+## 1.59.1 (Unreleased)
 ## 1.59.0 (October 25, 2019)
 
 - **New Resource:** `alicloud_cloud_connect_network` ([#1784](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1784))
