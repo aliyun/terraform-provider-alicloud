@@ -225,6 +225,13 @@ func resourceAliyunSlbListener() *schema.Resource {
 			"ssl_certificate_id": {
 				Type:             schema.TypeString,
 				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: sslCertificateIdDiffSuppressFunc,
+				Deprecated:       "Field 'ssl_certificate_id' has been deprecated from 1.59.0 and using 'server_certificate_id' instead.",
+			},
+			"server_certificate_id": {
+				Type:             schema.TypeString,
+				Optional:         true,
 				DiffSuppressFunc: sslCertificateIdDiffSuppressFunc,
 			},
 
@@ -362,11 +369,15 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 			request = reqHttp
 		}
 		if Protocol(protocol) == Https {
-			ssl_id, ok := d.GetOk("ssl_certificate_id")
-			if !ok || ssl_id.(string) == "" {
-				return WrapError(Error(`'ssl_certificate_id': required field is not set when the protocol is 'https'.`))
+			scId := d.Get("server_certificate_id").(string)
+			if scId == "" {
+				scId = d.Get("ssl_certificate_id").(string)
 			}
-			request.QueryParams["ServerCertificateId"] = ssl_id.(string)
+
+			if scId == "" {
+				return WrapError(Error(`'server_certificate_id': required field is not set when the protocol is 'https'.`))
+			}
+			request.QueryParams["ServerCertificateId"] = scId
 		}
 	}
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -644,13 +655,16 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 	// https
 	httpsArgs := httpArgs
 	if protocol == Https {
-		ssl_id, ok := d.GetOk("ssl_certificate_id")
-		if !ok && ssl_id == "" {
-			return WrapError(Error("'ssl_certificate_id': required field is not set when the protocol is 'https'."))
+		scId := d.Get("server_certificate_id").(string)
+		if scId == "" {
+			scId = d.Get("ssl_certificate_id").(string)
+		}
+		if scId == "" {
+			return WrapError(Error("'server_certificate_id': required field is not set when the protocol is 'https'."))
 		}
 
-		httpsArgs.QueryParams["ServerCertificateId"] = ssl_id.(string)
-		if d.HasChange("ssl_certificate_id") {
+		httpsArgs.QueryParams["ServerCertificateId"] = scId
+		if d.HasChange("ssl_certificate_id") || d.HasChange("server_certificate_id") {
 			update = true
 		}
 
@@ -975,6 +989,7 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	}
 	if val, ok := listener["ServerCertificateId"]; ok {
 		d.Set("ssl_certificate_id", val.(string))
+		d.Set("server_certificate_id", val.(string))
 	}
 
 	if val, ok := listener["EnableHttp2"]; ok {

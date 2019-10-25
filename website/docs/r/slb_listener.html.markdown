@@ -101,7 +101,8 @@ The following arguments are supported:
 * `health_check_timeout` - (Optional) Maximum timeout of each health check response. It is required when `health_check` is on. Valid value range: [1-300] in seconds. Default to 5. Note: If `health_check_timeout` < `health_check_interval`, its will be replaced by `health_check_interval`.
 * `health_check_interval` - (Optional) Time interval of health checks. It is required when `health_check` is on. Valid value range: [1-50] in seconds. Default to 2.
 * `health_check_http_code` - (Optional) Regular health check HTTP status code. Multiple codes are segmented by “,”. It is required when `health_check` is on. Default to `http_2xx`.  Valid values are: `http_2xx`,  `http_3xx`, `http_4xx` and `http_5xx`.
-* `ssl_certificate_id` - (Optional) Security certificate ID. It is required when `protocol` is `https`.
+* `ssl_certificate_id` - (Deprecated) It has been deprecated from 1.59.0 and using `server_certificate_id` instead. 
+* `server_certificate_id` - (Optional, Available in 1.59.0+) SLB Server certificate ID. It is required when `protocol` is `https`.
 * `gzip` - (Optional) Whether to enable "Gzip Compression". If enabled, files of specific file types will be compressed, otherwise, no files will be compressed. Default to true. Available in v1.13.0+.
 * `x_forwarded_for` - (Optional) Whether to set additional HTTP Header field "X-Forwarded-For" (documented below). Available in v1.13.0+.
 * `acl_status` - (Optional) Whether to enable "acl(access control list)", the acl is specified by `acl_id`. Valid values are `on` and `off`. Default to `off`.
@@ -154,7 +155,7 @@ unhealthy_threshold | http & https & tcp & udp | 1-10 |
 health_check_timeout | http & https & tcp & udp | 1-300 |
 health_check_interval | http & https & tcp & udp | 1-50 |
 health_check_http_code | http & https & tcp | http_2xx,http_3xx,http_4xx,http_5xx | 
-ssl_certificate_id | https |  |
+server_certificate_id | https |  |
 gzip | http & https | true or false  |
 x_forwarded_for | http & https |  |
 acl_status | http & https & tcp & udp | on or off |
@@ -195,7 +196,7 @@ The following attributes are exported:
 * `health_check_timeout` - Maximum timeout of each health check response.
 * `health_check_interval` - Time interval of health checks.
 * `health_check_http_code` - Regular health check HTTP status code.
-* `ssl_certificate_id` - (Optional) Security certificate ID.
+* `server_certificate_id` - (Optional) Security certificate ID.
 
 ## Import
 

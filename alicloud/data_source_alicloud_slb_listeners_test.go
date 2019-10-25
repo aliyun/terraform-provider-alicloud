@@ -360,7 +360,7 @@ resource "alicloud_slb_listener" "default" {
   acl_status = "on"
   acl_type   = "white"
   acl_id     = "${alicloud_slb_acl.default.id}"
-  ssl_certificate_id        = "${alicloud_slb_server_certificate.default.id}"
+  server_certificate_id        = "${alicloud_slb_server_certificate.default.id}"
   request_timeout           = 80
   idle_timeout              = 30
   enable_http2              = "on"
