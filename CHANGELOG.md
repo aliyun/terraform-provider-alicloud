@@ -1,4 +1,25 @@
-## 1.58.2 (Unreleased)
+## 1.59.0 (Unreleased)
+
+- **New Data Source:** `alicloud_cloud_connect_networks` [GH-1784]
+- **New Resource:** `alicloud_cloud_connect_network` [GH-1784]
+- **New Data Source:** `alicloud_file_crc64_checksum` [GH-1722]
+
+IMPROVEMENTS:
+
+- improve(zones): using describeAvailableResource instead of DescribeZones for RKvstore [GH-1789]
+- Update ssl_vpn_server.html.markdown [GH-1786]
+- add resource_group_id to dns [GH-1781]
+- improve(provider): modified the kms field conflict to diffsuppress [GH-1780]
+- Always set PolicyDocument for RAM policy update [GH-1777]
+- rename cs_serveless_kubernetes to cs_serverless_kubernetes [GH-1776]
+- improve(slb): updated slb server_group testcase [GH-1753]
+- improve(fc_function):support code_checksum [GH-1722]
+
+BUG FIXES:
+
+- fix(ddosbgp): the docs error [GH-1782]
+- fix(instance):fix credit_specification bug [GH-1778]
+
 ## 1.58.1 (October 22, 2019)
 
 IMPROVEMENTS:
