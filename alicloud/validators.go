@@ -852,6 +852,16 @@ func validateOnsGroupRemark(v interface{}, k string) (ws []string, errors []erro
 	return
 }
 
+func validateAlikafkaInstanceNameLen(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if len(value) == 0 {
+		errors = append(errors, fmt.Errorf("%q cannot be empty", k))
+	} else if len(value) > 64 || len(value) < 3 {
+		errors = append(errors, fmt.Errorf("%q should between 3 and 64 characters", k))
+	}
+	return
+}
+
 func validateAlikafkaStringLen(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) == 0 {

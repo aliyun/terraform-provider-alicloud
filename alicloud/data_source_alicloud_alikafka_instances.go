@@ -42,7 +42,7 @@ func dataSourceAlicloudAlikafkaInstances() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"instance_id": {
+						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -88,6 +88,10 @@ func dataSourceAlicloudAlikafkaInstances() *schema.Resource {
 						},
 						"topic_quota": {
 							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"zone_id": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
@@ -152,7 +156,7 @@ func alikafkaInstancesDecriptionAttributes(d *schema.ResourceData, instancesInfo
 
 	for _, item := range instancesInfo {
 		mapping := map[string]interface{}{
-			"instance_id":    item.InstanceId,
+			"id":             item.InstanceId,
 			"name":           item.Name,
 			"create_time":    time.Unix(int64(item.CreateTime)/1000, 0).Format("2006-01-02 03:04:05"),
 			"service_status": item.ServiceStatus,
@@ -164,6 +168,7 @@ func alikafkaInstancesDecriptionAttributes(d *schema.ResourceData, instancesInfo
 			"disk_type":      item.DiskType,
 			"disk_size":      item.DiskSize,
 			"topic_quota":    item.TopicNumLimit,
+			"zone_id":        item.ZoneId,
 		}
 
 		ids = append(ids, item.InstanceId)

@@ -39,9 +39,7 @@ resource "alicloud_alikafka_instance" "default" {
   disk_size = "500"
   deploy_type = "4"
   io_max = "20"
-  vpc_id = "${alicloud_vpc.default.id}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
 }
 
 data "alicloud_alikafka_instances" "instances_ds" {
@@ -69,7 +67,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of instance IDs.
 * `names` - A list of instance names.
 * `instances` - A list of instances. Each element contains the following attributes:
-  * `instance_id` - ID of the instance.
+  * `id` - ID of the instance.
   * `name` - Name of the instance.
   * `create_time` - The create time of the instance.
   * `service_status` - The current status of the instance. -1: unknown status, 0: wait deploy, 1: initializing, 2: preparing, 3 starting, 5: in service, 7: wait upgrade, 8: upgrading, 10: released, 15: freeze, 101: deploy error, 102: upgrade error. 
@@ -81,3 +79,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `disk_type` - The disk type of the instance. 0: efficient cloud disk , 1: SSD.
   * `disk_size` - The disk size of the instance.
   * `topic_quota` - The max num of topic can be create of the instance.
+  * `zone_id` - The ID of attaching zone to instance.
+

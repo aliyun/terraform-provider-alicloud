@@ -56,16 +56,14 @@ resource "alicloud_alikafka_instance" "default" {
 
 The following arguments are supported:
 
-* `name` - (Optional) Name of your Kafka instance. The length cannot exceed 64 characters.
+* `name` - (Optional) Name of your Kafka instance. The length should between 3 and 64 characters.
 * `topic_quota` - (Required) The max num of topic can be create of the instance. When modify this value, it only adjust to a greater value.
 * `disk_type` - (Required, ForceNew) The disk type of the instance. 0: efficient cloud disk , 1: SSD.
 * `disk_size` - (Required) The disk size of the instance. When modify this value, it only adjust to a greater value.
 * `deploy_type` - (Required, ForceNew) The deploy type of the instance. Currently only support two deploy type, 4: eip/vpc instance, 5: vpc instance.
 * `io_max` - (Required) The max value of io of the instance. When modify this value, it only adjust to a greater value.
 * `eip_max` - (Optional) The max bandwidth of the instance. When modify this value, it only adjust to a greater value.
-* `vpc_id` - (Required, ForceNew) The ID of attaching VPC to instance.
 * `vswitch_id` - (Required, ForceNew) The ID of attaching vswitch to instance.
-* `zone_id` - (Required, ForceNew) The Zone to launch the kafka instance.
 
 -> **NOTE:** Arguments io_max, disk_size, topic_quota, eip_max should follow the following constraints.
 
@@ -82,6 +80,8 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The `key` of the resource supplied above, also call instance id.
+* `vpc_id` - The ID of attaching VPC to instance.
+* `zone_id` - The Zone to launch the kafka instance.
 
 ## Import
 

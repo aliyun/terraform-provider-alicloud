@@ -21,12 +21,8 @@ The example launches ALIKAFKA Instance. The parameter in variables.tf can let yo
 	    		Enter a value: {var.io_max}
 	    	var.eip_max
                 Enter a value: {var.eip_max}
-            var.vpc_id
-                Enter a value: {var.vpc_id}
             var.vswitch_id
                 Enter a value: {var.vswitch_id}
-            var.zone_id
-                Enter a value: {var.zone_id}
 	    
 
 * Apply phase
@@ -46,12 +42,8 @@ The example launches ALIKAFKA Instance. The parameter in variables.tf can let yo
 	    		Enter a value: {var.io_max}
 	    	var.eip_max
                 Enter a value: {var.eip_max}
-            var.vpc_id
-                Enter a value: {var.vpc_id}
             var.vswitch_id
                 Enter a value: {var.vswitch_id}
-            var.zone_id
-                Enter a value: {var.zone_id}
 	    	    	
 
 * Destroy 

@@ -26,14 +26,6 @@ variable "eip_max" {
   description = "The peak bandwidth of the instance. When modify this value, it only adjust to a greater value."
 }
 
-variable "vpc_id" {
-  description = "The ID of attaching VPC to instance."
-}
-
 variable "vswitch_id" {
   description = "The ID of attaching vswitch to instance."
-}
-
-variable "zone_id" {
-  description = "The Zone to launch the kafka instance."
 }

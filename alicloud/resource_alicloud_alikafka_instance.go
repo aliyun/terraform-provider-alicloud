@@ -24,8 +24,9 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateAlikafkaInstanceNameLen,
 			},
 			"topic_quota": {
 				Type:     schema.TypeInt,
@@ -53,20 +54,18 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
-			"vpc_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"zone_id": {
 				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Computed: true,
 			},
 		},
 	}
@@ -76,6 +75,7 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 
 	client := meta.(*connectivity.AliyunClient)
 	alikafkaService := AlikafkaService{client}
+	vpcService := VpcService{client}
 
 	regionId := client.RegionId
 	topicQuota := d.Get("topic_quota").(int)
@@ -83,9 +83,13 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	diskSize := d.Get("disk_size").(int)
 	deployType := d.Get("deploy_type").(int)
 	ioMax := d.Get("io_max").(int)
-	vpcId := d.Get("vpc_id").(string)
-	vswtichId := d.Get("vswitch_id").(string)
-	zoneId := d.Get("zone_id").(string)
+	vswitchId := d.Get("vswitch_id").(string)
+
+	// Get vswitch info by vswitchId
+	vsw, err := vpcService.DescribeVSwitch(vswitchId)
+	if err != nil {
+		return WrapError(err)
+	}
 
 	// 1. Create post-pay order
 	createOrderReq := alikafka.CreateCreatePostPayOrderRequest()
@@ -100,7 +104,7 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	}
 
 	var createOrderResp *alikafka.CreatePostPayOrderResponse
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 			return alikafkaClient.CreatePostPayOrder(createOrderReq)
 		})
@@ -134,9 +138,9 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	startInstanceReq := alikafka.CreateStartInstanceRequest()
 	startInstanceReq.RegionId = regionId
 	startInstanceReq.InstanceId = instanceId
-	startInstanceReq.VpcId = vpcId
-	startInstanceReq.VSwitchId = vswtichId
-	startInstanceReq.ZoneId = zoneId
+	startInstanceReq.VpcId = vsw.VpcId
+	startInstanceReq.VSwitchId = vswitchId
+	startInstanceReq.ZoneId = vsw.ZoneId
 	if _, ok := d.GetOk("eip_max"); ok {
 		startInstanceReq.IsEipInner = requests.NewBoolean(true)
 		startInstanceReq.DeployModule = "eip"
