@@ -75,6 +75,12 @@ func resourceAlicloudFCFunction() *schema.Resource {
 				Optional: true,
 			},
 
+			"code_checksum": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+
 			"environment_variables": {
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -200,6 +206,7 @@ func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 	d.Set("service", parts[0])
+	d.Set("code_checksum", object.CodeChecksum)
 	d.Set("name", object.FunctionName)
 	d.Set("function_id", object.FunctionID)
 	d.Set("description", object.Description)

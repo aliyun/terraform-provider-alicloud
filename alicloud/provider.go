@@ -158,6 +158,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alikafka_consumer_groups":          dataSourceAlicloudAlikafkaConsumerGroups(),
 			"alicloud_alikafka_topics":                   dataSourceAlicloudAlikafkaTopics(),
 			"alicloud_fc_functions":                      dataSourceAlicloudFcFunctions(),
+			"alicloud_file_crc64_checksum":               dataSourceAlicloudFileCRC64Checksum(),
 			"alicloud_fc_services":                       dataSourceAlicloudFcServices(),
 			"alicloud_fc_triggers":                       dataSourceAlicloudFcTriggers(),
 			"alicloud_db_instances":                      dataSourceAlicloudDBInstances(),
