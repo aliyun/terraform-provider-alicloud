@@ -1,33 +1,33 @@
-## 1.59.0 (Unreleased)
+## 1.59.0 (October 25, 2019)
 
-- **New Resource:** `alicloud_cloud_connect_network` [GH-1784]
-- **New Resource:** `alicloud_alikafka_instance` [GH-1764]
-- **New Data Source:** `alicloud_cloud_connect_networks` [GH-1784]
-- **New Data Source:** `alicloud_emr_instance_types` [GH-1773]
-- **New Data Source:** `alicloud_emr_main_versions` [GH-1773] 
-- **New Data Source:** `alicloud_alikafka_instances` [GH-1764]
-- **New Data Source:** `alicloud_file_crc64_checksum` [GH-1722]
+- **New Resource:** `alicloud_cloud_connect_network` ([#1784](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1784))
+- **New Resource:** `alicloud_alikafka_instance` ([#1764](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1764))
+- **New Data Source:** `alicloud_cloud_connect_networks` ([#1784](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1784))
+- **New Data Source:** `alicloud_emr_instance_types` ([#1773](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1773))
+- **New Data Source:** `alicloud_emr_main_versions` [[#1773](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1773)] 
+- **New Data Source:** `alicloud_alikafka_instances` ([#1764](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1764))
+- **New Data Source:** `alicloud_file_crc64_checksum` ([#1722](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1722))
 
 IMPROVEMENTS:
 
-- improve(slb_listener): deprecate ssl_certificate_id and use server_certificate_id instead [GH-1797]
-- improve(slb): improve slb docs [GH-1796]
-- improve(slb_listener): add retry for StartLoadBalancerListener [GH-1794]
-- improve(fc_trigger):change testcase dependence resource cdn_domain to new [GH-1793]
-- improve(zones): using describeAvailableResource instead of DescribeZones for RKvstore [GH-1789]
-- Update ssl_vpn_server.html.markdown [GH-1786]
-- add resource_group_id to dns [GH-1781]
-- improve(provider): modified the kms field conflict to diffsuppress [GH-1780]
-- Always set PolicyDocument for RAM policy update [GH-1777]
-- rename cs_serveless_kubernetes to cs_serverless_kubernetes [GH-1776]
-- improve(slb): updated slb server_group testcase [GH-1753]
-- improve(fc_function):support code_checksum [GH-1722]
+- improve(slb_listener): deprecate ssl_certificate_id and use server_certificate_id instead ([#1797](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1797))
+- improve(slb): improve slb docs ([#1796](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1796))
+- improve(slb_listener): add retry for StartLoadBalancerListener ([#1794](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1794))
+- improve(fc_trigger):change testcase dependence resource cdn_domain to new ([#1793](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1793))
+- improve(zones): using describeAvailableResource instead of DescribeZones for RKvstore ([#1789](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1789))
+- Update ssl_vpn_server.html.markdown ([#1786](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1786))
+- add resource_group_id to dns ([#1781](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1781))
+- improve(provider): modified the kms field conflict to diffsuppress ([#1780](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1780))
+- Always set PolicyDocument for RAM policy update ([#1777](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1777))
+- rename cs_serveless_kubernetes to cs_serverless_kubernetes ([#1776](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1776))
+- improve(slb): updated slb server_group testcase ([#1753](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1753))
+- improve(fc_function):support code_checksum ([#1722](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1722))
 
 BUG FIXES:
 
-- fix(slb): address_type diff bug [GH-1795]
-- fix(ddosbgp): the docs error [GH-1782]
-- fix(instance):fix credit_specification bug [GH-1778]
+- fix(slb): address_type diff bug ([#1795](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1795))
+- fix(ddosbgp): the docs error ([#1782](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1782))
+- fix(instance):fix credit_specification bug ([#1778](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1778))
 
 ## 1.58.1 (October 22, 2019)
 
