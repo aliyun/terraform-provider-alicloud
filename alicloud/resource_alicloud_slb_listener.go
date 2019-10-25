@@ -387,13 +387,25 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 	startLoadBalancerListenerRequest.LoadBalancerId = lb_id
 	startLoadBalancerListenerRequest.ListenerPort = requests.NewInteger(frontend)
 	startLoadBalancerListenerRequest.ListenerProtocol = protocol
-	raw, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.StartLoadBalancerListener(startLoadBalancerListenerRequest)
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.StartLoadBalancerListener(startLoadBalancerListenerRequest)
+		})
+		if err != nil {
+			if IsExceptedError(err, "ServiceIsConfiguring") {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(startLoadBalancerListenerRequest.GetActionName(), raw, startLoadBalancerListenerRequest.RpcRequest, startLoadBalancerListenerRequest)
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_listener", startLoadBalancerListenerRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(startLoadBalancerListenerRequest.GetActionName(), raw, startLoadBalancerListenerRequest.RpcRequest, startLoadBalancerListenerRequest)
+
 	if err = slbService.WaitForSlbListener(d.Id(), Running, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
