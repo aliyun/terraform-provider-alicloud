@@ -93,7 +93,8 @@ The following arguments are supported:
 * `instance_name` - (Optional) Name of an ECS instance. Default to "ESS-Instance". It is valid from version 1.7.1.
 * `io_optimized` - (Deprecated) It has been deprecated on instance resource. All the launched alicloud instances will be I/O optimized.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
-* `security_group_id` - (Optional) ID of the security group to which a newly created instance belongs.
+* `security_group_id` - (Optional) ID of the security group used to create new instance. It is conflict with `security_group_ids`.
+* `security_group_ids` - (Optional, Available in 1.43.0+) List IDs of the security group used to create new instances. It is conflict with `security_group_id`.
 * `scaling_configuration_name` - (Optional) Name shown for the scheduled task. If this parameter value is not specified, the default value is ScalingConfigurationId.
 * `internet_charge_type` - (Optional) Network billing type, Values: PayByBandwidth or PayByTraffic. Default to `PayByBandwidth`.
 * `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). The value range is [1,200].

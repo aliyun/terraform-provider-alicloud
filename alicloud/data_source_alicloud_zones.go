@@ -195,27 +195,26 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		}
 	}
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRkv)) {
-		request := r_kvstore.CreateDescribeRegionsRequest()
+		request := r_kvstore.CreateDescribeAvailableResourceRequest()
 		request.RegionId = client.RegionId
+		request.InstanceChargeType = d.Get("instance_charge_type").(string)
 		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.DescribeRegions(request)
+			return rkvClient.DescribeAvailableResource(request)
 		})
 		if err != nil {
-			return fmt.Errorf("[ERROR] DescribeRegions got an error: %#v", err)
+			return fmt.Errorf("[ERROR] DescribeAvailableResource got an error: %#v", err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		regions, _ := raw.(*r_kvstore.DescribeRegionsResponse)
-		if len(regions.RegionIds.KVStoreRegion) <= 0 {
-			return fmt.Errorf("[ERROR] There is no available region for KVStore")
+		zones, _ := raw.(*r_kvstore.DescribeAvailableResourceResponse)
+		if len(zones.AvailableZones.AvailableZone) <= 0 {
+			return fmt.Errorf("[ERROR] There is no available zones for KVStore")
 		}
-		for _, r := range regions.RegionIds.KVStoreRegion {
-			for _, zoneID := range r.ZoneIdList.ZoneId {
-				if multi && strings.Contains(zoneID, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
-					zoneIds = append(zoneIds, zoneID)
-					continue
-				}
-				rkvZones[zoneID] = r.RegionId
+		for _, zone := range zones.AvailableZones.AvailableZone {
+			if multi && strings.Contains(zone.ZoneId, MULTI_IZ_SYMBOL) {
+				zoneIds = append(zoneIds, zone.ZoneId)
+				continue
 			}
+			rkvZones[zone.ZoneId] = zone.RegionId
 		}
 	}
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeMongoDB)) {
