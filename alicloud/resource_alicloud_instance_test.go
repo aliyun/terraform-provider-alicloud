@@ -483,6 +483,16 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"user_data": "I_am_user_data_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_data": "I_am_user_data_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"security_groups": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
