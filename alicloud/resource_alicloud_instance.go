@@ -287,7 +287,6 @@ func resourceAliyunInstance() *schema.Resource {
 			"user_data": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"role_name": {
 				Type:             schema.TypeString,
@@ -909,7 +908,12 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	}
 
 	if v := d.Get("user_data").(string); v != "" {
-		request.UserData = base64.StdEncoding.EncodeToString([]byte(v))
+		_, base64DecodeError := base64.StdEncoding.DecodeString(v)
+		if base64DecodeError == nil {
+			request.UserData = v
+		} else {
+			request.UserData = base64.StdEncoding.EncodeToString([]byte(v))
+		}
 	}
 
 	if v := d.Get("role_name").(string); v != "" {
@@ -1114,6 +1118,19 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	if d.HasChange("description") {
 		d.SetPartial("description")
 		request.Description = d.Get("description").(string)
+		update = true
+	}
+
+	if d.HasChange("user_data") {
+		d.SetPartial("user_data")
+		if v, ok := d.GetOk("user_data"); ok && v.(string) != "" {
+			_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
+			if base64DecodeError == nil {
+				request.UserData = v.(string)
+			} else {
+				request.UserData = base64.StdEncoding.EncodeToString([]byte(v.(string)))
+			}
+		}
 		update = true
 	}
 
