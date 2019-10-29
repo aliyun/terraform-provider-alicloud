@@ -1026,11 +1026,21 @@ func (s *VpcService) WaitForNetworkAclAttachment(id string, resource []vpc.Resou
 	}
 }
 
-func (s *VpcService) DescribeTags(resourceId string, resourceType TagResourceType) (tags []vpc.TagResource, err error) {
+func (s *VpcService) DescribeTags(resourceId string, resourceTags map[string]interface{}, resourceType TagResourceType) (tags []vpc.TagResource, err error) {
 	request := vpc.CreateListTagResourcesRequest()
 	request.RegionId = s.client.RegionId
 	request.ResourceType = string(resourceType)
 	request.ResourceId = &[]string{resourceId}
+	if resourceTags != nil && len(resourceTags) > 0 {
+		var reqTags []vpc.ListTagResourcesTag
+		for key, value := range resourceTags {
+			reqTags = append(reqTags, vpc.ListTagResourcesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
+	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var raw interface{}

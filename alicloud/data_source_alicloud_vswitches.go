@@ -176,17 +176,14 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 					continue
 				}
 			}
-			if value, ok := d.GetOk("tags"); ok {
-				tags, err := vpcService.DescribeTags(vsw.VSwitchId, TagResourceVSwitch)
+			if value, ok := d.GetOk("tags"); ok && len(value.(map[string]interface{})) > 0 {
+				tags, err := vpcService.DescribeTags(vsw.VSwitchId, value.(map[string]interface{}), TagResourceVSwitch)
 				if err != nil {
 					return WrapError(err)
 				}
-				if vmap, ok := value.(map[string]interface{}); ok && len(vmap) > 0 {
-					if !tagsMapEqual(vmap, vpcService.tagsToMap(tags)) {
-						continue
-					}
+				if len(tags) < 1 {
+					continue
 				}
-
 			}
 			allVSwitches = append(allVSwitches, vsw)
 		}

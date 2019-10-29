@@ -135,15 +135,13 @@ func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{})
 					continue
 				}
 			}
-			if value, ok := d.GetOk("tags"); ok {
-				tags, err := vpcService.DescribeTags(tables.RouteTableId, TagResourceRouteTable)
+			if value, ok := d.GetOk("tags"); ok && len(value.(map[string]interface{})) > 0 {
+				tags, err := vpcService.DescribeTags(tables.RouteTableId, value.(map[string]interface{}), TagResourceRouteTable)
 				if err != nil {
 					return WrapError(err)
 				}
-				if vmap, ok := value.(map[string]interface{}); ok && len(vmap) > 0 {
-					if !tagsMapEqual(vmap, vpcService.tagsToMap(tags)) {
-						continue
-					}
+				if len(tags) < 1 {
+					continue
 				}
 
 			}

@@ -95,7 +95,7 @@ func resourceAliyunRouteTableRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("vpc_id", object.VpcId)
 	d.Set("name", object.RouteTableName)
 	d.Set("description", object.Description)
-	tags, err := vpcService.DescribeTags(d.Id(), TagResourceRouteTable)
+	tags, err := vpcService.DescribeTags(d.Id(), nil, TagResourceRouteTable)
 	if err != nil {
 		return WrapError(err)
 	}
