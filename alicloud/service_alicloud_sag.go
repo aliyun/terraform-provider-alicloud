@@ -500,3 +500,52 @@ func (s *SagService) DescribeSagQosPolicy(id string) (c smartag.QosPolicy, err e
 	c = response.QosPolicies.QosPolicy[0]
 	return c, nil
 }
+
+func (s *SagService) WaitForSagAcl(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSagAcl(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		}
+		if object.AclId == id && status != Deleted {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AclId, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *SagService) WaitForSagAclRule(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeSagAclRule(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		}
+		parts_ := strings.Split(id, ":")
+		if object.AcrId == parts_[1] && status != Deleted {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AcrId, parts_[1], ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
