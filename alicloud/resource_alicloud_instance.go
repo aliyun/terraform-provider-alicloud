@@ -1132,6 +1132,7 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 			}
 		}
 		update = true
+		reboot = true
 	}
 
 	if d.HasChange("host_name") {

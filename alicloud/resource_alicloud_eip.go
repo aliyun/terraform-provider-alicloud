@@ -149,7 +149,7 @@ func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("ip_address", object.IpAddress)
 	d.Set("status", object.Status)
 	d.Set("resource_group_id", object.ResourceGroupId)
-	tags, err := vpcService.DescribeTags(d.Id(), TagResourceEip)
+	tags, err := vpcService.DescribeTags(d.Id(), nil, TagResourceEip)
 	if err != nil {
 		return WrapError(err)
 	}
