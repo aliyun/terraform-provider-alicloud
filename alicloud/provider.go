@@ -221,6 +221,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_connect_networks":            dataSourceAlicloudCloudConnectNetworks(),
 			"alicloud_emr_instance_types":                dataSourceAlicloudEmrInstanceTypes(),
 			"alicloud_emr_main_versions":                 dataSourceAlicloudEmrMainVersions(),
+			"alicloud_sag_acls":                          dataSourceAlicloudSagAcls(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -380,6 +381,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_network_acl_entries":                 resourceAliyunNetworkAclEntries(),
 			"alicloud_emr_cluster":                         resourceAlicloudEmrCluster(),
 			"alicloud_cloud_connect_network":               resourceAlicloudCloudConnectNetwork(),
+			"alicloud_sag_acl":                             resourceAlicloudSagAcl(),
+			"alicloud_sag_acl_rule":                        resourceAlicloudSagAclRule(),
 		},
 
 		ConfigureFunc: providerConfigure,
