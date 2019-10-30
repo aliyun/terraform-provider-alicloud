@@ -232,6 +232,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 			"server_certificate_id": {
 				Type:             schema.TypeString,
 				Optional:         true,
+				Computed:         true,
 				DiffSuppressFunc: sslCertificateIdDiffSuppressFunc,
 			},
 
