@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -66,11 +67,7 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 					"Safe",
 				}),
 			},
-			"tags": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validateJsonString,
-			},
+			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -187,7 +184,14 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 	request.VpcId = d.Get("vpc_id").(string)
 	request.VSwitchId = d.Get("vswitch_id").(string)
 	request.ConnectionMode = d.Get("connection_mode").(string)
-	request.Tags = d.Get("tags").(string)
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := v.(map[string]interface{})
+		bs, err := json.Marshal(tagsMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.Tags = string(bs)
+	}
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 

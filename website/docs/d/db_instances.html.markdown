@@ -17,12 +17,11 @@ Filters support regular expression for the instance name, searches by tags, and 
 data "alicloud_db_instances" "db_instances_ds" {
   name_regex = "data-\\d+"
   status     = "Running"
-  tags       = <<EOF
-{
-  "type": "database",
-  "size": "tiny"
-}
-EOF
+  tags       = {
+    "type" = "database",
+    "size" = "tiny"
+  }
+
 }
 
 output "first_db_instance_id" {
@@ -42,7 +41,7 @@ The following arguments are supported:
 * `vpc_id` - (Optional) Used to retrieve instances belong to specified VPC.
 * `vswitch_id` - (Optional) Used to retrieve instances belong to specified `vswitch` resources.
 * `connection_mode` - (Optional) `Standard` for standard access mode and `Safe` for high security access mode.
-* `tags` - (Optional) Query the instance bound to the tag. The format of the incoming value is `json` string, including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty. Format example `{"key1":"value1"}`.
+* `tags` - (Optional)  A map of tags assigned to the DB instances.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
