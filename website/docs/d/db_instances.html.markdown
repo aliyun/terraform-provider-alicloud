@@ -41,7 +41,8 @@ The following arguments are supported:
 * `vpc_id` - (Optional) Used to retrieve instances belong to specified VPC.
 * `vswitch_id` - (Optional) Used to retrieve instances belong to specified `vswitch` resources.
 * `connection_mode` - (Optional) `Standard` for standard access mode and `Safe` for high security access mode.
-* `tags` - (Optional)  A map of tags assigned to the DB instances.
+* `tags` - (Optional) A map of tags assigned to the DB instances. 
+Note: Before 1.60.0, the value's format is a `json` string which including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty. Format example `{"key1":"value1"}`
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

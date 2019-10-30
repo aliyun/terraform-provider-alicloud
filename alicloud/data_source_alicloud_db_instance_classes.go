@@ -61,6 +61,11 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
 			// Computed values.
 			"instance_classes": {
 				Type:     schema.TypeList,
@@ -234,12 +239,14 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 	}
 
 	infos := make([]map[string]interface{}, len(classInfos))
+	var classIds []string
 	for k, v := range classInfos {
 		infos[v.Index] = map[string]interface{}{
 			"zone_ids":       v.ZoneIds,
 			"storage_range":  v.StorageRange,
 			"instance_class": k,
 		}
+		classIds = append(classIds, k)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
@@ -247,6 +254,7 @@ func dataSourceAlicloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapError(err)
 	}
+	d.Set("ids", classIds)
 	if output, ok := d.GetOk("output_file"); ok {
 		err = writeToFile(output.(string), infos)
 		if err != nil {

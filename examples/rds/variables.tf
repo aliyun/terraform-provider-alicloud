@@ -6,12 +6,8 @@ variable "engine_version" {
   default = "5.6"
 }
 
-variable "instance_class" {
-  default = "rds.mysql.t1.small"
-}
-
 variable "storage" {
-  default = "10"
+  default = 50
 }
 
 variable "net_type" {
