@@ -125,6 +125,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eips":                   dataSourceAlicloudEips(),
 			"alicloud_key_pairs":              dataSourceAlicloudKeyPairs(),
 			"alicloud_kms_keys":               dataSourceAlicloudKmsKeys(),
+			"alicloud_dns_resolution_lines":   dataSourceAlicloudDnsResolutionLines(),
 			"alicloud_dns_domains":            dataSourceAlicloudDnsDomains(),
 			"alicloud_dns_groups":             dataSourceAlicloudDnsGroups(),
 			"alicloud_dns_records":            dataSourceAlicloudDnsRecords(),
