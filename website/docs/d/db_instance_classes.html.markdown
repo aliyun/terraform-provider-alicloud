@@ -45,6 +45,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `ids` - (Available in 1.60.0+) A list of Rds instance class codes.
 * `instance_classes` - A list of Rds available resource. Each element contains the following attributes:
   * `zone_ids` - A list of Zone to launch the DB instance.
     * `id` - The Zone to launch the DB instance

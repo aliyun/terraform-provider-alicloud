@@ -52,7 +52,6 @@ func resourceAlicloudDBDatabase() *schema.Resource {
 func resourceAlicloudDBDatabaseCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	rdsService := RdsService{client}
 	request := rds.CreateCreateDatabaseRequest()
 	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Get("instance_id").(string)
@@ -61,12 +60,6 @@ func resourceAlicloudDBDatabaseCreate(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
 		request.DBDescription = v.(string)
-	}
-
-	if inst, err := rdsService.DescribeDBInstance(request.DBInstanceId); err != nil {
-		return WrapError(err)
-	} else if inst.Engine == string(PostgreSQL) || inst.Engine == string(PPAS) {
-		return WrapError(Error("At present, it does not support creating 'PostgreSQL' and 'PPAS' database. Please login DB instance to create."))
 	}
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {

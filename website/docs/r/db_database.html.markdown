@@ -76,10 +76,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The current database resource ID. Composed of instance ID and database name with format `<instance_id>:<name>`.
-* `instance_id` - The Id of DB instance.
-* `name` - The name of DB database.
-* `character_set` - Character set that database used.
-* `description` - The database description.
 
 ## Import
 
