@@ -155,7 +155,6 @@ func dataSourceAlicloudKVStoreInstances() *schema.Resource {
 
 func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	kvstoreService := KvstoreService{client}
 
 	request := r_kvstore.CreateDescribeInstancesRequest()
 	request.RegionId = client.RegionId
@@ -180,6 +179,16 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		var reqTags []r_kvstore.DescribeInstancesTag
+		for key, value := range v.(map[string]interface{}) {
+			reqTags = append(reqTags, r_kvstore.DescribeInstancesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
+	}
 	for {
 		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 			return rkvClient.DescribeInstances(request)
@@ -203,18 +212,6 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 				if _, ok := idsMap[item.InstanceId]; !ok {
 					continue
 				}
-			}
-			if v, ok := d.GetOk("tags"); ok {
-				tags, err := kvstoreService.DescribeTags(item.InstanceId, TagResourceInstance)
-				if err != nil {
-					return WrapError(err)
-				}
-				if vmap, ok := v.(map[string]interface{}); ok && len(vmap) > 0 {
-					if !tagsMapEqual(vmap, kvstoreService.tagsToMap(tags)) {
-						continue
-					}
-				}
-
 			}
 			dbi = append(dbi, item)
 		}

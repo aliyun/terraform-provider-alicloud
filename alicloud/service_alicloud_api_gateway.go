@@ -352,11 +352,21 @@ func (s *CloudApiService) AbolishApi(id string, stageName string) (err error) {
 	return
 }
 
-func (s *CloudApiService) DescribeTags(resourceId string, resourceType TagResourceType) (tags []cloudapi.TagResource, err error) {
+func (s *CloudApiService) DescribeTags(resourceId string, resourceTags map[string]interface{}, resourceType TagResourceType) (tags []cloudapi.TagResource, err error) {
 	request := cloudapi.CreateListTagResourcesRequest()
 	request.RegionId = s.client.RegionId
 	request.ResourceType = string(resourceType)
 	request.ResourceId = &[]string{resourceId}
+	if resourceTags != nil && len(resourceTags) > 0 {
+		var reqTags []cloudapi.ListTagResourcesTag
+		for key, value := range resourceTags {
+			reqTags = append(reqTags, cloudapi.ListTagResourcesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
+	}
 	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
 		return cloudApiClient.ListTagResources(request)
 	})

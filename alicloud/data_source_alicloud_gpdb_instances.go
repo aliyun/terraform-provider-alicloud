@@ -134,6 +134,16 @@ func dataSourceAlicloudGpdbInstancesRead(d *schema.ResourceData, meta interface{
 	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
+	if v, ok := d.GetOk("tags"); ok {
+		var reqTags []gpdb.DescribeDBInstancesTag
+		for key, value := range v.(map[string]interface{}) {
+			reqTags = append(reqTags, gpdb.DescribeDBInstancesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
+	}
 
 	var dbi []gpdb.DBInstanceAttribute
 	for {
@@ -169,13 +179,6 @@ func dataSourceAlicloudGpdbInstancesRead(d *schema.ResourceData, meta interface{
 			// filter by vSwitchId
 			if vSwitchId != "" && vSwitchId != string(item.VSwitchId) {
 				continue
-			}
-			if v, ok := d.GetOk("tags"); ok {
-				if vmap, ok := v.(map[string]interface{}); ok && len(vmap) > 0 {
-					if !tagsMapEqual(vmap, gpdbService.tagsToMap(item.Tags.Tag)) {
-						continue
-					}
-				}
 			}
 
 			// describe instance

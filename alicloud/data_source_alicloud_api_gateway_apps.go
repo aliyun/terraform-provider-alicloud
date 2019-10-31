@@ -127,16 +127,13 @@ func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface
 			}
 		}
 		if value, ok := d.GetOk("tags"); ok {
-			tags, err := cloudApiService.DescribeTags(strconv.FormatInt(app.AppId, 10), TagResourceApp)
+			tags, err := cloudApiService.DescribeTags(strconv.FormatInt(app.AppId, 10), value.(map[string]interface{}), TagResourceApp)
 			if err != nil {
 				return WrapError(err)
 			}
-			if vmap, ok := value.(map[string]interface{}); ok && len(vmap) > 0 {
-				if !tagsMapEqual(vmap, cloudApiService.tagsToMap(tags)) {
-					continue
-				}
+			if len(tags) < 1 {
+				continue
 			}
-
 		}
 
 		filteredAppsTemp = append(filteredAppsTemp, app)
