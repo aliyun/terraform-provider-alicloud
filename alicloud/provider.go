@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform/helper/mutexkv"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/mitchellh/go-homedir"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -87,6 +88,7 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: descriptions["shared_credentials_file"],
+				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SHARED_CREDENTIALS_FILE", ""),
 			},
 			"profile": {
 				Type:        schema.TypeString,
@@ -970,7 +972,11 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 			return nil, nil
 		}
 		current := d.Get("profile").(string)
-		profilePath := d.Get("shared_credentials_file").(string)
+		// Set CredsFilename, expanding home directory
+		profilePath, err := homedir.Expand(d.Get("shared_credentials_file").(string))
+		if err != nil {
+			return nil, WrapError(err)
+		}
 		if profilePath == "" {
 			profilePath = fmt.Sprintf("%s/.aliyun/config.json", os.Getenv("HOME"))
 			if runtime.GOOS == "windows" {
@@ -978,7 +984,7 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 			}
 		}
 		providerConfig = make(map[string]interface{})
-		_, err := os.Stat(profilePath)
+		_, err = os.Stat(profilePath)
 		if !os.IsNotExist(err) {
 			data, err := ioutil.ReadFile(profilePath)
 			if err != nil {
