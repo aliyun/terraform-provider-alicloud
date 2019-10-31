@@ -72,7 +72,7 @@ func resourceAliyunApigatewayAppCreate(d *schema.ResourceData, meta interface{})
 func resourceAliyunApigatewayAppRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
-	tags, err := cloudApiService.DescribeTags(d.Id(), TagResourceApp)
+	tags, err := cloudApiService.DescribeTags(d.Id(), nil, TagResourceApp)
 	if err != nil {
 		return WrapError(err)
 	}
