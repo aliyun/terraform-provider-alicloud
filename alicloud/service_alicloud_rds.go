@@ -682,7 +682,7 @@ func (s *RdsService) WaitForDBInstance(id string, status Status, timeout int) er
 				return WrapError(err)
 			}
 		}
-		if strings.ToLower(object.DBInstanceStatus) == strings.ToLower(string(status)) {
+		if object != nil && strings.ToLower(object.DBInstanceStatus) == strings.ToLower(string(status)) {
 			break
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
@@ -777,7 +777,7 @@ func (s *RdsService) WaitForDBConnection(id string, status Status, timeout int) 
 				return WrapError(err)
 			}
 		}
-		if object.ConnectionString != "" {
+		if object != nil && object.ConnectionString != "" {
 			return nil
 		}
 		if time.Now().After(deadline) {
@@ -823,7 +823,7 @@ func (s *RdsService) WaitForAccount(id string, status Status, timeout int) error
 				return WrapError(err)
 			}
 		}
-		if object.AccountStatus == string(status) {
+		if object != nil && object.AccountStatus == string(status) {
 			break
 		}
 		if time.Now().After(deadline) {
@@ -919,7 +919,7 @@ func (s *RdsService) WaitForDBDatabase(id string, status Status, timeout int) er
 			}
 			return WrapError(err)
 		}
-		if object.DBName == parts[1] {
+		if object != nil && object.DBName == parts[1] {
 			break
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
