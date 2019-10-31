@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -48,33 +49,49 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 
 	tagsConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"name_regex": `"${alicloud_route_table.default.name}"`,
 			"tags": `{
 							Created = "TF"
 							For 	= "acceptance test"
 					  }`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"name_regex": `"${alicloud_route_table.default.name}"`,
 			"tags": `{
 							Created = "TF-fake"
-							For 	= "acceptance test"
+							For 	= "acceptance test-fake"
 					  }`,
+		}),
+	}
+
+	resourceGroupIdConfig := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"name_regex": `"${alicloud_route_table.default.name}"`,
+			// The resource route tables do not support resource_group_id, so it was set empty.
+			"resource_group_id": `""`,
+		}),
+		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"name_regex":        `"${alicloud_route_table.default.name}"`,
+			"resource_group_id": fmt.Sprintf(`"%s_fake"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 		}),
 	}
 
 	allConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
-			"name_regex": `"${alicloud_route_table.default.name}"`,
-			"vpc_id":     `"${alicloud_vpc.default.id}"`,
-			"ids":        `[ "${alicloud_route_table.default.id}" ]`,
+			"name_regex":        `"${alicloud_route_table.default.name}"`,
+			"vpc_id":            `"${alicloud_vpc.default.id}"`,
+			"ids":               `[ "${alicloud_route_table.default.id}" ]`,
+			"resource_group_id": `""`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
-			"name_regex": `"${alicloud_route_table.default.name}_fake"`,
-			"vpc_id":     `"${alicloud_vpc.default.id}"`,
-			"ids":        `[ "${alicloud_route_table.default.id}" ]`,
+			"name_regex":        `"${alicloud_route_table.default.name}_fake"`,
+			"vpc_id":            `"${alicloud_vpc.default.id}"`,
+			"ids":               `[ "${alicloud_route_table.default.id}" ]`,
+			"resource_group_id": `""`,
 		}),
 	}
 
-	routeTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConfig, vpcIdConfig, idsConfig, tagsConfig, allConfig)
+	routeTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConfig, vpcIdConfig, idsConfig, tagsConfig, resourceGroupIdConfig, allConfig)
 }
 
 func testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand int, attrMap map[string]string) string {
