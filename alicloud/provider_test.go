@@ -145,6 +145,17 @@ func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithCloudConnectNetworkGrantSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("GRANT_CEN_ID")); v == "" {
+		t.Skipf("Skipping the test case with no cen instance id setting")
+		t.Skipped()
+	}
+	if v := strings.TrimSpace(os.Getenv("GRANT_CEN_UID")); v == "" {
+		t.Skipf("Skipping the test case with no cen uid setting")
+		t.Skipped()
+	}
+}
+
 var providerCommon = `
 provider "alicloud" {
 	assume_role {}

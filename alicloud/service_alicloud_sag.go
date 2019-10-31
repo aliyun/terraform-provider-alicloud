@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
@@ -48,12 +47,15 @@ func (s *SagService) DescribeCloudConnectNetwork(id string) (c smartag.CloudConn
 	return c, nil
 }
 
-func (s *SagService) DescribeCloudConnectNetworkAttachment(id string) (c smartag.GrantRule, err error) {
-	parts, _ := ParseResourceId(id, 2)
-	ccn_id := parts[0]
+func (s *SagService) DescribeCloudConnectNetworkGrant(id string) (c smartag.GrantRule, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return c, WrapError(err)
+	}
+
 	request := smartag.CreateDescribeGrantRulesRequest()
 	request.RegionId = s.client.RegionId
-	request.AssociatedCcnId = ccn_id
+	request.AssociatedCcnId = parts[0]
 
 	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -80,41 +82,6 @@ func (s *SagService) DescribeCloudConnectNetworkAttachment(id string) (c smartag
 	response, _ := raw.(*smartag.DescribeGrantRulesResponse)
 	if len(response.GrantRules.GrantRule) <= 0 {
 		return c, WrapErrorf(Error(GetNotFoundMessage("GrantRule", id)), NotFoundMsg, ProviderERROR)
-	}
-	c = response.GrantRules.GrantRule[0]
-	return c, nil
-}
-
-func (s *SagService) DescribeSagGrantRules(id string) (c smartag.GrantRule, err error) {
-	request := smartag.CreateDescribeGrantSagRulesRequest()
-	request.RegionId = s.client.RegionId
-	request.SmartAGId = id
-
-	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
-			return sagClient.DescribeGrantSagRules(request)
-		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		return nil
-	})
-	if err != nil {
-		if IsExceptedError(err, "GrantSagRuleNotExist") {
-			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
-		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
-	response, _ := raw.(*smartag.DescribeGrantSagRulesResponse)
-	if len(response.GrantRules.GrantRule) <= 0 {
-		return c, WrapErrorf(Error(GetNotFoundMessage("Grant sag rule", id)), NotFoundMsg, ProviderERROR)
 	}
 	c = response.GrantRules.GrantRule[0]
 	return c, nil
@@ -156,17 +123,14 @@ func (s *SagService) DescribeSagAcl(id string) (c smartag.Acl, err error) {
 }
 
 func (s *SagService) DescribeSagAclRule(id string) (c smartag.Acr, err error) {
-	parts_ := strings.Split(id, ":")
-	acl_id := ""
-	if len(parts_) != 2 {
-		acl_id = id
-	} else {
-		parts, _ := ParseResourceId(id, 2)
-		acl_id = parts[0]
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return c, WrapError(err)
 	}
+
 	request := smartag.CreateDescribeACLAttributeRequest()
 	request.RegionId = s.client.RegionId
-	request.AclId = acl_id
+	request.AclId = parts[0]
 
 	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -234,12 +198,14 @@ func (s *SagService) DescribeSagNetworkopt(id string) (c smartag.NetworkOptimiza
 }
 
 func (s *SagService) DescribeSagNetworkoptSetting(id string) (c smartag.Setting, err error) {
-	parts, _ := ParseResourceId(id, 3)
-	opt_id := parts[0]
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return c, WrapError(err)
+	}
 
 	request := smartag.CreateDescribeNetworkOptimizationSettingsRequest()
 	request.RegionId = s.client.RegionId
-	request.NetworkOptId = opt_id
+	request.NetworkOptId = parts[0]
 
 	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -307,12 +273,14 @@ func (s *SagService) DescribeNetworkoptSags(id string) (c smartag.SmartAccessGat
 }
 
 func (s *SagService) DescribeSagClientUser(id string) (c smartag.User, err error) {
-	parts, _ := ParseResourceId(id, 2)
-	sag_id := parts[0]
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return c, WrapError(err)
+	}
 
 	request := smartag.CreateDescribeSmartAccessGatewayClientUsersRequest()
 	request.RegionId = s.client.RegionId
-	request.SmartAGId = sag_id
+	request.SmartAGId = parts[0]
 
 	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -345,12 +313,14 @@ func (s *SagService) DescribeSagClientUser(id string) (c smartag.User, err error
 }
 
 func (s *SagService) DescribeSagSnatEntry(id string) (c smartag.SnatEntry, err error) {
-	parts, _ := ParseResourceId(id, 2)
-	sag_id := parts[0]
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return c, WrapError(err)
+	}
 
 	request := smartag.CreateDescribeSnatEntriesRequest()
 	request.RegionId = s.client.RegionId
-	request.SmartAGId = sag_id
+	request.SmartAGId = parts[0]
 
 	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -383,12 +353,14 @@ func (s *SagService) DescribeSagSnatEntry(id string) (c smartag.SnatEntry, err e
 }
 
 func (s *SagService) DescribeSagDnatEntry(id string) (c smartag.DnatEntry, err error) {
-	parts, _ := ParseResourceId(id, 2)
-	sag_id := parts[0]
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return c, WrapError(err)
+	}
 
 	request := smartag.CreateDescribeDnatEntriesRequest()
 	request.RegionId = s.client.RegionId
-	request.SagId = sag_id
+	request.SagId = parts[0]
 
 	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -456,20 +428,15 @@ func (s *SagService) DescribeSagQos(id string) (c smartag.Qos, err error) {
 }
 
 func (s *SagService) DescribeSagQosPolicy(id string) (c smartag.QosPolicy, err error) {
-	parts_ := strings.Split(id, ":")
-	qos_id := ""
-	qospy_id := ""
-	if len(parts_) != 2 {
-		qos_id = id
-	} else {
-		parts, _ := ParseResourceId(id, 2)
-		qos_id = parts[0]
-		qospy_id = parts[1]
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return c, WrapError(err)
 	}
+
 	request := smartag.CreateDescribeQosPoliciesRequest()
 	request.RegionId = s.client.RegionId
-	request.QosId = qos_id
-	request.QosPolicyId = qospy_id
+	request.QosId = parts[0]
+	request.QosPolicyId = parts[1]
 
 	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -527,6 +494,11 @@ func (s *SagService) WaitForSagAcl(id string, status Status, timeout int) error 
 
 func (s *SagService) WaitForSagAclRule(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+
 	for {
 		object, err := s.DescribeSagAclRule(id)
 		if err != nil {
@@ -537,13 +509,38 @@ func (s *SagService) WaitForSagAclRule(id string, status Status, timeout int) er
 			}
 			return WrapError(err)
 		}
-		parts_ := strings.Split(id, ":")
-		if object.AcrId == parts_[1] && status != Deleted {
+		if object.AcrId == parts[1] && status != Deleted {
 			break
 		}
-
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AcrId, parts_[1], ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AcrId, parts[1], ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *SagService) WaitForCloudConnectNetworkGrant(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		object, err := s.DescribeCloudConnectNetworkGrant(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		}
+		if object.CenInstanceId == parts[1] && status != Deleted {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.CenInstanceId, parts[1], ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}

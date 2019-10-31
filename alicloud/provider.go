@@ -388,6 +388,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_connect_network":               resourceAlicloudCloudConnectNetwork(),
 			"alicloud_sag_acl":                             resourceAlicloudSagAcl(),
 			"alicloud_sag_acl_rule":                        resourceAlicloudSagAclRule(),
+			"alicloud_cloud_connect_network_grant":         resourceAlicloudCloudConnectNetworkGrant(),
 		},
 
 		ConfigureFunc: providerConfigure,
