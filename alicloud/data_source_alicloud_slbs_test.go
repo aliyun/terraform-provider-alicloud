@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -79,6 +80,17 @@ func TestAccAlicloudSlbsDataSource(t *testing.T) {
 		}),
 	}
 
+	resourceGroupIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbDataSourceConfig(rand, map[string]string{
+			"name_regex":        `"${alicloud_slb.default.name}"`,
+			"resource_group_id": fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+		}),
+		fakeConfig: testAccCheckAlicloudSlbDataSourceConfig(rand, map[string]string{
+			"name_regex":        `"${alicloud_slb.default.name}"`,
+			"resource_group_id": fmt.Sprintf(`"%s_fake"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbDataSourceConfig(rand, map[string]string{
 			"name_regex":               `"${alicloud_slb.default.name}"`,
@@ -88,6 +100,7 @@ func TestAccAlicloudSlbsDataSource(t *testing.T) {
 			"network_type":             `"vpc"`,
 			"tags":                     `{tag_f = 6}`,
 			"master_availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
+			"resource_group_id":        fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 		}),
 		fakeConfig: testAccCheckAlicloudSlbDataSourceConfig(rand, map[string]string{
 			"name_regex":               `"${alicloud_slb.default.name}_fake"`,
@@ -97,6 +110,7 @@ func TestAccAlicloudSlbsDataSource(t *testing.T) {
 			"network_type":             `"vpc"`,
 			"tags":                     `{tag_f = 6}`,
 			"master_availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
+			"resource_group_id":        fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 		}),
 	}
 
@@ -136,7 +150,7 @@ func TestAccAlicloudSlbsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeDnsRecordsMapFunc,
 	}
 
-	slbsRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, vpcIDConf, vswitchConf, netWorkTypeConf, tagsConf, masterZoneConf, allConf)
+	slbsRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, vpcIDConf, vswitchConf, netWorkTypeConf, tagsConf, masterZoneConf, resourceGroupIdConf, allConf)
 
 }
 
@@ -181,11 +195,12 @@ resource "alicloud_slb" "default" {
     tag_g = 7
     tag_h = 8
   }
+  resource_group_id = "%s"
 }
 
 data "alicloud_slbs" "default" {
   %s
 }
-`, rand, strings.Join(pairs, "\n  "))
+`, rand, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), strings.Join(pairs, "\n  "))
 	return config
 }

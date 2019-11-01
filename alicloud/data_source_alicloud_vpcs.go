@@ -55,6 +55,11 @@ func dataSourceAlicloudVpcs() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			// Computed values
 			"vpcs": {
 				Type:     schema.TypeList,
@@ -120,7 +125,7 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 	request.RegionId = string(client.Region)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	var allVpcs []vpc.Vpc
 	invoker := NewInvoker()
 	for {

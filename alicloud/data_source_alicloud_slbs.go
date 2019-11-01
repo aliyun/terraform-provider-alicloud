@@ -74,6 +74,11 @@ func dataSourceAlicloudSlbs() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			// Computed values
 			"slbs": {
 				Type:     schema.TypeList,
@@ -145,6 +150,7 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 
 	request := slb.CreateDescribeLoadBalancersRequest()
 	request.RegionId = client.RegionId
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	if v, ok := d.GetOk("master_availability_zone"); ok && v.(string) != "" {
 		request.MasterZoneId = v.(string)
 	}

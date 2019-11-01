@@ -35,6 +35,11 @@ func dataSourceAlicloudSlbCACertificates() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			// Computed values
 			"certificates": {
 				Type:     schema.TypeList,
@@ -93,6 +98,7 @@ func dataSourceAlicloudSlbCACertificatesRead(d *schema.ResourceData, meta interf
 
 	request := slb.CreateDescribeCACertificatesRequest()
 	request.RegionId = client.RegionId
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
