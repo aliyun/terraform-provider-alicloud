@@ -13,6 +13,8 @@
 
 IMPROVEMENTS:
 
+- vpc product datasource support resource_group_id [GH-1822]
+- imporve(instance): modified the argument reference in doc. [GH-1815]
 - Add resource_group_id to data_source_alicloud_route_tables [GH-1814]
 - use homedir to expand shared_credentials_file value and add environment variable for it [GH-1811]
 - Add password to resource_alicloud_ess_scalingconfiguration [GH-1810]
