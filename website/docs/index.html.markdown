@@ -175,7 +175,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
   If not provided, the provider will attempt to retrieve it automatically with [STS GetCallerIdentity](https://www.alibabacloud.com/help/doc-detail/43767.htm).
   It can be sourced from the `ALICLOUD_ACCOUNT_ID` environment variable.
 
-* `shared_credentials_file` - (Optional, Available in 1.49.0+) This is the path to the shared credentials file. If this is not set and a profile is specified, ~/.aliyun/config.json will be used.
+* `shared_credentials_file` - (Optional, Available in 1.49.0+) This is the path to the shared credentials file. It can also be sourced from the `ALICLOUD_SHARED_CREDENTIALS_FILE` environment variable. If this is not set and a profile is specified, ~/.aliyun/config.json will be used.
 
 * `profile` - (Optional, Available in 1.49.0+) This is the Alicloud profile name as set in the shared credentials file. It can also be sourced from the `ALICLOUD_PROFILE` environment variable.
 

@@ -80,14 +80,6 @@ const (
 	TotalCapacity            = AdjustmentType("TotalCapacity")
 )
 
-type RecurrenceType string
-
-const (
-	Daily   = RecurrenceType("Daily")
-	Weekly  = RecurrenceType("Weekly")
-	Monthly = RecurrenceType("Monthly")
-)
-
 type InstanceCreationType string
 
 const (

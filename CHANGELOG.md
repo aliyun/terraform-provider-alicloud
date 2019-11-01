@@ -13,6 +13,7 @@
 
 IMPROVEMENTS:
 
+- alicloud_ess_scheduled_task supports Cron type [GH-1824]
 - vpc product datasource support resource_group_id [GH-1822]
 - imporve(instance): modified the argument reference in doc. [GH-1815]
 - Add resource_group_id to data_source_alicloud_route_tables [GH-1814]
