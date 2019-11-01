@@ -73,15 +73,17 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 	}
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccVpcsdatasource%d"`, rand),
 			"tags": `{
 							Created = "TF"
 							For 	= "acceptance test"
 					  }`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
+			"name_regex": fmt.Sprintf(`"tf-testAccVpcsdatasource%d"`, rand),
 			"tags": `{
 							Created = "TF-fake"
-							For 	= "acceptance test"
+							For 	= "acceptance test-fake"
 					  }`,
 		}),
 	}
