@@ -1,36 +1,36 @@
-## 1.60.0 (Unreleased)
+## 1.60.0 (November 01, 2019)
 
-- **New Data Source:** `alicloud_emr_disk_types` [GH-1805]
-- **New Data Source:** `alicloud_dns_resolution_lines` [GH-1800]
-- **New Resource:** `alicloud_sag_qos` [GH-1790]
-- **New Resource:** `alicloud_sag_qos_policy` [GH-1790]
-- **New Resource:** `alicloud_sag_qos_car` [GH-1790]
-- **New Resource:** `alicloud_sag_acl` [GH-1788]
-- **New Resource:** `alicloud_sag_acl_rule` [GH-1788]
-- **New Data Source:** `alicloud_sag_acls` [GH-1788]
-- **New Resource:** `alicloud_slb_domain_extension` [GH-1756]
-- **New Data Source:** `alicloud_slb_domain_extensions` [GH-1756]
+- **New Data Source:** `alicloud_emr_disk_types` ([#1805](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1805))
+- **New Data Source:** `alicloud_dns_resolution_lines` ([#1800](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1800))
+- **New Resource:** `alicloud_sag_qos` ([#1790](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1790))
+- **New Resource:** `alicloud_sag_qos_policy` ([#1790](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1790))
+- **New Resource:** `alicloud_sag_qos_car` ([#1790](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1790))
+- **New Resource:** `alicloud_sag_acl` ([#1788](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1788))
+- **New Resource:** `alicloud_sag_acl_rule` ([#1788](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1788))
+- **New Data Source:** `alicloud_sag_acls` ([#1788](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1788))
+- **New Resource:** `alicloud_slb_domain_extension` ([#1756](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1756))
+- **New Data Source:** `alicloud_slb_domain_extensions` ([#1756](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1756))
 
 IMPROVEMENTS:
 
-- alicloud_ess_scheduled_task supports Cron type [GH-1824]
-- vpc product datasource support resource_group_id [GH-1822]
-- imporve(instance): modified the argument reference in doc. [GH-1815]
-- Add resource_group_id to data_source_alicloud_route_tables [GH-1814]
-- use homedir to expand shared_credentials_file value and add environment variable for it [GH-1811]
-- Add password to resource_alicloud_ess_scalingconfiguration [GH-1810]
-- add ids for db_instance_classess and remove limitation for db_database resource [GH-1803]
-- improve(db_instances):update tags type from string to map [GH-1802]
-- improve(instance): field 'user_data' supported update [GH-1798]
-- add doc of cloud_connect_network [GH-1791]
-- improve(slb): updated slb attachment testcase. [GH-1758]
+- alicloud_ess_scheduled_task supports Cron type ([#1824](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1824))
+- vpc product datasource support resource_group_id ([#1822](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1822))
+- imporve(instance): modified the argument reference in doc. ([#1815](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1815))
+- Add resource_group_id to data_source_alicloud_route_tables ([#1814](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1814))
+- use homedir to expand shared_credentials_file value and add environment variable for it ([#1811](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1811))
+- Add password to resource_alicloud_ess_scalingconfiguration ([#1810](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1810))
+- add ids for db_instance_classess and remove limitation for db_database resource ([#1803](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1803))
+- improve(db_instances):update tags type from string to map ([#1802](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1802))
+- improve(instance): field 'user_data' supported update ([#1798](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1798))
+- add doc of cloud_connect_network ([#1791](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1791))
+- improve(slb): updated slb attachment testcase. ([#1758](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1758))
 
 BUG FIXES:
 
-- fix(tag): fix api gw, gpdb, kvstore datasource bug [GH-1817]
-- fix(rds): fix creating db account empty pointer bug [GH-1812]
-- fix(slb_listener): fix server_certificate_id diff bug and add sag ci[GH-1808]
-- fix(vpc): fix DescribeTag bug for vpc's datasource [GH-1801]
+- fix(tag): fix api gw, gpdb, kvstore datasource bug ([#1817](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1817))
+- fix(rds): fix creating db account empty pointer bug ([#1812](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1812))
+- fix(slb_listener): fix server_certificate_id diff bug and add sag ci([#1808](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1808))
+- fix(vpc): fix DescribeTag bug for vpc's datasource ([#1801](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1801))
 
 ## 1.59.0 (October 25, 2019)
 
