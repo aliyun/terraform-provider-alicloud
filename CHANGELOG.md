@@ -1,4 +1,34 @@
-## 1.59.1 (Unreleased)
+## 1.60.0 (Unreleased)
+
+- **New Data Source:** `alicloud_emr_disk_types` [GH-1805]
+- **New Data Source:** `alicloud_dns_resolution_lines` [GH-1800]
+- **New Resource:** `alicloud_sag_qos` [GH-1790]
+- **New Resource:** `alicloud_sag_qos_policy` [GH-1790]
+- **New Resource:** `alicloud_sag_qos_car` [GH-1790]
+- **New Resource:** `alicloud_sag_acl` [GH-1788]
+- **New Resource:** `alicloud_sag_acl_rule` [GH-1788]
+- **New Data Source:** `alicloud_sag_acls` [GH-1788]
+- **New Resource:** `alicloud_slb_domain_extension` [GH-1756]
+- **New Data Source:** `alicloud_slb_domain_extensions` [GH-1756]
+
+IMPROVEMENTS:
+
+- Add resource_group_id to data_source_alicloud_route_tables [GH-1814]
+- use homedir to expand shared_credentials_file value and add environment variable for it [GH-1811]
+- Add password to resource_alicloud_ess_scalingconfiguration [GH-1810]
+- add ids for db_instance_classess and remove limitation for db_database resource [GH-1803]
+- improve(db_instances):update tags type from string to map [GH-1802]
+- improve(instance): field 'user_data' supported update [GH-1798]
+- add doc of cloud_connect_network [GH-1791]
+- improve(slb): updated slb attachment testcase. [GH-1758]
+
+BUG FIXES:
+
+- fix(tag): fix api gw, gpdb, kvstore datasource bug [GH-1817]
+- fix(rds): fix creating db account empty pointer bug [GH-1812]
+- fix(slb_listener): fix server_certificate_id diff bug and add sag ci[GH-1808]
+- fix(vpc): fix DescribeTag bug for vpc's datasource [GH-1801]
+
 ## 1.59.0 (October 25, 2019)
 
 - **New Resource:** `alicloud_cloud_connect_network` ([#1784](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1784))
