@@ -48,6 +48,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 					"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
+					"password":          "123-abcABC",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -57,7 +58,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id"},
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "password", "kms_encrypted_password", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -314,6 +315,7 @@ func TestAccAlicloudEssScalingConfigurationMulti(t *testing.T) {
 					"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
+					"password":          "123-abcABC",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
