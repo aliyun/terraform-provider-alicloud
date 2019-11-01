@@ -859,6 +859,22 @@ data "alicloud_emr_instance_types" "default" {
     instance_charge_type = "PostPaid"
 }
 
+data "alicloud_emr_disk_types" "data_disk" {
+	destination_resource = "DataDisk"
+	cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+	instance_charge_type = "PostPaid"
+	instance_type = data.alicloud_emr_instance_types.default.types.0.id
+	zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
+data "alicloud_emr_disk_types" "system_disk" {
+	destination_resource = "SystemDisk"
+	cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+	instance_charge_type = "PostPaid"
+	instance_type = data.alicloud_emr_instance_types.default.types.0.id
+	zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
 resource "alicloud_vpc" "default" {
   name = "${var.name}"
   cidr_block = "172.16.0.0/12"

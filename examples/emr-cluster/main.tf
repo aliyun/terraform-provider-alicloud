@@ -7,6 +7,22 @@ data "alicloud_emr_instance_types" "default" {
     instance_charge_type = "PostPaid"
 }
 
+data "alicloud_emr_disk_types" "data_disk" {
+    destination_resource = "DataDisk"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    instance_charge_type = "PostPaid"
+    instance_type = data.alicloud_emr_instance_types.default.types.0.id
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
+data "alicloud_emr_disk_types" "system_disk" {
+    destination_resource = "SystemDisk"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    instance_charge_type = "PostPaid"
+    instance_type = data.alicloud_emr_instance_types.default.types.0.id
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
 resource "alicloud_vpc" "vpc" {
     count = var.vpc_id == "" ? 1 : 0
 
@@ -67,11 +83,11 @@ resource "alicloud_emr_cluster" "default" {
         host_group_type = "MASTER"
         node_count = "2"
         instance_type = data.alicloud_emr_instance_types.default.types.0.id
-        disk_type = "cloud_ssd"
-        disk_capacity = "80"
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
         disk_count = "1"
-        sys_disk_type = "cloud_ssd"
-        sys_disk_capacity = "80"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
     }
 
     host_group {
@@ -79,11 +95,11 @@ resource "alicloud_emr_cluster" "default" {
         host_group_type = "CORE"
         node_count = "3"
         instance_type = data.alicloud_emr_instance_types.default.types.0.id
-        disk_type = "cloud_ssd"
-        disk_capacity = "80"
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
         disk_count = "4"
-        sys_disk_type = "cloud_ssd"
-        sys_disk_capacity = "80"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
     }
 
     host_group {
@@ -91,11 +107,11 @@ resource "alicloud_emr_cluster" "default" {
         host_group_type = "TASK"
         node_count = "2"
         instance_type = data.alicloud_emr_instance_types.default.types.0.id
-        disk_type = "cloud_ssd"
-        disk_capacity = "80"
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
         disk_count = "4"
-        sys_disk_type = "cloud_ssd"
-        sys_disk_capacity = "80"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
     }
 
     high_availability_enable = true
