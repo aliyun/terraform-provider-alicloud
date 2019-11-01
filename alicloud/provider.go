@@ -224,6 +224,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ots_tables":                        dataSourceAlicloudOtsTables(),
 			"alicloud_cloud_connect_networks":            dataSourceAlicloudCloudConnectNetworks(),
 			"alicloud_emr_instance_types":                dataSourceAlicloudEmrInstanceTypes(),
+			"alicloud_emr_disk_types":                    dataSourceAlicloudEmrDiskTypes(),
 			"alicloud_emr_main_versions":                 dataSourceAlicloudEmrMainVersions(),
 			"alicloud_sag_acls":                          dataSourceAlicloudSagAcls(),
 		},
