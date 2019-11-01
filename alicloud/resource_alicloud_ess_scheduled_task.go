@@ -46,7 +46,7 @@ func resourceAlicloudEssScheduledTask() *schema.Resource {
 				Type:         schema.TypeString,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(Daily), string(Weekly), string(Monthly)}),
+				ValidateFunc: validateAllowedStringValue([]string{"Daily", "Weekly", "Monthly", "Cron"}),
 			},
 			"recurrence_value": {
 				Type:     schema.TypeString,
