@@ -197,6 +197,27 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"password": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"kms_encrypted_password": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("password").(string) != ""
+				},
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
+			},
 		},
 	}
 }
@@ -649,6 +670,20 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 
 	securityGroupId := d.Get("security_group_id").(string)
 	securityGroupIds := d.Get("security_group_ids").([]interface{})
+
+	password := d.Get("password").(string)
+	kmsPassword := d.Get("kms_encrypted_password").(string)
+
+	if password != "" {
+		request.Password = password
+	} else if kmsPassword != "" {
+		kmsService := KmsService{client}
+		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+		if err != nil {
+			return nil, WrapError(err)
+		}
+		request.Password = decryptResp.Plaintext
+	}
 
 	if securityGroupId == "" && (securityGroupIds == nil || len(securityGroupIds) == 0) {
 		return nil, WrapError(Error("security_group_id or security_group_ids must be assigned"))
