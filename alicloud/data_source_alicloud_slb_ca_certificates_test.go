@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -28,14 +29,27 @@ func TestAccAlicloudSlbCACertificatesDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
+	resourceGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbCaCertificatesDataSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_slb_ca_certificate.default.id}"]`,
-			"name_regex": `"${alicloud_slb_ca_certificate.default.name}"`,
+			"ids":               `["${alicloud_slb_ca_certificate.default.id}"]`,
+			"resource_group_id": `""`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbCaCertificatesDataSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_slb_ca_certificate.default.id}_fake"]`,
-			"name_regex": `"${alicloud_slb_ca_certificate.default.name}"`,
+			"ids":               `["${alicloud_slb_ca_certificate.default.id}_fake"]`,
+			"resource_group_id": fmt.Sprintf(`"%s_fake"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbCaCertificatesDataSourceConfig(rand, map[string]string{
+			"ids":               `["${alicloud_slb_ca_certificate.default.id}"]`,
+			"name_regex":        `"${alicloud_slb_ca_certificate.default.name}"`,
+			"resource_group_id": `""`,
+		}),
+		fakeConfig: testAccCheckAlicloudSlbCaCertificatesDataSourceConfig(rand, map[string]string{
+			"ids":               `["${alicloud_slb_ca_certificate.default.id}_fake"]`,
+			"name_regex":        `"${alicloud_slb_ca_certificate.default.name}"`,
+			"resource_group_id": `""`,
 		}),
 	}
 
@@ -71,7 +85,7 @@ func TestAccAlicloudSlbCACertificatesDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeDnsRecordsMapFunc,
 	}
 
-	slbCaCertificatesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
+	slbCaCertificatesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, resourceGroupIdConf, allConf)
 
 }
 

@@ -56,6 +56,11 @@ func dataSourceAlicloudVSwitches() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			// Computed values
 			"vswitches": {
 				Type:     schema.TypeList,
@@ -111,6 +116,7 @@ func dataSourceAlicloudVSwitchesRead(d *schema.ResourceData, meta interface{}) e
 
 	request := vpc.CreateDescribeVSwitchesRequest()
 	request.RegionId = string(client.Region)
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	// API DescribeVSwitches has some limitations
 	// If there is no vpc_id, setting PageSizeSmall can avoid ServiceUnavailable Error
 	request.PageSize = requests.NewInteger(PageSizeSmall)

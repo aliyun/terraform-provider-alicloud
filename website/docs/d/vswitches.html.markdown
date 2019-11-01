@@ -47,6 +47,7 @@ The following arguments are supported:
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `ids` - (Optional, Available in 1.52.0+) A list of VSwitch IDs.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.60.0+) The Id of resource group which VSWitch belongs.
 
 ## Attributes Reference
 

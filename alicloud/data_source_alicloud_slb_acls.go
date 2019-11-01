@@ -30,6 +30,11 @@ func dataSourceAlicloudSlbAcls() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			// Computed values
 			"names": {
 				Type:     schema.TypeList,
@@ -106,6 +111,7 @@ func dataSourceAlicloudSlbAclsRead(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	request := slb.CreateDescribeAccessControlListsRequest()
 	request.RegionId = client.RegionId
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
