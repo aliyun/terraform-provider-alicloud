@@ -1,3 +1,4 @@
+## 1.60.1 (Unreleased)
 ## 1.60.0 (November 01, 2019)
 
 - **New Data Source:** `alicloud_emr_disk_types` ([#1805](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1805))
