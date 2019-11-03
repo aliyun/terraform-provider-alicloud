@@ -94,7 +94,7 @@ The following arguments are supported:
 * `alarm_actions` - (Required) The list of actions to execute when this alarm transition into an ALARM state. Each action is specified as ess scaling rule ari.
 * `scaling_group_id` - (Required, ForceNew) The scaling group associated with this alarm, the 'ForceNew' attribute is available in 1.56.0+.
 * `metric_type` - (Optional, ForceNew) The type for the alarm's associated metric. Supported value: system, custom. "system" means the metric data is collected by Aliyun Cloud Monitor Service(CMS), "custom" means the metric data is upload to CMS by users. Defaults to system. 
-* `metric_name` - (Required) The name for the alarm's associated metric.
+* `metric_name` - (Required) The name for the alarm's associated metric. See [Block_metricNames_and_dimensions](#block-metricnames_and_dimensions) below for details.
 * `period` - (Optional, ForceNew) The period in seconds over which the specified statistic is applied. Supported value: 60, 120, 300, 900. Defaults to 300.
 * `statistics` - (Optional) The statistic to apply to the alarm's associated metric. Supported value: Average, Minimum, Maximum. Defaults to Average.
 * `threshold` - (Required) The value against which the specified statistics is compared.
@@ -103,6 +103,30 @@ The following arguments are supported:
 * `cloud_monitor_group_id` - (Optional) Defines the application group id defined by CMS which is assigned when you upload custom metric to CMS, only available for custom metirc.
 * `dimensions` - (Optional) The dimension map for the alarm's associated metric (documented below). For all metrics, you can not set the dimension key as "scaling_group" or "userId", which is set by default, the second dimension for metric, such as "device" for "PackagesNetIn", need to be set by users.
 
+## Block metricNames_and_dimensions
+
+Supported metric names and dimensions :
+
+| MetricName         | Dimensions                   |
+| ------------------ | ---------------------------- |
+| CpuUtilization     | user_id,scaling_group        |
+| ClassicInternetRx  | user_id,scaling_group        |
+| ClassicInternetTx  | user_id,scaling_group        |
+| VpcInternetRx      | user_id,scaling_group        |
+| VpcInternetTx      | user_id,scaling_group        |
+| IntranetRx         | user_id,scaling_group        |
+| IntranetTx         | user_id,scaling_group        |
+| LoadAverage        | user_id,scaling_group        |
+| MemoryUtilization  | user_id,scaling_group        |
+| SystemDiskReadBps  | user_id,scaling_group        |
+| SystemDiskWriteBps | user_id,scaling_group        |
+| SystemDiskReadOps  | user_id,scaling_group        |
+| SystemDiskWriteOps | user_id,scaling_group        |
+| PackagesNetIn      | user_id,scaling_group,device |
+| PackagesNetOut     | user_id,scaling_group,device |
+| TcpConnection      | user_id,scaling_group,state  |
+
+-> **NOTE:** Dimension `user_id` and `scaling_group` is automatically filled, which means you only need to care about dimension `device` and `state` when needed.
 
 ## Attribute Reference
 

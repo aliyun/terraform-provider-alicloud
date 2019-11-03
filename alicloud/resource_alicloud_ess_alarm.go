@@ -215,6 +215,9 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 	request.AlarmTaskId = d.Id()
 	request.RegionId = client.RegionId
 	d.Partial(true)
+	if metricType, ok := d.GetOk("metric_type"); ok && metricType.(string) != "" {
+		request.MetricType = metricType.(string)
+	}
 	if d.HasChange("name") {
 		request.Name = d.Get("name").(string)
 	}
@@ -246,8 +249,8 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 	if d.HasChange("evaluation_count") {
 		request.EvaluationCount = requests.NewInteger(d.Get("evaluation_count").(int))
 	}
-	if d.HasChange("cloud_monitor_group_id") {
-		request.GroupId = requests.NewInteger(d.Get("cloud_monitor_group_id").(int))
+	if v, ok := d.GetOk("cloud_monitor_group_id"); ok {
+		request.GroupId = requests.NewInteger(v.(int))
 	}
 
 	dimensions := d.Get("dimensions").(map[string]interface{})
