@@ -92,7 +92,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 				if err != nil {
 					if IsExceptedError(err, IncorrectCapacityMaxSize) {
 						instances, err := essService.DescribeEssAttachment(d.Id(), make([]string, 0))
-						if err != nil {
+						if !NotFoundError(err) {
 							return resource.NonRetryableError(err)
 						}
 						var autoAdded, attached []string

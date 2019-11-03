@@ -294,7 +294,7 @@ func buildAlicloudEssScalingRuleArgs(d *schema.ResourceData, meta interface{}) (
 		if v, ok := d.GetOkExists("adjustment_value"); ok {
 			request.AdjustmentValue = requests.NewInteger(v.(int))
 		}
-		if v, ok := d.GetOkExists("cooldown"); ok && v.(int) != 0 {
+		if v, ok := d.GetOk("cooldown"); ok {
 			request.Cooldown = requests.NewInteger(v.(int))
 		}
 	case string(TargetTrackingScalingRule):
