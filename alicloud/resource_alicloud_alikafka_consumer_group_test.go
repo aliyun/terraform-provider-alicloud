@@ -133,7 +133,7 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id": "${alicloud_alikafka_instance.default.id}",
-					"consumer_id": "${var.consumer_id}",
+					"consumer_id": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -182,7 +182,7 @@ func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"count":       "5",
 					"instance_id": "${alicloud_alikafka_instance.default.id}",
-					"consumer_id": "${var.consumer_id}-${count.index}",
+					"consumer_id": "${var.name}-${count.index}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -197,7 +197,7 @@ func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
 
 func resourceAlikafkaConsumerGroupConfigDependence(name string) string {
 	return fmt.Sprintf(`
-		variable "consumer_id" {
+		variable "name" {
  			default = "%v"
 		}
 
@@ -206,12 +206,14 @@ func resourceAlikafkaConsumerGroupConfigDependence(name string) string {
 		}
 		resource "alicloud_vpc" "default" {
 		  cidr_block = "172.16.0.0/12"
+		  name       = "${var.name}"
 		}
 		
 		resource "alicloud_vswitch" "default" {
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.0.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name       = "${var.name}"
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
@@ -227,5 +229,5 @@ func resourceAlikafkaConsumerGroupConfigDependence(name string) string {
 }
 
 var alikafkaConsumerGroupBasicMap = map[string]string{
-	"consumer_id": "${var.consumer_id}",
+	"consumer_id": "${var.name}",
 }

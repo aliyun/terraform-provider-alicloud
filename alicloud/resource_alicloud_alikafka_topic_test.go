@@ -148,7 +148,7 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":   "${alicloud_alikafka_instance.default.id}",
-					"topic":         "${var.topic}",
+					"topic":         "${var.name}",
 					"local_topic":   "false",
 					"compact_topic": "false",
 					"partition_num": "6",
@@ -221,7 +221,7 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"topic":         "${var.topic}",
+					"topic":         "${var.name}",
 					"local_topic":   "false",
 					"compact_topic": "false",
 					"partition_num": "12",
@@ -272,7 +272,7 @@ func TestAccAlicloudAlikafkaTopic_multi(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"count":         "5",
 					"instance_id":   "${alicloud_alikafka_instance.default.id}",
-					"topic":         "${var.topic}-${count.index}",
+					"topic":         "${var.name}-${count.index}",
 					"local_topic":   "false",
 					"compact_topic": "false",
 					"partition_num": "6",
@@ -324,7 +324,7 @@ func shouldSkipLocalAndCompact(instanceId string) skipLocalAndCompactFunc {
 
 func resourceAlikafkaTopicConfigDependence(name string) string {
 	return fmt.Sprintf(`
-		variable "topic" {
+		variable "name" {
  			default = "%v"
 		}
 
@@ -333,12 +333,14 @@ func resourceAlikafkaTopicConfigDependence(name string) string {
 		}
 		resource "alicloud_vpc" "default" {
 		  cidr_block = "172.16.0.0/12"
+		  name       = "${var.name}"
 		}
 		
 		resource "alicloud_vswitch" "default" {
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.0.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name       = "${var.name}"
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
@@ -354,7 +356,7 @@ func resourceAlikafkaTopicConfigDependence(name string) string {
 }
 
 var alikafkaTopicBasicMap = map[string]string{
-	"topic":         "${var.topic}",
+	"topic":         "${var.name}",
 	"local_topic":   "false",
 	"compact_topic": "false",
 	"partition_num": "12",
