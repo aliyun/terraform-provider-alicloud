@@ -125,3 +125,36 @@ resource "alicloud_emr_cluster" "default" {
     ssh_enable = true
     master_pwd = "ABCtest1234!"
 }
+
+resource "alicloud_emr_cluster" "gateway" {
+    name = "terraform-gateway-test-1101"
+
+    emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
+
+    # supported 'GATEWAY' available in 1.61.0+.
+    cluster_type = "GATEWAY"
+
+    host_group {
+        host_group_name = "master_group"
+        host_group_type = "GATEWAY"
+        node_count = "1"
+        instance_type = data.alicloud_emr_instance_types.default.types.0.id
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
+        disk_count = "1"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
+    }
+
+    high_availability_enable = true
+    option_software_list = ["HBASE","PRESTO",]
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+    security_group_id = var.security_group_id == "" ? alicloud_security_group.default[0].id : var.security_group_id
+    is_open_public_ip = true
+    charge_type = "PostPaid"
+    vswitch_id = var.vswitch_id == "" ? alicloud_vswitch.vswitch[0].id : var.vswitch_id
+    user_defined_emr_ecs_role = alicloud_ram_role.default.name
+    ssh_enable = true
+    master_pwd = "ABCtest1234!"
+    related_cluster_id = alicloud_emr_cluster.default.id
+}

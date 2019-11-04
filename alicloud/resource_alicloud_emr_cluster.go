@@ -55,9 +55,10 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 							Optional: true,
 						},
 						"host_group_type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validateAllowedStringValue([]string{HOST_GROUP_TYPE_MASTER, HOST_GROUP_TYPE_CORE, HOST_GROUP_TYPE_TASK}),
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validateAllowedStringValue([]string{HOST_GROUP_TYPE_MASTER,
+								HOST_GROUP_TYPE_CORE, HOST_GROUP_TYPE_TASK, HOST_GROUP_TYPE_GATEWAY}),
 						},
 						"period": {
 							Type:         schema.TypeInt,
@@ -414,7 +415,7 @@ func resourceAlicloudEmrClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("deposit_type", object.ClusterInfo.DepositType)
 	d.Set("eas_enable", object.ClusterInfo.EasEnable)
 	d.Set("user_defined_emr_ecs_role", object.ClusterInfo.UserDefinedEmrEcsRole)
-	d.Set("related_cluster_id", object.ClusterInfo.RelateClusterId)
+	d.Set("related_cluster_id", object.ClusterInfo.RelateClusterInfo.ClusterId)
 
 	return nil
 }
