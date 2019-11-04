@@ -21,7 +21,7 @@ import (
 )
 
 // DescribeSnatEntries invokes the smartag.DescribeSnatEntries API synchronously
-// api document: https://help.aliyun.com/api/smartag/describednatentries.html
+// api document: https://help.aliyun.com/api/smartag/describesnatentries.html
 func (client *Client) DescribeSnatEntries(request *DescribeSnatEntriesRequest) (response *DescribeSnatEntriesResponse, err error) {
 	response = CreateDescribeSnatEntriesResponse()
 	err = client.DoAction(request, response)
@@ -77,21 +77,21 @@ func (client *Client) DescribeSnatEntriesWithCallback(request *DescribeSnatEntri
 type DescribeSnatEntriesRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
-	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	SmartAGId            string           `position:"Query" name:"SmartAGId"`
 	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	SmartAGId            string           `position:"Query" name:"SmartAGId"`
 }
 
 // DescribeSnatEntriesResponse is the response struct for api DescribeSnatEntries
 type DescribeSnatEntriesResponse struct {
 	*responses.BaseResponse
-	RequestId        string           `json:"RequestId" xml:"RequestId"`
-	TotalCount       int              `json:"TotalCount" xml:"TotalCount"`
-	PageNumber       int              `json:"PageNumber" xml:"PageNumber"`
-	PageSize         int              `json:"PageSize" xml:"PageSize"`
+	RequestId   string      `json:"RequestId" xml:"RequestId"`
+	TotalCount  int         `json:"TotalCount" xml:"TotalCount"`
+	PageNumber  int         `json:"PageNumber" xml:"PageNumber"`
+	PageSize    int         `json:"PageSize" xml:"PageSize"`
 	SnatEntries SnatEntries `json:"SnatEntries" xml:"SnatEntries"`
 }
 

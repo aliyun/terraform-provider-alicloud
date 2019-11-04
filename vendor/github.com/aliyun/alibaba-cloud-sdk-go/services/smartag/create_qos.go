@@ -79,9 +79,9 @@ type CreateQosRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	QosName              string           `position:"Query" name:"QosName"`
 	QosDescription       string           `position:"Query" name:"QosDescription"`
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 }
 
 // CreateQosResponse is the response struct for api CreateQos

@@ -18,15 +18,15 @@ package smartag
 // QosPolicy is a nested struct in smartag response
 type QosPolicy struct {
 	QosPolicyId     string `json:"QosPolicyId" xml:"QosPolicyId"`
-	QosId 		string `json:"QosId" xml:"QosId"`
-	Priority 	int    `json:"Priority" xml:"Priority"`
-	SourceCidr 	string `json:"SourceCidr" xml:"SourceCidr"`
-	DestCidr 	string `json:"DestCidr" xml:"DestCidr"`
-	IpProtocol 	string `json:"IpProtocol" xml:"IpProtocol"`
+	QosId           string `json:"QosId" xml:"QosId"`
+	Priority        int    `json:"Priority" xml:"Priority"`
+	Description     string `json:"Description" xml:"Description"`
+	SourceCidr      string `json:"SourceCidr" xml:"SourceCidr"`
+	DestCidr        string `json:"DestCidr" xml:"DestCidr"`
+	IpProtocol      string `json:"IpProtocol" xml:"IpProtocol"`
 	SourcePortRange string `json:"SourcePortRange" xml:"SourcePortRange"`
-	DestPortRange 	string `json:"DestPortRange" xml:"DestPortRange"`
-	Name 		string `json:"Name" xml:"Name"`
-	Description 	string `json:"Description" xml:"Description"`
-	StartTime 	string `json:"StartTime" xml:"StartTime"`
-	EndTime 	string `json:"EndTime" xml:"EndTime"`
+	DestPortRange   string `json:"DestPortRange" xml:"DestPortRange"`
+	StartTime       string `json:"StartTime" xml:"StartTime"`
+	EndTime         string `json:"EndTime" xml:"EndTime"`
+	Name            string `json:"Name" xml:"Name"`
 }

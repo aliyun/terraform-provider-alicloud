@@ -77,23 +77,25 @@ func (client *Client) DescribeQosCarsWithCallback(request *DescribeQosCarsReques
 type DescribeQosCarsRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	Description          string           `position:"Query" name:"Description"`
+	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
+	PageSize             requests.Integer `position:"Query" name:"PageSize"`
+	QosId                string           `position:"Query" name:"QosId"`
+	Order                string           `position:"Query" name:"Order"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	QosId                string           `position:"Query" name:"QosId"`
-	QosCarId             string           `position:"Query" name:"QosCarId"`
-	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
+	QosCarId             string           `position:"Query" name:"QosCarId"`
 }
 
 // DescribeQosCarsResponse is the response struct for api DescribeQosCars
 type DescribeQosCarsResponse struct {
 	*responses.BaseResponse
-	RequestId  string `json:"RequestId" xml:"RequestId"`
-	TotalCount int    `json:"TotalCount" xml:"TotalCount"`
-	PageNumber int    `json:"PageNumber" xml:"PageNumber"`
-	PageSize   int    `json:"PageSize" xml:"PageSize"`
-	QosCars    QosCars   `json:"QosCars" xml:"QosCars"`
+	RequestId  string  `json:"RequestId" xml:"RequestId"`
+	TotalCount int     `json:"TotalCount" xml:"TotalCount"`
+	PageNumber int     `json:"PageNumber" xml:"PageNumber"`
+	PageSize   int     `json:"PageSize" xml:"PageSize"`
+	QosCars    QosCars `json:"QosCars" xml:"QosCars"`
 }
 
 // CreateDescribeQosCarsRequest creates a request to invoke DescribeQosCars API

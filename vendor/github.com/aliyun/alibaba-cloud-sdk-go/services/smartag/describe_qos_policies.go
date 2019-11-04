@@ -77,23 +77,25 @@ func (client *Client) DescribeQosPoliciesWithCallback(request *DescribeQosPolici
 type DescribeQosPoliciesRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	QosPolicyId          string           `position:"Query" name:"QosPolicyId"`
+	Description          string           `position:"Query" name:"Description"`
+	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
+	PageSize             requests.Integer `position:"Query" name:"PageSize"`
+	QosId                string           `position:"Query" name:"QosId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	QosId                string           `position:"Query" name:"QosId"`
-	QosPolicyId          string           `position:"Query" name:"QosPolicyId"`
-	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
+	Priority             requests.Integer `position:"Query" name:"Priority"`
 }
 
 // DescribeQosPoliciesResponse is the response struct for api DescribeQosPolicies
 type DescribeQosPoliciesResponse struct {
 	*responses.BaseResponse
-	RequestId	string `json:"RequestId" xml:"RequestId"`
-	TotalCount	int    `json:"TotalCount" xml:"TotalCount"`
-	PageNumber	int    `json:"PageNumber" xml:"PageNumber"`
-	PageSize	int    `json:"PageSize" xml:"PageSize"`
-	QosPolicies	QosPolicies   `json:"QosPolicies" xml:"QosPolicies"`
+	RequestId   string      `json:"RequestId" xml:"RequestId"`
+	TotalCount  int         `json:"TotalCount" xml:"TotalCount"`
+	PageNumber  int         `json:"PageNumber" xml:"PageNumber"`
+	PageSize    int         `json:"PageSize" xml:"PageSize"`
+	QosPolicies QosPolicies `json:"QosPolicies" xml:"QosPolicies"`
 }
 
 // CreateDescribeQosPoliciesRequest creates a request to invoke DescribeQosPolicies API

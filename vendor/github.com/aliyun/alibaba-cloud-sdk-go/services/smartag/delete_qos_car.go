@@ -76,12 +76,12 @@ func (client *Client) DeleteQosCarWithCallback(request *DeleteQosCarRequest, cal
 // DeleteQosCarRequest is the request struct for api DeleteQosCar
 type DeleteQosCarRequest struct {
 	*requests.RpcRequest
-	QosId                string           `position:"Query" name:"QosId"`
-	QosCarId             string           `position:"Query" name:"QosCarId"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	QosId                string           `position:"Query" name:"QosId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	QosCarId             string           `position:"Query" name:"QosCarId"`
 }
 
 // DeleteQosCarResponse is the response struct for api DeleteQosCar

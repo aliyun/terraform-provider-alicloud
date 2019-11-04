@@ -77,36 +77,35 @@ func (client *Client) CreateQosCarWithCallback(request *CreateQosCarRequest, cal
 type CreateQosCarRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
-	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	QosId                string           `position:"Query" name:"QosId"`
-	Priority             requests.Integer `position:"Query" name:"Priority"`
-	LimitType            string           `position:"Query" name:"LimitType"`
 	MinBandwidthAbs      requests.Integer `position:"Query" name:"MinBandwidthAbs"`
-	MaxBandwidthAbs      requests.Integer `position:"Query" name:"MaxBandwidthAbs"`
-	MinBandwidthPercent  requests.Integer `position:"Query" name:"MinBandwidthPercent"`
-	MaxBandwidthPercent  requests.Integer `position:"Query" name:"MaxBandwidthPercent"`
-	Name                 string           `position:"Query" name:"Name"`
 	Description          string           `position:"Query" name:"Description"`
 	PercentSourceType    string           `position:"Query" name:"PercentSourceType"`
+	QosId                string           `position:"Query" name:"QosId"`
+	MaxBandwidthAbs      requests.Integer `position:"Query" name:"MaxBandwidthAbs"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	MaxBandwidthPercent  requests.Integer `position:"Query" name:"MaxBandwidthPercent"`
+	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	Priority             requests.Integer `position:"Query" name:"Priority"`
+	MinBandwidthPercent  requests.Integer `position:"Query" name:"MinBandwidthPercent"`
+	LimitType            string           `position:"Query" name:"LimitType"`
+	Name                 string           `position:"Query" name:"Name"`
 }
 
 // CreateQosCarResponse is the response struct for api CreateQosCar
 type CreateQosCarResponse struct {
 	*responses.BaseResponse
-	RequestId 		string `json:"RequestId" xml:"RequestId"`
-	QosCarId        	string `json:"QosCarId" xml:"QosCarId"`
-	QosId 			string `json:"QosId" xml:"QosId"`
-	Priority 		int    `json:"Priority" xml:"Priority"`
-	LimitType 		string `json:"LimitType" xml:"LimitType"`
-	MinBandwidthAbs 	int `json:"MinBandwidthAbs" xml:"MinBandwidthAbs"`
-	MaxBandwidthAbs 	int `json:"MaxBandwidthAbs" xml:"MaxBandwidthAbs"`
-	MinBandwidthPercent 	int `json:"MinBandwidthPercent" xml:"MinBandwidthPercent"`
-	MaxBandwidthPercent 	int `json:"MaxBandwidthPercent" xml:"MaxBandwidthPercent"`
-	Name 			string `json:"Name" xml:"Name"`
-	Description 		string `json:"Description" xml:"Description"`
-	PercentSourceType 	string `json:"PercentSourceType" xml:"PercentSourceType"`
+	RequestId           string `json:"RequestId" xml:"RequestId"`
+	QosId               string `json:"QosId" xml:"QosId"`
+	QosCarId            string `json:"QosCarId" xml:"QosCarId"`
+	Description         string `json:"Description" xml:"Description"`
+	Priority            int    `json:"Priority" xml:"Priority"`
+	LimitType           string `json:"LimitType" xml:"LimitType"`
+	MinBandwidthAbs     int    `json:"MinBandwidthAbs" xml:"MinBandwidthAbs"`
+	MaxBandwidthAbs     int    `json:"MaxBandwidthAbs" xml:"MaxBandwidthAbs"`
+	MinBandwidthPercent int    `json:"MinBandwidthPercent" xml:"MinBandwidthPercent"`
+	MaxBandwidthPercent int    `json:"MaxBandwidthPercent" xml:"MaxBandwidthPercent"`
+	PercentSourceType   string `json:"PercentSourceType" xml:"PercentSourceType"`
 }
 
 // CreateCreateQosCarRequest creates a request to invoke CreateQosCar API

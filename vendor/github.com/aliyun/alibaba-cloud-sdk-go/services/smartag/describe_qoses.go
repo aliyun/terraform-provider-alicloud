@@ -77,13 +77,13 @@ func (client *Client) DescribeQosesWithCallback(request *DescribeQosesRequest, c
 type DescribeQosesRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
+	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	QosIds               string           `position:"Query" name:"QosIds"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	QosName              string           `position:"Query" name:"QosName"`
-	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
+	QosName              string           `position:"Query" name:"QosName"`
 }
 
 // DescribeQosesResponse is the response struct for api DescribeQoses
@@ -93,7 +93,7 @@ type DescribeQosesResponse struct {
 	TotalCount int    `json:"TotalCount" xml:"TotalCount"`
 	PageNumber int    `json:"PageNumber" xml:"PageNumber"`
 	PageSize   int    `json:"PageSize" xml:"PageSize"`
-	Qoses      Qoses   `json:"Qoses" xml:"Qoses"`
+	Qoses      Qoses  `json:"Qoses" xml:"Qoses"`
 }
 
 // CreateDescribeQosesRequest creates a request to invoke DescribeQoses API

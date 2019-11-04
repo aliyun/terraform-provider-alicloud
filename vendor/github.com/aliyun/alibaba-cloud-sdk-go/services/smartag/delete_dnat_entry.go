@@ -77,17 +77,17 @@ func (client *Client) DeleteDnatEntryWithCallback(request *DeleteDnatEntryReques
 type DeleteDnatEntryRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	DnatEntryId          string           `position:"Query" name:"DnatEntryId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	SagId                string           `position:"Query" name:"SagId"`
-	DnatEntryId          string           `position:"Query" name:"DnatEntryId"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	SagId                string           `position:"Query" name:"SagId"`
 }
 
 // DeleteDnatEntryResponse is the response struct for api DeleteDnatEntry
 type DeleteDnatEntryResponse struct {
 	*responses.BaseResponse
-	RequestId    string `json:"RequestId" xml:"RequestId"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDeleteDnatEntryRequest creates a request to invoke DeleteDnatEntry API

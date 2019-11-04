@@ -79,15 +79,15 @@ type DeleteSnatEntryRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	SmartAGId            string           `position:"Query" name:"SmartAGId"`
-	InstanceId           string           `position:"Query" name:"InstanceId"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	InstanceId           string           `position:"Query" name:"InstanceId"`
+	SmartAGId            string           `position:"Query" name:"SmartAGId"`
 }
 
 // DeleteSnatEntryResponse is the response struct for api DeleteSnatEntry
 type DeleteSnatEntryResponse struct {
 	*responses.BaseResponse
-	RequestId    string `json:"RequestId" xml:"RequestId"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDeleteSnatEntryRequest creates a request to invoke DeleteSnatEntry API
