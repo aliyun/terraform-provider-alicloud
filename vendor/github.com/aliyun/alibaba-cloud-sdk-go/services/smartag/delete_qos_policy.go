@@ -76,9 +76,9 @@ func (client *Client) DeleteQosPolicyWithCallback(request *DeleteQosPolicyReques
 // DeleteQosPolicyRequest is the request struct for api DeleteQosPolicy
 type DeleteQosPolicyRequest struct {
 	*requests.RpcRequest
-	QosId                string           `position:"Query" name:"QosId"`
-	QosPolicyId          string           `position:"Query" name:"QosPolicyId"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	QosPolicyId          string           `position:"Query" name:"QosPolicyId"`
+	QosId                string           `position:"Query" name:"QosId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`

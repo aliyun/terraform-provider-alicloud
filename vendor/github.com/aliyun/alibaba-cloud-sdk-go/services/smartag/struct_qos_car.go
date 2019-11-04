@@ -19,13 +19,13 @@ package smartag
 type QosCar struct {
 	QosCarId            string `json:"QosCarId" xml:"QosCarId"`
 	QosId               string `json:"QosId" xml:"QosId"`
+	Description         string `json:"Description" xml:"Description"`
 	Priority            int    `json:"Priority" xml:"Priority"`
 	LimitType           string `json:"LimitType" xml:"LimitType"`
-	MinBandwidthAbs     int `json:"MinBandwidthAbs" xml:"MinBandwidthAbs"`
-	MaxBandwidthAbs     int `json:"MaxBandwidthAbs" xml:"MaxBandwidthAbs"`
-	MinBandwidthPercent int `json:"MinBandwidthPercent" xml:"MinBandwidthPercent"`
-	MaxBandwidthPercent int `json:"MaxBandwidthPercent" xml:"MaxBandwidthPercent"`
-	Name                string `json:"Name" xml:"Name"`
-	Description         string `json:"Description" xml:"Description"`
+	MinBandwidthAbs     int    `json:"MinBandwidthAbs" xml:"MinBandwidthAbs"`
+	MaxBandwidthAbs     int    `json:"MaxBandwidthAbs" xml:"MaxBandwidthAbs"`
+	MinBandwidthPercent int    `json:"MinBandwidthPercent" xml:"MinBandwidthPercent"`
+	MaxBandwidthPercent int    `json:"MaxBandwidthPercent" xml:"MaxBandwidthPercent"`
 	PercentSourceType   string `json:"PercentSourceType" xml:"PercentSourceType"`
+	Name                string `json:"Name" xml:"Name"`
 }

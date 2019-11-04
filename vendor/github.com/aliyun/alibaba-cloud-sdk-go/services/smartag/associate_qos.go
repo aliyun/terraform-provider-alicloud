@@ -76,12 +76,12 @@ func (client *Client) AssociateQosWithCallback(request *AssociateQosRequest, cal
 // AssociateQosRequest is the request struct for api AssociateQos
 type AssociateQosRequest struct {
 	*requests.RpcRequest
-	QosId                string           `position:"Query" name:"QosId"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	QosId                string           `position:"Query" name:"QosId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	SmartAGId            string           `position:"Query" name:"SmartAGId"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	SmartAGId            string           `position:"Query" name:"SmartAGId"`
 }
 
 // AssociateQosResponse is the response struct for api AssociateQos

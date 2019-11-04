@@ -77,18 +77,19 @@ func (client *Client) GrantSagInstanceToCcnWithCallback(request *GrantSagInstanc
 type GrantSagInstanceToCcnRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
-	CcnUid               string           `position:"Query" name:"CcnUid"`
-	SmartAGId            string           `position:"Query" name:"SmartAGId"`
+	CcnUid               requests.Integer `position:"Query" name:"CcnUid"`
 	CcnInstanceId        string           `position:"Query" name:"CcnInstanceId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	SmartAGId            string           `position:"Query" name:"SmartAGId"`
 }
 
 // GrantSagInstanceToCcnResponse is the response struct for api GrantSagInstanceToCcn
 type GrantSagInstanceToCcnResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
+	RequestId  string `json:"RequestId" xml:"RequestId"`
+	InstanceId string `json:"InstanceId" xml:"InstanceId"`
 }
 
 // CreateGrantSagInstanceToCcnRequest creates a request to invoke GrantSagInstanceToCcn API

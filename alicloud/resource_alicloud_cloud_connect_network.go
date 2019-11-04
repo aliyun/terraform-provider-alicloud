@@ -121,6 +121,7 @@ func resourceAlicloudCloudConnectNetworkUpdate(d *schema.ResourceData, meta inte
 
 func resourceAlicloudCloudConnectNetworkDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	sagService := SagService{client}
 	request := smartag.CreateDeleteCloudConnectNetworkRequest()
 	request.CcnId = d.Id()
 
@@ -135,5 +136,5 @@ func resourceAlicloudCloudConnectNetworkDelete(d *schema.ResourceData, meta inte
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
+	return WrapError(sagService.WaitForCloudConnectNetwork(d.Id(), Deleted, DefaultTimeoutMedium))
 }

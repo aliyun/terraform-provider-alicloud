@@ -77,21 +77,21 @@ func (client *Client) ModifyQosPolicyWithCallback(request *ModifyQosPolicyReques
 type ModifyQosPolicyRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
-	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	QosId                string           `position:"Query" name:"QosId"`
-	QosPolicyId          string           `position:"Query" name:"QosPolicyId"`
-	Priority             requests.Integer `position:"Query" name:"Priority"`
-	SourceCidr           string           `position:"Query" name:"SourceCidr"`
-	DestCidr             string           `position:"Query" name:"DestCidr"`
-	IpProtocol           string           `position:"Query" name:"IpProtocol"`
 	SourcePortRange      string           `position:"Query" name:"SourcePortRange"`
-	DestPortRange        string           `position:"Query" name:"DestPortRange"`
-	Name                 string           `position:"Query" name:"Name"`
+	QosPolicyId          string           `position:"Query" name:"QosPolicyId"`
+	SourceCidr           string           `position:"Query" name:"SourceCidr"`
 	Description          string           `position:"Query" name:"Description"`
 	StartTime            string           `position:"Query" name:"StartTime"`
+	DestCidr             string           `position:"Query" name:"DestCidr"`
+	QosId                string           `position:"Query" name:"QosId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	IpProtocol           string           `position:"Query" name:"IpProtocol"`
+	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	EndTime              string           `position:"Query" name:"EndTime"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	Priority             requests.Integer `position:"Query" name:"Priority"`
+	DestPortRange        string           `position:"Query" name:"DestPortRange"`
+	Name                 string           `position:"Query" name:"Name"`
 }
 
 // ModifyQosPolicyResponse is the response struct for api ModifyQosPolicy

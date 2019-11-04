@@ -21,8 +21,8 @@ func TestAccAlicloudCloudConnectNetwork_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	nameString := fmt.Sprintf("tf-testAccCloudConnectNetwork-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, nameString, resourceCcnBasicDependence)
+	name := fmt.Sprintf("tf-testAccCloudConnectNetwork-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCcnDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.SmartagSupportedRegions)
@@ -51,21 +51,21 @@ func TestAccAlicloudCloudConnectNetwork_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": fmt.Sprintf("%s-Name", nameString),
+					"name": fmt.Sprintf("%s-Name", name),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("%s-Name", nameString),
+						"name": fmt.Sprintf("%s-Name", name),
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": fmt.Sprintf("%s-Description", nameString),
+					"description": fmt.Sprintf("%s-Description", name),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": fmt.Sprintf("%s-Description", nameString),
+						"description": fmt.Sprintf("%s-Description", name),
 					}),
 				),
 			},
@@ -81,15 +81,15 @@ func TestAccAlicloudCloudConnectNetwork_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        nameString,
-					"description": nameString,
+					"name":        name,
+					"description": name,
 					"cidr_block":  "192.168.0.0/24",
 					"is_default":  "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        nameString,
-						"description": nameString,
+						"name":        name,
+						"description": name,
 						"cidr_block":  "192.168.0.0/24",
 						"is_default":  "true",
 					}),
@@ -99,6 +99,55 @@ func TestAccAlicloudCloudConnectNetwork_basic(t *testing.T) {
 	})
 }
 
-func resourceCcnBasicDependence(name string) string {
-	return ""
+func TestAccAlicloudCloudConnectNetwork_multi(t *testing.T) {
+	var ccn smartag.CloudConnectNetwork
+	resourceId := "alicloud_cloud_connect_network.default.9"
+	ra := resourceAttrInit(resourceId, nil)
+	serviceFunc := func() interface{} {
+		return &SagService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &ccn, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCloudConnectNetwork-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCcnDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.SmartagSupportedRegions)
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${var.name}-${count.index}",
+					"count":       "10",
+					"description": "${var.name}-${count.index}",
+					"cidr_block":  "192.168.0.0/24",
+					"is_default":  "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        fmt.Sprintf("%s-9", name),
+						"description": fmt.Sprintf("%s-9", name),
+						"cidr_block":  "192.168.0.0/24",
+						"is_default":  "true",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceCcnDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+`, name)
 }

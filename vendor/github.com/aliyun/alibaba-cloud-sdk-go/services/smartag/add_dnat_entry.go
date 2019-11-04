@@ -77,23 +77,23 @@ func (client *Client) AddDnatEntryWithCallback(request *AddDnatEntryRequest, cal
 type AddDnatEntryRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
-	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	SagId		     string           `position:"Query" name:"SagId"`
 	Type                 string           `position:"Query" name:"Type"`
-	ExternalIp           string           `position:"Query" name:"ExternalIp"`
-	ExternalPort         string           `position:"Query" name:"ExternalPort"`
 	InternalIp           string           `position:"Query" name:"InternalIp"`
-	InternalPort         string           `position:"Query" name:"InternalPort"`
+	ExternalIp           string           `position:"Query" name:"ExternalIp"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	IpProtocol           string           `position:"Query" name:"IpProtocol"`
+	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	SagId                string           `position:"Query" name:"SagId"`
+	InternalPort         string           `position:"Query" name:"InternalPort"`
+	ExternalPort         string           `position:"Query" name:"ExternalPort"`
 }
 
 // AddDnatEntryResponse is the response struct for api AddDnatEntry
 type AddDnatEntryResponse struct {
 	*responses.BaseResponse
-	RequestId    string `json:"RequestId" xml:"RequestId"`
-	DnatEntryId   string `json:"DnatEntryId" xml:"DnatEntryId"`
+	RequestId   string `json:"RequestId" xml:"RequestId"`
+	DnatEntryId string `json:"DnatEntryId" xml:"DnatEntryId"`
 }
 
 // CreateAddDnatEntryRequest creates a request to invoke AddDnatEntry API
