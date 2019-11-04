@@ -145,6 +145,13 @@ func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithSmartAccessGatewaySetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("SAG_INSTANCE_ID")); v == "" {
+		t.Skipf("Skipping the test case with no sag instance id setting")
+		t.Skipped()
+	}
+}
+
 var providerCommon = `
 provider "alicloud" {
 	assume_role {}
