@@ -29,7 +29,6 @@ func resourceAlicloudDBDatabase() *schema.Resource {
 
 			"name": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
 			},
 
@@ -38,7 +37,6 @@ func resourceAlicloudDBDatabase() *schema.Resource {
 				ValidateFunc: validateAllowedStringValue(CHARACTER_SET_NAME),
 				Optional:     true,
 				Default:      "utf8",
-				ForceNew:     true,
 			},
 
 			"description": {
