@@ -79,7 +79,7 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 
 func dataSourceAlikafkaInstancesConfigDependence(name string) string {
 	return fmt.Sprintf(`
-		variable "instance_name" {
+		variable "name" {
 		 default = "%v"
 		}
 
@@ -88,16 +88,18 @@ func dataSourceAlikafkaInstancesConfigDependence(name string) string {
 		}
 		resource "alicloud_vpc" "default" {
 		  cidr_block = "172.16.0.0/12"
+		  name       = "${var.name}"
 		}
 		
 		resource "alicloud_vswitch" "default" {
 		  vpc_id = "${alicloud_vpc.default.id}"
 		  cidr_block = "172.16.0.0/24"
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name       = "${var.name}"
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
-          name = "${var.instance_name}"
+          name = "${var.name}"
 		  topic_quota = "50"
 		  disk_type = "1"
 		  disk_size = "500"
