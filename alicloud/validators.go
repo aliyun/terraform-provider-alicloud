@@ -1316,8 +1316,8 @@ func validateInstanceSpotStrategy(v interface{}, k string) (ws []string, errors 
 
 func validateDBConnectionPrefix(v interface{}, k string) (ws []string, errors []error) {
 	if value := v.(string); value != "" {
-		if len(value) < 1 || len(value) > 31 {
-			errors = append(errors, fmt.Errorf("%q cannot be less than 1 and larger than 30.", k))
+		if len(value) < 8 || len(value) > 31 {
+			errors = append(errors, fmt.Errorf("%q cannot be less than 8 and larger than 30.", k))
 		}
 	}
 	return
