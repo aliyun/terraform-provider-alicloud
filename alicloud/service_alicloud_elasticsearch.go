@@ -80,6 +80,7 @@ func updateDescription(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	request := elasticsearch.CreateUpdateDescriptionRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
@@ -107,6 +108,7 @@ func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	request := elasticsearch.CreateUpdateWhiteIpsRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
@@ -140,6 +142,7 @@ func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdatePublicWhiteIpsRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
@@ -174,6 +177,7 @@ func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateInstanceRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
@@ -227,6 +231,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateInstanceRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
@@ -285,6 +290,7 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateInstanceRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
@@ -332,6 +338,7 @@ func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateKibanaWhiteIpsRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
@@ -387,6 +394,7 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateAdminPasswordRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)

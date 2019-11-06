@@ -359,6 +359,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	}
 
 	request := elasticsearch.CreateDeleteInstanceRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContentType("application/json")
@@ -403,6 +404,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (*elasticsearch.CreateInstanceRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
 	request := elasticsearch.CreateCreateInstanceRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	vpcService := VpcService{client}
 
