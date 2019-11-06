@@ -2,7 +2,7 @@ module github.com/terraform-providers/terraform-provider-alicloud
 
 require (
 	github.com/Sirupsen/logrus v0.0.0-20181010200618-458213699411 // indirect
-	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20191010082856-e76f4c50e182
+	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20191105090738-9799861328c6
 	github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
 	github.com/aliyun/aliyun-log-go-sdk v0.0.0-20181030123559-4e6c160e1ce5
 	github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190528142024-f8d6d645dc4b
@@ -31,7 +31,7 @@ require (
 	github.com/klauspost/cpuid v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
-	github.com/pkg/errors v0.8.1 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/valyala/bytebufferpool v0.0.0-20180905182247-cdfbe9377474 // indirect
 	github.com/valyala/fasthttp v0.0.0-20180927122258-761788a34bb6 // indirect
 	gopkg.in/yaml.v2 v2.2.2
