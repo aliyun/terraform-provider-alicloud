@@ -70,6 +70,27 @@ func (s *ElasticsearchService) ElasticsearchStateRefreshFunc(id string, failStat
 	}
 }
 
+func (s *ElasticsearchService) ElasticsearchRetryFunc(wait func(), errorCodeList []string, do func(*elasticsearch.Client) (interface{}, error)) (interface{}, error) {
+	var raw interface{}
+	var err error
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithElasticsearchClient(do)
+
+		if err != nil {
+			if IsExceptedErrors(err, errorCodeList) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+
+		return nil
+	})
+
+	return raw, err
+}
+
 func updateDescription(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
@@ -81,6 +102,7 @@ func updateDescription(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	request := elasticsearch.CreateUpdateDescriptionRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
@@ -108,14 +130,21 @@ func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	request := elasticsearch.CreateUpdateWhiteIpsRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	// retry
+	var raw interface{}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateWhiteIps(request)
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -141,14 +170,21 @@ func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdatePublicWhiteIpsRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	// retry
+	var raw interface{}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdatePublicWhiteIps(request)
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -175,27 +211,21 @@ func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateInstanceRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+
+	// retry
 	var raw interface{}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (resp interface{}, errs error) {
-			return elasticsearchClient.UpdateInstance(request)
-		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-		return nil
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.UpdateInstance(request)
 	})
+
 	if err != nil && !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -228,31 +258,26 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateInstanceRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	// retry
 	var raw interface{}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-			return elasticsearchClient.UpdateInstance(request)
-		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-		return nil
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.UpdateInstance(request)
 	})
+
 	if err != nil && !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
 	stateConf.PollInterval = 5 * time.Second
@@ -286,28 +311,21 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateInstanceRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	// retry
 	var raw interface{}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-			return elasticsearchClient.UpdateInstance(request)
-		})
-		if err != nil {
-			if IsExceptedErrors(err, []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-		return nil
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.UpdateInstance(request)
 	})
+
 	if err != nil && !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -333,17 +351,25 @@ func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateKibanaWhiteIpsRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	// retry
+	var raw interface{}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateKibanaWhiteIps(request)
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
@@ -388,14 +414,21 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	request := elasticsearch.CreateUpdateAdminPasswordRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	// retry
+	var raw interface{}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateAdminPassword(request)
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
