@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"strings"
-
-	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -184,32 +181,4 @@ var logStoreMap = map[string]string{
 	"max_split_shard_count": "0",
 	"append_meta":           "true",
 	"enable_web_tracking":   "false",
-}
-
-func testAccCheckAlicloudLogStoreExists(name string, store *sls.LogStore) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[name]
-		if !ok {
-			return fmt.Errorf("Not found: %s", name)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Log store ID is set")
-		}
-
-		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		logService := LogService{client}
-
-		logstore, err := logService.DescribeLogStore(rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-		if logstore == nil || logstore.Name == "" {
-			return fmt.Errorf("Log store %s is not exist.", split[1])
-		}
-		store = logstore
-
-		return nil
-	}
 }

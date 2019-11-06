@@ -14,9 +14,9 @@ type DatahubService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *DatahubService) DescribeDatahubProject(id string) (project *datahub.Project, err error) {
+func (s *DatahubService) DescribeDatahubProject(id string) (*datahub.Project, error) {
 	var requestInfo *datahub.DataHub
-
+	project := &datahub.Project{}
 	raw, err := s.client.WithDataHubClient(func(dataHubClient *datahub.DataHub) (interface{}, error) {
 		requestInfo = dataHubClient
 		return dataHubClient.GetProject(id)
@@ -25,7 +25,7 @@ func (s *DatahubService) DescribeDatahubProject(id string) (project *datahub.Pro
 		if isDatahubNotExistError(err) {
 			return project, WrapErrorf(err, NotFoundMsg, AliyunDatahubSdkGo)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetProject", AliyunDatahubSdkGo)
+		return project, WrapErrorf(err, DefaultErrorMsg, id, "GetProject", AliyunDatahubSdkGo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]string)
@@ -36,7 +36,7 @@ func (s *DatahubService) DescribeDatahubProject(id string) (project *datahub.Pro
 	if project == nil {
 		return project, WrapErrorf(Error(GetNotFoundMessage("DatahubProject", id)), NotFoundMsg, ProviderERROR)
 	}
-	return
+	return project, nil
 }
 
 func (s *DatahubService) WaitForDatahubProject(id string, status Status, timeout int) error {
@@ -61,10 +61,11 @@ func (s *DatahubService) WaitForDatahubProject(id string, status Status, timeout
 	}
 }
 
-func (s *DatahubService) DescribeDatahubSubscription(id string) (subscription *datahub.Subscription, err error) {
+func (s *DatahubService) DescribeDatahubSubscription(id string) (*datahub.Subscription, error) {
+	subscription := &datahub.Subscription{}
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
-		return nil, WrapError(err)
+		return subscription, WrapError(err)
 	}
 	projectName, topicName, subId := parts[0], parts[1], parts[2]
 
@@ -78,7 +79,7 @@ func (s *DatahubService) DescribeDatahubSubscription(id string) (subscription *d
 		if isDatahubNotExistError(err) {
 			return subscription, WrapErrorf(err, NotFoundMsg, AliyunDatahubSdkGo)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetSubscription", AliyunDatahubSdkGo)
+		return subscription, WrapErrorf(err, DefaultErrorMsg, id, "GetSubscription", AliyunDatahubSdkGo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]string)
@@ -91,7 +92,7 @@ func (s *DatahubService) DescribeDatahubSubscription(id string) (subscription *d
 	if subscription == nil || subscription.TopicName != topicName || subscription.SubId != subId {
 		return subscription, WrapErrorf(Error(GetNotFoundMessage("DatahubSubscription", id)), NotFoundMsg, ProviderERROR)
 	}
-	return
+	return subscription, nil
 }
 
 func (s *DatahubService) WaitForDatahubSubscription(id string, status Status, timeout int) error {
@@ -122,10 +123,11 @@ func (s *DatahubService) WaitForDatahubSubscription(id string, status Status, ti
 	}
 }
 
-func (s *DatahubService) DescribeDatahubTopic(id string) (topic *datahub.Topic, err error) {
+func (s *DatahubService) DescribeDatahubTopic(id string) (*datahub.Topic, error) {
+	topic := &datahub.Topic{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return topic, WrapError(err)
 	}
 	projectName, topicName := parts[0], parts[1]
 
@@ -139,7 +141,7 @@ func (s *DatahubService) DescribeDatahubTopic(id string) (topic *datahub.Topic, 
 		if isDatahubNotExistError(err) {
 			return topic, WrapErrorf(err, NotFoundMsg, AliyunDatahubSdkGo)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetTopic", AliyunDatahubSdkGo)
+		return topic, WrapErrorf(err, DefaultErrorMsg, id, "GetTopic", AliyunDatahubSdkGo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]string)
@@ -151,7 +153,7 @@ func (s *DatahubService) DescribeDatahubTopic(id string) (topic *datahub.Topic, 
 	if topic == nil {
 		return topic, WrapErrorf(Error(GetNotFoundMessage("DatahubTopic", id)), NotFoundMsg, ProviderERROR)
 	}
-	return
+	return topic, nil
 }
 
 func (s *DatahubService) WaitForDatahubTopic(id string, status Status, timeout int) error {

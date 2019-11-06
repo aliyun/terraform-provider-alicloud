@@ -13,7 +13,8 @@ type EmrService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *EmrService) DescribeEmrCluster(id string) (response *emr.DescribeClusterV2Response, err error) {
+func (s *EmrService) DescribeEmrCluster(id string) (*emr.DescribeClusterV2Response, error) {
+	response := &emr.DescribeClusterV2Response{}
 	request := emr.CreateDescribeClusterV2Request()
 	request.Id = id
 
@@ -22,17 +23,15 @@ func (s *EmrService) DescribeEmrCluster(id string) (response *emr.DescribeCluste
 	})
 
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	addDebug(request.GetActionName(), raw, request.RpcRequest)
 	response, _ = raw.(*emr.DescribeClusterV2Response)
 	if response.ClusterInfo.Status == "RELEASED" {
-		err = WrapErrorf(Error(GetNotFoundMessage("EmrCluster", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(Error(GetNotFoundMessage("EmrCluster", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
-
-	return
+	return response, nil
 }
 
 func (s *EmrService) WaitForEmrCluster(id string, status Status, timeout int) error {

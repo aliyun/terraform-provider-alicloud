@@ -14,9 +14,10 @@ type LogService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *LogService) DescribeLogProject(id string) (project *sls.LogProject, err error) {
+func (s *LogService) DescribeLogProject(id string) (*sls.LogProject, error) {
+	project := &sls.LogProject{}
 	var requestInfo *sls.Client
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			return slsClient.GetProject(id)
@@ -38,12 +39,12 @@ func (s *LogService) DescribeLogProject(id string) (project *sls.LogProject, err
 		if IsExceptedError(err, ProjectNotExist) {
 			return project, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetProject", AliyunLogGoSdkERROR)
+		return project, WrapErrorf(err, DefaultErrorMsg, id, "GetProject", AliyunLogGoSdkERROR)
 	}
 	if project == nil || project.Name == "" {
 		return project, WrapErrorf(Error(GetNotFoundMessage("LogProject", id)), NotFoundMsg, ProviderERROR)
 	}
-	return
+	return project, nil
 }
 
 func (s *LogService) WaitForLogProject(id string, status Status, timeout int) error {
@@ -68,10 +69,11 @@ func (s *LogService) WaitForLogProject(id string, status Status, timeout int) er
 	}
 }
 
-func (s *LogService) DescribeLogStore(id string) (store *sls.LogStore, err error) {
+func (s *LogService) DescribeLogStore(id string) (*sls.LogStore, error) {
+	store := &sls.LogStore{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return store, WrapError(err)
 	}
 	projectName, name := parts[0], parts[1]
 	var requestInfo *sls.Client
@@ -99,12 +101,12 @@ func (s *LogService) DescribeLogStore(id string) (store *sls.LogStore, err error
 		if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist}) {
 			return store, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetLogStore", AliyunLogGoSdkERROR)
+		return store, WrapErrorf(err, DefaultErrorMsg, id, "GetLogStore", AliyunLogGoSdkERROR)
 	}
 	if store == nil || store.Name == "" {
 		return store, WrapErrorf(Error(GetNotFoundMessage("LogStore", id)), NotFoundMsg, ProviderERROR)
 	}
-	return
+	return store, nil
 }
 
 func (s *LogService) WaitForLogStore(id string, status Status, timeout int) error {
@@ -134,10 +136,11 @@ func (s *LogService) WaitForLogStore(id string, status Status, timeout int) erro
 	}
 }
 
-func (s *LogService) DescribeLogStoreIndex(id string) (index *sls.Index, err error) {
+func (s *LogService) DescribeLogStoreIndex(id string) (*sls.Index, error) {
+	index := &sls.Index{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return index, WrapError(err)
 	}
 	projectName, name := parts[0], parts[1]
 	var requestInfo *sls.Client
@@ -166,19 +169,20 @@ func (s *LogService) DescribeLogStoreIndex(id string) (index *sls.Index, err err
 		if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist, IndexConfigNotExist}) {
 			return index, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetIndex", AliyunLogGoSdkERROR)
+		return index, WrapErrorf(err, DefaultErrorMsg, id, "GetIndex", AliyunLogGoSdkERROR)
 	}
 
 	if index == nil || (index.Line == nil && index.Keys == nil) {
 		return index, WrapErrorf(Error(GetNotFoundMessage("LogStoreIndex", id)), NotFoundMsg, ProviderERROR)
 	}
-	return
+	return index, nil
 }
 
-func (s *LogService) DescribeLogMachineGroup(id string) (group *sls.MachineGroup, err error) {
+func (s *LogService) DescribeLogMachineGroup(id string) (*sls.MachineGroup, error) {
+	group := &sls.MachineGroup{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return group, WrapError(err)
 	}
 	projectName, groupName := parts[0], parts[1]
 	var requestInfo *sls.Client
@@ -207,13 +211,13 @@ func (s *LogService) DescribeLogMachineGroup(id string) (group *sls.MachineGroup
 		if IsExceptedErrors(err, []string{ProjectNotExist, GroupNotExist, MachineGroupNotExist}) {
 			return group, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetMachineGroup", AliyunLogGoSdkERROR)
+		return group, WrapErrorf(err, DefaultErrorMsg, id, "GetMachineGroup", AliyunLogGoSdkERROR)
 	}
 
 	if group == nil || group.Name == "" {
 		return group, WrapErrorf(Error(GetNotFoundMessage("LogMachineGroup", id)), NotFoundMsg, ProviderERROR)
 	}
-	return
+	return group, nil
 }
 
 func (s *LogService) WaitForLogMachineGroup(id string, status Status, timeout int) error {
@@ -243,10 +247,11 @@ func (s *LogService) WaitForLogMachineGroup(id string, status Status, timeout in
 	}
 }
 
-func (s *LogService) DescribeLogtailConfig(id string) (response *sls.LogConfig, err error) {
+func (s *LogService) DescribeLogtailConfig(id string) (*sls.LogConfig, error) {
+	response := &sls.LogConfig{}
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
-		return nil, WrapError(err)
+		return response, WrapError(err)
 	}
 	projectName, configName := parts[0], parts[2]
 	var requestInfo *sls.Client
@@ -274,12 +279,12 @@ func (s *LogService) DescribeLogtailConfig(id string) (response *sls.LogConfig, 
 		if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist, LogConfigNotExist}) {
 			return response, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetConfig", AliyunLogGoSdkERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, "GetConfig", AliyunLogGoSdkERROR)
 	}
 	if response == nil || response.Name == "" {
 		return response, WrapErrorf(Error(GetNotFoundMessage("LogTailConfig", id)), NotFoundMsg, ProviderERROR)
 	}
-	return
+	return response, nil
 }
 
 func (s *LogService) WaitForLogtailConfig(id string, status Status, timeout int) error {

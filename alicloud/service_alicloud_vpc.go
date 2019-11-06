@@ -254,7 +254,8 @@ func (s *VpcService) QueryRouteTableById(routeTableId string) (rt vpc.RouteTable
 	return
 }
 
-func (s *VpcService) DescribeRouteEntry(id string) (v *vpc.RouteEntry, err error) {
+func (s *VpcService) DescribeRouteEntry(id string) (*vpc.RouteEntry, error) {
+	v := &vpc.RouteEntry{}
 	parts, err := ParseResourceId(id, 5)
 	if err != nil {
 		return v, WrapError(err)
@@ -285,8 +286,7 @@ func (s *VpcService) DescribeRouteEntry(id string) (v *vpc.RouteEntry, err error
 		for _, table := range response.RouteTables.RouteTable {
 			for _, entry := range table.RouteEntrys.RouteEntry {
 				if entry.DestinationCidrBlock == cidr && entry.NextHopType == nexthop_type && entry.InstanceId == nexthop_id {
-					v = &entry
-					return
+					return &entry, nil
 				}
 			}
 		}

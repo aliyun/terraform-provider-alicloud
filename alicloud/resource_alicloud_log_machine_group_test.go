@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -144,27 +143,4 @@ var logMachineGroupMap = map[string]string{
 	"name":            CHECKSET,
 	"project":         CHECKSET,
 	"identify_list.#": "3",
-}
-
-func testAccCheckAlicloudLogMachineGroupExists(name string, group *sls.MachineGroup) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[name]
-		if !ok {
-			return fmt.Errorf("Not found: %s", name)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Log machine group ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		logService := LogService{client}
-		g, err := logService.DescribeLogMachineGroup(rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		group = g
-		return nil
-	}
 }
