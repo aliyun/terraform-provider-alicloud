@@ -11,6 +11,7 @@ type DnsService struct {
 }
 
 func (s *DnsService) DescribeDns(id string) (*alidns.DescribeDomainInfoResponse, error) {
+	response := &alidns.DescribeDomainInfoResponse{}
 	request := alidns.CreateDescribeDomainInfoRequest()
 	request.RegionId = s.client.RegionId
 	request.DomainName = id
@@ -20,11 +21,11 @@ func (s *DnsService) DescribeDns(id string) (*alidns.DescribeDomainInfoResponse,
 	})
 	if err != nil {
 		if IsExceptedError(err, InvalidDomainNameNoExist) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	response, _ := raw.(*alidns.DescribeDomainInfoResponse)
+	response, _ = raw.(*alidns.DescribeDomainInfoResponse)
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if response.DomainName != id {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("Dns", id)), NotFoundMsg, ProviderERROR)
@@ -67,6 +68,7 @@ func (dns *DnsService) DescribeDnsGroup(id string) (alidns.DomainGroup, error) {
 }
 
 func (dns *DnsService) DescribeDnsRecord(id string) (*alidns.DescribeDomainRecordInfoResponse, error) {
+	response := &alidns.DescribeDomainRecordInfoResponse{}
 	request := alidns.CreateDescribeDomainRecordInfoRequest()
 	request.RecordId = id
 	request.RegionId = dns.client.RegionId
@@ -75,14 +77,14 @@ func (dns *DnsService) DescribeDnsRecord(id string) (*alidns.DescribeDomainRecor
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{DomainRecordNotBelongToUser}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*alidns.DescribeDomainRecordInfoResponse)
+	response, _ = raw.(*alidns.DescribeDomainRecordInfoResponse)
 	if response.RecordId != id {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DnsRecord", id)), NotFoundMsg, ProviderERROR)
+		return response, WrapErrorf(Error(GetNotFoundMessage("DnsRecord", id)), NotFoundMsg, ProviderERROR)
 	}
 	return response, nil
 }

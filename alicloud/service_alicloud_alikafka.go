@@ -14,8 +14,8 @@ type AlikafkaService struct {
 	client *connectivity.AliyunClient
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId string) (alikafkaInstance *alikafka.InstanceVO, err error) {
-
+func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId string) (*alikafka.InstanceVO, error) {
+	alikafkaInstance := &alikafka.InstanceVO{}
 	instanceListReq := alikafka.CreateGetInstanceListRequest()
 	instanceListReq.RegionId = alikafkaService.client.RegionId
 
@@ -24,7 +24,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId stri
 	})
 
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, instanceListReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		return alikafkaInstance, WrapErrorf(err, DefaultErrorMsg, instanceId, instanceListReq.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
@@ -34,15 +34,14 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId stri
 
 		// ServiceStatus equals 10 means the instance is released, do not return the instance.
 		if v.InstanceId == instanceId && v.ServiceStatus != 10 {
-			alikafkaInstance = &v
-			return
+			return &v, nil
 		}
 	}
 	return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", instanceId)), NotFoundMsg, ProviderERROR)
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaNodeStatus(instanceId string) (alikafkaStatusList *alikafka.StatusList, err error) {
-
+func (alikafkaService *AlikafkaService) DescribeAlikafkaNodeStatus(instanceId string) (*alikafka.StatusList, error) {
+	alikafkaStatusList := &alikafka.StatusList{}
 	describeNodeStatusReq := alikafka.CreateDescribeNodeStatusRequest()
 	describeNodeStatusReq.RegionId = alikafkaService.client.RegionId
 	describeNodeStatusReq.InstanceId = instanceId
@@ -52,18 +51,17 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaNodeStatus(instanceId st
 	})
 
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, describeNodeStatusReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		return alikafkaStatusList, WrapErrorf(err, DefaultErrorMsg, instanceId, describeNodeStatusReq.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	describeNodeStatusResp, _ := raw.(*alikafka.DescribeNodeStatusResponse)
 	addDebug(describeNodeStatusReq.GetActionName(), raw, describeNodeStatusReq.RpcRequest, describeNodeStatusReq)
 
-	alikafkaStatusList = &describeNodeStatusResp.StatusList
-	return
+	return &describeNodeStatusResp.StatusList, nil
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderId string, timeout int) (alikafkaInstance *alikafka.InstanceVO, err error) {
-
+func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderId string, timeout int) (*alikafka.InstanceVO, error) {
+	alikafkaInstance := &alikafka.InstanceVO{}
 	instanceListReq := alikafka.CreateGetInstanceListRequest()
 	instanceListReq.RegionId = alikafkaService.client.RegionId
 	instanceListReq.OrderId = orderId
@@ -75,15 +73,14 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderI
 		})
 
 		if err != nil {
-			return nil, WrapErrorf(err, DefaultErrorMsg, orderId, instanceListReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return alikafkaInstance, WrapErrorf(err, DefaultErrorMsg, orderId, instanceListReq.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 		instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
 		addDebug(instanceListReq.GetActionName(), raw, instanceListReq.RpcRequest, instanceListReq)
 
 		for _, v := range instanceListResp.InstanceList.InstanceVO {
-			alikafkaInstance = &v
-			return alikafkaInstance, nil
+			return &v, nil
 		}
 		if time.Now().After(deadline) {
 			return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", orderId)), NotFoundMsg, ProviderERROR)
@@ -92,11 +89,12 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderI
 	}
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string) (alikafkaConsumerGroup *alikafka.ConsumerVO, err error) {
+func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string) (*alikafka.ConsumerVO, error) {
+	alikafkaConsumerGroup := &alikafka.ConsumerVO{}
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return alikafkaConsumerGroup, WrapError(err)
 	}
 	instanceId := parts[0]
 	consumerId := parts[1]
@@ -118,18 +116,17 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string)
 
 	for _, v := range consumerListResp.ConsumerList.ConsumerVO {
 		if v.ConsumerId == consumerId {
-			alikafkaConsumerGroup = &v
-			return
+			return &v, nil
 		}
 	}
 	return alikafkaConsumerGroup, WrapErrorf(Error(GetNotFoundMessage("AlikafkaConsumerGroup", id)), NotFoundMsg, ProviderERROR)
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (alikafkaTopic *alikafka.TopicVO, err error) {
-
+func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (*alikafka.TopicVO, error) {
+	alikafkaTopic := &alikafka.TopicVO{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return alikafkaTopic, WrapError(err)
 	}
 	instanceId := parts[0]
 	topic := parts[1]
@@ -164,8 +161,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (alikaf
 
 	for _, v := range topicListResp.TopicList.TopicVO {
 		if v.Topic == topic {
-			alikafkaTopic = &v
-			return
+			return &v, nil
 		}
 	}
 	return alikafkaTopic, WrapErrorf(Error(GetNotFoundMessage("AlikafkaTopic", id)), NotFoundMsg, ProviderERROR)

@@ -973,6 +973,7 @@ func (s *EcsService) SnapshotStateRefreshFunc(id string, failStates []string) re
 }
 
 func (s *EcsService) DescribeSnapshot(id string) (*ecs.Snapshot, error) {
+	snapshot := &ecs.Snapshot{}
 	request := ecs.CreateDescribeSnapshotsRequest()
 	request.RegionId = s.client.RegionId
 	request.SnapshotIds = fmt.Sprintf("[\"%s\"]", id)
@@ -980,17 +981,18 @@ func (s *EcsService) DescribeSnapshot(id string) (*ecs.Snapshot, error) {
 		return ecsClient.DescribeSnapshots(request)
 	})
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return snapshot, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response := raw.(*ecs.DescribeSnapshotsResponse)
 	if len(response.Snapshots.Snapshot) != 1 || response.Snapshots.Snapshot[0].SnapshotId != id {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("Snapshot", id)), NotFoundMsg, ProviderERROR)
+		return snapshot, WrapErrorf(Error(GetNotFoundMessage("Snapshot", id)), NotFoundMsg, ProviderERROR)
 	}
 	return &response.Snapshots.Snapshot[0], nil
 }
 
 func (s *EcsService) DescribeSnapshotPolicy(id string) (*ecs.AutoSnapshotPolicy, error) {
+	policy := &ecs.AutoSnapshotPolicy{}
 	request := ecs.CreateDescribeAutoSnapshotPolicyExRequest()
 	request.AutoSnapshotPolicyId = id
 	request.RegionId = s.client.RegionId
@@ -998,14 +1000,14 @@ func (s *EcsService) DescribeSnapshotPolicy(id string) (*ecs.AutoSnapshotPolicy,
 		return ecsClient.DescribeAutoSnapshotPolicyEx(request)
 	})
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return policy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	response := raw.(*ecs.DescribeAutoSnapshotPolicyExResponse)
 	if len(response.AutoSnapshotPolicies.AutoSnapshotPolicy) != 1 ||
 		response.AutoSnapshotPolicies.AutoSnapshotPolicy[0].AutoSnapshotPolicyId != id {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("SnapshotPolicy", id)), NotFoundMsg, ProviderERROR)
+		return policy, WrapErrorf(Error(GetNotFoundMessage("SnapshotPolicy", id)), NotFoundMsg, ProviderERROR)
 	}
 
 	return &response.AutoSnapshotPolicies.AutoSnapshotPolicy[0], nil
