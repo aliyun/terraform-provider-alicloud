@@ -98,33 +98,6 @@ func testSweepNatGateways(region string) error {
 	return nil
 }
 
-func testAccCheckNatGatewayExists(n string, nat *vpc.NatGateway) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Gateway ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		vpcService := VpcService{client}
-		instance, err := vpcService.DescribeNatGateway(rs.Primary.ID)
-
-		if err != nil {
-			return err
-		}
-		if instance.NatGatewayId != rs.Primary.ID {
-			return fmt.Errorf("Nat gateway not found")
-		}
-
-		*nat = instance
-		return nil
-	}
-}
-
 func testAccCheckNatGatewayDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -180,9 +153,10 @@ func TestAccAlicloudNatGatewayBasic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period"},
 			},
 			{
 				Config: testAccNatGatewayConfig_type(rand),
