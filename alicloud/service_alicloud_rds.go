@@ -546,6 +546,9 @@ func (s *RdsService) GetSecurityIps(instanceId string) ([]string, error) {
 	var ips, separator string
 	ipsMap := make(map[string]string)
 	for _, ip := range object {
+		if ip.DBInstanceIPArrayAttribute == "hidden" {
+			continue
+		}
 		ips += separator + ip.SecurityIPList
 		separator = COMMA_SEPARATED
 	}
