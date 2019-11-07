@@ -188,7 +188,7 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"security_enhancement_strategy"},
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -469,7 +469,7 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"security_enhancement_strategy"},
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1645,5 +1645,5 @@ var testAccInstanceCheckMap = map[string]string{
 	"auto_renew_period":  NOSET,
 	"force_delete":       NOSET,
 	"include_data_disks": NOSET,
-	"dry_run":            NOSET,
+	"dry_run":            "false",
 }
