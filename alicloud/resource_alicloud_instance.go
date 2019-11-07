@@ -268,10 +268,9 @@ func resourceAliyunInstance() *schema.Resource {
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
 			"dry_run": {
-				Type:             schema.TypeBool,
-				Optional:         true,
-				Default:          false,
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 
 			"public_ip": {
