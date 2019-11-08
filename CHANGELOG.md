@@ -1,4 +1,24 @@
-## 1.60.1 (Unreleased)
+## 1.61.0 (Unreleased)
+
+- **New Resource:** `alicloud_sag_snat_entry` [GH-1799]
+
+IMPROVEMENTS:
+
+- improve(instance): postpaid instance supported 'dry_run' [GH-1845]
+- improve(rds): fix for hidden dts ip list [GH-1844]
+- improve(resource_alicloud_db_database): support Mohawk_100_BIN [GH-1838]
+- perf(alicloud_db_backup_policy,db_instances):perf rds document desc [GH-1836]
+- change sideBar [GH-1830]
+- modify CloudConnectNetwork_multi [GH-1828]
+- improve(alikafka): Added name for vpcs and vswitches [GH-1827]
+- support to create emr gateway cluster instance [GH-1821]
+
+BUG FIXES:
+
+- fix(nat_gateway):fix nat_gateway period bug [GH-1841]
+- fix waitfor method nil bug [GH-1840]
+- fix(ess): use GetOkExists to avoid some potential bugs [GH-1835]
+
 ## 1.60.0 (November 01, 2019)
 
 - **New Data Source:** `alicloud_emr_disk_types` ([#1805](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1805))
