@@ -23,6 +23,7 @@ data "alicloud_emr_main_versions" "default" {
 data "alicloud_emr_instance_types" "default" {
     destination_resource = "InstanceType"
     cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    support_local_storage = false
     instance_charge_type = "PostPaid"
 }
 
@@ -163,6 +164,7 @@ data "alicloud_emr_main_versions" "default" {
 data "alicloud_emr_instance_types" "default" {
     destination_resource = "InstanceType"
     cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    support_local_storage = false
     instance_charge_type = "PostPaid"
 }
 
@@ -299,6 +301,7 @@ data "alicloud_emr_main_versions" "default" {
 data "alicloud_emr_instance_types" "default" {
     destination_resource = "InstanceType"
     cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    support_local_storage = false
     instance_charge_type = "PostPaid"
 }
 
@@ -431,6 +434,7 @@ data "alicloud_emr_main_versions" "default" {
 data "alicloud_emr_instance_types" "default" {
     destination_resource = "InstanceType"
     cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    support_local_storage = false
     instance_charge_type = "PostPaid"
 }
 
