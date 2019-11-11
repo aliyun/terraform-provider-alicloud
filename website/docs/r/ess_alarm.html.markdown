@@ -78,6 +78,11 @@ resource "alicloud_ess_alarm" "foo" {
 }
 ```
 
+## Module Support
+
+You can use to the existing [autoscaling-rule module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling-rule/alicloud) 
+to create alarm task, different type rules and scheduled task directly.
+
 ## Argument Reference
 
 The following arguments are supported:
