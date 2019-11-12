@@ -307,6 +307,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_key_pair":                      resourceAlicloudKeyPair(),
 			"alicloud_key_pair_attachment":           resourceAlicloudKeyPairAttachment(),
 			"alicloud_kms_key":                       resourceAlicloudKmsKey(),
+			"alicloud_kms_ciphertext":                resourceAlicloudKmsCiphertext(),
 			"alicloud_ram_user":                      resourceAlicloudRamUser(),
 			"alicloud_ram_account_password_policy":   resourceAlicloudRamAccountPasswordPolicy(),
 			"alicloud_ram_access_key":                resourceAlicloudRamAccessKey(),
