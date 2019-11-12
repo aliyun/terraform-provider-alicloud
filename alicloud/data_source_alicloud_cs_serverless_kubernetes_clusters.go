@@ -56,7 +56,7 @@ func dataSourceAlicloudCSServerlessKubernetesClusters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"enndpoint_public_access_enabled": {
+						"endpoint_public_access_enabled": {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
@@ -218,7 +218,7 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 		mapping["deletion_protection"] = ct.DeletionProtection
 		mapping["tags"] = csService.tagsToMap(ct.Tags)
 		//set default value
-		mapping["enndpoint_public_access_enabled"] = false
+		mapping["endpoint_public_access_enabled"] = false
 
 		invoker := NewInvoker()
 		client := meta.(*connectivity.AliyunClient)
@@ -237,7 +237,7 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 		connection := make(map[string]string)
 		if endpoints, ok := response.(cs.ClusterEndpoints); ok && endpoints.ApiServerEndpoint != "" {
 			//set public access
-			mapping["enndpoint_public_access_enabled"] = true
+			mapping["endpoint_public_access_enabled"] = true
 
 			connection["api_server_internet"] = endpoints.ApiServerEndpoint
 			connection["master_public_ip"] = strings.TrimSuffix(strings.TrimPrefix(endpoints.ApiServerEndpoint, "https://"), ":6443")

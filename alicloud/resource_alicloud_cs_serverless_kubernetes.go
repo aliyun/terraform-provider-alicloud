@@ -67,7 +67,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				ForceNew: true,
 				Default:  false,
 			},
-			"enndpoint_public_access_enabled": {
+			"endpoint_public_access_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
@@ -143,7 +143,7 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		RegionId:             client.RegionId,
 		VpcId:                d.Get("vpc_id").(string),
 		VSwitchId:            d.Get("vswitch_id").(string),
-		EndpointPublicAccess: d.Get("enndpoint_public_access_enabled").(bool),
+		EndpointPublicAccess: d.Get("endpoint_public_access_enabled").(bool),
 		PrivateZone:          d.Get("private_zone").(bool),
 		NatGateway:           d.Get("new_nat_gateway").(bool),
 		DeletionProtection:   d.Get("deletion_protection").(bool),
@@ -247,7 +247,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		if err := invoker.Run(func() error {
 			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 				requestInfo = csClient
-				return csClient.DescribeClusterUserConfig(d.Id(), d.Get("enndpoint_public_access_enabled").(bool))
+				return csClient.DescribeClusterUserConfig(d.Id(), d.Get("endpoint_public_access_enabled").(bool))
 			})
 			response = raw
 			return err

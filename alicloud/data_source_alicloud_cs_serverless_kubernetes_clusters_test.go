@@ -67,8 +67,8 @@ func TestAccAlicloudCSServerlessKubernetesClustersDataSource(t *testing.T) {
 			"clusters.0.vswitch_id":          CHECKSET,
 			"clusters.0.deletion_protection": CHECKSET,
 			"clusters.0.tags.%":              CHECKSET,
-			"clusters.0.enndpoint_public_access_enabled": CHECKSET,
-			"clusters.0.connections.%":                   CHECKSET,
+			"clusters.0.endpoint_public_access_enabled": CHECKSET,
+			"clusters.0.connections.%":                  CHECKSET,
 		}
 	}
 
@@ -118,7 +118,7 @@ resource "alicloud_cs_serverless_kubernetes" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   vswitch_id = "${alicloud_vswitch.default.id}"
   new_nat_gateway = true
-  enndpoint_public_access_enabled = true
+  endpoint_public_access_enabled = true
   private_zone = false
   deletion_protection = false
   tags = {

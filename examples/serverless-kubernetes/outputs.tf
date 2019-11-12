@@ -20,9 +20,9 @@ output "deletion_protection" {
   value       = alicloud_cs_serverless_kubernetes.serverless.deletion_protection
 }
 
-output "enndpoint_public_access_enabled" {
+output "endpoint_public_access_enabled" {
   description = "Whether enable public access or not"
-  value       = alicloud_cs_serverless_kubernetes.serverless.enndpoint_public_access_enabled
+  value       = alicloud_cs_serverless_kubernetes.serverless.endpoint_public_access_enabled
 }
 
 
