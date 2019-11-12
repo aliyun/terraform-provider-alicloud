@@ -14,6 +14,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/mutexkv"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -543,6 +544,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.FcEndpoint = strings.TrimSpace(fcEndpoint.(string))
 	}
 
+	if config.ConfigurationSource == "" {
+		config.ConfigurationSource = fmt.Sprintf("Default/%s:%s", config.AccessKey, strings.Trim(uuid.New().String(), "-"))[:64]
+	}
 	client, err := config.Client()
 	if err != nil {
 		return nil, err

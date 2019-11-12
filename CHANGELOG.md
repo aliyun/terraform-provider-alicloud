@@ -4,6 +4,8 @@
 
 IMPROVEMENTS:
 
+- improve(provider): add default value for configuration_source [GH-1852]
+- improve(ess): add module guide for the ess resources [GH-1850]
 - improve(instance): postpaid instance supported 'dry_run' [GH-1845]
 - improve(rds): fix for hidden dts ip list [GH-1844]
 - improve(resource_alicloud_db_database): support Mohawk_100_BIN [GH-1838]
@@ -15,6 +17,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix(cs_kubenrnetes): fix terraform docs documentation [GH-1851]
 - fix(nat_gateway):fix nat_gateway period bug [GH-1841]
 - fix waitfor method nil bug [GH-1840]
 - fix(ess): use GetOkExists to avoid some potential bugs [GH-1835]
