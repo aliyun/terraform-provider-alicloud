@@ -1,26 +1,26 @@
-## 1.61.0 (Unreleased)
+## 1.61.0 (November 12, 2019)
 
-- **New Resource:** `alicloud_sag_snat_entry` [GH-1799]
+- **New Resource:** `alicloud_sag_snat_entry` ([#1799](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1799))
 
 IMPROVEMENTS:
 
-- improve(provider): add default value for configuration_source [GH-1852]
-- improve(ess): add module guide for the ess resources [GH-1850]
-- improve(instance): postpaid instance supported 'dry_run' [GH-1845]
-- improve(rds): fix for hidden dts ip list [GH-1844]
-- improve(resource_alicloud_db_database): support Mohawk_100_BIN [GH-1838]
-- perf(alicloud_db_backup_policy,db_instances):perf rds document desc [GH-1836]
-- change sideBar [GH-1830]
-- modify CloudConnectNetwork_multi [GH-1828]
-- improve(alikafka): Added name for vpcs and vswitches [GH-1827]
-- support to create emr gateway cluster instance [GH-1821]
+- improve(provider): add default value for configuration_source ([#1852](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1852))
+- improve(ess): add module guide for the ess resources ([#1850](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1850))
+- improve(instance): postpaid instance supported 'dry_run' ([#1845](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1845))
+- improve(rds): fix for hidden dts ip list ([#1844](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1844))
+- improve(resource_alicloud_db_database): support Mohawk_100_BIN ([#1838](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1838))
+- perf(alicloud_db_backup_policy,db_instances):perf rds document desc ([#1836](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1836))
+- change sideBar ([#1830](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1830))
+- modify CloudConnectNetwork_multi ([#1828](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1828))
+- improve(alikafka): Added name for vpcs and vswitches ([#1827](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1827))
+- support to create emr gateway cluster instance ([#1821](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1821))
 
 BUG FIXES:
 
-- fix(cs_kubenrnetes): fix terraform docs documentation [GH-1851]
-- fix(nat_gateway):fix nat_gateway period bug [GH-1841]
-- fix waitfor method nil bug [GH-1840]
-- fix(ess): use GetOkExists to avoid some potential bugs [GH-1835]
+- fix(cs_kubenrnetes): fix terraform docs documentation ([#1851](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1851))
+- fix(nat_gateway):fix nat_gateway period bug ([#1841](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1841))
+- fix waitfor method nil bug ([#1840](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1840))
+- fix(ess): use GetOkExists to avoid some potential bugs ([#1835](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1835))
 
 ## 1.60.0 (November 01, 2019)
 
