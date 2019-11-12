@@ -1,3 +1,4 @@
+## 1.62.0 (Unreleased)
 ## 1.61.0 (November 12, 2019)
 
 - **New Resource:** `alicloud_sag_snat_entry` ([#1799](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1799))
