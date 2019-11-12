@@ -222,6 +222,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+				ForceNew: true,
 			},
 			"force_update": {
 				Type:     schema.TypeBool,

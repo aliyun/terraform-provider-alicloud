@@ -92,6 +92,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
+				ForceNew: true,
 			},
 			"master_instance_type": {
 				Type:       schema.TypeString,

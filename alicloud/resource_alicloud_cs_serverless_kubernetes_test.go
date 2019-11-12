@@ -42,12 +42,12 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                            name,
-					"vpc_id":                          "${alicloud_vpc.default.id}",
-					"vswitch_id":                      "${alicloud_vswitch.default.id}",
-					"new_nat_gateway":                 "true",
-					"deletion_protection":             "false",
-					"enndpoint_public_access_enabled": "true",
+					"name":                           name,
+					"vpc_id":                         "${alicloud_vpc.default.id}",
+					"vswitch_id":                     "${alicloud_vswitch.default.id}",
+					"new_nat_gateway":                "true",
+					"deletion_protection":            "false",
+					"endpoint_public_access_enabled": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -84,8 +84,8 @@ resource "alicloud_vswitch" "default" {
 }
 
 var csServerlessKubernetesBasicMap = map[string]string{
-	"new_nat_gateway":                 "true",
-	"deletion_protection":             "false",
-	"enndpoint_public_access_enabled": "true",
-	"force_update":                    "false",
+	"new_nat_gateway":                "true",
+	"deletion_protection":            "false",
+	"endpoint_public_access_enabled": "true",
+	"force_update":                   "false",
 }
