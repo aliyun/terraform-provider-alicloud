@@ -49,6 +49,7 @@ const (
 	DDOSCOOCode       = ServiceCode("DDOSCOO")
 	DDOSBGPCode       = ServiceCode("DDOSBGP")
 	SAGCode           = ServiceCode("SAG")
+	YUNDUNDBAUDITCode = ServiceCode("YUNDUNDBAUDIT")
 )
 
 type Endpoints struct {

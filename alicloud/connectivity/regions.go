@@ -92,3 +92,4 @@ var GpdbClassicNoSupportedRegions = []Region{APSouthEast2, APSouthEast3, APSouth
 var OnsNoSupportRegions = []Region{APSouthEast5}
 var AlikafkaSupportedRegions = []Region{Hangzhou, Qingdao, Beijing, Hongkong, Shenzhen, Shanghai, Zhangjiakou, Huhehaote, APSouthEast1, APSouthEast5, APSouth1}
 var SmartagSupportedRegions = []Region{Shanghai, ShanghaiFinance, Hongkong, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5, EUCentral1, APNorthEast1}
+var YundunDbauditSupportedRegions = []Region{Hangzhou, Qingdao, Beijing, Hongkong, Shenzhen, Shanghai, Zhangjiakou, Huhehaote, USWest1}

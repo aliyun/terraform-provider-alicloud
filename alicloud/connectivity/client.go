@@ -36,6 +36,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -109,6 +110,7 @@ type AliyunClient struct {
 	bssopenapiconn               *bssopenapi.Client
 	emrconn                      *emr.Client
 	sagconn                      *smartag.Client
+	dbauditconn                  *yundun_dbaudit.Client
 }
 
 type ApiVersion string
@@ -1426,4 +1428,25 @@ func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{},
 	}
 
 	return do(client.sagconn)
+}
+
+func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the ddoscoo client if necessary
+	if client.dbauditconn == nil {
+		dbauditconn, err := yundun_dbaudit.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the DBAUDIT client: %#v", err)
+		}
+		dbauditconn.AppendUserAgent(Terraform, terraformVersion)
+		dbauditconn.AppendUserAgent(Provider, providerVersion)
+		if len(client.config.ConfigurationSource) > 0 {
+			dbauditconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		}
+		client.dbauditconn = dbauditconn
+	}
+
+	return do(client.dbauditconn)
 }
