@@ -108,11 +108,11 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 
 	dataMap := []map[string]interface{}{}
 
-	userName, userNameOk := d.GetOk("user_name")
-	groupName, groupNameOk := d.GetOk("group_name")
-	roleName, roleNameOk := d.GetOk("role_name")
-	policyType, policyTypeOk := d.GetOk("type")
-	nameRegex, nameRegexOk := d.GetOk("name_regex")
+	userName, userNameOk := d.GetOkExists("user_name")
+	groupName, groupNameOk := d.GetOkExists("group_name")
+	roleName, roleNameOk := d.GetOkExists("role_name")
+	policyType, policyTypeOk := d.GetOkExists("type")
+	nameRegex, nameRegexOk := d.GetOkExists("name_regex")
 
 	// policies filtered by name_regex and type
 	request := ram.CreateListPoliciesRequest()
@@ -246,7 +246,7 @@ func ramPoliciesDescriptionAttributes(d *schema.ResourceData, policies []interfa
 	}
 
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

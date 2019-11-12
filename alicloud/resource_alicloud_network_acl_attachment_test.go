@@ -256,12 +256,10 @@ resource "alicloud_vswitch" "default2" {
 
 resource "alicloud_network_acl_attachment" "default" {
 	network_acl_id = "${alicloud_network_acl.default.id}"
-    resources = [
-        {
-          resource_id = "${alicloud_vswitch.default.id}"
-          resource_type = "VSwitch"
-        }
-    ]
+    resources {
+		resource_id = "${alicloud_vswitch.default.id}"
+		resource_type = "VSwitch"
+	}
 }
 `, randInt)
 }
@@ -303,16 +301,15 @@ resource "alicloud_vswitch" "default2" {
 
 resource "alicloud_network_acl_attachment" "default" {
 	network_acl_id = "${alicloud_network_acl.default.id}"
-    resources = [
-        {
+    resources {
           resource_id = "${alicloud_vswitch.default.id}"
           resource_type = "VSwitch"
-        },
-        {
+        }
+
+	resources {
           resource_id = "${alicloud_vswitch.default2.id}"
           resource_type = "VSwitch"
         }
-    ]
 }
 `, randInt)
 }
@@ -354,12 +351,10 @@ resource "alicloud_vswitch" "default2" {
 
 resource "alicloud_network_acl_attachment" "default" {
 	network_acl_id = "${alicloud_network_acl.default.id}"
-    resources = [
-        {
+    resources {
           resource_id = "${alicloud_vswitch.default.id}"
           resource_type = "VSwitch"
         }
-    ]
 }
 `, randInt)
 }

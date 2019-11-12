@@ -75,7 +75,7 @@ func resourceAliyunSlbServerGroupCreate(d *schema.ResourceData, meta interface{}
 	request := slb.CreateCreateVServerGroupRequest()
 	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
-	if v, ok := d.GetOk("name"); ok {
+	if v, ok := d.GetOkExists("name"); ok {
 		request.VServerGroupName = v.(string)
 	}
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {

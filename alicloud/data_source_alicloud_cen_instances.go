@@ -109,7 +109,7 @@ func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, m
 	}
 
 	var nameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("name_regex"); ok && v.(string) != "" {
 		if r, err := regexp.Compile(Trim(v.(string))); err == nil {
 			nameRegex = r
 		}
@@ -165,7 +165,7 @@ func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, m
 func constructCenRequestFilters(d *schema.ResourceData) [][]cbn.DescribeCensFilter {
 	var res [][]cbn.DescribeCensFilter
 	maxQueryItem := 5
-	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
+	if v, ok := d.GetOkExists("ids"); ok && len(v.([]interface{})) > 0 {
 		// split ids
 		requestTimes := len(v.([]interface{})) / maxQueryItem
 		if (len(v.([]interface{})) % maxQueryItem) > 0 {
@@ -235,7 +235,7 @@ func censDescriptionAttributes(d *schema.ResourceData, cenSetTypes []cbn.Cen, me
 	}
 
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 

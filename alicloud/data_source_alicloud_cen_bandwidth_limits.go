@@ -63,7 +63,7 @@ func dataSourceAlicloudCenBandwidthLimitsRead(d *schema.ResourceData, meta inter
 	var allCenBwLimits []cbn.CenInterRegionBandwidthLimit
 
 	instanceIds := make([]string, 0)
-	if v, ok := d.GetOk("instance_ids"); ok {
+	if v, ok := d.GetOkExists("instance_ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			instanceIds = append(instanceIds, Trim(vv.(string)))
 		}
@@ -156,7 +156,7 @@ func cenInterRegionBandwidthLimitsAttributes(d *schema.ResourceData, allCenBwLim
 	}
 
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 

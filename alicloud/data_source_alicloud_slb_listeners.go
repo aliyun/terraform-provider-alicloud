@@ -218,11 +218,11 @@ func dataSourceAlicloudSlbListenersRead(d *schema.ResourceData, meta interface{}
 	response, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
 	var filteredListenersTemp []slb.ListenerPortAndProtocol
 	port := -1
-	if v, ok := d.GetOk("frontend_port"); ok && v.(int) != 0 {
+	if v, ok := d.GetOkExists("frontend_port"); ok && v.(int) != 0 {
 		port = v.(int)
 	}
 	protocol := ""
-	if v, ok := d.GetOk("protocol"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("protocol"); ok && v.(string) != "" {
 		protocol = v.(string)
 	}
 	if port != -1 && protocol != "" {
@@ -404,7 +404,7 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 	}
 
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

@@ -103,7 +103,7 @@ func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface
 	}
 
 	var filteredAppsTemp []cloudapi.AppAttribute
-	nameRegex, ok := d.GetOk("name_regex")
+	nameRegex, ok := d.GetOkExists("name_regex")
 	var r *regexp.Regexp
 	if ok && nameRegex.(string) != "" {
 		r = regexp.MustCompile(nameRegex.(string))
@@ -111,7 +111,7 @@ func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface
 
 	// ids
 	idsMap := make(map[string]string)
-	if v, ok := d.GetOk("ids"); ok {
+	if v, ok := d.GetOkExists("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			idsMap[vv.(string)] = vv.(string)
 		}
@@ -126,7 +126,7 @@ func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface
 				continue
 			}
 		}
-		if value, ok := d.GetOk("tags"); ok {
+		if value, ok := d.GetOkExists("tags"); ok {
 			tags, err := cloudApiService.DescribeTags(strconv.FormatInt(app.AppId, 10), value.(map[string]interface{}), TagResourceApp)
 			if err != nil {
 				return WrapError(err)
@@ -170,7 +170,7 @@ func apigatewayAppsDecriptionAttributes(d *schema.ResourceData, apps []cloudapi.
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

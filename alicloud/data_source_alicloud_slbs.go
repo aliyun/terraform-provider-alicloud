@@ -151,26 +151,26 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 	request := slb.CreateDescribeLoadBalancersRequest()
 	request.RegionId = client.RegionId
 	request.ResourceGroupId = d.Get("resource_group_id").(string)
-	if v, ok := d.GetOk("master_availability_zone"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("master_availability_zone"); ok && v.(string) != "" {
 		request.MasterZoneId = v.(string)
 	}
-	if v, ok := d.GetOk("slave_availability_zone"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("slave_availability_zone"); ok && v.(string) != "" {
 		request.SlaveZoneId = v.(string)
 	}
-	if v, ok := d.GetOk("network_type"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("network_type"); ok && v.(string) != "" {
 		request.NetworkType = v.(string)
 	}
-	if v, ok := d.GetOk("vpc_id"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("vpc_id"); ok && v.(string) != "" {
 		request.VpcId = v.(string)
 	}
-	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("vswitch_id"); ok && v.(string) != "" {
 		request.VSwitchId = v.(string)
 	}
-	if v, ok := d.GetOk("address"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("address"); ok && v.(string) != "" {
 		request.Address = v.(string)
 	}
 
-	if v, ok := d.GetOk("tags"); ok {
+	if v, ok := d.GetOkExists("tags"); ok {
 		var tags []Tag
 
 		for key, value := range v.(map[string]interface{}) {
@@ -183,7 +183,7 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	idsMap := make(map[string]string)
-	if v, ok := d.GetOk("ids"); ok {
+	if v, ok := d.GetOkExists("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
@@ -220,7 +220,7 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 
 	var filteredLoadBalancersTemp []slb.LoadBalancer
 
-	nameRegex, ok := d.GetOk("name_regex")
+	nameRegex, ok := d.GetOkExists("name_regex")
 	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
 		var r *regexp.Regexp
 		if nameRegex != "" {
@@ -284,7 +284,7 @@ func slbsDescriptionAttributes(d *schema.ResourceData, loadBalancers []slb.LoadB
 	}
 
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

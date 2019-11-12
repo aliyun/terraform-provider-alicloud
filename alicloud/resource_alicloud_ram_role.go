@@ -245,9 +245,9 @@ func buildAlicloudRamRoleCreateArgs(d *schema.ResourceData, meta interface{}) (*
 	request.RegionId = client.RegionId
 	request.RoleName = d.Get("name").(string)
 
-	ramUsers, usersOk := d.GetOk("ram_users")
-	services, servicesOk := d.GetOk("services")
-	document, documentOk := d.GetOk("document")
+	ramUsers, usersOk := d.GetOkExists("ram_users")
+	services, servicesOk := d.GetOkExists("services")
+	document, documentOk := d.GetOkExists("document")
 
 	if !usersOk && !servicesOk && !documentOk {
 		return &ram.CreateRoleRequest{}, WrapError(Error("At least one of 'ram_users', 'services' or 'document' must be set."))
@@ -263,7 +263,7 @@ func buildAlicloudRamRoleCreateArgs(d *schema.ResourceData, meta interface{}) (*
 		request.AssumeRolePolicyDocument = rolePolicyDocument
 	}
 
-	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("description"); ok && v.(string) != "" {
 		request.Description = v.(string)
 	}
 

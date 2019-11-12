@@ -77,10 +77,10 @@ func dataSourceAlicloudRamGroupsRead(d *schema.ResourceData, meta interface{}) e
 
 	dataMap := []map[string]interface{}{}
 
-	userName, userNameOk := d.GetOk("user_name")
-	policyName, policyNameOk := d.GetOk("policy_name")
-	policyType, policyTypeOk := d.GetOk("policy_type")
-	nameRegex, nameRegexOk := d.GetOk("name_regex")
+	userName, userNameOk := d.GetOkExists("user_name")
+	policyName, policyNameOk := d.GetOkExists("policy_name")
+	policyType, policyTypeOk := d.GetOkExists("policy_type")
+	nameRegex, nameRegexOk := d.GetOkExists("name_regex")
 
 	if policyTypeOk && !policyNameOk {
 		return WrapError(Error("You must set 'policy_name' at one time when you set 'policy_type'."))
@@ -181,7 +181,7 @@ func ramGroupsDescriptionAttributes(d *schema.ResourceData, groups []interface{}
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

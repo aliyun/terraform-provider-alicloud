@@ -110,7 +110,7 @@ func dataSourceAlicloudCenPublishedRouteEntriesRead(d *schema.ResourceData, meta
 	request.RegionId = client.RegionId
 	request.CenId = d.Get("instance_id").(string)
 	request.ChildInstanceRouteTableId = d.Get("route_table_id").(string)
-	if v, ok := d.GetOk("cidr_block"); ok {
+	if v, ok := d.GetOkExists("cidr_block"); ok {
 		request.DestinationCidrBlock = v.(string)
 	}
 
@@ -178,7 +178,7 @@ func cenPublishedRouteEntriesAttributes(d *schema.ResourceData, allPublishedRout
 	}
 
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 

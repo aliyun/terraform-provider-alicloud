@@ -57,10 +57,10 @@ func dataSourceAlicloudNasProtocolsRead(d *schema.ResourceData, meta interface{}
 			break
 		}
 		for _, val := range response.Zones.Zone {
-			if v, ok := d.GetOk("zone_id"); ok && val.ZoneId != Trim(v.(string)) {
+			if v, ok := d.GetOkExists("zone_id"); ok && val.ZoneId != Trim(v.(string)) {
 				continue
 			}
-			if v, ok := d.GetOk("type"); ok {
+			if v, ok := d.GetOkExists("type"); ok {
 				if Trim(v.(string)) == "Performance" {
 					if len(val.Performance.Protocol) == 0 {
 						continue
@@ -97,7 +97,7 @@ func nasProtocolsDescriptionAttributes(d *schema.ResourceData, nasProtocol [][]s
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

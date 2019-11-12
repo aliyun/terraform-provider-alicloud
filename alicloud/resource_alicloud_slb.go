@@ -299,7 +299,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 	request.InternetChargeType = strings.ToLower(string(PayByTraffic))
 	request.ClientToken = buildClientToken(request.GetActionName())
 
-	if v, ok := d.GetOk("address_type"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("address_type"); ok && v.(string) != "" {
 		request.AddressType = strings.ToLower(v.(string))
 	} else if v, ok := d.GetOkExists("internet"); ok {
 		request.AddressType = strings.ToLower(string(Intranet))
@@ -308,34 +308,34 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	if v, ok := d.GetOk("internet_charge_type"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("internet_charge_type"); ok && v.(string) != "" {
 		request.InternetChargeType = strings.ToLower((v.(string)))
 	}
 
-	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("vswitch_id"); ok && v.(string) != "" {
 		request.VSwitchId = v.(string)
 	}
 
-	if v, ok := d.GetOk("bandwidth"); ok && v.(int) != 0 {
+	if v, ok := d.GetOkExists("bandwidth"); ok && v.(int) != 0 {
 		request.Bandwidth = requests.NewInteger(v.(int))
 	}
 
-	if v, ok := d.GetOk("specification"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("specification"); ok && v.(string) != "" {
 		request.LoadBalancerSpec = v.(string)
 	}
 
-	if v, ok := d.GetOk("master_zone_id"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("master_zone_id"); ok && v.(string) != "" {
 		request.MasterZoneId = v.(string)
 	}
 
-	if v, ok := d.GetOk("slave_zone_id"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("slave_zone_id"); ok && v.(string) != "" {
 		request.SlaveZoneId = v.(string)
 	}
 
-	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("resource_group_id"); ok && v.(string) != "" {
 		request.ResourceGroupId = v.(string)
 	}
-	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("instance_charge_type"); ok && v.(string) != "" {
 		request.PayType = v.(string)
 		if request.PayType == string(PrePaid) {
 			request.PayType = "PrePay"
@@ -343,15 +343,15 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 			request.PayType = "PayOnDemand"
 		}
 	}
-	if v, ok := d.GetOk("delete_protection"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("delete_protection"); ok && v.(string) != "" {
 		request.DeleteProtection = d.Get("delete_protection").(string)
 	}
 
-	if v, ok := d.GetOk("address_ip_version"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("address_ip_version"); ok && v.(string) != "" {
 		request.AddressIPVersion = v.(string)
 	}
 
-	if v, ok := d.GetOk("address"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("address"); ok && v.(string) != "" {
 		request.Address = v.(string)
 	}
 
@@ -474,7 +474,7 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 		request := slb.CreateModifyLoadBalancerInstanceSpecRequest()
 		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
-		if _, ok := d.GetOk("specification"); !ok {
+		if _, ok := d.GetOkExists("specification"); !ok {
 			return WrapError(Error(`'specification': required field is not set when updating it'.`))
 		}
 		request.LoadBalancerSpec = d.Get("specification").(string)

@@ -346,7 +346,7 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 	protocol := d.Get("protocol").(string)
 	lb_id := d.Get("load_balancer_id").(string)
 	frontend := d.Get("frontend_port").(int)
-	if listenerForward, ok := d.GetOk("listener_forward"); ok && listenerForward.(string) == string(OnFlag) {
+	if listenerForward, ok := d.GetOkExists("listener_forward"); ok && listenerForward.(string) == string(OnFlag) {
 		httpForward = true
 	}
 	request, err := buildListenerCommonArgs(d, meta)
@@ -608,7 +608,7 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		update = true
 	}
 	if d.HasChange("health_check_connect_port") {
-		if port, ok := d.GetOk("health_check_connect_port"); ok {
+		if port, ok := d.GetOkExists("health_check_connect_port"); ok {
 			httpArgs.QueryParams["HealthCheckConnectPort"] = string(requests.NewInteger(port.(int)))
 			commonRequest.QueryParams["HealthCheckConnectPort"] = string(requests.NewInteger(port.(int)))
 			update = true
@@ -626,7 +626,7 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 
 	// http https tcp
 	if d.HasChange("health_check_domain") {
-		if domain, ok := d.GetOk("health_check_domain"); ok {
+		if domain, ok := d.GetOkExists("health_check_domain"); ok {
 			httpArgs.QueryParams["HealthCheckDomain"] = domain.(string)
 			tcpArgs.QueryParams["HealthCheckDomain"] = domain.(string)
 			update = true
@@ -767,30 +767,30 @@ func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) (*request
 	request.RegionId = client.RegionId
 	request.QueryParams["LoadBalancerId"] = d.Get("load_balancer_id").(string)
 	request.QueryParams["ListenerPort"] = string(requests.NewInteger(d.Get("frontend_port").(int)))
-	if backendServerPort, ok := d.GetOk("backend_port"); ok {
+	if backendServerPort, ok := d.GetOkExists("backend_port"); ok {
 		request.QueryParams["BackendServerPort"] = string(requests.NewInteger(backendServerPort.(int)))
 	}
-	if bandWidth, ok := d.GetOk("bandwidth"); ok {
+	if bandWidth, ok := d.GetOkExists("bandwidth"); ok {
 		request.QueryParams["Bandwidth"] = string(requests.NewInteger(bandWidth.(int)))
 	}
 
-	if groupId, ok := d.GetOk("server_group_id"); ok && groupId.(string) != "" {
+	if groupId, ok := d.GetOkExists("server_group_id"); ok && groupId.(string) != "" {
 		request.QueryParams["VServerGroupId"] = groupId.(string)
 	}
 
-	if groupId, ok := d.GetOk("master_slave_server_group_id"); ok && groupId.(string) != "" {
+	if groupId, ok := d.GetOkExists("master_slave_server_group_id"); ok && groupId.(string) != "" {
 		request.QueryParams["MasterSlaveServerGroupId"] = groupId.(string)
 	}
 	// acl status
-	if aclStatus, ok := d.GetOk("acl_status"); ok && aclStatus.(string) != "" {
+	if aclStatus, ok := d.GetOkExists("acl_status"); ok && aclStatus.(string) != "" {
 		request.QueryParams["AclStatus"] = aclStatus.(string)
 	}
 	// acl type
-	if aclType, ok := d.GetOk("acl_type"); ok && aclType.(string) != "" {
+	if aclType, ok := d.GetOkExists("acl_type"); ok && aclType.(string) != "" {
 		request.QueryParams["AclType"] = aclType.(string)
 	}
 	// acl id
-	if aclId, ok := d.GetOk("acl_id"); ok && aclId.(string) != "" {
+	if aclId, ok := d.GetOkExists("acl_id"); ok && aclId.(string) != "" {
 		request.QueryParams["AclId"] = aclId.(string)
 	}
 
@@ -803,7 +803,7 @@ func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) 
 	req.QueryParams["StickySession"] = stickySession
 	req.QueryParams["HealthCheck"] = healthCheck
 	if stickySession == string(OnFlag) {
-		sessionType, ok := d.GetOk("sticky_session_type")
+		sessionType, ok := d.GetOkExists("sticky_session_type")
 		if !ok || sessionType.(string) == "" {
 			return req, WrapError(Error("'sticky_session_type': required field is not set when the StickySession is %s.", OnFlag))
 		} else {
@@ -811,14 +811,14 @@ func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) 
 
 		}
 		if sessionType.(string) == string(InsertStickySessionType) {
-			if timeout, ok := d.GetOk("cookie_timeout"); !ok || timeout == 0 {
+			if timeout, ok := d.GetOkExists("cookie_timeout"); !ok || timeout == 0 {
 				return req, WrapError(Error("'cookie_timeout': required field is not set when the StickySession is %s and StickySessionType is %s.",
 					OnFlag, InsertStickySessionType))
 			} else {
 				req.QueryParams["CookieTimeout"] = string(requests.NewInteger(timeout.(int)))
 			}
 		} else {
-			if cookie, ok := d.GetOk("cookie"); !ok || cookie.(string) == "" {
+			if cookie, ok := d.GetOkExists("cookie"); !ok || cookie.(string) == "" {
 				return req, WrapError(fmt.Errorf("'cookie': required field is not set when the StickySession is %s and StickySessionType is %s.",
 					OnFlag, ServerStickySessionType))
 			} else {
@@ -828,7 +828,7 @@ func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) 
 	}
 	if healthCheck == string(OnFlag) {
 		req.QueryParams["HealthCheckURI"] = d.Get("health_check_uri").(string)
-		if port, ok := d.GetOk("health_check_connect_port"); ok {
+		if port, ok := d.GetOkExists("health_check_connect_port"); ok {
 			req.QueryParams["HealthCheckConnectPort"] = string(requests.NewInteger(port.(int)))
 		}
 		req.QueryParams["HealthyThreshold"] = string(requests.NewInteger(d.Get("healthy_threshold").(int)))
@@ -853,12 +853,12 @@ func buildHttpForwardArgs(d *schema.ResourceData, req *requests.CommonRequest) (
 	/**
 	if the user do not fill backend_port, give 80 to pass the SDK parameter check.
 	*/
-	if backEndServerPort, ok := d.GetOk("backend_port"); ok {
+	if backEndServerPort, ok := d.GetOkExists("backend_port"); ok {
 		req.QueryParams[""] = string(requests.NewInteger(backEndServerPort.(int)))
 	} else {
 		req.QueryParams["BackendServerPort"] = string("80")
 	}
-	if forwardPort, ok := d.GetOk("forward_port"); ok {
+	if forwardPort, ok := d.GetOkExists("forward_port"); ok {
 		req.QueryParams["ForwardPort"] = string(requests.NewInteger(forwardPort.(int)))
 	}
 	return req, nil
@@ -878,7 +878,7 @@ func parseListenerId(d *schema.ResourceData, meta interface{}) (string, string, 
 		protocol = parts[1]
 		port, err = strconv.Atoi(parts[2])
 	} else {
-		if v, ok := d.GetOk("protocol"); ok && v.(string) != "" {
+		if v, ok := d.GetOkExists("protocol"); ok && v.(string) != "" {
 			protocol = v.(string)
 		}
 		port, err = strconv.Atoi(parts[1])

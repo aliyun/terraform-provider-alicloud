@@ -104,7 +104,7 @@ func testSweepNetworkAcl(region string) error {
 }
 
 func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
-	var v *vpc.DescribeNetworkAclsResponse
+	var v vpc.NetworkAcl
 	resourceId := "alicloud_network_acl.default"
 	ra := resourceAttrInit(resourceId, testAccNaclCheckMap)
 	serviceFunc := func() interface{} {
@@ -171,7 +171,7 @@ func TestAccAlicloudNetworkAcl_basic(t *testing.T) {
 }
 
 func TestAccAlicloudNetworkAcl_multi(t *testing.T) {
-	var v *vpc.DescribeNetworkAclsResponse
+	var v vpc.NetworkAcl
 
 	ra := resourceAttrInit("alicloud_network_acl.default.2", testAccNaclCheckMap)
 	serviceFunc := func() interface{} {

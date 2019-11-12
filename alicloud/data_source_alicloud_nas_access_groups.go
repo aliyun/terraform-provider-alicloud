@@ -86,7 +86,7 @@ func dataSourceAlicloudAccessGroupsRead(d *schema.ResourceData, meta interface{}
 
 	var allAgs []nas.DescribeAccessGroupsAccessGroup1
 	var nameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok {
+	if v, ok := d.GetOkExists("name_regex"); ok {
 		if r, err := regexp.Compile(Trim(v.(string))); err == nil {
 			nameRegex = r
 		}
@@ -109,11 +109,11 @@ func dataSourceAlicloudAccessGroupsRead(d *schema.ResourceData, meta interface{}
 			break
 		}
 		for _, ag := range response.AccessGroups.AccessGroup {
-			if v, ok := d.GetOk("type"); ok && ag.AccessGroupType != Trim(v.(string)) {
+			if v, ok := d.GetOkExists("type"); ok && ag.AccessGroupType != Trim(v.(string)) {
 				continue
 			}
 
-			if v, ok := d.GetOk("description"); ok && ag.Description != v.(string) {
+			if v, ok := d.GetOkExists("description"); ok && ag.Description != v.(string) {
 				continue
 			}
 			if nameRegex != nil {
@@ -162,7 +162,7 @@ func AccessGroupsDecriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

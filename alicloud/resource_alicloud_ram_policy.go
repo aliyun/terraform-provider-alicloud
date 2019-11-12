@@ -304,8 +304,8 @@ func buildAlicloudRamPolicyCreateArgs(d *schema.ResourceData, meta interface{}) 
 	ramService := RamService{client}
 	var document string
 
-	doc, docOk := d.GetOk("document")
-	statement, statementOk := d.GetOk("statement")
+	doc, docOk := d.GetOkExists("document")
+	statement, statementOk := d.GetOkExists("statement")
 
 	if !docOk && !statementOk {
 		return &ram.CreatePolicyRequest{}, WrapError(Error("One of 'document' and 'statement' must be specified."))
@@ -326,7 +326,7 @@ func buildAlicloudRamPolicyCreateArgs(d *schema.ResourceData, meta interface{}) 
 	request.PolicyDocument = document
 	request.PolicyName = d.Get("name").(string)
 
-	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("description"); ok && v.(string) != "" {
 		request.Description = v.(string)
 	}
 
@@ -341,7 +341,7 @@ func buildAlicloudRamPolicyUpdateArgs(d *schema.ResourceData, meta interface{}) 
 	request.SetAsDefault = "true"
 	request.PolicyName = d.Id()
 
-	if document, ok := d.GetOk("document"); ok {
+	if document, ok := d.GetOkExists("document"); ok {
 		if d.HasChange("document") {
 			d.SetPartial("document")
 		}

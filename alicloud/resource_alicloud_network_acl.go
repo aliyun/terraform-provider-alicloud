@@ -59,10 +59,10 @@ func resourceAliyunNetworkAclCreate(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = client.RegionId
 
 	request.VpcId = d.Get("vpc_id").(string)
-	if networkAclName, ok := d.GetOk("name"); ok {
+	if networkAclName, ok := d.GetOkExists("name"); ok {
 		request.NetworkAclName = networkAclName.(string)
 	}
-	if description, ok := d.GetOk("description"); ok {
+	if description, ok := d.GetOkExists("description"); ok {
 		request.Description = description.(string)
 	}
 	request.ClientToken = buildClientToken(request.GetActionName())

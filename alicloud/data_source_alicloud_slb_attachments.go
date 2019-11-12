@@ -54,7 +54,7 @@ func dataSourceAlicloudSlbAttachmentsRead(d *schema.ResourceData, meta interface
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
 
 	instanceIdsMap := make(map[string]string)
-	if v, ok := d.GetOk("instance_ids"); ok {
+	if v, ok := d.GetOkExists("instance_ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			instanceIdsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
@@ -105,7 +105,7 @@ func slbAttachmentsDescriptionAttributes(d *schema.ResourceData, backendServers 
 	}
 
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

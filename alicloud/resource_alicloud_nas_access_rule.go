@@ -60,10 +60,10 @@ func resourceAlicloudNasAccessRuleCreate(d *schema.ResourceData, meta interface{
 	request.RegionId = string(client.Region)
 	request.AccessGroupName = d.Get("access_group_name").(string)
 	request.SourceCidrIp = d.Get("source_cidr_ip").(string)
-	if v, ok := d.GetOk("rw_access_type"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("rw_access_type"); ok && v.(string) != "" {
 		request.RWAccessType = v.(string)
 	}
-	if v, ok := d.GetOk("user_access_type"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("user_access_type"); ok && v.(string) != "" {
 		request.UserAccessType = v.(string)
 	}
 	request.Priority = requests.NewInteger(d.Get("priority").(int))

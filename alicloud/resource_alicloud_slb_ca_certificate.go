@@ -46,15 +46,15 @@ func resourceAlicloudSlbCACertificateCreate(d *schema.ResourceData, meta interfa
 	request := slb.CreateUploadCACertificateRequest()
 	request.RegionId = client.RegionId
 
-	if val, ok := d.GetOk("name"); ok && val.(string) != "" {
+	if val, ok := d.GetOkExists("name"); ok && val.(string) != "" {
 		request.CACertificateName = val.(string)
 	}
 
-	if val, ok := d.GetOk("resource_group_id"); ok && val.(string) != "" {
+	if val, ok := d.GetOkExists("resource_group_id"); ok && val.(string) != "" {
 		request.ResourceGroupId = val.(string)
 	}
 
-	if val, ok := d.GetOk("ca_certificate"); ok && val.(string) != "" {
+	if val, ok := d.GetOkExists("ca_certificate"); ok && val.(string) != "" {
 		request.CACertificate = val.(string)
 	} else {
 		return WrapError(Error("UploadCACertificate got an error, ca_certificate should be not null"))

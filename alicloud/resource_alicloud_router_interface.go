@@ -327,8 +327,8 @@ func buildAlicloudRouterInterfaceCreateArgs(d *schema.ResourceData, meta interfa
 
 func buildAlicloudRouterInterfaceModifyAttrArgs(d *schema.ResourceData, meta interface{}) (*vpc.ModifyRouterInterfaceAttributeRequest, bool, error) {
 
-	sourceIp, sourceOk := d.GetOk("health_check_source_ip")
-	targetIp, targetOk := d.GetOk("health_check_target_ip")
+	sourceIp, sourceOk := d.GetOkExists("health_check_source_ip")
+	targetIp, targetOk := d.GetOkExists("health_check_target_ip")
 	if sourceOk && !targetOk || !sourceOk && targetOk {
 		return nil, false, WrapError(Error("The 'health_check_source_ip' and 'health_check_target_ip' should be specified or not at one time."))
 	}

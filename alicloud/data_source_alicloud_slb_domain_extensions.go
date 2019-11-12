@@ -62,7 +62,7 @@ func dataSourceAlicloudSlbDomainExtensionsRead(d *schema.ResourceData, meta inte
 	request.ListenerPort = requests.NewInteger(d.Get("frontend_port").(int))
 
 	idsMap := make(map[string]string)
-	if v, ok := d.GetOk("ids"); ok {
+	if v, ok := d.GetOkExists("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
@@ -112,7 +112,7 @@ func slbDomainExtensionDescriptionAttributes(d *schema.ResourceData, domainExten
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

@@ -61,27 +61,27 @@ func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta int
 	request := slb.CreateUploadServerCertificateRequest()
 	request.RegionId = client.RegionId
 
-	if val, ok := d.GetOk("name"); ok && val != "" {
+	if val, ok := d.GetOkExists("name"); ok && val != "" {
 		request.ServerCertificateName = val.(string)
 	}
 
-	if val, ok := d.GetOk("server_certificate"); ok && val != "" {
+	if val, ok := d.GetOkExists("server_certificate"); ok && val != "" {
 		request.ServerCertificate = val.(string)
 	}
 
-	if val, ok := d.GetOk("private_key"); ok && val != "" {
+	if val, ok := d.GetOkExists("private_key"); ok && val != "" {
 		request.PrivateKey = val.(string)
 	}
 
-	if val, ok := d.GetOk("alicloud_certificate_id"); ok && val != "" {
+	if val, ok := d.GetOkExists("alicloud_certificate_id"); ok && val != "" {
 		request.AliCloudCertificateId = val.(string)
 	}
 
-	if val, ok := d.GetOk("alicloud_certificate_name"); ok && val != "" {
+	if val, ok := d.GetOkExists("alicloud_certificate_name"); ok && val != "" {
 		request.AliCloudCertificateName = val.(string)
 	}
 
-	if val, ok := d.GetOk("resource_group_id"); ok && val != "" {
+	if val, ok := d.GetOkExists("resource_group_id"); ok && val != "" {
 		request.ResourceGroupId = val.(string)
 	}
 

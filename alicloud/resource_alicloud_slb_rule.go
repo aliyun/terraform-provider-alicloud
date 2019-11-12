@@ -176,10 +176,10 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 	group_id := strings.Trim(d.Get("server_group_id").(string), " ")
 
 	var domain, url, rule string
-	if v, ok := d.GetOk("domain"); ok {
+	if v, ok := d.GetOkExists("domain"); ok {
 		domain = v.(string)
 	}
-	if v, ok := d.GetOk("url"); ok {
+	if v, ok := d.GetOkExists("url"); ok {
 		url = v.(string)
 	}
 
@@ -268,19 +268,19 @@ func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error
 	fullUpdate := false
 	request := slb.CreateSetRuleRequest()
 	request.RuleId = d.Id()
-	if listenerSync, ok := d.GetOk("listener_sync"); ok && listenerSync == string(OffFlag) {
+	if listenerSync, ok := d.GetOkExists("listener_sync"); ok && listenerSync == string(OffFlag) {
 		if stickySession := d.Get("sticky_session"); stickySession == string(OnFlag) {
-			if _, ok := d.GetOk("sticky_session_type"); !ok {
+			if _, ok := d.GetOkExists("sticky_session_type"); !ok {
 				return WrapError(Error(`'sticky_session_type': required field is not set when the sticky_session is 'on'.`))
 			}
 		}
 		if stickySessionType := d.Get("sticky_session_type"); stickySessionType == string(InsertStickySessionType) {
-			if _, ok := d.GetOk("cookie_timeout"); !ok {
+			if _, ok := d.GetOkExists("cookie_timeout"); !ok {
 				return WrapError(Error(`'cookie_timeout': required field is not set when the sticky_session_type is 'insert'.`))
 			}
 		}
 		if stickySessionType := d.Get("sticky_session_type"); stickySessionType == string(ServerStickySessionType) {
-			if _, ok := d.GetOk("cookie"); !ok {
+			if _, ok := d.GetOkExists("cookie"); !ok {
 				return WrapError(Error(`'cookie': required field is not set when the sticky_session_type is 'server'.`))
 			}
 		}
@@ -301,7 +301,7 @@ func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error
 
 	if fullUpdate {
 		request.ListenerSync = d.Get("listener_sync").(string)
-		if listenerSync, ok := d.GetOk("listener_sync"); ok && listenerSync == string(OffFlag) {
+		if listenerSync, ok := d.GetOkExists("listener_sync"); ok && listenerSync == string(OffFlag) {
 			request.Scheduler = d.Get("scheduler").(string)
 			request.HealthCheck = d.Get("health_check").(string)
 			request.StickySession = d.Get("sticky_session").(string)
@@ -312,9 +312,12 @@ func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error
 				request.UnhealthyThreshold = requests.NewInteger(d.Get("unhealthy_threshold").(int))
 				request.HealthCheckInterval = requests.NewInteger(d.Get("health_check_interval").(int))
 				request.HealthCheckHttpCode = d.Get("health_check_http_code").(string)
-				if healthCheckDomain, ok := d.GetOk("health_check_domain"); ok {
+				if healthCheckDomain, ok := d.GetOkExists("health_check_domain"); ok {
 					request.HealthCheckDomain = healthCheckDomain.(string)
 				}
+				// https://help.aliyun.com/document_detail/35230.html
+				// healthCheckConnectPort scope 1-65535
+				// if use d.GetOkExist, the healthCheckConnectPort would be assigned to 0
 				if healthCheckConnectPort, ok := d.GetOk("health_check_connect_port"); ok {
 					request.HealthCheckConnectPort = requests.NewInteger(healthCheckConnectPort.(int))
 				}

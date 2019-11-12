@@ -58,7 +58,7 @@ func resourceAliyunSlbBackendServersCreate(d *schema.ResourceData, meta interfac
 	request := slb.CreateAddBackendServersRequest()
 	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
-	if v, ok := d.GetOk("backend_servers"); ok {
+	if v, ok := d.GetOkExists("backend_servers"); ok {
 		request.BackendServers = expandBackendServersInfoToString(v.(*schema.Set).List())
 	}
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {

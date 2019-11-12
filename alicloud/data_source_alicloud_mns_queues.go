@@ -69,7 +69,7 @@ func dataSourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 
 	var namePrefix string
-	if v, ok := d.GetOk("name_prefix"); ok {
+	if v, ok := d.GetOkExists("name_prefix"); ok {
 		namePrefix = v.(string)
 	}
 
@@ -125,7 +125,7 @@ func mnsQueueDescription(d *schema.ResourceData, queueAttr []ali_mns.QueueAttrib
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

@@ -54,16 +54,16 @@ func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) err
 	request := ram.CreateCreateUserRequest()
 	request.RegionId = client.RegionId
 	request.UserName = d.Get("name").(string)
-	if v, ok := d.GetOk("display_name"); ok {
+	if v, ok := d.GetOkExists("display_name"); ok {
 		request.DisplayName = v.(string)
 	}
-	if v, ok := d.GetOk("mobile"); ok {
+	if v, ok := d.GetOkExists("mobile"); ok {
 		request.MobilePhone = v.(string)
 	}
-	if v, ok := d.GetOk("email"); ok {
+	if v, ok := d.GetOkExists("email"); ok {
 		request.Email = v.(string)
 	}
-	if v, ok := d.GetOk("comments"); ok {
+	if v, ok := d.GetOkExists("comments"); ok {
 		request.Comments = v.(string)
 	}
 

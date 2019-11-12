@@ -100,7 +100,7 @@ func dataSourceAlicloudSlbCACertificatesRead(d *schema.ResourceData, meta interf
 	request.RegionId = client.RegionId
 	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	idsMap := make(map[string]string)
-	if v, ok := d.GetOk("ids"); ok {
+	if v, ok := d.GetOkExists("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
@@ -114,7 +114,7 @@ func dataSourceAlicloudSlbCACertificatesRead(d *schema.ResourceData, meta interf
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*slb.DescribeCACertificatesResponse)
 	var filteredTemp []slb.CACertificate
-	nameRegex, ok := d.GetOk("name_regex")
+	nameRegex, ok := d.GetOkExists("name_regex")
 	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
 		var r *regexp.Regexp
 		if nameRegex != "" {
@@ -175,7 +175,7 @@ func slbCACertificatesDescriptionAttributes(d *schema.ResourceData, certificates
 	}
 
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

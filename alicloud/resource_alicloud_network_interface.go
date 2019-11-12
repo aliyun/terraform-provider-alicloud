@@ -91,19 +91,19 @@ func resourceAliyunNetworkInterfaceCreate(d *schema.ResourceData, meta interface
 
 	request.SecurityGroupId = groups[0].(string)
 
-	if primaryIpAddress, ok := d.GetOk("private_ip"); ok {
+	if primaryIpAddress, ok := d.GetOkExists("private_ip"); ok {
 		request.PrimaryIpAddress = primaryIpAddress.(string)
 	}
 
-	if v, ok := d.GetOk("resource_group_id"); ok {
+	if v, ok := d.GetOkExists("resource_group_id"); ok {
 		request.ResourceGroupId = v.(string)
 	}
 
-	if name, ok := d.GetOk("name"); ok {
+	if name, ok := d.GetOkExists("name"); ok {
 		request.NetworkInterfaceName = name.(string)
 	}
 
-	if description, ok := d.GetOk("description"); ok {
+	if description, ok := d.GetOkExists("description"); ok {
 		request.Description = description.(string)
 	}
 	request.ClientToken = buildClientToken(request.GetActionName())

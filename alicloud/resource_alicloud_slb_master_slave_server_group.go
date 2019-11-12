@@ -82,10 +82,10 @@ func resourceAliyunSlbMasterSlaveServerGroupCreate(d *schema.ResourceData, meta 
 	request := slb.CreateCreateMasterSlaveServerGroupRequest()
 	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
-	if v, ok := d.GetOk("name"); ok {
+	if v, ok := d.GetOkExists("name"); ok {
 		request.MasterSlaveServerGroupName = v.(string)
 	}
-	if v, ok := d.GetOk("servers"); ok {
+	if v, ok := d.GetOkExists("servers"); ok {
 		request.MasterSlaveBackendServers = expandMasterSlaveBackendServersToString(v.(*schema.Set).List())
 	}
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {

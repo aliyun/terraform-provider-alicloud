@@ -70,7 +70,7 @@ func resourceAliyunForwardEntryCreate(d *schema.ResourceData, meta interface{}) 
 	request.IpProtocol = d.Get("ip_protocol").(string)
 	request.InternalIp = d.Get("internal_ip").(string)
 	request.InternalPort = d.Get("internal_port").(string)
-	if name, ok := d.GetOk("name"); ok {
+	if name, ok := d.GetOkExists("name"); ok {
 		request.ForwardEntryName = name.(string)
 	}
 	var raw interface{}

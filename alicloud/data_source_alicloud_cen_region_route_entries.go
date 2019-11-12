@@ -117,7 +117,7 @@ func cenRegionDomainRouteEntriesAttributes(d *schema.ResourceData, allCenRouteEn
 	}
 
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 

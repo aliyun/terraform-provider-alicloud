@@ -55,7 +55,7 @@ func resourceAlicloudPvtzZoneCreate(d *schema.ResourceData, meta interface{}) er
 
 	request := pvtz.CreateAddZoneRequest()
 	request.RegionId = client.RegionId
-	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("name"); ok && v.(string) != "" {
 		request.ZoneName = v.(string)
 	}
 	// API AddZone has a throttling limitation 5qps which one use only can send 5 requests in one second.

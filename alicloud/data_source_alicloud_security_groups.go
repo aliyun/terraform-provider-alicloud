@@ -110,12 +110,12 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	var sg []SecurityGroup
 	var nameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok {
+	if v, ok := d.GetOkExists("name_regex"); ok {
 		if r, err := regexp.Compile(v.(string)); err == nil {
 			nameRegex = r
 		}
 	}
-	if v, ok := d.GetOk("tags"); ok {
+	if v, ok := d.GetOkExists("tags"); ok {
 		var tags []ecs.DescribeSecurityGroupsTag
 
 		for key, value := range v.(map[string]interface{}) {
@@ -129,7 +129,7 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 
 	// ids
 	idsMap := make(map[string]string)
-	if v, ok := d.GetOk("ids"); ok {
+	if v, ok := d.GetOkExists("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
@@ -224,7 +224,7 @@ func securityGroupsDescription(d *schema.ResourceData, sg []SecurityGroup) error
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

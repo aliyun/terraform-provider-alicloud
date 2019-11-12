@@ -81,7 +81,7 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 	request.PageNumber = requests.NewInteger(1)
 	var allArs []nas.DescribeAccessRulesAccessRule1
 	idsMap := make(map[string]string)
-	if v, ok := d.GetOk("ids"); ok {
+	if v, ok := d.GetOkExists("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			idsMap[vv.(string)] = vv.(string)
 		}
@@ -105,13 +105,13 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 			break
 		}
 		for _, rule := range response.AccessRules.AccessRule {
-			if v, ok := d.GetOk("source_cidr_ip"); ok && rule.SourceCidrIp != Trim(v.(string)) {
+			if v, ok := d.GetOkExists("source_cidr_ip"); ok && rule.SourceCidrIp != Trim(v.(string)) {
 				continue
 			}
-			if v, ok := d.GetOk("user_access"); ok && rule.UserAccess != Trim(v.(string)) {
+			if v, ok := d.GetOkExists("user_access"); ok && rule.UserAccess != Trim(v.(string)) {
 				continue
 			}
-			if v, ok := d.GetOk("rw_access"); ok && rule.RWAccess != Trim(v.(string)) {
+			if v, ok := d.GetOkExists("rw_access"); ok && rule.RWAccess != Trim(v.(string)) {
 				continue
 			}
 			if len(idsMap) > 0 {
@@ -160,7 +160,7 @@ func accessRulesDecriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.D
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

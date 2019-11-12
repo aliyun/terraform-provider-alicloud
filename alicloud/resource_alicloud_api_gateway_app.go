@@ -44,7 +44,7 @@ func resourceAliyunApigatewayAppCreate(d *schema.ResourceData, meta interface{})
 	request := cloudapi.CreateCreateAppRequest()
 	request.RegionId = client.RegionId
 	request.AppName = d.Get("name").(string)
-	if v, exist := d.GetOk("description"); exist {
+	if v, exist := d.GetOkExists("description"); exist {
 		request.Description = v.(string)
 	}
 	request.Description = d.Get("description").(string)
@@ -110,7 +110,7 @@ func resourceAliyunApigatewayAppUpdate(d *schema.ResourceData, meta interface{})
 		request.RegionId = client.RegionId
 		request.AppId = requests.Integer(d.Id())
 		request.AppName = d.Get("name").(string)
-		if v, exist := d.GetOk("description"); exist {
+		if v, exist := d.GetOkExists("description"); exist {
 			request.Description = v.(string)
 		}
 

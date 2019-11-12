@@ -134,11 +134,11 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 
 	if attr != nil {
 		for _, item := range attr.Permissions.Permission {
-			if v, ok := d.GetOk("ip_protocol"); ok && strings.ToLower(string(item.IpProtocol)) != v.(string) {
+			if v, ok := d.GetOkExists("ip_protocol"); ok && strings.ToLower(string(item.IpProtocol)) != v.(string) {
 				continue
 			}
 
-			if v, ok := d.GetOk("policy"); ok && strings.ToLower(string(item.Policy)) != v.(string) {
+			if v, ok := d.GetOkExists("policy"); ok && strings.ToLower(string(item.Policy)) != v.(string) {
 				continue
 			}
 
@@ -180,7 +180,7 @@ func dataSourceAlicloudSecurityGroupRulesRead(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), rules)
 	}
 	return nil

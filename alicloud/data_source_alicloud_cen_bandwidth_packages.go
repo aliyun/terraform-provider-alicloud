@@ -128,7 +128,7 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 	request.PageNumber = requests.NewInteger(1)
 
 	// filter by instance_id
-	if instanceId, ok := d.GetOk("instance_id"); ok {
+	if instanceId, ok := d.GetOkExists("instance_id"); ok {
 		filters = append(filters, cbn.DescribeCenBandwidthPackagesFilter{
 			Key:   "CenId",
 			Value: &[]string{instanceId.(string)},
@@ -140,7 +140,7 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 	}
 
 	var nameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("name_regex"); ok && v.(string) != "" {
 		if r, err := regexp.Compile(Trim(v.(string))); err == nil {
 			nameRegex = r
 		}
@@ -199,7 +199,7 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 func constructCenBwpRequestFilters(d *schema.ResourceData) [][]cbn.DescribeCenBandwidthPackagesFilter {
 	var res [][]cbn.DescribeCenBandwidthPackagesFilter
 	maxQueryItem := 5
-	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
+	if v, ok := d.GetOkExists("ids"); ok && len(v.([]interface{})) > 0 {
 		// split ids
 		requestTimes := len(v.([]interface{})) / maxQueryItem
 		if (len(v.([]interface{})) % maxQueryItem) > 0 {
@@ -270,7 +270,7 @@ func cenBandwidthPackageAttributes(d *schema.ResourceData, allCenBwps []cbn.CenB
 	}
 
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 

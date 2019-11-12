@@ -106,7 +106,7 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_file_systems", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		destription, ok := d.GetOk("description_regex")
+		destription, ok := d.GetOkExists("description_regex")
 		var r *regexp.Regexp
 		if ok && destription.(string) != "" {
 			r = regexp.MustCompile(destription.(string))
@@ -116,16 +116,16 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 			break
 		}
 		for _, file_system := range response.FileSystems.FileSystem {
-			if v, ok := d.GetOk("storage_type"); ok && file_system.StorageType != Trim(v.(string)) {
+			if v, ok := d.GetOkExists("storage_type"); ok && file_system.StorageType != Trim(v.(string)) {
 				continue
 			}
-			if v, ok := d.GetOk("protocol_type"); ok && string(file_system.ProtocolType) != Trim(v.(string)) {
+			if v, ok := d.GetOkExists("protocol_type"); ok && string(file_system.ProtocolType) != Trim(v.(string)) {
 				continue
 			}
 			if r != nil && !r.MatchString(file_system.Description) {
 				continue
 			}
-			if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
+			if v, ok := d.GetOkExists("ids"); ok && len(v.([]interface{})) > 0 {
 				id_found := false
 				for _, id := range v.([]interface{}) {
 					if string(file_system.FileSystemId) == id.(string) {
@@ -182,7 +182,7 @@ func fileSystemsDecriptionAttributes(d *schema.ResourceData, fssSetTypes []nas.D
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

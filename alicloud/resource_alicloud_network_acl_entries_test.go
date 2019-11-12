@@ -275,8 +275,7 @@ resource "alicloud_network_acl" "default" {
 
 resource "alicloud_network_acl_entries" "default" {
   network_acl_id = "${alicloud_network_acl.default.id}"
-  ingress = [
-    {
+  ingress {
       protocol = "all"
       port = "-1/-1"
       source_cidr_ip = "0.0.0.0/32"
@@ -285,9 +284,8 @@ resource "alicloud_network_acl_entries" "default" {
       policy = "accept"
       description = "${var.name}"
     }
-  ]
-  egress = [
-    {
+
+  egress {
       protocol = "all"
       port = "-1/-1"
       destination_cidr_ip = "0.0.0.0/32"
@@ -296,7 +294,6 @@ resource "alicloud_network_acl_entries" "default" {
       policy = "accept"
       description = "${var.name}"
     }
-  ]
 }
 `, randInt)
 }
@@ -323,8 +320,7 @@ resource "alicloud_network_acl" "default" {
 
 resource "alicloud_network_acl_entries" "default" {
   network_acl_id = "${alicloud_network_acl.default.id}"
-  ingress = [
-    {
+  ingress {
       protocol = "all"
       port = "-1/-1"
       source_cidr_ip = "0.0.0.0/32"
@@ -332,8 +328,9 @@ resource "alicloud_network_acl_entries" "default" {
       entry_type = "custom"
       policy = "accept"
       description = "${var.name}"
-    },
-    {
+    }
+
+  ingress {
       protocol = "all"
       port = "-1/-1"
       source_cidr_ip = "0.0.0.1/32"
@@ -342,9 +339,8 @@ resource "alicloud_network_acl_entries" "default" {
       policy = "accept"
       description = "${var.name}"
     }
-  ]
-  egress = [
-    {
+
+  egress {
       protocol = "all"
       port = "-1/-1"
       destination_cidr_ip = "0.0.0.0/32"
@@ -352,8 +348,9 @@ resource "alicloud_network_acl_entries" "default" {
       entry_type = "custom"
       policy = "accept"
       description = "${var.name}"
-    },
-    {
+    }
+
+  egress {
       protocol = "all"
       port = "-1/-1"
       destination_cidr_ip = "0.0.0.1/32"
@@ -362,7 +359,6 @@ resource "alicloud_network_acl_entries" "default" {
       policy = "accept"
       description = "${var.name}"
     }
-  ]
 }
 `, randInt)
 }
@@ -389,8 +385,7 @@ resource "alicloud_network_acl" "default" {
 
 resource "alicloud_network_acl_entries" "default" {
   network_acl_id = "${alicloud_network_acl.default.id}"
-  ingress = [
-    {
+  ingress {
       protocol = "all"
       port = "-1/-1"
       source_cidr_ip = "0.0.0.0/32"
@@ -399,9 +394,8 @@ resource "alicloud_network_acl_entries" "default" {
       policy = "accept"
       description = "${var.name}"
     }
-  ]
-  egress = [
-    {
+
+  egress {
       protocol = "all"
       port = "-1/-1"
       destination_cidr_ip = "0.0.0.0/32"
@@ -410,7 +404,6 @@ resource "alicloud_network_acl_entries" "default" {
       policy = "accept"
       description = "${var.name}"
     }
-  ]
 }
 `, randInt)
 }

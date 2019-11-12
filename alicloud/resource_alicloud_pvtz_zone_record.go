@@ -71,27 +71,27 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 	request := pvtz.CreateAddZoneRecordRequest()
 	request.RegionId = client.RegionId
 
-	if v, ok := d.GetOk("resource_record"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("resource_record"); ok && v.(string) != "" {
 		request.Rr = v.(string)
 	}
 
-	if v, ok := d.GetOk("type"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("type"); ok && v.(string) != "" {
 		request.Type = v.(string)
 	}
 
-	if v, ok := d.GetOk("value"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("value"); ok && v.(string) != "" {
 		request.Value = v.(string)
 	}
 
-	if v, ok := d.GetOk("zone_id"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("zone_id"); ok && v.(string) != "" {
 		request.ZoneId = v.(string)
 	}
 
-	if v, ok := d.GetOk("priority"); ok && v != nil {
+	if v, ok := d.GetOkExists("priority"); ok && v != nil {
 		request.Priority = requests.NewInteger(d.Get("priority").(int))
 	}
 
-	if v, ok := d.GetOk("ttl"); ok && v != nil {
+	if v, ok := d.GetOkExists("ttl"); ok && v != nil {
 		request.Ttl = requests.NewInteger(d.Get("ttl").(int))
 	}
 

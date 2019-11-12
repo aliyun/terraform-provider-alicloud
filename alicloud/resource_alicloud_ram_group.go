@@ -45,7 +45,7 @@ func resourceAlicloudRamGroupCreate(d *schema.ResourceData, meta interface{}) er
 	request := ram.CreateCreateGroupRequest()
 	request.RegionId = client.RegionId
 	request.GroupName = d.Get("name").(string)
-	if v, ok := d.GetOk("comments"); ok {
+	if v, ok := d.GetOkExists("comments"); ok {
 		request.Comments = v.(string)
 	}
 	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {

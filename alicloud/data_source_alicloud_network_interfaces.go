@@ -143,40 +143,40 @@ func dataSourceAlicloudNetworkInterfacesRead(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	request := ecs.CreateDescribeNetworkInterfacesRequest()
 	request.RegionId = client.RegionId
-	if networkInterfaceIds, ok := d.GetOk("ids"); ok {
+	if networkInterfaceIds, ok := d.GetOkExists("ids"); ok {
 		ids := expandStringList(networkInterfaceIds.(*schema.Set).List())
 		request.NetworkInterfaceId = &ids
 	}
 
-	if vpcId, ok := d.GetOk("vpc_id"); ok {
+	if vpcId, ok := d.GetOkExists("vpc_id"); ok {
 		request.VpcId = vpcId.(string)
 	}
 
-	if vswitchId, ok := d.GetOk("vswitch_id"); ok {
+	if vswitchId, ok := d.GetOkExists("vswitch_id"); ok {
 		request.VSwitchId = vswitchId.(string)
 	}
 
-	if privateIp, ok := d.GetOk("private_ip"); ok {
+	if privateIp, ok := d.GetOkExists("private_ip"); ok {
 		request.PrimaryIpAddress = privateIp.(string)
 	}
 
-	if securityGroupId, ok := d.GetOk("security_group_id"); ok {
+	if securityGroupId, ok := d.GetOkExists("security_group_id"); ok {
 		request.SecurityGroupId = securityGroupId.(string)
 	}
 
-	if resourceGroupId, ok := d.GetOk("resource_group_id"); ok {
+	if resourceGroupId, ok := d.GetOkExists("resource_group_id"); ok {
 		request.ResourceGroupId = resourceGroupId.(string)
 	}
 
-	if typ, ok := d.GetOk("type"); ok {
+	if typ, ok := d.GetOkExists("type"); ok {
 		request.Type = typ.(string)
 	}
 
-	if instanceId, ok := d.GetOk("instance_id"); ok {
+	if instanceId, ok := d.GetOkExists("instance_id"); ok {
 		request.InstanceId = instanceId.(string)
 	}
 
-	if v, ok := d.GetOk("tags"); ok {
+	if v, ok := d.GetOkExists("tags"); ok {
 		var tags []ecs.DescribeNetworkInterfacesTag
 		for key, value := range v.(map[string]interface{}) {
 			tags = append(tags, ecs.DescribeNetworkInterfacesTag{
@@ -212,7 +212,7 @@ func dataSourceAlicloudNetworkInterfacesRead(d *schema.ResourceData, meta interf
 	}
 
 	var filterEnis []ecs.NetworkInterfaceSet
-	nameRegex, ok := d.GetOk("name_regex")
+	nameRegex, ok := d.GetOkExists("name_regex")
 	if ok && nameRegex.(string) != "" {
 		var r *regexp.Regexp
 		r = regexp.MustCompile(nameRegex.(string))
@@ -275,7 +275,7 @@ func networkInterfaceDescriptionAttributes(d *schema.ResourceData, enis []ecs.Ne
 		return err
 	}
 
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 

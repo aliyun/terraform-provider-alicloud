@@ -51,10 +51,10 @@ func resourceAlicloudRamLoginProfileCreate(d *schema.ResourceData, meta interfac
 	request.RegionId = client.RegionId
 	request.UserName = d.Get("user_name").(string)
 	request.Password = d.Get("password").(string)
-	if v, ok := d.GetOk("password_reset_required"); ok {
+	if v, ok := d.GetOkExists("password_reset_required"); ok {
 		request.PasswordResetRequired = requests.Boolean(strconv.FormatBool(v.(bool)))
 	}
-	if v, ok := d.GetOk("mfa_bind_required"); ok {
+	if v, ok := d.GetOkExists("mfa_bind_required"); ok {
 		request.MFABindRequired = requests.Boolean(strconv.FormatBool(v.(bool)))
 	}
 

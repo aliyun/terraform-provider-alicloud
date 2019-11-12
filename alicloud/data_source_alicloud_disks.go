@@ -153,29 +153,29 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 	request := ecs.CreateDescribeDisksRequest()
 	request.RegionId = client.RegionId
 
-	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
+	if v, ok := d.GetOkExists("ids"); ok && len(v.([]interface{})) > 0 {
 		request.DiskIds = convertListToJsonString(v.([]interface{}))
 	}
-	if v, ok := d.GetOk("type"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("type"); ok && v.(string) != "" {
 		request.DiskType = v.(string)
 	}
-	if v, ok := d.GetOk("category"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("category"); ok && v.(string) != "" {
 		request.Category = v.(string)
 	}
-	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("resource_group_id"); ok && v.(string) != "" {
 		request.ResourceGroupId = v.(string)
 	}
-	if v, ok := d.GetOk("encrypted"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("encrypted"); ok && v.(string) != "" {
 		if v == string(OnFlag) {
 			request.Encrypted = requests.NewBoolean(true)
 		} else {
 			request.Encrypted = requests.NewBoolean(false)
 		}
 	}
-	if v, ok := d.GetOk("instance_id"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("instance_id"); ok && v.(string) != "" {
 		request.InstanceId = v.(string)
 	}
-	if v, ok := d.GetOk("tags"); ok {
+	if v, ok := d.GetOkExists("tags"); ok {
 		var tags []ecs.DescribeDisksTag
 
 		for key, value := range v.(map[string]interface{}) {
@@ -219,7 +219,7 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 
 	var filteredDisksTemp []ecs.Disk
 
-	nameRegex, ok := d.GetOk("name_regex")
+	nameRegex, ok := d.GetOkExists("name_regex")
 	if ok && nameRegex.(string) != "" {
 		var r *regexp.Regexp
 		if nameRegex != "" {
@@ -277,7 +277,7 @@ func disksDescriptionAttributes(d *schema.ResourceData, disks []ecs.Disk) error 
 	}
 
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

@@ -96,7 +96,7 @@ func dataSourceAlicloudMountTargetRead(d *schema.ResourceData, meta interface{})
 	var allMt []nas.DescribeMountTargetsMountTarget1
 
 	idsMap := make(map[string]string)
-	if v, ok := d.GetOk("ids"); ok {
+	if v, ok := d.GetOkExists("ids"); ok {
 		for _, vv := range v.([]interface{}) {
 			idsMap[vv.(string)] = vv.(string)
 		}
@@ -120,19 +120,19 @@ func dataSourceAlicloudMountTargetRead(d *schema.ResourceData, meta interface{})
 			break
 		}
 		for _, mt := range resp.MountTargets.MountTarget {
-			if v, ok := d.GetOk("type"); ok && mt.NetworkType != v.(string) {
+			if v, ok := d.GetOkExists("type"); ok && mt.NetworkType != v.(string) {
 				continue
 			}
-			if v, ok := d.GetOk("vpc_id"); ok && mt.VpcId != v.(string) {
+			if v, ok := d.GetOkExists("vpc_id"); ok && mt.VpcId != v.(string) {
 				continue
 			}
-			if v, ok := d.GetOk("vswitch_id"); ok && mt.VswId != v.(string) {
+			if v, ok := d.GetOkExists("vswitch_id"); ok && mt.VswId != v.(string) {
 				continue
 			}
-			if v, ok := d.GetOk("access_group_name"); ok && mt.AccessGroup != v.(string) {
+			if v, ok := d.GetOkExists("access_group_name"); ok && mt.AccessGroup != v.(string) {
 				continue
 			}
-			if v, ok := d.GetOk("mount_target_domain"); ok && mt.MountTargetDomain != v.(string) {
+			if v, ok := d.GetOkExists("mount_target_domain"); ok && mt.MountTargetDomain != v.(string) {
 				continue
 			}
 			if len(idsMap) > 0 {
@@ -177,7 +177,7 @@ func MountTargetDescriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.
 		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+	if output, ok := d.GetOkExists("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 	return nil

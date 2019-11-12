@@ -52,7 +52,7 @@ func resourceAlicloudRamAccessKeyCreate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
 	request := ram.CreateCreateAccessKeyRequest()
-	if v, ok := d.GetOk("user_name"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("user_name"); ok && v.(string) != "" {
 		request.UserName = v.(string)
 	}
 
@@ -65,7 +65,7 @@ func resourceAlicloudRamAccessKeyCreate(d *schema.ResourceData, meta interface{}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ram.CreateAccessKeyResponse)
 
-	if v, ok := d.GetOk("pgp_key"); ok {
+	if v, ok := d.GetOkExists("pgp_key"); ok {
 		pgpKey := v.(string)
 		encryptionKey, err := encryption.RetrieveGPGKey(pgpKey)
 		if err != nil {
@@ -79,7 +79,7 @@ func resourceAlicloudRamAccessKeyCreate(d *schema.ResourceData, meta interface{}
 		d.Set("encrypted_secret", encrypted)
 
 	}
-	if output, ok := d.GetOk("secret_file"); ok && output != nil {
+	if output, ok := d.GetOkExists("secret_file"); ok && output != nil {
 		// create a secret_file and write access key to it.
 		writeToFile(output.(string), response.AccessKey)
 	}
@@ -100,7 +100,7 @@ func resourceAlicloudRamAccessKeyUpdate(d *schema.ResourceData, meta interface{}
 	request.UserAccessKeyId = d.Id()
 	request.Status = d.Get("status").(string)
 
-	if v, ok := d.GetOk("user_name"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("user_name"); ok && v.(string) != "" {
 		request.UserName = v.(string)
 	}
 
@@ -120,7 +120,7 @@ func resourceAlicloudRamAccessKeyRead(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	ramservice := RamService{client}
 	userName := ""
-	if v, ok := d.GetOk("user_name"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("user_name"); ok && v.(string) != "" {
 		userName = v.(string)
 	}
 	object, err := ramservice.DescribeRamAccessKey(d.Id(), userName)
@@ -142,7 +142,7 @@ func resourceAlicloudRamAccessKeyDelete(d *schema.ResourceData, meta interface{}
 	request.RegionId = client.RegionId
 	request.UserAccessKeyId = d.Id()
 
-	if v, ok := d.GetOk("user_name"); ok && v.(string) != "" {
+	if v, ok := d.GetOkExists("user_name"); ok && v.(string) != "" {
 		request.UserName = v.(string)
 	}
 
