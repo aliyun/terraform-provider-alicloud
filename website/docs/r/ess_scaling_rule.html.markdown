@@ -131,5 +131,5 @@ The following attributes are exported:
 ESS scaling rule can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_ess_scalingrule.example abc123456
+$ terraform import alicloud_ess_scaling_rule.example abc123456
 ```
