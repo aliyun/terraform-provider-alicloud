@@ -1,4 +1,16 @@
 ## 1.62.0 (Unreleased)
+
+- **New Resource:** `alicloud_yundun_dbaudit_instance` [GH-1819]
+- **New Data Source:** `alicloud_yundun_dbaudit_instances` [GH-1819]
+
+IMPROVEMENTS:
+
+- improve docs and add ci for yundun dbaudit [GH-1853]
+
+BUG FIXES:
+
+- fix(provider): fix the bug: slice bounds out of range [GH-1854]
+
 ## 1.61.0 (November 12, 2019)
 
 - **New Resource:** `alicloud_sag_snat_entry` ([#1799](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1799))
