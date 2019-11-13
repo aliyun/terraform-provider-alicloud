@@ -1442,9 +1442,7 @@ func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (i
 		}
 		dbauditconn.AppendUserAgent(Terraform, terraformVersion)
 		dbauditconn.AppendUserAgent(Provider, providerVersion)
-		if len(client.config.ConfigurationSource) > 0 {
-			dbauditconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		dbauditconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.dbauditconn = dbauditconn
 	}
 

@@ -6,7 +6,7 @@ description: |-
   Provides a Alicloud Anti-DDoS Advanced(Ddosbgp) Instance Resource.
 ---
 
-# alicloud_ddoscoo_instance
+# alicloud_ddosbgp_instance
 
 Anti-DDoS Advanced instance resource. "Ddosbgp" is the short term of this product.
 

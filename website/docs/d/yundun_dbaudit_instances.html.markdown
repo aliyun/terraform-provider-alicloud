@@ -6,11 +6,11 @@ description: |-
   Provides a list of cloud DBaudit(yundun_dbaudit) instances available to the user.
 ---
 
-# alicloud\_yundun_dbaudit\_instances
+# alicloud\_yundun_dbaudit_instances
 
 This data source provides a list of cloud DBAudit instances in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.61.0+ .
+-> **NOTE:** Available in 1.62.0+ .
 
 ## Example Usage
 
