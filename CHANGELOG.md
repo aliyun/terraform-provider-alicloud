@@ -1,16 +1,16 @@
-## 1.62.0 (Unreleased)
+## 1.62.0 (November 13, 2019)
 
-- **New Resource:** `alicloud_yundun_dbaudit_instance` [GH-1819]
-- **New Data Source:** `alicloud_yundun_dbaudit_instances` [GH-1819]
+- **New Resource:** `alicloud_yundun_dbaudit_instance` ([#1819](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1819))
+- **New Data Source:** `alicloud_yundun_dbaudit_instances` ([#1819](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1819))
 
 IMPROVEMENTS:
 
-- improve(ess_scalingconfiguration): support password_inherit [GH-1856]
-- improve docs and add ci for yundun dbaudit [GH-1853]
+- improve(ess_scalingconfiguration): support password_inherit ([#1856](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1856))
+- improve docs and add ci for yundun dbaudit ([#1853](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1853))
 
 BUG FIXES:
 
-- fix(provider): fix the bug: slice bounds out of range [GH-1854]
+- fix(provider): fix the bug: slice bounds out of range ([#1854](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1854))
 
 ## 1.61.0 (November 12, 2019)
 
