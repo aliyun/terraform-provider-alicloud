@@ -12,7 +12,8 @@ type FcService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *FcService) DescribeFcService(id string) (response *fc.GetServiceOutput, err error) {
+func (s *FcService) DescribeFcService(id string) (*fc.GetServiceOutput, error) {
+	response := &fc.GetServiceOutput{}
 	request := &fc.GetServiceInput{ServiceName: &id}
 	var requestInfo *fc.Client
 	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
@@ -25,14 +26,14 @@ func (s *FcService) DescribeFcService(id string) (response *fc.GetServiceOutput,
 		} else {
 			err = WrapErrorf(err, DefaultErrorMsg, id, "GetService", FcGoSdk)
 		}
-		return
+		return response, err
 	}
 	addDebug("GetService", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetServiceOutput)
 	if *response.ServiceName != id {
 		err = WrapErrorf(Error(GetNotFoundMessage("FcService", id)), NotFoundMsg, FcGoSdk)
 	}
-	return
+	return response, err
 }
 
 func (s *FcService) WaitForFcService(id string, status Status, timeout int) error {
@@ -58,12 +59,11 @@ func (s *FcService) WaitForFcService(id string, status Status, timeout int) erro
 	}
 }
 
-func (s *FcService) DescribeFcFunction(id string) (response *fc.GetFunctionOutput, err error) {
-
+func (s *FcService) DescribeFcFunction(id string) (*fc.GetFunctionOutput, error) {
+	response := &fc.GetFunctionOutput{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		err = WrapError(err)
-		return
+		return response, WrapError(err)
 	}
 	service, name := parts[0], parts[1]
 	request := &fc.GetFunctionInput{
@@ -81,14 +81,14 @@ func (s *FcService) DescribeFcFunction(id string) (response *fc.GetFunctionOutpu
 		} else {
 			err = WrapErrorf(err, DefaultErrorMsg, id, "GetFunction", FcGoSdk)
 		}
-		return
+		return response, err
 	}
 	addDebug("GetFunction", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetFunctionOutput)
 	if *response.FunctionName == "" {
 		err = WrapErrorf(Error(GetNotFoundMessage("FcFunction", id)), NotFoundMsg, FcGoSdk)
 	}
-	return
+	return response, err
 }
 
 func (s *FcService) WaitForFcFunction(id string, status Status, timeout int) error {
@@ -119,11 +119,11 @@ func (s *FcService) WaitForFcFunction(id string, status Status, timeout int) err
 	return nil
 }
 
-func (s *FcService) DescribeFcTrigger(id string) (response *fc.GetTriggerOutput, err error) {
+func (s *FcService) DescribeFcTrigger(id string) (*fc.GetTriggerOutput, error) {
+	response := &fc.GetTriggerOutput{}
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
-		err = WrapError(err)
-		return
+		return response, WrapError(err)
 	}
 	service, function, name := parts[0], parts[1], parts[2]
 	request := fc.NewGetTriggerInput(service, function, name)
@@ -138,14 +138,14 @@ func (s *FcService) DescribeFcTrigger(id string) (response *fc.GetTriggerOutput,
 		} else {
 			err = WrapErrorf(err, DefaultErrorMsg, id, "FcTrigger", FcGoSdk)
 		}
-		return
+		return response, err
 	}
 	addDebug("GetTrigger", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetTriggerOutput)
 	if *response.TriggerName != name {
 		err = WrapErrorf(Error(GetNotFoundMessage("FcTrigger", name)), NotFoundMsg, ProviderERROR)
 	}
-	return
+	return response, err
 }
 
 func removeSpaceAndEnter(s string) string {

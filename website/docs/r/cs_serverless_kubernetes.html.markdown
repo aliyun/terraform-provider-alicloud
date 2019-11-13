@@ -56,7 +56,7 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
   vpc_id = "${alicloud_vpc.default.id}"
   vswitch_id = "${alicloud_vswitch.default.id}"
   new_nat_gateway = true
-  enndpoint_public_access_enabled = true
+  endpoint_public_access_enabled = true
   private_zone = false
   deletion_protection = false
   tags = {
@@ -75,7 +75,7 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The vpc where new kubernetes cluster will be located. Specify one vpc's id, if it is not specified, a new VPC  will be built.
 * `vswitch_id` - (Required, ForceNew) The vswitch where new kubernetes cluster will be located. Specify one vswitch's id, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true.
-* `enndpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
+* `endpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
 * `private_zone` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
 * `deletion_protection` - (Optional, ForceNew) Whether enable the deletion protection or not.
     - true: Enable deletion protection.

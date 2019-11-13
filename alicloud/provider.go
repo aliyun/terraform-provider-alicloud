@@ -14,6 +14,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/mutexkv"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -227,6 +228,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_emr_disk_types":                    dataSourceAlicloudEmrDiskTypes(),
 			"alicloud_emr_main_versions":                 dataSourceAlicloudEmrMainVersions(),
 			"alicloud_sag_acls":                          dataSourceAlicloudSagAcls(),
+			"alicloud_yundun_dbaudit_instance":           dataSourceAlicloudDbauditInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -393,6 +395,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sag_qos_policy":                      resourceAlicloudSagQosPolicy(),
 			"alicloud_sag_qos_car":                         resourceAlicloudSagQosCar(),
 			"alicloud_sag_snat_entry":                      resourceAlicloudSagSnatEntry(),
+			"alicloud_yundun_dbaudit_instance":             resourceAlicloudDbauditInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -543,6 +546,13 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.FcEndpoint = strings.TrimSpace(fcEndpoint.(string))
 	}
 
+	if config.ConfigurationSource == "" {
+		sourceName := fmt.Sprintf("Default/%s:%s", config.AccessKey, strings.Trim(uuid.New().String(), "-"))
+		if len(sourceName) > 64 {
+			sourceName = sourceName[:64]
+		}
+		config.ConfigurationSource = sourceName
+	}
 	client, err := config.Client()
 	if err != nil {
 		return nil, err

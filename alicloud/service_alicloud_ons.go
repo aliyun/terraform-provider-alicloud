@@ -22,6 +22,7 @@ func (s *OnsService) GetPreventCache() requests.Integer {
 }
 
 func (s *OnsService) DescribeOnsInstance(id string) (*ons.OnsInstanceBaseInfoResponse, error) {
+	response := &ons.OnsInstanceBaseInfoResponse{}
 	request := ons.CreateOnsInstanceBaseInfoRequest()
 	request.RegionId = s.client.RegionId
 	request.PreventCache = s.GetPreventCache()
@@ -33,21 +34,22 @@ func (s *OnsService) DescribeOnsInstance(id string) (*ons.OnsInstanceBaseInfoRes
 
 	if err != nil {
 		if IsExceptedError(err, InvalidDomainNameNoExist) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	response, _ := raw.(*ons.OnsInstanceBaseInfoResponse)
+	response, _ = raw.(*ons.OnsInstanceBaseInfoResponse)
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return response, nil
 
 }
 
-func (s *OnsService) DescribeOnsTopic(id string) (onsTopic *ons.PublishInfoDo, err error) {
+func (s *OnsService) DescribeOnsTopic(id string) (*ons.PublishInfoDo, error) {
+	onsTopic := &ons.PublishInfoDo{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return onsTopic, WrapError(err)
 	}
 	instanceId := parts[0]
 	topic := parts[1]
@@ -73,17 +75,17 @@ func (s *OnsService) DescribeOnsTopic(id string) (onsTopic *ons.PublishInfoDo, e
 
 	for _, v := range topicListResp.Data.PublishInfoDo {
 		if v.Topic == topic {
-			onsTopic = &v
-			return
+			return &v, nil
 		}
 	}
 	return onsTopic, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 }
 
-func (s *OnsService) DescribeOnsGroup(id string) (onsGroup *ons.SubscribeInfoDo, err error) {
+func (s *OnsService) DescribeOnsGroup(id string) (*ons.SubscribeInfoDo, error) {
+	onsGroup := &ons.SubscribeInfoDo{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return onsGroup, WrapError(err)
 	}
 	instanceId := parts[0]
 	groupId := parts[1]
@@ -108,8 +110,7 @@ func (s *OnsService) DescribeOnsGroup(id string) (onsGroup *ons.SubscribeInfoDo,
 
 	for _, v := range groupListResp.Data.SubscribeInfoDo {
 		if v.GroupId == groupId {
-			onsGroup = &v
-			return
+			return &v, nil
 		}
 	}
 

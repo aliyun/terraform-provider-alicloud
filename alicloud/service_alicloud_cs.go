@@ -289,7 +289,8 @@ func (s *CsService) CsServerlessKubernetesInstanceStateRefreshFunc(id string, fa
 	}
 }
 
-func (s *CsService) DescribeCsServerlessKubernetes(id string) (cluster *cs.ServerlessClusterResponse, err error) {
+func (s *CsService) DescribeCsServerlessKubernetes(id string) (*cs.ServerlessClusterResponse, error) {
+	cluster := &cs.ServerlessClusterResponse{}
 	var requestInfo *cs.Client
 	invoker := NewInvoker()
 	var response interface{}
@@ -316,7 +317,7 @@ func (s *CsService) DescribeCsServerlessKubernetes(id string) (cluster *cs.Serve
 	if cluster != nil && cluster.ClusterId != id {
 		return cluster, WrapErrorf(Error(GetNotFoundMessage("CSServerlessKubernetes", id)), NotFoundMsg, ProviderERROR)
 	}
-	return
+	return cluster, nil
 
 }
 

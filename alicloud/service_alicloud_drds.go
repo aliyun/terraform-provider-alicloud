@@ -11,7 +11,8 @@ type DrdsService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *DrdsService) DescribeDrdsInstance(id string) (response *drds.DescribeDrdsInstanceResponse, err error) {
+func (s *DrdsService) DescribeDrdsInstance(id string) (*drds.DescribeDrdsInstanceResponse, error) {
+	response := &drds.DescribeDrdsInstanceResponse{}
 	request := drds.CreateDescribeDrdsInstanceRequest()
 	request.RegionId = s.client.RegionId
 	request.DrdsInstanceId = id
@@ -21,9 +22,9 @@ func (s *DrdsService) DescribeDrdsInstance(id string) (response *drds.DescribeDr
 
 	if err != nil {
 		if IsExceptedError(err, InvalidDRDSInstanceIdNotFound) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*drds.DescribeDrdsInstanceResponse)

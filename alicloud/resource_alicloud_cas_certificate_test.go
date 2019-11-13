@@ -158,13 +158,14 @@ func testAccCheckCasCertificateDestroy(s *terraform.State) error {
 		client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
 		casService := &CasService{client: client}
-		cert, err := casService.DescribeCas(rs.Primary.Attributes["id"])
-
-		if cert != nil {
+		_, err := casService.DescribeCas(rs.Primary.Attributes["id"])
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
 			return WrapError(err)
 		}
 	}
-
 	return nil
 }
 

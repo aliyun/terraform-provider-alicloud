@@ -16,14 +16,15 @@ type ElasticsearchService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *ElasticsearchService) DescribeElasticsearchInstance(id string) (response *elasticsearch.DescribeInstanceResponse, err error) {
+func (s *ElasticsearchService) DescribeElasticsearchInstance(id string) (*elasticsearch.DescribeInstanceResponse, error) {
+	response := &elasticsearch.DescribeInstanceResponse{}
 	request := elasticsearch.CreateDescribeInstanceRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceId = id
 	request.SetContentType("application/json")
 
 	invoker := NewInvoker()
-	err = invoker.Run(func() error {
+	err := invoker.Run(func() error {
 		raw, err := s.client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 			return elasticsearchClient.DescribeInstance(request)
 		})

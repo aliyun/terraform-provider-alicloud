@@ -13,6 +13,7 @@ type CasService struct {
 }
 
 func (s *CasService) DescribeCas(id string) (*cas.Certificate, error) {
+	certificate := &cas.Certificate{}
 	request := cas.CreateDescribeUserCertificateListRequest()
 	request.RegionId = s.client.RegionId
 	request.ShowSize = requests.NewInteger(PageSizeLarge)
@@ -25,7 +26,7 @@ func (s *CasService) DescribeCas(id string) (*cas.Certificate, error) {
 			return casClient.DescribeUserCertificateList(request)
 		})
 		if err != nil {
-			return nil, WrapError(err)
+			return certificate, WrapError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		res, _ := raw.(*cas.DescribeUserCertificateListResponse)
@@ -40,5 +41,5 @@ func (s *CasService) DescribeCas(id string) (*cas.Certificate, error) {
 		}
 	}
 
-	return nil, WrapErrorf(Error(GetNotFoundMessage("Cas", id)), NotFoundMsg, ProviderERROR)
+	return certificate, WrapErrorf(Error(GetNotFoundMessage("Cas", id)), NotFoundMsg, ProviderERROR)
 }
