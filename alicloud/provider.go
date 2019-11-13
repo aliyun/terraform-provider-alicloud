@@ -415,6 +415,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_yundun_bastionhost_instance":         resourceAlicloudBastionhostInstance(),
 			"alicloud_polardb_cluster":                     resourceAlicloudPolarDBCluster(),
 			"alicloud_polardb_backup_policy":               resourceAlicloudPolarDBBackupPolicy(),
+			"alicloud_polardb_database":                    resourceAlicloudPolarDBDatabase(),
 		},
 
 		ConfigureFunc: providerConfigure,
