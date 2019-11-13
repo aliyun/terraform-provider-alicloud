@@ -6,13 +6,13 @@ description: |-
   Provides a Alicloud Cloud DBaudit Instance Resource.
 ---
 
-# alicloud_yundun_dbaudit_instance
+# alicloud\_yundun_dbaudit_instance
 
 Cloud DBaudit instance resource ("Yundun_dbaudit" is the short term of this product).
 
 -> **NOTE:** The endpoint of bssopenapi used only support "business.aliyuncs.com" at present.
 
--> **NOTE:** Available in 1.61.0+ .
+-> **NOTE:** Available in 1.62.0+ .
 
 -> **NOTE:** In order to destroy Cloud DBaudit instance , users are required to apply for white list first
 
@@ -48,6 +48,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the instance resource of Yundun_dbaudit.
+
 ## Import
 
 Yundun_dbaudit instance can be imported using the id, e.g.
