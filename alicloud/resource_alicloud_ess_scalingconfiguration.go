@@ -201,13 +201,22 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("password_inherit").(bool)
+				},
+			},
+			"password_inherit": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+				ForceNew: true,
 			},
 			"kms_encrypted_password": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("password").(string) != ""
+					return d.Get("password_inherit").(bool) || d.Get("password").(string) != ""
 				},
 			},
 			"kms_encryption_context": {
@@ -556,6 +565,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("tags", essTagsToMap(object.Tags.Tag))
 	d.Set("instance_name", object.InstanceName)
 	d.Set("override", d.Get("override").(bool))
+	d.Set("password_inherit", object.PasswordInherit)
 
 	if sg, ok := d.GetOk("security_group_id"); ok && sg.(string) != "" {
 		d.Set("security_group_id", object.SecurityGroupId)
@@ -667,6 +677,7 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 	request.ScalingGroupId = d.Get("scaling_group_id").(string)
 	request.ImageId = d.Get("image_id").(string)
 	request.SecurityGroupId = d.Get("security_group_id").(string)
+	request.PasswordInherit = requests.NewBoolean(d.Get("password_inherit").(bool))
 
 	securityGroupId := d.Get("security_group_id").(string)
 	securityGroupIds := d.Get("security_group_ids").([]interface{})
