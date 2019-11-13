@@ -69,6 +69,8 @@ type Config struct {
 	DdoscooEndpoint       string
 	DdosbgpEndpoint       string
 	SagEndpoint           string
+	EmrEndpoint           string
+	CasEndpoint           string
 
 	SkipRegionValidation bool
 	ConfigurationSource  string

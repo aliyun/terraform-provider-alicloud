@@ -525,6 +525,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.BssOpenApiEndpoint = strings.TrimSpace(endpoints["bssopenapi"].(string))
 		config.DdoscooEndpoint = strings.TrimSpace(endpoints["ddoscoo"].(string))
 		config.DdosbgpEndpoint = strings.TrimSpace(endpoints["ddosbgp"].(string))
+		config.EmrEndpoint = strings.TrimSpace(endpoints["emr"].(string))
+		config.CasEndpoint = strings.TrimSpace(endpoints["cas"].(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
@@ -667,6 +669,8 @@ func init() {
 		"ddoscoo_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DDOSCOO endpoints.",
 
 		"ddosbgp_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DDOSBGP endpoints.",
+
+		"emr_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom EMR endpoints.",
 	}
 }
 
@@ -933,6 +937,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["ddosbgp_endpoint"],
 				},
+				"emr": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["emr_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -977,6 +987,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["bssopenapi"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ddoscoo"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ddosbgp"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["emr"].(string)))
 	return hashcode.String(buf.String())
 }
 
