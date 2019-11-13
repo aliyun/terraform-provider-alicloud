@@ -51,7 +51,9 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 					"password":          "123-abcABC",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"password_inherit": "false",
+					}),
 				),
 			},
 			{
@@ -269,6 +271,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 						"security_group_id":                CHECKSET,
 						"image_id":                         REGEXMATCH + "^ubuntu_18",
 						"override":                         "true",
+						"password_inherit":                 "false",
 					}),
 				),
 			},

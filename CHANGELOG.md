@@ -5,6 +5,7 @@
 
 IMPROVEMENTS:
 
+- improve(ess_scalingconfiguration): support password_inherit [GH-1856]
 - improve docs and add ci for yundun dbaudit [GH-1853]
 
 BUG FIXES:
