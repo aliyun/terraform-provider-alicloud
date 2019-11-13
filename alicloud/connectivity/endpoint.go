@@ -23,7 +23,6 @@ const (
 	ALIKAFKACode      = ServiceCode("ALIKAFKA")
 	CONTAINCode       = ServiceCode("CS")
 	CRCode            = ServiceCode("CR")
-	DOMAINCode        = ServiceCode("DOMAIN")
 	CDNCode           = ServiceCode("CDN")
 	CMSCode           = ServiceCode("CMS")
 	KMSCode           = ServiceCode("KMS")
@@ -49,6 +48,8 @@ const (
 	DDOSCOOCode       = ServiceCode("DDOSCOO")
 	DDOSBGPCode       = ServiceCode("DDOSBGP")
 	SAGCode           = ServiceCode("SAG")
+	EMRCode           = ServiceCode("EMR")
+	CasCode           = ServiceCode("CAS")
 	YUNDUNDBAUDITCode = ServiceCode("YUNDUNDBAUDIT")
 )
 

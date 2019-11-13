@@ -632,6 +632,13 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 
 	// Initialize the CMS client if necessary
 	if client.cmsconn == nil {
+		endpoint := client.config.CmsEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CMSCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CMSCode), endpoint)
+		}
 		cmsconn, err := cms.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(false))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
@@ -1249,6 +1256,13 @@ func (client *AliyunClient) WithCasClient(do func(*cas.Client) (interface{}, err
 
 	// Initialize the CAS client if necessary
 	if client.casconn == nil {
+		endpoint := client.config.CasEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CasCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CasCode), endpoint)
+		}
 		casconn, err := cas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the CAS client: %#v", err)
@@ -1269,6 +1283,14 @@ func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interfac
 
 	// Initialize the ddoscoo client if necessary
 	if client.ddoscooconn == nil {
+		endpoint := client.config.DdoscooEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, DDOSCOOCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(DDOSCOOCode), endpoint)
+		}
+
 		ddoscooconn, err := ddoscoo.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the DDOSCOO client: %#v", err)
@@ -1289,6 +1311,14 @@ func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interfac
 
 	// Initialize the ddosbgp client if necessary
 	if client.ddosbgpconn == nil {
+		endpoint := client.config.DdosbgpEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, DDOSBGPCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(DDOSBGPCode), endpoint)
+		}
+
 		ddosbgpconn, err := ddosbgp.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the DDOSBGP client: %#v", err)
@@ -1390,6 +1420,13 @@ func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, err
 	defer goSdkMutex.Unlock()
 
 	if client.emrconn == nil {
+		endpoint := client.config.EmrEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, EMRCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(EMRCode), endpoint)
+		}
 		emrConn, err := emr.NewClientWithOptions(client.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %#v", err)
