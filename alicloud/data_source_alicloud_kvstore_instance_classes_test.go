@@ -26,12 +26,13 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 		}),
 	}
 
-	EngineVersionConfMemcache := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${data.alicloud_zones.resources.zones.0.id}",
-			"engine":  "Memcache",
-		}),
-	}
+	// At present, the datasource does not support memcache
+	//EngineVersionConfMemcache := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"zone_id": "${data.alicloud_zones.resources.zones.0.id}",
+	//		"engine":  "Memcache",
+	//	}),
+	//}
 	ChargeTypeConfPostpaid := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
@@ -161,7 +162,13 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 		fakeMapFunc:  fakeKVStoreInstanceMapFunc,
 	}
 
-	KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis, EngineVersionConfMemcache,
+	// At present, the datasource does not support memcache
+	//KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis, EngineVersionConfMemcache,
+	//	ChargeTypeConfPostpaid, PerformanceTypeStandardPerformanceType, PerformanceTypeEnhancePerformanceType,
+	//	StorageTypeInmemory, PackageTypeStandard, PackageTypeCustomized, ArchitectureStandard, ArchitectureCluster,
+	//	ArchitectureRwsplit, NodeTypeDouble, NodeTypeSingle, NodeTypeReadone, NodeTypeReadthree, NodeTypeReadfive,
+	//	ArchitectureStandard, allConf)
+	KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis,
 		ChargeTypeConfPostpaid, PerformanceTypeStandardPerformanceType, PerformanceTypeEnhancePerformanceType,
 		StorageTypeInmemory, PackageTypeStandard, PackageTypeCustomized, ArchitectureStandard, ArchitectureCluster,
 		ArchitectureRwsplit, NodeTypeDouble, NodeTypeSingle, NodeTypeReadone, NodeTypeReadthree, NodeTypeReadfive,
