@@ -101,11 +101,11 @@ func dataSourceAlicloudKVStoreInstanceEnginesRead(d *schema.ResourceData, meta i
 	engineVersion, engineVersionGot := d.GetOk("engine_version")
 
 	for _, AvailableZone := range response.AvailableZones.AvailableZone {
-		info := make(map[string]interface{})
 		zondId := AvailableZone.ZoneId
-		info["zone_id"] = AvailableZone.ZoneId
 		ids = append(ids, zondId)
 		for _, SupportedEngine := range AvailableZone.SupportedEngines.SupportedEngine {
+			info := make(map[string]interface{})
+			info["zone_id"] = AvailableZone.ZoneId
 			if engineGot && engine != SupportedEngine.Engine {
 				continue
 			}
@@ -117,11 +117,7 @@ func dataSourceAlicloudKVStoreInstanceEnginesRead(d *schema.ResourceData, meta i
 				}
 				info["engine_version"] = SupportedEngineVersion.Version
 				ids = append(ids, SupportedEngineVersion.Version)
-				temp := make(map[string]interface{}, len(info))
-				for key, value := range info {
-					temp[key] = value
-				}
-				infos = append(infos, temp)
+				infos = append(infos, info)
 			}
 		}
 	}
