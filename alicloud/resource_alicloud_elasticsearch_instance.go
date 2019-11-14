@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/resource"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -185,7 +183,12 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	// retry
+	var raw interface{}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{ESTokenPreviousRequestProcessError}
+	raw, err = runRetry(client, wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.CreateInstance(request)
 	})
 
@@ -193,6 +196,7 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_elasticsearch_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
 	response, _ := raw.(*elasticsearch.CreateInstanceResponse)
 	d.SetId(response.Result.InstanceId)
 
@@ -364,30 +368,23 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	request.InstanceId = d.Id()
 	request.SetContentType("application/json")
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	// retry
 	var raw interface{}
 	var err error
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-			return elasticsearchClient.DeleteInstance(request)
-		})
-		if err != nil {
-			if IsExceptedError(err, InstanceActivating) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-		return nil
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{InstanceActivating}
+	raw, err = runRetry(client, wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.DeleteInstance(request)
 	})
+
 	if err != nil {
 		if IsExceptedError(err, ESInstanceNotFound) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating", "inactive", "active"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{}))
 	stateConf.PollInterval = 5 * time.Second
