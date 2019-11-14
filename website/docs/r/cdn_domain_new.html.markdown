@@ -77,5 +77,5 @@ The following attributes are exported:
 CDN domain can be imported using the id, e.g.
 
 ```
-terraform import alicloud_cdn_domain_new.example cdn-abc123456
+terraform import alicloud_cdn_domain_new.example xxxx.com
 ```
