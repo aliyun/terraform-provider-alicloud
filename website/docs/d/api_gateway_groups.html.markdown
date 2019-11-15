@@ -1,4 +1,5 @@
 ---
+subcategory: "API Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_api_gateway_groups"
 sidebar_current: "docs-alicloud-datasource-api-gateway-groups"
