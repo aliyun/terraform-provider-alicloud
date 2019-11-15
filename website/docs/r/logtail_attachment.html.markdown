@@ -1,4 +1,5 @@
 ---
+subcategory: "Log Service (SLS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_logtail_attachment"
 sidebar_current: "docs-alicloud-resource-logtail-attachment"

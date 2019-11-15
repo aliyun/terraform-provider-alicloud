@@ -1,4 +1,5 @@
 ---
+subcategory: "E-MapReduce"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_emr_disk_types"
 sidebar_current: "docs-alicloud-datasource-emr-disk-types"

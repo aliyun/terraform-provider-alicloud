@@ -1,4 +1,5 @@
 ---
+subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_key_pair"
 sidebar_current: "docs-alicloud-resource-key-pair"

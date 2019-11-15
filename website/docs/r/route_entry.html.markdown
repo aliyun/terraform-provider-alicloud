@@ -1,4 +1,5 @@
 ---
+subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_route_entry"
 sidebar_current: "docs-alicloud-resource-route-entry"

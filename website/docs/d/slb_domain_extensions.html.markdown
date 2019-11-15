@@ -1,4 +1,5 @@
 ---
+subcategory: "Server Load Balancer (SLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_domain_extensions"
 sidebar_current: "docs-alicloud-resource-slb-domain-extensions"

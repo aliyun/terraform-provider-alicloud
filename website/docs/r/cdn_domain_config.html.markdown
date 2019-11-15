@@ -1,4 +1,5 @@
 ---
+subcategory: "CDN"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cdn_doamin_config"
 sidebar_current: "docs-alicloud-resource-cdn-domain-config"

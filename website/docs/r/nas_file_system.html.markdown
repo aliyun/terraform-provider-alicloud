@@ -1,4 +1,5 @@
 ---
+subcategory: "Network Attached Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_file_system"
 sidebar_current: "docs-alicloud-resource-nas-file-system"

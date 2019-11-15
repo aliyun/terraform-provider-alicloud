@@ -1,4 +1,5 @@
 ---
+subcategory: "E-MapReduce"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_emr_main_versions"
 sidebar_current: "docs-alicloud-datasource-emr-main-versions"

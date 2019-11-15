@@ -1,4 +1,5 @@
 ---
+subcategory: "VPN"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ssl_vpn_servers"
 sidebar_current: "docs-alicloud-datasource-ssl-vpn-servers"

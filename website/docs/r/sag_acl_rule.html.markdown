@@ -1,4 +1,5 @@
 ---
+subcategory: "Smart Access Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_sag_acl_rule"
 sidebar_current: "docs-alicloud-resource-sag-acl-rule"

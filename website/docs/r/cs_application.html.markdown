@@ -1,4 +1,5 @@
 ---
+subcategory: "Container Service (CS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cs_application"
 sidebar_current: "docs-alicloud-resource-cs-application"

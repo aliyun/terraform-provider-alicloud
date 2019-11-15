@@ -1,4 +1,5 @@
 ---
+subcategory: "Private Zone"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_pvtz_zones"
 sidebar_current: "docs-alicloud-datasource-pvtz-zones"

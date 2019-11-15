@@ -1,4 +1,5 @@
 ---
+subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_account_password_policy"
 sidebar_current: "docs-alicloud-resource-ram-account-password-policy"

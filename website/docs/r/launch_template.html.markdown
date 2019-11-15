@@ -1,4 +1,5 @@
 ---
+subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_launch_template"
 sidebar_current: "docs-alicloud-resource-launch-tempate"

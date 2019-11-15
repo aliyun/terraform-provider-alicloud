@@ -1,4 +1,5 @@
 ---
+subcategory: "VPN"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpn_connections"
 sidebar_current: "docs-alicloud-datasource-vpn-connections"

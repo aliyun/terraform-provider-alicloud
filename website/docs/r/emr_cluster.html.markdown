@@ -1,4 +1,5 @@
 ---
+subcategory: "E-MapReduce"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_emr_cluster"
 sidebar_current: "docs-alicloud-resource-emr-cluster"

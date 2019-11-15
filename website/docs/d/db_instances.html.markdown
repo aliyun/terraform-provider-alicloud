@@ -1,4 +1,5 @@
 ---
+subcategory: "RDS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_db_instances"
 sidebar_current: "docs-alicloud-datasource-db-instances"
