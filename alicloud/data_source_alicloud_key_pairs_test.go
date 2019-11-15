@@ -26,9 +26,11 @@ func TestAccAlicloudKeyPairsDataSourceBasic(t *testing.T) {
 	}
 	resourceGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
+			"name_regex":        `"${alicloud_key_pair.default.key_name}"`,
 			"resource_group_id": `"${var.resource_group_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
+			"name_regex":        `"${alicloud_key_pair.default.key_name}"`,
 			"resource_group_id": `"${var.resource_group_id}_fake"`,
 		}),
 	}
