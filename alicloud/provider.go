@@ -412,6 +412,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sag_client_user":                     resourceAlicloudSagClientUser(),
 			"alicloud_yundun_dbaudit_instance":             resourceAlicloudDbauditInstance(),
 			"alicloud_yundun_bastionhost_instance":         resourceAlicloudBastionhostInstance(),
+			"alicloud_polardb_backup_policy":               resourceAlicloudPolarDBBackupPolicy(),
 		},
 
 		ConfigureFunc: providerConfigure,
