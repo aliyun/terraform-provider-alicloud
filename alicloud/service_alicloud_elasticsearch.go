@@ -70,6 +70,27 @@ func (s *ElasticsearchService) ElasticsearchStateRefreshFunc(id string, failStat
 	}
 }
 
+func (s *ElasticsearchService) ElasticsearchRetryFunc(wait func(), errorCodeList []string, do func(*elasticsearch.Client) (interface{}, error)) (interface{}, error) {
+	var raw interface{}
+	var err error
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithElasticsearchClient(do)
+
+		if err != nil {
+			if IsExceptedErrors(err, errorCodeList) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+
+		return nil
+	})
+
+	return raw, err
+}
+
 func updateDescription(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
@@ -120,7 +141,7 @@ func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
-	raw, err = runRetry(client, wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateWhiteIps(request)
 	})
 
@@ -160,7 +181,7 @@ func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
-	raw, err = runRetry(client, wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdatePublicWhiteIps(request)
 	})
 
@@ -201,7 +222,7 @@ func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
-	raw, err = runRetry(client, wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
 	})
 
@@ -248,7 +269,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
-	raw, err = runRetry(client, wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
 	})
 
@@ -301,7 +322,7 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
-	raw, err = runRetry(client, wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
 	})
 
@@ -341,7 +362,7 @@ func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
-	raw, err = runRetry(client, wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateKibanaWhiteIps(request)
 	})
 
@@ -404,7 +425,7 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
-	raw, err = runRetry(client, wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateAdminPassword(request)
 	})
 
@@ -441,25 +462,4 @@ func filterWhitelist(destIPs []string, localIPs *schema.Set) []string {
 		}
 	}
 	return whitelist
-}
-
-func runRetry(client *connectivity.AliyunClient, wait func(), errorCodeList []string, do func(*elasticsearch.Client) (interface{}, error)) (interface{}, error) {
-	var raw interface{}
-	var err error
-
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = client.WithElasticsearchClient(do)
-
-		if err != nil {
-			if IsExceptedErrors(err, errorCodeList) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-
-		return nil
-	})
-
-	return raw, err
 }

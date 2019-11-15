@@ -188,7 +188,7 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{ESTokenPreviousRequestProcessError}
-	raw, err = runRetry(client, wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.CreateInstance(request)
 	})
 
@@ -374,7 +374,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{InstanceActivating}
-	raw, err = runRetry(client, wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.DeleteInstance(request)
 	})
 
