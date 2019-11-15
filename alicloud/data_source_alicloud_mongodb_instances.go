@@ -220,21 +220,21 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 		}
 
 		for _, item := range response.DBInstances.DBInstance {
-			switch {
-			case nameRegex != nil && !nameRegex.MatchString(item.DBInstanceDescription):
+			if nameRegex != nil && !nameRegex.MatchString(item.DBInstanceDescription) {
 				continue
-			case len(instClass) > 0 && instClass != strings.ToLower(string(item.DBInstanceClass)):
+			}
+			if len(instClass) > 0 && instClass != strings.ToLower(string(item.DBInstanceClass)) {
 				continue
-			case len(az) > 0 && az != strings.ToLower(string(item.ZoneId)):
+			}
+			if len(az) > 0 && az != strings.ToLower(string(item.ZoneId)) {
 				continue
-			case len(idsMap) > 0:
-				_, ok := idsMap[item.DBInstanceId]
-				if !ok {
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[item.DBInstanceId]; !ok {
 					continue
 				}
-			default:
-				dbi = append(dbi, item)
 			}
+			dbi = append(dbi, item)
 		}
 
 		if len(response.DBInstances.DBInstance) < PageSizeLarge {
