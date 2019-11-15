@@ -15,9 +15,11 @@ Provides an ALIKAFKA instance resource.
 
 -> **NOTE:** ALIKAFKA instance resource only support create post pay instance. Creation or modification may took about 10-40 minutes.
 
--> **NOTE:** Only the following regions support create alikafka instance.
+-> **NOTE:** Only the following regions support create alikafka pre paid instance.
 [`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`ap-southeast-1`,`ap-south-1`,`ap-southeast-5`]
 
+-> **NOTE:** Only the following regions support create alikafka post paid instance.
+[`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`ap-southeast-1`]
 ## Example Usage
 
 Basic Usage
@@ -55,14 +57,17 @@ resource "alicloud_alikafka_instance" "default" {
 
 The following arguments are supported:
 
-* `name` - (Optional) Name of your Kafka instance. The length should between 3 and 64 characters.
+* `name` - (Optional) Name of your Kafka instance. The length should between 3 and 64 characters. If not set, will use instance id as instance name.
 * `topic_quota` - (Required) The max num of topic can be create of the instance. When modify this value, it only adjust to a greater value.
 * `disk_type` - (Required, ForceNew) The disk type of the instance. 0: efficient cloud disk , 1: SSD.
-* `disk_size` - (Required) The disk size of the instance. When modify this value, it only adjust to a greater value.
+* `disk_size` - (Required) The disk size of the instance. When modify this value, it only support adjust to a greater value.
 * `deploy_type` - (Required, ForceNew) The deploy type of the instance. Currently only support two deploy type, 4: eip/vpc instance, 5: vpc instance.
-* `io_max` - (Required) The max value of io of the instance. When modify this value, it only adjust to a greater value.
-* `eip_max` - (Optional) The max bandwidth of the instance. When modify this value, it only adjust to a greater value.
+* `io_max` - (Required) The max value of io of the instance. When modify this value, it only support adjust to a greater value.
+* `eip_max` - (Optional) The max bandwidth of the instance. When modify this value, it only support adjust to a greater value.
+* `paid_type` - (Optional) The paid type of the instance. Support two type, "PrePaid": pre paid type instance, "PostPaid": post paid type instance. Default is PostPaid. When modify this value, it only support adjust from post pay to pre pay. 
+* `spec_type` - (Optional) The spec type of the instance. Support two type, "normal": normal version instance, "professional": professional version instance. Default is normal. When modify this value, it only support adjust from normal to professional. Note only pre paid type instance support professional specific type.
 * `vswitch_id` - (Required, ForceNew) The ID of attaching vswitch to instance.
+* `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
 
 -> **NOTE:** Arguments io_max, disk_size, topic_quota, eip_max should follow the following constraints.
 
@@ -73,6 +78,10 @@ The following arguments are supported:
 |60          |  1400-6100:100  |   80-450:1  |    1-500:1  |
 |90          |  2100-6100:100  |   100-450:1 |    1-500:1  |
 |120         |  2700-6100:100  |   150-450:1 |    1-500:1  |
+
+### Removing alicloud_alikafka_instance from your configuration
+ 
+The alicloud_alikafka_instance resource allows you to manage your alikafka instance, but Terraform cannot destroy it if your instance type is pre paid(post paid type can destroy normally). Removing this resource from your configuration will remove it from your statefile and management, but will not destroy the instance. You can resume managing the instance via the alikafka Console.
  
 ## Attributes Reference
 
@@ -87,5 +96,5 @@ The following attributes are exported:
 ALIKAFKA TOPIC can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_alikafka_instance.instance KAFKA_INST_1234567890_Baso1234567
+$ terraform import alicloud_alikafka_instance.instance alikafka_post-cn-123455abc
 ```

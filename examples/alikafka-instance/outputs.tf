@@ -38,6 +38,16 @@ output "eip_max" {
   value       = "${alicloud_alikafka_instance.default.eip_max}"
 }
 
+output "paid_type" {
+  description = "The paid type of the instance."
+  value       = "${alicloud_alikafka_instance.default.paid_type}"
+}
+
+output "spec_type" {
+  description = "The spec of the instance."
+  value       = "${alicloud_alikafka_instance.default.spec_type}"
+}
+
 output "vpc_id" {
   description = "The ID of attaching VPC to instance."
   value       = "${alicloud_alikafka_instance.default.vpc_id}"

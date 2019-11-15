@@ -90,6 +90,14 @@ func dataSourceAlicloudAlikafkaInstances() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"paid_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"spec_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"zone_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -155,6 +163,11 @@ func alikafkaInstancesDecriptionAttributes(d *schema.ResourceData, instancesInfo
 	var s []map[string]interface{}
 
 	for _, item := range instancesInfo {
+
+		paidType := PostPaid
+		if item.PaidType == 0 {
+			paidType = PrePaid
+		}
 		mapping := map[string]interface{}{
 			"id":             item.InstanceId,
 			"name":           item.Name,
@@ -168,6 +181,8 @@ func alikafkaInstancesDecriptionAttributes(d *schema.ResourceData, instancesInfo
 			"disk_type":      item.DiskType,
 			"disk_size":      item.DiskSize,
 			"topic_quota":    item.TopicNumLimit,
+			"paid_type":      paidType,
+			"spec_type":      item.SpecType,
 			"zone_id":        item.ZoneId,
 		}
 

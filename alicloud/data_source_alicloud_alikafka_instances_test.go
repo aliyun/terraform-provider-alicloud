@@ -56,6 +56,8 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 			"instances.0.disk_size":   "500",
 			"instances.0.deploy_type": "5",
 			"instances.0.io_max":      "20",
+			"instances.0.paid_type":   "PostPaid",
+			"instances.0.spec_type":   "normal",
 		}
 	}
 

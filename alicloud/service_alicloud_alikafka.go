@@ -1,8 +1,12 @@
 package alicloud
 
 import (
+	"log"
+	"regexp"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/schema"
 
 	"github.com/hashicorp/terraform/helper/resource"
 
@@ -123,6 +127,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string)
 }
 
 func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (*alikafka.TopicVO, error) {
+
 	alikafkaTopic := &alikafka.TopicVO{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -167,7 +172,8 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (*alika
 	return alikafkaTopic, WrapErrorf(Error(GetNotFoundMessage("AlikafkaTopic", id)), NotFoundMsg, ProviderERROR)
 }
 
-func (s *AlikafkaService) WaitForAlikafkaInstanceUpdated(id string, topicQuota int, diskSize int, ioMax int, eipMax int, timeout int) error {
+func (s *AlikafkaService) WaitForAlikafkaInstanceUpdated(id string, topicQuota int, diskSize int, ioMax int,
+	eipMax int, paidType int, specType string, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
 		object, err := s.DescribeAlikafkaInstance(id)
@@ -176,7 +182,7 @@ func (s *AlikafkaService) WaitForAlikafkaInstanceUpdated(id string, topicQuota i
 		}
 
 		// Wait for all variables be equal.
-		if object.InstanceId == id && object.TopicNumLimit == topicQuota && object.DiskSize == diskSize && object.IoMax == ioMax && object.EipMax == eipMax {
+		if object.InstanceId == id && object.TopicNumLimit == topicQuota && object.DiskSize == diskSize && object.IoMax == ioMax && object.EipMax == eipMax && object.PaidType == paidType && object.SpecType == specType {
 			return nil
 		}
 
@@ -307,4 +313,148 @@ func (s *AlikafkaService) WaitForAlikafkaTopic(id string, status Status, timeout
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
+}
+
+func (s *AlikafkaService) DescribeTags(resourceId string, resourceTags map[string]interface{}, resourceType TagResourceType) (tags []alikafka.TagResource, err error) {
+	request := alikafka.CreateListTagResourcesRequest()
+	request.RegionId = s.client.RegionId
+	request.ResourceType = string(resourceType)
+	request.ResourceId = &[]string{resourceId}
+	if resourceTags != nil && len(resourceTags) > 0 {
+		var reqTags []alikafka.ListTagResourcesTag
+		for key, value := range resourceTags {
+			reqTags = append(reqTags, alikafka.ListTagResourcesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
+	}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var raw interface{}
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			return alikafkaClient.ListTagResources(request)
+		})
+		if err != nil {
+			if IsExceptedError(err, Throttling) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	response, _ := raw.(*alikafka.ListTagResourcesResponse)
+
+	return response.TagResources.TagResource, nil
+}
+
+func (s *AlikafkaService) setInstanceTags(d *schema.ResourceData, resourceType TagResourceType) error {
+	if d.HasChange("tags") {
+		oraw, nraw := d.GetChange("tags")
+		o := oraw.(map[string]interface{})
+		n := nraw.(map[string]interface{})
+		create, remove := s.diffTags(s.tagsFromMap(o), s.tagsFromMap(n))
+
+		if len(remove) > 0 {
+			var tagKey []string
+			for _, v := range remove {
+				tagKey = append(tagKey, v.Key)
+			}
+			request := alikafka.CreateUntagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.ResourceType = string(resourceType)
+			request.TagKey = &tagKey
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+				return client.UntagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+
+		if len(create) > 0 {
+			request := alikafka.CreateTagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.Tag = &create
+			request.ResourceType = string(resourceType)
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+				return client.TagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+
+		d.SetPartial("tags")
+	}
+
+	return nil
+}
+
+func (s *AlikafkaService) tagsToMap(tags []alikafka.TagResource) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !s.ignoreTag(t) {
+			result[t.TagKey] = t.TagValue
+		}
+	}
+	return result
+}
+
+func (s *AlikafkaService) ignoreTag(t alikafka.TagResource) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
+		ok, _ := regexp.MatchString(v, t.TagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
+}
+
+func (s *AlikafkaService) diffTags(oldTags, newTags []alikafka.TagResourcesTag) ([]alikafka.TagResourcesTag, []alikafka.TagResourcesTag) {
+	// First, we're creating everything we have
+	create := make(map[string]interface{})
+	for _, t := range newTags {
+		create[t.Key] = t.Value
+	}
+
+	// Build the list of what to remove
+	var remove []alikafka.TagResourcesTag
+	for _, t := range oldTags {
+		old, ok := create[t.Key]
+		if !ok || old != t.Value {
+			// Delete it!
+			remove = append(remove, t)
+		}
+	}
+
+	return s.tagsFromMap(create), remove
+}
+
+func (s *AlikafkaService) tagsFromMap(m map[string]interface{}) []alikafka.TagResourcesTag {
+	result := make([]alikafka.TagResourcesTag, 0, len(m))
+	for k, v := range m {
+		result = append(result, alikafka.TagResourcesTag{
+			Key:   k,
+			Value: v.(string),
+		})
+	}
+
+	return result
 }

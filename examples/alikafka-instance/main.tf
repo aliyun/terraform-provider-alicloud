@@ -6,5 +6,7 @@ resource "alicloud_alikafka_instance" "default" {
   deploy_type       = "${var.deploy_type}"
   io_max            = "${var.io_max}"
   eip_max           = "${var.eip_max}"
+  paid_type         = "${var.paid_type}"
+  spec_type         = "${var.spec_type}"
   vswitch_id        = "${var.vswitch_id}"
 }

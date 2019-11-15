@@ -21,6 +21,10 @@ The example launches ALIKAFKA Instance. The parameter in variables.tf can let yo
 	    		Enter a value: {var.io_max}
 	    	var.eip_max
                 Enter a value: {var.eip_max}
+            var.paid_type
+                Enter a value: {var.paid_type}
+            var.spec_type
+                Enter a value: {var.spec_type}
             var.vswitch_id
                 Enter a value: {var.vswitch_id}
 	    
@@ -42,6 +46,10 @@ The example launches ALIKAFKA Instance. The parameter in variables.tf can let yo
 	    		Enter a value: {var.io_max}
 	    	var.eip_max
                 Enter a value: {var.eip_max}
+            var.paid_type
+                Enter a value: {var.paid_type}
+            var.spec_type
+                Enter a value: {var.spec_type}
             var.vswitch_id
                 Enter a value: {var.vswitch_id}
 	    	    	
