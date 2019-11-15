@@ -852,6 +852,14 @@ func validateAlikafkaInstanceNameLen(v interface{}, k string) (ws []string, erro
 	return
 }
 
+func validateAlikafkaPaidType(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	if value != string(PrePaid) && value != string(PostPaid) {
+		errors = append(errors, fmt.Errorf("%q can only be PrePaid or PostPaid", k))
+	}
+	return
+}
+
 func validateAlikafkaStringLen(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if len(value) == 0 {

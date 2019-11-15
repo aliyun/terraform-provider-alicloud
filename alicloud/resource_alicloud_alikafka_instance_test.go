@@ -3,8 +3,13 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/hashicorp/terraform/terraform"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -93,15 +98,18 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstanceConfigDependence)
 
+	vswitchId, err := getVSwitch()
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
+			testAccCheckErr(t, err)
 		},
 		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  testAccCheckAlikafkaInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -111,7 +119,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 					"disk_size":   "500",
 					"deploy_type": "5",
 					"io_max":      "20",
-					"vswitch_id":  "${alicloud_vswitch.default.id}",
+					"vswitch_id":  vswitchId,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -191,6 +199,40 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+						"Updated": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "3",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+						"tags.Updated": "TF",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"name":        "${var.name}",
 					"topic_quota": "50",
 					"disk_type":   "1",
@@ -198,22 +240,75 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 					"deploy_type": "5",
 					"io_max":      "20",
 					"eip_max":     "0",
+					"paid_type":   "PrePaid",
+					"spec_type":   "professional",
+					"tags":        REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
-						"topic_quota": "50",
-						"disk_type":   "1",
-						"disk_size":   "500",
-						"deploy_type": "5",
-						"io_max":      "20",
-						"eip_max":     "0",
+						"name":         fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
+						"topic_quota":  "50",
+						"disk_type":    "1",
+						"disk_size":    "500",
+						"deploy_type":  "5",
+						"io_max":       "20",
+						"eip_max":      "0",
+						"paid_type":    "PrePaid",
+						"spec_type":    "professional",
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+						"tags.Updated": REMOVEKEY,
 					}),
 				),
 			},
 		},
 	})
 
+}
+
+func testAccCheckErr(t *testing.T, err error) {
+
+	if err != nil {
+		t.Skipf(fmt.Sprintf("skip testing, error occur: %s", err))
+		t.Skipped()
+	}
+}
+
+func getVSwitch() (string, error) {
+
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		log.Printf("error getting Alicloud client. error %s", err)
+		return "", err
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	request := vpc.CreateDescribeVSwitchesRequest()
+	request.RegionId = string(client.Region)
+	request.PageSize = requests.NewInteger(PageSizeSmall)
+	request.PageNumber = requests.NewInteger(1)
+
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DescribeVSwitches(request)
+	})
+	if err != nil {
+		log.Printf("Describe vswitch error %s", err)
+		return "", err
+	}
+	response, _ := raw.(*vpc.DescribeVSwitchesResponse)
+
+	if len(response.VSwitches.VSwitch) < 1 {
+		return "", fmt.Errorf("please create a vswitch manully in this region first")
+	}
+
+	var vswitchId string
+	for _, vsw := range response.VSwitches.VSwitch {
+
+		vswitchId = vsw.VSwitchId
+		break
+	}
+	return vswitchId, nil
 }
 
 func TestAccAlicloudAlikafkaInstance_multi(t *testing.T) {
@@ -252,6 +347,8 @@ func TestAccAlicloudAlikafkaInstance_multi(t *testing.T) {
 					"deploy_type": "5",
 					"io_max":      "20",
 					"vswitch_id":  "${alicloud_vswitch.default.id}",
+					"paid_type":   "PostPaid",
+					"spec_type":   "normal",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -262,26 +359,18 @@ func TestAccAlicloudAlikafkaInstance_multi(t *testing.T) {
 
 }
 
+func testAccCheckAlikafkaInstanceDestroy(s *terraform.State) error {
+	// We expect instance to still exist
+	return nil
+}
+
 func resourceAlikafkaInstanceConfigDependence(name string) string {
 	return fmt.Sprintf(`
-
 		variable "name" {
-		 default = "%v"
+ 			default = "%v"
 		}
-		
-		data "alicloud_zones" "default" {
-			available_resource_creation= "VSwitch"
-		}
-		resource "alicloud_vpc" "default" {
-		  cidr_block = "172.16.0.0/12"
-		  name       = "${var.name}"
-		}
-		
-		resource "alicloud_vswitch" "default" {
-		  vpc_id = "${alicloud_vpc.default.id}"
-		  cidr_block = "172.16.0.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name = "${var.name}"
+
+		data "alicloud_vswitches" "default" {
 		}
 		`, name)
 }
@@ -293,4 +382,6 @@ var alikafkaInstanceBasicMap = map[string]string{
 	"deploy_type": CHECKSET,
 	"io_max":      CHECKSET,
 	"vswitch_id":  CHECKSET,
+	"paid_type":   CHECKSET,
+	"spec_type":   CHECKSET,
 }

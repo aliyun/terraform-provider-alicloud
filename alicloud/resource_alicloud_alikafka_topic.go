@@ -14,6 +14,7 @@ import (
 func resourceAlicloudAlikafkaTopic() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudAlikafkaTopicCreate,
+		Update: resourceAlicloudAlikafkaTopicUpdate,
 		Read:   resourceAlicloudAlikafkaTopicRead,
 		Delete: resourceAlicloudAlikafkaTopicDelete,
 		Importer: &schema.ResourceImporter{
@@ -36,16 +37,19 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
+				Default:  false,
 			},
 			"compact_topic": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
+				Default:  false,
 			},
 			"partition_num": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
+				Default:      12,
 				ValidateFunc: validateAlikafkaPartitionNum,
 			},
 			"remark": {
@@ -54,6 +58,7 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validateAlikafkaStringLen,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -104,6 +109,16 @@ func resourceAlicloudAlikafkaTopicCreate(d *schema.ResourceData, meta interface{
 	}
 
 	d.SetId(instanceId + ":" + topic)
+	return resourceAlicloudAlikafkaTopicUpdate(d, meta)
+}
+
+func resourceAlicloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	alikafkaService := AlikafkaService{client}
+	if err := alikafkaService.setInstanceTags(d, TagResourceTopic); err != nil {
+		return WrapError(err)
+	}
 	return resourceAlicloudAlikafkaTopicRead(d, meta)
 }
 
@@ -128,6 +143,12 @@ func resourceAlicloudAlikafkaTopicRead(d *schema.ResourceData, meta interface{})
 	d.Set("compact_topic", object.CompactTopic)
 	d.Set("partition_num", object.PartitionNum)
 	d.Set("remark", object.Remark)
+
+	tags, err := alikafkaService.DescribeTags(d.Id(), nil, TagResourceTopic)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", alikafkaService.tagsToMap(tags))
 
 	return nil
 }

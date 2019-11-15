@@ -69,6 +69,7 @@ The following arguments are supported:
 * `compact_topic` - (Optional, ForceNew) Whether the topic is compactTopic or not. Compact topic must be a localTopic.
 * `partition_num` - (Optional, ForceNew) The number of partitions of the topic. The number should between 1 and 48.
 * `remark` - (Required, ForceNew) This attribute is a concise description of topic. The length cannot exceed 64.
+* `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
@@ -81,5 +82,5 @@ The following attributes are exported:
 ALIKAFKA TOPIC can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_alikafka_topic.topic KAFKA_INST_1234567890_Baso1234567:alikafkaTopicDemo
+$ terraform import alicloud_alikafka_topic.topic alikafka_post-cn-123455abc:topicName
 ```

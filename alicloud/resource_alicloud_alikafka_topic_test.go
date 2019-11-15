@@ -221,11 +221,46 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+						"Updated": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "3",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+						"tags.Updated": "TF",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"topic":         "${var.name}",
 					"local_topic":   "false",
 					"compact_topic": "false",
 					"partition_num": "12",
 					"remark":        "alicloud_alikafka_topic_remark",
+					"tags":          REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -234,6 +269,10 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 						"compact_topic": "false",
 						"partition_num": "12",
 						"remark":        "alicloud_alikafka_topic_remark",
+						"tags.%":        REMOVEKEY,
+						"tags.Created":  REMOVEKEY,
+						"tags.For":      REMOVEKEY,
+						"tags.Updated":  REMOVEKEY,
 					}),
 				),
 			},

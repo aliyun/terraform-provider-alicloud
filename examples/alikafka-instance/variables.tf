@@ -7,7 +7,7 @@ variable "topic_quota" {
 }
 
 variable "disk_type" {
-  description = "The disk type of the instance. 0: efficient cloud disk , 1: SSD."
+  description = "The disk type of the instance. 0: efficient cloud disk, 1: SSD."
 }
 
 variable "disk_size" {
@@ -19,11 +19,20 @@ variable "deploy_type" {
 }
 
 variable "io_max" {
-  description = "The peak value of io of the instance. When modify this value, it only adjust to a greater value."
+  description = "The peak value of io of the instance. When modify this value, it only support adjust to a greater value."
 }
 
 variable "eip_max" {
-  description = "The peak bandwidth of the instance. When modify this value, it only adjust to a greater value."
+  description = "The peak bandwidth of the instance. When modify this value, it only support adjust to a greater value."
+}
+
+
+variable "paid_type" {
+  description = "The paid type of the instance. Support two type, \"0\": pre paid type instance, \"1\": post paid type instance. When modify this value, it only support adjust from post pay to pre pay."
+}
+
+variable "spec_type" {
+  description = "The spec type of the instance. Support two type, \"normal\": normal version instance, \"professional\": professional version instance. When modify this value, it only support adjust from normal to professional. Note only pre paid type instance support professional specific type."
 }
 
 variable "vswitch_id" {

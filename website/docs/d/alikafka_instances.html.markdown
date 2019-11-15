@@ -81,4 +81,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `disk_size` - The disk size of the instance.
   * `topic_quota` - The max num of topic can be create of the instance.
   * `zone_id` - The ID of attaching zone to instance.
+  * `paid_type` - The paid type of the instance.
+  * `spec_type` - The spec type of the instance.
 

@@ -59,7 +59,8 @@ resource "alicloud_alikafka_consumer_group" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) ID of the ALIKAFKA Instance that owns the groups.
-* `consumer_id` - (Required, ForceNew) ID of the consumer group. The length cannot exceed 64 characters..
+* `consumer_id` - (Required, ForceNew) ID of the consumer group. The length cannot exceed 64 characters.
+* `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
@@ -72,5 +73,5 @@ The following attributes are exported:
 ALIKAFKA GROUP can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_alikafka_consumer_group.group ALIKAFKA_INST_1234567890_Baso1234567:CID-alikafkaGroupDemo
+$ terraform import alicloud_alikafka_consumer_group.group alikafka_post-cn-123455abc:consumerId
 ```
