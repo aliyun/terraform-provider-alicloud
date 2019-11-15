@@ -1,4 +1,5 @@
 ---
+subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_groups"
 sidebar_current: "docs-alicloud-datasource-ram-groups"

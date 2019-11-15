@@ -1,4 +1,5 @@
 ---
+subcategory: "Alikafka"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alikafka_consumer_groups"
 sidebar_current: "docs-alicloud-datasource-alikafka-consumer-groups"

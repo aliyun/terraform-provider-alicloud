@@ -1,4 +1,5 @@
 ---
+subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_instance_attachment"
 sidebar_current: "docs-alicloud-resource-cen-instance-attachment"

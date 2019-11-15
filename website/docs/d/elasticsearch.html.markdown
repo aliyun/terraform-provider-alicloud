@@ -1,4 +1,5 @@
 ---
+subcategory: "Elasticsearch"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_elasticsearch_instances"
 sidebar_current: "docs-alicloud-datasource-elasticsearch-instances"

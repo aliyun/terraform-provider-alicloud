@@ -1,4 +1,5 @@
 ---
+subcategory: "DNS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dns"
 sidebar_current: "docs-alicloud-resource-dns"

@@ -1,4 +1,5 @@
 ---
+subcategory: "Auto Scaling(ESS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ess_notification"
 sidebar_current: "docs-alicloud-resource-ess-notification"

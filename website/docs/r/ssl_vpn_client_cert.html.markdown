@@ -1,4 +1,5 @@
 ---
+subcategory: "VPN"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ssl_vpn_client_cert"
 sidebar_current: "docs-alicloud-resource-ssl-vpn-client-cert"

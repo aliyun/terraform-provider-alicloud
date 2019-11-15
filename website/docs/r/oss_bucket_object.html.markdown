@@ -1,4 +1,5 @@
 ---
+subcategory: "OSS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_oss_bucket_object"
 sidebar_current: "docs-alicloud-resource-oss-bucket-object"

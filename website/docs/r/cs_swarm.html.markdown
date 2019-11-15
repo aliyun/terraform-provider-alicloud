@@ -1,4 +1,5 @@
 ---
+subcategory: "Container Service (CS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cs_swarm"
 sidebar_current: "docs-alicloud-resource-cs-swarm"

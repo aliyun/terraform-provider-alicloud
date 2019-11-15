@@ -1,4 +1,5 @@
 ---
+subcategory: "RDS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_db_account_privilege"
 sidebar_current: "docs-alicloud-resource-db-account-privilege"

@@ -1,4 +1,5 @@
 ---
+subcategory: "RDS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_db_backup_policy"
 sidebar_current: "docs-alicloud-resource-db-backup-policy"

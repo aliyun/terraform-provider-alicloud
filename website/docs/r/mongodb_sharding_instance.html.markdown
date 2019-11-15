@@ -1,4 +1,5 @@
 ---
+subcategory: "MongoDB"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_mongodb_sharding_instance"
 sidebar_current: "docs-alicloud-resource-mongodb-instance"

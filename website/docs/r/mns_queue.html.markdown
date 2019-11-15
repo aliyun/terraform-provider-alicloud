@@ -1,4 +1,5 @@
 ---
+subcategory: "Message Notification Service (MNS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_mns_queue"
 sidebar_current: "docs-alicloud-resource-mns-queue"

@@ -1,4 +1,5 @@
 ---
+subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_security_group_rules"
 sidebar_current: "docs-alicloud-datasource-security-group-rules"

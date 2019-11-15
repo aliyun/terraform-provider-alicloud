@@ -1,4 +1,5 @@
 ---
+subcategory: "Cloud Monitor"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cms_alarm"
 sidebar_current: "docs-alicloud-resource-cms-alarm"

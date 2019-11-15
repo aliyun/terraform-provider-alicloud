@@ -1,4 +1,5 @@
 ---
+subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_group_policy_attachment"
 sidebar_current: "docs-alicloud-resource-ram-group-policy-attachment"

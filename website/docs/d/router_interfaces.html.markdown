@@ -1,4 +1,5 @@
 ---
+subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_router_interfaces"
 sidebar_current: "docs-alicloud-datasource-router-interfaces"

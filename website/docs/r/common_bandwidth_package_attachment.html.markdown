@@ -1,4 +1,5 @@
 ---
+subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_common_bandwidth_package_attachment"
 sidebar_current: "docs-alicloud-resource-common-bandwidth-package-attachment"

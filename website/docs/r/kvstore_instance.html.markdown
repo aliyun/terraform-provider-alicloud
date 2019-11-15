@@ -1,4 +1,5 @@
 ---
+subcategory: "Redis And Memcache (KVStore)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_instance"
 sidebar_current: "docs-alicloud-resource-kvstore-instance"

@@ -1,4 +1,5 @@
 ---
+subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_security_groups"
 sidebar_current: "docs-alicloud-datasource-security-groups"

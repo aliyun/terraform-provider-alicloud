@@ -1,4 +1,5 @@
 ---
+subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_images"
 sidebar_current: "docs-alicloud-datasource-images"

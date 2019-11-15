@@ -1,4 +1,5 @@
 ---
+subcategory: "Distributed Relational Database Service (DRDS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_drds_instance"
 sidebar_current: "docs-alicloud-resource-drds-instance"

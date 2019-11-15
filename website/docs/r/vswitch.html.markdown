@@ -1,4 +1,5 @@
 ---
+subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vswitch"
 sidebar_current: "docs-alicloud-resource-vswitch"

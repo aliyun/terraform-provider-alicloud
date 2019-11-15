@@ -1,4 +1,5 @@
 ---
+subcategory: "RDS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_db_read_write_splitting_connection"
 sidebar_current: "docs-alicloud-resource-db-read-write-splitting-connection"

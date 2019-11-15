@@ -1,4 +1,5 @@
 ---
+subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_eip_association"
 sidebar_current: "docs-alicloud-resource-eip-association"

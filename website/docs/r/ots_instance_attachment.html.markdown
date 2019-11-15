@@ -1,4 +1,5 @@
 ---
+subcategory: "Table Store (OTS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ots_instance_attachment"
 sidebar_current: "docs-alicloud-resource-ots-instance-attachment"
