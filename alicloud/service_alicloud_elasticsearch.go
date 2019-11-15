@@ -88,7 +88,7 @@ func (s *ElasticsearchService) ElasticsearchRetryFunc(wait func(), errorCodeList
 		return nil
 	})
 
-	return raw, err
+	return raw, WrapError(err)
 }
 
 func updateDescription(d *schema.ResourceData, meta interface{}) error {
