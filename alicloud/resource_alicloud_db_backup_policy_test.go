@@ -69,12 +69,11 @@ func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period": []string{"Wednesday"},
+					"backup_period": []string{"Wednesday", "Monday"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "1",
-						"backup_period.1970423419": "Wednesday",
+						"backup_period.#": "2",
 					}),
 				),
 			},
@@ -131,7 +130,7 @@ func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":          "${alicloud_db_instance.default.id}",
-					"backup_period":        []string{"Tuesday", "Wednesday"},
+					"backup_period":        []string{"Tuesday", "Monday", "Wednesday"},
 					"backup_time":          "10:00Z-11:00Z",
 					"retention_period":     "10",
 					"log_backup":           "true",
@@ -139,11 +138,9 @@ func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "2",
-						"backup_period.1592931319": "Tuesday",
-						"backup_period.1970423419": "Wednesday",
-						"backup_time":              "10:00Z-11:00Z",
-						"retention_period":         "10",
+						"backup_period.#":  "3",
+						"backup_time":      "10:00Z-11:00Z",
+						"retention_period": "10",
 					}),
 				),
 			}},
@@ -222,12 +219,11 @@ func TestAccAlicloudDBBackupPolicy_pgdb(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period": []string{"Wednesday"},
+					"backup_period": []string{"Monday", "Wednesday"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "1",
-						"backup_period.1970423419": "Wednesday",
+						"backup_period.#": "2",
 					}),
 				),
 			},
@@ -283,17 +279,15 @@ func TestAccAlicloudDBBackupPolicy_pgdb(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period":    []string{"Tuesday", "Wednesday"},
+					"backup_period":    []string{"Tuesday", "Wednesday", "Monday"},
 					"backup_time":      "10:00Z-11:00Z",
 					"retention_period": "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "2",
-						"backup_period.1592931319": "Tuesday",
-						"backup_period.1970423419": "Wednesday",
-						"backup_time":              "10:00Z-11:00Z",
-						"retention_period":         "10",
+						"backup_period.#":  "3",
+						"backup_time":      "10:00Z-11:00Z",
+						"retention_period": "10",
 					}),
 				),
 			}},
@@ -305,22 +299,17 @@ func resourceDBBackupPolicyPostgreSQLConfigDependence(name string) string {
 variable "name" {
   default = "%s"
 }
-data "alicloud_zones" "default" {
-  available_resource_creation = "Rds"
-}
+
 data "alicloud_db_instance_engines" "default" {
 	engine               = "PostgreSQL"
 	engine_version       = "10.0"
 	instance_charge_type = "PostPaid"
-    multi_zone           = true
 }
 
 data "alicloud_db_instance_classes" "default" {
 	engine               = "PostgreSQL"
 	engine_version       = "10.0"
-	category             = "HighAvailability"
 	instance_charge_type = "PostPaid"
-    multi_zone           = true
 }
 
 resource "alicloud_vpc" "default" {
@@ -330,7 +319,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}"
+  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id}"
   name              = "${var.name}"
 }
 resource "alicloud_db_instance" "default" {
@@ -376,12 +365,11 @@ func TestAccAlicloudDBBackupPolicy_SQLServer(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period": []string{"Wednesday"},
+					"backup_period": []string{"Wednesday", "Monday"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "1",
-						"backup_period.1970423419": "Wednesday",
+						"backup_period.#": "2",
 					}),
 				),
 			},
@@ -413,11 +401,9 @@ func TestAccAlicloudDBBackupPolicy_SQLServer(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "2",
-						"backup_period.1592931319": "Tuesday",
-						"backup_period.1970423419": "Wednesday",
-						"backup_time":              "10:00Z-11:00Z",
-						"retention_period":         "10",
+						"backup_period.#":  "2",
+						"backup_time":      "10:00Z-11:00Z",
+						"retention_period": "10",
 					}),
 				),
 			}},
@@ -429,12 +415,10 @@ func resourceDBBackupPolicySQLServerConfigDependence(name string) string {
 variable "name" {
   default = "%s"
 }
-data "alicloud_zones" "default" {
-  available_resource_creation = "Rds"
-}
+
 data "alicloud_db_instance_engines" "default" {
 	engine               = "SQLServer"
-	engine_version       = "2008r2"
+	engine_version       = "2012"
 }
 
 data "alicloud_db_instance_classes" "default" {
