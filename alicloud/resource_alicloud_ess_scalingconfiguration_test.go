@@ -228,6 +228,16 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"password_inherit": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_inherit": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_name":              REMOVEKEY,
 					"instance_types":             REMOVEKEY,
 					"internet_charge_type":       REMOVEKEY,
@@ -247,6 +257,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 					"force_delete":               "true",
 					"override":                   "true",
 					"system_disk_size":           "100",
+					"password_inherit":           "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

@@ -209,7 +209,6 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
-				ForceNew: true,
 			},
 			"kms_encrypted_password": {
 				Type:     schema.TypeString,
@@ -326,6 +325,10 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		d.SetPartial("override")
 	}
 
+	if d.HasChange("password_inherit") {
+		request.PasswordInherit = requests.NewBoolean(d.Get("password_inherit").(bool))
+		d.SetPartial("password_inherit")
+	}
 	if d.HasChange("image_id") || d.Get("override").(bool) {
 		request.ImageId = d.Get("image_id").(string)
 		d.SetPartial("image_id")
