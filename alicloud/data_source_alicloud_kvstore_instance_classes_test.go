@@ -45,8 +45,9 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 			"performance_type": "standard_performance_type",
 		}),
 	}
+	// At present, there is no stock for enhance_performance_type, if someday stock enugth, just change fakeConfig to existConfig
 	PerformanceTypeEnhancePerformanceType := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+		fakeConfig: testAccConfig(map[string]interface{}{
 			"zone_id":          "${data.alicloud_zones.resources.zones.0.id}",
 			"performance_type": "enhance_performance_type",
 		}),
