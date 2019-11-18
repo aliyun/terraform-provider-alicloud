@@ -88,12 +88,23 @@ func TestAccAlicloudOssBucketObject_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bucket":       "${alicloud_oss_bucket.default.bucket}",
-					"key":          "test-object-source-key",
-					"content":      REMOVEKEY,
-					"source":       tmpFile.Name(),
-					"content_type": "binary/octet-stream",
-					"acl":          REMOVEKEY,
+					"server_side_encryption": "KMS",
+					"kms_key_id":             "423a0d8a-0c28-4899-be56-32217cb95e88",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bucket":                 "${alicloud_oss_bucket.default.bucket}",
+					"server_side_encryption": "AES256",
+					"kms_key_id":             REMOVEKEY,
+					"key":                    "test-object-source-key",
+					"content":                REMOVEKEY,
+					"source":                 tmpFile.Name(),
+					"content_type":           "binary/octet-stream",
+					"acl":                    REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudOssBucketObjectExists(
