@@ -53,10 +53,13 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/slb
 github.com/aliyun/alibaba-cloud-sdk-go/services/smartag
 github.com/aliyun/alibaba-cloud-sdk-go/services/sts
 github.com/aliyun/alibaba-cloud-sdk-go/services/vpc
+github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit
 # github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
 github.com/aliyun/aliyun-datahub-sdk-go/datahub
 # github.com/aliyun/aliyun-log-go-sdk v0.0.0-20181030123559-4e6c160e1ce5
 github.com/aliyun/aliyun-log-go-sdk
+# github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20191115025756-088ba95470f4
+github.com/aliyun/aliyun-mns-go-sdk
 # github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190528142024-f8d6d645dc4b
 github.com/aliyun/aliyun-oss-go-sdk/oss
 # github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible
@@ -129,8 +132,6 @@ github.com/denverdino/aliyungo/ecs
 github.com/denverdino/aliyungo/ram
 github.com/denverdino/aliyungo/rds
 github.com/denverdino/aliyungo/util
-# github.com/dxh031/ali_mns v0.0.0-20180927082505-3ae5346f8cf9
-github.com/dxh031/ali_mns
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
 # github.com/gogap/errors v0.0.0-20160523102334-149c546090d0

@@ -20,25 +20,43 @@ const (
 	HOST          = "Host"
 	DATE          = "Date"
 	KEEP_ALIVE    = "Keep-Alive"
+	SECURITY_TOKEN = "security-token"
 )
 
 type Credential interface {
 	Signature(method Method, headers map[string]string, resource string) (signature string, err error)
 	SetSecretKey(accessKeySecret string)
+	SetSecurityToken(securityToken string)
+	GetSecretKey() (accessKeySecret string)
+	GetSecurityToken() (securityToken string)
 }
 
 type AliMNSCredential struct {
 	accessKeySecret string
+	securityToken string
 }
 
-func NewAliMNSCredential(accessKeySecret string) *AliMNSCredential {
+func NewAliMNSCredential(accessKeySecret, securityToken string) *AliMNSCredential {
 	aliMNSCredential := new(AliMNSCredential)
 	aliMNSCredential.accessKeySecret = accessKeySecret
+	aliMNSCredential.securityToken = securityToken
 	return aliMNSCredential
 }
 
 func (p *AliMNSCredential) SetSecretKey(accessKeySecret string) {
 	p.accessKeySecret = accessKeySecret
+}
+
+func (p *AliMNSCredential) SetSecurityToken(securityToken string) {
+	p.securityToken = securityToken
+}
+
+func (p *AliMNSCredential) GetSecretKey() (accessKeySecret string) {
+	return p.accessKeySecret
+}
+
+func (p* AliMNSCredential) GetSecurityToken() (securityToken string) {
+	return p.securityToken
 }
 
 func (p *AliMNSCredential) Signature(method Method, headers map[string]string, resource string) (signature string, err error) {

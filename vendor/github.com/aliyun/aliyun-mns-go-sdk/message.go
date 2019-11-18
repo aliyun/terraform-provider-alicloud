@@ -155,7 +155,6 @@ type CreateQueueRequest struct {
 	MessageRetentionPeriod int32    `xml:"MessageRetentionPeriod,omitempty" json:"message_retention_period,omitempty"`
 	VisibilityTimeout      int32    `xml:"VisibilityTimeout,omitempty" json:"visibility_timeout,omitempty"`
 	PollingWaitSeconds     int32    `xml:"PollingWaitSeconds" json:"polling_wait_secods"`
-	Slices                 int32    `xml:"Slices" json:"slices"`
 }
 
 type CreateTopicRequest struct {
@@ -191,7 +190,7 @@ type MessageVisibilityChangeResponse struct {
 type QueueAttribute struct {
 	XMLName                xml.Name `xml:"Queue" json:"-"`
 	QueueName              string   `xml:"QueueName,omitempty" json:"queue_name,omitempty"`
-	DelaySeconds           int32    `xml:"DelaySeconds,omitempty" json:"delay_seconds,omitempty"`
+	DelaySeconds           int32    `xml:"DelaySenconds,omitempty" json:"delay_senconds,omitempty"`
 	MaxMessageSize         int32    `xml:"MaximumMessageSize,omitempty" json:"maximum_message_size,omitempty"`
 	MessageRetentionPeriod int32    `xml:"MessageRetentionPeriod,omitempty" json:"message_retention_period,omitempty"`
 	VisibilityTimeout      int32    `xml:"VisibilityTimeout,omitempty" json:"visibility_timeout,omitempty"`

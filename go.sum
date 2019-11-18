@@ -33,6 +33,8 @@ github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0 h1:nv
 github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0/go.mod h1:GwtZxKUD+aLBrtlkEcyPNAx+jRkBioEC7EKOlQ26lTc=
 github.com/aliyun/aliyun-log-go-sdk v0.0.0-20181030123559-4e6c160e1ce5 h1:7hpDIbKLWNgm3DXcB7lktF6Ti5Imm4KRHEfp1TOxLOs=
 github.com/aliyun/aliyun-log-go-sdk v0.0.0-20181030123559-4e6c160e1ce5/go.mod h1:s3YpfQC+iMbiVR7vog8NoYAbdfWdRxeUG03a6as4U34=
+github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20191115025756-088ba95470f4 h1:ZJpZCzQnbPwXTAKXqEqczw3SZZyPj8K8HQ+CbJ4T1CY=
+github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20191115025756-088ba95470f4/go.mod h1:eD/mEH7SwtLSwI9p8fP9VTH2cYM3wFSY1WNaxEdLIFU=
 github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190103054945-8205d1f41e70/go.mod h1:T/Aws4fEfogEE9v+HPhhw+CntffsBHJ8nXQCwKr0/g8=
 github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190528142024-f8d6d645dc4b h1:z6MCjm8mbUthTytmIVw5l7RiFF4GltKgZpNL5n84O/k=
 github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190528142024-f8d6d645dc4b/go.mod h1:T/Aws4fEfogEE9v+HPhhw+CntffsBHJ8nXQCwKr0/g8=
@@ -101,8 +103,6 @@ github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZm
 github.com/dimchansky/utfbom v1.0.0 h1:fGC2kkf4qOoKqZ4q7iIh+Vef4ubC1c38UDsEyZynZPc=
 github.com/dimchansky/utfbom v1.0.0/go.mod h1:rO41eb7gLfo8SF1jd9F8HplJm1Fewwi4mQvIirEdv+8=
 github.com/dnaeon/go-vcr v0.0.0-20180920040454-5637cf3d8a31/go.mod h1:aBB1+wY4s93YsC3HHjMBMrwTj2R9FHDzUr9KyGc8n1E=
-github.com/dxh031/ali_mns v0.0.0-20180927082505-3ae5346f8cf9 h1:JBRWEhI9rZzCBHFQ0VqAKpHE9xeVVIe0wu7lQBwLcKo=
-github.com/dxh031/ali_mns v0.0.0-20180927082505-3ae5346f8cf9/go.mod h1:FqaB9wDQXpsbChBMlk/4ksWHSNYFcVHL1rxeXy/eMAI=
 github.com/dylanmei/iso8601 v0.1.0 h1:812NGQDBcqquTfH5Yeo7lwR0nzx/cKdsmf3qMjPURUI=
 github.com/dylanmei/iso8601 v0.1.0/go.mod h1:w9KhXSgIyROl1DefbMYIE7UVSIvELTbMrCfx+QkYnoQ=
 github.com/dylanmei/winrmtest v0.0.0-20190225150635-99b7fe2fddf1/go.mod h1:lcy9/2gH1jn/VCLouHA6tOEwLoNVd4GW6zhuKLmHC2Y=
