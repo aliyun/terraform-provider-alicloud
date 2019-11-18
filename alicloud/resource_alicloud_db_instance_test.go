@@ -289,6 +289,16 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_mode": "safety",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ip_mode": "safety",
+					}),
+				),
+			},
 		},
 	})
 }
