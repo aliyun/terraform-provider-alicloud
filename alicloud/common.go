@@ -49,6 +49,11 @@ const (
 	Postpaid = PayType("Postpaid")
 )
 
+const (
+	NormalMode = "normal"
+	SafetyMode = "safety"
+)
+
 type DdosbgpInsatnceType string
 
 const (
