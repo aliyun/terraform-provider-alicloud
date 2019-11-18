@@ -39,12 +39,12 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
+	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/dxh031/ali_mns"
 	"github.com/hashicorp/terraform/terraform"
 
 	"fmt"
@@ -966,7 +966,7 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 		}
 		mnsUrl := fmt.Sprintf("https://%s.mns.%s", accountId, endpoint)
 
-		mnsClient := ali_mns.NewAliMNSClient(mnsUrl, client.config.AccessKey, client.config.SecretKey)
+		mnsClient := ali_mns.NewAliMNSClientWithToken(mnsUrl, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
 
 		client.mnsconn = &mnsClient
 	}

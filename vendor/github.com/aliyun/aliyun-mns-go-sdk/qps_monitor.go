@@ -13,14 +13,18 @@ type QPSMonitor struct {
 }
 
 func (p *QPSMonitor) Pulse() {
+	index := p.Update()
+	atomic.AddInt32(&p.totalQueries[index], 1)
+}
+
+func (p *QPSMonitor) Update() int32 {
 	index := int32(time.Now().Second()) % p.delaySecond
 
 	if p.latestIndex != index {
 		atomic.StoreInt32(&p.latestIndex, index)
 		atomic.StoreInt32(&p.totalQueries[p.latestIndex], 0)
 	}
-
-	atomic.AddInt32(&p.totalQueries[index], 1)
+	return index
 }
 
 func (p *QPSMonitor) QPS() int32 {
@@ -38,6 +42,7 @@ func (p *QPSMonitor) checkQPS() {
 	if p.qpsLimit > 0 {
 		for p.QPS() > p.qpsLimit {
 			time.Sleep(time.Millisecond * 10)
+            		p.Update()
 		}
 	}
 }
