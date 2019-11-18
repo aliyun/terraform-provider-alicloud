@@ -192,14 +192,15 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
-			"security_ip_mode": {
-				Type:     schema.TypeString,
-				Default:  "normal",
-				Optional: true,
-			},
 			"security_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"security_ip_mode": {
+				Type:         schema.TypeString,
+				ValidateFunc: validateAllowedStringValue([]string{NormalMode, SafetyMode}),
+				Optional:     true,
+				Default:      NormalMode,
 			},
 			"connections": {
 				Type: schema.TypeList,
@@ -487,11 +488,10 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("security_ips")
 	}
 
-	if d.HasChange("security_ip_mode") && d.Get("security_ip_mode").(string) == "safety" {
+	if d.HasChange("security_ip_mode") && d.Get("security_ip_mode").(string) == SafetyMode {
 		request := rds.CreateMigrateSecurityIPModeRequest()
 		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
-
 		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.MigrateSecurityIPMode(request)
 		})
