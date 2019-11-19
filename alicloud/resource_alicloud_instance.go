@@ -1063,7 +1063,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 			}
 			var disk ecs.Disk
 			err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-				disk, err = ecsService.QueryInstanceSystemDisk(d.Id(), rg)
+				disk, err = ecsService.QueryInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
 				if err != nil {
 					if NotFoundError(err) {
 						return resource.RetryableError(err)
