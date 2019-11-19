@@ -95,6 +95,47 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
     }
   }
 }
+
+resource "alicloud_oss_bucket" "bucket-lifecycle" {
+  bucket = "bucket-170309-lifecycle"
+  acl    = "public-read"
+
+  lifecycle_rule {
+    id      = "rule-days-transition"
+    prefix  = "path3/"
+    enabled = true
+
+    transitions {
+        days =         "3"
+        storage_class= "IA"
+    }
+    transitions {
+        days=         "30"
+        storage_class= "Archive"
+    }
+  }
+}
+
+resource "alicloud_oss_bucket" "bucket-lifecycle" {
+  bucket = "bucket-170309-lifecycle"
+  acl    = "public-read"
+
+  lifecycle_rule {
+    id      = "rule-days-transition"
+    prefix  = "path3/"
+    enabled = true
+
+    transitions {
+      created_before_date = "2020-11-11"
+      storage_class = "IA"
+    }
+    transitions {
+      created_before_date = "2021-11-11"
+      storage_class = "Archive"
+    }
+  }
+}
+
 ```
 
 Set bucket policy 
@@ -221,7 +262,8 @@ The lifecycle_rule object supports the following:
 * `id` - (Optional) Unique identifier for the rule. If omitted, OSS bucket will assign a unique name.
 * `prefix` - (Required) Object key prefix identifying one or more objects to which the rule applies.
 * `enabled` - (Required, Type: bool) Specifies lifecycle rule status.
-* `expiration` - (Optional, Required, Type: set) Specifies a period in the object's expire (documented below).
+* `expiration` - (Optional, Type: set) Specifies a period in the object's expire (documented below).
+* `transitions` - (Optional, Type: set, Available in 1.63.0+) Specifies the time when an object is converted to the IA or archive storage class during a valid life cycle. (documented below).
 
 #### Block expiration
 
@@ -231,6 +273,16 @@ The lifecycle_rule expiration object supports the following:
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
 
 `NOTE`: One and only one of "date" and "days" can be specified in one expiration configuration.
+
+#### Block transitions
+
+The lifecycle_rule transitions object supports the following:
+
+* `created_before_date` - (Optional) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that objects updated before 2002-10-11T00:00:00.000Z are deleted or converted to another storage class, and objects updated after this time (including this time) are not deleted or converted.
+* `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
+* `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`, `Standard`. 
+
+`NOTE`: One and only one of "created_before_date" and "days" can be specified in one transition configuration.
 
 #### Block server-side encryption rule
 
