@@ -120,6 +120,26 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 		"days": 0,
 		"date": "2018-01-12",
 	}))
+	hashcode3 := strconv.Itoa(transitionsHash(map[string]interface{}{
+		"days":                3,
+		"created_before_date": "",
+		"storage_class":       "IA",
+	}))
+	hashcode4 := strconv.Itoa(transitionsHash(map[string]interface{}{
+		"days":                30,
+		"created_before_date": "",
+		"storage_class":       "Archive",
+	}))
+	hashcode5 := strconv.Itoa(transitionsHash(map[string]interface{}{
+		"days":                0,
+		"created_before_date": "2020-11-11",
+		"storage_class":       "IA",
+	}))
+	hashcode6 := strconv.Itoa(transitionsHash(map[string]interface{}{
+		"days":                0,
+		"created_before_date": "2021-11-11",
+		"storage_class":       "Archive",
+	}))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -260,11 +280,41 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 								},
 							},
 						},
+						{
+							"id":      "rule3",
+							"prefix":  "path3/",
+							"enabled": "true",
+							"transitions": []map[string]interface{}{
+								{
+									"days":          "3",
+									"storage_class": "IA",
+								},
+								{
+									"days":          "30",
+									"storage_class": "Archive",
+								},
+							},
+						},
+						{
+							"id":      "rule4",
+							"prefix":  "path4/",
+							"enabled": "true",
+							"transitions": []map[string]interface{}{
+								{
+									"created_before_date": "2020-11-11",
+									"storage_class":       "IA",
+								},
+								{
+									"created_before_date": "2021-11-11",
+									"storage_class":       "Archive",
+								},
+							},
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"lifecycle_rule.#":                                   "2",
+						"lifecycle_rule.#":                                   "4",
 						"lifecycle_rule.0.id":                                "rule1",
 						"lifecycle_rule.0.prefix":                            "path1/",
 						"lifecycle_rule.0.enabled":                           "true",
@@ -273,6 +323,22 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 						"lifecycle_rule.1.prefix":                            "path2/",
 						"lifecycle_rule.1.enabled":                           "true",
 						"lifecycle_rule.1.expiration." + hashcode2 + ".date": "2018-01-12",
+
+						"lifecycle_rule.2.id":                                          "rule3",
+						"lifecycle_rule.2.prefix":                                      "path3/",
+						"lifecycle_rule.2.enabled":                                     "true",
+						"lifecycle_rule.2.transitions." + hashcode3 + ".days":          "3",
+						"lifecycle_rule.2.transitions." + hashcode3 + ".storage_class": string(oss.StorageIA),
+						"lifecycle_rule.2.transitions." + hashcode4 + ".days":          "30",
+						"lifecycle_rule.2.transitions." + hashcode4 + ".storage_class": string(oss.StorageArchive),
+
+						"lifecycle_rule.3.id":      "rule4",
+						"lifecycle_rule.3.prefix":  "path4/",
+						"lifecycle_rule.3.enabled": "true",
+						"lifecycle_rule.3.transitions." + hashcode5 + ".created_before_date": "2020-11-11",
+						"lifecycle_rule.3.transitions." + hashcode5 + ".storage_class":       string(oss.StorageIA),
+						"lifecycle_rule.3.transitions." + hashcode6 + ".created_before_date": "2021-11-11",
+						"lifecycle_rule.3.transitions." + hashcode6 + ".storage_class":       string(oss.StorageArchive),
 					}),
 				),
 			},
@@ -346,6 +412,23 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 						"lifecycle_rule.1.prefix":                            REMOVEKEY,
 						"lifecycle_rule.1.enabled":                           REMOVEKEY,
 						"lifecycle_rule.1.expiration." + hashcode2 + ".date": REMOVEKEY,
+
+						"lifecycle_rule.2.id":                                          REMOVEKEY,
+						"lifecycle_rule.2.prefix":                                      REMOVEKEY,
+						"lifecycle_rule.2.enabled":                                     REMOVEKEY,
+						"lifecycle_rule.2.transitions." + hashcode3 + ".days":          REMOVEKEY,
+						"lifecycle_rule.2.transitions." + hashcode3 + ".storage_class": REMOVEKEY,
+						"lifecycle_rule.2.transitions." + hashcode4 + ".days":          REMOVEKEY,
+						"lifecycle_rule.2.transitions." + hashcode4 + ".storage_class": REMOVEKEY,
+
+						"lifecycle_rule.3.id":      REMOVEKEY,
+						"lifecycle_rule.3.prefix":  REMOVEKEY,
+						"lifecycle_rule.3.enabled": REMOVEKEY,
+						"lifecycle_rule.3.transitions." + hashcode5 + ".created_before_date": REMOVEKEY,
+						"lifecycle_rule.3.transitions." + hashcode5 + ".storage_class":       REMOVEKEY,
+						"lifecycle_rule.3.transitions." + hashcode6 + ".created_before_date": REMOVEKEY,
+						"lifecycle_rule.3.transitions." + hashcode6 + ".storage_class":       REMOVEKEY,
+
 						"tags.%":           "0",
 						"tags.key1-update": REMOVEKEY,
 						"tags.Key2-update": REMOVEKEY,

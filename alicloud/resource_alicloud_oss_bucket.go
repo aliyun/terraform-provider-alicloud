@@ -158,7 +158,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 						},
 						"expiration": {
 							Type:     schema.TypeSet,
-							Required: true,
+							Optional: true,
 							Set:      expirationHash,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -170,6 +170,34 @@ func resourceAlicloudOssBucket() *schema.Resource {
 									"days": {
 										Type:     schema.TypeInt,
 										Optional: true,
+									},
+								},
+							},
+						},
+						"transitions": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Set:      transitionsHash,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"created_before_date": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: validateOssBucketDateTimestamp,
+									},
+									"days": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"storage_class": {
+										Type:     schema.TypeString,
+										Default:  oss.StorageStandard,
+										Optional: true,
+										ValidateFunc: validateAllowedStringValue([]string{
+											string(oss.StorageStandard),
+											string(oss.StorageIA),
+											string(oss.StorageArchive),
+										}),
 									},
 								},
 							},
@@ -493,6 +521,25 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 			e["days"] = int(lifecycleRule.Expiration.Days)
 			rule["expiration"] = schema.NewSet(expirationHash, []interface{}{e})
 		}
+		// transitions
+		if len(lifecycleRule.Transitions) != 0 {
+			var eSli []interface{}
+			for _, transition := range lifecycleRule.Transitions {
+				e := make(map[string]interface{})
+				if transition.CreatedBeforeDate != "" {
+					t, err := time.Parse("2006-01-02T15:04:05.000Z", transition.CreatedBeforeDate)
+					if err != nil {
+						return WrapError(err)
+					}
+					e["created_before_date"] = t.Format("2006-01-02")
+				}
+				e["days"] = transition.Days
+				e["storage_class"] = string(transition.StorageClass)
+				eSli = append(eSli, e)
+			}
+			rule["transitions"] = schema.NewSet(transitionsHash, eSli)
+		}
+
 		lrules = append(lrules, rule)
 	}
 
@@ -882,6 +929,35 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 			}
 			rule.Expiration = &i
 		}
+
+		// Transitions
+		transitions := d.Get(fmt.Sprintf("lifecycle_rule.%d.transitions", i)).(*schema.Set).List()
+		if len(transitions) > 0 {
+			for _, transition := range transitions {
+				i := oss.LifecycleTransition{}
+
+				valCreatedBeforeDate := transition.(map[string]interface{})["created_before_date"].(string)
+				valDays := transition.(map[string]interface{})["days"].(int)
+				valStorageClass := transition.(map[string]interface{})["storage_class"].(string)
+
+				if (valCreatedBeforeDate != "" && valDays > 0) || (valCreatedBeforeDate == "" && valDays <= 0) || (valStorageClass == "") {
+					return WrapError(Error("'CreatedBeforeDate' conflicts with 'Days'. One and only one of them can be specified in one transition configuration. 'storage_class' must be set."))
+				}
+
+				if valCreatedBeforeDate != "" {
+					i.CreatedBeforeDate = fmt.Sprintf("%sT00:00:00.000Z", valCreatedBeforeDate)
+				}
+				if valDays > 0 {
+					i.Days = valDays
+				}
+
+				if valStorageClass != "" {
+					i.StorageClass = oss.StorageClassType(valStorageClass)
+				}
+				rule.Transitions = append(rule.Transitions, i)
+			}
+		}
+
 		rules = append(rules, rule)
 	}
 
@@ -1102,6 +1178,21 @@ func expirationHash(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
 	if v, ok := m["date"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+	if v, ok := m["days"]; ok {
+		buf.WriteString(fmt.Sprintf("%d-", v.(int)))
+	}
+	return hashcode.String(buf.String())
+}
+
+func transitionsHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	if v, ok := m["created_before_date"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+	if v, ok := m["storage_class"]; ok {
 		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
 	}
 	if v, ok := m["days"]; ok {
