@@ -411,7 +411,9 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		return WrapError(err)
 	}
 
-	disk, err := ecsService.QueryInstanceSystemDisk(d.Id())
+	rg := instance.ResourceGroupId
+
+	disk, err := ecsService.QueryInstanceSystemDisk(d.Id(), rg)
 
 	if err != nil {
 		if NotFoundError(err) {
@@ -422,7 +424,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	d.Set("instance_name", instance.InstanceName)
-	d.Set("resource_group_id", instance.ResourceGroupId)
+	d.Set("resource_group_id", rg)
 	d.Set("description", instance.Description)
 	d.Set("status", instance.Status)
 	d.Set("availability_zone", instance.ZoneId)
@@ -523,7 +525,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		d.Set("tags", tagsToMap(tags))
 	}
 
-	ids, err := ecsService.QueryInstanceAllDisks(d.Id())
+	ids, err := ecsService.QueryInstanceAllDisks(d.Id(), rg)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -1061,7 +1063,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 			}
 			var disk ecs.Disk
 			err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-				disk, err = ecsService.QueryInstanceSystemDisk(d.Id())
+				disk, err = ecsService.QueryInstanceSystemDisk(d.Id(), rg)
 				if err != nil {
 					if NotFoundError(err) {
 						return resource.RetryableError(err)
