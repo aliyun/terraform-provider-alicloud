@@ -166,11 +166,11 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway": "false",
+					"new_nat_gateway": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"new_nat_gateway": "false",
+						"new_nat_gateway": "true",
 					}),
 				),
 			},
@@ -286,11 +286,11 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway": "false",
+					"new_nat_gateway": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"new_nat_gateway": "false",
+						"new_nat_gateway": "true",
 					}),
 				),
 			},
@@ -408,11 +408,11 @@ func TestAccAlicloudCSKubernetes_multiAZ(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway": "false",
+					"new_nat_gateway": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"new_nat_gateway": "false",
+						"new_nat_gateway": "true",
 					}),
 				),
 			},
