@@ -60,10 +60,6 @@ func dataSourceAlicloudCSServerlessKubernetesClusters() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
-						"private_zone": {
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
 						"deletion_protection": {
 							Type:     schema.TypeBool,
 							Computed: true,
@@ -214,7 +210,6 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 		mapping["vpc_id"] = ct.VpcId
 		mapping["vswitch_id"] = ct.VSwitchId
 		mapping["security_group_id"] = ct.SecurityGroupId
-		mapping["private_zone"] = ct.PrivateZone
 		mapping["deletion_protection"] = ct.DeletionProtection
 		mapping["tags"] = csService.tagsToMap(ct.Tags)
 		//set default value
