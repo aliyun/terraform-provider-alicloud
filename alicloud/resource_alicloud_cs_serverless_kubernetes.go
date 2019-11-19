@@ -201,7 +201,6 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	_ = d.Set("vpc_id", object.VpcId)
 	_ = d.Set("vswitch_id", object.VSwitchId)
 	_ = d.Set("security_group_id", object.SecurityGroupId)
-	_ = d.Set("private_zone", object.PrivateZone)
 	_ = d.Set("deletion_protection", object.DeletionProtection)
 	_ = d.Set("tags", object.Tags)
 
