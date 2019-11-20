@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_polardb_backup_policy"
 sidebar_current: "docs-alicloud-resource-polardb-backup-policy"
 description: |-
-  Provides an PolarDB backup policy resource.
+  Provides a PolarDB backup policy resource.
 ---
 
 # alicloud\_polardb\_backup\_policy
 
-Provides an PolarDB cluster backup policy resource and used to configure cluster backup policy.
+Provides a PolarDB cluster backup policy resource and used to configure cluster backup policy.
 
 -> **NOTE:** Available in v1.66.0+. Each DB cluster has a backup policy and it will be set default values when destroying the resource.
 
