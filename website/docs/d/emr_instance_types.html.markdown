@@ -47,4 +47,5 @@ The following attributes are exported in addition to the arguments listed above:
 * `types` - A list of emr instance types. Each element contains the following attributes:
   * `id` - The ID of the instance type.
   * `zone_id` - The available zone id in Alibaba Cloud account
+  * `local_instance_type` - (Available in 1.63.0+) The available ecs instance type which can only mount local storage disk 
   * `local_storage_capacity` - Local capacity of the applied ecs instance for emr cluster. Unit: GB.

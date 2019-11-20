@@ -1038,26 +1038,20 @@ data "alicloud_emr_instance_types" "local_disk" {
     instance_charge_type = "PostPaid"
 }
 
-data "alicloud_emr_instance_types" "cloud_disk" {
-    destination_resource = "InstanceType"
-    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
-    instance_charge_type = "PostPaid"
-}
-
 data "alicloud_emr_disk_types" "data_disk" {
 	destination_resource = "DataDisk"
 	cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
 	instance_charge_type = "PostPaid"
-	instance_type = data.alicloud_emr_instance_types.cloud_disk.types.0.id
-	zone_id = data.alicloud_emr_instance_types.cloud_disk.types.0.zone_id
+	instance_type = data.alicloud_emr_instance_types.local_disk.types.0.id
+	zone_id = data.alicloud_emr_instance_types.local_disk.types.0.zone_id
 }
 
 data "alicloud_emr_disk_types" "system_disk" {
 	destination_resource = "SystemDisk"
 	cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
 	instance_charge_type = "PostPaid"
-	instance_type = data.alicloud_emr_instance_types.cloud_disk.types.0.id
-	zone_id = data.alicloud_emr_instance_types.cloud_disk.types.0.zone_id
+	instance_type = data.alicloud_emr_instance_types.local_disk.types.0.id
+	zone_id = data.alicloud_emr_instance_types.local_disk.types.0.zone_id
 }
 
 resource "alicloud_vpc" "default" {
@@ -1068,7 +1062,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_emr_instance_types.cloud_disk.types.0.zone_id}"
+  availability_zone = "${data.alicloud_emr_instance_types.local_disk.types.0.zone_id}"
   name = "${var.name}"
 }
 

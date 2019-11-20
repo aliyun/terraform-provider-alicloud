@@ -60,6 +60,10 @@ func dataSourceAlicloudEmrInstanceTypes() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"local_instance_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"local_storage_capacity": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -130,19 +134,31 @@ func emrClusterInstanceTypesAttributes(d *schema.ResourceData, types map[string]
 		mapping := map[string]interface{}{
 			"zone_id": zoneID,
 		}
+		localFlag := make(map[string]string)
 		if v, ok := types[zoneID]; ok {
 			for _, tpe := range v {
-				if localStorage == true && tpe.LocalStorageAmount > 0 {
-					mapping["id"] = tpe.InstanceType
-					mapping["local_storage_capacity"] = tpe.LocalStorageCapacity
-					ids = append(ids, tpe.InstanceType)
-					s = append(s, mapping)
-					break
-				} else if localStorage == false && tpe.LocalStorageAmount == 0 {
+				if localStorage == false {
+					if tpe.LocalStorageAmount != 0 {
+						continue
+					}
 					mapping["id"] = tpe.InstanceType
 					ids = append(ids, tpe.InstanceType)
 					s = append(s, mapping)
 					break
+				} else {
+					if _, ok := localFlag["cloud"]; !ok && tpe.LocalStorageAmount == 0 {
+						mapping["id"] = tpe.InstanceType
+						localFlag["cloud"] = tpe.InstanceType
+					} else if _, ok := localFlag["local"]; !ok && tpe.LocalStorageAmount > 0 {
+						mapping["local_instance_type"] = tpe.InstanceType
+						mapping["local_storage_capacity"] = tpe.LocalStorageCapacity
+						localFlag["local"] = tpe.InstanceType
+					}
+					if len(localFlag) == 2 {
+						s = append(s, mapping)
+						ids = append(ids, localFlag["cloud"], localFlag["local"])
+						break
+					}
 				}
 			}
 		}
