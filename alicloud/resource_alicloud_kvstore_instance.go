@@ -39,10 +39,9 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				ValidateFunc: validateRKVInstanceName,
 			},
 			"password": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Sensitive:    true,
-				ValidateFunc: validateRKVPassword,
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
 			},
 			"kms_encrypted_password": {
 				Type:             schema.TypeString,
