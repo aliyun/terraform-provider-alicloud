@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_polardb_cluster"
 sidebar_current: "docs-alicloud-resource-polardb-cluster"
 description: |-
-  Provides an PolarDB cluster resource.
+  Provides a PolarDB cluster resource.
 ---
 
 # alicloud\_polardb\_cluster
 
-Provides an PolarDB cluster resource. A PolarDB cluster is an isolated database
+Provides a PolarDB cluster resource. A PolarDB cluster is an isolated database
 environment in the cloud. A PolarDB cluster can contain multiple user-created
 databases.
 

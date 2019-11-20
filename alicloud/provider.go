@@ -416,6 +416,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_cluster":                     resourceAlicloudPolarDBCluster(),
 			"alicloud_polardb_backup_policy":               resourceAlicloudPolarDBBackupPolicy(),
 			"alicloud_polardb_database":                    resourceAlicloudPolarDBDatabase(),
+			"alicloud_polardb_account":                     resourceAlicloudPolarDBAccount(),
 		},
 
 		ConfigureFunc: providerConfigure,
