@@ -479,12 +479,11 @@ func TestAccAlicloudDBBackupPolicy_PPAS(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period": []string{"Wednesday"},
+					"backup_period": []string{"Wednesday", "Monday"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "1",
-						"backup_period.1970423419": "Wednesday",
+						"backup_period.#": "2",
 					}),
 				),
 			},
@@ -540,17 +539,15 @@ func TestAccAlicloudDBBackupPolicy_PPAS(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period":    []string{"Wednesday", "Tuesday"},
+					"backup_period":    []string{"Wednesday", "Monday", "Tuesday"},
 					"backup_time":      "10:00Z-11:00Z",
 					"retention_period": "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "2",
-						"backup_period.1592931319": "Tuesday",
-						"backup_period.1970423419": "Wednesday",
-						"backup_time":              "10:00Z-11:00Z",
-						"retention_period":         "10",
+						"backup_period.#":  "3",
+						"backup_time":      "10:00Z-11:00Z",
+						"retention_period": "10",
 					}),
 				),
 			}},
