@@ -37,10 +37,10 @@ resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
 The following arguments are supported:
 
 * `zone_id` - (Required, ForceNew) The name of the Private Zone Record.
-* `vpc_ids` - (Optional, Computed) The id List of the VPC, for example:["vpc-1","vpc-2"]. But these VPCS should have the same region as pvtz_zone. 
-* `vpcs` - (Optional, Computed, Available in 1.63.0+) The List of the VPC:
+* `vpc_ids` - (Optional, Conflict with `vpcs`) The id List of the VPC with the same region, for example:["vpc-1","vpc-2"]. 
+* `vpcs` - (Optional, Conflict with `vpc_ids`, Available in 1.63.0+) The List of the VPC:
     * `vpc_id` - (Required) The Id of the vpc.
-    * `region_id` - (Option) The VPC's region_id, which defaults to the current environment region_id when not specified. Conflicts with vpc_ids.
+    * `region_id` - (Option) The region of the vpc. If not set, the current region will instead.
 
 
 ## Attributes Reference
@@ -48,7 +48,3 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the Private Zone VPC Attachment.
-* `vpc_ids` - The id List of the VPC, for example:["vpc-1","vpc-2"]. But these VPCS should have the same region as pvtz_zone. 
-* `vpcs` - The List of the VPC:
-    * `vpc_id` - The Id of the vpc.
-    * `region_id` - The VPC's region_id, which defaults to the current environment region_id when not specified. Conflicts with vpc_ids.
