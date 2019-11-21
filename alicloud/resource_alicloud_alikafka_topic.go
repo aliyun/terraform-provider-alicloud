@@ -6,8 +6,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -30,7 +31,7 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAlikafkaStringLen,
+				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
 			"local_topic": {
 				Type:     schema.TypeBool,
@@ -46,13 +47,13 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAlikafkaPartitionNum,
+				ValidateFunc: validation.IntBetween(1, 48),
 			},
 			"remark": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAlikafkaStringLen,
+				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
 		},
 	}

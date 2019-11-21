@@ -842,34 +842,6 @@ func validateOnsGroupRemark(v interface{}, k string) (ws []string, errors []erro
 	return
 }
 
-func validateAlikafkaInstanceNameLen(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(string)
-	if len(value) == 0 {
-		errors = append(errors, fmt.Errorf("%q cannot be empty", k))
-	} else if len(value) > 64 || len(value) < 3 {
-		errors = append(errors, fmt.Errorf("%q should between 3 and 64 characters", k))
-	}
-	return
-}
-
-func validateAlikafkaStringLen(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(string)
-	if len(value) == 0 {
-		errors = append(errors, fmt.Errorf("%q cannot be empty", k))
-	} else if len(value) > 64 {
-		errors = append(errors, fmt.Errorf("%q cannot be longer than 64 characters", k))
-	}
-	return
-}
-
-func validateAlikafkaPartitionNum(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(int)
-	if value <= 0 || value >= 48 {
-		errors = append(errors, fmt.Errorf("%q should not less than 1 or greater than 48", k))
-	}
-	return
-}
-
 func validateDomainRecordType(v interface{}, k string) (ws []string, errors []error) {
 	// Valid Record types
 	// A, NS, MX, TXT, CNAME, SRV, AAAA, CAA, REDIRECT_URL, FORWORD_URL
@@ -1648,23 +1620,3 @@ func intBetween(min, max int) schema.SchemaValidateFunc {
 	}
 }
 
-// StringMatch returns a SchemaValidateFunc which tests if the provided value
-// matches a given regexp. Optionally an error message can be provided to
-// return something friendlier than "must match some globby regexp".
-func stringMatch(r *regexp.Regexp, message string) schema.SchemaValidateFunc {
-	return func(i interface{}, k string) ([]string, []error) {
-		v, ok := i.(string)
-		if !ok {
-			return nil, []error{fmt.Errorf("expected type of %s to be string", k)}
-		}
-
-		if ok := r.MatchString(v); !ok {
-			if message != "" {
-				return nil, []error{fmt.Errorf("invalid value for %s (%s)", k, message)}
-
-			}
-			return nil, []error{fmt.Errorf("expected value of %s to match regular expression %q", k, r)}
-		}
-		return nil, nil
-	}
-}
