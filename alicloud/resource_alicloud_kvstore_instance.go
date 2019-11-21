@@ -303,6 +303,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		// for now we just support charge change from PostPaid to PrePaid
 		configPayType := PayType(d.Get("instance_charge_type").(string))
 		if configPayType == PrePaid {
+			prePaidRequest.AutoPay = requests.NewBoolean(true)
 			raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 				return rkvClient.TransformToPrePaid(prePaidRequest)
 			})

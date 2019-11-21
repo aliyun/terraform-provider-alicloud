@@ -362,6 +362,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		payType := PayType(d.Get("instance_charge_type").(string))
 		prePaidRequest.PayType = string(payType)
 		if payType == Prepaid {
+			prePaidRequest.AutoPay = "true"
 			period := d.Get("period").(int)
 			prePaidRequest.UsedTime = requests.Integer(strconv.Itoa(period))
 			prePaidRequest.Period = string(Month)
