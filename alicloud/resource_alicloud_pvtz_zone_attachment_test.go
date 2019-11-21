@@ -73,6 +73,44 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpcs": []map[string]interface{}{
+						{
+							"vpc_id": "${alicloud_vpc.default.id}",
+						},
+						{
+							"vpc_id": "${alicloud_vpc.default1.id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpcs.#":    "2",
+						"vpc_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"lang": "en",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"lang": "en",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_client_ip": "192.168.1.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_client_ip": "192.168.1.1",
+					}),
+				),
+			},
 		},
 	})
 }

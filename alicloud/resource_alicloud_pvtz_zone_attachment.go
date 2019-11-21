@@ -25,10 +25,37 @@ func resourceAlicloudPvtzZoneAttachment() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"lang": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"user_client_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"vpc_ids": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"vpcs": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				ConflictsWith: []string{"vpc_ids"},
+				Computed:      true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"region_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -50,59 +77,65 @@ func resourceAlicloudPvtzZoneAttachmentCreate(d *schema.ResourceData, meta inter
 }
 
 func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	pvtzService := PvtzService{client}
 
+	request := pvtz.CreateBindZoneVpcRequest()
+	request.RegionId = client.RegionId
+	request.ZoneId = d.Id()
+
+	vpcIdMap := make(map[string]string)
 	if d.HasChange("vpc_ids") {
-		client := meta.(*connectivity.AliyunClient)
-		vpcService := VpcService{client}
-		pvtzService := PvtzService{client}
-
-		request := pvtz.CreateBindZoneVpcRequest()
-		request.RegionId = client.RegionId
-		request.ZoneId = d.Id()
-
-		o, n := d.GetChange("vpc_ids")
-		os := o.(*schema.Set)
-		ns := n.(*schema.Set)
-		bindZoneVpcs := ns.Difference(os).List()
-
-		vpcIdMap := make(map[string]string)
-		vpcs := make([]pvtz.BindZoneVpcVpcs, len(bindZoneVpcs))
-		for i, e := range bindZoneVpcs {
-			vpcId := e.(string)
-			object, err := vpcService.DescribeVpc(vpcId)
-			if err != nil {
-				return WrapError(err)
-			}
-
-			regionId := object.RegionId
-
-			vpcs[i].RegionId = regionId
-			vpcs[i].VpcId = vpcId
-			vpcIdMap[vpcId] = vpcId
+		vpcIds := d.Get("vpc_ids").(*schema.Set).List()
+		bindZoneVpcVpcs := make([]pvtz.BindZoneVpcVpcs, len(vpcIds))
+		for i, v := range vpcIds {
+			bindZoneVpcVpcs[i].VpcId = v.(string)
+			bindZoneVpcVpcs[i].RegionId = client.RegionId
+			vpcIdMap[bindZoneVpcVpcs[i].VpcId] = bindZoneVpcVpcs[i].VpcId
 		}
+		request.Vpcs = &bindZoneVpcVpcs
+	}
 
-		request.Vpcs = &vpcs
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-				return pvtzClient.BindZoneVpc(request)
-			})
-			if err != nil {
-				if IsExceptedErrors(err, []string{ServiceUnavailable, PvtzThrottlingUser, PvtzSystemBusy, ZoneNotExists}) {
-					time.Sleep(5 * time.Second)
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
+	if d.HasChange("vpcs") {
+		vpcs := d.Get("vpcs").(*schema.Set).List()
+		bindZoneVpcVpcs := make([]pvtz.BindZoneVpcVpcs, len(vpcs))
+		for i, v := range vpcs {
+			vpc := v.(map[string]interface{})
+
+			bindZoneVpcVpcs[i].VpcId = vpc["vpc_id"].(string)
+			regionId := vpc["region_id"].(string)
+			if regionId == "" {
+				regionId = client.RegionId
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			return nil
+			bindZoneVpcVpcs[i].RegionId = regionId
+			vpcIdMap[bindZoneVpcVpcs[i].VpcId] = bindZoneVpcVpcs[i].VpcId
+		}
+		request.Vpcs = &bindZoneVpcVpcs
+	}
+
+	request.UserClientIp = d.Get("user_client_ip").(string)
+	request.Lang = d.Get("lang").(string)
+
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+			return pvtzClient.BindZoneVpc(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			if IsExceptedErrors(err, []string{ServiceUnavailable, PvtzThrottlingUser, PvtzSystemBusy, ZoneNotExists}) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
 
-		if err := pvtzService.WaitForZoneAttachment(d.Id(), vpcIdMap, DefaultTimeout); err != nil {
-			return WrapError(err)
-		}
+	if err := pvtzService.WaitForZoneAttachment(d.Id(), vpcIdMap, DefaultTimeout); err != nil {
+		return WrapError(err)
 	}
 
 	return resourceAlicloudPvtzZoneAttachmentRead(d, meta)
@@ -122,15 +155,24 @@ func resourceAlicloudPvtzZoneAttachmentRead(d *schema.ResourceData, meta interfa
 
 		return WrapError(err)
 	}
-
 	vpcs := object.BindVpcs.Vpc
 	vpcIds := make([]string, 0)
+	vpcMaps := make([]map[string]interface{}, 0)
 	for _, vpc := range vpcs {
 		vpcIds = append(vpcIds, vpc.VpcId)
+		vpcMap := map[string]interface{}{
+			"vpc_id":    vpc.VpcId,
+			"region_id": vpc.RegionId,
+		}
+		vpcMaps = append(vpcMaps, vpcMap)
 	}
 
 	d.Set("zone_id", d.Id())
 	if err := d.Set("vpc_ids", vpcIds); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("vpcs", vpcMaps); err != nil {
 		return WrapError(err)
 	}
 
