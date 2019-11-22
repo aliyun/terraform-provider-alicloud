@@ -38,7 +38,7 @@ The following arguments are supported:
 
 * `zone_id` - (Required, ForceNew) The name of the Private Zone Record.
 * `vpc_ids` - (Optional, Conflict with `vpcs`) The id List of the VPC with the same region, for example:["vpc-1","vpc-2"]. 
-* `vpcs` - (Optional, Conflict with `vpc_ids`, Available in 1.63.0+) The List of the VPC:
+* `vpcs` - (Optional, Conflict with `vpc_ids`, Available in 1.62.1+) The List of the VPC:
     * `vpc_id` - (Required) The Id of the vpc.
     * `region_id` - (Option) The region of the vpc. If not set, the current region will instead.
 

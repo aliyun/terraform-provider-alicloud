@@ -264,7 +264,7 @@ The lifecycle_rule object supports the following:
 * `prefix` - (Required) Object key prefix identifying one or more objects to which the rule applies.
 * `enabled` - (Required, Type: bool) Specifies lifecycle rule status.
 * `expiration` - (Optional, Type: set) Specifies a period in the object's expire (documented below).
-* `transitions` - (Optional, Type: set, Available in 1.63.0+) Specifies the time when an object is converted to the IA or archive storage class during a valid life cycle. (documented below).
+* `transitions` - (Optional, Type: set, Available in 1.62.1+) Specifies the time when an object is converted to the IA or archive storage class during a valid life cycle. (documented below).
 
 #### Block expiration
 
