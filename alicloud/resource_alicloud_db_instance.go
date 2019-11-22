@@ -301,6 +301,16 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			// Default to Manual
+			"auto_upgrade_minor_version": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validateAllowedStringValue([]string{"Auto", "Manual"}),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("engine").(string) != "MySQL"
+				},
+			},
 		},
 	}
 }
@@ -452,6 +462,22 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("maintain_time")
 	}
+	if d.HasChange("auto_upgrade_minor_version") {
+		request := rds.CreateModifyDBInstanceAutoUpgradeMinorVersionRequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		request.AutoUpgradeMinorVersion = d.Get("auto_upgrade_minor_version").(string)
+		request.ClientToken = buildClientToken(request.GetActionName())
+
+		raw, err := client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+			return client.ModifyDBInstanceAutoUpgradeMinorVersion(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("auto_upgrade_minor_version")
+	}
 
 	if d.IsNewResource() {
 		d.Partial(false)
@@ -602,6 +628,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("connection_string", instance.ConnectionString)
 	d.Set("instance_name", instance.DBInstanceDescription)
 	d.Set("maintain_time", instance.MaintainTime)
+	d.Set("auto_upgrade_minor_version", instance.AutoUpgradeMinorVersion)
 
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
 		return WrapError(err)

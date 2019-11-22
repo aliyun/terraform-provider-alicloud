@@ -3,6 +3,7 @@
 
 IMPROVEMENTS:
 
+- improve(db_instance): add new field auto_upgrade_minor_version to set minor version [GH-1897]
 - imporve(docs): add AODC warning [GH-1893]
 - improve(kvstore_instance): correct its docs [GH-1891]
 - improve(pvtz_zone_attachment):make pvtz_zone_attachment support different region vpc [GH-1890]

@@ -143,14 +143,6 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 		if d.Get("log_retention_period").(int) > d.Get("retention_period").(int) {
 			logBackupRetentionPeriod = retentionPeriod
 		}
-		instance, err := rdsService.DescribeDBInstance(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-		// At present, the sql server database does not support setting logBackupRetentionPeriod
-		if instance.Engine == "SQLServer" {
-			logBackupRetentionPeriod = ""
-		}
 		update = true
 	}
 
@@ -187,6 +179,9 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 	request.BackupLog = "Enable"
 	instance, err := rdsService.DescribeDBInstance(d.Id())
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapError(err)
 	}
 	if instance.Engine != "SQLServer" {

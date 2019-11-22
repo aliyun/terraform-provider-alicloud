@@ -147,7 +147,13 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 					"monitoring_period":    "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"engine":                     "MySQL",
+						"engine_version":             "5.6",
+						"instance_type":              CHECKSET,
+						"instance_storage":           CHECKSET,
+						"auto_upgrade_minor_version": "Auto",
+					}),
 				),
 			},
 			{
@@ -162,6 +168,16 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"maintain_time": "22:00Z-02:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_upgrade_minor_version": "Auto",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_upgrade_minor_version": "Auto",
 					}),
 				),
 			},
@@ -264,28 +280,30 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine":               "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}",
-					"engine_version":       "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
-					"instance_type":        "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
-					"instance_storage":     "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
-					"instance_name":        "tf-testAccDBInstanceConfig",
-					"monitoring_period":    "60",
-					"instance_charge_type": "Postpaid",
-					"security_group_id":    REMOVEKEY,
+					"engine":                     "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}",
+					"engine_version":             "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
+					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
+					"instance_name":              "tf-testAccDBInstanceConfig",
+					"monitoring_period":          "60",
+					"instance_charge_type":       "Postpaid",
+					"security_group_id":          REMOVEKEY,
+					"auto_upgrade_minor_version": "Manual",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine":               "MySQL",
-						"engine_version":       "5.6",
-						"instance_type":        CHECKSET,
-						"instance_storage":     "15",
-						"instance_name":        "tf-testAccDBInstanceConfig",
-						"monitoring_period":    "60",
-						"zone_id":              CHECKSET,
-						"instance_charge_type": "Postpaid",
-						"connection_string":    CHECKSET,
-						"port":                 CHECKSET,
-						"security_group_id":    REMOVEKEY,
+						"engine":                     "MySQL",
+						"engine_version":             "5.7",
+						"instance_type":              CHECKSET,
+						"instance_storage":           "15",
+						"instance_name":              "tf-testAccDBInstanceConfig",
+						"monitoring_period":          "60",
+						"zone_id":                    CHECKSET,
+						"instance_charge_type":       "Postpaid",
+						"connection_string":          CHECKSET,
+						"port":                       CHECKSET,
+						"security_group_id":          REMOVEKEY,
+						"auto_upgrade_minor_version": "Manual",
 					}),
 				),
 			},
