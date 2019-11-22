@@ -76,7 +76,7 @@ func (dns *DnsService) DescribeDnsRecord(id string) (*alidns.DescribeDomainRecor
 		return dnsClient.DescribeDomainRecordInfo(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{DomainRecordNotBelongToUser}) {
+		if IsExceptedErrors(err, []string{DomainRecordNotBelongToUser, "InvalidRR.NoExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
