@@ -1,36 +1,36 @@
-## 1.62.1 (Unreleased)
+## 1.62.1 (November 22, 2019)
 
 IMPROVEMENTS:
 
-- improve(db_instance): add new field auto_upgrade_minor_version to set minor version [GH-1897]
-- imporve(docs): add AODC warning [GH-1893]
-- improve(kvstore_instance): correct its docs [GH-1891]
-- improve(pvtz_zone_attachment):make pvtz_zone_attachment support different region vpc [GH-1890]
-- improve(db, kvstore): add auto pay when changing instance charge type [GH-1889]
-- improve(cs): Do not assume `private_zone` is returned from API [GH-1885]
-- improve(cs): modify the value of 'new_nat_gateway' to avoid errors. [GH-1882]
-- improve(docs): Terraform registry docs [GH-1881]
-- improve(rds): feature support high security access mode not submitted [GH-1880]
-- improve(oss): add transitions to life-cycle [GH-1879]
-- improve(db_instance): feature support high security access mode not submitted [GH-1878]
-- improve(scalingconfiguration): supports changing password_inherit [GH-1877]
-- improve(zones): use describeAvailableResource API to get rds available zones [GH-1876]
-- improve(kvstore_instance_classess): improve test case error caused by no stock [GH-1875]
-- improve(mns): mns support sts access [GH-1871]
-- improve(elasticsearch): Added retry to avoid CreateInstance TokenPreviousRequestProcessError error [GH-1870]
-- improve(kvstore_instance_engines): improve its code [GH-1864]
-- improve(kvstore): remove memcache filter from datasource test [GH-1863] 
-- improve(oss_bucket_object):make oss_bucket_object support KMS encryption [GH-1860]
-- improve(provider): added endpoint for resources. [GH-1855]
+- improve(db_instance): add new field auto_upgrade_minor_version to set minor version ([#1897](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1897))
+- imporve(docs): add AODC warning ([#1893](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1893))
+- improve(kvstore_instance): correct its docs ([#1891](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1891))
+- improve(pvtz_zone_attachment):make pvtz_zone_attachment support different region vpc ([#1890](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1890))
+- improve(db, kvstore): add auto pay when changing instance charge type ([#1889](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1889))
+- improve(cs): Do not assume `private_zone` is returned from API ([#1885](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1885))
+- improve(cs): modify the value of 'new_nat_gateway' to avoid errors. ([#1882](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1882))
+- improve(docs): Terraform registry docs ([#1881](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1881))
+- improve(rds): feature support high security access mode not submitted ([#1880](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1880))
+- improve(oss): add transitions to life-cycle ([#1879](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1879))
+- improve(db_instance): feature support high security access mode not submitted ([#1878](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1878))
+- improve(scalingconfiguration): supports changing password_inherit ([#1877](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1877))
+- improve(zones): use describeAvailableResource API to get rds available zones ([#1876](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1876))
+- improve(kvstore_instance_classess): improve test case error caused by no stock ([#1875](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1875))
+- improve(mns): mns support sts access ([#1871](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1871))
+- improve(elasticsearch): Added retry to avoid CreateInstance TokenPreviousRequestProcessError error ([#1870](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1870))
+- improve(kvstore_instance_engines): improve its code ([#1864](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1864))
+- improve(kvstore): remove memcache filter from datasource test [[#1863](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1863)] 
+- improve(oss_bucket_object):make oss_bucket_object support KMS encryption ([#1860](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1860))
+- improve(provider): added endpoint for resources. ([#1855](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1855))
 
 BUG FIXES:
 
-- fix(db_backup_policy): add limitation when modify sqlservr policy [GH-1896]
-- fix(kvstore): remove the kvstore instance password limitation [GH-1886]
-- fix(mongodb_instances): fix filetering bug [GH-1874]
-- fix(mongodb_instances): fix name_regex bug [GH-1865]
-- fix(key_pair):fix key_pair testcase bug [GH-1862]
-- fix(autoscaling): fix autoscaling bugs. [GH-1832]
+- fix(db_backup_policy): add limitation when modify sqlservr policy ([#1896](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1896))
+- fix(kvstore): remove the kvstore instance password limitation ([#1886](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1886))
+- fix(mongodb_instances): fix filetering bug ([#1874](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1874))
+- fix(mongodb_instances): fix name_regex bug ([#1865](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1865))
+- fix(key_pair):fix key_pair testcase bug ([#1862](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1862))
+- fix(autoscaling): fix autoscaling bugs. ([#1832](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1832))
 
 ## 1.62.0 (November 13, 2019)
 
@@ -682,7 +682,7 @@ BUG FIXES:
 - fix(nas): fix document and nas_access_rules ([#1271](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1271))
 - docs(version) Added 6.7 supported and fixed bug of version difference ([#1270](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1270))
 - fix(nas): fix documents ([#1267](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1267))
-- fix(nas): describe mount target & access rule [GH-1264]
+- fix(nas): describe mount target & access rule ([#1264](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1264))
 
 ## 1.46.0 (June 10, 2019)
 
