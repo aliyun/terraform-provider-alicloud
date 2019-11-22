@@ -1,5 +1,4 @@
-## 1.63.0 (Unreleased)
-## 1.62.1 (November 22, 2019)
+## 1.62.1 (Unreleased)
 
 IMPROVEMENTS:
 
