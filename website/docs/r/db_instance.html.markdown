@@ -131,6 +131,11 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `tags` - (Optional) the instance bound to the tag. The format of the incoming value is `json` string, including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty, and both cannot begin with `aliyun`. Format example `{"key1":"value1"}`, TagKey and TagValue are not case sensitive.
 * `security_group_id` - (Optional) Input the ECS Security Group ID to join ECS Security Group. Only support mysql 5.5, mysql 5.6
 * `maintain_time` - (Optional, Available in 1.56.0+) Maintainable time period format of the instance: HH:MMZ-HH:MMZ (UTC time)
+* `auto_upgrade_minor_version` - (Optional, Available in 1.62.1+) The upgrade method to use. Valid values:
+   - Auto: Instances are automatically upgraded to a higher minor version.
+   - Manual: Instances are forcibly upgraded to a higher minor version when the current version is unpublished.
+   
+   Default to "Manual". See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
 
 -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 

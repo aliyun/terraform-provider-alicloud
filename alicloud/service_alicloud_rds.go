@@ -479,7 +479,14 @@ func (s *RdsService) ModifyDBBackupPolicy(instanceId, backupTime, backupPeriod, 
 	request.BackupRetentionPeriod = retentionPeriod
 	request.PreferredBackupTime = backupTime
 	request.BackupLog = backupLog
-	request.LogBackupRetentionPeriod = LogBackupRetentionPeriod
+	instance, err := s.DescribeDBInstance(instanceId)
+	if err != nil {
+		return WrapError(err)
+	}
+	// At present, the sql server database does not support setting logBackupRetentionPeriod
+	if instance.Engine != "SQLServer" {
+		request.LogBackupRetentionPeriod = LogBackupRetentionPeriod
+	}
 
 	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 		return rdsClient.ModifyBackupPolicy(request)
