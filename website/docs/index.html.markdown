@@ -8,6 +8,8 @@ description: |-
 
 # Alibaba Cloud Provider
 
+!> **Warning:** Welcome to Join Alibaba Cloud Open Platform Developer Challenge and Win the grand prize. [See Details](https://developer.aliyun.com/article/726543).
+
 The Alibaba Cloud provider is used to interact with the
 many resources supported by [Alibaba Cloud](https://www.alibabacloud.com). The provider needs to be configured
 with the proper credentials before it can be used.
@@ -15,9 +17,6 @@ with the proper credentials before it can be used.
 Use the navigation on the left to read about the available resources.
 
 -> **Note:** From version 1.50.0, the provider start to support Terraform 0.12.x.
-
--> **Note:** When you use terraform on a `Windows` computer, please install [golang](https://golang.org/dl/) first.
-Otherwise, you may encounter an issue that occurs from the version 1.8.1 to 1.10.0. For more information, please read the [Crash Error](https://github.com/alibaba/terraform-provider/issues/469).
 
 
 ## Example Usage
@@ -32,7 +31,7 @@ provider "alicloud" {
 
 data "alicloud_instance_types" "c2g4" {
   cpu_core_count = 2
-  memory_size = 4
+  memory_size    = 4
 }
 
 data "alicloud_images" "default" {
@@ -43,21 +42,21 @@ data "alicloud_images" "default" {
 
 # Create a web server
 resource "alicloud_instance" "web" {
-  image_id          = "${data.alicloud_images.default.images.0.id}"
+  image_id              = "${data.alicloud_images.default.images.0.id}"
   internet_charge_type  = "PayByBandwidth"
 
   instance_type        = "${data.alicloud_instance_types.c2g4.instance_types.0.id}"
   system_disk_category = "cloud_efficiency"
   security_groups      = ["${alicloud_security_group.default.id}"]
   instance_name        = "web"
-  vswitch_id = "vsw-abc12345"
+  vswitch_id           = "vsw-abc12345"
 }
 
 # Create security group
 resource "alicloud_security_group" "default" {
   name        = "default"
   description = "default"
-  vpc_id = "vpc-abc12345"
+  vpc_id      = "vpc-abc12345"
 }
 ```
 
