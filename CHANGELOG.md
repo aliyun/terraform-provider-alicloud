@@ -25,7 +25,8 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- fix(kvstore): remove the kvstore instance password limitation[GH-1886]
+- fix(db_backup_policy): add limitation when modify sqlservr policy [GH-1896]
+- fix(kvstore): remove the kvstore instance password limitation [GH-1886]
 - fix(mongodb_instances): fix filetering bug [GH-1874]
 - fix(mongodb_instances): fix name_regex bug [GH-1865]
 - fix(key_pair):fix key_pair testcase bug [GH-1862]

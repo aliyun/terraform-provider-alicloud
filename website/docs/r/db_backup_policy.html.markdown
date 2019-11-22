@@ -63,9 +63,9 @@ The following arguments are supported:
 * `backup_time` - (Optional) DB instance backup time, in the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. Default to "02:00Z-03:00Z". China time is 8 hours behind it.
 * `retention_period` - (Optional) Instance backup retention days. Valid values: [7-730]. Default to 7.
 * `log_backup` - (Optional) Whether to backup instance log. Note: The 'Basic Edition' category Rds instance does not support setting log backup. [What is Basic Edition](https://www.alibabacloud.com/help/doc-detail/48980.htm).
-
--> **NOTE:** Do not support SQLServer's close operation.
 * `log_retention_period` - (Optional) Instance log backup retention days. Valid when the `log_backup` is `true`. Valid values: [7-730]. Default to 7. It cannot be larger than `retention_period`.
+
+-> **NOTE:** Currently, the SQLServer instance does not support to modify `log_retention_period`.
 
 ## Attributes Reference
 
