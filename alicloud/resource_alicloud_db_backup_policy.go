@@ -111,13 +111,13 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 	backupLog := "Enable"
 
 	retentionPeriod := ""
-	if temp, ok := d.GetOk("retention_period"); ok {
-		retentionPeriod = strconv.Itoa(temp.(int))
+	if v, ok := d.GetOk("retention_period"); ok {
+		retentionPeriod = strconv.Itoa(v.(int))
 	}
 
 	logBackupRetentionPeriod := ""
-	if temp, ok := d.GetOk("log_retention_period"); ok {
-		logBackupRetentionPeriod = strconv.Itoa(temp.(int))
+	if v, ok := d.GetOk("log_retention_period"); ok {
+		logBackupRetentionPeriod = strconv.Itoa(v.(int))
 	}
 
 	if d.HasChange("backup_period") {
@@ -142,6 +142,14 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 	if d.HasChange("log_retention_period") {
 		if d.Get("log_retention_period").(int) > d.Get("retention_period").(int) {
 			logBackupRetentionPeriod = retentionPeriod
+		}
+		instance, err := rdsService.DescribeDBInstance(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		// At present, the sql server database does not support setting logBackupRetentionPeriod
+		if instance.Engine == "SQLServer" {
+			logBackupRetentionPeriod = ""
 		}
 		update = true
 	}
@@ -177,7 +185,13 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 	request.BackupRetentionPeriod = "7"
 	request.PreferredBackupTime = "02:00Z-03:00Z"
 	request.BackupLog = "Enable"
-	request.LogBackupRetentionPeriod = "7"
+	instance, err := rdsService.DescribeDBInstance(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if instance.Engine != "SQLServer" {
+		request.LogBackupRetentionPeriod = "7"
+	}
 
 	raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 		return rdsClient.ModifyBackupPolicy(request)
