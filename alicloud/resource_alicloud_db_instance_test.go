@@ -293,7 +293,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine":                     "MySQL",
-						"engine_version":             "5.7",
+						"engine_version":             "5.6",
 						"instance_type":              CHECKSET,
 						"instance_storage":           "15",
 						"instance_name":              "tf-testAccDBInstanceConfig",
