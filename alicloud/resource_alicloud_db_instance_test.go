@@ -590,7 +590,7 @@ func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
 					testAccCheck(map[string]string{
 						"engine":           "PostgreSQL",
 						"engine_version":   "9.4",
-						"instance_storage": "250",
+						"instance_storage": "20",
 						"instance_type":    CHECKSET,
 					}),
 				),
@@ -659,7 +659,7 @@ func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
 						"engine":               "PostgreSQL",
 						"engine_version":       "9.4",
 						"instance_type":        CHECKSET,
-						"instance_storage":     "500",
+						"instance_storage":     "30",
 						"instance_name":        "tf-testAccDBInstanceConfig",
 						"monitoring_period":    "60",
 						"zone_id":              CHECKSET,
