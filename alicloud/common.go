@@ -330,6 +330,19 @@ func convertJsonStringToList(configured string) ([]interface{}, error) {
 	return result, nil
 }
 
+func convertMaptoJsonString(m map[string]interface{}) (string, error) {
+	sm := make(map[string]string, len(m))
+	for k, v := range m {
+		sm[k] = v.(string)
+	}
+
+	if result, err := json.Marshal(sm); err != nil {
+		return "", err
+	} else {
+		return string(result), nil
+	}
+}
+
 func StringPointer(s string) *string {
 	return &s
 }
