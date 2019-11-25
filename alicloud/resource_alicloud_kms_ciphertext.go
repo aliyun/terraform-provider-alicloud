@@ -31,10 +31,13 @@ func resourceAlicloudKmsCiphertext() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"context": {
-				Type:     schema.TypeString,
+			"encryption_context": {
+				Type:     schema.TypeMap,
 				Optional: true,
 				ForceNew: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 			"ciphertext_blob": {
 				Type:     schema.TypeString,
@@ -56,8 +59,13 @@ func resourceAlicloudKmsCiphertextCreate(d *schema.ResourceData, meta interface{
 	request.KeyId = d.Get("key_id").(string)
 	request.RegionId = client.RegionId
 
-	if context := d.Get("context"); context != nil {
-		request.EncryptionContext = context.(string)
+	if context := d.Get("encryption_context"); context != nil {
+		cm := context.(map[string]interface{})
+		contextJson, err := convertMaptoJsonString(cm)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_ciphertext", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		request.EncryptionContext = string(contextJson)
 	}
 
 	raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
