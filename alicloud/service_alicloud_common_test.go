@@ -858,6 +858,7 @@ data "alicloud_emr_instance_types" "default" {
     cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
     support_local_storage = false
     instance_charge_type = "PostPaid"
+    support_node_type = ["MASTER", "CORE"]
 }
 
 data "alicloud_emr_disk_types" "data_disk" {
@@ -926,6 +927,7 @@ data "alicloud_emr_instance_types" "default" {
     cluster_type = "GATEWAY"
     support_local_storage = false
     instance_charge_type = "PostPaid"
+    support_node_type = ["GATEWAY"]
 }
 
 data "alicloud_emr_disk_types" "data_disk" {
@@ -1036,12 +1038,14 @@ data "alicloud_emr_instance_types" "local_disk" {
     cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
     support_local_storage = true
     instance_charge_type = "PostPaid"
+    support_node_type = ["CORE"]
 }
 
 data "alicloud_emr_instance_types" "cloud_disk" {
     destination_resource = "InstanceType"
     cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
     instance_charge_type = "PostPaid"
+    support_node_type = ["MASTER"]
 }
 
 data "alicloud_emr_disk_types" "data_disk" {

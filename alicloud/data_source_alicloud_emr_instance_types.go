@@ -42,6 +42,11 @@ func dataSourceAlicloudEmrInstanceTypes() *schema.Resource {
 					"PrePaid",
 				}),
 			},
+			"support_node_type": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -93,30 +98,28 @@ func dataSourceAlicloudEmrInstanceTypesRead(d *schema.ResourceData, meta interfa
 		return emrClient.ListEmrAvailableResource(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_emr_instance_types", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_emr_instance_types",
+			request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	types := make(map[string][]emr.EmrInstanceType)
+	supportedResources := make(map[string][]emr.SupportedResource)
 	resourceResponse, _ := raw.(*emr.ListEmrAvailableResourceResponse)
 	for _, zoneInfo := range resourceResponse.EmrZoneInfoList.EmrZoneInfo {
-		instanceTypes := make([]emr.EmrInstanceType, 0)
 		resourceInfo := zoneInfo.EmrResourceInfoList.EmrResourceInfo
 		if len(resourceInfo) == 1 {
-			for _, res := range resourceInfo[0].SupportedResourceList.SupportedResource {
-				instanceTypes = append(instanceTypes, res.EmrInstanceType)
-			}
+			supportedResources[zoneInfo.ZoneId] = resourceInfo[0].SupportedResourceList.SupportedResource
 		}
-		types[zoneInfo.ZoneId] = instanceTypes
 	}
 
-	return emrClusterInstanceTypesAttributes(d, types)
+	return emrClusterInstanceTypesAttributes(d, supportedResources)
 }
 
-func emrClusterInstanceTypesAttributes(d *schema.ResourceData, types map[string][]emr.EmrInstanceType) error {
+func emrClusterInstanceTypesAttributes(d *schema.ResourceData,
+	supportedResources map[string][]emr.SupportedResource) error {
 	var ids []string
 	var zoneIDs []string
 	var s []map[string]interface{}
 
-	for k, v := range types {
+	for k, v := range supportedResources {
 		// ignore empty zoneId or empty emr instance type of the specific zoneId
 		if k == "" || len(v) == 0 {
 			continue
@@ -126,21 +129,42 @@ func emrClusterInstanceTypesAttributes(d *schema.ResourceData, types map[string]
 	}
 	sort.Strings(zoneIDs)
 	localStorage := d.Get("support_local_storage").(bool)
+	supportNodeType := d.Get("support_node_type").([]interface{})
+	nodeTypeFilter := func(filter []interface{}, source []string) bool {
+		if len(source) == 0 {
+			return false
+		}
+		sourceMapping := make(map[string]struct{})
+		for _, s := range source {
+			sourceMapping[s] = struct{}{}
+		}
+		for _, f := range filter {
+			if _, ok := sourceMapping[f.(string)]; !ok {
+				return false
+			}
+		}
+		return true
+	}
+
 	for _, zoneID := range zoneIDs {
 		mapping := map[string]interface{}{
 			"zone_id": zoneID,
 		}
-		if v, ok := types[zoneID]; ok {
+		if v, ok := supportedResources[zoneID]; ok {
 			for _, tpe := range v {
-				if localStorage == true && tpe.LocalStorageAmount > 0 {
-					mapping["id"] = tpe.InstanceType
-					mapping["local_storage_capacity"] = tpe.LocalStorageCapacity
-					ids = append(ids, tpe.InstanceType)
+				if nodeTypeFilter(supportNodeType, tpe.SupportNodeTypeList.SupportNodeType) == false {
+					continue
+				}
+
+				if localStorage == true && tpe.EmrInstanceType.LocalStorageAmount > 0 {
+					mapping["id"] = tpe.EmrInstanceType.InstanceType
+					mapping["local_storage_capacity"] = tpe.EmrInstanceType.LocalStorageCapacity
+					ids = append(ids, tpe.EmrInstanceType.InstanceType)
 					s = append(s, mapping)
 					break
-				} else if localStorage == false && tpe.LocalStorageAmount == 0 {
-					mapping["id"] = tpe.InstanceType
-					ids = append(ids, tpe.InstanceType)
+				} else if localStorage == false && tpe.EmrInstanceType.LocalStorageAmount == 0 {
+					mapping["id"] = tpe.EmrInstanceType.InstanceType
+					ids = append(ids, tpe.EmrInstanceType.InstanceType)
 					s = append(s, mapping)
 					break
 				}
