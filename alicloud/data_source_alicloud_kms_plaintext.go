@@ -9,9 +9,9 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func dataSourceAlicloudKmsSecret() *schema.Resource {
+func dataSourceAlicloudKmsPlaintext() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudKmsSecretRead,
+		Read: dataSourceAlicloudKmsPlaintextRead,
 
 		Schema: map[string]*schema.Schema{
 			"plaintext": {
@@ -40,10 +40,10 @@ func dataSourceAlicloudKmsSecret() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudKmsSecretRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudKmsPlaintextRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	// Since a secret has no ID, we create an ID based on
+	// Since a plaintext has no ID, we create an ID based on
 	// current unix time.
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))
 
@@ -55,7 +55,7 @@ func dataSourceAlicloudKmsSecretRead(d *schema.ResourceData, meta interface{}) e
 		cm := context.(map[string]interface{})
 		contextJson, err := convertMaptoJsonString(cm)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_secret", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_plaintext", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		request.EncryptionContext = string(contextJson)
 	}
@@ -64,7 +64,7 @@ func dataSourceAlicloudKmsSecretRead(d *schema.ResourceData, meta interface{}) e
 		return kmsClient.Decrypt(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_secret", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_plaintext", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*kms.DecryptResponse)

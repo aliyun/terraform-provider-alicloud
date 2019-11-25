@@ -1,12 +1,12 @@
 ---
 layout: "alicloud"
-page_title: "Alicloud: alicloud_kms_secret"
-sidebar_current: "docs-alicloud-datasource-kms-secret"
+page_title: "Alicloud: alicloud_kms_plaintext"
+sidebar_current: "docs-alicloud-datasource-kms-plaintext"
 description: |-
-    Decrypt a secret encrypted with KMS.
+    Decrypt a ciphertext encrypted with KMS.
 ---
 
-# alicloud\_kms\_secret
+# alicloud\_kms\_plaintext
 
 Decrypt a given ciphertext with KMS to use the resulting plaintext in resources.
 
@@ -27,13 +27,13 @@ resource "alicloud_kms_ciphertext" "encrypted" {
 }
 
 # Decrypt encrypted ciphertext
-data "alicloud_kms_secret" "secret" {
+data "alicloud_kms_plaintext" "plaintext" {
   ciphertext_blob = alicloud_kms_ciphertext.encrypted.ciphertext_blob
 }
 
 # Output 'example' should match the plaintext encrypted in the beginning
 output "decrypted" {
-  value = data.alicloud_kms_secret.secret.plaintext
+  value = data.alicloud_kms_plaintext.plaintext.plaintext
 }
 ```
 
