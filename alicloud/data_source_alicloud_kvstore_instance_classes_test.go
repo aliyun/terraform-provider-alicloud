@@ -82,40 +82,17 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 			"architecture": "cluster",
 		}),
 	}
-	ArchitectureRwsplit := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":      "${data.alicloud_zones.resources.zones.0.id}",
-			"architecture": "rwsplit",
-		}),
-	}
-	NodeTypeDouble := dataSourceTestAccConfig{
+	// Not all of zone support rwsplit
+	//ArchitectureRwsplit := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"zone_id":      "${data.alicloud_zones.resources.zones.0.id}",
+	//		"architecture": "rwsplit",
+	//	}),
+	//}
+	NodeType := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":   "${data.alicloud_zones.resources.zones.0.id}",
 			"node_type": "double",
-		}),
-	}
-	NodeTypeSingle := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":   "${data.alicloud_zones.resources.zones.0.id}",
-			"node_type": "single",
-		}),
-	}
-	NodeTypeReadone := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":   "${data.alicloud_zones.resources.zones.0.id}",
-			"node_type": "readone",
-		}),
-	}
-	NodeTypeReadthree := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":   "${data.alicloud_zones.resources.zones.0.id}",
-			"node_type": "readthree",
-		}),
-	}
-	NodeTypeReadfive := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":   "${data.alicloud_zones.resources.zones.0.id}",
-			"node_type": "readfive",
 		}),
 	}
 
@@ -172,8 +149,7 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 	KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis,
 		ChargeTypeConfPostpaid, PerformanceTypeStandardPerformanceType, PerformanceTypeEnhancePerformanceType,
 		StorageTypeInmemory, PackageTypeStandard, PackageTypeCustomized, ArchitectureStandard, ArchitectureCluster,
-		ArchitectureRwsplit, NodeTypeDouble, NodeTypeSingle, NodeTypeReadone, NodeTypeReadthree, NodeTypeReadfive,
-		ArchitectureStandard, allConf)
+		NodeType, ArchitectureStandard, allConf)
 }
 
 func kvstoreConfigHeader(name string) string {
