@@ -59,8 +59,7 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: validateAllowedStringValue([]string{string(PrePaid), string(PostPaid)}),
 				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
+				Default:      Postpaid,
 			},
 			"period": {
 				Type:             schema.TypeInt,
@@ -292,6 +291,27 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 	ddsService := MongoDBService{client}
 
 	d.Partial(true)
+
+	if !d.IsNewResource() && (d.HasChange("instance_charge_type") && d.Get("instance_charge_type").(string) == "Prepaid") {
+		prePaidRequest := dds.CreateRenewDBInstanceRequest()
+		prePaidRequest.DBInstanceId = d.Id()
+		prePaidRequest.AutoPay = "true"
+		prePaidRequest.Period = requests.Integer(d.Get("period").(int))
+		raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
+			return client.RenewDBInstance(prePaidRequest)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), prePaidRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(prePaidRequest.GetActionName(), raw, prePaidRequest.RpcRequest, prePaidRequest)
+		// wait instance status is running after modifying
+		stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("instance_charge_type")
+		d.SetPartial("period")
+	}
 
 	if d.HasChange("backup_time") || d.HasChange("backup_period") {
 		if err := ddsService.MotifyMongoDBBackupPolicy(d); err != nil {
