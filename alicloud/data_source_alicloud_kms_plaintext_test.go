@@ -6,8 +6,8 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccAlicloudKmsSecretDataSource(t *testing.T) {
-	resourceId := "data.alicloud_kms_secret.default"
+func TestAccAlicloudKmsPlaintextDataSource(t *testing.T) {
+	resourceId := "data.alicloud_kms_plaintext.default"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -18,7 +18,7 @@ func TestAccAlicloudKmsSecretDataSource(t *testing.T) {
 		Providers:     testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceKmsSecretConfigBasic,
+				Config: testAccDataSourceKmsPlaintextConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(
 						resourceId, "plaintext",
@@ -35,7 +35,7 @@ func TestAccAlicloudKmsSecretDataSource(t *testing.T) {
 	})
 }
 
-const testAccDataSourceKmsSecretConfigBasic = `
+const testAccDataSourceKmsPlaintextConfigBasic = `
 resource "alicloud_kms_key" "default" {
     is_enabled = true
 }
@@ -45,7 +45,7 @@ resource "alicloud_kms_ciphertext" "default" {
 	plaintext = "plaintext"
 }
 
-data "alicloud_kms_secret" "default" {
+data "alicloud_kms_plaintext" "default" {
 	ciphertext_blob = "${alicloud_kms_ciphertext.default.ciphertext_blob}"
 }
 `
