@@ -37,31 +37,62 @@ Basic Usage
 
 ```
 variable "name" {
-  default = "my-first-k8s"
+  default = "my-first-kubernetes-demo"
 }
-data "alicloud_zones" main {
+
+variable "log_project_name" {
+  default = "my-first-kubernetes-sls-demo"
+}
+
+data "alicloud_zones" default {
   available_resource_creation = "VSwitch"
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  cpu_core_count    = 1
-  memory_size       = 2
+  availability_zone = data.alicloud_zones.default.zones[0].id
+  cpu_core_count = 2
+  memory_size = 4
+  kubernetes_node_role = "Worker"
 }
 
-resource "alicloud_cs_managed_kubernetes" "k8s" {
-  name                  = "${var.name}"
-  availability_zone     = "${data.alicloud_zones.main.zones.0.id}"
-  new_nat_gateway       = true
-  worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  worker_numbers        = [2]
-  password              = "Yourpassword1234"
-  pod_cidr              = "172.20.0.0/16"
-  service_cidr          = "172.21.0.0/20"
-  install_cloud_monitor = true
-  slb_internet_enabled  = true
-  worker_disk_category  = "cloud_efficiency"
+resource "alicloud_vpc" "default" {
+  name = var.name
+  cidr_block = "10.1.0.0/21"
 }
+
+resource "alicloud_vswitch" "default" {
+  name = var.name
+  vpc_id = alicloud_vpc.default.id
+  cidr_block = "10.1.1.0/24"
+  availability_zone = data.alicloud_zones.default.zones[0].id
+}
+
+resource "alicloud_log_project" "log" {
+  name        = var.log_project_name
+  description = "created by terraform for managedkubernetes cluster"
+}
+
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name_prefix = var.name
+  availability_zone = data.alicloud_zones.default.zones[0].id
+  vswitch_ids = [alicloud_vswitch.default.id]
+  new_nat_gateway = true
+  worker_instance_types = [data.alicloud_instance_types.default.instance_types[0].id]
+  worker_number = 2
+  password = "Yourpassword1234"
+  pod_cidr = "172.20.0.0/16"
+  service_cidr = "172.21.0.0/20"
+  install_cloud_monitor = true
+  slb_internet_enabled = true
+  worker_disk_category  = "cloud_efficiency"
+  worker_data_disk_category = "cloud_ssd"
+  worker_data_disk_size =  200
+  log_config {
+    type = "SLS"
+    project = alicloud_log_project.log.name
+  }
+}
+
 ```
 
 ## Argument Reference
