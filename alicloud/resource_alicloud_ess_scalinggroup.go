@@ -57,7 +57,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				MinItems: 1,
 			},
 			"removal_policies": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 				Computed: true,
@@ -231,10 +231,10 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if d.HasChange("removal_policies") {
-		policyies := d.Get("removal_policies").(*schema.Set).List()
+		policyies := expandStringList(d.Get("removal_policies").([]interface{}))
 		s := reflect.ValueOf(request).Elem()
 		for i, p := range policyies {
-			s.FieldByName(fmt.Sprintf("RemovalPolicy%d", i+1)).Set(reflect.ValueOf(p.(string)))
+			s.FieldByName(fmt.Sprintf("RemovalPolicy%d", i+1)).Set(reflect.ValueOf(p))
 		}
 	}
 
