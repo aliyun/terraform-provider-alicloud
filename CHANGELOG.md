@@ -1,19 +1,19 @@
-## 1.62.2 (Unreleased)
+## 1.62.2 (November 26, 2019)
 
 IMPROVEMENTS:
 
-- improve(mongodb): feature mongodb support postpaid to prepaid [GH-1908]
-- improve(kvstore_instance_classes): skip unsupported zones [GH-1901]
+- improve(mongodb): feature mongodb support postpaid to prepaid ([#1908](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1908))
+- improve(kvstore_instance_classes): skip unsupported zones ([#1901](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1901))
 
 BUG FIXES:
 
-- fix(pvtz_attachment): fix vpc_ids diff error [GH-1911]
-- fix(kafka): remove the const endpoint [GH-1910]
-- fix(ess): modify the type of from Set to List. [GH-1905]
-- fix managedkubernetes demo  documentation [GH-1903]
-- fix the bug of TestAccAlicloudEmrCluster_local_storage failed [GH-1902]
-- fix(db_instance): fix postgre testcase [GH-1899]
-- fix(db_instance): test case [GH-1898]
+- fix(pvtz_attachment): fix vpc_ids diff error ([#1911](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1911))
+- fix(kafka): remove the const endpoint ([#1910](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1910))
+- fix(ess): modify the type of from Set to List. ([#1905](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1905))
+- fix managedkubernetes demo  documentation ([#1903](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1903))
+- fix the bug of TestAccAlicloudEmrCluster_local_storage failed ([#1902](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1902))
+- fix(db_instance): fix postgre testcase ([#1899](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1899))
+- fix(db_instance): test case ([#1898](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1898))
 
 ## 1.62.1 (November 22, 2019)
 
