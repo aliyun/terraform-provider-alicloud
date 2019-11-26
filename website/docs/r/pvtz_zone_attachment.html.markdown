@@ -12,6 +12,7 @@ description: |-
 Provides vpcs bound to Alicloud Private Zone resource.
 
 -> **NOTE:** Terraform will auto bind vpc to a Private Zone while it uses `alicloud_pvtz_zone_attachment` to build a Private Zone and VPC binding resource.
+-> **NOTE:** For `vpc_ids` and `vpcs`, one and only one must be specified, while the other is computed attribute.
 
 ## Example Usage
 
@@ -37,7 +38,9 @@ resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
 The following arguments are supported:
 
 * `zone_id` - (Required, ForceNew) The name of the Private Zone Record.
-* `vpc_ids` - (Optional, Conflict with `vpcs`) The id List of the VPC with the same region, for example:["vpc-1","vpc-2"]. 
+* `lang` - (Optional) Language, for example: "en".
+* `user_client_ip` - (Optional) user client ip, for example: "1.1.1.1".
+* `vpc_ids` - (Deprecated) The attribute vpc_ids has been deprecated on pvtz_zone resource. Replace it with vpcs which supports vpc bindings for different regions 
 * `vpcs` - (Optional, Conflict with `vpc_ids`, Available in 1.62.1+) The List of the VPC:
     * `vpc_id` - (Required) The Id of the vpc.
     * `region_id` - (Option) The region of the vpc. If not set, the current region will instead.
@@ -48,3 +51,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the Private Zone VPC Attachment.
+* `vpc_ids` - The attribute vpc_ids has been deprecated on pvtz_zone resource. Replace it with vpcs which supports vpc bindings for different regions 
+* `vpcs` - The List of the VPC:
+    * `vpc_id` - The Id of the vpc.
+    * `region_id` - The region of the vpc. If not set, the current region will instead.

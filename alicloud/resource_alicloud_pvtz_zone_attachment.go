@@ -18,6 +18,14 @@ func resourceAlicloudPvtzZoneAttachment() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		CustomizeDiff: func(d *schema.ResourceDiff, v interface{}) error {
+			if d.HasChange("vpcs") {
+				d.SetNewComputed("vpc_ids")
+			} else if d.HasChange("vpc_ids") {
+				d.SetNewComputed("vpcs")
+			}
+			return nil
+		},
 
 		Schema: map[string]*schema.Schema{
 			"zone_id": {
@@ -34,10 +42,11 @@ func resourceAlicloudPvtzZoneAttachment() *schema.Resource {
 				Optional: true,
 			},
 			"vpc_ids": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "The attribute vpc_ids has been deprecated on pvtz_zone resource. Replace it with vpcs which supports vpc bindings for different regions",
+				Elem:       &schema.Schema{Type: schema.TypeString},
 			},
 			"vpcs": {
 				Type:          schema.TypeSet,
@@ -52,6 +61,7 @@ func resourceAlicloudPvtzZoneAttachment() *schema.Resource {
 						},
 						"region_id": {
 							Type:     schema.TypeString,
+							Computed: true,
 							Optional: true,
 						},
 					},
@@ -79,14 +89,15 @@ func resourceAlicloudPvtzZoneAttachmentCreate(d *schema.ResourceData, meta inter
 func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	pvtzService := PvtzService{client}
-
 	request := pvtz.CreateBindZoneVpcRequest()
 	request.RegionId = client.RegionId
 	request.ZoneId = d.Id()
 
 	vpcIdMap := make(map[string]string)
-	if d.HasChange("vpc_ids") {
-		vpcIds := d.Get("vpc_ids").(*schema.Set).List()
+
+	vpcIds := d.Get("vpc_ids").(*schema.Set).List()
+
+	if d.HasChange("vpc_ids") && len(vpcIds) != 0 {
 		bindZoneVpcVpcs := make([]pvtz.BindZoneVpcVpcs, len(vpcIds))
 		for i, v := range vpcIds {
 			bindZoneVpcVpcs[i].VpcId = v.(string)
@@ -94,9 +105,7 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 			vpcIdMap[bindZoneVpcVpcs[i].VpcId] = bindZoneVpcVpcs[i].VpcId
 		}
 		request.Vpcs = &bindZoneVpcVpcs
-	}
-
-	if d.HasChange("vpcs") {
+	} else {
 		vpcs := d.Get("vpcs").(*schema.Set).List()
 		bindZoneVpcVpcs := make([]pvtz.BindZoneVpcVpcs, len(vpcs))
 		for i, v := range vpcs {
@@ -137,7 +146,6 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 	if err := pvtzService.WaitForZoneAttachment(d.Id(), vpcIdMap, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
-
 	return resourceAlicloudPvtzZoneAttachmentRead(d, meta)
 }
 

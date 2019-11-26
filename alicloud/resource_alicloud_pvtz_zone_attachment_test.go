@@ -75,6 +75,7 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"vpc_ids": REMOVEKEY,
 					"vpcs": []map[string]interface{}{
 						{
 							"vpc_id": "${alicloud_vpc.default.id}",
@@ -88,6 +89,18 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"vpcs.#":    "2",
 						"vpc_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_ids": []string{"${alicloud_vpc.default.id}"},
+					"vpcs":    REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpcs.#":    "1",
+						"vpc_ids.#": "1",
 					}),
 				),
 			},
