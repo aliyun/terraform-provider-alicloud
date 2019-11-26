@@ -1395,9 +1395,6 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 		endpoint := client.config.AlikafkaEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, ALIKAFKACode)
-			if endpoint == "" {
-				endpoint = "alikafka.aliyuncs.com"
-			}
 		}
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(ALIKAFKACode), endpoint)
