@@ -236,6 +236,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_yundun_dbaudit_instance":           dataSourceAlicloudDbauditInstances(),
 			"alicloud_yundun_bastionhost_instances":      dataSourceAlicloudBastionhostInstances(),
 			"alicloud_market_products":                   dataSourceAlicloudProducts(),
+			"alicloud_polardb_endpoints":                 dataSourceAlicloudPolarDBClusterEndpoints(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -412,6 +413,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sag_client_user":                     resourceAlicloudSagClientUser(),
 			"alicloud_yundun_dbaudit_instance":             resourceAlicloudDbauditInstance(),
 			"alicloud_yundun_bastionhost_instance":         resourceAlicloudBastionhostInstance(),
+			"alicloud_polardb_connection":                  resourceAlicloudPolarDBConnection(),
 		},
 
 		ConfigureFunc: providerConfigure,
