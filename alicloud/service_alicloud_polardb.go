@@ -316,7 +316,7 @@ func (s *PolarDBService) WaitForPolarDBConnection(id string, status Status, time
 }
 
 func (s *PolarDBService) DescribePolarDBConnection(id string) (*polardb.Address, error) {
-	parts, err := ParseResourceId(id, 3)
+	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return nil, WrapError(err)
 	}
@@ -335,7 +335,7 @@ func (s *PolarDBService) DescribePolarDBConnection(id string) (*polardb.Address,
 			for _, o := range object {
 				if o.DBEndpointId == parts[1] {
 					for _, p := range o.AddressItems {
-						if p.NetType == parts[2] {
+						if p.NetType == "Public" {
 							return &p, nil
 						}
 					}
@@ -528,6 +528,26 @@ func (s *PolarDBService) WaitForPolarDBInstance(id string, status Status, timeou
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.DBClusterStatus, status, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *PolarDBService) WaitForPolarDBConnectionPrefix(id, prefix string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribePolarDBConnection(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		parts := strings.Split(object.ConnectionString, ".")
+		if prefix == parts[0] {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, parts[0], prefix, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
