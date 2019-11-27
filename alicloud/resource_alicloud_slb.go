@@ -1,12 +1,15 @@
 package alicloud
 
 import (
+	"github.com/denverdino/aliyungo/common"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -24,7 +27,7 @@ func resourceAliyunSlb() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateSlbName,
+				ValidateFunc: validation.StringLenBetween(1, 80),
 				Default:      resource.PrefixedUniqueId("tf-lb-"),
 			},
 
@@ -42,7 +45,7 @@ func resourceAliyunSlb() *schema.Resource {
 				ForceNew:      true,
 				Computed:      true,
 				ConflictsWith: []string{"internet"},
-				ValidateFunc:  validateAllowedStringValue([]string{"internet", "intranet"}),
+				ValidateFunc:  validation.StringInSlice([]string{"internet", "intranet"}, false),
 			},
 
 			"vswitch_id": {
@@ -56,20 +59,20 @@ func resourceAliyunSlb() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Default:          PayByTraffic,
-				ValidateFunc:     validateSlbInternetChargeType,
+				ValidateFunc:     validation.StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, true),
 				DiffSuppressFunc: slbInternetChargeTypeDiffSuppressFunc,
 			},
 
 			"specification": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateSlbInstanceSpecType,
+				ValidateFunc: validation.StringInSlice([]string{S1Small, S2Small, S2Medium, S3Small, S3Medium, S3Large, S4Large}, false),
 			},
 
 			"bandwidth": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				ValidateFunc:     validateIntegerInRange(1, 1000),
+				ValidateFunc:     validation.IntBetween(1, 1000),
 				Default:          1,
 				DiffSuppressFunc: slbBandwidthDiffSuppressFunc,
 			},
@@ -223,21 +226,21 @@ func resourceAliyunSlb() *schema.Resource {
 				Computed:         true,
 				ForceNew:         true,
 				Optional:         true,
-				ValidateFunc:     validateIpAddress,
+				ValidateFunc:     validation.SingleIP(),
 				DiffSuppressFunc: slbAddressDiffSuppressFunc,
 			},
 
 			"tags": {
 				Type:         schema.TypeMap,
 				Optional:     true,
-				ValidateFunc: validateSlbInstanceTagNum,
+				ValidateFunc: validation.StringLenBetween(0, 10),
 			},
 
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      PostPaid,
-				ValidateFunc: validateInstanceChargeType,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 			},
 
 			"period": {
@@ -245,7 +248,9 @@ func resourceAliyunSlb() *schema.Resource {
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
-				ValidateFunc:     validateRouterInterfaceChargeTypePeriod,
+				ValidateFunc: validation.Any(
+					validation.IntBetween(1, 9),
+					validation.IntInSlice([]int{12, 24, 36})),
 			},
 
 			"master_zone_id": {
@@ -272,7 +277,7 @@ func resourceAliyunSlb() *schema.Resource {
 			"delete_protection": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				ValidateFunc:     validation.StringInSlice([]string{"on", "off"}, false),
 				DiffSuppressFunc: slbDeleteProtectionSuppressFunc,
 				Default:          string(OffFlag),
 			},
@@ -280,7 +285,7 @@ func resourceAliyunSlb() *schema.Resource {
 			"address_ip_version": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				ValidateFunc:     validateAllowedStringValue([]string{string(IPV4), string(IPV6)}),
+				ValidateFunc:     validation.StringInSlice([]string{"ipv4", "ipv6"}, false),
 				Default:          string(IPV4),
 				ForceNew:         true,
 				DiffSuppressFunc: slbAddressIpVersionSuppressFunc,

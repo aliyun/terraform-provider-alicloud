@@ -5,12 +5,14 @@ import (
 	"math"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"reflect"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -28,12 +30,12 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 			"min_size": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validateIntegerInRange(0, 1000),
+				ValidateFunc: validation.IntBetween(0, 1000),
 			},
 			"max_size": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validateIntegerInRange(0, 1000),
+				ValidateFunc: validation.IntBetween(0, 1000),
 			},
 			"scaling_group_name": {
 				Type:     schema.TypeString,
@@ -43,7 +45,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:         schema.TypeInt,
 				Default:      300,
 				Optional:     true,
-				ValidateFunc: validateIntegerInRange(0, 86400),
+				ValidateFunc: validation.IntBetween(0, 86400),
 			},
 			"vswitch_id": {
 				Type:       schema.TypeString,
@@ -80,26 +82,26 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      Priority,
-				ValidateFunc: validateAllowedStringValue([]string{string(Priority), string(Balance), string(CostOptimized)}),
+				ValidateFunc: validation.StringInSlice([]string{"PRIORITY", "BALANCE", "COST_OPTIMIZED"}, false),
 				ForceNew:     true,
 			},
 			"on_demand_base_capacity": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validateIntegerInRange(0, 1000),
+				ValidateFunc: validation.IntBetween(0, 1000),
 			},
 			"on_demand_percentage_above_base_capacity": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validateIntegerInRange(0, 100),
+				ValidateFunc: validation.IntBetween(0, 100),
 			},
 			"spot_instance_pools": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validateIntegerInRange(0, 10),
+				ValidateFunc: validation.IntBetween(0, 10),
 			},
 			"spot_instance_remedy": {
 				Type:     schema.TypeBool,

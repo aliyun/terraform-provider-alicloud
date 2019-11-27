@@ -3,10 +3,12 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -28,7 +30,7 @@ func resourceAlicloudSlbDomainExtension() *schema.Resource {
 			},
 			"frontend_port": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validateIntegerInRange(1, 65535),
+				ValidateFunc: validation.IntBetween(1, 65535),
 				Required:     true,
 				ForceNew:     true,
 			},

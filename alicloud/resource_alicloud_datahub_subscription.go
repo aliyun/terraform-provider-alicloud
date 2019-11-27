@@ -5,10 +5,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -27,7 +29,7 @@ func resourceAlicloudDatahubSubscription() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateDatahubProjectName,
+				ValidateFunc: validation.StringLenBetween(3, 32),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},
@@ -36,7 +38,7 @@ func resourceAlicloudDatahubSubscription() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateDatahubTopicName,
+				ValidateFunc: validation.StringLenBetween(1, 128),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},
@@ -45,7 +47,7 @@ func resourceAlicloudDatahubSubscription() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "subscription added by terraform",
-				ValidateFunc: validateStringLengthInRange(0, 255),
+				ValidateFunc: validation.StringLenBetween(0, 255),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return strings.ToLower(new) == strings.ToLower(old)
 				},

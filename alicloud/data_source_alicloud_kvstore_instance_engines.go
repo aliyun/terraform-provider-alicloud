@@ -5,8 +5,9 @@ import (
 	"time"
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -34,7 +35,7 @@ func dataSourceAlicloudKVStoreInstanceEngines() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      PrePaid,
-				ValidateFunc: validateAllowedStringValue([]string{string(PostPaid), string(PrePaid)}),
+				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,

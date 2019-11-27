@@ -16,21 +16,17 @@ require (
 	github.com/gogap/errors v0.0.0-20160523102334-149c546090d0 // indirect
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/gogo/protobuf v1.2.1 // indirect
-	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
-	github.com/hashicorp/go-hclog v0.8.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/terraform v0.12.9
+	github.com/hashicorp/terraform-plugin-sdk v1.4.0
 	github.com/hashicorp/vault v0.10.4
-	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 	github.com/keybase/go-crypto v0.0.0-20190416182011-b785b22cc757 // indirect
 	github.com/klauspost/compress v0.0.0-20180801095237-b50017755d44 // indirect
 	github.com/klauspost/cpuid v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/valyala/bytebufferpool v0.0.0-20180905182247-cdfbe9377474 // indirect
 	github.com/valyala/fasthttp v0.0.0-20180927122258-761788a34bb6 // indirect

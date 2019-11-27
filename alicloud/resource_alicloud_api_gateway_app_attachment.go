@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -38,7 +39,7 @@ func resourceAliyunApigatewayAppAttachment() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(StageNamePre), string(StageNameRelease), string(StageNameTest)}),
+				ValidateFunc: validation.StringInSlice([]string{"PRE", "RELEASE", "TEST"}, false),
 			},
 		},
 	}

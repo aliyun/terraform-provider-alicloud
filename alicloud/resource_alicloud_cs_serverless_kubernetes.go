@@ -3,10 +3,12 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -29,14 +31,14 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validateContainerName,
+				ValidateFunc:  validation.StringLenBetween(1, 63),
 				ConflictsWith: []string{"name_prefix"},
 			},
 			"name_prefix": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ForceNew:      true,
-				ValidateFunc:  validateContainerNamePrefix,
+				ValidateFunc:  validation.StringLenBetween(0, 37),
 				ConflictsWith: []string{"name"},
 			},
 			"vpc_id": {

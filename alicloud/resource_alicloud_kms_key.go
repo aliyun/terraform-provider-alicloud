@@ -1,11 +1,11 @@
 package alicloud
 
 import (
-	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -26,21 +26,14 @@ func resourceAlicloudKmsKey() *schema.Resource {
 				Optional:     true,
 				Default:      "From Terraform",
 				ForceNew:     true,
-				ValidateFunc: validateStringLengthInRange(0, 8192),
+				ValidateFunc: validation.StringLenBetween(0, 8192),
 			},
 			"key_usage": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				ValidateFunc: func(v interface{}, k string) (ws []string, es []error) {
-					value := v.(string)
-					if !(value == "ENCRYPT/DECRYPT") {
-						es = append(es, fmt.Errorf(
-							"%q must be %s", k, "ENCRYPT/DECRYPT"))
-					}
-					return
-				},
-				Default: "ENCRYPT/DECRYPT",
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ENCRYPT/DECRYPT"}, false),
+				Default:      "ENCRYPT/DECRYPT",
 			},
 			"is_enabled": {
 				Type:     schema.TypeBool,
@@ -50,7 +43,7 @@ func resourceAlicloudKmsKey() *schema.Resource {
 			"deletion_window_in_days": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateIntegerInRange(7, 30),
+				ValidateFunc: validation.IntBetween(7, 30),
 				Default:      30,
 			},
 			"arn": {

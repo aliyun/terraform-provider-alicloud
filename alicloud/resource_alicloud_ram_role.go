@@ -3,9 +3,11 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -56,7 +58,7 @@ func resourceAlicloudRamRole() *schema.Resource {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
-				ValidateFunc: validateJsonString,
+				ValidateFunc: validation.ValidateJsonString,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -68,8 +70,9 @@ func resourceAlicloudRamRole() *schema.Resource {
 				Optional:      true,
 				Default:       "1",
 				ConflictsWith: []string{"document"},
-				ValidateFunc:  validatePolicyDocVersion,
-				Deprecated:    "Field 'version' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
+				// can only be '1' so far.
+				ValidateFunc: validation.StringInSlice([]string{"1"}, false),
+				Deprecated:   "Field 'version' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
 			},
 			"force": {
 				Type:     schema.TypeBool,

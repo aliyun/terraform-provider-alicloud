@@ -4,10 +4,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -42,14 +44,14 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{string(PostPaid)}),
+				ValidateFunc: validation.StringInSlice([]string{"PostPaid"}, false),
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
 			},
 			"description": {
 				Type:         schema.TypeString,
-				ValidateFunc: validateDBInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 256),
 				Optional:     true,
 			},
 			"vswitch_id": {
@@ -66,7 +68,7 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 			},
 			"engine": {
 				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{string(GPDB)}),
+				ValidateFunc: validation.StringInSlice([]string{"gpdb"}, false),
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,

@@ -3,10 +3,12 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -34,20 +36,20 @@ func resourceAliyunDisk() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateDiskName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateDiskDescription,
+				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 
 			"category": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(DiskCloud), string(DiskCloudESSD), string(DiskCloudSSD), string(DiskCloudEfficiency)}),
+				ValidateFunc: validation.StringInSlice([]string{"cloud", "cloud_essd", "cloud_ssd", "cloud_efficiency"}, false),
 				Default:      DiskCloudEfficiency,
 			},
 

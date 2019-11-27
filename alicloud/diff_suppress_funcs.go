@@ -10,7 +10,7 @@ import (
 	"github.com/denverdino/aliyungo/dns"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/denverdino/aliyungo/rds"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func httpHttpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {

@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -27,19 +28,19 @@ func resourceAlicloudSagDnatEntry() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"Intranet", "Internet"}),
+				ValidateFunc: validation.StringInSlice([]string{"Intranet", "Internet"}, false),
 			},
 			"ip_protocol": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"tcp", "udp", "any"}),
+				ValidateFunc: validation.StringInSlice([]string{"tcp", "udp", "any"}, false),
 			},
 			"external_ip": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
-				ValidateFunc:     validateIpAddress,
+				ValidateFunc:     validation.SingleIP(),
 				DiffSuppressFunc: sagDnatEntryTypeDiffSuppressFunc,
 			},
 			"external_port": {
@@ -51,7 +52,7 @@ func resourceAlicloudSagDnatEntry() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateIpAddress,
+				ValidateFunc: validation.SingleIP(),
 			},
 			"internal_port": {
 				Type:     schema.TypeString,

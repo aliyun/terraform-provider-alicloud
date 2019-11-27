@@ -5,9 +5,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/emr"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -43,7 +45,7 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "PostPaid",
-				ValidateFunc: validateAllowedStringValue([]string{string(PrePaid), string(PostPaid)}),
+				ValidateFunc: validation.StringInSlice([]string{string(PrePaid), string(PostPaid)}, false),
 			},
 			"host_group": {
 				Type:     schema.TypeSet,
@@ -57,18 +59,18 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 						"host_group_type": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ValidateFunc: validateAllowedStringValue([]string{HOST_GROUP_TYPE_MASTER,
-								HOST_GROUP_TYPE_CORE, HOST_GROUP_TYPE_TASK, HOST_GROUP_TYPE_GATEWAY}),
+							ValidateFunc: validation.StringInSlice([]string{HOST_GROUP_TYPE_MASTER,
+								HOST_GROUP_TYPE_CORE, HOST_GROUP_TYPE_TASK, HOST_GROUP_TYPE_GATEWAY}, false),
 						},
 						"period": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+							ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 						},
 						"charge_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validateAllowedStringValue([]string{string(PrePaid), string(PostPaid)}),
+							ValidateFunc: validation.StringInSlice([]string{string(PrePaid), string(PostPaid)}, false),
 						},
 						"node_count": {
 							Type:     schema.TypeString,
@@ -79,10 +81,9 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 							Optional: true,
 						},
 						"disk_type": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ValidateFunc: validateAllowedStringValue([]string{string(DiskCloud), string(DiskCloudEfficiency),
-								string(DiskCloudSSD), string(DiskCloudESSD), string(DiskLocalDisk)}),
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_ssd", "cloud_essd", "local_disk"}, false),
 						},
 						"disk_capacity": {
 							Type:     schema.TypeString,
@@ -93,10 +94,9 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 							Optional: true,
 						},
 						"sys_disk_type": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ValidateFunc: validateAllowedStringValue([]string{string(DiskCloud), string(DiskCloudEfficiency),
-								string(DiskCloudSSD), string(DiskCloudESSD)}),
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_ssd", "cloud_essd"}, false),
 						},
 						"sys_disk_capacity": {
 							Type:     schema.TypeString,
@@ -188,7 +188,7 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{DEPOSIT_TYPE_FULLY_MANAGED, DEPOSIT_TYPE_HALF_MANAGED}),
+				ValidateFunc: validation.StringInSlice([]string{DEPOSIT_TYPE_FULLY_MANAGED, DEPOSIT_TYPE_HALF_MANAGED}, false),
 				Default:      "HALF_MANAGED",
 			},
 			"related_cluster_id": {

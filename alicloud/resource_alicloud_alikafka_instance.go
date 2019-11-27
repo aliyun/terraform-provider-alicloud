@@ -2,14 +2,16 @@ package alicloud
 
 import (
 	"errors"
+	"github.com/denverdino/aliyungo/common"
 	"strconv"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -28,7 +30,7 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validateAlikafkaInstanceNameLen,
+				ValidateFunc: validation.StringLenBetween(3, 64),
 			},
 			"topic_quota": {
 				Type:     schema.TypeInt,
@@ -55,7 +57,7 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 			"paid_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateAlikafkaPaidType,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				Default:      PostPaid,
 			},
 			"spec_type": {

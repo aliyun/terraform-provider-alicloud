@@ -8,8 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/mitchellh/go-homedir"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -50,7 +52,7 @@ func resourceAlicloudOssBucketObject() *schema.Resource {
 				Type:         schema.TypeString,
 				Default:      oss.ACLPrivate,
 				Optional:     true,
-				ValidateFunc: validateOssBucketAcl,
+				ValidateFunc: validation.StringInSlice([]string{"private", "public-read", "public-read-write"}, false),
 			},
 
 			"content_type": {
@@ -92,9 +94,9 @@ func resourceAlicloudOssBucketObject() *schema.Resource {
 			"server_side_encryption": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(ServerSideEncryptionKMS), string(ServerSideEncryptionAes256),
-				}),
+				}, false),
 				Default: ServerSideEncryptionAes256,
 			},
 

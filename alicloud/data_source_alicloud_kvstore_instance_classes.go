@@ -5,8 +5,9 @@ import (
 	"time"
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -33,38 +34,38 @@ func dataSourceAlicloudKVStoreInstanceClasses() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"standard", "cluster", "rwsplit"}),
+				ValidateFunc: validation.StringInSlice([]string{"standard", "cluster", "rwsplit"}, false),
 			},
 			"performance_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"standard_performance_type", "enhance_performance_type"}),
+				ValidateFunc: validation.StringInSlice([]string{"standard_performance_type", "enhance_performance_type"}, false),
 			},
 			"storage_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"inmemory", "hybrid"}),
+				ValidateFunc: validation.StringInSlice([]string{"inmemory", "hybrid"}, false),
 			},
 			"node_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"double", "single", "readone", "readthree", "readfive"}),
+				ValidateFunc: validation.StringInSlice([]string{"double", "single", "readone", "readthree", "readfive"}, false),
 			},
 			"package_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"standard", "customized"}),
+				ValidateFunc: validation.StringInSlice([]string{"standard", "customized"}, false),
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      PrePaid,
-				ValidateFunc: validateAllowedStringValue([]string{string(PostPaid), string(PrePaid)}),
+				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,

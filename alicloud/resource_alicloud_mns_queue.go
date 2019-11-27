@@ -2,7 +2,8 @@ package alicloud
 
 import (
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -21,37 +22,37 @@ func resourceAlicloudMNSQueue() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateStringLengthInRange(3, 256),
+				ValidateFunc: validation.StringLenBetween(3, 256),
 			},
 			"delay_seconds": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      0,
-				ValidateFunc: validateIntegerInRange(0, 604800),
+				ValidateFunc: validation.IntBetween(0, 604800),
 			},
 			"maximum_message_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      65536,
-				ValidateFunc: validateIntegerInRange(1024, 65536),
+				ValidateFunc: validation.IntBetween(1024, 65536),
 			},
 			"message_retention_period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      345600,
-				ValidateFunc: validateIntegerInRange(60, 604800),
+				ValidateFunc: validation.IntBetween(60, 604800),
 			},
 			"visibility_timeout": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      30,
-				ValidateFunc: validateIntegerInRange(1, 43200),
+				ValidateFunc: validation.IntBetween(1, 43200),
 			},
 			"polling_wait_seconds": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      0,
-				ValidateFunc: validateIntegerInRange(0, 1800),
+				ValidateFunc: validation.IntBetween(0, 1800),
 			},
 		},
 	}

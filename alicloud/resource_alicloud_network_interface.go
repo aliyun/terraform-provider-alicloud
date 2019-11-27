@@ -3,11 +3,13 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -64,7 +66,7 @@ func resourceAliyunNetworkInterface() *schema.Resource {
 				Type:          schema.TypeInt,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validateIntegerInRange(0, 10),
+				ValidateFunc:  validation.IntBetween(0, 10),
 				ConflictsWith: []string{"private_ips"},
 			},
 			"mac": {

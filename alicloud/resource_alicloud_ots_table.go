@@ -5,11 +5,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"strconv"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -49,8 +51,8 @@ func resourceAlicloudOtsTable() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 							ForceNew: true,
-							ValidateFunc: validateAllowedStringValue([]string{
-								string(IntegerType), string(BinaryType), string(StringType)}),
+							ValidateFunc: validation.StringInSlice([]string{
+								string(IntegerType), string(BinaryType), string(StringType)}, false),
 						},
 					},
 				},
@@ -60,12 +62,12 @@ func resourceAlicloudOtsTable() *schema.Resource {
 			"time_to_live": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validateIntegerInRange(-1, INT_MAX),
+				ValidateFunc: validation.IntBetween(-1, INT_MAX),
 			},
 			"max_version": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validateIntegerInRange(1, INT_MAX),
+				ValidateFunc: validation.IntBetween(1, INT_MAX),
 			},
 			"deviation_cell_version_in_sec": {
 				Type:         schema.TypeString,

@@ -2,8 +2,9 @@ package alicloud
 
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/hashicorp/terraform/helper/encryption"
-	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -29,7 +30,7 @@ func resourceAlicloudRamAccessKey() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      Active,
-				ValidateFunc: validateRamAKStatus,
+				ValidateFunc: validation.StringInSlice([]string{"Active", "Inactive"}, false),
 			},
 			"pgp_key": {
 				Type:     schema.TypeString,

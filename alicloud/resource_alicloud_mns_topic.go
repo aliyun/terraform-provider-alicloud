@@ -2,7 +2,8 @@ package alicloud
 
 import (
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -20,14 +21,14 @@ func resourceAlicloudMNSTopic() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateStringLengthInRange(3, 256),
+				ValidateFunc: validation.StringLenBetween(3, 256),
 			},
 
 			"maximum_message_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      65536,
-				ValidateFunc: validateIntegerInRange(1024, 65536),
+				ValidateFunc: validation.IntBetween(1024, 65536),
 			},
 
 			"logging_enabled": {

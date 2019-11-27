@@ -10,7 +10,7 @@ import (
 
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudCRRepo_Basic(t *testing.T) {

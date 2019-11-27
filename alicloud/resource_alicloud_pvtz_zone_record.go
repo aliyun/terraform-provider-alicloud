@@ -6,10 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -29,10 +31,9 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 				ForceNew: true,
 			},
 			"type": {
-				Type:     schema.TypeString,
-				Required: true,
-				ValidateFunc: validateAllowedStringValue([]string{string(RecordA), string(RecordCNAME),
-					string(RecordMX), string(RecordTXT), string(RecordPTR)}),
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"A", "CNAME", "MX", "TXT", "PTR"}, false),
 			},
 			"value": {
 				Type:     schema.TypeString,
@@ -47,7 +48,7 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
-				ValidateFunc: validateIntegerInRange(1, 50),
+				ValidateFunc: validation.IntBetween(1, 50),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("type").(string) != string(RecordMX)
 				},

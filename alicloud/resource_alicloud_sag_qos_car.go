@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -27,12 +28,12 @@ func resourceAlicloudSagQosCar() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceDescription,
+				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 			"priority": {
 				Type:     schema.TypeInt,
@@ -41,7 +42,7 @@ func resourceAlicloudSagQosCar() *schema.Resource {
 			"limit_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"Absolute", "Percent"}),
+				ValidateFunc: validation.StringInSlice([]string{"Absolute", "Percent"}, false),
 			},
 			"min_bandwidth_abs": {
 				Type:     schema.TypeInt,
@@ -62,7 +63,7 @@ func resourceAlicloudSagQosCar() *schema.Resource {
 			"percent_source_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"InternetUpBandwidth", "CcnBandwidth"}),
+				ValidateFunc: validation.StringInSlice([]string{"InternetUpBandwidth", "CcnBandwidth"}, false),
 				Default:      "InternetUpBandwidth",
 			},
 		},

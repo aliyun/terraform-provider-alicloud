@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform/helper/hashcode"
-	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -24,7 +25,7 @@ func resourceAlicloudCdnDomainConfig() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateDomainName,
+				ValidateFunc: validation.StringLenBetween(5, 67),
 			},
 			"function_name": {
 				Type:     schema.TypeString,

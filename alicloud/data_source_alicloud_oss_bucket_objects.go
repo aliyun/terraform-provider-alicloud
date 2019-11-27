@@ -9,7 +9,8 @@ import (
 	"net/http"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -31,7 +32,7 @@ func dataSourceAlicloudOssBucketObjects() *schema.Resource {
 			"key_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
 			},
 			"output_file": {

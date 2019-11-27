@@ -5,8 +5,9 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -25,7 +26,7 @@ func dataSourceAlicloudDBInstanceEngines() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      PostPaid,
-				ValidateFunc: validateAllowedStringValue([]string{string(PostPaid), string(PrePaid)}),
+				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
 			},
 			"engine": {
 				Type:     schema.TypeString,

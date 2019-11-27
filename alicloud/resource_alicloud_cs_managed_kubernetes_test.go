@@ -9,7 +9,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {

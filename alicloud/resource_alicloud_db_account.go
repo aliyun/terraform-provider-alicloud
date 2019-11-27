@@ -5,9 +5,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -55,7 +57,7 @@ func resourceAlicloudDBAccount() *schema.Resource {
 			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(DBAccountNormal), string(DBAccountSuper)}),
+				ValidateFunc: validation.StringInSlice([]string{"Normal", "Super"}, false),
 				ForceNew:     true,
 				Computed:     true,
 			},

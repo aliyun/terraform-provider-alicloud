@@ -3,10 +3,12 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -29,7 +31,7 @@ func resourceAliyunSslVpnServer() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 
 			"client_ip_pool": {
@@ -48,14 +50,14 @@ func resourceAliyunSslVpnServer() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      VPN_UDP_PROTO,
-				ValidateFunc: validateAllowedStringValue([]string{VPN_UDP_PROTO, VPN_TCP_PROTO}),
+				ValidateFunc: validation.StringInSlice([]string{VPN_UDP_PROTO, VPN_TCP_PROTO}, false),
 			},
 
 			"cipher": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      SSL_VPN_ENC_AES_128,
-				ValidateFunc: validateAllowedStringValue([]string{SSL_VPN_ENC_AES_128, SSL_VPN_ENC_AES_192, SSL_VPN_ENC_AES_256, SSL_VPN_ENC_NONE}),
+				ValidateFunc: validation.StringInSlice([]string{SSL_VPN_ENC_AES_128, SSL_VPN_ENC_AES_192, SSL_VPN_ENC_AES_256, SSL_VPN_ENC_NONE}, false),
 			},
 			"port": {
 				Type:         schema.TypeInt,

@@ -5,9 +5,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	sls "github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -67,11 +69,10 @@ func resourceAlicloudLogStoreIndex() *schema.Resource {
 							Required: true,
 						},
 						"type": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Default:  LongType,
-							ValidateFunc: validateAllowedStringValue([]string{string(TextType), string(LongType),
-								string(DoubleType), string(JsonType)}),
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      LongType,
+							ValidateFunc: validation.StringInSlice([]string{"text", "long", "double", "json"}, false),
 						},
 						"alias": {
 							Type:     schema.TypeString,

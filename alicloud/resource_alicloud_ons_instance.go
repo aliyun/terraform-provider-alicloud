@@ -3,10 +3,12 @@ package alicloud
 import (
 	"time"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -23,13 +25,13 @@ func resourceAlicloudOnsInstance() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateOnsInstanceName,
+				ValidateFunc: validation.StringLenBetween(3, 64),
 			},
 
 			"remark": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateOnsInstanceRemark,
+				ValidateFunc: validation.StringLenBetween(0, 128),
 			},
 
 			// Computed Values

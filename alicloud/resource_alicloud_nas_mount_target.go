@@ -3,8 +3,10 @@ package alicloud
 import (
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -37,7 +39,7 @@ func resourceAlicloudNasMountTarget() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"Active", "Inactive"}),
+				ValidateFunc: validation.StringInSlice([]string{"Active", "Inactive"}, false),
 			},
 		},
 	}

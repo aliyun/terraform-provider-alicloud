@@ -3,9 +3,11 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -44,29 +46,29 @@ func resourceAliyunSlbMasterSlaveServerGroup() *schema.Resource {
 						"port": {
 							Type:         schema.TypeInt,
 							Required:     true,
-							ValidateFunc: validateIntegerInRange(1, 65535),
+							ValidateFunc: validation.IntBetween(1, 65535),
 						},
 						"weight": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Default:      100,
-							ValidateFunc: validateIntegerInRange(0, 100),
+							ValidateFunc: validation.IntBetween(0, 100),
 						},
 						"type": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      string(ECS),
-							ValidateFunc: validateAllowedStringValue([]string{string(ENI), string(ECS)}),
+							ValidateFunc: validation.StringInSlice([]string{"eni", "ecs"}, false),
 						},
 						"server_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validateAllowedStringValue([]string{string("Master"), string("Slave")}),
+							ValidateFunc: validation.StringInSlice([]string{"Master", "Slave"}, false),
 						},
 						"is_backup": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: validateAllowedIntValue([]int{0, 1}),
+							ValidateFunc: validation.IntInSlice([]int{0, 1}),
 						},
 					},
 				},

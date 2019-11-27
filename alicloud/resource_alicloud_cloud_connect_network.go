@@ -3,7 +3,8 @@ package alicloud
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -21,12 +22,12 @@ func resourceAlicloudCloudConnectNetwork() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceDescription,
+				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 			"is_default": {
 				Type:     schema.TypeBool,

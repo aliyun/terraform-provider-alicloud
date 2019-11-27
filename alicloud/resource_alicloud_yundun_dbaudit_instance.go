@@ -3,11 +3,13 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -35,7 +37,7 @@ func resourceAlicloudDbauditInstance() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateStringLengthInRange(1, 64),
+				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
 			"plan_code": {
 				Type:     schema.TypeString,
@@ -43,7 +45,7 @@ func resourceAlicloudDbauditInstance() *schema.Resource {
 			},
 			"period": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validateAllowedIntValue([]int{1, 3, 6, 12, 24, 36}),
+				ValidateFunc: validation.IntInSlice([]int{1, 3, 6, 12, 24, 36}),
 				Optional:     true,
 				Default:      1,
 				ForceNew:     true,

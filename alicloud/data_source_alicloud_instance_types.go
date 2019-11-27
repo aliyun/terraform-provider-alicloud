@@ -1,12 +1,15 @@
 package alicloud
 
 import (
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/denverdino/aliyungo/common"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -24,7 +27,7 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateInstanceType,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
 			},
 			"cpu_core_count": {
 				Type:     schema.TypeInt,
@@ -37,24 +40,25 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				ForceNew: true,
 			},
 			"instance_charge_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Default:      PostPaid,
-				ValidateFunc: validateInstanceChargeType,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Default:  PostPaid,
+				// %q must contain a valid InstanceChargeType, expected common.PrePaid, common.PostPaid
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 			},
 			"network_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(Vpc), string(Classic)}),
+				ValidateFunc: validation.StringInSlice([]string{"Vpc", "Classic"}, false),
 			},
 			"spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      NoSpot,
-				ValidateFunc: validateInstanceSpotStrategy,
+				ValidateFunc: validation.StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 			},
 			"eni_amount": {
 				Type:     schema.TypeInt,
@@ -65,10 +69,10 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(KubernetesNodeMaster),
 					string(KubernetesNodeWorker),
-				}),
+				}, false),
 			},
 			"is_outdated": {
 				Type:     schema.TypeBool,

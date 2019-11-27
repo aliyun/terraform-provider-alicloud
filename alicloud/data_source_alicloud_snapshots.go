@@ -5,7 +5,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -42,33 +43,33 @@ func dataSourceAlicloudSnapshots() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"progressing", "accomplished", "failed", "all"}),
+				ValidateFunc: validation.StringInSlice([]string{"progressing", "accomplished", "failed", "all"}, false),
 				Default:      "all",
 			},
 			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"auto", "user", "all"}),
+				ValidateFunc: validation.StringInSlice([]string{"auto", "user", "all"}, false),
 				Default:      "all",
 			},
 			"source_disk_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"System", "Data"}),
+				ValidateFunc: validation.StringInSlice([]string{"System", "Data"}, false),
 			},
 			"usage": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"image", "disk", "image_disk", "none"}),
+				ValidateFunc: validation.StringInSlice([]string{"image", "disk", "image_disk", "none"}, false),
 			},
 			"names": {
 				Type:     schema.TypeList,

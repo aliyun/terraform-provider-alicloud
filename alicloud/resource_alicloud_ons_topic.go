@@ -3,10 +3,12 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -30,23 +32,23 @@ func resourceAlicloudOnsTopic() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateOnsTopic,
+				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
 			"message_type": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateOnsTopicMessageType,
+				ValidateFunc: validation.IntInSlice([]int{0, 1, 2, 4, 5}),
 			},
 			"remark": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateOnsTopicRemark,
+				ValidateFunc: validation.StringLenBetween(1, 128),
 			},
 			"perm": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateOnsTopicPerm,
+				ValidateFunc: validation.IntInSlice([]int{2, 4, 6}),
 			},
 		},
 	}

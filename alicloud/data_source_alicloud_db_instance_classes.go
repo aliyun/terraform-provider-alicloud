@@ -5,10 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -37,7 +38,7 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      PostPaid,
-				ValidateFunc: validateAllowedStringValue([]string{string(PostPaid), string(PrePaid)}),
+				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
 			},
 			"db_instance_class": {
 				Type:     schema.TypeString,
@@ -50,7 +51,7 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 			"storage_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"cloud_ssd", "local_ssd"}),
+				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "local_ssd"}, false),
 			},
 			"multi_zone": {
 				Type:     schema.TypeBool,
