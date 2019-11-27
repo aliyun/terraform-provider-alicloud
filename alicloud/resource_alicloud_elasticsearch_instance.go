@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"encoding/json"
-	"github.com/denverdino/aliyungo/common"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/denverdino/aliyungo/common"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 

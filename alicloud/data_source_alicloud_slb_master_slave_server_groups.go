@@ -78,6 +78,7 @@ func dataSourceAlicloudSlbMasterSlaveServerGroups() *schema.Resource {
 									"is_backup": {
 										Type:     schema.TypeInt,
 										Computed: true,
+										Removed:  "Field 'is_backup' has been removed from provider version 1.63.0.",
 									},
 								},
 							},
@@ -167,7 +168,6 @@ func slbMasterSlaveServerGroupsDescriptionAttributes(d *schema.ResourceData, ser
 					"instance_id": backendServer.ServerId,
 					"weight":      backendServer.Weight,
 					"server_type": backendServer.ServerType,
-					"is_backup":   backendServer.IsBackup,
 				}
 				backendServerMappings = append(backendServerMappings, backendServerMapping)
 			}

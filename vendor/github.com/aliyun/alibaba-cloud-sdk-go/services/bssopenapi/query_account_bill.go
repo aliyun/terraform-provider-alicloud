@@ -76,10 +76,12 @@ func (client *Client) QueryAccountBillWithCallback(request *QueryAccountBillRequ
 // QueryAccountBillRequest is the request struct for api QueryAccountBill
 type QueryAccountBillRequest struct {
 	*requests.RpcRequest
-	BillingCycle string           `position:"Query" name:"BillingCycle"`
-	PageNum      requests.Integer `position:"Query" name:"PageNum"`
-	OwnerID      requests.Integer `position:"Query" name:"OwnerID"`
-	PageSize     requests.Integer `position:"Query" name:"PageSize"`
+	ProductCode      string           `position:"Query" name:"ProductCode"`
+	BillingCycle     string           `position:"Query" name:"BillingCycle"`
+	PageNum          requests.Integer `position:"Query" name:"PageNum"`
+	OwnerID          requests.Integer `position:"Query" name:"OwnerID"`
+	IsGroupByProduct requests.Boolean `position:"Query" name:"IsGroupByProduct"`
+	PageSize         requests.Integer `position:"Query" name:"PageSize"`
 }
 
 // QueryAccountBillResponse is the response struct for api QueryAccountBill

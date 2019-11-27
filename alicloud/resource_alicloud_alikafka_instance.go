@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"errors"
-	"github.com/denverdino/aliyungo/common"
 	"strconv"
 	"time"
+
+	"github.com/denverdino/aliyungo/common"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 

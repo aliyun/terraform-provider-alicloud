@@ -79,17 +79,17 @@ type DescribeAccountsRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	AccountName          string           `position:"Query" name:"AccountName"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
+	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 }
 
 // DescribeAccountsResponse is the response struct for api DescribeAccounts
 type DescribeAccountsResponse struct {
 	*responses.BaseResponse
-	RequestId string                     `json:"RequestId" xml:"RequestId"`
-	Accounts  AccountsInDescribeAccounts `json:"Accounts" xml:"Accounts"`
+	RequestId string   `json:"RequestId" xml:"RequestId"`
+	Accounts  Accounts `json:"Accounts" xml:"Accounts"`
 }
 
 // CreateDescribeAccountsRequest creates a request to invoke DescribeAccounts API
