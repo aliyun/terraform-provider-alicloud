@@ -3,8 +3,10 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -27,7 +29,7 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateStringLengthInRange(1, 129),
+				ValidateFunc: validation.StringLenBetween(1, 129),
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -42,7 +44,7 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(PostPaid), string(PrePaid)}),
+				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
 				ForceNew:     true,
 				Default:      PostPaid,
 			},
@@ -54,7 +56,7 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 			"instance_series": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(drds4c8g), string(drds8c16g), string(drds16c32g), string(drds32c64g)}),
+				ValidateFunc: validation.StringInSlice([]string{"drds.sn1.4c8g", "drds.sn1.8c16g", "drds.sn1.16c32g", "drds.sn1.32c64g"}, false),
 				ForceNew:     true,
 			},
 		},

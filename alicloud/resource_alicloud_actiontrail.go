@@ -3,9 +3,11 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -28,7 +30,7 @@ func resourceAlicloudActiontrail() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      EventWrite,
-				ValidateFunc: validateActiontrailEventrw,
+				ValidateFunc: validation.StringInSlice([]string{"Read", "Write", "All"}, false),
 			},
 			"oss_bucket_name": {
 				Type:     schema.TypeString,

@@ -2,17 +2,20 @@ package alicloud
 
 import (
 	"encoding/json"
+	"github.com/denverdino/aliyungo/common"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 
 	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform/helper/hashcode"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -36,7 +39,7 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateRKVInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 			"password": {
 				Type:      schema.TypeString,
@@ -68,13 +71,13 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: validateInstanceChargeType,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				Optional:     true,
 				Default:      PostPaid,
 			},
 			"period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
@@ -87,7 +90,7 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 			},
 			"auto_renew_period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateIntegerInRange(1, 12),
+				ValidateFunc:     validation.IntBetween(1, 12),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
@@ -97,10 +100,10 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Default:  string(KVStoreRedis),
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(KVStoreMemcache),
 					string(KVStoreRedis),
-				}),
+				}, false),
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -138,7 +141,7 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"Open", "Close"}),
+				ValidateFunc: validation.StringInSlice([]string{"Open", "Close"}, false),
 			},
 
 			"parameters": {

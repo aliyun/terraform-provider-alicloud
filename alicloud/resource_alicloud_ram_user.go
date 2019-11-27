@@ -2,7 +2,8 @@ package alicloud
 
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -41,7 +42,7 @@ func resourceAlicloudRamUser() *schema.Resource {
 			"comments": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateComment,
+				ValidateFunc: validation.StringLenBetween(0, 128),
 			},
 		},
 	}

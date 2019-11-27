@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform/helper/hashcode"
 
@@ -12,8 +14,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -68,20 +70,20 @@ func resourceAlicloudDBInstance() *schema.Resource {
 
 			"instance_charge_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{string(Postpaid), string(Prepaid)}),
+				ValidateFunc: validation.StringInSlice([]string{string(Postpaid), string(Prepaid)}, false),
 				Optional:     true,
 				Default:      Postpaid,
 			},
 			"period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
 			},
 			"monitoring_period": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validateAllowedIntValue([]int{5, 60, 300}),
+				ValidateFunc: validation.IntInSlice([]int{5, 60, 300}),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -93,7 +95,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 			"auto_renew_period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateIntegerInRange(1, 12),
+				ValidateFunc:     validation.IntBetween(1, 12),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rdsPostPaidAndRenewDiffSuppressFunc,
@@ -119,7 +121,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateDBInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 
 			"connection_string": {
@@ -198,7 +200,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 			"security_ip_mode": {
 				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{NormalMode, SafetyMode}),
+				ValidateFunc: validation.StringInSlice([]string{NormalMode, SafetyMode}, false),
 				Optional:     true,
 				Default:      NormalMode,
 			},
@@ -306,7 +308,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"Auto", "Manual"}),
+				ValidateFunc: validation.StringInSlice([]string{"Auto", "Manual"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("engine").(string) != "MySQL"
 				},

@@ -4,7 +4,8 @@ import (
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -21,7 +22,7 @@ func dataSourceAlicloudOnsGroups() *schema.Resource {
 			"group_id_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
 			},
 			"output_file": {

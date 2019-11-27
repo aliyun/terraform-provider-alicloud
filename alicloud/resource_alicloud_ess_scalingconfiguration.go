@@ -3,14 +3,17 @@ package alicloud
 import (
 	"encoding/base64"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -46,7 +49,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"instance_type": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				ValidateFunc:  validateInstanceType,
+				ValidateFunc:  validation.StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
 				ConflictsWith: []string{"instance_types"},
 			},
 			"instance_types": {
@@ -90,7 +93,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      PayByBandwidth,
-				ValidateFunc: validateInternetChargeType,
+				ValidateFunc: validation.StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
 			},
 			"internet_max_bandwidth_in": {
 				Type:     schema.TypeInt,
@@ -100,18 +103,18 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"internet_max_bandwidth_out": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateInternetMaxBandWidthOut,
+				ValidateFunc: validation.IntBetween(0, 100),
 			},
 			"system_disk_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      DiskCloudEfficiency,
-				ValidateFunc: validateAllowedStringValue([]string{string(DiskCloud), string(DiskEphemeralSSD), string(DiskCloudSSD), string(DiskCloudESSD), string(DiskCloudEfficiency)}),
+				ValidateFunc: validation.StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_ssd", "cloud_essd", "cloud_efficiency"}, false),
 			},
 			"system_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateIntegerInRange(20, 500),
+				ValidateFunc: validation.IntBetween(20, 500),
 			},
 			"data_disk": {
 				Optional: true,
@@ -125,7 +128,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 						"category": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validateDiskCategory,
+							ValidateFunc: validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
 						},
 						"snapshot_id": {
 							Type:     schema.TypeString,
@@ -190,7 +193,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "ESS-Instance",
-				ValidateFunc: validateInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 
 			"override": {

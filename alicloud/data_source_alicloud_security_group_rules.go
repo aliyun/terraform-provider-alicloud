@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -19,24 +20,32 @@ func dataSourceAlicloudSecurityGroupRules() *schema.Resource {
 				Required: true,
 			},
 			"nic_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validateSecurityRuleNicType,
+				Type:     schema.TypeString,
+				Optional: true,
+				// must be one of GroupRuleInternet, GroupRuleIntranet
+				ValidateFunc: validation.StringInSlice([]string{"internet", "intranet"}, false),
 			},
 			"direction": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateSecurityRuleType,
+				ValidateFunc: validation.StringInSlice([]string{"ingress", "egress"}, false),
 			},
 			"ip_protocol": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validateSecurityRuleIpProtocol,
+				Type:     schema.TypeString,
+				Optional: true,
+				// must be one of Tcp, Udp, Icmp, Gre, All
+				ValidateFunc: validation.StringInSlice([]string{
+					string(Tcp),
+					string(Udp),
+					string(Icmp),
+					string(Gre),
+					string(All),
+				}, false),
 			},
 			"policy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateSecurityRulePolicy,
+				ValidateFunc: validation.StringInSlice([]string{"accept", "drop"}, false),
 			},
 			"rules": {
 				Type:     schema.TypeList,

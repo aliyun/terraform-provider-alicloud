@@ -2,13 +2,16 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/denverdino/aliyungo/cdn"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -23,24 +26,25 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 			"domain_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateDomainName,
+				ValidateFunc: validation.StringLenBetween(5, 67),
 			},
 			"cdn_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateCdnType,
+				ValidateFunc: validation.StringInSlice([]string{cdn.Web, cdn.Download /*cdn.video,*/, cdn.LiveStream}, false),
 			},
 			"source_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateCdnSourceType,
+				ValidateFunc: validation.StringInSlice([]string{cdn.Ipaddr, cdn.Domain, cdn.OSS}, false),
 				Deprecated:   "Use `alicloud_cdn_domain_new` configuration `sources` block `type` argument instead.",
 			},
 			"source_port": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Default:      80,
-				ValidateFunc: validateCdnSourcePort,
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  80,
+				// must be one 80 or 443.
+				ValidateFunc: validation.IntInSlice([]int{80, 443}),
 				Deprecated:   "Use `alicloud_cdn_domain_new` configuration `sources` block `port` argument instead.",
 			},
 			"sources": {
@@ -53,35 +57,37 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				Deprecated: "Use `alicloud_cdn_domain_new` configuration `sources` argument instead.",
 			},
 			"scope": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validateCdnScope,
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				// Domestic, Overseas, Global
+				ValidateFunc: validation.StringInSlice([]string{cdn.Domestic, cdn.Overseas, cdn.Global}, false),
 			},
 
 			// configs
 			"optimize_enable": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validateCdnEnable,
+				Type:     schema.TypeString,
+				Optional: true,
+				// must be 'on' or 'off'
+				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 				Deprecated:   "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 			"page_compress_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateCdnEnable,
+				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 				Deprecated:   "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 			"range_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateCdnEnable,
+				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 				Deprecated:   "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 			"video_seek_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateCdnEnable,
+				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 				Deprecated:   "Use `alicloud_cdn_domain_config` configuration `function_name` and `function_args` arguments instead.",
 			},
 			"block_ips": {
@@ -102,7 +108,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "off",
-							ValidateFunc: validateCdnEnable,
+							ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 						},
 						"hash_key_args": {
 							Type:     schema.TypeList,
@@ -110,7 +116,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 							Computed: true,
 							Elem: &schema.Schema{
 								Type:         schema.TypeString,
-								ValidateFunc: validateCdnHashKeyArg,
+								ValidateFunc: validation.StringDoesNotContainAny(",."),
 							},
 							MaxItems: 10,
 						},
@@ -129,7 +135,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "default",
-							ValidateFunc: validateCdnPage404Type,
+							ValidateFunc: validation.StringInSlice([]string{"default", "charity", "other"}, false),
 						},
 						"custom_page_url": {
 							Type:     schema.TypeString,
@@ -154,7 +160,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "block",
-							ValidateFunc: validateCdnReferType,
+							ValidateFunc: validation.StringInSlice([]string{"block", "allow"}, false),
 						},
 						"refer_list": {
 							Type:     schema.TypeList,
@@ -167,7 +173,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "on",
-							ValidateFunc: validateCdnEnable,
+							ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 						},
 					},
 				},
@@ -189,7 +195,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 							Type:         schema.TypeString,
 							Default:      "on",
 							Optional:     true,
-							ValidateFunc: validateCdnEnable,
+							ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 						},
 						"private_key": {
 							Type:      schema.TypeString,
@@ -208,22 +214,24 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"auth_type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							Default:      "no_auth",
-							ValidateFunc: validateCdnAuthType,
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "no_auth",
+							// must be one of ['no_auth', 'type_a', 'type_b', 'type_c']"
+							ValidateFunc: validation.StringInSlice([]string{"no_auth", "type_a", "type_b", "type_c"}, false),
 						},
 						"master_key": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							Computed:     true,
-							ValidateFunc: validateCdnAuthKey,
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							// can only consists of alphanumeric characters and can not be longer than 32 or less than 6 characters.
+							ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z0-9]{6,32}$`), "can only consists of alphanumeric characters and can not be longer than 32 or less than 6 characters."),
 						},
 						"slave_key": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: validateCdnAuthKey,
+							ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z0-9]{6,32}$`), "can only consists of alphanumeric characters and can not be longer than 32 or less than 6 characters."),
 						},
 						"timeout": {
 							Type:     schema.TypeInt,
@@ -244,7 +252,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 						"header_key": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validateCdnHttpHeader,
+							ValidateFunc: validation.StringInSlice([]string{cdn.ContentType, cdn.CacheControl, cdn.ContentDisposition, cdn.ContentLanguage, cdn.Expires, cdn.AccessControlAllowMethods, cdn.AccessControlAllowOrigin, cdn.AccessControlMaxAge}, false),
 						},
 						"header_value": {
 							Type:     schema.TypeString,
@@ -276,13 +284,13 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 						"cache_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validateCacheType,
+							ValidateFunc: validation.StringInSlice([]string{"suffix", "path"}, false),
 						},
 						"weight": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Default:      1,
-							ValidateFunc: validateIntegerInRange(1, 99),
+							ValidateFunc: validation.IntBetween(1, 99),
 						},
 						"cache_id": {
 							Type:     schema.TypeString,

@@ -8,7 +8,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -21,7 +22,7 @@ func dataSourceAlicloudImages() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 			"most_recent": {
 				Type:     schema.TypeBool,
@@ -30,10 +31,11 @@ func dataSourceAlicloudImages() *schema.Resource {
 				ForceNew: true,
 			},
 			"owners": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateImageOwners,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				// must contain a valid Image owner, expected ImageOwnerSystem, ImageOwnerSelf, ImageOwnerOthers, ImageOwnerMarketplace, ImageOwnerDefault
+				ValidateFunc: validation.StringInSlice([]string{"system", "self", "others", "marketplace", ""}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,

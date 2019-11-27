@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	sls "github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -32,13 +34,10 @@ func resourceAlicloudLogMachineGroup() *schema.Resource {
 				ForceNew: true,
 			},
 			"identify_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  sls.MachineIDTypeIP,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(sls.MachineIDTypeIP),
-					string(sls.MachineIDTypeUserDefined),
-				}),
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      sls.MachineIDTypeIP,
+				ValidateFunc: validation.StringInSlice([]string{sls.MachineIDTypeIP, sls.MachineIDTypeUserDefined}, false),
 			},
 			"topic": {
 				Type:     schema.TypeString,

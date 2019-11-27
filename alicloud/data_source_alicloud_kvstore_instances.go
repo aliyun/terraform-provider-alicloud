@@ -5,7 +5,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -17,25 +18,25 @@ func dataSourceAlicloudKVStoreInstances() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 			"status": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(Normal),
 					string(Creating),
 					string(Changing),
 					string(Inactive),
-				}),
+				}, false),
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					"Memcache",
 					"Redis",
-				}),
+				}, false),
 			},
 			"instance_class": {
 				Type:     schema.TypeString,

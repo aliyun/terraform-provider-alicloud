@@ -5,12 +5,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -33,7 +35,7 @@ func resourceAliyunSlbRule() *schema.Resource {
 
 			"frontend_port": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validateIntegerInRange(1, 65535),
+				ValidateFunc: validation.IntBetween(1, 65535),
 				Required:     true,
 				ForceNew:     true,
 			},
@@ -46,13 +48,13 @@ func resourceAliyunSlbRule() *schema.Resource {
 
 			"listener_sync": {
 				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 				Optional:     true,
 				Default:      string(OnFlag),
 			},
 			"scheduler": {
 				Type:             schema.TypeString,
-				ValidateFunc:     validateSlbListenerScheduler,
+				ValidateFunc:     validation.StringInSlice([]string{"wrr", "wlc", "rr"}, false),
 				Optional:         true,
 				Default:          WRRScheduler,
 				DiffSuppressFunc: slbRuleListenerSyncDiffSuppressFunc,
@@ -73,19 +75,19 @@ func resourceAliyunSlbRule() *schema.Resource {
 			},
 			"cookie": {
 				Type:             schema.TypeString,
-				ValidateFunc:     validateSlbListenerCookie,
+				ValidateFunc:     validation.StringLenBetween(1, 200),
 				Optional:         true,
 				DiffSuppressFunc: slbRuleCookieDiffSuppressFunc,
 			},
 			"cookie_timeout": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateSlbListenerCookieTimeout,
+				ValidateFunc:     validation.IntBetween(1, 86400),
 				Optional:         true,
 				DiffSuppressFunc: slbRuleCookieTimeoutDiffSuppressFunc,
 			},
 			"health_check": {
 				Type:             schema.TypeString,
-				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				ValidateFunc:     validation.StringInSlice([]string{"on", "off"}, false),
 				Optional:         true,
 				Default:          OnFlag,
 				DiffSuppressFunc: slbRuleListenerSyncDiffSuppressFunc,
@@ -100,48 +102,50 @@ func resourceAliyunSlbRule() *schema.Resource {
 			},
 			"health_check_interval": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateIntegerInRange(1, 50),
+				ValidateFunc:     validation.IntBetween(1, 50),
 				Optional:         true,
 				Default:          2,
 				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
 			},
 			"health_check_domain": {
 				Type:             schema.TypeString,
-				ValidateFunc:     validateSlbListenerHealthCheckDomain,
+				ValidateFunc:     validation.StringLenBetween(1, 80),
 				Optional:         true,
 				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
 			},
 			"health_check_uri": {
 				Type:             schema.TypeString,
-				ValidateFunc:     validateSlbListenerHealthCheckUri,
+				ValidateFunc:     validation.StringLenBetween(1, 80),
 				Optional:         true,
 				Default:          "/",
 				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
 			},
 			"health_check_connect_port": {
-				Type:             schema.TypeInt,
-				ValidateFunc:     validateSlbListenerHealthCheckConnectPort,
+				Type: schema.TypeInt,
+				ValidateFunc: validation.Any(
+					validation.IntBetween(1, 65535),
+					validation.IntInSlice([]int{-520})),
 				Optional:         true,
 				Computed:         true,
 				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
 			},
 			"health_check_timeout": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateIntegerInRange(1, 300),
+				ValidateFunc:     validation.IntBetween(1, 300),
 				Optional:         true,
 				Default:          5,
 				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
 			},
 			"healthy_threshold": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateIntegerInRange(1, 10),
+				ValidateFunc:     validation.IntBetween(1, 10),
 				Optional:         true,
 				Default:          3,
 				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
 			},
 			"unhealthy_threshold": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateIntegerInRange(1, 10),
+				ValidateFunc:     validation.IntBetween(1, 10),
 				Optional:         true,
 				Default:          3,
 				DiffSuppressFunc: slbRuleHealthCheckDiffSuppressFunc,
@@ -149,7 +153,7 @@ func resourceAliyunSlbRule() *schema.Resource {
 			//http & https
 			"sticky_session": {
 				Type:             schema.TypeString,
-				ValidateFunc:     validateAllowedStringValue([]string{string(OnFlag), string(OffFlag)}),
+				ValidateFunc:     validation.StringInSlice([]string{"on", "off"}, false),
 				Optional:         true,
 				Default:          OffFlag,
 				DiffSuppressFunc: slbRuleListenerSyncDiffSuppressFunc,
@@ -157,9 +161,9 @@ func resourceAliyunSlbRule() *schema.Resource {
 			//http & https
 			"sticky_session_type": {
 				Type: schema.TypeString,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(InsertStickySessionType),
-					string(ServerStickySessionType)}),
+					string(ServerStickySessionType)}, false),
 				Optional:         true,
 				DiffSuppressFunc: slbRuleStickySessionTypeDiffSuppressFunc,
 			},

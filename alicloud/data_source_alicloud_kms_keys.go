@@ -5,7 +5,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -26,14 +27,19 @@ func dataSourceAlicloudKmsKeys() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 
 			"status": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validateKmsKeyStatus,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				// must contain a valid status, expected Enabled, Disabled, PendingDeletion
+				ValidateFunc: validation.StringInSlice([]string{
+					string(Enabled),
+					string(Disabled),
+					string(PendingDeletion),
+				}, false),
 			},
 
 			"output_file": {

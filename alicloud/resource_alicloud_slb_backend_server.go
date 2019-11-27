@@ -3,9 +3,11 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -38,13 +40,13 @@ func resourceAliyunSlbBackendServer() *schema.Resource {
 						"weight": {
 							Type:         schema.TypeInt,
 							Required:     true,
-							ValidateFunc: validateIntegerInRange(0, 100),
+							ValidateFunc: validation.IntBetween(0, 100),
 						},
 						"type": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      string(ECS),
-							ValidateFunc: validateAllowedStringValue([]string{string(ENI), string(ECS)}),
+							ValidateFunc: validation.StringInSlice([]string{"eni", "ecs"}, false),
 						},
 					},
 				},

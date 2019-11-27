@@ -3,8 +3,10 @@ package alicloud
 import (
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -25,7 +27,7 @@ func resourceAlicloudKVStoreBackupPolicy() *schema.Resource {
 			},
 			"backup_time": {
 				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue(BACKUP_TIME),
+				ValidateFunc: validation.StringInSlice(BACKUP_TIME, false),
 				Optional:     true,
 				Default:      "02:00Z-03:00Z",
 			},

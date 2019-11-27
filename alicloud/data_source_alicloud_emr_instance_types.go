@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/emr"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -17,13 +18,13 @@ func dataSourceAlicloudEmrInstanceTypes() *schema.Resource {
 			"destination_resource": {
 				Type:     schema.TypeString,
 				Required: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					"Zone",
 					"Network",
 					"InstanceType",
 					"SystemDisk",
 					"DataDisk",
-				}),
+				}, false),
 			},
 			"cluster_type": {
 				Type:     schema.TypeString,
@@ -37,10 +38,10 @@ func dataSourceAlicloudEmrInstanceTypes() *schema.Resource {
 			"instance_charge_type": {
 				Type:     schema.TypeString,
 				Required: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					"PostPaid",
 					"PrePaid",
-				}),
+				}, false),
 			},
 			"support_node_type": {
 				Type:     schema.TypeList,

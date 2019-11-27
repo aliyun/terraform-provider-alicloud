@@ -6,9 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	sls "github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -30,12 +32,9 @@ func resourceAlicloudLogtailConfig() *schema.Resource {
 			},
 
 			"input_type": {
-				Type:     schema.TypeString,
-				Required: true,
-				ValidateFunc: validateAllowedStringValue([]string{
-					"file",
-					"plugin",
-				}),
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"file", "plugin"}, false),
 			},
 			"log_sample": {
 				Type:     schema.TypeString,
@@ -63,7 +62,7 @@ func resourceAlicloudLogtailConfig() *schema.Resource {
 					yaml, _ := normalizeJsonString(v)
 					return yaml
 				},
-				ValidateFunc: validateJsonString,
+				ValidateFunc: validation.ValidateJsonString,
 			},
 		},
 	}

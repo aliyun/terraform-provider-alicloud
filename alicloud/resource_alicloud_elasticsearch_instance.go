@@ -2,13 +2,15 @@ package alicloud
 
 import (
 	"encoding/json"
-	"fmt"
+	"github.com/denverdino/aliyungo/common"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -29,17 +31,9 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			// Basic instance information
 			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
-					value := v.(string)
-
-					if reg := regexp.MustCompile(`^[\w\-.]{0,30}$`); !reg.MatchString(value) {
-						errors = append(errors, fmt.Errorf("%q be 0 to 30 characters in length and can contain numbers, letters, underscores, (_) and hyphens (-). It must start with a letter, a number or Chinese character.", k))
-					}
-
-					return
-				},
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[\w\-.]{0,30}$`), "be 0 to 30 characters in length and can contain numbers, letters, underscores, (_) and hyphens (-). It must start with a letter, a number or Chinese character."),
 			},
 
 			"vswitch_id": {
@@ -76,7 +70,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			// Life cycle
 			"instance_charge_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: validateInstanceChargeType,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				ForceNew:     true,
 				Default:      PostPaid,
 				Optional:     true,
@@ -84,7 +78,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 
 			"period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
@@ -94,7 +88,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"data_node_amount": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validateIntegerInRange(2, 50),
+				ValidateFunc: validation.IntBetween(2, 50),
 			},
 
 			"data_node_spec": {
@@ -167,7 +161,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"zone_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateIntegerInRange(1, 3),
+				ValidateFunc: validation.IntBetween(1, 3),
 				Default:      1,
 			},
 		},

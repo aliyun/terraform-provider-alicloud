@@ -5,10 +5,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -25,7 +27,7 @@ func resourceAlicloudKeyPairAttachment() *schema.Resource {
 			"key_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateKeyPairName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 				ForceNew:     true,
 			},
 			"instance_ids": {

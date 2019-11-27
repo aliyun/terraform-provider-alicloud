@@ -45,7 +45,7 @@ import (
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"fmt"
 	"log"
@@ -138,7 +138,7 @@ const Module = "Terraform-Module"
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
 var providerVersion = "1.62.2"
-var terraformVersion = strings.TrimSuffix(terraform.VersionString(), "-dev")
+var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient
 func (c *Config) Client() (*AliyunClient, error) {

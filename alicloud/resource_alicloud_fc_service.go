@@ -1,15 +1,16 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func resourceAlicloudFCService() *schema.Resource {
@@ -29,21 +30,13 @@ func resourceAlicloudFCService() *schema.Resource {
 				Computed:      true,
 				ForceNew:      true,
 				ConflictsWith: []string{"name_prefix"},
-				ValidateFunc:  validateStringLengthInRange(1, 128),
+				ValidateFunc:  validation.StringLenBetween(1, 128),
 			},
 			"name_prefix": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
-					// uuid is 26 characters, limit the prefix to 229.
-					value := v.(string)
-					if len(value) > 122 {
-						errors = append(errors, fmt.Errorf(
-							"%q cannot be longer than 102 characters, name is limited to 128", k))
-					}
-					return
-				},
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringLenBetween(0, 122),
 			},
 
 			"description": {

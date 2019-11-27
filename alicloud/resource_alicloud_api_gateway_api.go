@@ -8,7 +8,8 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAliyunApigatewayApi() *schema.Resource {
@@ -76,7 +77,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 			"service_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"MOCK", "HTTP-VPC", "FunctionCompute", "HTTP"}),
+				ValidateFunc: validation.StringInSlice([]string{"MOCK", "HTTP-VPC", "FunctionCompute", "HTTP"}, false),
 			},
 
 			"http_service_config": {
@@ -278,7 +279,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				Type: schema.TypeSet,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: validateAllowedStringValue([]string{string(StageNamePre), string(StageNameRelease), string(StageNameTest)}),
+					ValidateFunc: validation.StringInSlice([]string{"PRE", "RELEASE", "TEST"}, false),
 				},
 				Optional: true,
 			},

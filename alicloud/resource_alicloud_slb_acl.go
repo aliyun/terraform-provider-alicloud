@@ -3,8 +3,10 @@ package alicloud
 import (
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -28,7 +30,7 @@ func resourceAlicloudSlbAcl() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      IPVersion4,
-				ValidateFunc: validateAllowedStringValue([]string{string(IPVersion4), string(IPVersion6)}),
+				ValidateFunc: validation.StringInSlice([]string{"ipv4", "ipv6"}, false),
 			},
 			"entry_list": {
 				Type:     schema.TypeSet,

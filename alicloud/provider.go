@@ -11,14 +11,16 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/mutexkv"
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/mitchellh/go-homedir"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -108,7 +110,7 @@ func Provider() terraform.ResourceProvider {
 				Optional:     true,
 				Default:      "",
 				Description:  descriptions["configuration_source"],
-				ValidateFunc: validateStringLengthInRange(0, 64),
+				ValidateFunc: validation.StringLenBetween(0, 64),
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{

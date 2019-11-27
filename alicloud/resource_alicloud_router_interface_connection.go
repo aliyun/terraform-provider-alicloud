@@ -3,10 +3,12 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -33,8 +35,8 @@ func resourceAlicloudRouterInterfaceConnection() *schema.Resource {
 			"opposite_router_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(VRouter), string(VBR)}),
+				ValidateFunc: validation.StringInSlice([]string{
+					string(VRouter), string(VBR)}, false),
 				Default:  VRouter,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
