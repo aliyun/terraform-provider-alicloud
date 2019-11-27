@@ -1008,6 +1008,387 @@ data "alicloud_zones" "default" {
 }`, name)
 }
 
+func TestAccAlicloudDBInstancePrePaid(t *testing.T) {
+	var instance *rds.DBInstanceAttribute
+	var ips []map[string]interface{}
+
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "tf-testAccDBInstancePrePaid"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstancePrePaidConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVswitch(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":               "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}",
+					"engine_version":       "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
+					"instance_type":        "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":     "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
+					"instance_charge_type": "Prepaid",
+					"instance_name":        "${var.name}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
+					"monitoring_period":    "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                     "MySQL",
+						"engine_version":             "5.6",
+						"instance_type":              CHECKSET,
+						"instance_storage":           CHECKSET,
+						"auto_upgrade_minor_version": "Auto",
+						"instance_charge_type":       "Prepaid",
+						"instance_name":              "tf-testAccDBInstancePrePaid",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"period", "auto_renew", "auto_renew_period"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_time": "22:00Z-02:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_time": "22:00Z-02:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_upgrade_minor_version": "Auto",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_upgrade_minor_version": "Auto",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_storage": "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_storage": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": "tf-testAccDBInstance_prepaid_name",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": "tf-testAccDBInstance_prepaid_name",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"monitoring_period": "300",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"monitoring_period": "300",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": []string{"10.168.1.12", "100.69.7.112"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.ComposeTestCheckFunc(testAccCheckSecurityIpExists("alicloud_db_instance.default", ips)),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_id": "${alicloud_security_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"created": "tf",
+						"for":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.created": "tf",
+						"tags.for":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       REMOVEKEY,
+						"tags.created": REMOVEKEY,
+						"tags.for":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew":        "true",
+						"auto_renew_period": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew_period": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew":        "true",
+						"auto_renew_period": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                     "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}",
+					"engine_version":             "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
+					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
+					"instance_name":              "tf-testAccDBInstancePrePaid",
+					"monitoring_period":          "60",
+					"instance_charge_type":       "Prepaid",
+					"security_group_id":          REMOVEKEY,
+					"auto_upgrade_minor_version": "Manual",
+					"auto_renew":                 "false",
+					"auto_renew_period":          "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                     "MySQL",
+						"engine_version":             "5.6",
+						"instance_type":              CHECKSET,
+						"instance_storage":           "15",
+						"instance_name":              "tf-testAccDBInstancePrePaid",
+						"monitoring_period":          "60",
+						"zone_id":                    CHECKSET,
+						"instance_charge_type":       "Prepaid",
+						"connection_string":          CHECKSET,
+						"port":                       CHECKSET,
+						"security_group_id":          REMOVEKEY,
+						"auto_upgrade_minor_version": "Manual",
+						"auto_renew":                 "false",
+						"auto_renew_period":          "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_mode": SafetyMode,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ip_mode": SafetyMode,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceDBInstancePrePaidConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_vswitches" "default" {
+  is_default = true
+}
+data "alicloud_db_instance_engines" "default" {
+  instance_charge_type = "PrePaid"
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  zone_id              = data.alicloud_vswitches.default.vswitches.0.zone_id
+}
+
+data "alicloud_db_instance_classes" "default" {
+  instance_charge_type = "PrePaid"
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  zone_id              = data.alicloud_vswitches.default.vswitches.0.zone_id
+}
+resource "alicloud_security_group" "default" {
+	name   = "${var.name}"
+	vpc_id = data.alicloud_vswitches.default.vswitches.0.vpc_id
+}
+`, name)
+}
+
+func TestAccAlicloudDBInstancePostPaidToPrePaid(t *testing.T) {
+	var instance *rds.DBInstanceAttribute
+
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "tf-testAccDBInstancePostPaidToPrePaid"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstancePostPaidToPrePaidConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVswitch(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":               "${data.alicloud_db_instance_engines.postpaid.instance_engines.0.engine}",
+					"engine_version":       "${data.alicloud_db_instance_engines.postpaid.instance_engines.0.engine_version}",
+					"instance_type":        "${data.alicloud_db_instance_classes.postpaid.instance_classes.0.instance_class}",
+					"instance_storage":     "${data.alicloud_db_instance_classes.postpaid.instance_classes.0.storage_range.min}",
+					"instance_charge_type": "Postpaid",
+					"instance_name":        "${var.name}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
+					"monitoring_period":    "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                     "MySQL",
+						"engine_version":             "5.6",
+						"instance_type":              CHECKSET,
+						"instance_storage":           CHECKSET,
+						"auto_upgrade_minor_version": "Auto",
+						"instance_charge_type":       "Postpaid",
+						"instance_name":              "tf-testAccDBInstancePostPaidToPrePaid",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":               "${data.alicloud_db_instance_engines.prepaid.instance_engines.0.engine}",
+					"engine_version":       "${data.alicloud_db_instance_engines.prepaid.instance_engines.0.engine_version}",
+					"instance_type":        "${data.alicloud_db_instance_classes.prepaid.instance_classes.0.instance_class}",
+					"instance_storage":     "${data.alicloud_db_instance_classes.prepaid.instance_classes.0.storage_range.min}",
+					"instance_charge_type": "Prepaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":               "MySQL",
+						"engine_version":       "5.6",
+						"instance_type":        CHECKSET,
+						"instance_storage":     CHECKSET,
+						"instance_charge_type": "Prepaid",
+						"period":               "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceDBInstancePostPaidToPrePaidConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_vswitches" "default" {
+  is_default = true
+}
+data "alicloud_db_instance_engines" "prepaid" {
+  instance_charge_type = "PrePaid"
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  zone_id              = data.alicloud_vswitches.default.vswitches.0.zone_id
+}
+
+data "alicloud_db_instance_classes" "prepaid" {
+  instance_charge_type = "PrePaid"
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  zone_id              = data.alicloud_vswitches.default.vswitches.0.zone_id
+}
+data "alicloud_db_instance_engines" "postpaid" {
+  instance_charge_type = "PostPaid"
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  zone_id              = data.alicloud_vswitches.default.vswitches.0.zone_id
+}
+
+data "alicloud_db_instance_classes" "postpaid" {
+  instance_charge_type = "PostPaid"
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  zone_id              = data.alicloud_vswitches.default.vswitches.0.zone_id
+}
+`, name)
+}
 func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]

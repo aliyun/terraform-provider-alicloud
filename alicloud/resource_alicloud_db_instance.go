@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"log"
 )
 
 func resourceAlicloudDBInstance() *schema.Resource {
@@ -677,7 +678,8 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	if PayType(instance.PayType) == Prepaid {
-		return WrapError(Error("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically."))
+		log.Printf("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically.")
+		return nil
 	}
 
 	request := rds.CreateDeleteDBInstanceRequest()

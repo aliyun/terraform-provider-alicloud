@@ -63,7 +63,7 @@ The following arguments are supported:
 * `replication_factor` - (Optional) Number of replica set nodes. Valid values: [3,5,7]
 * `storage_engine` (Optional, ForceNew) Storage engine: WiredTiger or RocksDB. System Default value: WiredTiger.
 * `name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
-* `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`,System default to `PostPaid`. It can be modified from `PostPaid` to `PrePaid` after version 1.63.0.
+* `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`,System default to `PostPaid`. It can be modified from `PostPaid` to `PrePaid` after version 1.62.2.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. System default to 1.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. it supports multiple zone.
 If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of them.
