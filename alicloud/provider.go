@@ -395,6 +395,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sag_qos_policy":                      resourceAlicloudSagQosPolicy(),
 			"alicloud_sag_qos_car":                         resourceAlicloudSagQosCar(),
 			"alicloud_sag_snat_entry":                      resourceAlicloudSagSnatEntry(),
+			"alicloud_sag_dnat_entry":                      resourceAlicloudSagDnatEntry(),
 			"alicloud_yundun_dbaudit_instance":             resourceAlicloudDbauditInstance(),
 		},
 

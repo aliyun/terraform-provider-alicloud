@@ -441,3 +441,10 @@ func kmsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	}
 	return false
 }
+
+func sagDnatEntryTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("type").(string) != "Intranet" {
+		return true
+	}
+	return false
+}
