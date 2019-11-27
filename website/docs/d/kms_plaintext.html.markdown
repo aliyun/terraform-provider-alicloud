@@ -42,7 +42,7 @@ output "decrypted" {
 The following arguments are supported:
 
 * `encryption_context` -
-  (Optional) The Encryption context. If you specify this parameter in the Encrypt or GenerateDataKey API operation, it is also required when you call the Decrypt API operation. For more information, see [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm?spm=a2c63.p38356.b99.14.47562193BvC7Hu).
+  (Optional) The Encryption context. If you specify this parameter in the Encrypt or GenerateDataKey API operation, it is also required when you call the Decrypt API operation. For more information, see [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm).
 * `ciphertext_blob` - The ciphertext to be decrypted.
 
 ## Attributes Reference
