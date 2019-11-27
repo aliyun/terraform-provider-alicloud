@@ -1,4 +1,5 @@
 ---
+subcategory: "KMS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kms_ciphertext"
 sidebar_current: "docs-alicloud-datasource-kms-ciphertext"
