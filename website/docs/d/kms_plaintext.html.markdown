@@ -1,4 +1,5 @@
 ---
+subcategory: "KMS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kms_plaintext"
 sidebar_current: "docs-alicloud-datasource-kms-plaintext"
