@@ -3,12 +3,9 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform/terraform"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
@@ -98,13 +95,11 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstanceConfigDependence)
 
-	vswitchId, err := getVSwitch()
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccCheckErr(t, err)
+			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -119,7 +114,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 					"disk_size":   "500",
 					"deploy_type": "5",
 					"io_max":      "20",
-					"vswitch_id":  vswitchId,
+					"vswitch_id":  "${data.alicloud_vswitches.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -264,51 +259,6 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 			},
 		},
 	})
-
-}
-
-func testAccCheckErr(t *testing.T, err error) {
-
-	if err != nil {
-		t.Skipf(fmt.Sprintf("skip testing, error occur: %s", err))
-		t.Skipped()
-	}
-}
-
-func getVSwitch() (string, error) {
-
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		log.Printf("error getting Alicloud client. error %s", err)
-		return "", err
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-	request := vpc.CreateDescribeVSwitchesRequest()
-	request.RegionId = string(client.Region)
-	request.PageSize = requests.NewInteger(PageSizeSmall)
-	request.PageNumber = requests.NewInteger(1)
-
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeVSwitches(request)
-	})
-	if err != nil {
-		log.Printf("Describe vswitch error %s", err)
-		return "", err
-	}
-	response, _ := raw.(*vpc.DescribeVSwitchesResponse)
-
-	if len(response.VSwitches.VSwitch) < 1 {
-		return "", fmt.Errorf("please create a vswitch manully in this region first")
-	}
-
-	var vswitchId string
-	for _, vsw := range response.VSwitches.VSwitch {
-
-		vswitchId = vsw.VSwitchId
-		break
-	}
-	return vswitchId, nil
 }
 
 func TestAccAlicloudAlikafkaInstance_multi(t *testing.T) {
@@ -371,6 +321,7 @@ func resourceAlikafkaInstanceConfigDependence(name string) string {
 		}
 
 		data "alicloud_vswitches" "default" {
+		  is_default = true
 		}
 		`, name)
 }
