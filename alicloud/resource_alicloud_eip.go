@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"github.com/denverdino/aliyungo/common"
 	"strconv"
 	"time"
+
+	"github.com/denverdino/aliyungo/common"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 

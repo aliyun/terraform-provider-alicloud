@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/denverdino/aliyungo/common"
 	"reflect"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/denverdino/aliyungo/common"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"

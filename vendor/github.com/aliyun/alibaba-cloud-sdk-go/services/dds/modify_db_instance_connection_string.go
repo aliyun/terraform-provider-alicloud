@@ -78,12 +78,12 @@ type ModifyDBInstanceConnectionStringRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId         requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	SecurityToken           string           `position:"Query" name:"SecurityToken"`
+	DBInstanceId            string           `position:"Query" name:"DBInstanceId"`
+	NodeId                  string           `position:"Query" name:"NodeId"`
 	ResourceOwnerAccount    string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount            string           `position:"Query" name:"OwnerAccount"`
-	DBInstanceId            string           `position:"Query" name:"DBInstanceId"`
 	NewConnectionString     string           `position:"Query" name:"NewConnectionString"`
 	OwnerId                 requests.Integer `position:"Query" name:"OwnerId"`
-	NodeId                  string           `position:"Query" name:"NodeId"`
 	CurrentConnectionString string           `position:"Query" name:"CurrentConnectionString"`
 }
 

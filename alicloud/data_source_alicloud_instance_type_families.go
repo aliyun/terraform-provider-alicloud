@@ -1,8 +1,9 @@
 package alicloud
 
 import (
-	"github.com/denverdino/aliyungo/common"
 	"sort"
+
+	"github.com/denverdino/aliyungo/common"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"

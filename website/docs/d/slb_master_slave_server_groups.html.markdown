@@ -48,4 +48,5 @@ The following attributes are exported in addition to the arguments listed above:
     * `weight` - Weight associated to the ECS instance.
     * `port` - The port used by the master slave server group.
     * `server_type` - The server type of the attached ECS instance.
-    * `is_backup` - Determine if the server is executing.
+    * `is_backup` - (Removed from v1.63.0) Determine if the server is executing.
+

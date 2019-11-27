@@ -77,17 +77,17 @@ func (client *Client) TransformToPrePaidWithCallback(request *TransformToPrePaid
 type TransformToPrePaidRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	CouponNo             string           `position:"Query" name:"CouponNo"`
+	SecurityToken        string           `position:"Query" name:"SecurityToken"`
+	BusinessInfo         string           `position:"Query" name:"BusinessInfo"`
 	Period               requests.Integer `position:"Query" name:"Period"`
 	AutoPay              requests.Boolean `position:"Query" name:"AutoPay"`
 	FromApp              string           `position:"Query" name:"FromApp"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	CouponNo             string           `position:"Query" name:"CouponNo"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	InstanceId           string           `position:"Query" name:"InstanceId"`
 	AutoRenew            string           `position:"Query" name:"AutoRenew"`
-	SecurityToken        string           `position:"Query" name:"SecurityToken"`
-	BusinessInfo         string           `position:"Query" name:"BusinessInfo"`
 }
 
 // TransformToPrePaidResponse is the response struct for api TransformToPrePaid
