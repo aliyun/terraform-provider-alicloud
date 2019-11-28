@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -225,6 +226,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		addDebug("GetClusterCerts", response, requestInfo, requestMap)
 	}
 	cert, _ := response.(cs.ClusterCerts)
+
 	if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
 		if err := writeToFile(ce.(string), cert.Cert); err != nil {
 			return WrapError(err)
@@ -253,15 +255,21 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterConfig", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeClusterUserConfig", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
 			requestMap["ClusterId"] = d.Id()
-			addDebug("GetClusterConfig", response, requestInfo, requestMap)
+			addDebug("DescribeClusterUserConfig", response, requestInfo, requestMap)
 		}
-		config, _ = response.(cs.ClusterConfig)
 
+		jsonData, jsonErr := json.Marshal(response)
+		if jsonErr != nil {
+			return WrapError(jsonErr)
+		}
+		if err := json.Unmarshal(jsonData, &config); err != nil {
+			return WrapError(err)
+		}
 		if err := writeToFile(file.(string), config.Config); err != nil {
 			return WrapError(err)
 		}
