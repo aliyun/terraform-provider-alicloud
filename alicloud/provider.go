@@ -233,6 +233,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_emr_main_versions":                 dataSourceAlicloudEmrMainVersions(),
 			"alicloud_sag_acls":                          dataSourceAlicloudSagAcls(),
 			"alicloud_yundun_dbaudit_instance":           dataSourceAlicloudDbauditInstances(),
+			"alicloud_yundun_bastionhost_instances":      dataSourceAlicloudBastionhostInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -402,6 +403,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sag_snat_entry":                      resourceAlicloudSagSnatEntry(),
 			"alicloud_sag_dnat_entry":                      resourceAlicloudSagDnatEntry(),
 			"alicloud_yundun_dbaudit_instance":             resourceAlicloudDbauditInstance(),
+			"alicloud_yundun_bastionhost_instance":         resourceAlicloudBastionhostInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,

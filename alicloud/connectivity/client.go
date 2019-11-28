@@ -36,6 +36,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -111,6 +112,7 @@ type AliyunClient struct {
 	emrconn                      *emr.Client
 	sagconn                      *smartag.Client
 	dbauditconn                  *yundun_dbaudit.Client
+	bastionhostconn              *yundun_bastionhost.Client
 }
 
 type ApiVersion string
@@ -1481,4 +1483,22 @@ func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (i
 	}
 
 	return do(client.dbauditconn)
+}
+
+func (client *AliyunClient) WithBastionhostClient(do func(*yundun_bastionhost.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	if client.bastionhostconn == nil {
+		bastionhostconn, err := yundun_bastionhost.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the BASTIONHOST client: %#v", err)
+		}
+		bastionhostconn.AppendUserAgent(Terraform, terraformVersion)
+		bastionhostconn.AppendUserAgent(Provider, providerVersion)
+		bastionhostconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.bastionhostconn = bastionhostconn
+	}
+
+	return do(client.bastionhostconn)
 }
