@@ -226,7 +226,6 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		addDebug("GetClusterCerts", response, requestInfo, requestMap)
 	}
 	cert, _ := response.(cs.ClusterCerts)
-
 	if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
 		if err := writeToFile(ce.(string), cert.Cert); err != nil {
 			return WrapError(err)
