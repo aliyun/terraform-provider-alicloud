@@ -62,9 +62,7 @@ func dataSourceAlicloudSlbs() *schema.Resource {
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
-				// the size of DataSourceSlbsTagsNum should not be greater than 5
-				ValidateFunc: validation.StringLenBetween(0, 5),
-				ForceNew:     true,
+				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
