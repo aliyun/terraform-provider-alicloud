@@ -23,6 +23,7 @@ func init() {
 		Dependencies: []string{
 			"alicloud_instance",
 			"alicloud_network_interface",
+			"alicloud_yundun_bastionhost_instance",
 		},
 	})
 }
