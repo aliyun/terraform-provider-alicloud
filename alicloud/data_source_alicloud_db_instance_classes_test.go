@@ -21,6 +21,30 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 		}),
 	}
 
+	prePaidSortedByConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"engine":               `"MySQL"`,
+			"engine_version":       `"5.6"`,
+			"instance_charge_type": `"PrePaid"`,
+			"sorted_by":            `"Price"`,
+		}),
+		existChangMap: map[string]string{
+			"instance_classes.0.price": CHECKSET,
+		},
+	}
+
+	postPaidSortedByConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
+			"engine":               `"MySQL"`,
+			"engine_version":       `"5.6"`,
+			"instance_charge_type": `"PostPaid"`,
+			"sorted_by":            `"Price"`,
+		}),
+		existChangMap: map[string]string{
+			"instance_classes.0.price": CHECKSET,
+		},
+	}
+
 	ChargeTypeConf_Prepaid := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PrePaid"`,
@@ -74,11 +98,16 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 			"instance_charge_type": `"PostPaid"`,
 			"engine":               `"MySQL"`,
 			"engine_version":       `"5.6"`,
+			"sorted_by":            `"Price"`,
 		}),
+		existChangMap: map[string]string{
+			"instance_classes.0.price": CHECKSET,
+		},
 		fakeConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PostPaid"`,
 			"engine":               `"Fake"`,
 			"engine_version":       `"5.6"`,
+			"sorted_by":            `"Price"`,
 		}),
 	}
 
@@ -86,6 +115,7 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 		return map[string]string{
 			"instance_classes.#":                           CHECKSET,
 			"instance_classes.0.instance_class":            CHECKSET,
+			"instance_classes.0.price":                     "",
 			"instance_classes.0.storage_range.min":         CHECKSET,
 			"instance_classes.0.storage_range.max":         CHECKSET,
 			"instance_classes.0.storage_range.step":        CHECKSET,
@@ -106,7 +136,8 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 		fakeMapFunc:  fakeDBInstanceMapFunc,
 	}
 
-	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConf, ChargeTypeConf_Prepaid, ChargeTypeConf_Postpaid, CategoryConf, DBInstanceClassConf, multiZoneConf, falseMultiZoneConf, StorageTypeConf_local_ssd, StorageTypeConf_cloud_ssd, allConf)
+	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConf, prePaidSortedByConf, postPaidSortedByConf,
+		ChargeTypeConf_Prepaid, ChargeTypeConf_Postpaid, CategoryConf, DBInstanceClassConf, multiZoneConf, falseMultiZoneConf, StorageTypeConf_local_ssd, StorageTypeConf_cloud_ssd, allConf)
 }
 
 func testAccCheckAlicloudDBInstanceClassesDataSourceConfig(attrMap map[string]string) string {
