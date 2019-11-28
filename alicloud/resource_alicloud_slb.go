@@ -232,9 +232,8 @@ func resourceAliyunSlb() *schema.Resource {
 			},
 
 			"tags": {
-				Type:         schema.TypeMap,
-				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(0, 10),
+				Type:     schema.TypeMap,
+				Optional: true,
 			},
 
 			"instance_charge_type": {
