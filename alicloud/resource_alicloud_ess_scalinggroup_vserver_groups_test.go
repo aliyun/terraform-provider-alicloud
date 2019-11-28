@@ -38,9 +38,10 @@ func TestAccAlicloudEssVserverGroups_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
 			},
 			{
 				Config: testAccEssScalingGroupVserverGroupUpdate(EcsInstanceCommonTestCase, rand),
@@ -118,6 +119,7 @@ func testAccEssScalingGroupVserverGroup(common string, rand int) string {
 					weight = "60"
 				}
 			}
+	force = true
 	}
 
 	resource "alicloud_slb" "default" {
@@ -178,6 +180,7 @@ func testAccEssScalingGroupVserverGroupUpdate(common string, rand int) string {
 					weight = "60"
 				}
 			}
+		force = false
 	}
 
 	resource "alicloud_slb" "default" {
