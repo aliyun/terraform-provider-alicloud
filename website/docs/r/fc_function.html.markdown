@@ -100,6 +100,12 @@ resource "alicloud_fc_function" "foo" {
     }
 }
 ```
+
+## Module Support
+
+You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) 
+to create a function quickly and set several triggers for it.
+
 ## Argument Reference
 
 The following arguments are supported:

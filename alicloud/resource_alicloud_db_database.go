@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -36,11 +34,10 @@ func resourceAlicloudDBDatabase() *schema.Resource {
 			},
 
 			"character_set": {
-				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice(CHARACTER_SET_NAME, false),
-				Optional:     true,
-				Default:      "utf8",
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "utf8",
+				ForceNew: true,
 			},
 
 			"description": {

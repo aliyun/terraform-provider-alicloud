@@ -1001,81 +1001,41 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 		oraw, nraw := d.GetChange("tags")
 		o := oraw.(map[string]interface{})
 		n := nraw.(map[string]interface{})
-		create, remove := diffTags(tagsFromMap(o), tagsFromMap(n))
+		remove, add := diffRdsTags(o, n)
 
 		if len(remove) > 0 {
-			if err := s.removeTags(remove, d.Id()); err != nil {
-				return err
+			request := rds.CreateUntagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.ResourceType = "INSTANCE"
+			request.TagKey = &remove
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+				return client.UntagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
-		if len(create) > 0 {
-			if err := s.addTags(create, d.Id()); err != nil {
-				return err
+		if len(add) > 0 {
+			request := rds.CreateTagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.Tag = &add
+			request.ResourceType = "INSTANCE"
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+				return client.TagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 		d.SetPartial("tags")
 	}
 
-	return nil
-}
-
-func (s *RdsService) addTags(tags []Tag, instanceId string) error {
-	return s.doBatchTags(s.addTagsPerTime, tags, instanceId)
-}
-
-func (s *RdsService) addTagsPerTime(tags []Tag, id string) error {
-	request := rds.CreateAddTagsToResourceRequest()
-	request.DBInstanceId = id
-	request.Tags = s.tagsToString(tags)
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
-		return client.AddTagsToResource(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
-}
-
-func (s *RdsService) removeTags(tags []Tag, id string) error {
-	return s.doBatchTags(s.removeTagsPerTime, tags, id)
-}
-
-func (s *RdsService) removeTagsPerTime(tags []Tag, id string) error {
-	request := rds.CreateRemoveTagsFromResourceRequest()
-	request.DBInstanceId = id
-	request.Tags = s.tagsToString(tags)
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
-		return client.RemoveTagsFromResource(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
-}
-
-func (s *RdsService) doBatchTags(batchFunc func([]Tag, string) error, tags []Tag, instanceId string) error {
-	num := len(tags)
-	if num <= 0 {
-		return nil
-	}
-
-	start, end := 0, 0
-	for end < num {
-		start = end
-		end += tagsMaxNumPerTime
-		if end > num {
-			end = num
-		}
-		if err := batchFunc(tags[start:end], instanceId); err != nil {
-			return WrapError(err)
-		}
-	}
 	return nil
 }
 

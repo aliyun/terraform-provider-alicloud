@@ -48,19 +48,9 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ForceNew: true,
 				Required: true,
 			},
-			"db_instance_class": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'db_instance_class' has been deprecated from provider version 1.5.0. New field 'instance_type' replaces it.",
-			},
 			"instance_type": {
 				Type:     schema.TypeString,
 				Required: true,
-			},
-			"db_instance_storage": {
-				Type:       schema.TypeInt,
-				Optional:   true,
-				Deprecated: "Field 'db_instance_storage' has been deprecated from provider version 1.5.0. New field 'instance_storage' replaces it.",
 			},
 
 			"instance_storage": {
@@ -107,12 +97,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 			},
 
-			"multi_az": {
-				Type:       schema.TypeBool,
-				Optional:   true,
-				Deprecated: "Field 'multi_az' has been deprecated from provider version 1.8.1. Please use field 'zone_id' to specify multiple availability zone.",
-			},
-
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
@@ -134,60 +118,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 			},
 
-			"db_instance_net_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return true
-				},
-				Deprecated: "Field 'db_instance_net_type' has been deprecated from provider version 1.5.0.",
-			},
-			"allocate_public_connection": {
-				Type:       schema.TypeBool,
-				Optional:   true,
-				Deprecated: "Field 'allocate_public_connection' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_connection' replaces it.",
-			},
-
-			"instance_network_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return true
-				},
-				Deprecated: "Field 'instance_network_type' has been deprecated from provider version 1.5.0.",
-			},
-
-			"master_user_name": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'master_user_name' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_account' field 'name' replaces it.",
-			},
-
-			"master_user_password": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'master_user_password' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_account' field 'password' replaces it.",
-			},
-
-			"preferred_backup_period": {
-				Type:       schema.TypeList,
-				Elem:       &schema.Schema{Type: schema.TypeString},
-				Optional:   true,
-				Deprecated: "Field 'preferred_backup_period' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_backup_policy' field 'backup_period' replaces it.",
-			},
-
-			"preferred_backup_time": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'preferred_backup_time' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_backup_policy' field 'backup_time' replaces it.",
-			},
-
-			"backup_retention_period": {
-				Type:       schema.TypeInt,
-				Optional:   true,
-				Deprecated: "Field 'backup_retention_period' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_backup_policy' field 'retention_period' replaces it.",
-			},
-
 			"security_ips": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -203,57 +133,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{NormalMode, SafetyMode}, false),
 				Optional:     true,
 				Default:      NormalMode,
-			},
-			"connections": {
-				Type: schema.TypeList,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"connection_string": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"ip_type": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"ip_address": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-				Optional: true,
-				Computed: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return true
-				},
-				Deprecated: "Field 'connections' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_connection' replaces it.",
-			},
-
-			"db_mappings": {
-				Type: schema.TypeSet,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"db_name": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"character_set_name": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"db_description": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-				Optional: true,
-				Computed: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return true
-				},
-				Deprecated: "Field 'db_mappings' has been deprecated from provider version 1.5.0. New resource 'alicloud_db_database' replaces it.",
 			},
 
 			"parameters": {
@@ -275,28 +154,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 			},
 
-			"tags": {
-				Type:     schema.TypeMap,
-				Optional: true,
-				// Because of the API TagKey and TagValue are not case sensitive, diff suppress here if contain uppercase letters.
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					ov, nv := d.GetChange("tags")
-					oMap, nMap := ov.(map[string]interface{}), nv.(map[string]interface{})
-					if len(oMap) != len(nMap) {
-						return false
-					}
-					for nvk, nvv := range nMap {
-						if ovv, ok := oMap[strings.ToLower(nvk)]; !ok {
-							return false
-						} else {
-							if strings.ToLower(ovv.(string)) != strings.ToLower(nvv.(string)) {
-								return false
-							}
-						}
-					}
-					return true
-				},
-			},
+			"tags": tagsSchema(),
 
 			"maintain_time": {
 				Type:     schema.TypeString,
