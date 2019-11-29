@@ -13,7 +13,7 @@ func resourceAlicloudKmsCiphertext() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudKmsCiphertextCreate,
 		Read:   schema.Noop,
-		Delete: schema.Noop,
+		Delete: resourceAlicloudKmsCiphertextDelete,
 
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -78,5 +78,9 @@ func resourceAlicloudKmsCiphertextCreate(d *schema.ResourceData, meta interface{
 	response, _ := raw.(*kms.EncryptResponse)
 	d.Set("ciphertext_blob", response.CiphertextBlob)
 
+	return nil
+}
+
+func resourceAlicloudKmsCiphertextDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
