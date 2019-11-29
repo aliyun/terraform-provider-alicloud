@@ -2,43 +2,54 @@ package alicloud
 
 import (
 	"testing"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudKmsCiphertextDataSource(t *testing.T) {
 	resourceId := "data.alicloud_kms_ciphertext.default"
 
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccDataSourceKmsCiphertextConfigBasic,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet(
-						resourceId, "ciphertext_blob",
-					),
-				),
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceKmsCiphertextDependence)
+
+	plaintextConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"key_id":    "${alicloud_kms_key.default.id}",
+			"plaintext": "plaintext",
+		}),
+	}
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"key_id":    "${alicloud_kms_key.default.id}",
+			"plaintext": "plaintext",
+			"encryption_context": map[string]string{
+				"key": "value",
 			},
-			{
-				ResourceName: resourceId,
-			},
-		},
-	})
+		}),
+	}
+
+	var existKmsCiphertextMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ciphertext_blob": CHECKSET,
+		}
+	}
+
+	var fakeKmsCiphertextMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ciphertext_blob": NOSET,
+		}
+	}
+
+	var kmsCipherCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existKmsCiphertextMapFunc,
+		fakeMapFunc:  fakeKmsCiphertextMapFunc,
+	}
+
+	kmsCipherCheckInfo.dataSourceTestCheck(t, 0, plaintextConf, allConf)
 }
 
-const testAccDataSourceKmsCiphertextConfigBasic = `
-resource "alicloud_kms_key" "default" {
-    is_enabled = true
+func dataSourceKmsCiphertextDependence(name string) string {
+	return `
+	resource "alicloud_kms_key" "default" {
+    	is_enabled = true
+	}
+	`
 }
-
-data "alicloud_kms_ciphertext" "default" {
-	key_id = "${alicloud_kms_key.default.id}"
-	plaintext = "plaintext"
-}
-`

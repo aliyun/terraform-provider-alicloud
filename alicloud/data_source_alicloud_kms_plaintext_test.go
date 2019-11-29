@@ -2,50 +2,50 @@ package alicloud
 
 import (
 	"testing"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudKmsPlaintextDataSource(t *testing.T) {
 	resourceId := "data.alicloud_kms_plaintext.default"
 
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccDataSourceKmsPlaintextConfigBasic,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet(
-						resourceId, "plaintext",
-					),
-					resource.TestCheckResourceAttrSet(
-						resourceId, "key_id",
-					),
-				),
-			},
-			{
-				ResourceName: resourceId,
-			},
-		},
-	})
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceKmsPlaintextDependence)
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ciphertext_blob": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+		}),
+	}
+
+	var existKmsPlaintextMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"plaintext": "plaintext",
+		}
+	}
+
+	var fakeKmsPlaintextMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ciphertext_blob": NOSET,
+		}
+	}
+
+	var kmsPlainCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existKmsPlaintextMapFunc,
+		fakeMapFunc:  fakeKmsPlaintextMapFunc,
+	}
+
+	kmsPlainCheckInfo.dataSourceTestCheck(t, 0, allConf)
 }
 
-const testAccDataSourceKmsPlaintextConfigBasic = `
-resource "alicloud_kms_key" "default" {
-    is_enabled = true
-}
+func dataSourceKmsPlaintextDependence(name string) string {
+	return `
+	resource "alicloud_kms_key" "default" {
+    	is_enabled = true
+	}
 
-resource "alicloud_kms_ciphertext" "default" {
-	key_id = "${alicloud_kms_key.default.id}"
-	plaintext = "plaintext"
-}
+	resource "alicloud_kms_ciphertext" "default" {
+		key_id = "${alicloud_kms_key.default.id}"
+		plaintext = "plaintext"
+	}
 
-data "alicloud_kms_plaintext" "default" {
-	ciphertext_blob = "${alicloud_kms_ciphertext.default.ciphertext_blob}"
+	`
 }
-`
