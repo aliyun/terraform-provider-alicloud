@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -15,6 +16,7 @@ func resourceAliyunSlbMasterSlaveServerGroup() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunSlbMasterSlaveServerGroupCreate,
 		Read:   resourceAliyunSlbMasterSlaveServerGroupRead,
+		Update: resourceAliyunSlbMasterSlaveServerGroupUpdate,
 		Delete: resourceAliyunSlbMasterSlaveServerGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -75,6 +77,11 @@ func resourceAliyunSlbMasterSlaveServerGroup() *schema.Resource {
 				},
 				MaxItems: 2,
 				MinItems: 2,
+			},
+			"delete_protection_validation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -140,9 +147,28 @@ func resourceAliyunSlbMasterSlaveServerGroupRead(d *schema.ResourceData, meta in
 	return nil
 }
 
+func resourceAliyunSlbMasterSlaveServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+	return nil
+}
+
 func resourceAliyunSlbMasterSlaveServerGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
+
+	if d.Get("delete_protection_validation").(bool) {
+		lbId := d.Get("load_balancer_id").(string)
+		lbInstance, err := slbService.DescribeSlb(lbId)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapError(err)
+		}
+		if lbInstance.DeleteProtection == "on" {
+			return WrapError(fmt.Errorf("Current master-slave server group's SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the resource.", lbId))
+		}
+	}
+
 	request := slb.CreateDeleteMasterSlaveServerGroupRequest()
 	request.RegionId = client.RegionId
 	request.MasterSlaveServerGroupId = d.Id()

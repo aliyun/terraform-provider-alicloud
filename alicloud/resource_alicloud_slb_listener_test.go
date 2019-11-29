@@ -102,9 +102,10 @@ func TestAccAlicloudSlbListener_http_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -460,9 +461,10 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -679,9 +681,10 @@ func TestAccAlicloudSlbListener_tcp_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -937,9 +940,10 @@ func TestAccAlicloudSlbListener_udp_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

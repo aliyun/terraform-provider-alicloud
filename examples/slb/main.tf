@@ -1,7 +1,7 @@
 resource "alicloud_slb" "instance" {
   name                 = var.slb_name
   internet_charge_type = var.internet_charge_type
-  internet             = var.internet
+  address_type         = var.address_type
   specification        = "slb.s2.small"
 
   tags = {
@@ -100,8 +100,7 @@ resource "alicloud_slb_acl" "acl" {
 }
 
 data "alicloud_slb_acls" "slb_acls" {
-  ids         = [alicloud_slb_acl.acl.id]
-  output_file = "${path.module}/acl.json"
+  ids = [alicloud_slb_acl.acl.id]
 }
 
 resource "alicloud_slb_server_certificate" "foo-file" {
@@ -128,7 +127,7 @@ resource "alicloud_slb_listener" "https-file" {
   health_check_interval     = 5
   health_check_http_code    = "http_2xx,http_3xx"
   bandwidth                 = 10
-  ssl_certificate_id        = alicloud_slb_server_certificate.foo-file.id
+  server_certificate_id     = alicloud_slb_server_certificate.foo-file.id
   request_timeout           = 80
   idle_timeout              = 30
   enable_http2              = "on"
@@ -136,8 +135,6 @@ resource "alicloud_slb_listener" "https-file" {
 }
 
 data "alicloud_slbs" "balancers" {
-  output_file = "${path.module}/loadbalancers.json"
-
   tags = {
     tag_a = 1
   }

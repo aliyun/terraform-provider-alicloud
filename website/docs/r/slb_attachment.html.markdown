@@ -80,8 +80,7 @@ The following arguments are supported:
 * `instance_ids` - (Required) A list of instance ids to added backend server in the SLB.
 * `weight` - (Optional) Weight of the instances. Valid value range: [0-100]. Default to 100.
 * `server_type` - (Optional, Available in 1.60.0+) Type of the instances. Valid value ecs, eni. Default to ecs.
-* `slb_id` - (Deprecated) It has been deprecated from provider version 1.6.0. New field 'load_balancer_id' replaces it.
-* `instances` - (Deprecated) It has been deprecated from provider version 1.6.0. New field 'instance_ids' replaces it.
+* `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
 
 ## Attributes Reference
 

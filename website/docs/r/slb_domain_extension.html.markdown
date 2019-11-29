@@ -70,6 +70,7 @@ The following arguments are supported:
 * `frontend_port` - (Required, ForceNew) The frontend port used by the HTTPS listener of the SLB instance. Valid values: 1–65535.
 * `domain` - (Optional, ForceNew) The domain name,
 * `server_certificate_id` - (Required) The ID of the certificate used by the domain name.
+* `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
 
 ## Attributes Reference
 

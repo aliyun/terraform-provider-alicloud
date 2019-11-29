@@ -85,6 +85,7 @@ resource "alicloud_slb_backend_server" "group" {
     server_id = alicloud_instance.instance[0].id
     weight    = 100
   }
+  depends_on = ["alicloud_network_interface_attachment.default"]
 }
 
 resource "alicloud_slb_listener" "tcp" {
