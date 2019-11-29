@@ -19,6 +19,7 @@ func dataSourceAlicloudOnsInstances() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				ForceNew: true,
+				Computed: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,

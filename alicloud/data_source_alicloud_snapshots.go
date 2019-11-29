@@ -36,6 +36,7 @@ func dataSourceAlicloudSnapshots() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+				Computed: true,
 				MinItems: 1,
 				MaxItems: 100,
 			},

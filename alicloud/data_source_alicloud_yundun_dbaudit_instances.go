@@ -30,6 +30,7 @@ func dataSourceAlicloudDbauditInstances() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 				ForceNew: true,
 			},
 			"descriptions": {

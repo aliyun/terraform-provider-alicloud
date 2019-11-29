@@ -30,6 +30,7 @@ func dataSourceAlicloudApiGatewayApis() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,

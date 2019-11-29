@@ -28,6 +28,7 @@ func dataSourceAlicloudDnsDomains() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"ali_domain": {
 				Type:     schema.TypeBool,

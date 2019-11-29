@@ -24,6 +24,7 @@ func dataSourceAlicloudElasticsearch() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"version": {
 				Type:     schema.TypeString,
