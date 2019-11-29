@@ -26,6 +26,7 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+				Computed: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,

@@ -25,6 +25,7 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"engine": {
 				Type:     schema.TypeString,

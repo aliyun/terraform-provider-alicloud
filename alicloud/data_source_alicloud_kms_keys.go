@@ -20,6 +20,7 @@ func dataSourceAlicloudKmsKeys() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 				MinItems: 1,
 			},
 
