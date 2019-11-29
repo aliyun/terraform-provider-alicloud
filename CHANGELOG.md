@@ -1,4 +1,28 @@
-## 1.62.3 (Unreleased)
+## 1.63.0 (Unreleased)
+
+- **New Resource:** `alicloud_cloud_connect_network_grant` [GH-1921]
+- **New Data Source:** `alicloud_yundun_bastionhost_instances` [GH-1894]
+- **New Resource:** `alicloud_yundun_bastionhost_instance` [GH-1894]
+- **New Data Source:** `alicloud_kms_ciphertext` [GH-1858]
+- **New Data Source:** `alicloud_kms_plaintext` [GH-1858]
+- **New Resource:** `alicloud_kms_ciphertext` [GH-1858]
+- **New Resource:** `alicloud_sag_dnat_entry` [GH-1823]
+
+IMPROVEMENTS:
+
+- improve(provider): added 'Computed : true' to all 'ids' fields. [GH-1924]
+- improve(validator): Delete TagNum Count [GH-1920]
+- improve(sag_dnat_entry): modify docs "add subcategory" [GH-1918]
+- improve(sdk): upgrade alibaba go sdk [GH-1917]
+- improve(db_database):update db_database doc [GH-1916]
+- improve(validator): shift validator to offical ones [GH-1912]
+- improve(alikafka): Support pre paid instance & Support tag resource [GH-1873]
+
+BUG FIXES:
+
+- fix(dns_record): fix dns_record testcase bug [GH-1892]
+- fix(ecs): FIX: query system disk does not exist because no resource_group_id is specified [GH-1884]
+
 ## 1.62.2 (November 26, 2019)
 
 IMPROVEMENTS:
