@@ -167,6 +167,11 @@ func resourceAliyunSlbRule() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: slbRuleStickySessionTypeDiffSuppressFunc,
 			},
+			"delete_protection_validation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -353,6 +358,21 @@ func resourceAliyunSlbRuleUpdate(d *schema.ResourceData, meta interface{}) error
 func resourceAliyunSlbRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
+
+	if d.Get("delete_protection_validation").(bool) {
+		lbId := d.Get("load_balancer_id").(string)
+		lbInstance, err := slbService.DescribeSlb(lbId)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapError(err)
+		}
+		if lbInstance.DeleteProtection == "on" {
+			return WrapError(fmt.Errorf("Current rule's SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the rule.", lbId))
+		}
+	}
+
 	request := slb.CreateDeleteRulesRequest()
 	request.RegionId = client.RegionId
 	request.RuleIds = fmt.Sprintf("['%s']", d.Id())

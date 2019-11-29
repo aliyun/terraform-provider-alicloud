@@ -11,9 +11,6 @@ description: |-
 
 Provides an Application Load Balancer resource.
 
--> **NOTE:** Resource `alicloud_slb` has deprecated 'listener' filed from terraform-alicloud-provider [version 1.3.0](https://github.com/alibaba/terraform-provider/releases/tag/V1.3.0) . You can create new listeners for Load Balancer by resource `alicloud_slb_listener`.
-If you have had several listeners in one load balancer, you can import them via the specified listener ID. In the `alicloud_slb_listener`, listener ID is consist of load balancer ID and frontend port, and its format is `<load balancer ID>:<frontend port>`, like "lb-hr2fwnf32t:8080".
-
 -> **NOTE:** At present, to avoid some unnecessary regulation confusion, SLB can not support alicloud international account to create "paybybandwidth" instance.
 
 -> **NOTE:** The supported specifications vary by region. Currently not all regions support guaranteed-performance instances.
@@ -76,7 +73,6 @@ Terraform will autogenerate a name beginning with `tf-lb`.
   Before version 1.10.1, the valid values are "paybybandwidth" and "paybytraffic".
 * `bandwidth` - (Optional) Valid
   value is between 1 and 1000, If argument "internet_charge_type" is "paybytraffic", then this value will be ignore.
-* `listener` - (Deprecated) The field has been deprecated from terraform-alicloud-provider [version 1.3.0](https://github.com/alibaba/terraform-provider/releases/tag/V1.3.0), and use resource `alicloud_slb_listener` to replace.
 * `vswitch_id` - (Required for a VPC SLB, Forces New Resource) The VSwitch ID to launch in. If `address_type` is internet, it will be ignore.
 * `specification` - (Optional) The specification of the Server Load Balancer instance. Default to empty string indicating it is "Shared-Performance" instance.
  Launching "[Performance-guaranteed](https://www.alibabacloud.com/help/doc-detail/27657.htm)" instance, it is must be specified and it valid values are: "slb.s1.small", "slb.s2.small", "slb.s2.medium",
@@ -90,6 +86,7 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 * `address_ip_version` - (Optional, Available in v1.55.2+) The IP version of the SLB instance to be created, which can be set to ipv4 or ipv6 . Default to "ipv4". Now, only internet instance support ipv6 address.
 * `address` - (Optional, Available in v1.55.2+) Specify the IP address of the private network for the SLB instance, which must be in the destination CIDR block of the correspond ing switch.
 * `resource_group_id` - (Optional, ForceNew, Available in v1.55.3+) The Id of resource group which the SLB belongs.
+
 -> **NOTE:** A "Shared-Performance" instance can be changed to "Performance-guaranteed", but the change is irreversible.
 
 -> **NOTE:** To change a "Shared-Performance" instance to a "Performance-guaranteed" instance, the SLB will have a short probability of business interruption (10 seconds-30 seconds). Advise to change it during the business downturn, or migrate business to other SLB Instances by using GSLB before changing.
@@ -102,6 +99,7 @@ The following attributes are exported:
 
 * `id` - The ID of the load balancer.
 * `address` - The IP address of the load balancer.
+
 ## Import
 
 Load balancer can be imported using the id, e.g.

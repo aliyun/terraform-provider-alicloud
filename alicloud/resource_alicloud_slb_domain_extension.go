@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -42,6 +43,11 @@ func resourceAlicloudSlbDomainExtension() *schema.Resource {
 			"server_certificate_id": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"delete_protection_validation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -131,6 +137,20 @@ func resourceAliyunSlbDomainExtensionUpdate(d *schema.ResourceData, meta interfa
 func resourceAliyunSlbDomainExtensionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
+
+	if d.Get("delete_protection_validation").(bool) {
+		lbId := d.Get("load_balancer_id").(string)
+		lbInstance, err := slbService.DescribeSlb(lbId)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapError(err)
+		}
+		if lbInstance.DeleteProtection == "on" {
+			return WrapError(fmt.Errorf("Current domain extension's SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the resource.", lbId))
+		}
+	}
 
 	request := slb.CreateDeleteDomainExtensionRequest()
 	request.DomainExtensionId = d.Id()

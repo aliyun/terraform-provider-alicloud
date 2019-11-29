@@ -10,6 +10,8 @@
 
 IMPROVEMENTS:
 
+- improve(slb): add a new field delete_protection_validation [GH-1927]
+- improve(kms): improve kms testcases use new method [GH-1926]
 - improve(provider): added 'Computed : true' to all 'ids' fields. [GH-1924]
 - improve(validator): Delete TagNum Count [GH-1920]
 - improve(sag_dnat_entry): modify docs "add subcategory" [GH-1918]

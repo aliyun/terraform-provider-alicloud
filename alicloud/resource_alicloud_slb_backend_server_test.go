@@ -53,9 +53,10 @@ func TestAccAlicloudSlbBackendServers_vpc(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -206,9 +207,10 @@ func TestAccAlicloudSlbBackendServers_classic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
 			},
 			{
 				//Config: testAccSlbBackendServersClassicUpdateServer,

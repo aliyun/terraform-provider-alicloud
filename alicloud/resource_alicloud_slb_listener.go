@@ -340,6 +340,11 @@ func resourceAliyunSlbListener() *schema.Resource {
 				Computed:         true,
 				DiffSuppressFunc: httpDiffSuppressFunc,
 			},
+			"delete_protection_validation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -729,7 +734,7 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
-	lb_id, protocol, port, err := parseListenerId(d, meta)
+	lbId, protocol, port, err := parseListenerId(d, meta)
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -737,9 +742,21 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 		}
 		return WrapError(err)
 	}
+	if d.Get("delete_protection_validation").(bool) {
+		lbInstance, err := slbService.DescribeSlb(lbId)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapError(err)
+		}
+		if lbInstance.DeleteProtection == "on" {
+			return WrapError(fmt.Errorf("Current listener's SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the listener resource.", lbId))
+		}
+	}
 	request := slb.CreateDeleteLoadBalancerListenerRequest()
 	request.RegionId = client.RegionId
-	request.LoadBalancerId = lb_id
+	request.LoadBalancerId = lbId
 	request.ListenerPort = requests.NewInteger(port)
 	request.ListenerProtocol = protocol
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {

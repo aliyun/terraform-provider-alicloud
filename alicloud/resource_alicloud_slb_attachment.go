@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -23,26 +24,9 @@ func resourceAliyunSlbAttachment() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-
-			"slb_id": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'slb_id' has been deprecated from provider version 1.6.0. New field 'load_balancer_id' replaces it.",
-			},
-
 			"load_balancer_id": {
 				Type:     schema.TypeString,
 				Required: true,
-			},
-
-			"instances": {
-				Type:     schema.TypeSet,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Optional: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return true
-				},
-				Deprecated: "Field 'instances' has been deprecated from provider version 1.6.0. New field 'instance_ids' replaces it.",
 			},
 
 			"instance_ids": {
@@ -71,6 +55,11 @@ func resourceAliyunSlbAttachment() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"delete_protection_validation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -221,6 +210,20 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 func resourceAliyunSlbAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
+
+	if d.Get("delete_protection_validation").(bool) {
+		lbInstance, err := slbService.DescribeSlb(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapError(err)
+		}
+		if lbInstance.DeleteProtection == "on" {
+			return WrapError(fmt.Errorf("Current SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the resource.", d.Id()))
+		}
+	}
+
 	instanceSet := d.Get("instance_ids").(*schema.Set)
 	weight := d.Get("weight").(int)
 	serverType := d.Get("server_type").(string)

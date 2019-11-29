@@ -68,6 +68,11 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 					},
 				},
 			},
+			"delete_protection_validation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -319,6 +324,21 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
+
+	if d.Get("delete_protection_validation").(bool) {
+		lbId := d.Get("load_balancer_id").(string)
+		lbInstance, err := slbService.DescribeSlb(lbId)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapError(err)
+		}
+		if lbInstance.DeleteProtection == "on" {
+			return WrapError(fmt.Errorf("Current VServerGroup's SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the group.", lbId))
+		}
+	}
+
 	request := slb.CreateDeleteVServerGroupRequest()
 	request.RegionId = client.RegionId
 	request.VServerGroupId = d.Id()
