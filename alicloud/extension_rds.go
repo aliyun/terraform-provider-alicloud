@@ -33,11 +33,6 @@ var BACKUP_TIME = []string{
 	"20:00Z-21:00Z", "21:00Z-22:00Z", "22:00Z-23:00Z", "23:00Z-24:00Z",
 }
 
-var CHARACTER_SET_NAME = []string{
-	"utf8", "gbk", "latin1", "utf8mb4", "Mohawk_100_BIN",
-	"Chinese_PRC_CI_AS", "Chinese_PRC_CS_AS", "SQL_Latin1_General_CP1_CI_AS", "SQL_Latin1_General_CP1_CS_AS", "Chinese_PRC_BIN",
-}
-
 type KVStoreInstanceType string
 
 const (

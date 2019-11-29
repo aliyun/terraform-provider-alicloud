@@ -10,6 +10,8 @@
 
 IMPROVEMENTS:
 
+- improve(db_instance): tags supports case sensitive [GH-1930]
+- improve(mongodb_instance): adding replica_set_name to output from alicloud_mongodb_instance [GH-1929]
 - improve(slb): add a new field delete_protection_validation [GH-1927]
 - improve(kms): improve kms testcases use new method [GH-1926]
 - improve(provider): added 'Computed : true' to all 'ids' fields. [GH-1924]

@@ -15,6 +15,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -216,6 +217,19 @@ func diffTags(oldTags, newTags []Tag) ([]Tag, []Tag) {
 	}
 
 	return tagsFromMap(create), remove
+}
+
+func diffRdsTags(oldTags, newTags map[string]interface{}) (remove []string, add []rds.TagResourcesTag) {
+	for k, _ := range oldTags {
+		remove = append(remove, k)
+	}
+	for k, v := range newTags {
+		add = append(add, rds.TagResourcesTag{
+			Key:   k,
+			Value: v.(string),
+		})
+	}
+	return
 }
 
 func diffGpdbTags(oldTags, newTags []gpdb.TagResourcesTag) ([]gpdb.TagResourcesTag, []gpdb.TagResourcesTag) {

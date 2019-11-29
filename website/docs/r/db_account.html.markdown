@@ -11,9 +11,6 @@ description: |-
 
 Provides an RDS account resource and used to manage databases.
 
--> **NOTE:** Currently, only MySQL、PostgreSQL、MariaDB、SQL Server（exclude SQL Server 2017 clustered edition）instance support creating a `Normal` account. Other engine instance, like PPAS and SQL Server 2017, only support creating a `Super` account, and you can log on to the database to create other accounts using this Super account.
-> **NOTE:** Because the `Super` account can not be deleted, there does not suggest to manage `Super` account using this resource. Otherwise, this resource can not be deleted when account is `Super`.
-
 ## Example Usage
 
 ```
@@ -70,20 +67,14 @@ The following arguments are supported:
 * `type` - (Optional, ForceNew)Privilege type of account.
     - Normal: Common privilege.
     - Super: High privilege.
-    - defalut Normal to MySQL、MariaDB、SQL Server(exclude SQL Server 2017 clustered edition).
-    - defalut Super to PostgreSQL, PPAS, SQL Server 2017 clustered edition.
-    Currently, MySQL 5.7, SQL Server 2012/2016, PostgreSQL, and PPAS each can have only one initial account.
-    Other accounts are created by the initial account that has logged on to the database. [Refer to details](https://www.alibabacloud.com/help/doc-detail/26263.htm).
+    
+    Default to Normal.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The current account resource ID. Composed of instance ID and account name with format `<instance_id>:<name>`.
-* `instance_id` - The Id of DB instance.
-* `name` - The name of DB account.
-* `description` - The account description.
-* `type` - Privilege type of account.
 
 ## Import
 

@@ -242,30 +242,18 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
-						"created": "tf",
-						"for":     "acceptance test",
+						"Created": "TF",
+						"For":     "acceptance Test",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
-						"tags.created": "tf",
-						"tags.for":     "acceptance test",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance Test",
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "acceptance test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
-				),
-			},
-
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": REMOVEKEY,
@@ -273,8 +261,8 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       REMOVEKEY,
-						"tags.created": REMOVEKEY,
-						"tags.for":     REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
