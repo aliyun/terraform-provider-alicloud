@@ -128,6 +128,10 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
+			"replica_set_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"maintain_start_time": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -280,6 +284,7 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("storage_engine", instance.StorageEngine)
 	d.Set("maintain_start_time", instance.MaintainStartTime)
 	d.Set("maintain_end_time", instance.MaintainEndTime)
+	d.Set("replica_set_name", instance.ReplicaSetName)
 
 	if replication_factor, err := strconv.Atoi(instance.ReplicationFactor); err == nil {
 		d.Set("replication_factor", replication_factor)
