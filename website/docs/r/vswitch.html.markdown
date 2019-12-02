@@ -27,6 +27,12 @@ resource "alicloud_vswitch" "vsw" {
   availability_zone = "cn-beijing-b"
 }
 ```
+
+## Module Support
+
+You can use to the existing [vpc module](https://registry.terraform.io/modules/alibaba/vpc/alicloud) 
+to create a VPC and several VSwitches.
+
 ## Argument Reference
 
 The following arguments are supported:
