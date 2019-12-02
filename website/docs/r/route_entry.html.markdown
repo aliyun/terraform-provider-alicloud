@@ -83,6 +83,12 @@ resource "alicloud_route_entry" "foo" {
   nexthop_id            = "${alicloud_instance.foo.id}"
 }
 ```
+
+## Module Support
+
+You can use to the existing [vpc module](https://registry.terraform.io/modules/alibaba/vpc/alicloud) 
+to create a VPC, several VSwitches and add several route entries.
+
 ## Argument Reference
 
 The following arguments are supported:
