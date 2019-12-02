@@ -114,6 +114,11 @@ func resourceAliyunNatGateway() *schema.Resource {
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36})),
 			},
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -135,7 +140,7 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 			request.Duration = strconv.Itoa(period / 12)
 			request.PricingCycle = string(Year)
 		}
-		request.AutoPay = requests.NewBoolean(true)
+		request.AutoPay = requests.NewBoolean(d.Get("auto_pay").(bool))
 	}
 	request.ClientToken = buildClientToken(request.GetActionName())
 	bandwidthPackages := []vpc.CreateNatGatewayBandwidthPackage{}
@@ -207,6 +212,7 @@ func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("description", object.Description)
 	d.Set("vpc_id", object.VpcId)
 	d.Set("instance_charge_type", object.InstanceChargeType)
+	d.Set("auto_pay", object.AutoPay)
 
 	bindWidthPackages, err := flattenBandWidthPackages(object.BandwidthPackageIds.BandwidthPackageId, meta, d)
 	if err != nil {
@@ -271,12 +277,16 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		addDebug(modifyNatGatewayAttributeRequest.GetActionName(), raw, modifyNatGatewayAttributeRequest.RpcRequest, modifyNatGatewayAttributeRequest)
 	}
 
-	if d.HasChange("specification") {
+	if d.HasChange("specification") || d.HasChange("auto_pay") {
 		d.SetPartial("specification")
+		d.SetPartial("auto_pay")
 		modifyNatGatewaySpecRequest := vpc.CreateModifyNatGatewaySpecRequest()
 		modifyNatGatewaySpecRequest.RegionId = natGateway.RegionId
 		modifyNatGatewaySpecRequest.NatGatewayId = natGateway.NatGatewayId
 		modifyNatGatewaySpecRequest.Spec = d.Get("specification").(string)
+		if d.HasChange("auto_pay") {
+			modifyNatGatewaySpecRequest.AutoPay = requests.NewBoolean(d.Get("auto_pay").(bool))
+		}
 
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.ModifyNatGatewaySpec(modifyNatGatewaySpecRequest)
