@@ -396,6 +396,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_network_acl_entries":                 resourceAliyunNetworkAclEntries(),
 			"alicloud_emr_cluster":                         resourceAlicloudEmrCluster(),
 			"alicloud_cloud_connect_network":               resourceAlicloudCloudConnectNetwork(),
+			"alicloud_cloud_connect_network_attachment":    resourceAlicloudCloudConnectNetworkAttachment(),
 			"alicloud_cloud_connect_network_grant":         resourceAlicloudCloudConnectNetworkGrant(),
 			"alicloud_sag_acl":                             resourceAlicloudSagAcl(),
 			"alicloud_sag_acl_rule":                        resourceAlicloudSagAclRule(),
