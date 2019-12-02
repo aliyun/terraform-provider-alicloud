@@ -1,32 +1,32 @@
-## 1.63.0 (Unreleased)
+## 1.63.0 (December 02, 2019)
 
-- **New Resource:** `alicloud_cloud_connect_network_grant` [GH-1921]
-- **New Data Source:** `alicloud_yundun_bastionhost_instances` [GH-1894]
-- **New Resource:** `alicloud_yundun_bastionhost_instance` [GH-1894]
-- **New Data Source:** `alicloud_kms_ciphertext` [GH-1858]
-- **New Data Source:** `alicloud_kms_plaintext` [GH-1858]
-- **New Resource:** `alicloud_kms_ciphertext` [GH-1858]
-- **New Resource:** `alicloud_sag_dnat_entry` [GH-1823]
+- **New Resource:** `alicloud_cloud_connect_network_grant` ([#1921](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1921))
+- **New Data Source:** `alicloud_yundun_bastionhost_instances` ([#1894](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1894))
+- **New Resource:** `alicloud_yundun_bastionhost_instance` ([#1894](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1894))
+- **New Data Source:** `alicloud_kms_ciphertext` ([#1858](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1858))
+- **New Data Source:** `alicloud_kms_plaintext` ([#1858](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1858))
+- **New Resource:** `alicloud_kms_ciphertext` ([#1858](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1858))
+- **New Resource:** `alicloud_sag_dnat_entry` ([#1823](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1823))
 
 IMPROVEMENTS:
 
-- improve(vpc): add module support for vpc, vswitch and route entry [GH-1934]
-- improve(db_instance): tags supports case sensitive [GH-1930]
-- improve(mongodb_instance): adding replica_set_name to output from alicloud_mongodb_instance [GH-1929]
-- improve(slb): add a new field delete_protection_validation [GH-1927]
-- improve(kms): improve kms testcases use new method [GH-1926]
-- improve(provider): added 'Computed : true' to all 'ids' fields. [GH-1924]
-- improve(validator): Delete TagNum Count [GH-1920]
-- improve(sag_dnat_entry): modify docs "add subcategory" [GH-1918]
-- improve(sdk): upgrade alibaba go sdk [GH-1917]
-- improve(db_database):update db_database doc [GH-1916]
-- improve(validator): shift validator to offical ones [GH-1912]
-- improve(alikafka): Support pre paid instance & Support tag resource [GH-1873]
+- improve(vpc): add module support for vpc, vswitch and route entry ([#1934](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1934))
+- improve(db_instance): tags supports case sensitive ([#1930](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1930))
+- improve(mongodb_instance): adding replica_set_name to output from alicloud_mongodb_instance ([#1929](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1929))
+- improve(slb): add a new field delete_protection_validation ([#1927](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1927))
+- improve(kms): improve kms testcases use new method ([#1926](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1926))
+- improve(provider): added 'Computed : true' to all 'ids' fields. ([#1924](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1924))
+- improve(validator): Delete TagNum Count ([#1920](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1920))
+- improve(sag_dnat_entry): modify docs "add subcategory" ([#1918](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1918))
+- improve(sdk): upgrade alibaba go sdk ([#1917](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1917))
+- improve(db_database):update db_database doc ([#1916](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1916))
+- improve(validator): shift validator to offical ones ([#1912](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1912))
+- improve(alikafka): Support pre paid instance & Support tag resource ([#1873](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1873))
 
 BUG FIXES:
 
-- fix(dns_record): fix dns_record testcase bug [GH-1892]
-- fix(ecs): FIX: query system disk does not exist because no resource_group_id is specified [GH-1884]
+- fix(dns_record): fix dns_record testcase bug ([#1892](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1892))
+- fix(ecs): FIX: query system disk does not exist because no resource_group_id is specified ([#1884](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1884))
 
 ## 1.62.2 (November 26, 2019)
 
