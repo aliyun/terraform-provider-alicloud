@@ -28,7 +28,7 @@ func (s *DrdsService) DescribeDrdsInstance(id string) (*drds.DescribeDrdsInstanc
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*drds.DescribeDrdsInstanceResponse)
-	if response.Data.Status == "5" {
+	if response.Data.Status == "RELEASE" {
 		return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
 	return response, nil
