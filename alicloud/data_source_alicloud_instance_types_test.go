@@ -17,7 +17,6 @@ func TestAccAlicloudInstanceTypesDataSource_basic(t *testing.T) {
 				Config: testAccCheckAlicloudInstanceTypesDataSourceBasicConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.c4g8"),
-					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.price"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "instance_types.0.id"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.c4g8", "instance_types.0.cpu_core_count", "4"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.c4g8", "instance_types.0.memory_size", "8"),
@@ -228,7 +227,6 @@ const testAccCheckAlicloudInstanceTypesDataSourceBasicConfig = `
 data "alicloud_instance_types" "c4g8" {
 	cpu_core_count = 4
 	memory_size = 8
-	sorted_by = "Price"
 }
 `
 
