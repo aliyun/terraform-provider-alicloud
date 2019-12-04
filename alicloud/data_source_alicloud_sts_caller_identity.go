@@ -40,7 +40,10 @@ func dataSourceAlicloudStsCallerIdentity() *schema.Resource {
 
 func dataSourceAlicloudStsCallerIdentityRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	resp, err := client.GetCallerIdentity()()
+	resp, err := client.GetCallerIdentity()
+	if err != nil {
+		return err
+	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		s := map[string]interface{}{
 			"account_id":     resp.AccountId,
