@@ -1107,7 +1107,7 @@ func (client *AliyunClient) AccountId() (string, error) {
 
 	if client.accountId == "" {
 		log.Printf("[DEBUG] account_id not provided, attempting to retrieve it automatically...")
-		identity, err := client.getCallerIdentity()
+		identity, err := client.GetCallerIdentity()
 		if err != nil {
 			return "", err
 		}
@@ -1200,7 +1200,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (*loc
 	return nil, fmt.Errorf("There is no any available endpoint for %s in region %s.", serviceCode, client.RegionId)
 }
 
-func (client *AliyunClient) getCallerIdentity() (*sts.GetCallerIdentityResponse, error) {
+func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse, error) {
 	args := sts.CreateGetCallerIdentityRequest()
 
 	endpoint := client.config.StsEndpoint
