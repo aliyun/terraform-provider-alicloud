@@ -71,6 +71,7 @@ type Config struct {
 	SagEndpoint           string
 	EmrEndpoint           string
 	CasEndpoint           string
+	MarketEndpoint        string
 
 	SkipRegionValidation bool
 	ConfigurationSource  string
