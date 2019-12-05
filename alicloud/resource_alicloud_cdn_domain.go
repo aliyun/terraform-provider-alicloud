@@ -31,7 +31,7 @@ func resourceAlicloudCdnDomain() *schema.Resource {
 			"cdn_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{cdn.Web, cdn.Download /*cdn.video,*/, cdn.LiveStream}, false),
+				ValidateFunc: validation.StringInSlice([]string{cdn.Web, cdn.Download, cdn.Video, cdn.LiveStream}, false),
 			},
 			"source_type": {
 				Type:         schema.TypeString,
