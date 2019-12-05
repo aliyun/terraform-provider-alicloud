@@ -38,8 +38,8 @@ func resourceAlicloudDBAccountPrivilege() *schema.Resource {
 			"privilege": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ReadOnly", "ReadWrite"}, false),
-				Default:      ReadOnly,
+				ValidateFunc: validation.StringInSlice([]string{"ReadOnly", "ReadWrite", "DDLOnly", "DMLOnly", "DBOwner"}, false),
+				Default:      "ReadOnly",
 				ForceNew:     true,
 			},
 

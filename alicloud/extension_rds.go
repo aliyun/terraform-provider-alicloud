@@ -9,20 +9,6 @@ const (
 	PostgreSQL = Engine("PostgreSQL")
 )
 
-type DBAccountPrivilege string
-
-const (
-	ReadOnly  = DBAccountPrivilege("ReadOnly")
-	ReadWrite = DBAccountPrivilege("ReadWrite")
-)
-
-type DBAccountType string
-
-const (
-	DBAccountNormal = DBAccountType("Normal")
-	DBAccountSuper  = DBAccountType("Super")
-)
-
 var WEEK_ENUM = []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
 
 var BACKUP_TIME = []string{

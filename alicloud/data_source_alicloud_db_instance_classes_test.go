@@ -100,9 +100,9 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 			"engine_version":       `"5.6"`,
 			//"sorted_by":            `"Price"`,
 		}),
-		existChangMap: map[string]string{
-			"instance_classes.0.price": CHECKSET,
-		},
+		//existChangMap: map[string]string{
+		//	"instance_classes.0.price": CHECKSET,
+		//},
 		fakeConfig: testAccCheckAlicloudDBInstanceClassesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PostPaid"`,
 			"engine":               `"Fake"`,
@@ -113,9 +113,9 @@ func TestAccAlicloudDBInstanceClasses_base(t *testing.T) {
 
 	var existDBInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instance_classes.#":                           CHECKSET,
-			"instance_classes.0.instance_class":            CHECKSET,
-			"instance_classes.0.price":                     "",
+			"instance_classes.#":                CHECKSET,
+			"instance_classes.0.instance_class": CHECKSET,
+			//"instance_classes.0.price":                     "",
 			"instance_classes.0.storage_range.min":         CHECKSET,
 			"instance_classes.0.storage_range.max":         CHECKSET,
 			"instance_classes.0.storage_range.step":        CHECKSET,
