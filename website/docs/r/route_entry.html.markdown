@@ -87,7 +87,7 @@ resource "alicloud_route_entry" "foo" {
 ## Module Support
 
 You can use to the existing [vpc module](https://registry.terraform.io/modules/alibaba/vpc/alicloud) 
-to create a VPC, several VSwitches and add several route entries.
+to create a VPC, several VSwitches and add several route entries one-click.
 
 ## Argument Reference
 

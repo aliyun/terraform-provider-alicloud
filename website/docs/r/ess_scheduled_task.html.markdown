@@ -96,7 +96,7 @@ resource "alicloud_ess_scheduled_task" "default" {
 ## Module Support
 
 You can use to the existing [autoscaling-rule module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling-rule/alicloud) 
-to create scheduled task, different type rules and alarm task directly.
+to create scheduled task, different type rules and alarm task one-click.
 
 ## Argument Reference
 
