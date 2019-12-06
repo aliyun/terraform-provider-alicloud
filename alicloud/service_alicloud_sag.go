@@ -88,6 +88,47 @@ func (s *SagService) DescribeCloudConnectNetworkGrant(id string) (c smartag.Gran
 	return c, WrapErrorf(Error(GetNotFoundMessage("CloudConnectNetworkGrant", id)), NotFoundMsg, ProviderERROR)
 }
 
+func (s *SagService) DescribeCloudConnectNetworkAttachment(id string) (c smartag.SmartAccessGateway, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return c, WrapError(err)
+	}
+	ccnId := parts[0]
+	sagId := parts[1]
+	request := smartag.CreateDescribeSmartAccessGatewaysRequest()
+	request.RegionId = s.client.RegionId
+	request.SmartAGId = sagId
+
+	var raw interface{}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithSagClient(func(ccnClient *smartag.Client) (interface{}, error) {
+			return ccnClient.DescribeSmartAccessGateways(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+				time.Sleep(DefaultIntervalShort * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	})
+	if err != nil {
+		if IsExceptedError(err, "SmartAccessGatewayNotExist") {
+			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	response, _ := raw.(*smartag.DescribeSmartAccessGatewaysResponse)
+	if len(response.SmartAccessGateways.SmartAccessGateway) <= 0 || response.SmartAccessGateways.SmartAccessGateway[0].AssociatedCcnId != ccnId || response.SmartAccessGateways.SmartAccessGateway[0].SmartAGId != sagId {
+		return c, WrapErrorf(Error(GetNotFoundMessage("SmartAccessGatewayAttachment", id)), NotFoundMsg, ProviderERROR)
+	}
+	c = response.SmartAccessGateways.SmartAccessGateway[0]
+	return c, nil
+}
+
 func (s *SagService) DescribeSagAcl(id string) (c smartag.Acl, err error) {
 	request := smartag.CreateDescribeACLsRequest()
 	request.RegionId = s.client.RegionId
@@ -524,6 +565,34 @@ func (s *SagService) WaitForCloudConnectNetworkGrant(id string, status Status, t
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.CenInstanceId, parts[1], ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *SagService) WaitForCloudConnectNetworkAttachment(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	ccnId := parts[0]
+	for {
+		object, err := s.DescribeCloudConnectNetworkAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		}
+		if object.AssociatedCcnId == ccnId && status != Deleted {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AssociatedCcnId, ccnId, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}

@@ -51,6 +51,7 @@ const (
 	EMRCode           = ServiceCode("EMR")
 	CasCode           = ServiceCode("CAS")
 	YUNDUNDBAUDITCode = ServiceCode("YUNDUNDBAUDIT")
+	MARKETCode        = ServiceCode("MARKET")
 )
 
 type Endpoints struct {

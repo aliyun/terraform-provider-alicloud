@@ -26,6 +26,36 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 		}),
 	}
 
+	// At present, there are some limitation for sorted
+	//prePaidSortedByConfRedis := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
+	//		"engine":               "Redis",
+	//		"engine_version":       "5.0",
+	//		"instance_charge_type": "PrePaid",
+	//		"sorted_by":            "Price",
+	//	}),
+	//	existChangMap: map[string]string{
+	//		"classes.#":                CHECKSET,
+	//		"classes.0.instance_class": CHECKSET,
+	//		"classes.0.price":          CHECKSET,
+	//	},
+	//}
+	//
+	//postPaidSortedByConfRedis := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
+	//		"engine":               "Redis",
+	//		"engine_version":       "5.0",
+	//		"instance_charge_type": "PostPaid",
+	//		"sorted_by":            "Price",
+	//	}),
+	//	existChangMap: map[string]string{
+	//		"classes.#":                CHECKSET,
+	//		"classes.0.instance_class": CHECKSET,
+	//		"classes.0.price":          CHECKSET,
+	//	},
+	//}
 	// At present, the datasource does not support memcache
 	//EngineVersionConfMemcache := dataSourceTestAccConfig{
 	//	existConfig: testAccConfig(map[string]interface{}{
@@ -131,6 +161,7 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 	var fakeKVStoreInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"instance_classes.#": "0",
+			"classes.#":          "0",
 		}
 	}
 
@@ -147,6 +178,7 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 	//	ArchitectureRwsplit, NodeTypeDouble, NodeTypeSingle, NodeTypeReadone, NodeTypeReadthree, NodeTypeReadfive,
 	//	ArchitectureStandard, allConf)
 	KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis,
+		//prePaidSortedByConfRedis, postPaidSortedByConfRedis,
 		ChargeTypeConfPostpaid, PerformanceTypeStandardPerformanceType, PerformanceTypeEnhancePerformanceType,
 		StorageTypeInmemory, PackageTypeStandard, PackageTypeCustomized, ArchitectureStandard, ArchitectureCluster,
 		NodeType, ArchitectureStandard, allConf)

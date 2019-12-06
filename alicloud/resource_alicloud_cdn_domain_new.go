@@ -404,7 +404,7 @@ func certificateConfigUpdateNew(client *connectivity.AliyunClient, d *schema.Res
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	d.SetPartial("certificate_config")
-	if okServerCertificate && request.ServerCertificateStatus != "off" {
+	if serverCertificate != "" && request.ServerCertificateStatus != "off" {
 		err := cdnService.WaitForServerCertificateNew(d.Id(), request.ServerCertificate, DefaultTimeout)
 		if err != nil {
 			return WrapError(err)

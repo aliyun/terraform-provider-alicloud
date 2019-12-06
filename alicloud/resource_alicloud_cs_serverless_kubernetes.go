@@ -241,7 +241,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		}
 	}
 
-	var config cs.ClusterConfig
+	var config *cs.ClusterConfig
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
 		var requestInfo *cs.Client
 
@@ -260,7 +260,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 			requestMap["ClusterId"] = d.Id()
 			addDebug("GetClusterConfig", response, requestInfo, requestMap)
 		}
-		config, _ = response.(cs.ClusterConfig)
+		config, _ = response.(*cs.ClusterConfig)
 
 		if err := writeToFile(file.(string), config.Config); err != nil {
 			return WrapError(err)

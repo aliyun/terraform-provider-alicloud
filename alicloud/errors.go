@@ -139,7 +139,7 @@ const (
 	InvalidEssAlarmTaskNotFound                 = "404"
 	InvalidEssScalingConfigurationIdNotFound    = "InvalidScalingConfigurationId.NotFound"
 	//drds
-	InvalidDRDSInstanceIdNotFound = "InvalidDRDSInstanceId.NotFound"
+	InvalidDRDSInstanceIdNotFound = "InvalidDrdsInstanceId.NotFound"
 
 	//mongodb
 	InvalidMongoDBInstanceIdNotFound = "InvalidDBInstanceId.NotFound"

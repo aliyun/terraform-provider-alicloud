@@ -234,9 +234,11 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sag_acls":                          dataSourceAlicloudSagAcls(),
 			"alicloud_yundun_dbaudit_instance":           dataSourceAlicloudDbauditInstances(),
 			"alicloud_yundun_bastionhost_instances":      dataSourceAlicloudBastionhostInstances(),
+			"alicloud_market_products":                   dataSourceAlicloudProducts(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
+			"alicloud_image":                              resourceAliCloudImage(),
 			"alicloud_ram_role_attachment":                resourceAlicloudRamRoleAttachment(),
 			"alicloud_disk":                               resourceAliyunDisk(),
 			"alicloud_disk_attachment":                    resourceAliyunDiskAttachment(),
@@ -396,6 +398,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_network_acl_entries":                 resourceAliyunNetworkAclEntries(),
 			"alicloud_emr_cluster":                         resourceAlicloudEmrCluster(),
 			"alicloud_cloud_connect_network":               resourceAlicloudCloudConnectNetwork(),
+			"alicloud_cloud_connect_network_attachment":    resourceAlicloudCloudConnectNetworkAttachment(),
 			"alicloud_cloud_connect_network_grant":         resourceAlicloudCloudConnectNetworkGrant(),
 			"alicloud_sag_acl":                             resourceAlicloudSagAcl(),
 			"alicloud_sag_acl_rule":                        resourceAlicloudSagAclRule(),
@@ -537,6 +540,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DdosbgpEndpoint = strings.TrimSpace(endpoints["ddosbgp"].(string))
 		config.EmrEndpoint = strings.TrimSpace(endpoints["emr"].(string))
 		config.CasEndpoint = strings.TrimSpace(endpoints["cas"].(string))
+		config.MarketEndpoint = strings.TrimSpace(endpoints["market"].(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
@@ -681,6 +685,8 @@ func init() {
 		"ddosbgp_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom DDOSBGP endpoints.",
 
 		"emr_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom EMR endpoints.",
+
+		"market_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Market Place endpoints.",
 	}
 }
 
@@ -953,6 +959,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["emr_endpoint"],
 				},
+				"market": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["market_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -998,6 +1010,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["ddoscoo"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ddosbgp"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["emr"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["market"].(string)))
 	return hashcode.String(buf.String())
 }
 

@@ -62,7 +62,6 @@ func TestAccAlicloudCSServerlessKubernetesClustersDataSource(t *testing.T) {
 			"clusters.0.id":                  CHECKSET,
 			"clusters.0.name":                REGEXMATCH + fmt.Sprintf("tf-testaccserverlessk8s-%d", rand),
 			"clusters.0.security_group_id":   CHECKSET,
-			"clusters.0.nat_gateway_id":      CHECKSET,
 			"clusters.0.vpc_id":              CHECKSET,
 			"clusters.0.vswitch_id":          CHECKSET,
 			"clusters.0.deletion_protection": CHECKSET,

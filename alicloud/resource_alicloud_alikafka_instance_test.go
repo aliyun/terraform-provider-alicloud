@@ -281,6 +281,7 @@ func TestAccAlicloudAlikafkaInstance_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -296,7 +297,7 @@ func TestAccAlicloudAlikafkaInstance_multi(t *testing.T) {
 					"disk_size":   "500",
 					"deploy_type": "5",
 					"io_max":      "20",
-					"vswitch_id":  "${alicloud_vswitch.default.id}",
+					"vswitch_id":  "${data.alicloud_vswitches.default.ids.0}",
 					"paid_type":   "PostPaid",
 					"spec_type":   "normal",
 				}),

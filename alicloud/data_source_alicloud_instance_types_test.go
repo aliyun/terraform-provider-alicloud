@@ -51,6 +51,7 @@ func TestAccAlicloudInstanceTypesDataSource_gpu(t *testing.T) {
 				Config: testAccCheckAlicloudInstanceTypesDataSourceGpu,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.gpu"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.gpu", "instance_types.0.price"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.gpu", "instance_types.0.id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.gpu", "instance_types.0.cpu_core_count"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.gpu", "instance_types.0.memory_size"),
@@ -75,6 +76,7 @@ func TestAccAlicloudInstanceTypesDataSource_gpu(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.gpu"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.gpu", "instance_types.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.gpu", "instance_types.0.price"),
 					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.gpu", "instance_types.0.cpu_core_count"),
 					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.gpu", "instance_types.0.memory_size"),
 					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.gpu", "instance_types.0.family"),
@@ -91,6 +93,7 @@ func TestAccAlicloudInstanceTypesDataSource_gpu(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.gpu"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.gpu", "instance_types.0.id"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.gpu", "instance_types.0.price"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.gpu", "instance_types.0.cpu_core_count"),
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.gpu", "instance_types.0.memory_size"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.gpu", "instance_types.0.family", "ecs.gn5"),
@@ -126,6 +129,7 @@ func TestAccAlicloudInstanceTypesDataSource_empty(t *testing.T) {
 					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.empty"),
 					resource.TestCheckResourceAttr("data.alicloud_instance_types.empty", "instance_types.#", "0"),
 					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.empty", "instance_types.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.empty", "instance_types.0.price"),
 					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.empty", "instance_types.0.cpu_core_count"),
 					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.empty", "instance_types.0.memory_size"),
 					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.empty", "instance_types.0.family"),
@@ -231,6 +235,7 @@ provider "alicloud" {
 	region = "cn-hangzhou"
 }
 data "alicloud_instance_types" "gpu" {
+	sorted_by = "Price"
 	instance_type_family = "ecs.gn5"
 	instance_charge_type = "PrePaid"
 }
@@ -240,6 +245,7 @@ provider "alicloud" {
 	region = "cn-hangzhou"
 }
 data "alicloud_instance_types" "gpu" {
+	sorted_by = "Price"
 	kubernetes_node_role = "Master"
 	instance_type_family = "ecs.gn5"
 }
@@ -249,6 +255,7 @@ provider "alicloud" {
 	region = "cn-hangzhou"
 }
 data "alicloud_instance_types" "gpu" {
+	sorted_by = "Price"
 	kubernetes_node_role = "Worker"
 	instance_type_family = "ecs.gn5"
 }
