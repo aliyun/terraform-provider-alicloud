@@ -49,7 +49,6 @@ The following arguments are supported:
 * `kubernetes_node_role` - (Optional) Filter the result which is used to create a [kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_kubernetes.html)
  and [managed kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_managed_kubernetes.html). Optional Values: `Master` and `Worker`.
 * `is_outdated` - (Optional, type: bool) If true, outdated instance types are included in the results. Default to false.
-* `sorted_by` - (Optional, Available in 1.63.0+) Sort the list of results. Valid value: [ "CPU", "Memory", "Price" ].
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -62,7 +61,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `cpu_core_count` - Number of CPU cores.
   * `memory_size` - Size of memory, measured in GB.
   * `family` - The instance type family.
-  * `price` - The price will be query and assigned when the `sorted_by` is "Price".
   * `availability_zones` - List of availability zones that support the instance type.
   * `gpu` - The GPU attribution of an instance type:
     * `amount` - The amount of GPU of an instance type.

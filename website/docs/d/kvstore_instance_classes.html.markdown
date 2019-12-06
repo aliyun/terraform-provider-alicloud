@@ -43,7 +43,6 @@ The following arguments are supported:
 * `engine_version` - (Optional) Database version required by the user. Value options of Redis can refer to the latest docs [detail info](https://www.alibabacloud.com/help/doc-detail/60873.htm) `EngineVersion`. Value of Memcache should be empty.
 * `architecture` - (Optional) The KVStore instance system architecture required by the user. Valid values: `standard`, `cluster` and `rwsplit`.
 * `performance_type` - (Optional) The KVStore instance performance type required by the user. Valid values: `standard_performance_type` and `enhance_performance_type`.
-* `sorted_by` - (Optional, Available in 1.63.0+) Sort the list of results. Valid value: [ "Price" ].
 * `storage_type` - (Optional) The KVStore instance storage space required by the user. Valid values: `inmemory` and `hybrid`.
 * `node_type` - (Optional) The KVStore instance node type required by the user. Valid values: `double`, `single`, `readone`, `readthree` and `readfive`.
 * `package_type` - (Optional) The KVStore instance package type required by the user. Valid values: `standard` and `customized`.
@@ -56,5 +55,4 @@ The following attributes are exported in addition to the arguments listed above:
 * `instance_classes` - A list of KVStore available instance classes.
 * `classes` - A list of KVStore available instance classes when the `sorted_by` is "Price". include:
   * `instance_class` - KVStore available instance class.
-  * `price` - The price of kvStore instance class.
     

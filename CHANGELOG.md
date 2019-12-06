@@ -5,6 +5,8 @@
 - **New Resource:** `alicloud_image` [GH-1913]
 
 IMPROVEMENTS:
+
+- improve(docs): improve module guide [GH-1957]
 - improve(db_account_privilege): supports more privileges [GH-1945]
 - improve(datasources): remove sorted_by testcase results from some internal limitation [GH-1943]
 - improve(sdk): Updated sdk to v1.60.280 and modified drds fields [GH-1938]
@@ -13,6 +15,7 @@ IMPROVEMENTS:
 - improve(db_instance): make 'instance_types' 'db_instance_class' 'kvstore_instance_class' support price [GH-1749]
 
 BUG FIXES:
+
 - fix(alikafka): fix bug in when doing alikafka instance multi acc test [GH-1947]
 - fix(CSKubernetes): fix 3az test case [GH-1942]
 - fix(cdn_domain_new): constant timeout waiting for server cert [GH-1937]

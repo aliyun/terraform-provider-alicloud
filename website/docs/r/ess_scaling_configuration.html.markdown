@@ -86,7 +86,7 @@ resource "alicloud_ess_scaling_configuration" "default" {
 ## Module Support
 
 You can use to the existing [autoscaling module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling/alicloud) 
-to create a configuration, scaling group and lifecycle hook directly.
+to create a configuration, scaling group and lifecycle hook one-click.
 
 ## Argument Reference
 
