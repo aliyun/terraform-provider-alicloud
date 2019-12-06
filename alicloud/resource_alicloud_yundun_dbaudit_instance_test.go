@@ -177,16 +177,6 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"plan_code": "alpha.premium",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"plan_code": "alpha.premium",
-					}),
-				),
-			},
 		},
 	})
 }
@@ -220,7 +210,7 @@ func TestAccAlicloudYundunDbauditInstance_Multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"count":       "5",
+					"count":       "2",
 					"description": "${var.name}-${count.index}",
 					"plan_code":   "alpha.professional",
 					"period":      "1",
