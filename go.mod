@@ -32,14 +32,13 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/valyala/bytebufferpool v0.0.0-20180905182247-cdfbe9377474 // indirect
 	github.com/valyala/fasthttp v0.0.0-20180927122258-761788a34bb6 // indirect
-	golang.org/x/tools v0.0.0-20191205225056-3393d29bb9fe // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/klog v1.0.0 // indirect
-	k8s.io/utils v0.0.0-20190221042446-c2654d5206da
+	k8s.io/utils v0.0.0-20190221042446-c2654d5206da // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
 
