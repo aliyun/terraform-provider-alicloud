@@ -9,6 +9,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
+	"encoding/base64"
+
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -16,6 +18,28 @@ import (
 type CsService struct {
 	client *connectivity.AliyunClient
 }
+
+const (
+	COMPONENT_AUTO_SCALER      = "cluster-autoscaler"
+	COMPONENT_DEFAULT_VRESION  = "v1.0.0"
+	SCALING_CONFIGURATION_NAME = "kubernetes_autoscaler_autogen"
+	DefaultECSTag              = "k8s.aliyun.com"
+	RECYCLE_MODE_LABEL         = "k8s.io/cluster-autoscaler/node-template/label/policy"
+	DefaultAutoscalerTag       = "k8s.io/cluster-autoscaler"
+	SCALING_GROUP_NAME         = "sg-%s-%s"
+	DEFAULT_COOL_DOWN_TIME     = 300
+	RELEASE_MODE               = "release"
+	RECYCLE_MODE               = "recycle"
+
+	PRIORITY_POLICY       = "PRIORITY"
+	COST_OPTIMIZED_POLICY = "COST_OPTIMIZED"
+	BALANCE_POLICY        = "BALANCE"
+)
+
+var (
+	ATTACH_SCRIPT_WITH_VERSION = `#!/bin/sh
+curl http://aliacs-k8s-%s.oss-%s.aliyuncs.com/public/pkg/run/attach/%s/attach_node.sh | bash -s -- --openapi-token %s --ess true `
+)
 
 func (s *CsService) GetContainerClusterByName(name string) (cluster cs.ClusterType, err error) {
 	name = Trim(name)
@@ -367,4 +391,91 @@ func (s *CsService) ignoreTag(t cs.Tag) bool {
 		}
 	}
 	return false
+}
+
+func (s *CsService) GetPermanentToken(clusterId string) (string, error) {
+
+	describeClusterTokensResponse, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+		return csClient.DescribeClusterTokens(clusterId)
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to get permanent token,because of %v", err)
+	}
+
+	tokens, ok := describeClusterTokensResponse.([]*cs.ClusterTokenResponse)
+
+	if ok != true {
+		return "", fmt.Errorf("failed to parse ClusterTokenResponse of cluster %s", clusterId)
+	}
+
+	permanentTokens := make([]string, 0)
+
+	for _, token := range tokens {
+		if token.Expired == 0 && token.IsActive == 1 {
+			permanentTokens = append(permanentTokens, token.Token)
+			break
+		}
+	}
+
+	// create a new token
+	if len(permanentTokens) == 0 {
+		createClusterTokenResponse, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			clusterTokenReqeust := &cs.ClusterTokenReqeust{}
+			clusterTokenReqeust.IsPermanently = true
+			return csClient.CreateClusterToken(clusterId, clusterTokenReqeust)
+		})
+		if err != nil {
+			return "", fmt.Errorf("failed to create permanent token,because of %v", err)
+		}
+
+		token, ok := createClusterTokenResponse.(*cs.ClusterTokenResponse)
+		if ok != true {
+			return "", fmt.Errorf("failed to parse token of %s", clusterId)
+		}
+		return token.Token, nil
+	}
+
+	return permanentTokens[0], nil
+}
+
+// GetUserData of cluster
+func (s *CsService) GetUserData(clusterId string, labels string, taints string) (string, error) {
+
+	token, err := s.GetPermanentToken(clusterId)
+
+	if err != nil {
+		return "", err
+	}
+
+	if labels == "" {
+		labels = fmt.Sprintf("%s=true", DefaultAutoscalerTag)
+	} else {
+		labels = fmt.Sprintf("%s,%s=true", labels, DefaultAutoscalerTag)
+	}
+
+	cluster, err := s.DescribeCsKubernetes(clusterId)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to describe cs kuberentes cluster,because of %v", err)
+	}
+
+	extra_options := make([]string, 0)
+
+	if len(labels) > 0 || len(taints) > 0 {
+
+		if len(labels) != 0 {
+			extra_options = append(extra_options, fmt.Sprintf("--labels %s", labels))
+		}
+
+		if len(taints) != 0 {
+			extra_options = append(extra_options, fmt.Sprintf("--taints %s", taints))
+		}
+	}
+
+	extra_options_in_line := strings.Join(extra_options, " ")
+
+	version := cluster.CurrentVersion
+	region := cluster.RegionID
+
+	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(ATTACH_SCRIPT_WITH_VERSION+extra_options_in_line, region, region, version, token))), nil
 }

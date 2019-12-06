@@ -14,6 +14,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
+	officalCS "github.com/aliyun/alibaba-cloud-sdk-go/services/cs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddosbgp"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
@@ -83,6 +84,7 @@ type AliyunClient struct {
 	dnsconn                      *alidns.Client
 	ramconn                      *ram.Client
 	csconn                       *cs.Client
+	officalCSConn                *officalCS.Client
 	cdnconn_new                  *cdn_new.Client
 	crconn                       *cr.Client
 	cdnconn                      *cdn.CdnClient
@@ -195,6 +197,33 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 	}
 
 	return do(client.ecsconn)
+}
+
+func (client *AliyunClient) WithOfficalCSClient(do func(*officalCS.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the CS client if necessary
+	if client.officalCSConn == nil {
+		endpoint := client.config.CsEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CONTAINCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CONTAINCode), endpoint)
+		}
+		csconn, err := officalCS.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CS client: %#v", err)
+		}
+
+		csconn.AppendUserAgent(Terraform, terraformVersion)
+		csconn.AppendUserAgent(Provider, providerVersion)
+		csconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.officalCSConn = csconn
+	}
+
+	return do(client.officalCSConn)
 }
 
 func (client *AliyunClient) WithRdsClient(do func(*rds.Client) (interface{}, error)) (interface{}, error) {
@@ -474,6 +503,30 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the CS client if necessary
+	if client.csconn == nil {
+		csconn := cs.NewClientForAussumeRole(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
+		csconn.SetUserAgent(client.getUserAgent())
+		endpoint := client.config.CsEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CONTAINCode)
+		}
+		if endpoint != "" {
+			if !strings.HasPrefix(endpoint, "http") {
+				endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
+			}
+			csconn.SetEndpoint(endpoint)
+		}
+		client.csconn = csconn
+	}
+
+	return do(client.csconn)
+}
+
+func (client *AliyunClient) WithOfficialCsClient(do func(*cs.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
