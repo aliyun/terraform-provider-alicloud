@@ -1,4 +1,5 @@
 ---
+subcategory: "Container Registry (CR)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cr_namespaces"
 sidebar_current: "docs-alicloud-datasource-cr-namespaces"

@@ -1,4 +1,5 @@
 ---
+subcategory: "Container Service (CS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cs_kubernetes"
 sidebar_current: "docs-alicloud-resource-cs-kubernetes"
@@ -199,7 +200,7 @@ The following arguments are supported:
 * `force_update` - (Optional, Available in 1.50.0+) Whether to force the update of kubernetes cluster arguments. Default to false.
 * `availability_zone` - (Optional, ForceNew) The Zone where new kubernetes cluster will be located. If it is not be specified, the `vswitch_ids` should be set, its value will be vswitch's zone.
 * `vswitch_id` - (Deprecated from version 1.16.0)(Force new resource) The vswitch where new kubernetes cluster will be located. If it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
-* `vswitch_ids` - (Optional, ForceNew) The vswitch where new kubernetes cluster will be located. For SingleAZ Cluster, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified. For MultiAZ Cluster, you must create three vswitches firstly, specify them here.
+* `vswitch_ids` - (Required, ForceNew) The vswitch where new kubernetes cluster will be located. Specify one or more vswitch's id. It must be in the zone which `availability_zone` specified.
 * `new_nat_gateway` - (Optional, ForceNew) Whether to create a new nat gateway while creating kubernetes cluster. Default to true.
 * `master_instance_type` - (Deprecated from version 1.16.0)(Required, Force new resource) The instance type of master node.
 * `master_instance_types` - (Required, ForceNew) The instance type of master node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
@@ -213,11 +214,11 @@ You can get the available kubetnetes master node instance types by [datasource i
 * `kms_encrypted_password` - (Optional, ForceNew, Available in 1.57.1+) An KMS encrypts password used to a cs kubernetes. It is conflicted with `password` and `key_name`.
 * `kms_encryption_context` - (Optional, ForceNew, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `user_ca` - (Optional, ForceNew) The path of customized CA cert, you can use this CA to sign client certs to connect your cluster.
-* `cluster_network_type` - (Required, ForceNew) The network that cluster uses, use `flannel` or `terway`.
+* `cluster_network_type` - (Optional, ForceNew) The network that cluster uses, use `flannel` or `terway`.
 * `pod_cidr` - (Optional, ForceNew) The CIDR block for the pod network. It will be allocated automatically when `vswitch_ids` is not specified.
 It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 Maximum number of hosts allowed in the cluster: 256. Refer to [Plan Kubernetes CIDR blocks under VPC](https://www.alibabacloud.com/help/doc-detail/64530.htm).
-* `service_cidr` - (Optional, ForceNew) The CIDR block for the service network.  It will be allocated automatically when `vswitch_id` is not specified.
+* `service_cidr` - (Optional, ForceNew) The CIDR block for the service network. 
 It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `master_instance_charge_type` - (Optional, ForceNew) Master payment type. `PrePaid` or `PostPaid`, defaults to `PostPaid`.
 * `master_period_unit` - (Optional) Master payment period unit. `Month` or `Week`, defaults to `Month`.
@@ -237,7 +238,7 @@ Larger this number is, less pods can be allocated on each node. Default value is
 * `enable_ssh` - (Optional, ForceNew) Whether to allow to SSH login kubernetes. Default to false.
 * `slb_internet_enabled` - (Optional, ForceNew) Whether to create internet load balancer for API Server. Default to true.
 * `master_disk_category` - (Optional, ForceNew) The system disk category of master node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `master_disk_size` - (Optional, ForceNew) The system disk size of master node. Its valid value range [20~32768] in GB. Default to 20.
+* `master_disk_size` - (Optional, ForceNew) The system disk size of master node. Its valid value range [20~500] in GB. Default to 20.
 * `worker_disk_category` - (Optional, ForceNew) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `worker_disk_size` - (Optional, ForceNew) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
 * `worker_data_disk_size` - (Optional, ForceNew) The data disk size of worker node. Its valid value range [20~32768] in GB. When `worker_data_disk_category` is presented, it defaults to 40.

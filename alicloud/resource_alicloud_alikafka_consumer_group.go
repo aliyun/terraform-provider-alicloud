@@ -4,14 +4,16 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudAlikafkaConsumerGroup() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudAlikafkaConsumerGroupCreate,
+		Update: resourceAlicloudAlikafkaConsumerGroupUpdate,
 		Read:   resourceAlicloudAlikafkaConsumerGroupRead,
 		Delete: resourceAlicloudAlikafkaConsumerGroupDelete,
 		Importer: &schema.ResourceImporter{
@@ -28,8 +30,9 @@ func resourceAlicloudAlikafkaConsumerGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAlikafkaStringLen,
+				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -68,7 +71,7 @@ func resourceAlicloudAlikafkaConsumerGroupCreate(d *schema.ResourceData, meta in
 	}
 
 	d.SetId(instanceId + ":" + consumerId)
-	return resourceAlicloudAlikafkaConsumerGroupRead(d, meta)
+	return resourceAlicloudAlikafkaConsumerGroupUpdate(d, meta)
 }
 
 func resourceAlicloudAlikafkaConsumerGroupRead(d *schema.ResourceData, meta interface{}) error {
@@ -89,7 +92,23 @@ func resourceAlicloudAlikafkaConsumerGroupRead(d *schema.ResourceData, meta inte
 	d.Set("instance_id", object.InstanceId)
 	d.Set("consumer_id", object.ConsumerId)
 
+	tags, err := alikafkaService.DescribeTags(d.Id(), nil, TagResourceConsumerGroup)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", alikafkaService.tagsToMap(tags))
+
 	return nil
+}
+
+func resourceAlicloudAlikafkaConsumerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	alikafkaService := AlikafkaService{client}
+	if err := alikafkaService.setInstanceTags(d, TagResourceConsumerGroup); err != nil {
+		return WrapError(err)
+	}
+	return resourceAlicloudAlikafkaConsumerGroupRead(d, meta)
 }
 
 func resourceAlicloudAlikafkaConsumerGroupDelete(d *schema.ResourceData, meta interface{}) error {

@@ -6,7 +6,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -18,20 +19,21 @@ func dataSourceAlicloudMongoDBInstances() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(MongoDBSharding),
 					string(MongoDBReplicate),
-				}),
+				}, false),
 			},
 			"instance_class": {
 				Type:     schema.TypeString,
@@ -185,11 +187,7 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
-		if r, err := regexp.Compile(v.(string)); err == nil {
-			nameRegex = r
-		} else {
-			return WrapError(err)
-		}
+		nameRegex = regexp.MustCompile(v.(string))
 	}
 
 	var instClass string
@@ -224,23 +222,21 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 		}
 
 		for _, item := range response.DBInstances.DBInstance {
-			switch {
-			case nameRegex != nil:
-				if !nameRegex.MatchString(item.DBInstanceDescription) {
-					continue
-				}
-			case len(instClass) > 0 && instClass != strings.ToLower(string(item.DBInstanceClass)):
+			if nameRegex != nil && !nameRegex.MatchString(item.DBInstanceDescription) {
 				continue
-			case len(az) > 0 && az != strings.ToLower(string(item.ZoneId)):
-				continue
-			case len(idsMap) > 0:
-				_, ok := idsMap[item.DBInstanceId]
-				if !ok {
-					continue
-				}
-			default:
-				dbi = append(dbi, item)
 			}
+			if len(instClass) > 0 && instClass != strings.ToLower(string(item.DBInstanceClass)) {
+				continue
+			}
+			if len(az) > 0 && az != strings.ToLower(string(item.ZoneId)) {
+				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[item.DBInstanceId]; !ok {
+					continue
+				}
+			}
+			dbi = append(dbi, item)
 		}
 
 		if len(response.DBInstances.DBInstance) < PageSizeLarge {
@@ -273,10 +269,10 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 			"network_type":      item.NetworkType,
 			"lock_mode":         item.LockMode,
 			"availability_zone": item.ZoneId,
+			"instance_class":    item.DBInstanceClass,
+			"storage":           item.DBInstanceStorage,
+			"replication":       item.ReplicationFactor,
 		}
-		mapping["instance_class"] = item.DBInstanceClass
-		mapping["storage"] = item.DBInstanceStorage
-		mapping["replication"] = item.ReplicationFactor
 		mongoList := []map[string]interface{}{}
 		for _, v := range item.MongosList.MongosAttribute {
 			mongo := map[string]interface{}{

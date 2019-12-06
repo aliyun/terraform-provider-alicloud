@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
@@ -83,12 +83,13 @@ func (s *CenService) CenInstanceStateRefreshFunc(id string, failStates []string)
 	}
 }
 
-func (s *CenService) DescribeCenInstanceAttachment(id string) (c *cbn.ChildInstance, err error) {
+func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstance, error) {
+	c := &cbn.ChildInstance{}
 	request := cbn.CreateDescribeCenAttachedChildInstancesRequest()
 	request.RegionId = s.client.RegionId
 	cenId, instanceId, err := s.GetCenIdAndAnotherId(id)
 	if err != nil {
-		return nil, WrapError(err)
+		return c, WrapError(err)
 	}
 	request.CenId = cenId
 
@@ -102,7 +103,7 @@ func (s *CenService) DescribeCenInstanceAttachment(id string) (c *cbn.ChildInsta
 			if IsExceptedError(err, ParameterInstanceIdNotExist) {
 				return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance Attachment", instanceId)), NotFoundMsg, ProviderERROR)
 			}
-			return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), ProviderERROR)
+			return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), ProviderERROR)
 		}
 		response, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)

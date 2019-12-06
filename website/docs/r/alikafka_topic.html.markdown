@@ -1,4 +1,5 @@
 ---
+subcategory: "Alikafka"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alikafka_topic"
 sidebar_current: "docs-alicloud-resource-alikafka-topic"
@@ -20,8 +21,28 @@ Provides an ALIKAFKA topic resource.
 Basic Usage
 
 ```
-variable "instance_id" {
-  default = "yourInstanceId"
+
+data "alicloud_zones" "default" {
+    available_resource_creation= "VSwitch"
+}
+resource "alicloud_vpc" "default" {
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_alikafka_instance" "default" {
+  name = "tf-testacc-alikafkainstance"
+  topic_quota = "50"
+  disk_type = "1"
+  disk_size = "500"
+  deploy_type = "5"
+  io_max = "20"
+  vswitch_id = "${alicloud_vswitch.default.id}"
 }
 
 variable "topic" {
@@ -29,7 +50,7 @@ variable "topic" {
 }
 
 resource "alicloud_alikafka_topic" "default" {
-  instance_id = "${var.instance_id}"
+  instance_id = "${alicloud_alikafka_instance.default.id}"
   topic = "${var.topic}"
   local_topic = "false"
   compact_topic = "false"
@@ -48,6 +69,7 @@ The following arguments are supported:
 * `compact_topic` - (Optional, ForceNew) Whether the topic is compactTopic or not. Compact topic must be a localTopic.
 * `partition_num` - (Optional, ForceNew) The number of partitions of the topic. The number should between 1 and 48.
 * `remark` - (Required, ForceNew) This attribute is a concise description of topic. The length cannot exceed 64.
+* `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
@@ -60,5 +82,5 @@ The following attributes are exported:
 ALIKAFKA TOPIC can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_alikafka_topic.topic KAFKA_INST_1234567890_Baso1234567:alikafkaTopicDemo
+$ terraform import alicloud_alikafka_topic.topic alikafka_post-cn-123455abc:topicName
 ```

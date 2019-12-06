@@ -4,7 +4,8 @@ import (
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -21,13 +22,14 @@ func dataSourceAlicloudSlbMasterSlaveServerGroups() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 				ForceNew: true,
 				MinItems: 1,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
 			},
 			"output_file": {
@@ -77,6 +79,7 @@ func dataSourceAlicloudSlbMasterSlaveServerGroups() *schema.Resource {
 									"is_backup": {
 										Type:     schema.TypeInt,
 										Computed: true,
+										Removed:  "Field 'is_backup' has been removed from provider version 1.63.0.",
 									},
 								},
 							},
@@ -166,7 +169,6 @@ func slbMasterSlaveServerGroupsDescriptionAttributes(d *schema.ResourceData, ser
 					"instance_id": backendServer.ServerId,
 					"weight":      backendServer.Weight,
 					"server_type": backendServer.ServerType,
-					"is_backup":   backendServer.IsBackup,
 				}
 				backendServerMappings = append(backendServerMappings, backendServerMapping)
 			}

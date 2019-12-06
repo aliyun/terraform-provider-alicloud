@@ -1,11 +1,13 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -17,22 +19,23 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"engine": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(MySQL),
 					string(SQLServer),
 					string(PPAS),
 					string(PostgreSQL),
-				}),
+				}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -43,12 +46,12 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 			"db_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					"Primary",
 					"Readonly",
 					"Guard",
 					"Temp",
-				}),
+				}, false),
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -61,16 +64,12 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 			"connection_mode": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					"Standard",
 					"Safe",
-				}),
+				}, false),
 			},
-			"tags": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validateJsonString,
-			},
+			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -187,7 +186,14 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 	request.VpcId = d.Get("vpc_id").(string)
 	request.VSwitchId = d.Get("vswitch_id").(string)
 	request.ConnectionMode = d.Get("connection_mode").(string)
-	request.Tags = d.Get("tags").(string)
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := v.(map[string]interface{})
+		bs, err := json.Marshal(tagsMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.Tags = string(bs)
+	}
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 

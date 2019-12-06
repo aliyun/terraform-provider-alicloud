@@ -76,14 +76,14 @@ func (client *Client) DescribeTagsWithCallback(request *DescribeTagsRequest, cal
 // DescribeTagsRequest is the request struct for api DescribeTags
 type DescribeTagsRequest struct {
 	*requests.RpcRequest
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ClientToken          string           `position:"Query" name:"ClientToken"`
-	ProxyId              string           `position:"Query" name:"proxyId"`
 	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
-	Tags                 string           `position:"Query" name:"Tags"`
+	ProxyId              string           `position:"Query" name:"proxyId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	Tags                 string           `position:"Query" name:"Tags"`
 }
 
 // DescribeTagsResponse is the response struct for api DescribeTags
@@ -98,7 +98,7 @@ func CreateDescribeTagsRequest() (request *DescribeTagsRequest) {
 	request = &DescribeTagsRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeTags", "rds", "openAPI")
+	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeTags", "", "")
 	return
 }
 

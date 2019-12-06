@@ -11,10 +11,10 @@ import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAlicloudOssBucketObject_basic(t *testing.T) {
@@ -88,12 +88,23 @@ func TestAccAlicloudOssBucketObject_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bucket":       "${alicloud_oss_bucket.default.bucket}",
-					"key":          "test-object-source-key",
-					"content":      REMOVEKEY,
-					"source":       tmpFile.Name(),
-					"content_type": "binary/octet-stream",
-					"acl":          REMOVEKEY,
+					"server_side_encryption": "KMS",
+					"kms_key_id":             "423a0d8a-0c28-4899-be56-32217cb95e88",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bucket":                 "${alicloud_oss_bucket.default.bucket}",
+					"server_side_encryption": "AES256",
+					"kms_key_id":             REMOVEKEY,
+					"key":                    "test-object-source-key",
+					"content":                REMOVEKEY,
+					"source":                 tmpFile.Name(),
+					"content_type":           "binary/octet-stream",
+					"acl":                    REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudOssBucketObjectExists(

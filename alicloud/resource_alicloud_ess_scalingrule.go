@@ -4,9 +4,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -26,10 +28,9 @@ func resourceAlicloudEssScalingRule() *schema.Resource {
 				ForceNew: true,
 			},
 			"adjustment_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{string(QuantityChangeInCapacity),
-					string(PercentChangeInCapacity), string(TotalCapacity)}),
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"QuantityChangeInCapacity", "PercentChangeInCapacity", "TotalCapacity"}, false),
 			},
 			"adjustment_value": {
 				Type:     schema.TypeInt,
@@ -47,18 +48,18 @@ func resourceAlicloudEssScalingRule() *schema.Resource {
 			"cooldown": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateIntegerInRange(0, 86400),
+				ValidateFunc: validation.IntBetween(0, 86400),
 			},
 			"scaling_rule_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "SimpleScalingRule",
 				ForceNew: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(SimpleScalingRule),
 					string(TargetTrackingScalingRule),
 					string(StepScalingRule),
-				}),
+				}, false),
 			},
 			"estimated_instance_warmup": {
 				Type:     schema.TypeInt,
@@ -291,10 +292,10 @@ func buildAlicloudEssScalingRuleArgs(d *schema.ResourceData, meta interface{}) (
 		if v, ok := d.GetOk("adjustment_type"); ok && v.(string) != "" {
 			request.AdjustmentType = v.(string)
 		}
-		if v, ok := d.GetOk("adjustment_value"); ok {
+		if v, ok := d.GetOkExists("adjustment_value"); ok {
 			request.AdjustmentValue = requests.NewInteger(v.(int))
 		}
-		if v, ok := d.GetOk("cooldown"); ok && v.(int) != 0 {
+		if v, ok := d.GetOk("cooldown"); ok {
 			request.Cooldown = requests.NewInteger(v.(int))
 		}
 	case string(TargetTrackingScalingRule):

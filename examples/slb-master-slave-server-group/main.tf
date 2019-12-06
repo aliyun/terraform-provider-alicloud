@@ -19,7 +19,7 @@ variable "name" {
 }
 
 variable "number" {
-  default = "1"
+  default = 2
 }
 
 resource "alicloud_vpc" "main" {
@@ -40,10 +40,10 @@ resource "alicloud_security_group" "group" {
 }
 
 resource "alicloud_instance" "instance" {
+  count                      = 2
   image_id                   = data.alicloud_images.image.images[0].id
   instance_type              = data.alicloud_instance_types.default.instance_types[0].id
   instance_name              = var.name
-  count                      = "2"
   security_groups            = [alicloud_security_group.group.id]
   internet_charge_type       = "PayByTraffic"
   internet_max_bandwidth_out = "10"
@@ -54,15 +54,26 @@ resource "alicloud_instance" "instance" {
 }
 
 resource "alicloud_slb" "instance" {
-  name          = var.name
-  vswitch_id    = alicloud_vswitch.main.id
-  specification = "slb.s2.small"
+  name              = var.name
+  vswitch_id        = alicloud_vswitch.main.id
+  specification     = "slb.s2.small"
+  delete_protection = "on"
 }
 
-resource "alicloud_network_interface" "default" {
-  count           = var.number
-  name            = var.name
-  vswitch_id      = alicloud_vswitch.main.id
-  security_groups = [alicloud_security_group.group.id]
-}
+resource "alicloud_slb_master_slave_server_group" "this" {
+  load_balancer_id = alicloud_slb.instance.id
+  name             = var.name
+  servers {
+    server_id   = alicloud_instance.instance.0.id
+    port        = 100
+    weight      = 100
+    server_type = "Master"
+  }
 
+  servers {
+    server_id   = alicloud_instance.instance.1.id
+    port        = 100
+    weight      = 100
+    server_type = "Slave"
+  }
+}

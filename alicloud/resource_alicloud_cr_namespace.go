@@ -3,8 +3,10 @@ package alicloud
 import (
 	"encoding/json"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -23,7 +25,7 @@ func resourceAlicloudCRNamespace() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateContainerRegistryNamespaceName,
+				ValidateFunc: validation.StringLenBetween(2, 30),
 			},
 			"auto_create": {
 				Type:     schema.TypeBool,
@@ -32,7 +34,7 @@ func resourceAlicloudCRNamespace() *schema.Resource {
 			"default_visibility": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"PUBLIC", "PRIVATE"}),
+				ValidateFunc: validation.StringInSlice([]string{"PUBLIC", "PRIVATE"}, false),
 			},
 		},
 	}

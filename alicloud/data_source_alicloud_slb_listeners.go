@@ -5,7 +5,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -147,6 +147,10 @@ func dataSourceAlicloudSlbListeners() *schema.Resource {
 							Computed: true,
 						},
 						"ssl_certificate_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"server_certificate_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -323,6 +327,7 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 			mapping["health_check_http_code"] = response.HealthCheckHttpCode
 			mapping["gzip"] = response.Gzip
 			mapping["ssl_certificate_id"] = response.ServerCertificateId
+			mapping["server_certificate_id"] = response.ServerCertificateId
 			mapping["ca_certificate_id"] = response.CACertificateId
 			mapping["x_forwarded_for"] = response.XForwardedFor
 			mapping["x_forwarded_for_slb_ip"] = response.XForwardedForSLBIP

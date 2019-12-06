@@ -6,6 +6,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -16,9 +19,9 @@ import (
 
 	"strings"
 
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -145,9 +148,38 @@ func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
 	}
 }
 
-func testAccPreCheckWithAlikafkaInstanceSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no alikafka instance id setting")
+func testAccPreCheckWithSmartAccessGatewaySetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("SAG_INSTANCE_ID")); v == "" {
+		t.Skipf("Skipping the test case with no sag instance id setting")
+		t.Skipped()
+	}
+}
+
+func testAccPreCheckWithNoDefaultVswitch(t *testing.T) {
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	request := vpc.CreateDescribeVSwitchesRequest()
+	request.RegionId = string(client.Region)
+	request.PageSize = requests.NewInteger(PageSizeSmall)
+	request.PageNumber = requests.NewInteger(1)
+	request.IsDefault = requests.NewBoolean(true)
+
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DescribeVSwitches(request)
+	})
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	response, _ := raw.(*vpc.DescribeVSwitchesResponse)
+
+	if len(response.VSwitches.VSwitch) < 1 {
+		t.Skipf("Skipping the test case with there is no default vswitche")
 		t.Skipped()
 	}
 }

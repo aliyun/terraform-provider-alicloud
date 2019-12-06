@@ -3,7 +3,8 @@ package alicloud
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -39,14 +40,14 @@ func resourceAlicloudEssScheduledTask() *schema.Resource {
 				Type:         schema.TypeInt,
 				Default:      600,
 				Optional:     true,
-				ValidateFunc: validateIntegerInRange(0, 21600),
+				ValidateFunc: validation.IntBetween(0, 21600),
 			},
 			//RecurrenceType, RecurrenceValue and RecurrenceEndTime must be specified.
 			"recurrence_type": {
 				Type:         schema.TypeString,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(Daily), string(Weekly), string(Monthly)}),
+				ValidateFunc: validation.StringInSlice([]string{"Daily", "Weekly", "Monthly", "Cron"}, false),
 			},
 			"recurrence_value": {
 				Type:     schema.TypeString,
@@ -137,15 +138,9 @@ func resourceAliyunEssScheduledTaskUpdate(d *schema.ResourceData, meta interface
 		request.LaunchTime = d.Get("launch_time").(string)
 	}
 
-	if d.HasChange("recurrence_type") {
+	if d.HasChange("recurrence_type") || d.HasChange("recurrence_value") || d.HasChange("recurrence_end_time") {
 		request.RecurrenceType = d.Get("recurrence_type").(string)
-	}
-
-	if d.HasChange("recurrence_value") {
 		request.RecurrenceValue = d.Get("recurrence_value").(string)
-	}
-
-	if d.HasChange("recurrence_end_time") {
 		request.RecurrenceEndTime = d.Get("recurrence_end_time").(string)
 	}
 

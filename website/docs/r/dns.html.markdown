@@ -1,4 +1,5 @@
 ---
+subcategory: "DNS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dns"
 sidebar_current: "docs-alicloud-resource-dns"
@@ -27,7 +28,7 @@ The following arguments are supported:
 
 * `name` - (Required, ForceNew) Name of the domain. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
 * `group_id` - (Optional) Id of the group in which the domain will add. If not supplied, then use default group.
-
+* `resource_group_id` - (Optional, ForceNew, Available in 1.59.0+) The Id of resource group which the dns belongs.
 
 ## Attributes Reference
 

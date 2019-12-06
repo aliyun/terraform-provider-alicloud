@@ -5,7 +5,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -18,12 +19,12 @@ func dataSourceAlicloudRouterInterfaces() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{string(Active), string(Inactive), string(Idle)}),
+				ValidateFunc: validation.StringInSlice([]string{"Active", "Inactive", "Idle"}, false),
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
 			},
 			"specification": {
@@ -40,8 +41,8 @@ func dataSourceAlicloudRouterInterfaces() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(VRouter), string(VBR)}),
+				ValidateFunc: validation.StringInSlice([]string{
+					string(VRouter), string(VBR)}, false),
 			},
 			"role": {
 				Type:     schema.TypeString,
@@ -62,6 +63,7 @@ func dataSourceAlicloudRouterInterfaces() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"names": {
 				Type:     schema.TypeList,

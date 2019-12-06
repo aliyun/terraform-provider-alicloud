@@ -1,4 +1,5 @@
 ---
+subcategory: "Private Zone"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_pvtz_zone_attachment"
 sidebar_current: "docs-alicloud-resource-pvtz-zone-attachment"
@@ -14,32 +15,123 @@ Provides vpcs bound to Alicloud Private Zone resource.
 
 ## Example Usage
 
-Basic Usage
+Using `vpc_ids` to attach being in same region several vpc instances to a private zone
 
 ```
 resource "alicloud_pvtz_zone" "zone" {
   name = "foo.test.com"
 }
 
-resource "alicloud_vpc" "vpc" {
-  name       = "tf_test_foo"
+resource "alicloud_vpc" "first" {
+  name       = "the-first-vpc"
   cidr_block = "172.16.0.0/12"
+}
+resource "alicloud_vpc" "second" {
+  name       = "the-second-vpc"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
+  zone_id = alicloud_pvtz_zone.zone.id
+  vpc_ids = [alicloud_vpc.first.id, alicloud_vpc.second.id]
+}
+```
+
+Using `vpcs` to attach being in same region several vpc instances to a private zone
+
+```
+resource "alicloud_pvtz_zone" "zone" {
+  name = "foo.test.com"
+}
+
+resource "alicloud_vpc" "first" {
+  name       = "the-first-vpc"
+  cidr_block = "172.16.0.0/12"
+}
+resource "alicloud_vpc" "second" {
+  name       = "the-second-vpc"
+  cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
   zone_id = "${alicloud_pvtz_zone.zone.id}"
-  vpc_ids = ["${alicloud_vpc.vpc.id}"]
+  vpcs {
+    vpc_id = alicloud_vpc.first.id
+  }
+  vpcs {
+    vpc_id = alicloud_vpc.second.id
+  }
 }
 ```
+
+Using `vpcs` to attach being in different regions several vpc instances to a private zone
+
+
+```
+resource "alicloud_pvtz_zone" "zone" {
+  name = "foo.test.com"
+}
+
+resource "alicloud_vpc" "first" {
+  name       = "the-first-vpc"
+  cidr_block = "172.16.0.0/12"
+}
+resource "alicloud_vpc" "second" {
+  name       = "the-second-vpc"
+  cidr_block = "172.16.0.0/16"
+}
+
+provider "alicloud" {
+  alias  = "eu"
+  region = "eu-central-1"
+}
+
+resource "alicloud_vpc" "third" {
+  provider   = alicloud.eu
+  name       = "the-thrid-vpc"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
+  zone_id = "${alicloud_pvtz_zone.zone.id}"
+  vpcs {
+    vpc_id = alicloud_vpc.first.id
+  }
+  vpcs {
+    vpc_id = alicloud_vpc.second.id
+  }
+  vpcs {
+    region_id = "eu-central-1"
+    vpc_id    = alicloud_vpc.third.id
+  }
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
 
 * `zone_id` - (Required, ForceNew) The name of the Private Zone Record.
-* `vpc_ids` - (Required) The id List of the VPC, for example:["vpc-1","vpc-2"].
+* `vpc_ids` - (Optional, Conflict with `vpcs`) The id List of the VPC with the same region, for example:["vpc-1","vpc-2"]. 
+* `vpcs` - (Optional, Conflict with `vpc_ids`, Available in 1.62.1+) The List of the VPC:
+    * `vpc_id` - (Required) The Id of the vpc.
+    * `region_id` - (Option) The region of the vpc. If not set, the current region will instead of.
+    
+    Recommend to use `vpcs`.
+
+* `lang` - (Optional, Available in 1.62.1+) The language of code.
+* `user_client_ip` - (Optional, Available in 1.62.1+) The user custom IP address.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the Private Zone VPC Attachment.
+* `id` - The ID of the Private Zone VPC Attachment. It sames with `zone_id`.
+
+## Import
+
+Private Zone attachment can be imported using the id(same with `zone_id`), e.g.
+
+```
+$ terraform import alicloud_pvtz_zone_attachment.example abc123456
+```

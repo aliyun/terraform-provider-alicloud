@@ -1,4 +1,5 @@
 ---
+subcategory: "Container Registry (CR)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cr_repos"
 sidebar_current: "docs-alicloud-datasource-cr-repos"

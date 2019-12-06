@@ -1,4 +1,5 @@
 ---
+subcategory: "AnalyticDB for PostgreSQL (GPDB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_gpdb_connection"
 sidebar_current: "docs-alicloud-resource-gpdb-connection"

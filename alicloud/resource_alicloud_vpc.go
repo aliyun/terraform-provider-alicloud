@@ -5,10 +5,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -53,7 +55,7 @@ func resourceAliyunVpc() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateStringLengthInRange(2, 256),
+				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 			"tags": tagsSchema(),
 			"router_id": {
@@ -130,7 +132,7 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("description", object.Description)
 	d.Set("router_id", object.VRouterId)
 	d.Set("resource_group_id", object.ResourceGroupId)
-	tags, err := vpcService.DescribeTags(d.Id(), TagResourceVpc)
+	tags, err := vpcService.DescribeTags(d.Id(), nil, TagResourceVpc)
 	if err != nil {
 		return WrapError(err)
 	}

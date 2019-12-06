@@ -5,7 +5,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -27,7 +28,7 @@ func dataSourceAlicloudVpcs() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
 			},
 			"is_default": {
@@ -49,11 +50,17 @@ func dataSourceAlicloudVpcs() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			// Computed values
 			"vpcs": {
@@ -120,7 +127,7 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 	request.RegionId = string(client.Region)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	var allVpcs []vpc.Vpc
 	invoker := NewInvoker()
 	for {
@@ -196,15 +203,13 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 			continue
 		}
 
-		if value, ok := d.GetOk("tags"); ok {
-			tags, err := vpcService.DescribeTags(v.VpcId, TagResourceVpc)
+		if value, ok := d.GetOk("tags"); ok && len(value.(map[string]interface{})) > 0 {
+			tags, err := vpcService.DescribeTags(v.VpcId, value.(map[string]interface{}), TagResourceVpc)
 			if err != nil {
 				return WrapError(err)
 			}
-			if vmap, ok := value.(map[string]interface{}); ok && len(vmap) > 0 {
-				if !tagsMapEqual(vmap, vpcService.tagsToMap(tags)) {
-					continue
-				}
+			if len(tags) < 1 {
+				continue
 			}
 
 		}

@@ -76,12 +76,12 @@ func (client *Client) DescribeDBInstanceIpHostnameWithCallback(request *Describe
 // DescribeDBInstanceIpHostnameRequest is the request struct for api DescribeDBInstanceIpHostname
 type DescribeDBInstanceIpHostnameRequest struct {
 	*requests.RpcRequest
-	SecurityToken        string           `position:"Query" name:"SecurityToken"`
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
+	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 }
 
 // DescribeDBInstanceIpHostnameResponse is the response struct for api DescribeDBInstanceIpHostname
@@ -97,7 +97,7 @@ func CreateDescribeDBInstanceIpHostnameRequest() (request *DescribeDBInstanceIpH
 	request = &DescribeDBInstanceIpHostnameRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeDBInstanceIpHostname", "rds", "openAPI")
+	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeDBInstanceIpHostname", "", "")
 	return
 }
 

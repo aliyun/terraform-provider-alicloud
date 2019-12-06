@@ -4,16 +4,19 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudAlikafkaTopic() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudAlikafkaTopicCreate,
+		Update: resourceAlicloudAlikafkaTopicUpdate,
 		Read:   resourceAlicloudAlikafkaTopicRead,
 		Delete: resourceAlicloudAlikafkaTopicDelete,
 		Importer: &schema.ResourceImporter{
@@ -30,30 +33,34 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAlikafkaStringLen,
+				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
 			"local_topic": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
+				Default:  false,
 			},
 			"compact_topic": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
+				Default:  false,
 			},
 			"partition_num": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAlikafkaPartitionNum,
+				Default:      12,
+				ValidateFunc: validation.IntBetween(0, 48),
 			},
 			"remark": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAlikafkaStringLen,
+				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -104,6 +111,16 @@ func resourceAlicloudAlikafkaTopicCreate(d *schema.ResourceData, meta interface{
 	}
 
 	d.SetId(instanceId + ":" + topic)
+	return resourceAlicloudAlikafkaTopicUpdate(d, meta)
+}
+
+func resourceAlicloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	alikafkaService := AlikafkaService{client}
+	if err := alikafkaService.setInstanceTags(d, TagResourceTopic); err != nil {
+		return WrapError(err)
+	}
 	return resourceAlicloudAlikafkaTopicRead(d, meta)
 }
 
@@ -128,6 +145,12 @@ func resourceAlicloudAlikafkaTopicRead(d *schema.ResourceData, meta interface{})
 	d.Set("compact_topic", object.CompactTopic)
 	d.Set("partition_num", object.PartitionNum)
 	d.Set("remark", object.Remark)
+
+	tags, err := alikafkaService.DescribeTags(d.Id(), nil, TagResourceTopic)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", alikafkaService.tagsToMap(tags))
 
 	return nil
 }

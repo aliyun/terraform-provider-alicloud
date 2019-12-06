@@ -1,4 +1,5 @@
 ---
+subcategory: "RDS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_db_instances"
 sidebar_current: "docs-alicloud-datasource-db-instances"
@@ -17,12 +18,11 @@ Filters support regular expression for the instance name, searches by tags, and 
 data "alicloud_db_instances" "db_instances_ds" {
   name_regex = "data-\\d+"
   status     = "Running"
-  tags       = <<EOF
-{
-  "type": "database",
-  "size": "tiny"
-}
-EOF
+  tags       = {
+    "type" = "database",
+    "size" = "tiny"
+  }
+
 }
 
 output "first_db_instance_id" {
@@ -38,11 +38,12 @@ The following arguments are supported:
 * `ids` - (Optional, Available 1.52.0+) A list of RDS instance IDs. 
 * `engine` - (Optional) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL` and `PPAS`. If no value is specified, all types are returned.
 * `status` - (Optional) Status of the instance.
-* `db_type` - (Optional) `Primary` for primary instance, `ReadOnly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
+* `db_type` - (Optional) `Primary` for primary instance, `Readonly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
 * `vpc_id` - (Optional) Used to retrieve instances belong to specified VPC.
 * `vswitch_id` - (Optional) Used to retrieve instances belong to specified `vswitch` resources.
 * `connection_mode` - (Optional) `Standard` for standard access mode and `Safe` for high security access mode.
-* `tags` - (Optional) Query the instance bound to the tag. The format of the incoming value is `json` string, including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty. Format example `{"key1":"value1"}`.
+* `tags` - (Optional) A map of tags assigned to the DB instances. 
+Note: Before 1.60.0, the value's format is a `json` string which including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty. Format example `"{\"key1\":\"value1\"}"`
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -55,7 +56,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `id` - The ID of the RDS instance.
   * `name` - The name of the RDS instance.
   * `charge_type` - Billing method. Value options: `Postpaid` for Pay-As-You-Go and `Prepaid` for subscription.
-  * `db_type` - `Primary` for primary instance, `ReadOnly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
+  * `db_type` - `Primary` for primary instance, `Readonly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
   * `region_id` - Region ID the instance belongs to.
   * `create_time` - Creation time of the instance.
   * `expire_time` - Expiration time. Pay-As-You-Go instances never expire.

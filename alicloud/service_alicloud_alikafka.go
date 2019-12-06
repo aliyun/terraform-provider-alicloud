@@ -1,9 +1,13 @@
 package alicloud
 
 import (
+	"log"
+	"regexp"
+	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -13,8 +17,8 @@ type AlikafkaService struct {
 	client *connectivity.AliyunClient
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId string) (alikafkaInstance *alikafka.InstanceVO, err error) {
-
+func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId string) (*alikafka.InstanceVO, error) {
+	alikafkaInstance := &alikafka.InstanceVO{}
 	instanceListReq := alikafka.CreateGetInstanceListRequest()
 	instanceListReq.RegionId = alikafkaService.client.RegionId
 
@@ -23,26 +27,77 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId stri
 	})
 
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, instanceListReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		return alikafkaInstance, WrapErrorf(err, DefaultErrorMsg, instanceId, instanceListReq.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
 	addDebug(instanceListReq.GetActionName(), raw, instanceListReq.RpcRequest, instanceListReq)
 
 	for _, v := range instanceListResp.InstanceList.InstanceVO {
-		if v.InstanceId == instanceId {
-			alikafkaInstance = &v
-			return
+
+		// ServiceStatus equals 10 means the instance is released, do not return the instance.
+		if v.InstanceId == instanceId && v.ServiceStatus != 10 {
+			return &v, nil
 		}
 	}
 	return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", instanceId)), NotFoundMsg, ProviderERROR)
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string) (alikafkaConsumerGroup *alikafka.ConsumerVO, err error) {
+func (alikafkaService *AlikafkaService) DescribeAlikafkaNodeStatus(instanceId string) (*alikafka.StatusList, error) {
+	alikafkaStatusList := &alikafka.StatusList{}
+	describeNodeStatusReq := alikafka.CreateDescribeNodeStatusRequest()
+	describeNodeStatusReq.RegionId = alikafkaService.client.RegionId
+	describeNodeStatusReq.InstanceId = instanceId
+
+	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+		return alikafkaClient.DescribeNodeStatus(describeNodeStatusReq)
+	})
+
+	if err != nil {
+		return alikafkaStatusList, WrapErrorf(err, DefaultErrorMsg, instanceId, describeNodeStatusReq.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	describeNodeStatusResp, _ := raw.(*alikafka.DescribeNodeStatusResponse)
+	addDebug(describeNodeStatusReq.GetActionName(), raw, describeNodeStatusReq.RpcRequest, describeNodeStatusReq)
+
+	return &describeNodeStatusResp.StatusList, nil
+}
+
+func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderId string, timeout int) (*alikafka.InstanceVO, error) {
+	alikafkaInstance := &alikafka.InstanceVO{}
+	instanceListReq := alikafka.CreateGetInstanceListRequest()
+	instanceListReq.RegionId = alikafkaService.client.RegionId
+	instanceListReq.OrderId = orderId
+
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			return alikafkaClient.GetInstanceList(instanceListReq)
+		})
+
+		if err != nil {
+			return alikafkaInstance, WrapErrorf(err, DefaultErrorMsg, orderId, instanceListReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+
+		instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
+		addDebug(instanceListReq.GetActionName(), raw, instanceListReq.RpcRequest, instanceListReq)
+
+		for _, v := range instanceListResp.InstanceList.InstanceVO {
+			return &v, nil
+		}
+		if time.Now().After(deadline) {
+			return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", orderId)), NotFoundMsg, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string) (*alikafka.ConsumerVO, error) {
+	alikafkaConsumerGroup := &alikafka.ConsumerVO{}
 
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return alikafkaConsumerGroup, WrapError(err)
 	}
 	instanceId := parts[0]
 	consumerId := parts[1]
@@ -64,18 +119,18 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string)
 
 	for _, v := range consumerListResp.ConsumerList.ConsumerVO {
 		if v.ConsumerId == consumerId {
-			alikafkaConsumerGroup = &v
-			return
+			return &v, nil
 		}
 	}
 	return alikafkaConsumerGroup, WrapErrorf(Error(GetNotFoundMessage("AlikafkaConsumerGroup", id)), NotFoundMsg, ProviderERROR)
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (alikafkaTopic *alikafka.TopicVO, err error) {
+func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (*alikafka.TopicVO, error) {
 
+	alikafkaTopic := &alikafka.TopicVO{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return alikafkaTopic, WrapError(err)
 	}
 	instanceId := parts[0]
 	topic := parts[1]
@@ -110,11 +165,103 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (alikaf
 
 	for _, v := range topicListResp.TopicList.TopicVO {
 		if v.Topic == topic {
-			alikafkaTopic = &v
-			return
+			return &v, nil
 		}
 	}
 	return alikafkaTopic, WrapErrorf(Error(GetNotFoundMessage("AlikafkaTopic", id)), NotFoundMsg, ProviderERROR)
+}
+
+func (s *AlikafkaService) WaitForAlikafkaInstanceUpdated(id string, topicQuota int, diskSize int, ioMax int,
+	eipMax int, paidType int, specType string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeAlikafkaInstance(id)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		// Wait for all variables be equal.
+		if object.InstanceId == id && object.TopicNumLimit == topicQuota && object.DiskSize == diskSize && object.IoMax == ioMax && object.EipMax == eipMax && object.PaidType == paidType && object.SpecType == specType {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.InstanceId, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *AlikafkaService) WaitForAlikafkaInstance(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeAlikafkaInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		// Process wait for running.
+		if object.InstanceId == id && status == Running {
+
+			// ServiceStatus equals 5, means the server is in service.
+			if object.ServiceStatus == 5 {
+				return nil
+			}
+
+		} else if object.InstanceId == id {
+
+			// If target status is not deleted and found a instance, return.
+			if status != Deleted {
+				return nil
+			} else {
+				// ServiceStatus equals 10, means the server is in released.
+				if object.ServiceStatus == 10 {
+					return nil
+				}
+			}
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.InstanceId, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *AlikafkaService) WaitForAllAlikafkaNodeRelease(id string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeAlikafkaNodeStatus(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		// Process wait for all node become released.
+		allReleased := true
+		for _, v := range object.Status {
+			if !strings.EqualFold("released", v) {
+				allReleased = false
+			}
+		}
+		if allReleased {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalMedium * time.Second)
+	}
 }
 
 func (s *AlikafkaService) WaitForAlikafkaConsumerGroup(id string, status Status, timeout int) error {
@@ -165,4 +312,148 @@ func (s *AlikafkaService) WaitForAlikafkaTopic(id string, status Status, timeout
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
+}
+
+func (s *AlikafkaService) DescribeTags(resourceId string, resourceTags map[string]interface{}, resourceType TagResourceType) (tags []alikafka.TagResource, err error) {
+	request := alikafka.CreateListTagResourcesRequest()
+	request.RegionId = s.client.RegionId
+	request.ResourceType = string(resourceType)
+	request.ResourceId = &[]string{resourceId}
+	if resourceTags != nil && len(resourceTags) > 0 {
+		var reqTags []alikafka.ListTagResourcesTag
+		for key, value := range resourceTags {
+			reqTags = append(reqTags, alikafka.ListTagResourcesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
+	}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var raw interface{}
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			return alikafkaClient.ListTagResources(request)
+		})
+		if err != nil {
+			if IsExceptedError(err, Throttling) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	response, _ := raw.(*alikafka.ListTagResourcesResponse)
+
+	return response.TagResources.TagResource, nil
+}
+
+func (s *AlikafkaService) setInstanceTags(d *schema.ResourceData, resourceType TagResourceType) error {
+	if d.HasChange("tags") {
+		oraw, nraw := d.GetChange("tags")
+		o := oraw.(map[string]interface{})
+		n := nraw.(map[string]interface{})
+		create, remove := s.diffTags(s.tagsFromMap(o), s.tagsFromMap(n))
+
+		if len(remove) > 0 {
+			var tagKey []string
+			for _, v := range remove {
+				tagKey = append(tagKey, v.Key)
+			}
+			request := alikafka.CreateUntagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.ResourceType = string(resourceType)
+			request.TagKey = &tagKey
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+				return client.UntagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+
+		if len(create) > 0 {
+			request := alikafka.CreateTagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.Tag = &create
+			request.ResourceType = string(resourceType)
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+				return client.TagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+
+		d.SetPartial("tags")
+	}
+
+	return nil
+}
+
+func (s *AlikafkaService) tagsToMap(tags []alikafka.TagResource) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !s.ignoreTag(t) {
+			result[t.TagKey] = t.TagValue
+		}
+	}
+	return result
+}
+
+func (s *AlikafkaService) ignoreTag(t alikafka.TagResource) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
+		ok, _ := regexp.MatchString(v, t.TagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
+}
+
+func (s *AlikafkaService) diffTags(oldTags, newTags []alikafka.TagResourcesTag) ([]alikafka.TagResourcesTag, []alikafka.TagResourcesTag) {
+	// First, we're creating everything we have
+	create := make(map[string]interface{})
+	for _, t := range newTags {
+		create[t.Key] = t.Value
+	}
+
+	// Build the list of what to remove
+	var remove []alikafka.TagResourcesTag
+	for _, t := range oldTags {
+		old, ok := create[t.Key]
+		if !ok || old != t.Value {
+			// Delete it!
+			remove = append(remove, t)
+		}
+	}
+
+	return s.tagsFromMap(create), remove
+}
+
+func (s *AlikafkaService) tagsFromMap(m map[string]interface{}) []alikafka.TagResourcesTag {
+	result := make([]alikafka.TagResourcesTag, 0, len(m))
+	for k, v := range m {
+		result = append(result, alikafka.TagResourcesTag{
+			Key:   k,
+			Value: v.(string),
+		})
+	}
+
+	return result
 }

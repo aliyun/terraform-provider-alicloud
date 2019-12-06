@@ -1,4 +1,5 @@
 ---
+subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpc"
 sidebar_current: "docs-alicloud-resource-vpc"
@@ -22,6 +23,12 @@ resource "alicloud_vpc" "vpc" {
   cidr_block = "172.16.0.0/12"
 }
 ```
+
+## Module Support
+
+You can use to the existing [vpc module](https://registry.terraform.io/modules/alibaba/vpc/alicloud) 
+to create a VPC and several VSwitches.
+
 ## Argument Reference
 
 The following arguments are supported:

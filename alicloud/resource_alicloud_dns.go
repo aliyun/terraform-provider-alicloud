@@ -3,9 +3,11 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -23,7 +25,7 @@ func resourceAlicloudDns() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateDomainName,
+				ValidateFunc: validation.StringLenBetween(5, 67),
 				ForceNew:     true,
 			},
 			"domain_id": {
@@ -41,6 +43,11 @@ func resourceAlicloudDns() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -51,6 +58,7 @@ func resourceAlicloudDnsCreate(d *schema.ResourceData, meta interface{}) error {
 	request := alidns.CreateAddDomainRequest()
 	request.RegionId = client.RegionId
 	request.DomainName = d.Get("name").(string)
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 
 	raw, err := client.WithDnsClient(func(dnsClient *alidns.Client) (interface{}, error) {
 		return dnsClient.AddDomain(request)

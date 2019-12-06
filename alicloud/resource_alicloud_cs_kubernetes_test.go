@@ -10,9 +10,9 @@ import (
 	"fmt"
 
 	"github.com/denverdino/aliyungo/cs"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -166,11 +166,11 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway": "false",
+					"new_nat_gateway": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"new_nat_gateway": "false",
+						"new_nat_gateway": "true",
 					}),
 				),
 			},
@@ -286,11 +286,11 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway": "false",
+					"new_nat_gateway": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"new_nat_gateway": "false",
+						"new_nat_gateway": "true",
 					}),
 				),
 			},
@@ -362,8 +362,8 @@ func TestAccAlicloudCSKubernetes_multiAZ(t *testing.T) {
 					"worker_data_disk_category": "cloud_ssd",
 					"worker_data_disk_size":     "50",
 					"password":                  "Yourpassword1234",
-					"pod_cidr":                  "192.168.1.0/24",
-					"service_cidr":              "192.168.2.0/24",
+					"pod_cidr":                  "172.16.0.0/18",
+					"service_cidr":              "172.20.1.0/24",
 					"enable_ssh":                "true",
 					"install_cloud_monitor":     "true",
 					"force_update":              "true",
@@ -383,8 +383,8 @@ func TestAccAlicloudCSKubernetes_multiAZ(t *testing.T) {
 						"master_disk_category":  "cloud_ssd",
 						"worker_disk_size":      "50",
 						"password":              "Yourpassword1234",
-						"pod_cidr":              "192.168.1.0/24",
-						"service_cidr":          "192.168.2.0/24",
+						"pod_cidr":              "172.16.0.0/18",
+						"service_cidr":          "172.20.1.0/24",
 						"enable_ssh":            "true",
 						"install_cloud_monitor": "true",
 						"force_update":          "true",
@@ -408,11 +408,11 @@ func TestAccAlicloudCSKubernetes_multiAZ(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway": "false",
+					"new_nat_gateway": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"new_nat_gateway": "false",
+						"new_nat_gateway": "true",
 					}),
 				),
 			},

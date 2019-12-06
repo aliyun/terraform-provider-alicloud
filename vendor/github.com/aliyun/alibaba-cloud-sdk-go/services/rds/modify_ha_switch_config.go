@@ -76,12 +76,12 @@ func (client *Client) ModifyHASwitchConfigWithCallback(request *ModifyHASwitchCo
 // ModifyHASwitchConfigRequest is the request struct for api ModifyHASwitchConfig
 type ModifyHASwitchConfigRequest struct {
 	*requests.RpcRequest
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	HAConfig             string           `position:"Query" name:"HAConfig"`
 	ManualHATime         string           `position:"Query" name:"ManualHATime"`
+	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 }
 
 // ModifyHASwitchConfigResponse is the response struct for api ModifyHASwitchConfig
@@ -95,7 +95,7 @@ func CreateModifyHASwitchConfigRequest() (request *ModifyHASwitchConfigRequest) 
 	request = &ModifyHASwitchConfigRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "ModifyHASwitchConfig", "rds", "openAPI")
+	request.InitWithApiInfo("Rds", "2014-08-15", "ModifyHASwitchConfig", "", "")
 	return
 }
 

@@ -1,4 +1,5 @@
 ---
+subcategory: "Server Load Balancer (SLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_master_slave_server_group"
 sidebar_current: "docs-alicloud-resource-slb-master-slave-server-group"
@@ -146,6 +147,7 @@ The following arguments are supported:
 * `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new master slave server group.
 * `name` - (Required, ForceNew) Name of the master slave server group. 
 * `servers` - (Optional, ForceNew) A list of ECS instances to be added. Only two ECS instances can be supported in one resource. It contains six sub-fields as `Block server` follows.
+* `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
 
 ## Block servers
 
@@ -156,7 +158,7 @@ The servers mapping supports the following:
 * `weight` - (Optional) Weight of the backend server. Valid value range: [0-100]. Default to 100.
 * `type` - (Optional, Available in 1.51.0+) Type of the backend server. Valid value ecs, eni. Default to eni.
 * `server_type` - (Optional) The server type of the backend server. Valid value Master, Slave.
-* `is_backup` - (Optional)  Determine if the server is executing. Valid value 0, 1. 
+* `is_backup` - (Removed from v1.63.0) Determine if the server is executing. Valid value 0, 1. 
 
 ## Attributes Reference
 

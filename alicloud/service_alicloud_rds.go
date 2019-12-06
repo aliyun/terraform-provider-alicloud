@@ -10,8 +10,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -35,8 +35,8 @@ type RdsService struct {
 // That the business layer only need to check error.
 var DBInstanceStatusCatcher = Catcher{"OperationDenied.DBInstanceStatus", 60, 5}
 
-func (s *RdsService) DescribeDBInstance(id string) (instance *rds.DBInstanceAttribute, err error) {
-
+func (s *RdsService) DescribeDBInstance(id string) (*rds.DBInstanceAttribute, error) {
+	instance := &rds.DBInstanceAttribute{}
 	request := rds.CreateDescribeDBInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -45,21 +45,21 @@ func (s *RdsService) DescribeDBInstance(id string) (instance *rds.DBInstanceAttr
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*rds.DescribeDBInstanceAttributeResponse)
 	if len(response.Items.DBInstanceAttribute) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstance", id)), NotFoundMsg, ProviderERROR)
+		return instance, WrapErrorf(Error(GetNotFoundMessage("DBInstance", id)), NotFoundMsg, ProviderERROR)
 	}
 
 	return &response.Items.DBInstanceAttribute[0], nil
 }
 
-func (s *RdsService) DescribeDBReadonlyInstance(id string) (instance *rds.DBInstanceAttribute, err error) {
-
+func (s *RdsService) DescribeDBReadonlyInstance(id string) (*rds.DBInstanceAttribute, error) {
+	instance := &rds.DBInstanceAttribute{}
 	request := rds.CreateDescribeDBInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -68,24 +68,24 @@ func (s *RdsService) DescribeDBReadonlyInstance(id string) (instance *rds.DBInst
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*rds.DescribeDBInstanceAttributeResponse)
 	if len(response.Items.DBInstanceAttribute) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstance", id)), NotFoundMsg, ProviderERROR)
+		return instance, WrapErrorf(Error(GetNotFoundMessage("DBInstance", id)), NotFoundMsg, ProviderERROR)
 	}
 
 	return &response.Items.DBInstanceAttribute[0], nil
 }
 
-func (s *RdsService) DescribeDBAccount(id string) (ds *rds.DBInstanceAccount, err error) {
+func (s *RdsService) DescribeDBAccount(id string) (*rds.DBInstanceAccount, error) {
+	ds := &rds.DBInstanceAccount{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		err = WrapError(err)
-		return
+		return ds, WrapError(err)
 	}
 	request := rds.CreateDescribeAccountsRequest()
 	request.RegionId = s.client.RegionId
@@ -108,22 +108,22 @@ func (s *RdsService) DescribeDBAccount(id string) (ds *rds.DBInstanceAccount, er
 		return nil
 	}); err != nil {
 		if IsExceptedError(err, InvalidDBInstanceIdNotFound) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return ds, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return ds, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	if len(response.Accounts.DBInstanceAccount) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccount", id)), NotFoundMsg, ProviderERROR)
+		return ds, WrapErrorf(Error(GetNotFoundMessage("DBAccount", id)), NotFoundMsg, ProviderERROR)
 	}
 	return &response.Accounts.DBInstanceAccount[0], nil
 }
 
-func (s *RdsService) DescribeDBAccountPrivilege(id string) (ds *rds.DBInstanceAccount, err error) {
+func (s *RdsService) DescribeDBAccountPrivilege(id string) (*rds.DBInstanceAccount, error) {
+	ds := &rds.DBInstanceAccount{}
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
-		err = WrapError(err)
-		return
+		return ds, WrapError(err)
 	}
 	request := rds.CreateDescribeAccountsRequest()
 	request.RegionId = s.client.RegionId
@@ -144,21 +144,22 @@ func (s *RdsService) DescribeDBAccountPrivilege(id string) (ds *rds.DBInstanceAc
 		return nil
 	}); err != nil {
 		if IsExceptedError(err, InvalidDBInstanceIdNotFound) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return ds, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return ds, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	if len(response.Accounts.DBInstanceAccount) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccountPrivilege", id)), NotFoundMsg, ProviderERROR)
+		return ds, WrapErrorf(Error(GetNotFoundMessage("DBAccountPrivilege", id)), NotFoundMsg, ProviderERROR)
 	}
 	return &response.Accounts.DBInstanceAccount[0], nil
 }
 
-func (s *RdsService) DescribeDBDatabase(id string) (ds *rds.Database, err error) {
+func (s *RdsService) DescribeDBDatabase(id string) (*rds.Database, error) {
+	ds := &rds.Database{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return ds, WrapError(err)
 	}
 	dbName := parts[1]
 	request := rds.CreateDescribeDatabasesRequest()
@@ -189,10 +190,11 @@ func (s *RdsService) DescribeDBDatabase(id string) (ds *rds.Database, err error)
 		ds = &response.Databases.Database[0]
 		return nil
 	})
-	return
+	return ds, err
 }
 
-func (s *RdsService) DescribeParameters(id string) (ds *rds.DescribeParametersResponse, err error) {
+func (s *RdsService) DescribeParameters(id string) (*rds.DescribeParametersResponse, error) {
+	ds := &rds.DescribeParametersResponse{}
 	request := rds.CreateDescribeParametersRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -202,9 +204,9 @@ func (s *RdsService) DescribeParameters(id string) (ds *rds.DescribeParametersRe
 	})
 	if err != nil {
 		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return ds, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return ds, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -323,17 +325,18 @@ func (s *RdsService) DescribeDBInstanceNetInfo(id string) ([]rds.DBInstanceNetIn
 }
 
 func (s *RdsService) DescribeDBConnection(id string) (*rds.DBInstanceNetInfo, error) {
+	info := &rds.DBInstanceNetInfo{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return info, WrapError(err)
 	}
 	object, err := s.DescribeDBInstanceNetInfo(parts[0])
 
 	if err != nil {
 		if IsExceptedError(err, InvalidCurrentConnectionStringNotFound) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return info, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapError(err)
+		return info, WrapError(err)
 	}
 
 	if object != nil {
@@ -344,12 +347,13 @@ func (s *RdsService) DescribeDBConnection(id string) (*rds.DBInstanceNetInfo, er
 		}
 	}
 
-	return nil, WrapErrorf(Error(GetNotFoundMessage("DBConnection", id)), NotFoundMsg, ProviderERROR)
+	return info, WrapErrorf(Error(GetNotFoundMessage("DBConnection", id)), NotFoundMsg, ProviderERROR)
 }
 func (s *RdsService) DescribeDBReadWriteSplittingConnection(id string) (*rds.DBInstanceNetInfo, error) {
+	ds := &rds.DBInstanceNetInfo{}
 	object, err := s.DescribeDBInstanceNetInfo(id)
 	if err != nil && !NotFoundError(err) {
-		return nil, err
+		return ds, err
 	}
 
 	if object != nil {
@@ -361,13 +365,13 @@ func (s *RdsService) DescribeDBReadWriteSplittingConnection(id string) (*rds.DBI
 				continue
 			}
 			if _, err := strconv.Atoi(conn.MaxDelayTime); err != nil {
-				return nil, err
+				return ds, err
 			}
 			return &conn, nil
 		}
 	}
 
-	return nil, WrapErrorf(Error(GetNotFoundMessage("ReadWriteSplittingConnection", id)), NotFoundMsg, ProviderERROR)
+	return ds, WrapErrorf(Error(GetNotFoundMessage("ReadWriteSplittingConnection", id)), NotFoundMsg, ProviderERROR)
 }
 
 func (s *RdsService) GrantAccountPrivilege(id, dbName string) error {
@@ -475,7 +479,14 @@ func (s *RdsService) ModifyDBBackupPolicy(instanceId, backupTime, backupPeriod, 
 	request.BackupRetentionPeriod = retentionPeriod
 	request.PreferredBackupTime = backupTime
 	request.BackupLog = backupLog
-	request.LogBackupRetentionPeriod = LogBackupRetentionPeriod
+	instance, err := s.DescribeDBInstance(instanceId)
+	if err != nil {
+		return WrapError(err)
+	}
+	// At present, the sql server database does not support setting logBackupRetentionPeriod
+	if instance.Engine != "SQLServer" {
+		request.LogBackupRetentionPeriod = LogBackupRetentionPeriod
+	}
 
 	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 		return rdsClient.ModifyBackupPolicy(request)
@@ -542,6 +553,9 @@ func (s *RdsService) GetSecurityIps(instanceId string) ([]string, error) {
 	var ips, separator string
 	ipsMap := make(map[string]string)
 	for _, ip := range object {
+		if ip.DBInstanceIPArrayAttribute == "hidden" {
+			continue
+		}
 		ips += separator + ip.SecurityIPList
 		separator = COMMA_SEPARATED
 	}
@@ -626,8 +640,8 @@ func (s *RdsService) DescribeMultiIZByRegion() (izs []string, err error) {
 	return zoneIds, nil
 }
 
-func (s *RdsService) DescribeBackupPolicy(id string) (policy *rds.DescribeBackupPolicyResponse, err error) {
-
+func (s *RdsService) DescribeBackupPolicy(id string) (*rds.DescribeBackupPolicyResponse, error) {
+	policy := &rds.DescribeBackupPolicyResponse{}
 	request := rds.CreateDescribeBackupPolicyRequest()
 	request.DBInstanceId = id
 	request.RegionId = s.client.RegionId
@@ -637,7 +651,7 @@ func (s *RdsService) DescribeBackupPolicy(id string) (policy *rds.DescribeBackup
 
 	if err != nil {
 		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return policy, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return policy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -682,7 +696,7 @@ func (s *RdsService) WaitForDBInstance(id string, status Status, timeout int) er
 				return WrapError(err)
 			}
 		}
-		if strings.ToLower(object.DBInstanceStatus) == strings.ToLower(string(status)) {
+		if object != nil && strings.ToLower(object.DBInstanceStatus) == strings.ToLower(string(status)) {
 			break
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
@@ -777,7 +791,7 @@ func (s *RdsService) WaitForDBConnection(id string, status Status, timeout int) 
 				return WrapError(err)
 			}
 		}
-		if object.ConnectionString != "" {
+		if object != nil && object.ConnectionString != "" {
 			return nil
 		}
 		if time.Now().After(deadline) {
@@ -823,7 +837,7 @@ func (s *RdsService) WaitForAccount(id string, status Status, timeout int) error
 				return WrapError(err)
 			}
 		}
-		if object.AccountStatus == string(status) {
+		if object != nil && object.AccountStatus == string(status) {
 			break
 		}
 		if time.Now().After(deadline) {
@@ -919,7 +933,7 @@ func (s *RdsService) WaitForDBDatabase(id string, status Status, timeout int) er
 			}
 			return WrapError(err)
 		}
-		if object.DBName == parts[1] {
+		if object != nil && object.DBName == parts[1] {
 			break
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
@@ -987,81 +1001,41 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 		oraw, nraw := d.GetChange("tags")
 		o := oraw.(map[string]interface{})
 		n := nraw.(map[string]interface{})
-		create, remove := diffTags(tagsFromMap(o), tagsFromMap(n))
+		remove, add := diffRdsTags(o, n)
 
 		if len(remove) > 0 {
-			if err := s.removeTags(remove, d.Id()); err != nil {
-				return err
+			request := rds.CreateUntagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.ResourceType = "INSTANCE"
+			request.TagKey = &remove
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+				return client.UntagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
-		if len(create) > 0 {
-			if err := s.addTags(create, d.Id()); err != nil {
-				return err
+		if len(add) > 0 {
+			request := rds.CreateTagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.Tag = &add
+			request.ResourceType = "INSTANCE"
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+				return client.TagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 		d.SetPartial("tags")
 	}
 
-	return nil
-}
-
-func (s *RdsService) addTags(tags []Tag, instanceId string) error {
-	return s.doBatchTags(s.addTagsPerTime, tags, instanceId)
-}
-
-func (s *RdsService) addTagsPerTime(tags []Tag, id string) error {
-	request := rds.CreateAddTagsToResourceRequest()
-	request.DBInstanceId = id
-	request.Tags = s.tagsToString(tags)
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
-		return client.AddTagsToResource(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
-}
-
-func (s *RdsService) removeTags(tags []Tag, id string) error {
-	return s.doBatchTags(s.removeTagsPerTime, tags, id)
-}
-
-func (s *RdsService) removeTagsPerTime(tags []Tag, id string) error {
-	request := rds.CreateRemoveTagsFromResourceRequest()
-	request.DBInstanceId = id
-	request.Tags = s.tagsToString(tags)
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
-		return client.RemoveTagsFromResource(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
-}
-
-func (s *RdsService) doBatchTags(batchFunc func([]Tag, string) error, tags []Tag, instanceId string) error {
-	num := len(tags)
-	if num <= 0 {
-		return nil
-	}
-
-	start, end := 0, 0
-	for end < num {
-		start = end
-		end += tagsMaxNumPerTime
-		if end > num {
-			end = num
-		}
-		if err := batchFunc(tags[start:end], instanceId); err != nil {
-			return WrapError(err)
-		}
-	}
 	return nil
 }
 

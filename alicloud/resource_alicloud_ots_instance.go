@@ -3,9 +3,11 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -24,16 +26,16 @@ func resourceAlicloudOtsInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateStringLengthInRange(3, 16),
+				ValidateFunc: validation.StringLenBetween(3, 16),
 			},
 
 			"accessed_by": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  AnyNetwork,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(AnyNetwork), string(VpcOnly), string(VpcOrConsole),
-				}),
+				}, false),
 			},
 
 			"instance_type": {
@@ -41,9 +43,9 @@ func resourceAlicloudOtsInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Default:  OtsHighPerformance,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(OtsCapacity), string(OtsHighPerformance),
-				}),
+				}, false),
 			},
 			"description": {
 				Type:     schema.TypeString,

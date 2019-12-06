@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func resourceAlicloudLogStore() *schema.Resource {
@@ -36,7 +38,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      30,
-				ValidateFunc: validateIntegerInRange(1, 3650),
+				ValidateFunc: validation.IntBetween(1, 3650),
 			},
 			"shard_count": {
 				Type:     schema.TypeInt,
@@ -82,7 +84,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      0,
-				ValidateFunc: validateIntegerInRange(0, 64),
+				ValidateFunc: validation.IntBetween(0, 64),
 			},
 			"append_meta": {
 				Type:     schema.TypeBool,

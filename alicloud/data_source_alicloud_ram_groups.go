@@ -4,7 +4,8 @@ import (
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -22,19 +23,20 @@ func dataSourceAlicloudRamGroups() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateRamName,
+				ValidateFunc: validation.StringLenBetween(0, 64),
 			},
 			"policy_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateRamPolicyName,
+				ValidateFunc: validation.StringLenBetween(0, 128),
 			},
 			"policy_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validatePolicyType,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				// must be ram.System, ram.Custom
+				ValidateFunc: validation.StringInSlice([]string{"System", "Custom"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,

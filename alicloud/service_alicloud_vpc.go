@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -254,7 +254,8 @@ func (s *VpcService) QueryRouteTableById(routeTableId string) (rt vpc.RouteTable
 	return
 }
 
-func (s *VpcService) DescribeRouteEntry(id string) (v *vpc.RouteEntry, err error) {
+func (s *VpcService) DescribeRouteEntry(id string) (*vpc.RouteEntry, error) {
+	v := &vpc.RouteEntry{}
 	parts, err := ParseResourceId(id, 5)
 	if err != nil {
 		return v, WrapError(err)
@@ -285,8 +286,7 @@ func (s *VpcService) DescribeRouteEntry(id string) (v *vpc.RouteEntry, err error
 		for _, table := range response.RouteTables.RouteTable {
 			for _, entry := range table.RouteEntrys.RouteEntry {
 				if entry.DestinationCidrBlock == cidr && entry.NextHopType == nexthop_type && entry.InstanceId == nexthop_id {
-					v = &entry
-					return
+					return &entry, nil
 				}
 			}
 		}
@@ -1026,11 +1026,21 @@ func (s *VpcService) WaitForNetworkAclAttachment(id string, resource []vpc.Resou
 	}
 }
 
-func (s *VpcService) DescribeTags(resourceId string, resourceType TagResourceType) (tags []vpc.TagResource, err error) {
+func (s *VpcService) DescribeTags(resourceId string, resourceTags map[string]interface{}, resourceType TagResourceType) (tags []vpc.TagResource, err error) {
 	request := vpc.CreateListTagResourcesRequest()
 	request.RegionId = s.client.RegionId
 	request.ResourceType = string(resourceType)
 	request.ResourceId = &[]string{resourceId}
+	if resourceTags != nil && len(resourceTags) > 0 {
+		var reqTags []vpc.ListTagResourcesTag
+		for key, value := range resourceTags {
+			reqTags = append(reqTags, vpc.ListTagResourcesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
+	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var raw interface{}

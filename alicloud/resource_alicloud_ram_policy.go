@@ -1,12 +1,13 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -34,16 +35,9 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"effect": {
-							Type:     schema.TypeString,
-							Required: true,
-							ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
-								value := Effect(v.(string))
-								if value != Allow && value != Deny {
-									errors = append(errors, fmt.Errorf(
-										"%q must be '%s' or '%s'.", k, Allow, Deny))
-								}
-								return
-							},
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringInSlice([]string{"Allow", "Deny"}, false),
 						},
 						"action": {
 							Type:     schema.TypeList,
@@ -68,7 +62,7 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"statement", "version"},
-				ValidateFunc:  validateJsonString,
+				ValidateFunc:  validation.ValidateJsonString,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
@@ -84,8 +78,9 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 				Optional:      true,
 				Default:       "1",
 				ConflictsWith: []string{"document"},
-				ValidateFunc:  validatePolicyDocVersion,
-				Deprecated:    "Field 'version' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
+				// can only be '1' so far.
+				ValidateFunc: validation.StringInSlice([]string{"1"}, false),
+				Deprecated:   "Field 'version' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
 			},
 			"force": {
 				Type:     schema.TypeBool,
@@ -341,12 +336,13 @@ func buildAlicloudRamPolicyUpdateArgs(d *schema.ResourceData, meta interface{}) 
 	request.SetAsDefault = "true"
 	request.PolicyName = d.Id()
 
-	if d.HasChange("document") {
-		d.SetPartial("document")
-		request.PolicyDocument = d.Get("document").(string)
+	if document, ok := d.GetOk("document"); ok {
+		if d.HasChange("document") {
+			d.SetPartial("document")
+		}
 
-	} else if d.HasChange("statement") || d.HasChange("version") {
-
+		request.PolicyDocument = document.(string)
+	} else {
 		if d.HasChange("statement") {
 			d.SetPartial("statement")
 		}
@@ -358,6 +354,7 @@ func buildAlicloudRamPolicyUpdateArgs(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return &ram.CreatePolicyVersionRequest{}, err
 		}
+
 		request.PolicyDocument = document
 	}
 

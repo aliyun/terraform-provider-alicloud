@@ -3,10 +3,12 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -35,19 +37,19 @@ func resourceAlicloudEssLifecycleHook() *schema.Resource {
 			"lifecycle_transition": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateLifecycleTransaction,
+				ValidateFunc: validation.StringInSlice([]string{"SCALE_IN", "SCALE_OUT"}, false),
 			},
 			"heartbeat_timeout": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      600,
-				ValidateFunc: validateIntegerInRange(30, 21600),
+				ValidateFunc: validation.IntBetween(30, 21600),
 			},
 			"default_result": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      Continue,
-				ValidateFunc: validateActionResult,
+				ValidateFunc: validation.StringInSlice([]string{"CONTINUE", "ABANDON"}, false),
 			},
 			"notification_arn": {
 				Type:     schema.TypeString,

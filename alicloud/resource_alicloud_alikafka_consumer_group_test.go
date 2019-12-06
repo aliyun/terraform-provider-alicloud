@@ -3,14 +3,13 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -125,7 +124,6 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithAlikafkaInstanceSetting(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -134,8 +132,8 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": os.Getenv("ALICLOUD_INSTANCE_ID"),
-					"consumer_id": "${var.consumer_id}",
+					"instance_id": "${alicloud_alikafka_instance.default.id}",
+					"consumer_id": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -148,6 +146,56 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+						"Updated": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "3",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+						"tags.Updated": "TF",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"consumer_id": "${var.name}",
+					"tags":        REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"consumer_id":  fmt.Sprintf("tf-testacc-alikafkaconsumerbasic%v", rand),
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+						"tags.Updated": REMOVEKEY,
+					}),
+				),
 			},
 		},
 	})
@@ -174,7 +222,6 @@ func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithAlikafkaInstanceSetting(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -184,8 +231,8 @@ func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":       "5",
-					"instance_id": os.Getenv("ALICLOUD_INSTANCE_ID"),
-					"consumer_id": "${var.consumer_id}-${count.index}",
+					"instance_id": "${alicloud_alikafka_instance.default.id}",
+					"consumer_id": "${var.name}-${count.index}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -200,12 +247,37 @@ func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
 
 func resourceAlikafkaConsumerGroupConfigDependence(name string) string {
 	return fmt.Sprintf(`
-		variable "consumer_id" {
+		variable "name" {
  			default = "%v"
+		}
+
+		data "alicloud_zones" "default" {
+			available_resource_creation= "VSwitch"
+		}
+		resource "alicloud_vpc" "default" {
+		  cidr_block = "172.16.0.0/12"
+		  name       = "${var.name}"
+		}
+		
+		resource "alicloud_vswitch" "default" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.0.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name       = "${var.name}"
+		}
+
+		resource "alicloud_alikafka_instance" "default" {
+          name = "tf-testacc-alikafkainstance"
+		  topic_quota = "50"
+		  disk_type = "1"
+		  disk_size = "500"
+		  deploy_type = "5"
+		  io_max = "20"
+          vswitch_id = "${alicloud_vswitch.default.id}"
 		}
 		`, name)
 }
 
 var alikafkaConsumerGroupBasicMap = map[string]string{
-	"consumer_id": "${var.consumer_id}",
+	"consumer_id": "${var.name}",
 }

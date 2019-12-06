@@ -1,4 +1,5 @@
 ---
+subcategory: "RAM"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_account_aliases"
 sidebar_current: "docs-alicloud-datasource-ram-account-alias"

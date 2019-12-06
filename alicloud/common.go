@@ -23,7 +23,7 @@ import (
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/fc-go-sdk"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"gopkg.in/yaml.v2"
 
@@ -47,6 +47,11 @@ const (
 	PostPaid = PayType("PostPaid")
 	Prepaid  = PayType("Prepaid")
 	Postpaid = PayType("Postpaid")
+)
+
+const (
+	NormalMode = "normal"
+	SafetyMode = "safety"
 )
 
 type DdosbgpInsatnceType string
@@ -325,6 +330,19 @@ func convertJsonStringToList(configured string) ([]interface{}, error) {
 	return result, nil
 }
 
+func convertMaptoJsonString(m map[string]interface{}) (string, error) {
+	sm := make(map[string]string, len(m))
+	for k, v := range m {
+		sm[k] = v.(string)
+	}
+
+	if result, err := json.Marshal(sm); err != nil {
+		return "", err
+	} else {
+		return string(result), nil
+	}
+}
+
 func StringPointer(s string) *string {
 	return &s
 }
@@ -364,6 +382,8 @@ const (
 	TagResourcePlugin        = TagResourceType("plugin")
 	TagResourceApiGroup      = TagResourceType("apiGroup")
 	TagResourceApp           = TagResourceType("app")
+	TagResourceTopic         = TagResourceType("topic")
+	TagResourceConsumerGroup = TagResourceType("consumergroup")
 )
 
 type KubernetesNodeType string

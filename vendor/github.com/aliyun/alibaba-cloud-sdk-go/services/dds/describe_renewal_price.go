@@ -77,13 +77,13 @@ func (client *Client) DescribeRenewalPriceWithCallback(request *DescribeRenewalP
 type DescribeRenewalPriceRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	CouponNo             string           `position:"Query" name:"CouponNo"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
+	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
+	BusinessInfo         string           `position:"Query" name:"BusinessInfo"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	CouponNo             string           `position:"Query" name:"CouponNo"`
-	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	BusinessInfo         string           `position:"Query" name:"BusinessInfo"`
 }
 
 // DescribeRenewalPriceResponse is the response struct for api DescribeRenewalPrice

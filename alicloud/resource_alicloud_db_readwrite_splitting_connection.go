@@ -6,9 +6,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -36,12 +38,12 @@ func resourceAlicloudDBReadWriteSplittingConnection() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateDBConnectionPrefix,
+				ValidateFunc: validation.StringLenBetween(1, 31),
 			},
 			"distribution_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"Standard", "Custom"}),
+				ValidateFunc: validation.StringInSlice([]string{"Standard", "Custom"}, false),
 			},
 			"weight": {
 				Type:     schema.TypeMap,

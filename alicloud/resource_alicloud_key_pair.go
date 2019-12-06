@@ -5,13 +5,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"os"
 
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func resourceAlicloudKeyPair() *schema.Resource {
@@ -29,14 +31,14 @@ func resourceAlicloudKeyPair() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ForceNew:      true,
-				ValidateFunc:  validateKeyPairName,
+				ValidateFunc:  validation.StringLenBetween(2, 128),
 				ConflictsWith: []string{"key_name_prefix"},
 			},
 			"key_name_prefix": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateKeyPairPrefix,
+				ValidateFunc: validation.StringLenBetween(0, 100),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,

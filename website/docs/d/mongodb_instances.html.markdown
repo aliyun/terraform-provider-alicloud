@@ -1,4 +1,5 @@
 ---
+subcategory: "MongoDB"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_mongodb_instances"
 sidebar_current: "docs-alicloud-datasource-mongodb-instances"

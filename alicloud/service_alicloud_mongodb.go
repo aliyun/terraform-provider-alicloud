@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
@@ -279,7 +279,8 @@ func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 	return nil
 }
 
-func (s *MongoDBService) DescribeMongoDBBackupPolicy(id string) (response *dds.DescribeBackupPolicyResponse, err error) {
+func (s *MongoDBService) DescribeMongoDBBackupPolicy(id string) (*dds.DescribeBackupPolicyResponse, error) {
+	response := &dds.DescribeBackupPolicyResponse{}
 	request := dds.CreateDescribeBackupPolicyRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id

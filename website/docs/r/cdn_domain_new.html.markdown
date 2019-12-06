@@ -1,4 +1,5 @@
 ---
+subcategory: "CDN"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cdn_domain_new"
 sidebar_current: "docs-alicloud-resource-cdn-domain-new"
@@ -77,5 +78,5 @@ The following attributes are exported:
 CDN domain can be imported using the id, e.g.
 
 ```
-terraform import alicloud_cdn_domain_new.example cdn-abc123456
+terraform import alicloud_cdn_domain_new.example xxxx.com
 ```

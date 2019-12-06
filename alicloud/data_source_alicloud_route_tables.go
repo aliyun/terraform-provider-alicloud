@@ -5,7 +5,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -17,7 +18,7 @@ func dataSourceAlicloudRouteTables() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
 			},
 			"output_file": {
@@ -41,6 +42,11 @@ func dataSourceAlicloudRouteTables() *schema.Resource {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 
 			// Computed values
@@ -87,6 +93,7 @@ func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{})
 	request.RegionId = string(client.Region)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -135,15 +142,13 @@ func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{})
 					continue
 				}
 			}
-			if value, ok := d.GetOk("tags"); ok {
-				tags, err := vpcService.DescribeTags(tables.RouteTableId, TagResourceRouteTable)
+			if value, ok := d.GetOk("tags"); ok && len(value.(map[string]interface{})) > 0 {
+				tags, err := vpcService.DescribeTags(tables.RouteTableId, value.(map[string]interface{}), TagResourceRouteTable)
 				if err != nil {
 					return WrapError(err)
 				}
-				if vmap, ok := value.(map[string]interface{}); ok && len(vmap) > 0 {
-					if !tagsMapEqual(vmap, vpcService.tagsToMap(tags)) {
-						continue
-					}
+				if len(tags) < 1 {
+					continue
 				}
 
 			}

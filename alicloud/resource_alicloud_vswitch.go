@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -102,7 +102,7 @@ func resourceAliyunSwitchRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("cidr_block", vswitch.CidrBlock)
 	d.Set("name", vswitch.VSwitchName)
 	d.Set("description", vswitch.Description)
-	tags, err := vpcService.DescribeTags(d.Id(), TagResourceVSwitch)
+	tags, err := vpcService.DescribeTags(d.Id(), nil, TagResourceVSwitch)
 	if err != nil {
 		return WrapError(err)
 	}

@@ -11,8 +11,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -188,7 +188,7 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"security_enhancement_strategy"},
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -469,7 +469,7 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"security_enhancement_strategy"},
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -478,6 +478,16 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"image_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_data": "I_am_user_data_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_data": "I_am_user_data_update",
 					}),
 				),
 			},
@@ -1635,5 +1645,5 @@ var testAccInstanceCheckMap = map[string]string{
 	"auto_renew_period":  NOSET,
 	"force_delete":       NOSET,
 	"include_data_disks": NOSET,
-	"dry_run":            NOSET,
+	"dry_run":            "false",
 }

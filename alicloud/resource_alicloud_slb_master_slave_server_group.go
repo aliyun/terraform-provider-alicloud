@@ -1,11 +1,14 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -13,6 +16,7 @@ func resourceAliyunSlbMasterSlaveServerGroup() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunSlbMasterSlaveServerGroupCreate,
 		Read:   resourceAliyunSlbMasterSlaveServerGroupRead,
+		Update: resourceAliyunSlbMasterSlaveServerGroupUpdate,
 		Delete: resourceAliyunSlbMasterSlaveServerGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -44,34 +48,40 @@ func resourceAliyunSlbMasterSlaveServerGroup() *schema.Resource {
 						"port": {
 							Type:         schema.TypeInt,
 							Required:     true,
-							ValidateFunc: validateIntegerInRange(1, 65535),
+							ValidateFunc: validation.IntBetween(1, 65535),
 						},
 						"weight": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Default:      100,
-							ValidateFunc: validateIntegerInRange(0, 100),
+							ValidateFunc: validation.IntBetween(0, 100),
 						},
 						"type": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      string(ECS),
-							ValidateFunc: validateAllowedStringValue([]string{string(ENI), string(ECS)}),
+							ValidateFunc: validation.StringInSlice([]string{"eni", "ecs"}, false),
 						},
 						"server_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validateAllowedStringValue([]string{string("Master"), string("Slave")}),
+							ValidateFunc: validation.StringInSlice([]string{"Master", "Slave"}, false),
 						},
 						"is_backup": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: validateAllowedIntValue([]int{0, 1}),
+							ValidateFunc: validation.IntInSlice([]int{0, 1}),
+							Removed:      "Field 'is_backup' has been removed from provider version 1.63.0.",
 						},
 					},
 				},
 				MaxItems: 2,
 				MinItems: 2,
+			},
+			"delete_protection_validation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -126,7 +136,6 @@ func resourceAliyunSlbMasterSlaveServerGroupRead(d *schema.ResourceData, meta in
 			"weight":      server.Weight,
 			"type":        server.Type,
 			"server_type": server.ServerType,
-			"is_backup":   server.IsBackup,
 		}
 		servers = append(servers, s)
 	}
@@ -138,9 +147,28 @@ func resourceAliyunSlbMasterSlaveServerGroupRead(d *schema.ResourceData, meta in
 	return nil
 }
 
+func resourceAliyunSlbMasterSlaveServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+	return nil
+}
+
 func resourceAliyunSlbMasterSlaveServerGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
+
+	if d.Get("delete_protection_validation").(bool) {
+		lbId := d.Get("load_balancer_id").(string)
+		lbInstance, err := slbService.DescribeSlb(lbId)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapError(err)
+		}
+		if lbInstance.DeleteProtection == "on" {
+			return WrapError(fmt.Errorf("Current master-slave server group's SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the resource.", lbId))
+		}
+	}
+
 	request := slb.CreateDeleteMasterSlaveServerGroupRequest()
 	request.RegionId = client.RegionId
 	request.MasterSlaveServerGroupId = d.Id()

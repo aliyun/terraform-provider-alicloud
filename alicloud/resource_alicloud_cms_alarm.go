@@ -6,12 +6,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -52,20 +54,18 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Default:  300,
 			},
 			"statistics": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  Average,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(Average), string(Minimum), string(Maximum),
-				}),
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      Average,
+				ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum}, false),
 			},
 			"operator": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  Equal,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, Equal, NotEqual,
-				}),
+				}, false),
 			},
 			"threshold": {
 				Type:     schema.TypeString,
@@ -85,14 +85,14 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      0,
-				ValidateFunc: validateIntegerInRange(0, 24),
+				ValidateFunc: validation.IntBetween(0, 24),
 				Deprecated:   "Field 'start_time' has been deprecated from provider version 1.50.0. New field 'effective_interval' instead.",
 			},
 			"end_time": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      24,
-				ValidateFunc: validateIntegerInRange(0, 24),
+				ValidateFunc: validation.IntBetween(0, 24),
 				Deprecated:   "Field 'end_time' has been deprecated from provider version 1.50.0. New field 'effective_interval' instead.",
 			},
 			"effective_interval": {
@@ -103,13 +103,13 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      86400,
-				ValidateFunc: validateIntegerInRange(300, 86400),
+				ValidateFunc: validation.IntBetween(300, 86400),
 			},
 
 			"notify_type": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateAllowedIntValue([]int{0, 1}),
+				ValidateFunc: validation.IntInSlice([]int{0, 1}),
 				Removed:      "Field 'notify_type' has been removed from provider version 1.50.0.",
 			},
 

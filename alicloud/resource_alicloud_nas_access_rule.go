@@ -3,9 +3,11 @@ package alicloud
 import (
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -32,18 +34,18 @@ func resourceAlicloudNasAccessRule() *schema.Resource {
 			"rw_access_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"RDWR", "RDONLY"}),
+				ValidateFunc: validation.StringInSlice([]string{"RDWR", "RDONLY"}, false),
 			},
 			"user_access_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"no_squash", "root_squash", "all_squash"}),
+				ValidateFunc: validation.StringInSlice([]string{"no_squash", "root_squash", "all_squash"}, false),
 			},
 			"priority": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
-				ValidateFunc: validateIntegerInRange(1, 100),
+				ValidateFunc: validation.IntBetween(1, 100),
 			},
 			"access_rule_id": {
 				Type:     schema.TypeString,

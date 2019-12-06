@@ -1,4 +1,5 @@
 ---
+subcategory: "Auto Scaling(ESS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ess_scalinggroup_vserver_groups"
 sidebar_current: "docs-alicloud-resource-ess_scalinggroup_vserver_groups"
@@ -107,6 +108,7 @@ the vserver_group supports the following:
 
 * `loadbalancer_id` - (Required) Loadbalancer server ID of VServer Group.
 * `vserver_attributes` - (Required) A list of VServer Group attributes. See [Block vserver_attribute](#block-vserver_attribute) below for details.
+* `force` - (Optional, Available in 1.64.0+) If instances of scaling group are attached/removed from slb backend server when attach/detach vserver group from scaling group. Default to true.
 
 ## Block vserver_attribute
 

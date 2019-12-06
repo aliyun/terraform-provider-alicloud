@@ -77,12 +77,12 @@ func (client *Client) ModifyAuditPolicyWithCallback(request *ModifyAuditPolicyRe
 type ModifyAuditPolicyRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	AuditStatus          string           `position:"Query" name:"AuditStatus"`
 	StoragePeriod        requests.Integer `position:"Query" name:"StoragePeriod"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
+	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
+	AuditStatus          string           `position:"Query" name:"AuditStatus"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 }
 

@@ -1,4 +1,5 @@
 ---
+subcategory: "Function Compute Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fc_trigger"
 sidebar_current: "docs-alicloud-resource-fc"
@@ -218,15 +219,17 @@ variable "name" {
 data "alicloud_account" "current" {
 }
 
-resource "alicloud_cdn_domain" "domain" {
+resource "alicloud_cdn_domain_new" "domain" {
     domain_name = "${var.name}.tf.com"
-    cdn_type = "web"
-    source_type = "oss"
-    sources = ["terraformtest.aliyuncs.com"]
-    optimize_enable = "off"
-    page_compress_enable = "off"
-    range_enable = "off"
-    video_seek_enable = "off"
+    cdn_type    = "web"
+    scope       = "overseas"
+    sources {
+      content  = "1.1.1.1"
+      type     = "ipaddr"
+      priority = 20
+      port     = 80
+      weight   = 10
+    }
 }
 
 resource "alicloud_fc_service" "foo" {
@@ -316,12 +319,17 @@ resource "alicloud_fc_trigger" "default" {
      "eventVersion":"1.0.0",
      "notes":"cdn events trigger",
      "filter":{
-        "domain": ["${alicloud_cdn_domain.domain.domain_name}"]
+        "domain": ["${alicloud_cdn_domain_new.domain.domain_name}"]
         }
     }EOF
     depends_on = ["alicloud_ram_role_policy_attachment.foo"]
 }
 ```
+
+## Module Support
+
+You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) 
+to create several triggers quickly.
 
 ## Argument Reference
 

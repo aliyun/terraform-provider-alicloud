@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -39,7 +41,7 @@ func resourceAliyunVpnConnection() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 
 			"local_subnet": {
@@ -79,53 +81,53 @@ func resourceAliyunVpnConnection() *schema.Resource {
 						"psk": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validateStringLengthInRange(1, 100),
+							ValidateFunc: validation.StringLenBetween(1, 100),
 						},
 						"ike_version": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      IKE_VERSION_1,
-							ValidateFunc: validateAllowedStringValue([]string{IKE_VERSION_1, IKE_VERSION_2}),
+							ValidateFunc: validation.StringInSlice([]string{IKE_VERSION_1, IKE_VERSION_2}, false),
 						},
 						"ike_mode": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      IKE_MODE_MAIN,
-							ValidateFunc: validateAllowedStringValue([]string{IKE_MODE_MAIN, IKE_MODE_AGGRESSIVE}),
+							ValidateFunc: validation.StringInSlice([]string{IKE_MODE_MAIN, IKE_MODE_AGGRESSIVE}, false),
 						},
 						"ike_enc_alg": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      VPN_ENC_AES,
-							ValidateFunc: validateAllowedStringValue([]string{VPN_ENC_AES, VPN_ENC_AES_3DES, VPN_ENC_AES_192, VPN_ENC_AES_256, VPN_ENC_AES_DES}),
+							ValidateFunc: validation.StringInSlice([]string{VPN_ENC_AES, VPN_ENC_AES_3DES, VPN_ENC_AES_192, VPN_ENC_AES_256, VPN_ENC_AES_DES}, false),
 						},
 						"ike_auth_alg": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      VPN_AUTH_SHA,
-							ValidateFunc: validateAllowedStringValue([]string{VPN_AUTH_SHA, VPN_AUTH_MD5, VPN_AUTH_SHA256, VPN_AUTH_SHA386, VPN_AUTH_SHA512}),
+							ValidateFunc: validation.StringInSlice([]string{VPN_AUTH_SHA, VPN_AUTH_MD5, VPN_AUTH_SHA256, VPN_AUTH_SHA386, VPN_AUTH_SHA512}, false),
 						},
 						"ike_pfs": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      VPN_PFS_G2,
-							ValidateFunc: validateAllowedStringValue([]string{VPN_PFS_G1, VPN_PFS_G2, VPN_PFS_G5, VPN_PFS_G14, VPN_PFS_G24}),
+							ValidateFunc: validation.StringInSlice([]string{VPN_PFS_G1, VPN_PFS_G2, VPN_PFS_G5, VPN_PFS_G14, VPN_PFS_G24}, false),
 						},
 						"ike_lifetime": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Default:      86400,
-							ValidateFunc: validateIntegerInRange(0, 86400),
+							ValidateFunc: validation.IntBetween(0, 86400),
 						},
 						"ike_local_id": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validateStringLengthInRange(1, 100),
+							ValidateFunc: validation.StringLenBetween(1, 100),
 						},
 						"ike_remote_id": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validateStringLengthInRange(1, 100),
+							ValidateFunc: validation.StringLenBetween(1, 100),
 						},
 					},
 				},
@@ -141,24 +143,24 @@ func resourceAliyunVpnConnection() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      VPN_ENC_AES,
-							ValidateFunc: validateAllowedStringValue([]string{VPN_ENC_AES, VPN_ENC_AES_3DES, VPN_ENC_AES_192, VPN_ENC_AES_256, VPN_ENC_AES_DES}),
+							ValidateFunc: validation.StringInSlice([]string{VPN_ENC_AES, VPN_ENC_AES_3DES, VPN_ENC_AES_192, VPN_ENC_AES_256, VPN_ENC_AES_DES}, false),
 						},
 						"ipsec_auth_alg": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      VPN_AUTH_SHA,
-							ValidateFunc: validateAllowedStringValue([]string{VPN_AUTH_SHA, VPN_AUTH_MD5, VPN_AUTH_SHA256, VPN_AUTH_SHA386, VPN_AUTH_SHA512}),
+							ValidateFunc: validation.StringInSlice([]string{VPN_AUTH_SHA, VPN_AUTH_MD5, VPN_AUTH_SHA256, VPN_AUTH_SHA386, VPN_AUTH_SHA512}, false),
 						},
 						"ipsec_pfs": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      VPN_PFS_G2,
-							ValidateFunc: validateAllowedStringValue([]string{VPN_PFS_G1, VPN_PFS_G2, VPN_PFS_G5, VPN_PFS_G14, VPN_PFS_G24, VPN_PFS_DISABLED}),
+							ValidateFunc: validation.StringInSlice([]string{VPN_PFS_G1, VPN_PFS_G2, VPN_PFS_G5, VPN_PFS_G14, VPN_PFS_G24, VPN_PFS_DISABLED}, false),
 						},
 						"ipsec_lifetime": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: validateIntegerInRange(0, 86400),
+							ValidateFunc: validation.IntBetween(0, 86400),
 						},
 					},
 				},

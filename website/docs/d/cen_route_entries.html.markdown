@@ -1,4 +1,5 @@
 ---
+subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_route_entries"
 sidebar_current: "docs-alicloud-datasource-cen-route-entries"

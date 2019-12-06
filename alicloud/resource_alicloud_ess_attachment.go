@@ -7,8 +7,8 @@ import (
 	"reflect"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -92,7 +92,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 				if err != nil {
 					if IsExceptedError(err, IncorrectCapacityMaxSize) {
 						instances, err := essService.DescribeEssAttachment(d.Id(), make([]string, 0))
-						if err != nil {
+						if !NotFoundError(err) {
 							return resource.NonRetryableError(err)
 						}
 						var autoAdded, attached []string

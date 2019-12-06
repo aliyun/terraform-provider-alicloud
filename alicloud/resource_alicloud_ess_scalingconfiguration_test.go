@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -48,16 +48,19 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 					"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
+					"password":          "123-abcABC",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"password_inherit": "false",
+					}),
 				),
 			},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id"},
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "password", "kms_encrypted_password", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -225,6 +228,16 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"password_inherit": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_inherit": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_name":              REMOVEKEY,
 					"instance_types":             REMOVEKEY,
 					"internet_charge_type":       REMOVEKEY,
@@ -244,6 +257,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 					"force_delete":               "true",
 					"override":                   "true",
 					"system_disk_size":           "100",
+					"password_inherit":           "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -268,6 +282,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 						"security_group_id":                CHECKSET,
 						"image_id":                         REGEXMATCH + "^ubuntu_18",
 						"override":                         "true",
+						"password_inherit":                 "false",
 					}),
 				),
 			},
@@ -314,6 +329,7 @@ func TestAccAlicloudEssScalingConfigurationMulti(t *testing.T) {
 					"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"force_delete":      "true",
+					"password":          "123-abcABC",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),

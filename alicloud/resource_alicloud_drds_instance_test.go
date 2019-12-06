@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/acctest"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"log"
 	"strings"
@@ -49,7 +49,7 @@ func testSweepDRDSInstances(region string) error {
 	response, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 
 	sweeped := false
-	for _, v := range response.Data.Instance {
+	for _, v := range response.Instances.Instance {
 		name := v.Description
 		id := v.DrdsInstanceId
 		skip := true

@@ -3,9 +3,11 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -23,13 +25,13 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateSecurityGroupName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateSecurityGroupDescription,
+				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 
 			"vpc_id": {
@@ -47,7 +49,7 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 				Optional:     true,
 				Default:      "normal",
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"normal", "enterprise"}),
+				ValidateFunc: validation.StringInSlice([]string{"normal", "enterprise"}, false),
 			},
 			"inner_access": {
 				Type:       schema.TypeBool,
@@ -60,7 +62,7 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"inner_access"},
-				ValidateFunc:  validateAllowedStringValue([]string{"Accept", "Drop"}),
+				ValidateFunc:  validation.StringInSlice([]string{"Accept", "Drop"}, false),
 				// The InnerAccessPolicy attribute of enterprise level security group can't be modified.
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("security_group_type").(string) == "enterprise"

@@ -26,12 +26,43 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 		}),
 	}
 
-	EngineVersionConfMemcache := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${data.alicloud_zones.resources.zones.0.id}",
-			"engine":  "Memcache",
-		}),
-	}
+	// At present, there are some limitation for sorted
+	//prePaidSortedByConfRedis := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
+	//		"engine":               "Redis",
+	//		"engine_version":       "5.0",
+	//		"instance_charge_type": "PrePaid",
+	//		"sorted_by":            "Price",
+	//	}),
+	//	existChangMap: map[string]string{
+	//		"classes.#":                CHECKSET,
+	//		"classes.0.instance_class": CHECKSET,
+	//		"classes.0.price":          CHECKSET,
+	//	},
+	//}
+	//
+	//postPaidSortedByConfRedis := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
+	//		"engine":               "Redis",
+	//		"engine_version":       "5.0",
+	//		"instance_charge_type": "PostPaid",
+	//		"sorted_by":            "Price",
+	//	}),
+	//	existChangMap: map[string]string{
+	//		"classes.#":                CHECKSET,
+	//		"classes.0.instance_class": CHECKSET,
+	//		"classes.0.price":          CHECKSET,
+	//	},
+	//}
+	// At present, the datasource does not support memcache
+	//EngineVersionConfMemcache := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"zone_id": "${data.alicloud_zones.resources.zones.0.id}",
+	//		"engine":  "Memcache",
+	//	}),
+	//}
 	ChargeTypeConfPostpaid := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
@@ -44,8 +75,9 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 			"performance_type": "standard_performance_type",
 		}),
 	}
+	// At present, there is no stock for enhance_performance_type, if someday stock enugth, just change fakeConfig to existConfig
 	PerformanceTypeEnhancePerformanceType := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+		fakeConfig: testAccConfig(map[string]interface{}{
 			"zone_id":          "${data.alicloud_zones.resources.zones.0.id}",
 			"performance_type": "enhance_performance_type",
 		}),
@@ -80,40 +112,17 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 			"architecture": "cluster",
 		}),
 	}
-	ArchitectureRwsplit := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":      "${data.alicloud_zones.resources.zones.0.id}",
-			"architecture": "rwsplit",
-		}),
-	}
-	NodeTypeDouble := dataSourceTestAccConfig{
+	// Not all of zone support rwsplit
+	//ArchitectureRwsplit := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"zone_id":      "${data.alicloud_zones.resources.zones.0.id}",
+	//		"architecture": "rwsplit",
+	//	}),
+	//}
+	NodeType := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":   "${data.alicloud_zones.resources.zones.0.id}",
 			"node_type": "double",
-		}),
-	}
-	NodeTypeSingle := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":   "${data.alicloud_zones.resources.zones.0.id}",
-			"node_type": "single",
-		}),
-	}
-	NodeTypeReadone := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":   "${data.alicloud_zones.resources.zones.0.id}",
-			"node_type": "readone",
-		}),
-	}
-	NodeTypeReadthree := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":   "${data.alicloud_zones.resources.zones.0.id}",
-			"node_type": "readthree",
-		}),
-	}
-	NodeTypeReadfive := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":   "${data.alicloud_zones.resources.zones.0.id}",
-			"node_type": "readfive",
 		}),
 	}
 
@@ -152,6 +161,7 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 	var fakeKVStoreInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"instance_classes.#": "0",
+			"classes.#":          "0",
 		}
 	}
 
@@ -161,11 +171,17 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 		fakeMapFunc:  fakeKVStoreInstanceMapFunc,
 	}
 
-	KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis, EngineVersionConfMemcache,
+	// At present, the datasource does not support memcache
+	//KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis, EngineVersionConfMemcache,
+	//	ChargeTypeConfPostpaid, PerformanceTypeStandardPerformanceType, PerformanceTypeEnhancePerformanceType,
+	//	StorageTypeInmemory, PackageTypeStandard, PackageTypeCustomized, ArchitectureStandard, ArchitectureCluster,
+	//	ArchitectureRwsplit, NodeTypeDouble, NodeTypeSingle, NodeTypeReadone, NodeTypeReadthree, NodeTypeReadfive,
+	//	ArchitectureStandard, allConf)
+	KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis,
+		//prePaidSortedByConfRedis, postPaidSortedByConfRedis,
 		ChargeTypeConfPostpaid, PerformanceTypeStandardPerformanceType, PerformanceTypeEnhancePerformanceType,
 		StorageTypeInmemory, PackageTypeStandard, PackageTypeCustomized, ArchitectureStandard, ArchitectureCluster,
-		ArchitectureRwsplit, NodeTypeDouble, NodeTypeSingle, NodeTypeReadone, NodeTypeReadthree, NodeTypeReadfive,
-		ArchitectureStandard, allConf)
+		NodeType, ArchitectureStandard, allConf)
 }
 
 func kvstoreConfigHeader(name string) string {

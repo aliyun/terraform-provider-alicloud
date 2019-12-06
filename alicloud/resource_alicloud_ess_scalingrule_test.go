@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -310,6 +310,7 @@ func testAccEssScalingRuleConfig(common string, rand int) string {
 		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 1
+		cooldown = 0
 	}
 	`, common, rand)
 }
@@ -342,6 +343,7 @@ func testAccEssScalingRuleUpdateAdjustmentType(common string, rand int) string {
 		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
 		adjustment_type = "PercentChangeInCapacity"
 		adjustment_value = 1
+		cooldown = 0
 	}
 	`, common, rand)
 }
@@ -374,6 +376,7 @@ func testAccEssScalingRuleUpdateAdjustmentValue(common string, rand int) string 
 		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
 		adjustment_type = "PercentChangeInCapacity"
 		adjustment_value = 2
+		cooldown = 0
 	}
 	`, common, rand)
 }
@@ -407,6 +410,7 @@ func testAccEssScalingRuleUpdateScalingRuleName(common string, rand int) string 
 		adjustment_type = "PercentChangeInCapacity"
 		adjustment_value = 2
 		scaling_rule_name = "${var.name}"
+		cooldown = 0
 	}
 	`, common, rand)
 }

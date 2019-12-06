@@ -1,12 +1,15 @@
 package alicloud
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -21,26 +24,9 @@ func resourceAliyunSlbAttachment() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-
-			"slb_id": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'slb_id' has been deprecated from provider version 1.6.0. New field 'load_balancer_id' replaces it.",
-			},
-
 			"load_balancer_id": {
 				Type:     schema.TypeString,
 				Required: true,
-			},
-
-			"instances": {
-				Type:     schema.TypeSet,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Optional: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return true
-				},
-				Deprecated: "Field 'instances' has been deprecated from provider version 1.6.0. New field 'instance_ids' replaces it.",
 			},
 
 			"instance_ids": {
@@ -55,13 +41,25 @@ func resourceAliyunSlbAttachment() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      100,
-				ValidateFunc: validateIntegerInRange(0, 100),
+				ValidateFunc: validation.IntBetween(0, 100),
+			},
+
+			"server_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "ecs",
+				ValidateFunc: validation.StringInSlice([]string{"eni", "ecs"}, false),
 			},
 
 			"backend_servers": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"delete_protection_validation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -94,8 +92,10 @@ func resourceAliyunSlbAttachmentRead(d *schema.ResourceData, meta interface{}) e
 	servers := object.BackendServers.BackendServer
 	instanceIds := make([]string, 0, len(servers))
 	var weight int
+	var serverType string
 	if len(servers) > 0 {
 		weight = servers[0].Weight
+		serverType = servers[0].Type
 		for _, e := range servers {
 			instanceIds = append(instanceIds, e.ServerId)
 		}
@@ -104,6 +104,7 @@ func resourceAliyunSlbAttachmentRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("load_balancer_id", object.LoadBalancerId)
 	d.Set("instance_ids", instanceIds)
 	d.Set("weight", weight)
+	d.Set("server_type", serverType)
 	d.Set("backend_servers", strings.Join(instanceIds, ","))
 
 	return nil
@@ -114,7 +115,12 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 	update := false
 	weight := d.Get("weight").(int)
+	oldServerType, serverType := d.GetChange("server_type")
 
+	if d.HasChange("server_type") {
+		update = true
+		d.SetPartial("server_type")
+	}
 	if d.HasChange("weight") {
 		update = true
 		d.SetPartial("weight")
@@ -130,7 +136,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 			request := slb.CreateAddBackendServersRequest()
 			request.RegionId = client.RegionId
 			request.LoadBalancerId = d.Id()
-			request.BackendServers = expandBackendServersToString(ns.Difference(os).List(), weight)
+			request.BackendServers = expandBackendServersToString(ns.Difference(os).List(), weight, serverType.(string))
 			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 					return slbClient.AddBackendServers(request)
@@ -151,7 +157,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 			request := slb.CreateRemoveBackendServersRequest()
 			request.RegionId = client.RegionId
 			request.LoadBalancerId = d.Id()
-			request.BackendServers = expandBackendServersToString(os.Difference(ns).List(), weight)
+			request.BackendServers = expandBackendServersToString(os.Difference(ns).List(), weight, oldServerType.(string))
 			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 					return slbClient.RemoveBackendServers(request)
@@ -179,7 +185,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 		request := slb.CreateSetBackendServersRequest()
 		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
-		request.BackendServers = expandBackendServersToString(d.Get("instance_ids").(*schema.Set).List(), weight)
+		request.BackendServers = expandBackendServersToString(d.Get("instance_ids").(*schema.Set).List(), weight, serverType.(string))
 		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 				return slbClient.SetBackendServers(request)
@@ -204,12 +210,28 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 func resourceAliyunSlbAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
+
+	if d.Get("delete_protection_validation").(bool) {
+		lbInstance, err := slbService.DescribeSlb(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapError(err)
+		}
+		if lbInstance.DeleteProtection == "on" {
+			return WrapError(fmt.Errorf("Current SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the resource.", d.Id()))
+		}
+	}
+
 	instanceSet := d.Get("instance_ids").(*schema.Set)
+	weight := d.Get("weight").(int)
+	serverType := d.Get("server_type").(string)
 	if len(instanceSet.List()) > 0 {
 		request := slb.CreateRemoveBackendServersRequest()
 		request.RegionId = client.RegionId
 		request.LoadBalancerId = d.Id()
-		request.BackendServers = convertListToJsonString(instanceSet.List())
+		request.BackendServers = expandBackendServersToString(d.Get("instance_ids").(*schema.Set).List(), weight, serverType)
 		if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 				return slbClient.RemoveBackendServers(request)

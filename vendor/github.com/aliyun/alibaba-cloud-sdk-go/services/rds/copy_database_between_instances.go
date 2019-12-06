@@ -76,19 +76,19 @@ func (client *Client) CopyDatabaseBetweenInstancesWithCallback(request *CopyData
 // CopyDatabaseBetweenInstancesRequest is the request struct for api CopyDatabaseBetweenInstances
 type CopyDatabaseBetweenInstancesRequest struct {
 	*requests.RpcRequest
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ClientToken          string           `position:"Query" name:"ClientToken"`
-	PayType              string           `position:"Query" name:"PayType"`
-	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
-	TargetDBInstanceId   string           `position:"Query" name:"TargetDBInstanceId"`
-	DbNames              string           `position:"Query" name:"DbNames"`
-	BackupId             string           `position:"Query" name:"BackupId"`
-	RestoreTime          string           `position:"Query" name:"RestoreTime"`
-	SyncUserPrivilege    string           `position:"Query" name:"SyncUserPrivilege"`
-	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
+	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
+	RestoreTime          string           `position:"Query" name:"RestoreTime"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	BackupId             string           `position:"Query" name:"BackupId"`
+	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	SyncUserPrivilege    string           `position:"Query" name:"SyncUserPrivilege"`
+	DbNames              string           `position:"Query" name:"DbNames"`
+	TargetDBInstanceId   string           `position:"Query" name:"TargetDBInstanceId"`
+	PayType              string           `position:"Query" name:"PayType"`
 }
 
 // CopyDatabaseBetweenInstancesResponse is the response struct for api CopyDatabaseBetweenInstances
@@ -103,7 +103,7 @@ func CreateCopyDatabaseBetweenInstancesRequest() (request *CopyDatabaseBetweenIn
 	request = &CopyDatabaseBetweenInstancesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "CopyDatabaseBetweenInstances", "rds", "openAPI")
+	request.InitWithApiInfo("Rds", "2014-08-15", "CopyDatabaseBetweenInstances", "", "")
 	return
 }
 

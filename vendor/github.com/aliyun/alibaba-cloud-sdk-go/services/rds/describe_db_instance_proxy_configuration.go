@@ -76,9 +76,9 @@ func (client *Client) DescribeDBInstanceProxyConfigurationWithCallback(request *
 // DescribeDBInstanceProxyConfigurationRequest is the request struct for api DescribeDBInstanceProxyConfiguration
 type DescribeDBInstanceProxyConfigurationRequest struct {
 	*requests.RpcRequest
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 }
 
@@ -96,7 +96,7 @@ func CreateDescribeDBInstanceProxyConfigurationRequest() (request *DescribeDBIns
 	request = &DescribeDBInstanceProxyConfigurationRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeDBInstanceProxyConfiguration", "rds", "openAPI")
+	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeDBInstanceProxyConfiguration", "", "")
 	return
 }
 

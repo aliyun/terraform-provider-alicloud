@@ -76,12 +76,12 @@ func (client *Client) DescribeResourceUsageWithCallback(request *DescribeResourc
 // DescribeResourceUsageRequest is the request struct for api DescribeResourceUsage
 type DescribeResourceUsageRequest struct {
 	*requests.RpcRequest
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ClientToken          string           `position:"Query" name:"ClientToken"`
-	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 }
 
 // DescribeResourceUsageResponse is the response struct for api DescribeResourceUsage
@@ -105,7 +105,7 @@ func CreateDescribeResourceUsageRequest() (request *DescribeResourceUsageRequest
 	request = &DescribeResourceUsageRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeResourceUsage", "rds", "openAPI")
+	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeResourceUsage", "", "")
 	return
 }
 

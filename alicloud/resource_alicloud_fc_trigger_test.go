@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/aliyun/fc-go-sdk"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -646,7 +646,7 @@ var testTriggerCdnEventsTemplate = `
 		"eventVersion": "1.0.0",
 		"notes": "cdn events trigger",
 		"filter": {
-			"domain": ["${alicloud_cdn_domain.default.domain_name}"]
+			"domain": ["${alicloud_cdn_domain_new.default.domain_name}"]
 		}
 	}
 `
@@ -656,7 +656,7 @@ var testTriggerUpdateCdnEventsTemplate = `
 		"eventVersion":"1.0.0",
 		"notes": "update cdn events trigger",
 		"filter": {
-			"domain": ["${alicloud_cdn_domain.default.domain_name}"]
+			"domain": ["${alicloud_cdn_domain_new.default.domain_name}"]
 		}
 	}
 `
@@ -706,15 +706,17 @@ variable "name" {
 data "alicloud_account" "default" {
 }
 
-resource "alicloud_cdn_domain" "default" {
-	  domain_name = "${var.name}.xiaozhu.com"
-	  cdn_type = "web"
-	  source_type = "oss"
-	  sources = ["terraformtest.aliyuncs.com"]
-	  optimize_enable = "off"
-	  page_compress_enable = "off"
-	  range_enable = "off"
-	  video_seek_enable = "off"
+resource "alicloud_cdn_domain_new" "default" {
+  domain_name = "${var.name}.xiaozhu.com"
+  cdn_type    = "web"
+  scope       = "overseas"
+  sources {
+    content  = "1.1.1.1"
+    type     = "ipaddr"
+    priority = 20
+    port     = 80
+    weight   = 10
+  }
 }
 
 resource "alicloud_fc_service" "default" {
@@ -788,15 +790,17 @@ variable "name" {
 data "alicloud_account" "default" {
 }
 
-resource "alicloud_cdn_domain" "default" {
-	  domain_name = "${var.name}.xiaozhu.com"
-	  cdn_type = "web"
-	  source_type = "oss"
-	  sources = ["terraformtest.aliyuncs.com"]
-	  optimize_enable = "off"
-	  page_compress_enable = "off"
-	  range_enable = "off"
-	  video_seek_enable = "off"
+resource "alicloud_cdn_domain_new" "default" {
+  domain_name = "${var.name}.xiaozhu.com"
+  cdn_type    = "web"
+  scope       = "overseas"
+  sources {
+    content  = "1.1.1.1"
+    type     = "ipaddr"
+    priority = 20
+    port     = 80
+    weight   = 10
+  }
 }
 
 resource "alicloud_fc_service" "default" {

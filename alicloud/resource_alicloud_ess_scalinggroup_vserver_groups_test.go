@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -38,9 +38,10 @@ func TestAccAlicloudEssVserverGroups_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
 			},
 			{
 				Config: testAccEssScalingGroupVserverGroupUpdate(EcsInstanceCommonTestCase, rand),
@@ -118,6 +119,7 @@ func testAccEssScalingGroupVserverGroup(common string, rand int) string {
 					weight = "60"
 				}
 			}
+	force = true
 	}
 
 	resource "alicloud_slb" "default" {
@@ -178,6 +180,7 @@ func testAccEssScalingGroupVserverGroupUpdate(common string, rand int) string {
 					weight = "60"
 				}
 			}
+		force = false
 	}
 
 	resource "alicloud_slb" "default" {

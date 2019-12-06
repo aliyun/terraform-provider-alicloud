@@ -1,4 +1,5 @@
 ---
+subcategory: "Auto Scaling(ESS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ess_scaling_configurations"
 sidebar_current: "docs-alicloud_ess_scaling_configurations"
@@ -39,7 +40,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of scaling configuration ids.
 * `names` - A list of scaling configuration names.
-* `scaling_rules` - A list of scaling rules. Each element contains the following attributes:
+* `scaling_configurations` - A list of scaling rules. Each element contains the following attributes:
   * `id` - ID of the scaling rule.
   * `scaling_group_id` - ID of the scaling group.
   * `name` - Name of the scaling configuration.

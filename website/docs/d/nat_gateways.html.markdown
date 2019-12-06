@@ -1,4 +1,5 @@
 ---
+subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nat_gateways"
 sidebar_current: "docs-alicloud-datasource-nat-gateways"

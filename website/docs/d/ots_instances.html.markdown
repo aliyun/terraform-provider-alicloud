@@ -1,4 +1,5 @@
 ---
+subcategory: "Table Store (OTS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ots_instances"
 sidebar_current: "docs-alicloud-datasource-ots-instances"

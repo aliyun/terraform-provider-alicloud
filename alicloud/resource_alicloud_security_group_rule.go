@@ -6,10 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -28,7 +30,7 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateSecurityRuleType,
+				ValidateFunc: validation.StringInSlice([]string{"ingress", "egress"}, false),
 				Description:  "Type of rule, ingress (inbound) or egress (outbound).",
 			},
 
@@ -36,7 +38,7 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateSecurityRuleIpProtocol,
+				ValidateFunc: validation.StringInSlice([]string{"tcp", "udp", "icmp", "gre", "all"}, false),
 			},
 
 			"nic_type": {
@@ -44,7 +46,7 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: validateSecurityRuleNicType,
+				ValidateFunc: validation.StringInSlice([]string{"internet", "intranet"}, false),
 			},
 
 			"policy": {
@@ -52,7 +54,7 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      GroupRulePolicyAccept,
-				ValidateFunc: validateSecurityRulePolicy,
+				ValidateFunc: validation.StringInSlice([]string{"accept", "drop"}, false),
 			},
 
 			"port_range": {
@@ -68,7 +70,7 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      1,
-				ValidateFunc: validateSecurityPriority,
+				ValidateFunc: validation.IntBetween(1, 100),
 			},
 
 			"security_group_id": {

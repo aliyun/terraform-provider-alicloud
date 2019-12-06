@@ -1,4 +1,5 @@
 ---
+subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_network_interface"
 sidebar_current: "docs-alicloud-resource-network-interface"

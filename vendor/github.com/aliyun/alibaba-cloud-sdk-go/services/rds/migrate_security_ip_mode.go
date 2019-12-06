@@ -76,9 +76,9 @@ func (client *Client) MigrateSecurityIPModeWithCallback(request *MigrateSecurity
 // MigrateSecurityIPModeRequest is the request struct for api MigrateSecurityIPMode
 type MigrateSecurityIPModeRequest struct {
 	*requests.RpcRequest
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 }
 
@@ -95,7 +95,7 @@ func CreateMigrateSecurityIPModeRequest() (request *MigrateSecurityIPModeRequest
 	request = &MigrateSecurityIPModeRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "MigrateSecurityIPMode", "rds", "openAPI")
+	request.InitWithApiInfo("Rds", "2014-08-15", "MigrateSecurityIPMode", "", "")
 	return
 }
 

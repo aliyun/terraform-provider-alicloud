@@ -1,4 +1,5 @@
 ---
+subcategory: "Server Load Balancer (SLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_acls"
 sidebar_current: "docs-alicloud-datasource-slb-acls"
@@ -28,6 +29,7 @@ The following arguments are supported:
 * `ids` - (Optional) A list of acls IDs to filter results.
 * `name_regex` - (Optional) A regex string to filter results by acl name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `resource_group_id` - (Optional, ForceNew, Available in 1.60.0+) The Id of resource group which acl belongs.
 
 ## Attributes Reference
 

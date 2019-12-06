@@ -1,7 +1,7 @@
 package alicloud
 
 import (
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -11,7 +11,8 @@ type DrdsService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *DrdsService) DescribeDrdsInstance(id string) (response *drds.DescribeDrdsInstanceResponse, err error) {
+func (s *DrdsService) DescribeDrdsInstance(id string) (*drds.DescribeDrdsInstanceResponse, error) {
+	response := &drds.DescribeDrdsInstanceResponse{}
 	request := drds.CreateDescribeDrdsInstanceRequest()
 	request.RegionId = s.client.RegionId
 	request.DrdsInstanceId = id
@@ -21,13 +22,13 @@ func (s *DrdsService) DescribeDrdsInstance(id string) (response *drds.DescribeDr
 
 	if err != nil {
 		if IsExceptedError(err, InvalidDRDSInstanceIdNotFound) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*drds.DescribeDrdsInstanceResponse)
-	if response.Data.Status == "5" {
+	if response.Data.Status == "RELEASE" {
 		return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
 	return response, nil

@@ -2,11 +2,16 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
+
+	"github.com/denverdino/aliyungo/common"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -25,13 +30,13 @@ func resourceAliyunLaunchTemplate() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateLaunchTemplateName,
+				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateLaunchTemplateDescription,
+				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 
 			"host_name": {
@@ -47,25 +52,25 @@ func resourceAliyunLaunchTemplate() *schema.Resource {
 			"image_owner_alias": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateImageOwners,
+				ValidateFunc: validation.StringInSlice([]string{"system", "self", "others", "marketplace", ""}, false),
 			},
 
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceChargeType,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 			},
 
 			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 
 			"instance_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceType,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
 			},
 
 			"auto_release_time": {
@@ -76,38 +81,38 @@ func resourceAliyunLaunchTemplate() *schema.Resource {
 			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInternetChargeType,
+				ValidateFunc: validation.StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
 			},
 
 			"internet_max_bandwidth_in": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validateIntegerInRange(1, 200),
+				ValidateFunc: validation.IntBetween(1, 200),
 			},
 
 			"internet_max_bandwidth_out": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateIntegerInRange(0, 100),
+				ValidateFunc: validation.IntBetween(0, 100),
 			},
 
 			"io_optimized": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateIoOptimized,
+				ValidateFunc: validation.StringInSlice([]string{"none", "optimized"}, false),
 			},
 
 			"key_pair_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateKeyPairName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 
 			"network_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceNetworkType,
+				ValidateFunc: validation.StringInSlice([]string{"classic", "vpc"}, false),
 			},
 
 			"ram_role_name": {
@@ -118,10 +123,10 @@ func resourceAliyunLaunchTemplate() *schema.Resource {
 			"security_enhancement_strategy": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(ActiveSecurityEnhancementStrategy),
 					string(DeactiveSecurityEnhancementStrategy),
-				}),
+				}, false),
 			},
 
 			"security_group_id": {
@@ -137,28 +142,28 @@ func resourceAliyunLaunchTemplate() *schema.Resource {
 			"spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceSpotStrategy,
+				ValidateFunc: validation.StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 			},
 
 			"system_disk_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateDiskCategory,
+				ValidateFunc: validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
 			},
 			"system_disk_description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateDiskDescription,
+				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 			"system_disk_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateDiskName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 			"system_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateIntegerInRange(20, 500),
+				ValidateFunc: validation.IntBetween(20, 500),
 			},
 
 			"tags": {
@@ -208,7 +213,7 @@ func resourceAliyunLaunchTemplate() *schema.Resource {
 						"primary_ip": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validateIpAddress,
+							ValidateFunc: validation.SingleIP(),
 						},
 						"security_group_id": {
 							Type:     schema.TypeString,

@@ -76,11 +76,11 @@ func (client *Client) DescribeOssDownloadsForSQLServerWithCallback(request *Desc
 // DescribeOssDownloadsForSQLServerRequest is the request struct for api DescribeOssDownloadsForSQLServer
 type DescribeOssDownloadsForSQLServerRequest struct {
 	*requests.RpcRequest
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	MigrateTaskId        string           `position:"Query" name:"MigrateTaskId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 }
 
 // DescribeOssDownloadsForSQLServerResponse is the response struct for api DescribeOssDownloadsForSQLServer
@@ -97,7 +97,7 @@ func CreateDescribeOssDownloadsForSQLServerRequest() (request *DescribeOssDownlo
 	request = &DescribeOssDownloadsForSQLServerRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeOssDownloadsForSQLServer", "rds", "openAPI")
+	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeOssDownloadsForSQLServer", "", "")
 	return
 }
 

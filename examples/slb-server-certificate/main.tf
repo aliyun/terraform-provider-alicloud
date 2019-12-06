@@ -7,7 +7,7 @@ resource "alicloud_slb_server_certificate" "foo" {
 resource "alicloud_slb" "instance" {
   name                 = var.slb_name
   internet_charge_type = var.internet_charge_type
-  internet             = var.internet
+  address_type         = var.address_type
 }
 
 resource "alicloud_slb_listener" "https" {
@@ -28,7 +28,7 @@ resource "alicloud_slb_listener" "https" {
   health_check_interval     = 5
   health_check_http_code    = "http_2xx,http_3xx"
   bandwidth                 = 10
-  ssl_certificate_id        = alicloud_slb_server_certificate.foo.id
+  server_certificate_id     = alicloud_slb_server_certificate.foo.id
 }
 
 ## another way: server certificate uploaded by file
@@ -56,7 +56,7 @@ resource "alicloud_slb_listener" "https-file" {
   health_check_interval     = 5
   health_check_http_code    = "http_2xx,http_3xx"
   bandwidth                 = 10
-  ssl_certificate_id        = alicloud_slb_server_certificate.foo-file.id
+  server_certificate_id     = alicloud_slb_server_certificate.foo-file.id
 }
 
 data "alicloud_slb_server_certificates" "slb_server_certificates" {

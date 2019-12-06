@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -19,7 +19,7 @@ func TestAccAlicloudDBAccountUpdate(t *testing.T) {
 		"instance_id": CHECKSET,
 		"name":        "tftestnormal",
 		"password":    "YourPassword_123",
-		"type":        string(DBAccountNormal),
+		"type":        "Normal",
 	}
 	resourceId := "alicloud_db_account.default"
 	ra := resourceAttrInit(resourceId, basicMap)

@@ -17,7 +17,8 @@ package alikafka
 
 // ConsumerVO is a nested struct in alikafka response
 type ConsumerVO struct {
-	RegionId   string `json:"RegionId" xml:"RegionId"`
-	InstanceId string `json:"InstanceId" xml:"InstanceId"`
-	ConsumerId string `json:"ConsumerId" xml:"ConsumerId"`
+	RegionId   string                `json:"RegionId" xml:"RegionId"`
+	InstanceId string                `json:"InstanceId" xml:"InstanceId"`
+	ConsumerId string                `json:"ConsumerId" xml:"ConsumerId"`
+	Tags       TagsInGetConsumerList `json:"Tags" xml:"Tags"`
 }

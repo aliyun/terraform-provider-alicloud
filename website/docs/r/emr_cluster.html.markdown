@@ -1,4 +1,5 @@
 ---
+subcategory: "E-MapReduce"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_emr_cluster"
 sidebar_current: "docs-alicloud-resource-emr-cluster"
@@ -17,78 +18,132 @@ Provides a EMR Cluster resource. With this you can create, read, and release  EM
 #### 1. Create A Cluster
 
 ```
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
+data "alicloud_emr_main_versions" "default" {
 }
 
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_emr_instance_types" "default" {
+    destination_resource = "InstanceType"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    support_local_storage = false
+    instance_charge_type = "PostPaid"
+    support_node_type = ["MASTER", "CORE", "TASK"]
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+data "alicloud_emr_disk_types" "data_disk" {
+    destination_resource = "DataDisk"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    instance_charge_type = "PostPaid"
+    instance_type = data.alicloud_emr_instance_types.default.types.0.id
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
+data "alicloud_emr_disk_types" "system_disk" {
+    destination_resource = "SystemDisk"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    instance_charge_type = "PostPaid"
+    instance_type = data.alicloud_emr_instance_types.default.types.0.id
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
+resource "alicloud_vpc" "vpc" {
+    count = var.vpc_id == "" ? 1 : 0
+
+    name       = var.vpc_name
+    cidr_block = var.vpc_cidr
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    count = var.security_group_id == "" ? 1 : 0
+
+    name = var.security_group_name
+    vpc_id = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
+}
+
+// VSwitch Resource for Module
+resource "alicloud_vswitch" "vswitch" {
+    count = var.vswitch_id == "" ? 1 : 0
+
+    availability_zone = var.availability_zone == "" ? data.alicloud_emr_instance_types.default.types.0.zone_id : var.availability_zone
+    name              = var.vswitch_name
+    cidr_block        = var.vswitch_cidr
+    vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
+}
+
+// Ram role Resource for Module
+resource "alicloud_ram_role" "default" {
+	name = var.ram_name
+	document = <<EOF
+    {
+        "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+            "Service": [
+                "emr.aliyuncs.com", 
+                "ecs.aliyuncs.com"
+            ]
+            }
+        }
+        ],
+        "Version": "1"
+    }
+    EOF
+    description = "this is a role test."
+    force = true
 }
 
 resource "alicloud_emr_cluster" "default" {
-    name = "terraform-resize-test-0923"
+    name = "terraform-resize-test-0926"
 
-    emr_ver = "EMR-3.22.0"
+    emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 
-    cluster_type = "HADOOP"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
 
     host_group {
         host_group_name = "master_group"
         host_group_type = "MASTER"
         node_count = "2"
-        instance_type = "ecs.g5.xlarge"
-        disk_type = "CLOUD_SSD"
-        disk_capacity = "80"
+        instance_type = data.alicloud_emr_instance_types.default.types.0.id
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
         disk_count = "1"
-        sys_disk_type = "CLOUD_SSD"
-        sys_disk_capacity = "80"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
     }
 
     host_group {
         host_group_name = "core_group"
         host_group_type = "CORE"
-        node_count = "2"
-        instance_type = "ecs.g5.xlarge"
-        disk_type = "CLOUD_SSD"
-        disk_capacity = "80"
+        node_count = "3"
+        instance_type = data.alicloud_emr_instance_types.default.types.0.id
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
         disk_count = "4"
-        sys_disk_type = "CLOUD_SSD"
-        sys_disk_capacity = "80"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
     }
 
     host_group {
         host_group_name = "task_group"
         host_group_type = "TASK"
         node_count = "2"
-        instance_type = "ecs.g5.xlarge"
-        disk_type = "CLOUD_SSD"
-        disk_capacity = "80"
+        instance_type = data.alicloud_emr_instance_types.default.types.0.id
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
         disk_count = "4"
-        sys_disk_type = "CLOUD_SSD"
-        sys_disk_capacity = "80"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
     }
 
     high_availability_enable = true
     option_software_list = ["HBASE","PRESTO",]
-    zone_id = "${data.alicloud_zones.default.zones.0.id}"
-    security_group_id = "${alicloud_security_group.default.id}"
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+    security_group_id = var.security_group_id == "" ? alicloud_security_group.default[0].id : var.security_group_id
     is_open_public_ip = true
     charge_type = "PostPaid"
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    user_defined_emr_ecs_role = "EMRUserDefineRole-Role1"
+    vswitch_id = var.vswitch_id == "" ? alicloud_vswitch.vswitch[0].id : var.vswitch_id
+    user_defined_emr_ecs_role = alicloud_ram_role.default.name
     ssh_enable = true
     master_pwd = "ABCtest1234!"
 }
@@ -105,78 +160,132 @@ Scaling down is only applicable to TASK group. If you want to scale down CORE gr
 As the following case, we scale up the TASK group 2 nodes by increasing host_group.node_count by 2.
 
 ```
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
+data "alicloud_emr_main_versions" "default" {
 }
 
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_emr_instance_types" "default" {
+    destination_resource = "InstanceType"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    support_local_storage = false
+    instance_charge_type = "PostPaid"
+    support_node_type = ["MASTER", "CORE", "TASK"]
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+data "alicloud_emr_disk_types" "data_disk" {
+    destination_resource = "DataDisk"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    instance_charge_type = "PostPaid"
+    instance_type = data.alicloud_emr_instance_types.default.types.0.id
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
+data "alicloud_emr_disk_types" "system_disk" {
+    destination_resource = "SystemDisk"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    instance_charge_type = "PostPaid"
+    instance_type = data.alicloud_emr_instance_types.default.types.0.id
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
+resource "alicloud_vpc" "vpc" {
+    count = var.vpc_id == "" ? 1 : 0
+
+    name       = var.vpc_name
+    cidr_block = var.vpc_cidr
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    count = var.security_group_id == "" ? 1 : 0
+
+    name = var.security_group_name
+    vpc_id = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
+}
+
+// VSwitch Resource for Module
+resource "alicloud_vswitch" "vswitch" {
+    count = var.vswitch_id == "" ? 1 : 0
+
+    availability_zone = var.availability_zone == "" ? data.alicloud_emr_instance_types.default.types.0.zone_id : var.availability_zone
+    name              = var.vswitch_name
+    cidr_block        = var.vswitch_cidr
+    vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
+}
+
+// Ram role Resource for Module
+resource "alicloud_ram_role" "default" {
+	name = var.ram_name
+	document = <<EOF
+    {
+        "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+            "Service": [
+                "emr.aliyuncs.com", 
+                "ecs.aliyuncs.com"
+            ]
+            }
+        }
+        ],
+        "Version": "1"
+    }
+    EOF
+    description = "this is a role test."
+    force = true
 }
 
 resource "alicloud_emr_cluster" "default" {
-    name = "terraform-resize-test-0923"
+    name = "terraform-resize-test-0926"
 
-    emr_ver = "EMR-3.22.0"
+    emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 
-    cluster_type = "HADOOP"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
 
     host_group {
         host_group_name = "master_group"
         host_group_type = "MASTER"
         node_count = "2"
-        instance_type = "ecs.g5.xlarge"
-        disk_type = "CLOUD_SSD"
-        disk_capacity = "80"
+        instance_type = data.alicloud_emr_instance_types.default.types.0.id
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
         disk_count = "1"
-        sys_disk_type = "CLOUD_SSD"
-        sys_disk_capacity = "80"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
     }
 
     host_group {
         host_group_name = "core_group"
         host_group_type = "CORE"
         node_count = "2"
-        instance_type = "ecs.g5.xlarge"
-        disk_type = "CLOUD_SSD"
-        disk_capacity = "80"
+        instance_type = data.alicloud_emr_instance_types.default.types.0.id
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
         disk_count = "4"
-        sys_disk_type = "CLOUD_SSD"
-        sys_disk_capacity = "80"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
     }
 
     host_group {
         host_group_name = "task_group"
         host_group_type = "TASK"
         node_count = "4"
-        instance_type = "ecs.g5.xlarge"
-        disk_type = "CLOUD_SSD"
-        disk_capacity = "80"
+        instance_type = data.alicloud_emr_instance_types.default.types.0.id
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
         disk_count = "4"
-        sys_disk_type = "CLOUD_SSD"
-        sys_disk_capacity = "80"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
     }
 
     high_availability_enable = true
     option_software_list = ["HBASE","PRESTO",]
-    zone_id = "${data.alicloud_zones.default.zones.0.id}"
-    security_group_id = "${alicloud_security_group.default.id}"
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+    security_group_id = var.security_group_id == "" ? alicloud_security_group.default[0].id : var.security_group_id
     is_open_public_ip = true
     charge_type = "PostPaid"
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    user_defined_emr_ecs_role = "EMRUserDefineRole-Role1"
+    vswitch_id = var.vswitch_id == "" ? alicloud_vswitch.vswitch[0].id : var.vswitch_id
+    user_defined_emr_ecs_role = alicloud_ram_role.default.name
     ssh_enable = true
     master_pwd = "ABCtest1234!"
 }
@@ -189,81 +298,248 @@ In the case of scaling down a cluster, we need to specified the host group and t
 The following is an example. We scale down the cluster by decreasing the node count by 2, and specifying the scale-down instance list.
 
 ```
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
+data "alicloud_emr_main_versions" "default" {
 }
 
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_emr_instance_types" "default" {
+    destination_resource = "InstanceType"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    support_local_storage = false
+    instance_charge_type = "PostPaid"
+    support_node_type = ["MASTER", "CORE", "TASK"]
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+data "alicloud_emr_disk_types" "data_disk" {
+    destination_resource = "DataDisk"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    instance_charge_type = "PostPaid"
+    instance_type = data.alicloud_emr_instance_types.default.types.0.id
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
+data "alicloud_emr_disk_types" "system_disk" {
+    destination_resource = "SystemDisk"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    instance_charge_type = "PostPaid"
+    instance_type = data.alicloud_emr_instance_types.default.types.0.id
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
+resource "alicloud_vpc" "vpc" {
+    count = var.vpc_id == "" ? 1 : 0
+
+    name       = var.vpc_name
+    cidr_block = var.vpc_cidr
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    count = var.security_group_id == "" ? 1 : 0
+
+    name = var.security_group_name
+    vpc_id = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
+}
+
+// VSwitch Resource for Module
+resource "alicloud_vswitch" "vswitch" {
+    count = var.vswitch_id == "" ? 1 : 0
+
+    availability_zone = var.availability_zone == "" ? data.alicloud_emr_instance_types.default.types.0.zone_id : var.availability_zone
+    name              = var.vswitch_name
+    cidr_block        = var.vswitch_cidr
+    vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
+}
+
+// Ram role Resource for Module
+resource "alicloud_ram_role" "default" {
+	name = var.ram_name
+	document = <<EOF
+    {
+        "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+            "Service": [
+                "emr.aliyuncs.com", 
+                "ecs.aliyuncs.com"
+            ]
+            }
+        }
+        ],
+        "Version": "1"
+    }
+    EOF
+    description = "this is a role test."
+    force = true
 }
 
 resource "alicloud_emr_cluster" "default" {
-    name = "terraform-resize-test-0923"
+    name = "terraform-resize-test-0926"
 
-    emr_ver = "EMR-3.22.0"
+    emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 
-    cluster_type = "HADOOP"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
 
     host_group {
         host_group_name = "master_group"
         host_group_type = "MASTER"
         node_count = "2"
-        instance_type = "ecs.g5.xlarge"
-        disk_type = "CLOUD_SSD"
-        disk_capacity = "80"
+        instance_type = data.alicloud_emr_instance_types.default.types.0.id
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
         disk_count = "1"
-        sys_disk_type = "CLOUD_SSD"
-        sys_disk_capacity = "80"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
     }
 
     host_group {
         host_group_name = "core_group"
         host_group_type = "CORE"
         node_count = "2"
-        instance_type = "ecs.g5.xlarge"
-        disk_type = "CLOUD_SSD"
-        disk_capacity = "80"
+        instance_type = data.alicloud_emr_instance_types.default.types.0.id
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
         disk_count = "4"
-        sys_disk_type = "CLOUD_SSD"
-        sys_disk_capacity = "80"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
     }
 
     host_group {
         host_group_name = "task_group"
         host_group_type = "TASK"
         node_count = "2"
-        instance_type = "ecs.g5.xlarge"
-        disk_type = "CLOUD_SSD"
-        disk_capacity = "80"
+        instance_type = data.alicloud_emr_instance_types.default.types.0.id
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
         disk_count = "4"
-        sys_disk_type = "CLOUD_SSD"
-        sys_disk_capacity = "80"
-        instance_list = "[\"instance_id1\",\"instance_id2\"]"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
     }
 
     high_availability_enable = true
     option_software_list = ["HBASE","PRESTO",]
-    zone_id = "${data.alicloud_zones.default.zones.0.id}"
-    security_group_id = "${alicloud_security_group.default.id}"
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+    security_group_id = var.security_group_id == "" ? alicloud_security_group.default[0].id : var.security_group_id
     is_open_public_ip = true
     charge_type = "PostPaid"
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    user_defined_emr_ecs_role = "EMRUserDefineRole-Role1"
+    vswitch_id = var.vswitch_id == "" ? alicloud_vswitch.vswitch[0].id : var.vswitch_id
+    user_defined_emr_ecs_role = alicloud_ram_role.default.name
     ssh_enable = true
     master_pwd = "ABCtest1234!"
+}
+```
+
+#### 4. Create a emr gateway cluster
+
+```
+data "alicloud_emr_main_versions" "default" {
+}
+
+data "alicloud_emr_instance_types" "default" {
+    destination_resource = "InstanceType"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    support_local_storage = false
+    instance_charge_type = "PostPaid"
+    support_node_type = ["GATEWAY"]
+}
+
+data "alicloud_emr_disk_types" "data_disk" {
+    destination_resource = "DataDisk"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    instance_charge_type = "PostPaid"
+    instance_type = data.alicloud_emr_instance_types.default.types.0.id
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
+data "alicloud_emr_disk_types" "system_disk" {
+    destination_resource = "SystemDisk"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    instance_charge_type = "PostPaid"
+    instance_type = data.alicloud_emr_instance_types.default.types.0.id
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
+resource "alicloud_vpc" "vpc" {
+    count = var.vpc_id == "" ? 1 : 0
+
+    name       = var.vpc_name
+    cidr_block = var.vpc_cidr
+}
+
+resource "alicloud_security_group" "default" {
+    count = var.security_group_id == "" ? 1 : 0
+
+    name = var.security_group_name
+    vpc_id = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
+}
+
+// VSwitch Resource for Module
+resource "alicloud_vswitch" "vswitch" {
+    count = var.vswitch_id == "" ? 1 : 0
+
+    availability_zone = var.availability_zone == "" ? data.alicloud_emr_instance_types.default.types.0.zone_id : var.availability_zone
+    name              = var.vswitch_name
+    cidr_block        = var.vswitch_cidr
+    vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
+}
+
+// Ram role Resource for Module
+resource "alicloud_ram_role" "default" {
+	name = var.ram_name
+	document = <<EOF
+    {
+        "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+            "Service": [
+                "emr.aliyuncs.com", 
+                "ecs.aliyuncs.com"
+            ]
+            }
+        }
+        ],
+        "Version": "1"
+    }
+    EOF
+    description = "this is a role test."
+    force = true
+}
+
+resource "alicloud_emr_cluster" "gateway" {
+    name = "terraform-gateway-test-1101"
+
+    emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
+
+    # supported 'GATEWAY' available in 1.61.0+.
+    cluster_type = "GATEWAY"
+
+    host_group {
+        host_group_name = "master_group"
+        host_group_type = "GATEWAY"
+        node_count = "1"
+        instance_type = data.alicloud_emr_instance_types.default.types.0.id
+        disk_type = data.alicloud_emr_disk_types.data_disk.types.0.value
+        disk_capacity = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
+        disk_count = "1"
+        sys_disk_type = data.alicloud_emr_disk_types.system_disk.types.0.value
+        sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
+    }
+
+    high_availability_enable = true
+    option_software_list = ["HBASE","PRESTO",]
+    zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+    security_group_id = var.security_group_id == "" ? alicloud_security_group.default[0].id : var.security_group_id
+    is_open_public_ip = true
+    charge_type = "PostPaid"
+    vswitch_id = var.vswitch_id == "" ? alicloud_vswitch.vswitch[0].id : var.vswitch_id
+    user_defined_emr_ecs_role = alicloud_ram_role.default.name
+    ssh_enable = true
+    master_pwd = "ABCtest1234!"
+
+    // the gateway related emr cluster id, if you want to bind a cluster dynamically, please refer to the examples.
+    related_cluster_id = ${related_cluster_id}
 }
 ```
 
@@ -274,7 +550,7 @@ The following arguments are supported:
 
 * `name` - (Required) The name of emr cluster. The name length must be less than 64. Supported characters: chinese character, english character, number, "-", "_".
 * `emr_ver` - (Required, ForceNew) EMR Version, e.g. EMR-3.22.0. You can find the all valid EMR Version in emr web console.
-* `cluster_type` - (Required, ForceNew) EMR Cluster Type, e.g. HADOOP, KAFKA, DRUID, etc. You can find all valid EMR cluster type in emr web console.
+* `cluster_type` - (Required, ForceNew) EMR Cluster Type, e.g. HADOOP, KAFKA, DRUID, GATEWAY etc. You can find all valid EMR cluster type in emr web console. Supported 'GATEWAY' available in 1.61.0+.
 * `charge_type` - (Required, ForceNew) Charge Type for this cluster. Supported value: PostPaid or PrePaid. Default value: PostPaid.
 * `zone_id` - (Required, ForceNew) Zone ID, e.g. cn-huhehaote-a
 * `security_group_id` (Optional, ForceNew) Security Group ID for Cluster, you can also specify this key for each host group.
@@ -296,7 +572,7 @@ The following arguments are supported:
 The host_group mapping supports the following: 
 
 * `host_group_name` - (Required, ForceNew) host group name.
-* `host_group_type` - (Required) host group type, supported value: MASTER, CORE or TASK.
+* `host_group_type` - (Required) host group type, supported value: MASTER, CORE or TASK, supported 'GATEWAY' available in 1.61.0+.
 * `charge_type` - (Optional) Charge Type for this group of hosts: PostPaid or PrePaid. If this is not specified, charge type will follow global charge_type value.
 * `period` - (Optional) If charge type is PrePaid, this should be specified, unit is month. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36.
 * `node_count` - (Required) Host number in this group.

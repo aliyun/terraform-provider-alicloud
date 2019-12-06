@@ -3,10 +3,14 @@ package alicloud
 import (
 	"time"
 
+	"github.com/denverdino/aliyungo/common"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -29,8 +33,8 @@ func resourceAlicloudRouterInterface() *schema.Resource {
 			"router_type": {
 				Type:     schema.TypeString,
 				Required: true,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(VRouter), string(VBR)}),
+				ValidateFunc: validation.StringInSlice([]string{
+					string(VRouter), string(VBR)}, false),
 				ForceNew:         true,
 				DiffSuppressFunc: routerInterfaceAcceptsideDiffSuppressFunc,
 			},
@@ -42,25 +46,25 @@ func resourceAlicloudRouterInterface() *schema.Resource {
 			"role": {
 				Type:     schema.TypeString,
 				Required: true,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(InitiatingSide), string(AcceptingSide)}),
+				ValidateFunc: validation.StringInSlice([]string{
+					string(InitiatingSide), string(AcceptingSide)}, false),
 				ForceNew: true,
 			},
 			"specification": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				ValidateFunc:     validateAllowedStringValue(GetAllRouterInterfaceSpec()),
+				ValidateFunc:     validation.StringInSlice(GetAllRouterInterfaceSpec(), false),
 				DiffSuppressFunc: routerInterfaceAcceptsideDiffSuppressFunc,
 			},
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateRouterInterfaceDescription,
+				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 			"health_check_source_ip": {
 				Type:             schema.TypeString,
@@ -77,7 +81,7 @@ func resourceAlicloudRouterInterface() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      PostPaid,
-				ValidateFunc: validateInstanceChargeType,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 			},
 			"period": {
 				Type:             schema.TypeInt,
@@ -85,7 +89,9 @@ func resourceAlicloudRouterInterface() *schema.Resource {
 				ForceNew:         true,
 				Default:          1,
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
-				ValidateFunc:     validateRouterInterfaceChargeTypePeriod,
+				ValidateFunc: validation.Any(
+					validation.IntBetween(1, 9),
+					validation.IntInSlice([]int{12, 24, 36})),
 			},
 			"access_point_id": {
 				Type:       schema.TypeString,

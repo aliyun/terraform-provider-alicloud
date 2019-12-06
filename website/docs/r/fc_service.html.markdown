@@ -1,4 +1,5 @@
 ---
+subcategory: "Function Compute Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fc_service"
 sidebar_current: "docs-alicloud-resource-fc"
@@ -72,6 +73,12 @@ resource "alicloud_fc_service" "foo" {
   depends_on = ["alicloud_ram_role_policy_attachment.attac"]
 }
 ```
+
+## Module Support
+
+You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) 
+to create a service and a function quickly and then set several triggers for it.
+
 ## Argument Reference
 
 The following arguments are supported:

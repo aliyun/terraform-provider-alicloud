@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"testing"
 
@@ -61,6 +62,18 @@ func TestAccAlicloudDnsDomainsDataSource(t *testing.T) {
 			"version_code":      "bumianfei",
 		}),
 	}
+
+	resourceGroupIdConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"domain_name_regex": "${alicloud_dns.default.name}",
+			"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"domain_name_regex": "${alicloud_dns.default.name}",
+			"resource_group_id": fmt.Sprintf("%s_fake", os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"domain_name_regex": "${alicloud_dns.default.name}",
@@ -69,6 +82,7 @@ func TestAccAlicloudDnsDomainsDataSource(t *testing.T) {
 			"instance_id":       "",
 			"ali_domain":        "false",
 			"group_name_regex":  "${alicloud_dns_group.default.name}",
+			"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"domain_name_regex": "${alicloud_dns.default.name}",
@@ -77,9 +91,10 @@ func TestAccAlicloudDnsDomainsDataSource(t *testing.T) {
 			"instance_id":       "",
 			"ali_domain":        "true",
 			"group_name_regex":  "${alicloud_dns_group.default.name}",
+			"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 		}),
 	}
-	dnsDomainsCheckInfo.dataSourceTestCheck(t, rand, aliDomainConf, idsConf, groupNameConf, instanceIdConf, versionCodeConf, allConf)
+	dnsDomainsCheckInfo.dataSourceTestCheck(t, rand, aliDomainConf, idsConf, groupNameConf, instanceIdConf, versionCodeConf, resourceGroupIdConf, allConf)
 }
 
 func dataSourceDnsDomainsConfigDependence(name string) string {
@@ -99,8 +114,9 @@ resource "alicloud_dns_group" "default" {
 resource "alicloud_dns" "default" {
 	name = "${var.dnsName}"
 	group_id = "${alicloud_dns_group.default.id}"
+	resource_group_id = "%s"
 }
-`, defaultRegionToTest, name, name)
+`, defaultRegionToTest, name, name, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
 
 var existDnsDomainsMapCheck = func(rand int) map[string]string {

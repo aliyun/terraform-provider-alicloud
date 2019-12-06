@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -28,14 +29,28 @@ func TestAccAlicloudSlbAclsDataSource_basic(t *testing.T) {
 		}),
 	}
 
+	resourceGroupIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
+			"ids":               `["${alicloud_slb_acl.default.id}"]`,
+			"resource_group_id": `""`,
+		}),
+		fakeConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
+			"ids":               `["${alicloud_slb_acl.default.id}_fake"]`,
+			"resource_group_id": fmt.Sprintf(`"%s_fake"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
 			"ids":        `["${alicloud_slb_acl.default.id}"]`,
 			"name_regex": `"${alicloud_slb_acl.default.name}"`,
+			// The resource route tables do not support resource_group_id, so it was set empty.
+			"resource_group_id": `""`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_slb_acl.default.id}_fake"]`,
-			"name_regex": `"${alicloud_slb_acl.default.name}"`,
+			"ids":               `["${alicloud_slb_acl.default.id}_fake"]`,
+			"name_regex":        `"${alicloud_slb_acl.default.name}"`,
+			"resource_group_id": `""`,
 		}),
 	}
 
@@ -66,7 +81,7 @@ func TestAccAlicloudSlbAclsDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeDnsRecordsMapFunc,
 	}
 
-	slbaclsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
+	slbaclsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, resourceGroupIdConf, allConf)
 }
 
 func testAccCheckAlicloudSlbAclsDataSourceConfig(rand int, attrMap map[string]string) string {

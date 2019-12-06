@@ -1,4 +1,5 @@
 ---
+subcategory: "Server Load Balancer (SLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slbs"
 sidebar_current: "docs-alicloud-datasource-slbs"
@@ -44,6 +45,7 @@ The following arguments are supported:
   }
   ```
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `resource_group_id` - (Optional, ForceNew, Available in 1.60.0+) The Id of resource group which SLB belongs.
 
 ## Attributes Reference
 

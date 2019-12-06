@@ -2,13 +2,16 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -39,14 +42,14 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validateContainerName,
+				ValidateFunc:  validation.StringLenBetween(1, 63),
 				ConflictsWith: []string{"name_prefix"},
 			},
 			"name_prefix": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Default:       "Terraform-Creation",
-				ValidateFunc:  validateContainerNamePrefix,
+				ValidateFunc:  validation.StringLenBetween(0, 37),
 				ConflictsWith: []string{"name"},
 			},
 			"availability_zone": {
@@ -61,7 +64,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				ForceNew: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: validateContainerVswitchId,
+					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
 				MinItems:         1,
 				MaxItems:         5,
@@ -140,7 +143,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{ManagedKubernetesClusterNetworkTypeFlannel, ManagedKubernetesClusterNetworkTypeTerway}),
+				ValidateFunc: validation.StringInSlice([]string{ManagedKubernetesClusterNetworkTypeFlannel, ManagedKubernetesClusterNetworkTypeTerway}, false),
 			},
 			"image_id": {
 				Type:             schema.TypeString,
@@ -153,50 +156,50 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional:     true,
 				Default:      40,
 				ForceNew:     true,
-				ValidateFunc: validateIntegerInRange(20, 32768),
+				ValidateFunc: validation.IntBetween(20, 32768),
 			},
 			"worker_disk_category": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				Default:  DiskCloudEfficiency,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
+				ValidateFunc: validation.StringInSlice([]string{
+					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
 			},
 			"worker_data_disk_size": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				ForceNew:         true,
 				Default:          40,
-				ValidateFunc:     validateIntegerInRange(20, 32768),
+				ValidateFunc:     validation.IntBetween(20, 32768),
 				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
 			},
 			"worker_data_disk_category": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
+				ValidateFunc: validation.StringInSlice([]string{
+					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
 			},
 			"worker_instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateInstanceChargeType,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				Default:      PostPaid,
 			},
 			"worker_period_unit": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Default:          Month,
-				ValidateFunc:     validateInstanceChargeTypePeriodUnit,
+				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 			},
 			"worker_period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Default:          1,
-				ValidateFunc:     validateInstanceChargeTypePeriod,
+				ValidateFunc:     validation.IntBetween(1, 9),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 			},
 			"worker_auto_renew": {
@@ -209,7 +212,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Default:          1,
-				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 6, 12}),
+				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 			},
 			"slb_internet_enabled": {
@@ -222,6 +225,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+				ForceNew: true,
 			},
 			"force_update": {
 				Type:     schema.TypeBool,
@@ -258,7 +262,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"type": {
 							Type:         schema.TypeString,
-							ValidateFunc: validateAllowedStringValue([]string{KubernetesClusterLoggingTypeSLS}),
+							ValidateFunc: validation.StringInSlice([]string{KubernetesClusterLoggingTypeSLS}, false),
 							Required:     true,
 						},
 						"project": {

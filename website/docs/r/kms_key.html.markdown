@@ -1,4 +1,5 @@
 ---
+subcategory: "KMS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kms_key"
 sidebar_current: "docs-alicloud-resource-kms-key"

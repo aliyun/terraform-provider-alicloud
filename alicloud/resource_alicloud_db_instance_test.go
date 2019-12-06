@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -147,7 +147,13 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 					"monitoring_period":    "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"engine":                     "MySQL",
+						"engine_version":             "5.6",
+						"instance_type":              CHECKSET,
+						"instance_storage":           CHECKSET,
+						"auto_upgrade_minor_version": "Auto",
+					}),
 				),
 			},
 			{
@@ -162,6 +168,16 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"maintain_time": "22:00Z-02:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_upgrade_minor_version": "Auto",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_upgrade_minor_version": "Auto",
 					}),
 				),
 			},
@@ -226,30 +242,18 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
-						"created": "tf",
-						"for":     "acceptance test",
+						"Created": "TF",
+						"For":     "acceptance Test",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
-						"tags.created": "tf",
-						"tags.for":     "acceptance test",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance Test",
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "acceptance test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
-				),
-			},
-
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": REMOVEKEY,
@@ -257,35 +261,47 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       REMOVEKEY,
-						"tags.created": REMOVEKEY,
-						"tags.for":     REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine":               "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}",
-					"engine_version":       "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
-					"instance_type":        "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
-					"instance_storage":     "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
-					"instance_name":        "tf-testAccDBInstanceConfig",
-					"monitoring_period":    "60",
-					"instance_charge_type": "Postpaid",
-					"security_group_id":    REMOVEKEY,
+					"engine":                     "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}",
+					"engine_version":             "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
+					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
+					"instance_name":              "tf-testAccDBInstanceConfig",
+					"monitoring_period":          "60",
+					"instance_charge_type":       "Postpaid",
+					"security_group_id":          REMOVEKEY,
+					"auto_upgrade_minor_version": "Manual",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine":               "MySQL",
-						"engine_version":       "5.6",
-						"instance_type":        CHECKSET,
-						"instance_storage":     "15",
-						"instance_name":        "tf-testAccDBInstanceConfig",
-						"monitoring_period":    "60",
-						"zone_id":              CHECKSET,
-						"instance_charge_type": "Postpaid",
-						"connection_string":    CHECKSET,
-						"port":                 CHECKSET,
-						"security_group_id":    REMOVEKEY,
+						"engine":                     "MySQL",
+						"engine_version":             "5.6",
+						"instance_type":              CHECKSET,
+						"instance_storage":           "15",
+						"instance_name":              "tf-testAccDBInstanceConfig",
+						"monitoring_period":          "60",
+						"zone_id":                    CHECKSET,
+						"instance_charge_type":       "Postpaid",
+						"connection_string":          CHECKSET,
+						"port":                       CHECKSET,
+						"security_group_id":          REMOVEKEY,
+						"auto_upgrade_minor_version": "Manual",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_mode": SafetyMode,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ip_mode": SafetyMode,
 					}),
 				),
 			},
@@ -562,7 +578,7 @@ func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
 					testAccCheck(map[string]string{
 						"engine":           "PostgreSQL",
 						"engine_version":   "9.4",
-						"instance_storage": "250",
+						"instance_storage": "20",
 						"instance_type":    CHECKSET,
 					}),
 				),
@@ -631,7 +647,7 @@ func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
 						"engine":               "PostgreSQL",
 						"engine_version":       "9.4",
 						"instance_type":        CHECKSET,
-						"instance_storage":     "500",
+						"instance_storage":     "30",
 						"instance_name":        "tf-testAccDBInstanceConfig",
 						"monitoring_period":    "60",
 						"zone_id":              CHECKSET,

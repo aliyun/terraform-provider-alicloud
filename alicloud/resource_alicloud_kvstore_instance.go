@@ -5,14 +5,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/denverdino/aliyungo/common"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 
 	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform/helper/hashcode"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -36,18 +40,17 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateRKVInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 			"password": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Sensitive:    true,
-				ValidateFunc: validateRKVPassword,
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
 			},
 			"kms_encrypted_password": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				ConflictsWith: []string{"password"},
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: kmsDiffSuppressFunc,
 			},
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
@@ -69,13 +72,13 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: validateInstanceChargeType,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				Optional:     true,
 				Default:      PostPaid,
 			},
 			"period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
@@ -88,7 +91,7 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 			},
 			"auto_renew_period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateIntegerInRange(1, 12),
+				ValidateFunc:     validation.IntBetween(1, 12),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
@@ -98,10 +101,10 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Default:  string(KVStoreRedis),
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(KVStoreMemcache),
 					string(KVStoreRedis),
-				}),
+				}, false),
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -139,7 +142,7 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"Open", "Close"}),
+				ValidateFunc: validation.StringInSlice([]string{"Open", "Close"}, false),
 			},
 
 			"parameters": {
@@ -304,6 +307,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		// for now we just support charge change from PostPaid to PrePaid
 		configPayType := PayType(d.Get("instance_charge_type").(string))
 		if configPayType == PrePaid {
+			prePaidRequest.AutoPay = requests.NewBoolean(true)
 			raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 				return rkvClient.TransformToPrePaid(prePaidRequest)
 			})

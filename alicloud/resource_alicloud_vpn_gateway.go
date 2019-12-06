@@ -6,10 +6,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/denverdino/aliyungo/common"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -27,7 +31,7 @@ func resourceAliyunVpnGateway() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateVpnName,
+				ValidateFunc: validation.StringLenBetween(1, 128),
 				Default:      resource.PrefixedUniqueId("tf-vpn-"),
 			},
 			"vpc_id": {
@@ -41,19 +45,21 @@ func resourceAliyunVpnGateway() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      PostPaid,
-				ValidateFunc: validateInstanceChargeType,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 			},
 
 			"period": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validateVpnPeriod,
+				Type:     schema.TypeInt,
+				Optional: true,
+				ValidateFunc: validation.Any(
+					validation.IntBetween(1, 9),
+					validation.IntInSlice([]int{12, 24, 36})),
 			},
 
 			"bandwidth": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validateVpnBandwidth([]int{5, 10, 20, 50, 100, 200, 500, 1000}),
+				ValidateFunc: validation.IntInSlice([]int{5, 10, 20, 50, 100, 200, 500, 1000}),
 			},
 
 			"enable_ipsec": {
@@ -78,7 +84,7 @@ func resourceAliyunVpnGateway() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateVpnDescription,
+				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 
 			"vswitch_id": {

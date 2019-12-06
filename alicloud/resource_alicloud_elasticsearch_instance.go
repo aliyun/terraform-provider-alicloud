@@ -2,15 +2,16 @@ package alicloud
 
 import (
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/denverdino/aliyungo/common"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -31,17 +32,9 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			// Basic instance information
 			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
-					value := v.(string)
-
-					if reg := regexp.MustCompile(`^[\w\-.]{0,30}$`); !reg.MatchString(value) {
-						errors = append(errors, fmt.Errorf("%q be 0 to 30 characters in length and can contain numbers, letters, underscores, (_) and hyphens (-). It must start with a letter, a number or Chinese character.", k))
-					}
-
-					return
-				},
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[\w\-.]{0,30}$`), "be 0 to 30 characters in length and can contain numbers, letters, underscores, (_) and hyphens (-). It must start with a letter, a number or Chinese character."),
 			},
 
 			"vswitch_id": {
@@ -56,9 +49,9 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional:  true,
 			},
 			"kms_encrypted_password": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				ConflictsWith: []string{"password"},
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: kmsDiffSuppressFunc,
 			},
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
@@ -78,7 +71,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			// Life cycle
 			"instance_charge_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: validateInstanceChargeType,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				ForceNew:     true,
 				Default:      PostPaid,
 				Optional:     true,
@@ -86,7 +79,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 
 			"period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
@@ -96,7 +89,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"data_node_amount": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validateIntegerInRange(2, 50),
+				ValidateFunc: validation.IntBetween(2, 50),
 			},
 
 			"data_node_spec": {
@@ -169,7 +162,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"zone_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateIntegerInRange(1, 3),
+				ValidateFunc: validation.IntBetween(1, 3),
 				Default:      1,
 			},
 		},
@@ -185,7 +178,12 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	// retry
+	var raw interface{}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{ESTokenPreviousRequestProcessError}
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.CreateInstance(request)
 	})
 
@@ -193,6 +191,7 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_elasticsearch_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
 	response, _ := raw.(*elasticsearch.CreateInstanceResponse)
 	d.SetId(response.Result.InstanceId)
 
@@ -359,34 +358,28 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	}
 
 	request := elasticsearch.CreateDeleteInstanceRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 	request.SetContentType("application/json")
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	// retry
 	var raw interface{}
 	var err error
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-			return elasticsearchClient.DeleteInstance(request)
-		})
-		if err != nil {
-			if IsExceptedError(err, InstanceActivating) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-		return nil
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{InstanceActivating}
+	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.DeleteInstance(request)
 	})
+
 	if err != nil {
 		if IsExceptedError(err, ESInstanceNotFound) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating", "inactive", "active"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{}))
 	stateConf.PollInterval = 5 * time.Second
@@ -403,6 +396,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (*elasticsearch.CreateInstanceRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
 	request := elasticsearch.CreateCreateInstanceRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.RegionId = client.RegionId
 	vpcService := VpcService{client}
 

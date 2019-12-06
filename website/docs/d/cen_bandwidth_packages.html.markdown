@@ -1,4 +1,5 @@
 ---
+subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_bandwidth_packages"
 sidebar_current: "docs-alicloud-datasource-cen-bandwidth-packages"

@@ -3,14 +3,17 @@ package alicloud
 import (
 	"encoding/base64"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -46,7 +49,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"instance_type": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				ValidateFunc:  validateInstanceType,
+				ValidateFunc:  validation.StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
 				ConflictsWith: []string{"instance_types"},
 			},
 			"instance_types": {
@@ -90,7 +93,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      PayByBandwidth,
-				ValidateFunc: validateInternetChargeType,
+				ValidateFunc: validation.StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
 			},
 			"internet_max_bandwidth_in": {
 				Type:     schema.TypeInt,
@@ -100,17 +103,18 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"internet_max_bandwidth_out": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validateInternetMaxBandWidthOut,
+				ValidateFunc: validation.IntBetween(0, 100),
 			},
 			"system_disk_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      DiskCloudEfficiency,
-				ValidateFunc: validateAllowedStringValue([]string{string(DiskCloud), string(DiskEphemeralSSD), string(DiskCloudSSD), string(DiskCloudEfficiency)}),
+				ValidateFunc: validation.StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_ssd", "cloud_essd", "cloud_efficiency"}, false),
 			},
 			"system_disk_size": {
-				Type:     schema.TypeInt,
-				Optional: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(20, 500),
 			},
 			"data_disk": {
 				Optional: true,
@@ -124,7 +128,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 						"category": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validateDiskCategory,
+							ValidateFunc: validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
 						},
 						"snapshot_id": {
 							Type:     schema.TypeString,
@@ -189,13 +193,42 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "ESS-Instance",
-				ValidateFunc: validateInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 
 			"override": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+			},
+			"password": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("password_inherit").(bool)
+				},
+			},
+			"password_inherit": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"kms_encrypted_password": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("password_inherit").(bool) || d.Get("password").(string) != ""
+				},
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
 			},
 		},
 	}
@@ -296,6 +329,10 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		d.SetPartial("override")
 	}
 
+	if d.HasChange("password_inherit") {
+		request.PasswordInherit = requests.NewBoolean(d.Get("password_inherit").(bool))
+		d.SetPartial("password_inherit")
+	}
 	if d.HasChange("image_id") || d.Get("override").(bool) {
 		request.ImageId = d.Get("image_id").(string)
 		d.SetPartial("image_id")
@@ -535,6 +572,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("tags", essTagsToMap(object.Tags.Tag))
 	d.Set("instance_name", object.InstanceName)
 	d.Set("override", d.Get("override").(bool))
+	d.Set("password_inherit", object.PasswordInherit)
 
 	if sg, ok := d.GetOk("security_group_id"); ok && sg.(string) != "" {
 		d.Set("security_group_id", object.SecurityGroupId)
@@ -646,9 +684,24 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 	request.ScalingGroupId = d.Get("scaling_group_id").(string)
 	request.ImageId = d.Get("image_id").(string)
 	request.SecurityGroupId = d.Get("security_group_id").(string)
+	request.PasswordInherit = requests.NewBoolean(d.Get("password_inherit").(bool))
 
 	securityGroupId := d.Get("security_group_id").(string)
 	securityGroupIds := d.Get("security_group_ids").([]interface{})
+
+	password := d.Get("password").(string)
+	kmsPassword := d.Get("kms_encrypted_password").(string)
+
+	if password != "" {
+		request.Password = password
+	} else if kmsPassword != "" {
+		kmsService := KmsService{client}
+		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+		if err != nil {
+			return nil, WrapError(err)
+		}
+		request.Password = decryptResp.Plaintext
+	}
 
 	if securityGroupId == "" && (securityGroupIds == nil || len(securityGroupIds) == 0) {
 		return nil, WrapError(Error("security_group_id or security_group_ids must be assigned"))

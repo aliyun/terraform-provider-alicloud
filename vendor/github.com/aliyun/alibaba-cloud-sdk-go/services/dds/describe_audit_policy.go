@@ -78,9 +78,9 @@ type DescribeAuditPolicyRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
+	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
-	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 }
 
@@ -89,7 +89,6 @@ type DescribeAuditPolicyResponse struct {
 	*responses.BaseResponse
 	RequestId      string `json:"RequestId" xml:"RequestId"`
 	LogAuditStatus string `json:"LogAuditStatus" xml:"LogAuditStatus"`
-	StoragePeriod  int    `json:"StoragePeriod" xml:"StoragePeriod"`
 }
 
 // CreateDescribeAuditPolicyRequest creates a request to invoke DescribeAuditPolicy API

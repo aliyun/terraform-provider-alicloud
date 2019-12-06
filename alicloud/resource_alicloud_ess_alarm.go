@@ -4,10 +4,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -53,10 +55,10 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 				Optional: true,
 				Default:  System,
 				ForceNew: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(System),
 					string(Custom),
-				}),
+				}, false),
 			},
 			"metric_name": {
 				Type:     schema.TypeString,
@@ -67,7 +69,7 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 				Optional: true,
 				Default:  FiveMinite,
 				ForceNew: true,
-				ValidateFunc: validateAllowedIntValue([]int{
+				ValidateFunc: validation.IntInSlice([]int{
 					int(OneMinite),
 					int(TwoMinite),
 					int(FiveMinite),
@@ -78,11 +80,11 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  Average,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(Average),
 					string(Minimum),
 					string(Maximum),
-				}),
+				}, false),
 			},
 			"threshold": {
 				Type:     schema.TypeString,
@@ -92,18 +94,18 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  Gte,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(Gt),
 					string(Gte),
 					string(Lt),
 					string(Lte),
-				}),
+				}, false),
 			},
 			"evaluation_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      3,
-				ValidateFunc: validateEvaluationCount,
+				ValidateFunc: validation.IntAtLeast(0),
 			},
 			"cloud_monitor_group_id": {
 				Type:     schema.TypeInt,
@@ -215,6 +217,9 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 	request.AlarmTaskId = d.Id()
 	request.RegionId = client.RegionId
 	d.Partial(true)
+	if metricType, ok := d.GetOk("metric_type"); ok && metricType.(string) != "" {
+		request.MetricType = metricType.(string)
+	}
 	if d.HasChange("name") {
 		request.Name = d.Get("name").(string)
 	}
@@ -246,8 +251,8 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 	if d.HasChange("evaluation_count") {
 		request.EvaluationCount = requests.NewInteger(d.Get("evaluation_count").(int))
 	}
-	if d.HasChange("cloud_monitor_group_id") {
-		request.GroupId = requests.NewInteger(d.Get("cloud_monitor_group_id").(int))
+	if v, ok := d.GetOk("cloud_monitor_group_id"); ok {
+		request.GroupId = requests.NewInteger(v.(int))
 	}
 
 	dimensions := d.Get("dimensions").(map[string]interface{})

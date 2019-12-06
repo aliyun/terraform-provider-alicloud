@@ -6,10 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -41,14 +43,14 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 
 			"backup_time": {
 				Type:         schema.TypeString,
-				ValidateFunc: validateAllowedStringValue(BACKUP_TIME),
+				ValidateFunc: validation.StringInSlice(BACKUP_TIME, false),
 				Optional:     true,
 				Default:      "02:00Z-03:00Z",
 			},
 
 			"retention_period": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validateIntegerInRange(7, 730),
+				ValidateFunc: validation.IntBetween(7, 730),
 				Optional:     true,
 				Default:      7,
 			},
@@ -61,7 +63,7 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 
 			"log_retention_period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validateIntegerInRange(7, 730),
+				ValidateFunc:     validation.IntBetween(7, 730),
 				Optional:         true,
 				Computed:         true,
 				DiffSuppressFunc: logRetentionPeriodDiffSuppressFunc,
@@ -111,13 +113,13 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 	backupLog := "Enable"
 
 	retentionPeriod := ""
-	if temp, ok := d.GetOk("retention_period"); ok {
-		retentionPeriod = strconv.Itoa(temp.(int))
+	if v, ok := d.GetOk("retention_period"); ok {
+		retentionPeriod = strconv.Itoa(v.(int))
 	}
 
 	logBackupRetentionPeriod := ""
-	if temp, ok := d.GetOk("log_retention_period"); ok {
-		logBackupRetentionPeriod = strconv.Itoa(temp.(int))
+	if v, ok := d.GetOk("log_retention_period"); ok {
+		logBackupRetentionPeriod = strconv.Itoa(v.(int))
 	}
 
 	if d.HasChange("backup_period") {
@@ -177,7 +179,16 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 	request.BackupRetentionPeriod = "7"
 	request.PreferredBackupTime = "02:00Z-03:00Z"
 	request.BackupLog = "Enable"
-	request.LogBackupRetentionPeriod = "7"
+	instance, err := rdsService.DescribeDBInstance(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
+		return WrapError(err)
+	}
+	if instance.Engine != "SQLServer" {
+		request.LogBackupRetentionPeriod = "7"
+	}
 
 	raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 		return rdsClient.ModifyBackupPolicy(request)

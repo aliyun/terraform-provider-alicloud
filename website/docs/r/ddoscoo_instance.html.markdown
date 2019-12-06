@@ -1,4 +1,5 @@
 ---
+subcategory: "BGP-Line Anti-DDoS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ddoscoo_instance"
 sidebar_current: "docs-alicloud-resource-ddoscoo-instance"
@@ -8,7 +9,7 @@ description: |-
 
 # alicloud_ddoscoo_instance
 
-BGP-Line Anti-DDoS instance resource. "Ddoscoo" is the short term of this product.
+BGP-Line Anti-DDoS instance resource. "Ddoscoo" is the short term of this product. See [What is Anti-DDoS Pro](https://www.alibabacloud.com/help/doc-detail/69319.htm).
 
 -> **NOTE:** The product region only support cn-hangzhou.
 

@@ -2,8 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -13,8 +16,8 @@ import (
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -51,14 +54,14 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validateContainerName,
+				ValidateFunc:  validation.StringLenBetween(1, 63),
 				ConflictsWith: []string{"name_prefix"},
 			},
 			"name_prefix": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Default:       "Terraform-Creation",
-				ValidateFunc:  validateContainerNamePrefix,
+				ValidateFunc:  validation.StringLenBetween(0, 37),
 				ConflictsWith: []string{"name"},
 			},
 			"force_update": {
@@ -83,7 +86,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ForceNew: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: validateContainerVswitchId,
+					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
 				MaxItems:         3,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
@@ -92,6 +95,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
+				ForceNew: true,
 			},
 			"master_instance_type": {
 				Type:       schema.TypeString,
@@ -192,7 +196,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
-				ValidateFunc:     validateAllowedStringValue([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}),
+				ValidateFunc:     validation.StringInSlice([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"node_cidr_mask": {
@@ -200,7 +204,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:         true,
 				ForceNew:         true,
 				Default:          KubernetesClusterNodeCIDRMasksByDefault,
-				ValidateFunc:     validateIntegerInRange(24, 28),
+				ValidateFunc:     validation.IntBetween(24, 28),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"log_config": {
@@ -212,7 +216,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"type": {
 							Type:         schema.TypeString,
-							ValidateFunc: validateAllowedStringValue([]string{KubernetesClusterLoggingTypeSLS}),
+							ValidateFunc: validation.StringInSlice([]string{KubernetesClusterLoggingTypeSLS}, false),
 							Required:     true,
 						},
 						"project": {
@@ -241,7 +245,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:         true,
 				Default:          40,
 				ForceNew:         true,
-				ValidateFunc:     validateIntegerInRange(40, 500),
+				ValidateFunc:     validation.IntBetween(40, 500),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"master_disk_category": {
@@ -249,8 +253,8 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 				Default:  DiskCloudEfficiency,
 				ForceNew: true,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
+				ValidateFunc: validation.StringInSlice([]string{
+					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_disk_size": {
@@ -258,7 +262,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:         true,
 				Default:          40,
 				ForceNew:         true,
-				ValidateFunc:     validateIntegerInRange(20, 32768),
+				ValidateFunc:     validation.IntBetween(20, 32768),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_disk_category": {
@@ -266,8 +270,8 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Default:  DiskCloudEfficiency,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
+				ValidateFunc: validation.StringInSlice([]string{
+					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_data_disk_size": {
@@ -275,22 +279,22 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:         true,
 				ForceNew:         true,
 				Default:          40,
-				ValidateFunc:     validateIntegerInRange(20, 32768),
+				ValidateFunc:     validation.IntBetween(20, 32768),
 				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
 			},
 			"worker_data_disk_category": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: validateAllowedStringValue([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}),
+				ValidateFunc: validation.StringInSlice([]string{
+					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"master_instance_charge_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
-				ValidateFunc:     validateInstanceChargeType,
+				ValidateFunc:     validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				Default:          PostPaid,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
@@ -298,14 +302,17 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Default:          Month,
-				ValidateFunc:     validateInstanceChargeTypePeriodUnit,
+				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
 				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
 			},
 			"master_period": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          1,
-				ValidateFunc:     validateInstanceChargeTypePeriod,
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  1,
+				// must be a valid period, expected [1-9], 12, 24, 36, 48 or 60,
+				ValidateFunc: validation.Any(
+					validation.IntBetween(1, 9),
+					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
 				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
 			},
 			"master_auto_renew": {
@@ -318,14 +325,14 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Default:          1,
-				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 6, 12}),
+				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
 			},
 			"worker_instance_charge_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
-				ValidateFunc:     validateInstanceChargeType,
+				ValidateFunc:     validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				Default:          PostPaid,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
@@ -333,14 +340,16 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Default:          Month,
-				ValidateFunc:     validateInstanceChargeTypePeriodUnit,
+				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 			},
 			"worker_period": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          1,
-				ValidateFunc:     validateInstanceChargeTypePeriod,
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  1,
+				ValidateFunc: validation.Any(
+					validation.IntBetween(1, 9),
+					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 			},
 			"worker_auto_renew": {
@@ -353,7 +362,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Default:          1,
-				ValidateFunc:     validateAllowedIntValue([]int{1, 2, 3, 6, 12}),
+				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 			},
 			"install_cloud_monitor": {

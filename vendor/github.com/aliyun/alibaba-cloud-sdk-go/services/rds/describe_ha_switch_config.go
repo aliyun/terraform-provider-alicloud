@@ -76,9 +76,9 @@ func (client *Client) DescribeHASwitchConfigWithCallback(request *DescribeHASwit
 // DescribeHASwitchConfigRequest is the request struct for api DescribeHASwitchConfig
 type DescribeHASwitchConfigRequest struct {
 	*requests.RpcRequest
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 }
 
@@ -95,7 +95,7 @@ func CreateDescribeHASwitchConfigRequest() (request *DescribeHASwitchConfigReque
 	request = &DescribeHASwitchConfigRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeHASwitchConfig", "rds", "openAPI")
+	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeHASwitchConfig", "", "")
 	return
 }
 

@@ -2,6 +2,10 @@
 data "alicloud_zones" "default" {
   available_resource_creation = "Rds"
 }
+data "alicloud_db_instance_classes" "this" {
+  engine         = var.engine
+  engine_version = var.engine_version
+}
 
 // VPC Resource for Module
 resource "alicloud_vpc" "vpc" {
@@ -15,7 +19,7 @@ resource "alicloud_vpc" "vpc" {
 resource "alicloud_vswitch" "vswitch" {
   count = var.vswitch_id == "" ? 1 : 0
 
-  availability_zone = var.availability_zone == "" ? data.alicloud_zones.default.zones[0].id : var.availability_zone
+  availability_zone = var.availability_zone == "" ? data.alicloud_db_instance_classes.this.instance_classes.0.zone_ids.0["id"] : var.availability_zone
   name              = var.vswitch_name
   cidr_block        = var.vswitch_cidr
   vpc_id            = var.vpc_id == "" ? alicloud_vpc.vpc[0].id : var.vpc_id
@@ -24,7 +28,7 @@ resource "alicloud_vswitch" "vswitch" {
 resource "alicloud_db_instance" "instance" {
   engine           = var.engine
   engine_version   = var.engine_version
-  instance_type    = var.instance_class
+  instance_type    = data.alicloud_db_instance_classes.this.ids.0
   instance_storage = var.storage
   vswitch_id       = var.vswitch_id == "" ? alicloud_vswitch.vswitch[0].id : var.vswitch_id
 

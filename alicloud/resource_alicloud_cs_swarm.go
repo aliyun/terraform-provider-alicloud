@@ -2,14 +2,17 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	newsdk "github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -28,14 +31,14 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validateContainerName,
+				ValidateFunc:  validation.StringLenBetween(1, 63),
 				ConflictsWith: []string{"name_prefix"},
 			},
 			"name_prefix": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Default:       "Terraform-Creation",
-				ValidateFunc:  validateContainerNamePrefix,
+				ValidateFunc:  validation.StringLenBetween(0, 37),
 				ConflictsWith: []string{"name"},
 			},
 			"size": {
@@ -47,7 +50,7 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
-				ValidateFunc: validateIntegerInRange(0, 50),
+				ValidateFunc: validation.IntBetween(0, 50),
 			},
 			"cidr_block": {
 				Type:     schema.TypeString,
@@ -58,7 +61,7 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateInstanceType,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -76,7 +79,7 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      20,
-				ValidateFunc: validateIntegerInRange(20, 32768),
+				ValidateFunc: validation.IntBetween(20, 32768),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("node_number").(int) == 0
 				},
@@ -86,7 +89,7 @@ func resourceAlicloudCSSwarm() *schema.Resource {
 				Optional:     true,
 				Default:      ecs.DiskCategoryCloudEfficiency,
 				ForceNew:     true,
-				ValidateFunc: validateDiskCategory,
+				ValidateFunc: validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("node_number").(int) == 0
 				},

@@ -76,14 +76,14 @@ func (client *Client) ModifySQLCollectorPolicyWithCallback(request *ModifySQLCol
 // ModifySQLCollectorPolicyRequest is the request struct for api ModifySQLCollectorPolicy
 type ModifySQLCollectorPolicyRequest struct {
 	*requests.RpcRequest
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	ClientToken          string           `position:"Query" name:"ClientToken"`
-	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
-	SQLCollectorStatus   string           `position:"Query" name:"SQLCollectorStatus"`
 	StoragePeriod        requests.Integer `position:"Query" name:"StoragePeriod"`
+	ClientToken          string           `position:"Query" name:"ClientToken"`
+	SQLCollectorStatus   string           `position:"Query" name:"SQLCollectorStatus"`
+	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 }
 
 // ModifySQLCollectorPolicyResponse is the response struct for api ModifySQLCollectorPolicy
@@ -97,7 +97,7 @@ func CreateModifySQLCollectorPolicyRequest() (request *ModifySQLCollectorPolicyR
 	request = &ModifySQLCollectorPolicyRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "ModifySQLCollectorPolicy", "rds", "openAPI")
+	request.InitWithApiInfo("Rds", "2014-08-15", "ModifySQLCollectorPolicy", "", "")
 	return
 }
 

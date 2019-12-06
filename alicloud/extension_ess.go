@@ -7,6 +7,18 @@ const GroupId = "groupId"
 type ScalingRuleType string
 
 const (
+	CpuUtilization    = MetricName("CpuUtilization")
+	ClassicInternetRx = MetricName("ClassicInternetRx")
+	ClassicInternetTx = MetricName("ClassicInternetTx")
+	VpcInternetRx     = MetricName("VpcInternetRx")
+	VpcInternetTx     = MetricName("VpcInternetTx")
+	IntranetRx        = MetricName("IntranetRx")
+	IntranetTx        = MetricName("IntranetTx")
+)
+
+type MetricName string
+
+const (
 	SimpleScalingRule         = ScalingRuleType("SimpleScalingRule")
 	TargetTrackingScalingRule = ScalingRuleType("TargetTrackingScalingRule")
 	StepScalingRule           = ScalingRuleType("StepScalingRule")
@@ -78,14 +90,6 @@ const (
 	QuantityChangeInCapacity = AdjustmentType("QuantityChangeInCapacity")
 	PercentChangeInCapacity  = AdjustmentType("PercentChangeInCapacity")
 	TotalCapacity            = AdjustmentType("TotalCapacity")
-)
-
-type RecurrenceType string
-
-const (
-	Daily   = RecurrenceType("Daily")
-	Weekly  = RecurrenceType("Weekly")
-	Monthly = RecurrenceType("Monthly")
 )
 
 type InstanceCreationType string

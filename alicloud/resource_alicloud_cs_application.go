@@ -2,14 +2,17 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"sort"
 
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -33,7 +36,7 @@ func resourceAlicloudCSApplication() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateContainerAppName,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z0-9]{1}[a-zA-Z0-9-]{0,63}$`), "should be 1-64 characters long, and can contain numbers, English letters and hyphens, but cannot start with hyphens."),
 			},
 			"description": {
 				Type:     schema.TypeString,

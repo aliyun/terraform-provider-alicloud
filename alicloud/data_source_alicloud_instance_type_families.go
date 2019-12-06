@@ -3,8 +3,11 @@ package alicloud
 import (
 	"sort"
 
+	"github.com/denverdino/aliyungo/common"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -17,7 +20,7 @@ func dataSourceAlicloudInstanceTypeFamilies() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateAllowedStringValue([]string{"ecs-1", "ecs-2", "ecs-3", "ecs-4"}),
+				ValidateFunc: validation.StringInSlice([]string{"ecs-1", "ecs-2", "ecs-3", "ecs-4"}, false),
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -25,18 +28,19 @@ func dataSourceAlicloudInstanceTypeFamilies() *schema.Resource {
 				ForceNew: true,
 			},
 			"instance_charge_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Default:      PostPaid,
-				ValidateFunc: validateInstanceChargeType,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Default:  PostPaid,
+				// %q must contain a valid InstanceChargeType, expected common.PrePaid, common.PostPaid
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 			},
 			"spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      NoSpot,
-				ValidateFunc: validateInstanceSpotStrategy,
+				ValidateFunc: validation.StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,

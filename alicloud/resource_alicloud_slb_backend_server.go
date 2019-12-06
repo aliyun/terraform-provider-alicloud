@@ -1,11 +1,14 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -38,16 +41,21 @@ func resourceAliyunSlbBackendServer() *schema.Resource {
 						"weight": {
 							Type:         schema.TypeInt,
 							Required:     true,
-							ValidateFunc: validateIntegerInRange(0, 100),
+							ValidateFunc: validation.IntBetween(0, 100),
 						},
 						"type": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      string(ECS),
-							ValidateFunc: validateAllowedStringValue([]string{string(ENI), string(ECS)}),
+							ValidateFunc: validation.StringInSlice([]string{"eni", "ecs"}, false),
 						},
 					},
 				},
+			},
+			"delete_protection_validation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -249,6 +257,20 @@ func resourceAliyunSlbBackendServersDelete(d *schema.ResourceData, meta interfac
 	step := 20
 	if len(instanceSet.List()) > 0 {
 
+		slbService := SlbService{client}
+		if d.Get("delete_protection_validation").(bool) {
+			lbInstance, err := slbService.DescribeSlb(d.Id())
+			if err != nil {
+				if NotFoundError(err) {
+					return nil
+				}
+				return WrapError(err)
+			}
+			if lbInstance.DeleteProtection == "on" {
+				return WrapError(fmt.Errorf("Current backend servers' SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the resource.", d.Id()))
+			}
+		}
+
 		servers := make([]interface{}, 0)
 		for _, rmserver := range instanceSet.List() {
 			rms := rmserver.(map[string]interface{})
@@ -278,7 +300,7 @@ func resourceAliyunSlbBackendServersDelete(d *schema.ResourceData, meta interfac
 					return slbClient.RemoveBackendServers(request)
 				})
 				if err != nil {
-					if IsExceptedErrors(err, []string{RspoolVipExist}) {
+					if IsExceptedErrors(err, []string{RspoolVipExist, "ObtainIpFail"}) {
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -45,6 +45,7 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vpc_ids.#": "1",
+						"vpcs.#":    "1",
 					}),
 				),
 			},
@@ -60,6 +61,7 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vpc_ids.#": "1",
+						"vpcs.#":    "1",
 					}),
 				),
 			},
@@ -70,6 +72,62 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vpc_ids.#": "2",
+						"vpcs.#":    "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_ids": REMOVEKEY,
+					"vpcs": []map[string]interface{}{
+						{
+							"vpc_id": "${alicloud_vpc.default.id}",
+						},
+						{
+							"vpc_id": "${alicloud_vpc.default1.id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpcs.#":    "2",
+						"vpc_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"lang": "en",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"lang": "en",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_client_ip": "192.168.1.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_client_ip": "192.168.1.1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpcs":           REMOVEKEY,
+					"vpc_ids":        []string{"${alicloud_vpc.default1.id}"},
+					"lang":           "zh",
+					"user_client_ip": "192.168.1.2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_ids.#":      "1",
+						"vpcs.#":         "1",
+						"lang":           "zh",
+						"user_client_ip": "192.168.1.2",
 					}),
 				),
 			},

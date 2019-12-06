@@ -76,9 +76,9 @@ func (client *Client) DescribeCollationTimeZonesWithCallback(request *DescribeCo
 // DescribeCollationTimeZonesRequest is the request struct for api DescribeCollationTimeZones
 type DescribeCollationTimeZonesRequest struct {
 	*requests.RpcRequest
-	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 }
 
 // DescribeCollationTimeZonesResponse is the response struct for api DescribeCollationTimeZones
@@ -93,7 +93,7 @@ func CreateDescribeCollationTimeZonesRequest() (request *DescribeCollationTimeZo
 	request = &DescribeCollationTimeZonesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeCollationTimeZones", "rds", "openAPI")
+	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeCollationTimeZones", "", "")
 	return
 }
 

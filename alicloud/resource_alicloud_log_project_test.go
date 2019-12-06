@@ -7,9 +7,8 @@ import (
 	"testing"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -178,31 +177,4 @@ func resourceLogProjectConfigDependence(name string) string {
 
 var logProjectMap = map[string]string{
 	"name": CHECKSET,
-}
-
-func testAccCheckAlicloudLogProjectExists(name string, project *sls.LogProject) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[name]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", name))
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(fmt.Errorf("No Log project ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		logService := LogService{client}
-
-		p, err := logService.DescribeLogProject(rs.Primary.ID)
-		if err != nil {
-			return WrapError(err)
-		}
-		if p == nil || p.Name == "" {
-			return WrapError(fmt.Errorf("Log project %s is not exist.", rs.Primary.ID))
-		}
-		project = p
-
-		return nil
-	}
 }

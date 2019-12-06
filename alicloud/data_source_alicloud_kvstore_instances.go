@@ -5,7 +5,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -17,25 +18,25 @@ func dataSourceAlicloudKVStoreInstances() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 			"status": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					string(Normal),
 					string(Creating),
 					string(Changing),
 					string(Inactive),
-				}),
+				}, false),
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validateAllowedStringValue([]string{
+				ValidateFunc: validation.StringInSlice([]string{
 					"Memcache",
 					"Redis",
-				}),
+				}, false),
 			},
 			"instance_class": {
 				Type:     schema.TypeString,
@@ -58,6 +59,7 @@ func dataSourceAlicloudKVStoreInstances() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -155,7 +157,6 @@ func dataSourceAlicloudKVStoreInstances() *schema.Resource {
 
 func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	kvstoreService := KvstoreService{client}
 
 	request := r_kvstore.CreateDescribeInstancesRequest()
 	request.RegionId = client.RegionId
@@ -180,6 +181,16 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		var reqTags []r_kvstore.DescribeInstancesTag
+		for key, value := range v.(map[string]interface{}) {
+			reqTags = append(reqTags, r_kvstore.DescribeInstancesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
+	}
 	for {
 		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 			return rkvClient.DescribeInstances(request)
@@ -203,18 +214,6 @@ func dataSourceAlicloudKVStoreInstancesRead(d *schema.ResourceData, meta interfa
 				if _, ok := idsMap[item.InstanceId]; !ok {
 					continue
 				}
-			}
-			if v, ok := d.GetOk("tags"); ok {
-				tags, err := kvstoreService.DescribeTags(item.InstanceId, TagResourceInstance)
-				if err != nil {
-					return WrapError(err)
-				}
-				if vmap, ok := v.(map[string]interface{}); ok && len(vmap) > 0 {
-					if !tagsMapEqual(vmap, kvstoreService.tagsToMap(tags)) {
-						continue
-					}
-				}
-
 			}
 			dbi = append(dbi, item)
 		}

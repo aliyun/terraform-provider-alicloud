@@ -6,8 +6,11 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	cdn2 "github.com/denverdino/aliyungo/cdn"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -25,13 +28,13 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 			"domain_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateDomainName,
+				ValidateFunc: validation.StringLenBetween(5, 67),
 			},
 			"cdn_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validateCdnType,
+				ValidateFunc: validation.StringInSlice(cdn2.CdnTypes, false),
 			},
 			"sources": {
 				Type:     schema.TypeList,
@@ -45,19 +48,19 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 						"type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validateCdnSourceType,
+							ValidateFunc: validation.StringInSlice(cdn2.SourceTypes, false),
 						},
 						"port": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Default:      80,
-							ValidateFunc: validateCdnSourcePort,
+							ValidateFunc: validation.IntInSlice([]int{80, 443}),
 						},
 						"priority": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Default:      20,
-							ValidateFunc: validateIntegerInRange(0, 100),
+							ValidateFunc: validation.IntBetween(0, 100),
 						},
 						"weight": {
 							Type:     schema.TypeInt,
@@ -74,7 +77,7 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 								}
 								return false
 							},
-							ValidateFunc: validateIntegerInRange(0, 100),
+							ValidateFunc: validation.IntBetween(0, 100),
 						},
 					},
 				},
@@ -95,7 +98,7 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 							Type:         schema.TypeString,
 							Default:      "on",
 							Optional:     true,
-							ValidateFunc: validateCdnEnable,
+							ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 						},
 						"private_key": {
 							Type:      schema.TypeString,
@@ -105,7 +108,7 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 						"force_set": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validateAllowedStringValue([]string{"1", "0"}),
+							ValidateFunc: validation.StringInSlice([]string{"1", "0"}, false),
 						},
 						"cert_name": {
 							Type:     schema.TypeString,
@@ -114,7 +117,7 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 						"cert_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validateAllowedStringValue([]string{"upload", "cas", "free"}),
+							ValidateFunc: validation.StringInSlice([]string{"upload", "cas", "free"}, false),
 						},
 					},
 				},
@@ -125,7 +128,7 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validateCdnScope,
+				ValidateFunc: validation.StringInSlice(cdn2.Scopes, false),
 			},
 			"tags": tagsSchema(),
 		},
@@ -401,7 +404,7 @@ func certificateConfigUpdateNew(client *connectivity.AliyunClient, d *schema.Res
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	d.SetPartial("certificate_config")
-	if okServerCertificate && request.ServerCertificateStatus != "off" {
+	if serverCertificate != "" && request.ServerCertificateStatus != "off" {
 		err := cdnService.WaitForServerCertificateNew(d.Id(), request.ServerCertificate, DefaultTimeout)
 		if err != nil {
 			return WrapError(err)

@@ -1,4 +1,5 @@
 ---
+subcategory: "Auto Scaling(ESS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ess_schedule"
 sidebar_current: "docs-alicloud-resource-ess-schedule"
@@ -92,25 +93,38 @@ resource "alicloud_ess_scheduled_task" "default" {
 }
 ```
 
+## Module Support
+
+You can use to the existing [autoscaling-rule module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling-rule/alicloud) 
+to create scheduled task, different type rules and alarm task directly.
+
 ## Argument Reference
 
 The following arguments are supported:
 
-* `scheduled_action` - (Required) Operations performed when the scheduled task is triggered. Fill in the unique identifier of the scaling rule.
-* `launch_time` - (Required) Operations performed when the scheduled task is triggered. Fill in the unique identifier of the scaling rule.
+* `scheduled_action` - (Required) The operation to be performed when a scheduled task is triggered. Enter the unique identifier of a scaling rule.
 * `scheduled_task_name` - (Optional) Display name of the scheduled task, which must be 2-40 characters (English or Chinese) long.
 * `description` - (Optional) Description of the scheduled task, which is 2-200 characters (English or Chinese) long.
-* `launch_expiration_time` - (Optional) Time period within which the failed scheduled task is retried. The default value is 600s. Value range: [0, 21600]
-* `recurrence_type` - (Optional) Type of the scheduled task to be repeated. RecurrenceType, RecurrenceValue and RecurrenceEndTime must be specified. Optional values:
-    - Daily: Recurrence interval by day for a scheduled task.
-    - Weekly: Recurrence interval by week for a scheduled task.
-    - Monthly: Recurrence interval by month for a scheduled task.
-* `recurrence_value` - (Optional) Value of the scheduled task to be repeated. RecurrenceType, RecurrenceValue and RecurrenceEndTime must be specified.
-    - Daily: Only one value in the range [1,31] can be filled.
-    - Weekly: Multiple values can be filled. The values of Sunday to Saturday are 0 to 6 in sequence. Multiple values shall be separated by a comma “,”.
-    - Monthly: In the format of A-B. The value range of A and B is 1 to 31, and the B value must be greater than the A value.
-* `recurrence_end_time` - (Optional) End time of the scheduled task to be repeated. The date format follows the ISO8601 standard and uses UTC time. It is in the format of YYYY-MM-DDThh:mmZ. A time point 90 days after creation or modification cannot be entered. RecurrenceType, RecurrenceValue and RecurrenceEndTime must be specified.                                  
-* `task_enabled` - (Optional) Whether to enable the scheduled task. The default value is true.
+* `launch_time` - (Required) The time at which the scheduled task is triggered. Specify the time in the ISO 8601 standard in the YYYY-MM-DDThh:mm:ssZ format. 
+The time must be in UTC. You cannot enter a time point later than 90 days from the date of scheduled task creation. 
+If the `recurrence_type` parameter is specified, the task is executed repeatedly at the time specified by LaunchTime. 
+Otherwise, the task is only executed once at the date and time specified by LaunchTime.
+* `launch_expiration_time` - (Optional) The time period during which a failed scheduled task is retried. Unit: seconds. Valid values: 0 to 21600. Default value: 600
+* `recurrence_type` - (Optional) Specifies the recurrence type of the scheduled task. 
+If set, both `recurrence_value` and `recurrence_end_time` must be set. Valid values:
+    - Daily: The scheduled task is executed once every specified number of days.
+    - Weekly: The scheduled task is executed on each specified day of a week.
+    - Monthly: The scheduled task is executed on each specified day of a month.
+    - Cron: (Available in 1.60.0+) The scheduled task is executed based on the specified cron expression.
+* `recurrence_value` - (Optional) Specifies how often a scheduled task recurs. The valid value depends on `recurrence_type`
+    - Daily: You can enter one value. Valid values: 1 to 31.
+    - Weekly: You can enter multiple values and separate them with commas (,). For example, the values 0 to 6 correspond to the days of the week in sequence from Sunday to Saturday.
+    - Monthly: You can enter two values in A-B format. Valid values of A and B: 1 to 31. The value of B must be greater than or equal to the value of A.
+    - Cron: You can enter a cron expression which is written in UTC and consists of five fields: minute, hour, day of month (date), month, and day of week. The expression can contain wildcard characters including commas (,), question marks (?), hyphens (-), asterisks (*), number signs (#), forward slashes (/), and the L and W letters.
+* `recurrence_end_time` - (Optional) Specifies the end time after which the scheduled task is no longer repeated. 
+Specify the time in the ISO 8601 standard in the YYYY-MM-DDThh:mm:ssZ format. 
+The time must be in UTC. You cannot enter a time point later than 365 days from the date of scheduled task creation.                                
+* `task_enabled` - (Optional) Specifies whether to start the scheduled task. Default to true.
                                   
                                  
 ## Attributes Reference

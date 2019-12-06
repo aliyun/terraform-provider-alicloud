@@ -1,4 +1,5 @@
 ---
+subcategory: "Auto Scaling(ESS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ess_scaling_group"
 sidebar_current: "docs-alicloud-resource-ess-scaling-group"
@@ -83,13 +84,18 @@ resource "alicloud_ess_scaling_group" "default" {
 }
 ```
 
+## Module Support
+
+You can use to the existing [autoscaling module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling/alicloud) 
+to create a scaling group, configuration and lifecycle hook directly.
+
 ## Argument Reference
 
 The following arguments are supported:
 
 * `min_size` - (Required) Minimum number of ECS instances in the scaling group. Value range: [0, 1000].
 * `max_size` - (Required) Maximum number of ECS instances in the scaling group. Value range: [0, 1000].
-* `scaling_group_name` - (Optional) Name shown for the scaling group, which must contain 2-40 characters (English or Chinese). If this parameter is not specified, the default value is ScalingGroupId.
+* `scaling_group_name` - (Optional) Name shown for the scaling group, which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain numbers, underscores `_`, hyphens `-`, and decimal points `.`. If this parameter is not specified, the default value is ScalingGroupId.
 * `default_cooldown` - (Optional) Default cool-down time (in seconds) of the scaling group. Value range: [0, 86400]. The default value is 300s.
 * `vswitch_id` - (Deprecated) It has been deprecated from version 1.7.1 and new field 'vswitch_ids' replaces it.
 * `vswitch_ids` - (Optional) List of virtual switch IDs in which the ecs instances to be launched.

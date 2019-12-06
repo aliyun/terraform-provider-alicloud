@@ -4,10 +4,14 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/denverdino/aliyungo/common"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -25,12 +29,12 @@ func resourceAliyunEip() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceName,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceDescription,
+				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 			"bandwidth": {
 				Type:     schema.TypeInt,
@@ -42,21 +46,23 @@ func resourceAliyunEip() *schema.Resource {
 				Default:      "PayByTraffic",
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validateInternetChargeType,
+				ValidateFunc: validation.StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateInstanceChargeType,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				Default:      PostPaid,
 				ForceNew:     true,
 			},
 			"period": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          1,
-				ForceNew:         true,
-				ValidateFunc:     validateEipChargeTypePeriod,
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  1,
+				ForceNew: true,
+				ValidateFunc: validation.Any(
+					validation.IntBetween(1, 9),
+					validation.IntInSlice([]int{12, 24, 36})),
 				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
 			},
 			"tags": tagsSchema(),
@@ -149,7 +155,7 @@ func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("ip_address", object.IpAddress)
 	d.Set("status", object.Status)
 	d.Set("resource_group_id", object.ResourceGroupId)
-	tags, err := vpcService.DescribeTags(d.Id(), TagResourceEip)
+	tags, err := vpcService.DescribeTags(d.Id(), nil, TagResourceEip)
 	if err != nil {
 		return WrapError(err)
 	}

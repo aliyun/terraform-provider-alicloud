@@ -1,4 +1,5 @@
 ---
+subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_instance_type_families"
 sidebar_current: "docs-alicloud-datasource-instance-type-families"

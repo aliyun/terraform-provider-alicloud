@@ -76,11 +76,11 @@ func (client *Client) ModifyReadonlyInstanceDelayReplicationTimeWithCallback(req
 // ModifyReadonlyInstanceDelayReplicationTimeRequest is the request struct for api ModifyReadonlyInstanceDelayReplicationTime
 type ModifyReadonlyInstanceDelayReplicationTimeRequest struct {
 	*requests.RpcRequest
-	OwnerId                requests.Integer `position:"Query" name:"OwnerId"`
-	ResourceOwnerAccount   string           `position:"Query" name:"ResourceOwnerAccount"`
 	ResourceOwnerId        requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	DBInstanceId           string           `position:"Query" name:"DBInstanceId"`
+	ResourceOwnerAccount   string           `position:"Query" name:"ResourceOwnerAccount"`
+	OwnerId                requests.Integer `position:"Query" name:"OwnerId"`
 	ReadSQLReplicationTime string           `position:"Query" name:"ReadSQLReplicationTime"`
+	DBInstanceId           string           `position:"Query" name:"DBInstanceId"`
 }
 
 // ModifyReadonlyInstanceDelayReplicationTimeResponse is the response struct for api ModifyReadonlyInstanceDelayReplicationTime
@@ -97,7 +97,7 @@ func CreateModifyReadonlyInstanceDelayReplicationTimeRequest() (request *ModifyR
 	request = &ModifyReadonlyInstanceDelayReplicationTimeRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "ModifyReadonlyInstanceDelayReplicationTime", "rds", "openAPI")
+	request.InitWithApiInfo("Rds", "2014-08-15", "ModifyReadonlyInstanceDelayReplicationTime", "", "")
 	return
 }
 

@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
 	"github.com/hashicorp/terraform/helper/acctest"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -102,9 +102,10 @@ func TestAccAlicloudSlbListener_http_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -419,14 +420,14 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 							"retrive_slb_id": "true",
 						},
 					},
-					"acl_status":         "on",
-					"acl_type":           "white",
-					"acl_id":             "${alicloud_slb_acl.default.id}",
-					"request_timeout":    "80",
-					"idle_timeout":       "30",
-					"enable_http2":       "on",
-					"tls_cipher_policy":  "tls_cipher_policy_1_2",
-					"ssl_certificate_id": "${alicloud_slb_server_certificate.default.id}",
+					"acl_status":            "on",
+					"acl_type":              "white",
+					"acl_id":                "${alicloud_slb_acl.default.id}",
+					"request_timeout":       "80",
+					"idle_timeout":          "30",
+					"enable_http2":          "on",
+					"tls_cipher_policy":     "tls_cipher_policy_1_2",
+					"server_certificate_id": "${alicloud_slb_server_certificate.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -452,7 +453,7 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 						"idle_timeout":              "30",
 						"request_timeout":           "80",
 						"health_check_http_code":    string(HTTP_2XX) + "," + string(HTTP_3XX),
-						"ssl_certificate_id":        CHECKSET,
+						"server_certificate_id":     CHECKSET,
 						"enable_http2":              "on",
 						"x_forwarded_for.#":         "1",
 						"tls_cipher_policy":         "tls_cipher_policy_1_2",
@@ -460,9 +461,10 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -679,9 +681,10 @@ func TestAccAlicloudSlbListener_tcp_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -937,9 +940,10 @@ func TestAccAlicloudSlbListener_udp_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1040,7 +1044,7 @@ func testAccSlbListenerHttpForward(name string) string {
   		health_check_interval = 5
   		health_check_http_code = "http_2xx,http_3xx"
   		bandwidth = 10
-  		ssl_certificate_id= "${alicloud_slb_server_certificate.default.id}"
+  		server_certificate_id= "${alicloud_slb_server_certificate.default.id}"
 	}
 	`, resourceSlbHTTPSListenerConfigDependence(name))
 }

@@ -7,7 +7,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -18,7 +19,7 @@ func dataSourceAlicloudGpdbInstances() *schema.Resource {
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateNameRegex,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 			"availability_zone": {
 				Type:     schema.TypeString,
@@ -38,6 +39,7 @@ func dataSourceAlicloudGpdbInstances() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 				ForceNew: true,
 				MinItems: 1,
 			},
@@ -134,6 +136,16 @@ func dataSourceAlicloudGpdbInstancesRead(d *schema.ResourceData, meta interface{
 	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
+	if v, ok := d.GetOk("tags"); ok {
+		var reqTags []gpdb.DescribeDBInstancesTag
+		for key, value := range v.(map[string]interface{}) {
+			reqTags = append(reqTags, gpdb.DescribeDBInstancesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
+	}
 
 	var dbi []gpdb.DBInstanceAttribute
 	for {
@@ -169,13 +181,6 @@ func dataSourceAlicloudGpdbInstancesRead(d *schema.ResourceData, meta interface{
 			// filter by vSwitchId
 			if vSwitchId != "" && vSwitchId != string(item.VSwitchId) {
 				continue
-			}
-			if v, ok := d.GetOk("tags"); ok {
-				if vmap, ok := v.(map[string]interface{}); ok && len(vmap) > 0 {
-					if !tagsMapEqual(vmap, gpdbService.tagsToMap(item.Tags.Tag)) {
-						continue
-					}
-				}
 			}
 
 			// describe instance

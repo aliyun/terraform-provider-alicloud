@@ -3,7 +3,7 @@ package alicloud
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -16,6 +16,7 @@ func dataSourceAlicloudEips() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 				ForceNew: true,
 				MinItems: 1,
 			},
@@ -142,17 +143,14 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 					continue
 				}
 			}
-			if value, ok := d.GetOk("tags"); ok {
-				tags, err := vpcService.DescribeTags(e.AllocationId, TagResourceEip)
+			if value, ok := d.GetOk("tags"); ok && len(value.(map[string]interface{})) > 0 {
+				tags, err := vpcService.DescribeTags(e.AllocationId, value.(map[string]interface{}), TagResourceEip)
 				if err != nil {
 					return WrapError(err)
 				}
-				if vmap, ok := value.(map[string]interface{}); ok && len(vmap) > 0 {
-					if !tagsMapEqual(vmap, vpcService.tagsToMap(tags)) {
-						continue
-					}
+				if len(tags) < 1 {
+					continue
 				}
-
 			}
 			allEips = append(allEips, e)
 		}

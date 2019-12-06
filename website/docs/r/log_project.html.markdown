@@ -1,4 +1,5 @@
 ---
+subcategory: "Log Service (SLS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_log_project"
 sidebar_current: "docs-alicloud-resource-log-project"

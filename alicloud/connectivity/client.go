@@ -25,6 +25,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -33,17 +34,20 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
+	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/dxh031/ali_mns"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"fmt"
 	"log"
@@ -107,6 +111,10 @@ type AliyunClient struct {
 	ddosbgpconn                  *ddosbgp.Client
 	bssopenapiconn               *bssopenapi.Client
 	emrconn                      *emr.Client
+	sagconn                      *smartag.Client
+	dbauditconn                  *yundun_dbaudit.Client
+	bastionhostconn              *yundun_bastionhost.Client
+	marketconn                   *market.Client
 }
 
 type ApiVersion string
@@ -133,8 +141,8 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.58.0"
-var terraformVersion = strings.TrimSuffix(terraform.VersionString(), "-dev")
+var providerVersion = "1.63.0"
+var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient
 func (c *Config) Client() (*AliyunClient, error) {
@@ -184,9 +192,7 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		}
 		ecsconn.AppendUserAgent(Terraform, terraformVersion)
 		ecsconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			ecsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		ecsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.ecsconn = ecsconn
 	}
 
@@ -213,9 +219,7 @@ func (client *AliyunClient) WithRdsClient(do func(*rds.Client) (interface{}, err
 
 		rdsconn.AppendUserAgent(Terraform, terraformVersion)
 		rdsconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			rdsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		rdsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.rdsconn = rdsconn
 	}
 
@@ -242,9 +246,7 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 
 		slbconn.AppendUserAgent(Terraform, terraformVersion)
 		slbconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			slbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		slbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.slbconn = slbconn
 	}
 
@@ -271,9 +273,7 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 
 		vpcconn.AppendUserAgent(Terraform, terraformVersion)
 		vpcconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			vpcconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		vpcconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.vpcconn = vpcconn
 	}
 
@@ -296,9 +296,7 @@ func (client *AliyunClient) WithNasClient(do func(*nas.Client) (interface{}, err
 		}
 		nasconn.AppendUserAgent(Terraform, terraformVersion)
 		nasconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			nasconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		nasconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.nasconn = nasconn
 	}
 
@@ -325,9 +323,7 @@ func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, err
 
 		cenconn.AppendUserAgent(Terraform, terraformVersion)
 		cenconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			cenconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		cenconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.cenconn = cenconn
 	}
 
@@ -354,9 +350,7 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 
 		essconn.AppendUserAgent(Terraform, terraformVersion)
 		essconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			essconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		essconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.essconn = essconn
 	}
 
@@ -444,9 +438,7 @@ func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, 
 		}
 		dnsconn.AppendUserAgent(Terraform, terraformVersion)
 		dnsconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			dnsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		dnsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.dnsconn = dnsconn
 	}
 
@@ -476,9 +468,7 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 		}
 		ramconn.AppendUserAgent(Terraform, terraformVersion)
 		ramconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			ramconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		ramconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.ramconn = ramconn
 	}
 
@@ -531,9 +521,7 @@ func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error
 		}
 		crconn.AppendUserAgent(Terraform, terraformVersion)
 		crconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			crconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		crconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.crconn = crconn
 	}
 
@@ -582,9 +570,7 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 
 		cdnconn.AppendUserAgent(Terraform, terraformVersion)
 		cdnconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			cdnconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		cdnconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.cdnconn_new = cdnconn
 	}
 
@@ -611,9 +597,7 @@ func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, err
 		}
 		kmsconn.AppendUserAgent(Terraform, terraformVersion)
 		kmsconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			kmsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		kmsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.kmsconn = kmsconn
 	}
 	return do(client.kmsconn)
@@ -639,9 +623,7 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 
 		otsconn.AppendUserAgent(Terraform, terraformVersion)
 		otsconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			otsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		otsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.otsconn = otsconn
 	}
 
@@ -654,6 +636,13 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 
 	// Initialize the CMS client if necessary
 	if client.cmsconn == nil {
+		endpoint := client.config.CmsEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CMSCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CMSCode), endpoint)
+		}
 		cmsconn, err := cms.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(false))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
@@ -661,9 +650,7 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 
 		cmsconn.AppendUserAgent(Terraform, terraformVersion)
 		cmsconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			cmsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		cmsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.cmsconn = cmsconn
 	}
 
@@ -692,9 +679,7 @@ func (client *AliyunClient) WithPvtzClient(do func(*pvtz.Client) (interface{}, e
 
 		pvtzconn.AppendUserAgent(Terraform, terraformVersion)
 		pvtzconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			pvtzconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		pvtzconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.pvtzconn = pvtzconn
 	}
 
@@ -721,9 +706,7 @@ func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, err
 
 		stsconn.AppendUserAgent(Terraform, terraformVersion)
 		stsconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			stsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		stsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.stsconn = stsconn
 	}
 
@@ -780,9 +763,7 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 
 		drdsconn.AppendUserAgent(Terraform, terraformVersion)
 		drdsconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			drdsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		drdsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.drdsconn = drdsconn
 	}
 
@@ -809,9 +790,7 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 
 		ddsconn.AppendUserAgent(Terraform, terraformVersion)
 		ddsconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			ddsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		ddsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.ddsconn = ddsconn
 	}
 
@@ -838,9 +817,7 @@ func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, e
 
 		gpdbconn.AppendUserAgent(Terraform, terraformVersion)
 		gpdbconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			gpdbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		gpdbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.gpdbconn = gpdbconn
 	}
 
@@ -867,9 +844,7 @@ func (client *AliyunClient) WithRkvClient(do func(*r_kvstore.Client) (interface{
 
 		rkvconn.AppendUserAgent(Terraform, terraformVersion)
 		rkvconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			rkvconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		rkvconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.rkvconn = rkvconn
 	}
 
@@ -933,9 +908,7 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 
 		cloudapiconn.AppendUserAgent(Terraform, terraformVersion)
 		cloudapiconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			cloudapiconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		cloudapiconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.cloudapiconn = cloudapiconn
 	}
 
@@ -997,7 +970,7 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 		}
 		mnsUrl := fmt.Sprintf("https://%s.mns.%s", accountId, endpoint)
 
-		mnsClient := ali_mns.NewAliMNSClient(mnsUrl, client.config.AccessKey, client.config.SecretKey)
+		mnsClient := ali_mns.NewAliMNSClientWithToken(mnsUrl, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
 
 		client.mnsconn = &mnsClient
 	}
@@ -1025,9 +998,7 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 
 		elasticsearchconn.AppendUserAgent(Terraform, terraformVersion)
 		elasticsearchconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			elasticsearchconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		elasticsearchconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.elasticsearchconn = elasticsearchconn
 	}
 
@@ -1126,9 +1097,7 @@ func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string
 	request.Scheme = schema
 	request.AppendUserAgent(Terraform, terraformVersion)
 	request.AppendUserAgent(Provider, providerVersion)
-	if client.config.ConfigurationSource != "" {
-		request.AppendUserAgent(Module, client.config.ConfigurationSource)
-	}
+	request.AppendUserAgent(Module, client.config.ConfigurationSource)
 	return request, nil
 }
 
@@ -1161,10 +1130,7 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 }
 
 func (client *AliyunClient) getUserAgent() string {
-	if client.config.ConfigurationSource != "" {
-		return fmt.Sprintf("%s/%s %s/%s %s/%s", Terraform, terraformVersion, Provider, providerVersion, Module, client.config.ConfigurationSource)
-	}
-	return fmt.Sprintf("%s/%s %s/%s", Terraform, terraformVersion, Provider, providerVersion)
+	return fmt.Sprintf("%s/%s %s/%s %s/%s", Terraform, terraformVersion, Provider, providerVersion, Module, client.config.ConfigurationSource)
 }
 
 func (client *AliyunClient) getTransport() *http.Transport {
@@ -1219,9 +1185,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (*loc
 	}
 	locationClient.AppendUserAgent(Terraform, terraformVersion)
 	locationClient.AppendUserAgent(Provider, providerVersion)
-	if client.config.ConfigurationSource != "" {
-		locationClient.AppendUserAgent(Module, client.config.ConfigurationSource)
-	}
+	locationClient.AppendUserAgent(Module, client.config.ConfigurationSource)
 	endpointsResponse, err := locationClient.DescribeEndpoints(args)
 	if err != nil {
 		return nil, fmt.Errorf("Describe %s endpoint using region: %#v got an error: %#v.", serviceCode, client.RegionId, err)
@@ -1253,9 +1217,8 @@ func (client *AliyunClient) getCallerIdentity() (*sts.GetCallerIdentityResponse,
 
 	stsClient.AppendUserAgent(Terraform, terraformVersion)
 	stsClient.AppendUserAgent(Provider, providerVersion)
-	if client.config.ConfigurationSource != "" {
-		stsClient.AppendUserAgent(Module, client.config.ConfigurationSource)
-	}
+	stsClient.AppendUserAgent(Module, client.config.ConfigurationSource)
+
 	identity, err := stsClient.GetCallerIdentity(args)
 	if err != nil {
 		return nil, err
@@ -1284,9 +1247,7 @@ func (client *AliyunClient) WithActionTrailClient(do func(*actiontrail.Client) (
 
 		actiontrailconn.AppendUserAgent(Terraform, terraformVersion)
 		actiontrailconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			actiontrailconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		actiontrailconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.actiontrailconn = actiontrailconn
 	}
 
@@ -1299,6 +1260,13 @@ func (client *AliyunClient) WithCasClient(do func(*cas.Client) (interface{}, err
 
 	// Initialize the CAS client if necessary
 	if client.casconn == nil {
+		endpoint := client.config.CasEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CasCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CasCode), endpoint)
+		}
 		casconn, err := cas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the CAS client: %#v", err)
@@ -1306,9 +1274,7 @@ func (client *AliyunClient) WithCasClient(do func(*cas.Client) (interface{}, err
 
 		casconn.AppendUserAgent(Terraform, terraformVersion)
 		casconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			casconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		casconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.casconn = casconn
 	}
 
@@ -1321,15 +1287,21 @@ func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interfac
 
 	// Initialize the ddoscoo client if necessary
 	if client.ddoscooconn == nil {
+		endpoint := client.config.DdoscooEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, DDOSCOOCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(DDOSCOOCode), endpoint)
+		}
+
 		ddoscooconn, err := ddoscoo.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the DDOSCOO client: %#v", err)
 		}
 		ddoscooconn.AppendUserAgent(Terraform, terraformVersion)
 		ddoscooconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			ddoscooconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		ddoscooconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.ddoscooconn = ddoscooconn
 
 	}
@@ -1343,6 +1315,14 @@ func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interfac
 
 	// Initialize the ddosbgp client if necessary
 	if client.ddosbgpconn == nil {
+		endpoint := client.config.DdosbgpEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, DDOSBGPCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(DDOSBGPCode), endpoint)
+		}
+
 		ddosbgpconn, err := ddosbgp.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the DDOSBGP client: %#v", err)
@@ -1350,9 +1330,7 @@ func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interfac
 
 		ddosbgpconn.AppendUserAgent(Terraform, terraformVersion)
 		ddosbgpconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			ddosbgpconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		ddosbgpconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.ddosbgpconn = ddosbgpconn
 	}
 
@@ -1379,9 +1357,7 @@ func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (in
 		}
 		bssopenapiconn.AppendUserAgent(Terraform, terraformVersion)
 		bssopenapiconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			bssopenapiconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		bssopenapiconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.bssopenapiconn = bssopenapiconn
 	}
 
@@ -1407,9 +1383,7 @@ func (client *AliyunClient) WithOnsClient(do func(*ons.Client) (interface{}, err
 		}
 		onsconn.AppendUserAgent(Terraform, terraformVersion)
 		onsconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			onsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		onsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.onsconn = onsconn
 	}
 
@@ -1420,8 +1394,8 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
-	// Initialize the ons client if necessary
-	if client.onsconn == nil {
+	// Initialize the alikafka client if necessary
+	if client.alikafkaconn == nil {
 		endpoint := client.config.AlikafkaEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, ALIKAFKACode)
@@ -1435,9 +1409,7 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 		}
 		alikafkaconn.AppendUserAgent(Terraform, terraformVersion)
 		alikafkaconn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			alikafkaconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		alikafkaconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.alikafkaconn = alikafkaconn
 	}
 
@@ -1449,17 +1421,113 @@ func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, err
 	defer goSdkMutex.Unlock()
 
 	if client.emrconn == nil {
+		endpoint := client.config.EmrEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, EMRCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(EMRCode), endpoint)
+		}
 		emrConn, err := emr.NewClientWithOptions(client.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %#v", err)
 		}
 		emrConn.AppendUserAgent(Terraform, terraformVersion)
 		emrConn.AppendUserAgent(Provider, providerVersion)
-		if client.config.ConfigurationSource != "" {
-			emrConn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		}
+		emrConn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.emrconn = emrConn
 	}
 
 	return do(client.emrconn)
+}
+
+func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the SAG client if necessary
+	if client.sagconn == nil {
+		endpoint := client.config.SagEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, SAGCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(SAGCode), endpoint)
+		}
+		sagconn, err := smartag.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the SAG client: %#v", err)
+		}
+
+		sagconn.AppendUserAgent(Terraform, terraformVersion)
+		sagconn.AppendUserAgent(Provider, providerVersion)
+		sagconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.sagconn = sagconn
+	}
+
+	return do(client.sagconn)
+}
+
+func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the ddoscoo client if necessary
+	if client.dbauditconn == nil {
+		dbauditconn, err := yundun_dbaudit.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the DBAUDIT client: %#v", err)
+		}
+		dbauditconn.AppendUserAgent(Terraform, terraformVersion)
+		dbauditconn.AppendUserAgent(Provider, providerVersion)
+		dbauditconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.dbauditconn = dbauditconn
+	}
+
+	return do(client.dbauditconn)
+}
+
+func (client *AliyunClient) WithBastionhostClient(do func(*yundun_bastionhost.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	if client.bastionhostconn == nil {
+		bastionhostconn, err := yundun_bastionhost.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the BASTIONHOST client: %#v", err)
+		}
+		bastionhostconn.AppendUserAgent(Terraform, terraformVersion)
+		bastionhostconn.AppendUserAgent(Provider, providerVersion)
+		bastionhostconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.bastionhostconn = bastionhostconn
+	}
+
+	return do(client.bastionhostconn)
+}
+
+func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the Market API client if necessary
+	if client.marketconn == nil {
+		endpoint := client.config.MarketEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.RegionId, MARKETCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.RegionId, "MARKET", endpoint)
+		}
+		marketconn, err := market.NewClientWithOptions(client.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Market client: %#v", err)
+		}
+
+		marketconn.AppendUserAgent(Terraform, terraformVersion)
+		marketconn.AppendUserAgent(Provider, providerVersion)
+		marketconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.marketconn = marketconn
+	}
+
+	return do(client.marketconn)
 }

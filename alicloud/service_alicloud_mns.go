@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dxh031/ali_mns"
+	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -63,20 +63,21 @@ func (s *MnsService) WaitForMnsQueue(id string, status Status, timeout int) erro
 	}
 }
 
-func (s *MnsService) DescribeMnsTopic(id string) (response *ali_mns.TopicAttribute, err error) {
+func (s *MnsService) DescribeMnsTopic(id string) (*ali_mns.TopicAttribute, error) {
+	response := &ali_mns.TopicAttribute{}
 	raw, err := s.client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
 		return topicManager.GetTopicAttributes(id)
 	})
 	if err != nil {
 		if s.TopicNotExistFunc(err) {
-			return nil, WrapErrorf(err, NotFoundMsg, AliMnsERROR)
+			return response, WrapErrorf(err, NotFoundMsg, AliMnsERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "GetTopicAttributes", AliMnsERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, "GetTopicAttributes", AliMnsERROR)
 	}
 	addDebug("GetTopicAttributes", raw)
 	resp, _ := raw.(ali_mns.TopicAttribute)
 	if resp.TopicName == "" {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("MnsTopic", id)), NotFoundMsg, ProviderERROR)
+		return response, WrapErrorf(Error(GetNotFoundMessage("MnsTopic", id)), NotFoundMsg, ProviderERROR)
 	}
 	return &resp, nil
 }
@@ -103,7 +104,8 @@ func (s *MnsService) WaitForMnsTopic(id string, status Status, timeout int) erro
 	}
 }
 
-func (s *MnsService) DescribeMnsTopicSubscription(id string) (response *ali_mns.SubscriptionAttribute, err error) {
+func (s *MnsService) DescribeMnsTopicSubscription(id string) (*ali_mns.SubscriptionAttribute, error) {
+	response := &ali_mns.SubscriptionAttribute{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return response, WrapError(err)
