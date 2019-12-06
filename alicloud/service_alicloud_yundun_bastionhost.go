@@ -41,7 +41,7 @@ const (
 	}`
 )
 
-var BastionhostpolicyRequired = []PolicyRequired{
+var bastionhostpolicyRequired = []BastionhostPolicyRequired{
 	{
 		PolicyName: "AliyunBastionHostRolePolicy",
 		PolicyType: "System",
@@ -195,13 +195,13 @@ func (s *bastionhostService) createRole() error {
 		return ramClient.CreateRole(createRoleRequest)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, RoleName, createRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, BastionhostRoleName, createRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(createRoleRequest.GetActionName(), raw, createRoleRequest.RpcRequest, createRoleRequest)
 	return nil
 }
 
-func (s *bastionhostService) attachPolicy(policyToBeAttached []PolicyRequired) error {
+func (s *bastionhostService) attachPolicy(policyToBeAttached []BastionhostPolicyRequired) error {
 	attachPolicyRequest := ram.CreateAttachPolicyToRoleRequest()
 	for _, policy := range policyToBeAttached {
 		attachPolicyRequest.RoleName = BastionhostRoleName
@@ -211,7 +211,7 @@ func (s *bastionhostService) attachPolicy(policyToBeAttached []PolicyRequired) e
 			return ramClient.AttachPolicyToRole(attachPolicyRequest)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, RoleName, attachPolicyRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, BastionhostRoleName, attachPolicyRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		if response, err := raw.(*ram.AttachPolicyToRoleResponse); !err || !response.IsSuccess() {
 			return WrapError(errors.New("attach policy to role failed"))
@@ -228,15 +228,13 @@ func (s *bastionhostService) ProcessRolePolicy() error {
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.GetRole(getRoleRequest)
 	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, RoleName, getRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(getRoleRequest.GetActionName(), raw, getRoleRequest.RpcRequest, getRoleRequest)
-	if response, _ := raw.(*ram.GetRoleResponse); response == nil || response.Role.RoleName != BastionhostRoleName {
+	response, _ := raw.(*ram.GetRoleResponse)
+	if err != nil || response == nil || response.Role.RoleName != BastionhostRoleName {
 		if err := s.createRole(); err != nil {
 			return err
 		}
 	}
+	addDebug(getRoleRequest.GetActionName(), raw, getRoleRequest.RpcRequest, getRoleRequest)
 	listPolicyForRoleRequest := ram.CreateListPoliciesForRoleRequest()
 	listPolicyForRoleRequest.RoleName = BastionhostRoleName
 	raw, err = s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -246,9 +244,9 @@ func (s *bastionhostService) ProcessRolePolicy() error {
 		return WrapErrorf(err, DefaultErrorMsg, BastionhostRoleName, listPolicyForRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(listPolicyForRoleRequest.GetActionName(), raw, listPolicyForRoleRequest.RpcRequest, listPolicyForRoleRequest)
-	var policyToAttach []PolicyRequired
+	var policyToAttach []BastionhostPolicyRequired
 	if response, _ := raw.(*ram.ListPoliciesForRoleResponse); response != nil && response.IsSuccess() {
-		for _, required := range policyRequired {
+		for _, required := range bastionhostpolicyRequired {
 			contains := false
 			for _, policy := range response.Policies.Policy {
 				if required.PolicyName == policy.PolicyName {
