@@ -150,8 +150,6 @@ func resourceAliyunDatahubTopicRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	d.SetId(strings.ToLower(fmt.Sprintf("%s%s%s", object.ProjectName, COLON_SEPARATED, object.TopicName)))
-
 	d.Set("name", object.TopicName)
 	d.Set("project_name", object.ProjectName)
 	d.Set("shard_count", object.ShardCount)
@@ -195,6 +193,21 @@ func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) 
 			requestMap["LifeCycle"] = strconv.Itoa(lifeCycle)
 			requestMap["TopicComment"] = topicComment
 			addDebug("UpdateTopic", raw, requestInfo, requestMap)
+		}
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			datahubService := DatahubService{client}
+			object, err := datahubService.DescribeDatahubTopic(d.Id())
+			if err != nil {
+				return resource.NonRetryableError(err)
+			}
+			if object.Comment != topicComment || object.Lifecycle != lifeCycle {
+				return resource.RetryableError(fmt.Errorf("waiting for updating topic %s comment and lifecycle finished timwout. "+
+					"current comment is %s and lifecycle is %d", d.Id(), object.Comment, object.Lifecycle))
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapError(err)
 		}
 	}
 

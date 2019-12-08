@@ -47,17 +47,6 @@ func TestAccAlicloudCenInstancesDataSource(t *testing.T) {
 	CenInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 
-func TestAccAlicloudCenInstancesDataSource_multi(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 99999999)
-	multiConf := dataSourceTestAccConfig{
-		existConfig: testAccAlicloudCenInstancesDataSourceConfig_multi(rand, map[string]string{
-			"ids": `"${alicloud_cen_instance.default.*.id}"`,
-		}),
-	}
-
-	CenInstancesCheckInfoMulti.dataSourceTestCheck(t, rand, multiConf)
-}
-
 func testAccAlicloudCenInstancesDataSourceConfig(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
@@ -68,25 +57,6 @@ func testAccAlicloudCenInstancesDataSourceConfig(rand int, attrMap map[string]st
 		resource "alicloud_cen_instance" "default" {
 			name = "tf-testAcc%sCenInstancesDataSourceCen-%d"
 			description = "tf-testAccCenConfigDescription"
-		}
-
-		data "alicloud_cen_instances" "default" {
-			%s
-		}
-`, defaultRegionToTest, rand, strings.Join(pairs, "\n  "))
-	return config
-}
-func testAccAlicloudCenInstancesDataSourceConfig_multi(rand int, attrMap map[string]string) string {
-	var pairs []string
-	for k, v := range attrMap {
-		pairs = append(pairs, k+" = "+v)
-	}
-
-	config := fmt.Sprintf(`
-		resource "alicloud_cen_instance" "default" {
-			name = "tf-testAcc%sCenInstancesDataSourceCen-%d"
-			description = "tf-testAccCenConfigDescription"
-			count = 5
 		}
 
 		data "alicloud_cen_instances" "default" {
