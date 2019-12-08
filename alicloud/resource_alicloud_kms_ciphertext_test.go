@@ -1,50 +1,70 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
+	"fmt"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/acctest"
 )
 
 func TestAccAlicloudKmsCiphertext_basic(t *testing.T) {
-	var v *kms.EncryptResponse
-
-	resourceId := "alicloud_kms_ciphertext.default"
-	ra := resourceAttrInit(resourceId, kmsCiphertextBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKmsCiphertextConfigBasic,
+				Config: testAccAlicloudKmsCiphertextConfig_basic(acctest.RandomWithPrefix("tf-testacc-basic")),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					resource.TestCheckResourceAttrSet(
+						"alicloud_kms_ciphertext.default", "ciphertext_blob"),
 				),
-			},
-			{
-				ResourceName: resourceId,
 			},
 		},
 	})
 }
 
-const testAccKmsCiphertextConfigBasic = `
+func TestAccAlicloudKmsCiphertext_validate(t *testing.T) {
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAlicloudKmsCiphertextConfig_validate(acctest.RandomWithPrefix("tf-testacc-validate")),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_kms_ciphertext.default", "ciphertext_blob"),
+					resource.TestCheckResourceAttrPair("alicloud_kms_ciphertext.default", "plaintext", "data.alicloud_kms_plaintext.default", "plaintext"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudKmsCiphertext_validate_withContext(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAlicloudKmsCiphertextConfig_validate_withContext(acctest.RandomWithPrefix("tf-testacc-validate-withcontext")),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_kms_ciphertext.default", "ciphertext_blob"),
+					resource.TestCheckResourceAttrPair("alicloud_kms_ciphertext.default", "plaintext", "data.alicloud_kms_plaintext.default", "plaintext"),
+				),
+			},
+		},
+	})
+}
+
+var testAccAlicloudKmsCiphertextConfig_basic = func(keyId string) string {
+	return fmt.Sprintf(`
 resource "alicloud_kms_key" "default" {
+  	description = "%s"
 	is_enabled  = true
 }
 
@@ -52,11 +72,47 @@ resource "alicloud_kms_ciphertext" "default" {
 	key_id = "${alicloud_kms_key.default.id}"
 	plaintext = "plaintext"
 }
-`
+`, keyId)
+}
 
-var kmsCiphertextBasicMap = map[string]string{
-	"plaintext":       CHECKSET,
-	"key_id":          CHECKSET,
-	"context":         NOSET,
-	"ciphertext_blob": CHECKSET,
+var testAccAlicloudKmsCiphertextConfig_validate = func(keyId string) string {
+	return fmt.Sprintf(`
+	resource "alicloud_kms_key" "default" {
+        description = "%s"
+		is_enabled  = true
+	}
+	
+	resource "alicloud_kms_ciphertext" "default" {
+		key_id = "${alicloud_kms_key.default.id}"
+		plaintext = "plaintext"
+	}
+	
+	data "alicloud_kms_plaintext" "default" {
+	  ciphertext_blob = "${alicloud_kms_ciphertext.default.ciphertext_blob}"
+	}
+	`, keyId)
+}
+
+var testAccAlicloudKmsCiphertextConfig_validate_withContext = func(keyId string) string {
+	return fmt.Sprintf(`
+	resource "alicloud_kms_key" "default" {
+        description = "%s"
+		is_enabled  = true
+	}
+	
+	resource "alicloud_kms_ciphertext" "default" {
+		key_id = "${alicloud_kms_key.default.id}"
+		plaintext = "plaintext"
+        encryption_context = {
+    		name = "value"
+  		}
+	}
+	
+	data "alicloud_kms_plaintext" "default" {
+	  ciphertext_blob = "${alicloud_kms_ciphertext.default.ciphertext_blob}"
+	  encryption_context = {
+		name = "value"
+	  }
+	}
+	`, keyId)
 }
