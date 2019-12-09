@@ -21,10 +21,6 @@ func dataSourceAlicloudCallerIdentity() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"principal_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 		},
 	}
 }
@@ -43,9 +39,6 @@ func dataSourceAlicloudCallerIdentityRead(d *schema.ResourceData, meta interface
 		return err
 	}
 	if err := d.Set("identity_type", resp.IdentityType); err != nil {
-		return err
-	}
-	if err := d.Set("principal_id", resp.PrincipalId); err != nil {
 		return err
 	}
 	return nil

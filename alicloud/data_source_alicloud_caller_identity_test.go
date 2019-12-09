@@ -20,7 +20,6 @@ func TestAccAliclouCallerIdentityDataSource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_caller_identity.cur", "arn"),
 					resource.TestCheckResourceAttrSet("data.alicloud_caller_identity.cur", "account_id"),
 					resource.TestCheckResourceAttrSet("data.alicloud_caller_identity.cur", "identity_type"),
-					resource.TestCheckResourceAttrSet("data.alicloud_caller_identity.cur", "principal_id"),
 				),
 			},
 		},
