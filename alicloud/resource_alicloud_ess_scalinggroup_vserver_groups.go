@@ -71,6 +71,14 @@ func resourceAlicloudEssScalingGroupVserverGroups() *schema.Resource {
 					},
 				},
 			},
+			"force": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+				DiffSuppressFunc: func(k, old string, new string, d *schema.ResourceData) bool {
+					return old == "" && new == "true" && d.Id() != ""
+				},
+			},
 		},
 	}
 }
@@ -109,14 +117,18 @@ func resourceAliyunEssVserverGroupsUpdate(d *schema.ResourceData, meta interface
 	vserverGroupsMapFromScalingGroup := vserverGroupMapFromScalingGroup(object.VServerGroups.VServerGroup)
 	vserverGroupsMapFromConfig := vserverGroupMapFromConfig(d.Get("vserver_groups").(*schema.Set))
 	attachMap, detachMap := attachOrDetachVserverGroupMap(vserverGroupsMapFromConfig, vserverGroupsMapFromScalingGroup)
-
-	err = detachVserverGroups(d, client, detachMap)
+	v, ok := d.GetOkExists("force")
+	force := true
+	if ok {
+		force = v.(bool)
+	}
+	err = detachVserverGroups(d, client, detachMap, force)
 	if err != nil {
 		return WrapError(err)
 	}
 	d.SetPartial("vserver_groups")
 
-	err = attachVserverGroups(d, client, attachMap)
+	err = attachVserverGroups(d, client, attachMap, force)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -129,7 +141,12 @@ func resourceAliyunEssVserverGroupsDelete(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	vserverGroupsFromConfig := vserverGroupMapFromConfig(d.Get("vserver_groups").(*schema.Set))
 	_, detachMap := attachOrDetachVserverGroupMap(make(map[string]string, 0), vserverGroupsFromConfig)
-	err := detachVserverGroups(d, client, detachMap)
+	v, ok := d.GetOkExists("force")
+	force := true
+	if ok {
+		force = v.(bool)
+	}
+	err := detachVserverGroups(d, client, detachMap, force)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -205,7 +222,7 @@ func buildEssVserverGroupListMap(vserverGroupMap map[string]string) map[string][
 	return vserverGroupRequestMap
 }
 
-func attachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClient, attachMap map[string]string) error {
+func attachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClient, attachMap map[string]string, force bool) error {
 	if len(attachMap) > 0 {
 		vserverGroupListMap := buildEssVserverGroupListMap(attachMap)
 		attachScalingGroupVserverGroups := make([]ess.AttachVServerGroupsVServerGroup, 0)
@@ -229,7 +246,7 @@ func attachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 		request := ess.CreateAttachVServerGroupsRequest()
 		request.RegionId = client.RegionId
 		request.ScalingGroupId = d.Id()
-		request.ForceAttach = requests.NewBoolean(true)
+		request.ForceAttach = requests.NewBoolean(force)
 		request.VServerGroup = &attachScalingGroupVserverGroups
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.AttachVServerGroups(request)
@@ -242,7 +259,7 @@ func attachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 	return nil
 }
 
-func detachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClient, detachMap map[string]string) error {
+func detachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClient, detachMap map[string]string, force bool) error {
 	if len(detachMap) > 0 {
 		vserverGroupListMap := buildEssVserverGroupListMap(detachMap)
 		detachScalingGroupVserverGroups := make([]ess.DetachVServerGroupsVServerGroup, 0)
@@ -265,7 +282,7 @@ func detachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 		request := ess.CreateDetachVServerGroupsRequest()
 		request.RegionId = client.RegionId
 		request.ScalingGroupId = d.Id()
-		request.ForceDetach = requests.NewBoolean(true)
+		request.ForceDetach = requests.NewBoolean(force)
 		request.VServerGroup = &detachScalingGroupVserverGroups
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.DetachVServerGroups(request)

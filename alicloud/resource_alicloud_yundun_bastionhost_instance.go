@@ -87,7 +87,9 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 	bastionhostService := bastionhostService{client}
 
 	// check RAM policy
-	bastionhostService.ProcessRolePolicy()
+	if err := bastionhostService.ProcessRolePolicy(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 	// wait for order complete
 	stateConf := BuildStateConf([]string{}, []string{"PENDING"}, d.Timeout(schema.TimeoutCreate), 20*time.Second, bastionhostService.BastionhostInstanceRefreshFunc(d.Id(), []string{"UPGRADING", "UPGRADE_FAILED", "CREATE_FAILED"}))
 	if _, err := stateConf.WaitForState(); err != nil {

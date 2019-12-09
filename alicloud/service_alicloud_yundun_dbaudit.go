@@ -222,11 +222,9 @@ func (s *DbauditService) ProcessRolePolicy() error {
 		return ramClient.GetRole(getRoleRequest)
 	})
 	log.Printf("DEBUG ProcessRolePolicy create role %v", raw.(*ram.GetRoleResponse))
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, RoleName, getRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
 	addDebug(getRoleRequest.GetActionName(), raw, getRoleRequest.RpcRequest, getRoleRequest)
-	if response, _ := raw.(*ram.GetRoleResponse); response == nil || response.Role.RoleName != RoleName {
+	response, _ := raw.(*ram.GetRoleResponse)
+	if err != nil || response == nil || response.Role.RoleName != RoleName {
 		if err := s.createRole(); err != nil {
 			return WrapError(err)
 		}

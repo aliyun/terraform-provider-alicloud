@@ -1,4 +1,28 @@
-## 1.63.1 (Unreleased)
+## 1.64.1 (Unreleased)
+## 1.64.0 (December 06, 2019)
+
+- **New Data Source:** `alicloud_market_products` ([#1941](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1941))
+- **New Resource:** `alicloud_cloud_connect_network_attachment` ([#1933](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1933))
+- **New Resource:** `alicloud_image` ([#1913](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1913))
+
+IMPROVEMENTS:
+
+- improve(docs): improve module guide ([#1957](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1957))
+- improve(db_account_privilege): supports more privileges ([#1945](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1945))
+- improve(datasources): remove sorted_by testcase results from some internal limitation ([#1943](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1943))
+- improve(sdk): Updated sdk to v1.60.280 and modified drds fields ([#1938](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1938))
+- improve(snat): update example to support for snat's creation with multi eips ([#1931](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1931))
+- improve(ess): resource alicloud_ess_scalinggroup_vserver_groups support parameter ([#1919](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1919))
+- improve(db_instance): make 'instance_types' 'db_instance_class' 'kvstore_instance_class' support price ([#1749](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1749))
+
+BUG FIXES:
+
+- fix(alikafka): fix bug in when doing alikafka instance multi acc test ([#1947](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1947))
+- fix(CSKubernetes): fix 3az test case ([#1942](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1942))
+- fix(cdn_domain_new): constant timeout waiting for server cert ([#1937](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1937))
+- fix(pvtz_zone_record): allow SRV records ([#1936](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1936))
+- fix(Serverless Kubernetes): fix #1867 add serverless kube_config ([#1923](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1923))
+
 ## 1.63.0 (December 02, 2019)
 
 - **New Resource:** `alicloud_cloud_connect_network_grant` ([#1921](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1921))

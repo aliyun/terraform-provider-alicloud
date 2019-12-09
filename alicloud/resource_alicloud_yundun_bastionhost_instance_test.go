@@ -179,16 +179,6 @@ func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"license_code": "bhah_ent_200_asset",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"license_code": "bhah_ent_200_asset",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"security_group_ids": []string{"${alicloud_security_group.default.1.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -230,7 +220,7 @@ func TestAccAlicloudYundunBastionhostInstance_Multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"count":              "5",
+					"count":              "2",
 					"description":        "${var.name}-${count.index}",
 					"period":             "1",
 					"vswitch_id":         "${alicloud_vswitch.default.id}",
