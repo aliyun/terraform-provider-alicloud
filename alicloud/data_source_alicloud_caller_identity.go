@@ -5,9 +5,9 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func dataSourceAlicloudStsCallerIdentity() *schema.Resource {
+func dataSourceAlicloudCallerIdentity() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudStsCallerIdentityRead,
+		Read: dataSourceAlicloudCallerIdentityRead,
 		Schema: map[string]*schema.Schema{
 			"account_id": {
 				Type:     schema.TypeString,
@@ -29,7 +29,7 @@ func dataSourceAlicloudStsCallerIdentity() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudStsCallerIdentityRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudCallerIdentityRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resp, err := client.GetCallerIdentity()
 	if err != nil {
