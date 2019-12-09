@@ -53,7 +53,6 @@ func TestAccAlicloudMarketProductsDataSource(t *testing.T) {
 			"products.0.suggested_price":   CHECKSET,
 			"products.0.supplier_id":       CHECKSET,
 			"products.0.supplier_name":     CHECKSET,
-			"products.0.tags":              CHECKSET,
 			"products.0.target_url":        CHECKSET,
 		}
 	}
