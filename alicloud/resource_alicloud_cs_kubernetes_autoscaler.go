@@ -100,7 +100,22 @@ func resourceAlicloudCSKubernetesAutoscaler() *schema.Resource {
 
 // resourceAlicloudCSKubernetesAutoscalerCreate define how to create autoscaler
 func resourceAlicloudCSKubernetesAutoscalerCreate(d *schema.ResourceData, meta interface{}) error {
-	return resourceAlicloudCSKubernetesAutoscalerUpdate(d, meta)
+
+	var clusterId string
+	if value, ok := d.GetOk("cluster_id"); ok == true {
+		clusterId = value.(string)
+	} else {
+		return WrapError(fmt.Errorf("clusterId must be provided instead of %s", "nil"))
+	}
+
+	err := resourceAlicloudCSKubernetesAutoscalerUpdate(d, meta)
+
+	if err != nil {
+		return WrapError(err)
+	}
+	// set unique id of tf state
+	d.SetId(fmt.Sprintf("%s-%s", clusterId, clusterAutoscaler))
+	return nil
 }
 
 // resourceAlicloudCSKubernetesAutoscalerRead no need to implement
@@ -231,9 +246,6 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return fmt.Errorf("failed to deploy autoscaler,because of %v", err)
 		}
-
-		// set unique id of tf state
-		d.SetId(fmt.Sprintf("%s-%s", clusterId, clusterAutoscaler))
 	}
 	return nil
 }
@@ -261,8 +273,8 @@ func resourceAlicloudCSKubernetesAutoscalerDelete(d *schema.ResourceData, meta i
 // update scaling group config
 func UpdateScalingGroupConfiguration(client *connectivity.AliyunClient, groupId, userData string, labels string, taints string) (err error) {
 
+	describeScalingConfigurationsRequest := ess.CreateDescribeScalingConfigurationsRequest()
 	describeScalingConfigurationsResponse, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		describeScalingConfigurationsRequest := ess.CreateDescribeScalingConfigurationsRequest()
 		describeScalingConfigurationsRequest.RegionId = client.RegionId
 		describeScalingConfigurationsRequest.ScalingGroupId = groupId
 		return essClient.DescribeScalingConfigurations(describeScalingConfigurationsRequest)
@@ -274,14 +286,20 @@ func UpdateScalingGroupConfiguration(client *connectivity.AliyunClient, groupId,
 		return fmt.Errorf("failed to parse DescribeScalingConfigurationsResponse of %s", groupId)
 	}
 
+	if err != nil {
+		return WrapErrorf(err, "failed to invoke CreateDescribeScalingConfigurations,because of %v", err)
+	}
+
+	addDebug("DescribeScalingConfigurations", configurations, describeScalingConfigurationsRequest)
+
 	if len(configurations.ScalingConfigurations.ScalingConfiguration) == 0 {
 		//todo  create configuration
 		return fmt.Errorf("please create the default scaling configuration of group %s", groupId)
 	} else {
 		defaultConfiguration := configurations.ScalingConfigurations.ScalingConfiguration[0]
 		// modify the default one
-		_, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			modifyScalingConfigurationRequest := ess.CreateModifyScalingConfigurationRequest()
+		modifyScalingConfigurationRequest := ess.CreateModifyScalingConfigurationRequest()
+		modifyScalingConfigurationResponse, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			modifyScalingConfigurationRequest.RegionId = client.RegionId
 			modifyScalingConfigurationRequest.UserData = userData
 			modifyScalingConfigurationRequest.Tags = createScalingGroupTags(labels, taints)
@@ -290,8 +308,10 @@ func UpdateScalingGroupConfiguration(client *connectivity.AliyunClient, groupId,
 		})
 
 		if err != nil {
-			return fmt.Errorf("failed to invoke ModifyScalingConfiguration,because of %v", err)
+			return WrapErrorf(err, "failed to invoke ModifyScalingConfiguration,because of %v", err)
 		}
+
+		addDebug("ModifyScalingConfiguration", modifyScalingConfigurationResponse, modifyScalingConfigurationRequest)
 	}
 	return nil
 }
@@ -306,8 +326,9 @@ func GetScalingGroupSizeRange(client *connectivity.AliyunClient, groupId string)
 	})
 
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to invoke DescribeScalingGroups,because of %v", err)
+		return 0, 0, WrapErrorf(err, "failed to invoke DescribeScalingGroups,because of %v", err)
 	}
+	addDebug("DescribeScalingGroups", describeScalingGroupResponse, describeScalingGroupRequest)
 
 	resp, ok := describeScalingGroupResponse.(*ess.DescribeScalingGroupsResponse)
 
@@ -331,15 +352,15 @@ func GetScalingGroupSizeRange(client *connectivity.AliyunClient, groupId string)
 // prepare kubeconf of kubernetes clsuter
 func DownloadUserKubeConf(client *connectivity.AliyunClient, clusterId string) (string, error) {
 
+	describeClusterUserKubeconfigRequest := cs.CreateDescribeClusterUserKubeconfigRequest()
 	describeClusterUserKubeconfigResponse, err := client.WithOfficalCSClient(func(csClient *cs.Client) (interface{}, error) {
-		req := cs.CreateDescribeClusterUserKubeconfigRequest()
-		req.RegionId = client.RegionId
-		req.ClusterId = clusterId
-		return csClient.DescribeClusterUserKubeconfig(req)
+		describeClusterUserKubeconfigRequest.RegionId = client.RegionId
+		describeClusterUserKubeconfigRequest.ClusterId = clusterId
+		return csClient.DescribeClusterUserKubeconfig(describeClusterUserKubeconfigRequest)
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("failed to describe user kuberconf of cluster %s,because of %v", clusterId, err)
+		return "", WrapErrorf(err, "failed to describe user kuberconf of cluster %s,because of %v", clusterId, err)
 	}
 
 	kubeConfResponse, ok := describeClusterUserKubeconfigResponse.(*cs.DescribeClusterUserKubeconfigResponse)
@@ -347,6 +368,7 @@ func DownloadUserKubeConf(client *connectivity.AliyunClient, clusterId string) (
 	if ok != true {
 		return "", fmt.Errorf("failed to parse DescribeClusterUserKubeconfigResponse of %s", clusterId)
 	}
+	addDebug("DescribeClusterUserKubeconfig", describeClusterUserKubeconfigResponse, describeClusterUserKubeconfigRequest)
 
 	// get response bytes
 	kubeconfBytes := kubeConfResponse.GetHttpContentBytes()
