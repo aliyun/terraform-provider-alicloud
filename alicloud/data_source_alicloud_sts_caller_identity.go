@@ -13,14 +13,6 @@ func dataSourceAlicloudStsCallerIdentity() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"user_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"role_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"arn": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -43,16 +35,18 @@ func dataSourceAlicloudStsCallerIdentityRead(d *schema.ResourceData, meta interf
 	if err != nil {
 		return err
 	}
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		s := map[string]interface{}{
-			"account_id":     resp.AccountId,
-			"user_id":        resp.UserId,
-			"role_id":        resp.RoleId,
-			"arn":            resp.Arn,
-			"identity_type ": resp.IdentityType,
-			"principal_id":   resp.PrincipalId,
-		}
-		writeToFile(output.(string), s)
+	d.SetId(resp.PrincipalId)
+	if err := d.Set("account_id", resp.AccountId); err != nil {
+		return err
+	}
+	if err := d.Set("arn", resp.Arn); err != nil {
+		return err
+	}
+	if err := d.Set("identity_type", resp.IdentityType); err != nil {
+		return err
+	}
+	if err := d.Set("principal_id", resp.PrincipalId); err != nil {
+		return err
 	}
 	return nil
 }
