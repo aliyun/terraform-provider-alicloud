@@ -81,6 +81,7 @@ func resourceAlicloudCSKubernetesAutoscaler() *schema.Resource {
 					},
 				},
 				MaxItems: 30,
+				MinItems: 1,
 			},
 			"utilization": {
 				Type:     schema.TypeString,
@@ -100,17 +101,10 @@ func resourceAlicloudCSKubernetesAutoscaler() *schema.Resource {
 
 // resourceAlicloudCSKubernetesAutoscalerCreate define how to create autoscaler
 func resourceAlicloudCSKubernetesAutoscalerCreate(d *schema.ResourceData, meta interface{}) error {
-
 	clusterId := d.Get("cluster_id").(string)
-
-	err := resourceAlicloudCSKubernetesAutoscalerUpdate(d, meta)
-
-	if err != nil {
-		return WrapError(err)
-	}
 	// set unique id of tf state
 	d.SetId(fmt.Sprintf("%s:%s", clusterId, clusterAutoscaler))
-	return nil
+	return resourceAlicloudCSKubernetesAutoscalerUpdate(d, meta)
 }
 
 // resourceAlicloudCSKubernetesAutoscalerRead no need to implement
@@ -137,10 +131,6 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 		// parse nodepools
 		nodePoolsParams := d.Get("nodepools").(*schema.Set)
 		nodePools := nodePoolsParams.List()
-
-		if len(nodePools) == 0 {
-			return WrapError(fmt.Errorf("please provide at least one node pool of %s", clusterId))
-		}
 
 		// args creation
 		args := make([]string, 0)
