@@ -399,13 +399,13 @@ func (s *CsService) GetPermanentToken(clusterId string) (string, error) {
 		return csClient.DescribeClusterTokens(clusterId)
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to get permanent token,because of %v", err)
+		return "", WrapError(fmt.Errorf("failed to get permanent token,because of %v", err))
 	}
 
 	tokens, ok := describeClusterTokensResponse.([]*cs.ClusterTokenResponse)
 
 	if ok != true {
-		return "", fmt.Errorf("failed to parse ClusterTokenResponse of cluster %s", clusterId)
+		return "", WrapError(fmt.Errorf("failed to parse ClusterTokenResponse of cluster %s", clusterId))
 	}
 
 	permanentTokens := make([]string, 0)
@@ -425,12 +425,12 @@ func (s *CsService) GetPermanentToken(clusterId string) (string, error) {
 			return csClient.CreateClusterToken(clusterId, clusterTokenReqeust)
 		})
 		if err != nil {
-			return "", fmt.Errorf("failed to create permanent token,because of %v", err)
+			return "", WrapError(fmt.Errorf("failed to create permanent token,because of %v", err))
 		}
 
 		token, ok := createClusterTokenResponse.(*cs.ClusterTokenResponse)
 		if ok != true {
-			return "", fmt.Errorf("failed to parse token of %s", clusterId)
+			return "", WrapError(fmt.Errorf("failed to parse token of %s", clusterId))
 		}
 		return token.Token, nil
 	}
@@ -456,7 +456,7 @@ func (s *CsService) GetUserData(clusterId string, labels string, taints string) 
 	cluster, err := s.DescribeCsKubernetes(clusterId)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to describe cs kuberentes cluster,because of %v", err)
+		return "", WrapError(fmt.Errorf("failed to describe cs kuberentes cluster,because of %v", err))
 	}
 
 	extra_options := make([]string, 0)

@@ -101,12 +101,7 @@ func resourceAlicloudCSKubernetesAutoscaler() *schema.Resource {
 // resourceAlicloudCSKubernetesAutoscalerCreate define how to create autoscaler
 func resourceAlicloudCSKubernetesAutoscalerCreate(d *schema.ResourceData, meta interface{}) error {
 
-	var clusterId string
-	if value, ok := d.GetOk("cluster_id"); ok == true {
-		clusterId = value.(string)
-	} else {
-		return WrapError(fmt.Errorf("clusterId must be provided instead of %s", "nil"))
-	}
+	clusterId := d.Get("cluster_id").(string)
 
 	err := resourceAlicloudCSKubernetesAutoscalerUpdate(d, meta)
 
@@ -134,36 +129,10 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 
 		regionId := client.RegionId
 
-		var clusterId, utilization, coolDownDuration, deferScaleInDuration string
-		var ok bool
-		var value interface{}
-
-		if value, ok = d.GetOk("cluster_id"); ok == true {
-			clusterId = value.(string)
-		} else {
-			return WrapError(fmt.Errorf("please provide your cluster id in region %s", regionId))
-		}
-
-		// check utilization value
-		if value, ok = d.GetOk("utilization"); ok == true {
-			utilization = value.(string)
-		} else {
-			return WrapError(fmt.Errorf("please provide utilization of cluster %s", clusterId))
-		}
-
-		// check cool_down_duration value
-		if value, ok = d.GetOk("cool_down_duration"); ok == true {
-			coolDownDuration = value.(string)
-		} else {
-			return WrapError(fmt.Errorf("please provide cool_down_duration of cluster %s", clusterId))
-		}
-
-		// check defer_scale_in_duration
-		if value, ok = d.GetOk("defer_scale_in_duration"); ok == true {
-			deferScaleInDuration = value.(string)
-		} else {
-			return WrapError(fmt.Errorf("please provide defer_scale_in_duration of cluster %s", clusterId))
-		}
+		clusterId := d.Get("cluster_id").(string)
+		utilization := d.Get("utilization").(string)
+		coolDownDuration := d.Get("cool_down_duration").(string)
+		deferScaleInDuration := d.Get("defer_scale_in_duration").(string)
 
 		// parse nodepools
 		nodePoolsParams := d.Get("nodepools").(*schema.Set)
@@ -287,7 +256,7 @@ func UpdateScalingGroupConfiguration(client *connectivity.AliyunClient, groupId,
 	}
 
 	if err != nil {
-		return WrapErrorf(err, "failed to invoke CreateDescribeScalingConfigurations,because of %v", err)
+		return WrapErrorf(err, DefaultErrorMsg, groupId, describeScalingConfigurationsRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	addDebug("DescribeScalingConfigurations", configurations, describeScalingConfigurationsRequest)
@@ -308,7 +277,7 @@ func UpdateScalingGroupConfiguration(client *connectivity.AliyunClient, groupId,
 		})
 
 		if err != nil {
-			return WrapErrorf(err, "failed to invoke ModifyScalingConfiguration,because of %v", err)
+			return WrapErrorf(err, DefaultErrorMsg, groupId, modifyScalingConfigurationRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
 		addDebug("ModifyScalingConfiguration", modifyScalingConfigurationResponse, modifyScalingConfigurationRequest)
@@ -326,7 +295,7 @@ func GetScalingGroupSizeRange(client *connectivity.AliyunClient, groupId string)
 	})
 
 	if err != nil {
-		return 0, 0, WrapErrorf(err, "failed to invoke DescribeScalingGroups,because of %v", err)
+		return 0, 0, WrapErrorf(err, DefaultErrorMsg, groupId, describeScalingGroupRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug("DescribeScalingGroups", describeScalingGroupResponse, describeScalingGroupRequest)
 
@@ -360,7 +329,7 @@ func DownloadUserKubeConf(client *connectivity.AliyunClient, clusterId string) (
 	})
 
 	if err != nil {
-		return "", WrapErrorf(err, "failed to describe user kuberconf of cluster %s,because of %v", clusterId, err)
+		return "", WrapErrorf(err, DefaultErrorMsg, clusterId, describeClusterUserKubeconfigRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	kubeConfResponse, ok := describeClusterUserKubeconfigResponse.(*cs.DescribeClusterUserKubeconfigResponse)
