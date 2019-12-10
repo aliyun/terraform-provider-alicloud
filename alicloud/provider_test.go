@@ -155,6 +155,13 @@ func testAccPreCheckWithSmartAccessGatewaySetting(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithSmartAccessGatewayAppSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("SAG_APP_INSTANCE_ID")); v == "" {
+		t.Skipf("Skipping the test case with no sag app instance id setting")
+		t.Skipped()
+	}
+}
+
 func testAccPreCheckWithNoDefaultVswitch(t *testing.T) {
 	region := os.Getenv("ALICLOUD_REGION")
 	rawClient, err := sharedClientForRegion(region)

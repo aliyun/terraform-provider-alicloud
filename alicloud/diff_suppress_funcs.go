@@ -448,3 +448,10 @@ func sagDnatEntryTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 	}
 	return false
 }
+
+func sagClientUserPasswordSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("user_name").(string) == "" {
+		return true
+	}
+	return false
+}
