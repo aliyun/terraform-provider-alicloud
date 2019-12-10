@@ -129,6 +129,48 @@ func (s *SagService) DescribeCloudConnectNetworkAttachment(id string) (c smartag
 	return c, nil
 }
 
+func (s *SagService) DescribeSagGrant(id string) (c smartag.GrantRule, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return c, WrapError(err)
+	}
+	sagId := parts[0]
+	ccnId := parts[1]
+	request := smartag.CreateDescribeGrantSagRulesRequest()
+	request.RegionId = s.client.RegionId
+	request.SmartAGId = sagId
+
+	var raw interface{}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithSagClient(func(ccnClient *smartag.Client) (interface{}, error) {
+			return ccnClient.DescribeGrantSagRules(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{"ServiceUnavailable", Throttling, "Throttling.User"}) {
+				time.Sleep(DefaultIntervalShort * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	})
+	if err != nil {
+		if IsExceptedError(err, "SagNotExist") {
+			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	response, _ := raw.(*smartag.DescribeGrantSagRulesResponse)
+	for _, value := range response.GrantRules.GrantRule {
+		if value.SmartAGId == sagId && value.CcnInstanceId == ccnId {
+			return value, nil
+		}
+	}
+	return c, WrapErrorf(Error(GetNotFoundMessage("GrantSagRules", id)), NotFoundMsg, ProviderERROR)
+}
+
 func (s *SagService) DescribeSagAcl(id string) (c smartag.Acl, err error) {
 	request := smartag.CreateDescribeACLsRequest()
 	request.RegionId = s.client.RegionId
@@ -593,6 +635,33 @@ func (s *SagService) WaitForCloudConnectNetworkAttachment(id string, status Stat
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AssociatedCcnId, ccnId, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
+
+func (s *SagService) WaitForSagGrant(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		object, err := s.DescribeSagGrant(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		}
+		if object.CcnInstanceId == parts[1] && status != Deleted {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.CcnInstanceId, parts[1], ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}

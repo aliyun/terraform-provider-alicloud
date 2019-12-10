@@ -406,6 +406,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sag_qos_car":                         resourceAlicloudSagQosCar(),
 			"alicloud_sag_snat_entry":                      resourceAlicloudSagSnatEntry(),
 			"alicloud_sag_dnat_entry":                      resourceAlicloudSagDnatEntry(),
+			"alicloud_sag_grant":                           resourceAlicloudSagGrant(),
 			"alicloud_yundun_dbaudit_instance":             resourceAlicloudDbauditInstance(),
 			"alicloud_yundun_bastionhost_instance":         resourceAlicloudBastionhostInstance(),
 		},
