@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -59,7 +59,7 @@ func resourceAlicloudCSKubernetesAutoscaler() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"cluster_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"nodepools": {
 				Type:     schema.TypeSet,
@@ -84,15 +84,15 @@ func resourceAlicloudCSKubernetesAutoscaler() *schema.Resource {
 			},
 			"utilization": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"cool_down_duration": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"defer_scale_in_duration": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 		},
 	}
@@ -114,7 +114,7 @@ func resourceAlicloudCSKubernetesAutoscalerCreate(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 	// set unique id of tf state
-	d.SetId(fmt.Sprintf("%s-%s", clusterId, clusterAutoscaler))
+	d.SetId(fmt.Sprintf("%s:%s", clusterId, clusterAutoscaler))
 	return nil
 }
 
@@ -141,28 +141,28 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 		if value, ok = d.GetOk("cluster_id"); ok == true {
 			clusterId = value.(string)
 		} else {
-			return fmt.Errorf("please provide your cluster id in region %s", regionId)
+			return WrapError(fmt.Errorf("please provide your cluster id in region %s", regionId))
 		}
 
 		// check utilization value
 		if value, ok = d.GetOk("utilization"); ok == true {
 			utilization = value.(string)
 		} else {
-			return fmt.Errorf("please provide utilization of cluster %s", clusterId)
+			return WrapError(fmt.Errorf("please provide utilization of cluster %s", clusterId))
 		}
 
 		// check cool_down_duration value
 		if value, ok = d.GetOk("cool_down_duration"); ok == true {
 			coolDownDuration = value.(string)
 		} else {
-			return fmt.Errorf("please provide cool_down_duration of cluster %s", clusterId)
+			return WrapError(fmt.Errorf("please provide cool_down_duration of cluster %s", clusterId))
 		}
 
 		// check defer_scale_in_duration
 		if value, ok = d.GetOk("defer_scale_in_duration"); ok == true {
 			deferScaleInDuration = value.(string)
 		} else {
-			return fmt.Errorf("please provide defer_scale_in_duration of cluster %s", clusterId)
+			return WrapError(fmt.Errorf("please provide defer_scale_in_duration of cluster %s", clusterId))
 		}
 
 		// parse nodepools
@@ -170,7 +170,7 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 		nodePools := nodePoolsParams.List()
 
 		if len(nodePools) == 0 {
-			return fmt.Errorf("please provide at least one node pool of %s", clusterId)
+			return WrapError(fmt.Errorf("please provide at least one node pool of %s", clusterId))
 		}
 
 		// args creation
@@ -181,7 +181,7 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 
 			poolBytes, err := json.Marshal(pool)
 			if err != nil {
-				return fmt.Errorf("failed to marshal pool,because of %v", err)
+				return WrapError(fmt.Errorf("failed to marshal pool,because of %v", err))
 			}
 
 			pool := make(nodePool)
@@ -189,7 +189,7 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 			err = json.Unmarshal(poolBytes, &pool)
 
 			if err != nil {
-				return fmt.Errorf("failed to unmarshal pool,because of %v", err)
+				return WrapError(fmt.Errorf("failed to unmarshal pool,because of %v", err))
 			}
 
 			// get params of node pool
@@ -201,19 +201,19 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 			userData, err := csService.GetUserData(clusterId, labels, taints)
 
 			if err != nil {
-				return fmt.Errorf("failed to get permanent token,because of %v", err)
+				return WrapError(fmt.Errorf("failed to get permanent token,because of %v", err))
 			}
 
 			err = UpdateScalingGroupConfiguration(client, id, userData, labels, taints)
 			if err != nil {
-				return fmt.Errorf("failed to update scaling group status,because of %v", err)
+				return WrapError(fmt.Errorf("failed to update scaling group status,because of %v", err))
 			}
 
 			// get min max of scaling group
 			min, max, err := GetScalingGroupSizeRange(client, id)
 
 			if err != nil {
-				return fmt.Errorf("failed to describe scaling group %s,because of %v", id, err)
+				return WrapError(fmt.Errorf("failed to describe scaling group %s,because of %v", id, err))
 			}
 
 			nodeArgs := fmt.Sprintf("--nodes=%d:%d:%s", min, max, id)
@@ -238,13 +238,13 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 		kubeConfPath, err := DownloadUserKubeConf(client, clusterId)
 
 		if err != nil {
-			return fmt.Errorf("failed to download kubeconf from cluster,because of %v", err)
+			return WrapError(fmt.Errorf("failed to download kubeconf from cluster,because of %v", err))
 		}
 
 		err = DeployAutoscaler(args, fmt.Sprintf(defaultAutoscalerImage, regionId), kubeConfPath)
 
 		if err != nil {
-			return fmt.Errorf("failed to deploy autoscaler,because of %v", err)
+			return WrapError(fmt.Errorf("failed to deploy autoscaler,because of %v", err))
 		}
 	}
 	return nil
@@ -258,13 +258,13 @@ func resourceAlicloudCSKubernetesAutoscalerDelete(d *schema.ResourceData, meta i
 	clusterId := d.Get("cluster_id").(string)
 
 	if clusterId == "" {
-		return fmt.Errorf("please provide the cluster_id in region %s", regionId)
+		return WrapError(fmt.Errorf("please provide the cluster_id in region %s", regionId))
 	}
 
 	kubeConfPath, err := DownloadUserKubeConf(client, clusterId)
 
 	if err != nil {
-		return fmt.Errorf("failed to download kubeconf from cluster,because of %v", err)
+		return WrapError(fmt.Errorf("failed to download kubeconf from cluster,because of %v", err))
 	}
 
 	return DeleteAutoscaler(kubeConfPath)
@@ -283,7 +283,7 @@ func UpdateScalingGroupConfiguration(client *connectivity.AliyunClient, groupId,
 	configurations, ok := describeScalingConfigurationsResponse.(*ess.DescribeScalingConfigurationsResponse)
 
 	if ok != true {
-		return fmt.Errorf("failed to parse DescribeScalingConfigurationsResponse of %s", groupId)
+		return WrapError(fmt.Errorf("failed to parse DescribeScalingConfigurationsResponse of %s", groupId))
 	}
 
 	if err != nil {
@@ -294,7 +294,7 @@ func UpdateScalingGroupConfiguration(client *connectivity.AliyunClient, groupId,
 
 	if len(configurations.ScalingConfigurations.ScalingConfiguration) == 0 {
 		//todo  create configuration
-		return fmt.Errorf("please create the default scaling configuration of group %s", groupId)
+		return WrapError(fmt.Errorf("please create the default scaling configuration of group %s", groupId))
 	} else {
 		defaultConfiguration := configurations.ScalingConfigurations.ScalingConfiguration[0]
 		// modify the default one
@@ -333,17 +333,17 @@ func GetScalingGroupSizeRange(client *connectivity.AliyunClient, groupId string)
 	resp, ok := describeScalingGroupResponse.(*ess.DescribeScalingGroupsResponse)
 
 	if ok != true {
-		return 0, 0, fmt.Errorf("failed to parse DescribeScalingGroupsResponse of scaling group %s", groupId)
+		return 0, 0, WrapError(fmt.Errorf("failed to parse DescribeScalingGroupsResponse of scaling group %s", groupId))
 	}
 
 	if resp.ScalingGroups.ScalingGroup == nil || len(resp.ScalingGroups.ScalingGroup) == 0 {
-		return 0, 0, fmt.Errorf("the scaling group %s you specific is not found", groupId)
+		return 0, 0, WrapError(fmt.Errorf("the scaling group %s you specific is not found", groupId))
 	}
 
 	scalingGroup := resp.ScalingGroups.ScalingGroup[0]
 
 	if &scalingGroup == nil {
-		fmt.Errorf("the scaling group %s you specific is not found", groupId)
+		return 0, 0, WrapError(fmt.Errorf("the scaling group %s you specific is not found", groupId))
 	}
 
 	return scalingGroup.MinSize, scalingGroup.MaxSize, nil
@@ -366,7 +366,7 @@ func DownloadUserKubeConf(client *connectivity.AliyunClient, clusterId string) (
 	kubeConfResponse, ok := describeClusterUserKubeconfigResponse.(*cs.DescribeClusterUserKubeconfigResponse)
 
 	if ok != true {
-		return "", fmt.Errorf("failed to parse DescribeClusterUserKubeconfigResponse of %s", clusterId)
+		return "", WrapError(fmt.Errorf("failed to parse DescribeClusterUserKubeconfigResponse of %s", clusterId))
 	}
 	addDebug("DescribeClusterUserKubeconfig", describeClusterUserKubeconfigResponse, describeClusterUserKubeconfigRequest)
 
@@ -377,7 +377,7 @@ func DownloadUserKubeConf(client *connectivity.AliyunClient, clusterId string) (
 	err = json.Unmarshal(kubeconfBytes, ukc)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to parse DescribeClusterUserKubeconfigResponse,because of %v", err)
+		return "", WrapError(fmt.Errorf("failed to parse DescribeClusterUserKubeconfigResponse,because of %v", err))
 	}
 
 	content := ukc.Config
@@ -385,7 +385,7 @@ func DownloadUserKubeConf(client *connectivity.AliyunClient, clusterId string) (
 	wd, err := os.Getwd()
 
 	if err != nil {
-		return "", fmt.Errorf("failed to get current working dir,because of %v", err)
+		return "", WrapError(fmt.Errorf("failed to get current working dir,because of %v", err))
 	}
 
 	kubeConfPath := path.Join(wd, fmt.Sprintf("%s-kubeconf", clusterId))
@@ -393,7 +393,7 @@ func DownloadUserKubeConf(client *connectivity.AliyunClient, clusterId string) (
 	err = ioutil.WriteFile(kubeConfPath, []byte(content), 0755)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to create kubeconf in working dir because of %v", err)
+		return "", WrapError(fmt.Errorf("failed to create kubeconf in working dir because of %v", err))
 	}
 
 	return kubeConfPath, nil
@@ -404,13 +404,13 @@ func DeleteAutoscaler(kubeconf string) error {
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconf)
 
 	if err != nil {
-		return fmt.Errorf("failed to build kubeconf from local path %s,because of %v", kubeconf, err)
+		return WrapError(fmt.Errorf("failed to build kubeconf from local path %s,because of %v", kubeconf, err))
 	}
 
 	clientSet, err := kubernetes.NewForConfig(config)
 
 	if err != nil {
-		return fmt.Errorf("failed to create client-go clientSet,because of %v", err)
+		return WrapError(fmt.Errorf("failed to create client-go clientSet,because of %v", err))
 	}
 
 	return clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Delete(clusterAutoscaler, &metav1.DeleteOptions{})
@@ -421,11 +421,11 @@ func DeployAutoscaler(args []string, image string, kubeconf string) error {
 
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconf)
 	if err != nil {
-		return fmt.Errorf("failed to build kubeconf from local path %s,because of %v", kubeconf, err)
+		return WrapError(fmt.Errorf("failed to build kubeconf from local path %s,because of %v", kubeconf, err))
 	}
 	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return fmt.Errorf("failed to create client-go clientSet,because of %v", err)
+		return WrapError(fmt.Errorf("failed to create client-go clientSet,because of %v", err))
 	}
 
 	deploy, err := clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Get(clusterAutoscaler, metav1.GetOptions{})
@@ -487,18 +487,18 @@ func DeployAutoscaler(args []string, image string, kubeconf string) error {
 			}
 			_, err := clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Create(deployObject)
 			if err != nil {
-				return fmt.Errorf("failed to create %s deployment,because of %v", clusterAutoscaler, err)
+				return WrapError(fmt.Errorf("failed to create %s deployment,because of %v", clusterAutoscaler, err))
 			}
 
 		} else {
-			return fmt.Errorf("failed to describe %s deployment,because of %v", clusterAutoscaler, err)
+			return WrapError(fmt.Errorf("failed to describe %s deployment,because of %v", clusterAutoscaler, err))
 		}
 	} else {
 		// update deployment
 		deploy.Spec.Template.Spec.Containers[0].Command = args
 		_, err := clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Update(deploy)
 		if err != nil {
-			return fmt.Errorf("failed to update %s deployment,because of %v", clusterAutoscaler, err)
+			return WrapError(fmt.Errorf("failed to update %s deployment,because of %v", clusterAutoscaler, err))
 		}
 	}
 	return nil
