@@ -31,7 +31,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
-	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
@@ -41,8 +41,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
-	sls "github.com/aliyun/aliyun-log-go-sdk"
-	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
+	"github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/fc-go-sdk"
@@ -505,30 +505,6 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
-	// Initialize the CS client if necessary
-	if client.csconn == nil {
-		csconn := cs.NewClientForAussumeRole(client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
-		csconn.SetUserAgent(client.getUserAgent())
-		endpoint := client.config.CsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CONTAINCode)
-		}
-		if endpoint != "" {
-			if !strings.HasPrefix(endpoint, "http") {
-				endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "://"))
-			}
-			csconn.SetEndpoint(endpoint)
-		}
-		client.csconn = csconn
-	}
-
-	return do(client.csconn)
-}
-
-func (client *AliyunClient) WithOfficialCsClient(do func(*cs.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
