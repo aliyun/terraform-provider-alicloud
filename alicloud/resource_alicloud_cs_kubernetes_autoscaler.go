@@ -445,7 +445,7 @@ func DeleteAutoscaler(kubeconf string) error {
 		return nil
 	}
 
-	return err
+	return WrapError(err)
 }
 
 // deploy cluster-autoscaler to kubernetes cluster
@@ -608,7 +608,7 @@ func createOrUpdateAutoscalerMeta(clientSet *kubernetes.Clientset, meta autoscal
 
 	meta_bytes, err := json.Marshal(meta)
 	if err != nil {
-		return err
+		return WrapError(fmt.Errorf("failed to marshal autoscaler meta,because of %v", err))
 	}
 	meta_map := make(map[string]string)
 	meta_map[clusterAutoscalerMeta] = string(meta_bytes)
