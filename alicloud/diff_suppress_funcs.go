@@ -316,7 +316,7 @@ func routerInterfaceVBRTypeDiffSuppressFunc(k, old, new string, d *schema.Resour
 }
 
 func rkvPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if PayType(d.Get("instance_charge_type").(string)) == PrePaid {
+	if PayType(d.Get("instance_charge_type").(string)) == PrePaid && d.Get("auto_renew").(bool) == true {
 		return false
 	}
 	return true
