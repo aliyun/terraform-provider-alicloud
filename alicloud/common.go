@@ -27,6 +27,8 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"math"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/google/uuid"
@@ -767,4 +769,18 @@ func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration
 		time.Sleep(waitTime)
 		retryCount++
 	}
+}
+
+func computePeriodByMonth(createTime, endTime string) float64 {
+	create, err := time.Parse(time.RFC3339, createTime)
+	if err != nil {
+		log.Fatalf("Parase the CreateTime %s failed and error is: %#v.", createTime, err)
+		return 0
+	}
+	end, err := time.Parse(time.RFC3339, endTime)
+	if err != nil {
+		log.Fatalf("Parase the EndTime %s failed and error is: %#v.", endTime, err)
+		return 0
+	}
+	return math.Floor(end.Sub(create).Hours() / 24 / 30)
 }

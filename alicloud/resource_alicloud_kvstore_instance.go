@@ -297,34 +297,31 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 	}
-
-	if !d.IsNewResource() && (d.HasChange("instance_charge_type") || d.HasChange("period")) {
+	configPayType := PayType(d.Get("instance_charge_type").(string))
+	if !d.IsNewResource() && d.HasChange("instance_charge_type") && configPayType == PrePaid {
+		// for now we just support charge change from PostPaid to PrePaid
 		prePaidRequest := r_kvstore.CreateTransformToPrePaidRequest()
 		prePaidRequest.RegionId = client.RegionId
 		prePaidRequest.InstanceId = d.Id()
 		prePaidRequest.Period = requests.Integer(strconv.Itoa(d.Get("period").(int)))
 
-		// for now we just support charge change from PostPaid to PrePaid
-		configPayType := PayType(d.Get("instance_charge_type").(string))
-		if configPayType == PrePaid {
-			prePaidRequest.AutoPay = requests.NewBoolean(true)
-			raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-				return rkvClient.TransformToPrePaid(prePaidRequest)
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), prePaidRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
-			addDebug(prePaidRequest.GetActionName(), raw, prePaidRequest.RpcRequest, prePaidRequest)
-			// wait instance status is Normal after modifying
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapError(err)
-			}
-			d.SetPartial("instance_charge_type")
-			d.SetPartial("period")
+		prePaidRequest.AutoPay = requests.NewBoolean(true)
+		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.TransformToPrePaid(prePaidRequest)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), prePaidRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(prePaidRequest.GetActionName(), raw, prePaidRequest.RpcRequest, prePaidRequest)
+		// wait instance status is Normal after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("instance_charge_type")
+		d.SetPartial("period")
 	}
 
-	if d.HasChange("auto_renew") || d.HasChange("auto_renew_period") {
+	if configPayType == PrePaid && (d.HasChange("auto_renew") || d.HasChange("auto_renew_period")) {
 		request := r_kvstore.CreateModifyInstanceAutoRenewalAttributeRequest()
 		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
@@ -505,7 +502,7 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("tags", kvstoreService.tagsToMap(tags))
 
-	if object.ChargeType == string(Prepaid) {
+	if object.ChargeType == string(PrePaid) {
 		request := r_kvstore.CreateDescribeInstanceAutoRenewalAttributeRequest()
 		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
@@ -525,6 +522,7 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 			d.Set("auto_renew", auto_renew)
 			d.Set("auto_renew_period", renew.Duration)
 		}
+		d.Set("period", computePeriodByMonth(object.CreateTime, object.EndTime))
 	}
 	//refresh parameters
 	if err = refreshParameters(d, meta); err != nil {
@@ -545,8 +543,8 @@ func resourceAlicloudKVStoreInstanceDelete(d *schema.ResourceData, meta interfac
 		}
 		return WrapError(err)
 	}
-	if PayType(object.ChargeType) == Prepaid {
-		return WrapError(Error("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically"))
+	if PayType(object.ChargeType) == PrePaid {
+		return WrapError(Error("At present, 'PrePaid' instance cannot be deleted and must wait it to be expired and release it automatically"))
 	}
 	request := r_kvstore.CreateDeleteInstanceRequest()
 	request.RegionId = client.RegionId
