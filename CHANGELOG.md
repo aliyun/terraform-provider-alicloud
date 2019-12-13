@@ -7,6 +7,7 @@
 
 IMPROVEMENTS:
 
+- improve(ess_vserver_groups): improve docs [GH-1976]
 - improve(kvstore_instance): set period using createtime and endtime [GH-1971]
 - improve(slb_server_group): set servers to computed and avoid diff when using ess_scaling_vserver_group [GH-1970]
 - improve(k8s):add AccessKey and AccessKeySecret instead of RamRole [GH-1966]
