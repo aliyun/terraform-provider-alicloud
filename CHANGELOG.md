@@ -1,27 +1,27 @@
-## 1.65.0 (Unreleased)
+## 1.65.0 (December 13, 2019)
 
-- **New Resource:** `alicloud_reserved_instance` [GH-1967]
-- **New Resource:** `alicloud_cs_kubernetes_autoscaler` [GH-1956]
-- **New Data Source:** `alicloud_caller_identity` [GH-1944]
-- **New Resource:** `alicloud_sag_client_user` [GH-1807]
+- **New Resource:** `alicloud_reserved_instance` ([#1967](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1967))
+- **New Resource:** `alicloud_cs_kubernetes_autoscaler` ([#1956](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1956))
+- **New Data Source:** `alicloud_caller_identity` ([#1944](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1944))
+- **New Resource:** `alicloud_sag_client_user` ([#1807](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1807))
 
 IMPROVEMENTS:
 
-- improve(ess_vserver_groups): improve docs [GH-1976]
-- improve(kvstore_instance): set period using createtime and endtime [GH-1971]
-- improve(slb_server_group): set servers to computed and avoid diff when using ess_scaling_vserver_group [GH-1970]
-- improve(k8s):add AccessKey and AccessKeySecret instead of RamRole [GH-1966]
-- improve(caller_identity): expose GetCallerIdentity as data source [GH-1944]
+- improve(ess_vserver_groups): improve docs ([#1976](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1976))
+- improve(kvstore_instance): set period using createtime and endtime ([#1971](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1971))
+- improve(slb_server_group): set servers to computed and avoid diff when using ess_scaling_vserver_group ([#1970](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1970))
+- improve(k8s):add AccessKey and AccessKeySecret instead of RamRole ([#1966](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1966))
+- improve(caller_identity): expose GetCallerIdentity as data source ([#1944](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1944))
 
 BUG FIXES:
 
-- fix(market): remove the suggested_price check for avoid the error of testcase [GH-1964]
-- fix(provider): Resolve issues from aone. [GH-1963]
-- fix(market): remove the tags check for avoid the error of testcase [GH-1962]
-- fix(alicloud/yundun_bastionhost): Bastionhost RAM policy authorization bug fix[GH-1960]
-- fix(datahub): fix updating datahub topic comment bug [GH-1959]
-- fix(kms): correct test case errors  [GH-1958]
-- fix(validator): update package github.com/denverdino/aliyungo/cdn [GH-1946]
+- fix(market): remove the suggested_price check for avoid the error of testcase ([#1964](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1964))
+- fix(provider): Resolve issues from aone. ([#1963](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1963))
+- fix(market): remove the tags check for avoid the error of testcase ([#1962](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1962))
+- fix(alicloud/yundun_bastionhost): Bastionhost RAM policy authorization bug fix([#1960](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1960))
+- fix(datahub): fix updating datahub topic comment bug ([#1959](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1959))
+- fix(kms): correct test case errors  ([#1958](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1958))
+- fix(validator): update package github.com/denverdino/aliyungo/cdn ([#1946](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1946))
 
 ## 1.64.0 (December 06, 2019)
 
