@@ -771,16 +771,35 @@ func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration
 	}
 }
 
-func computePeriodByMonth(createTime, endTime string) float64 {
-	create, err := time.Parse(time.RFC3339, createTime)
-	if err != nil {
-		log.Fatalf("Parase the CreateTime %s failed and error is: %#v.", createTime, err)
-		return 0
+func computePeriodByMonth(createTime, endTime interface{}) (float64, error) {
+	var createTimeStr, endTimeStr string
+	switch value := createTime.(type) {
+	case int64:
+		createTimeStr = time.Unix(createTime.(int64), 0).Format(time.RFC3339)
+		endTimeStr = time.Unix(endTime.(int64), 0).Format(time.RFC3339)
+	case string:
+		createTimeStr = createTime.(string)
+		endTimeStr = endTime.(string)
+	default:
+		return 0, WrapError(fmt.Errorf("Unsupported time type: %#v", value))
 	}
-	end, err := time.Parse(time.RFC3339, endTime)
+	// currently, there is time value does not format as standard RFC3339
+	UnStandardRFC3339 := "2006-01-02T15:04Z07:00"
+	create, err := time.Parse(time.RFC3339, createTimeStr)
 	if err != nil {
-		log.Fatalf("Parase the EndTime %s failed and error is: %#v.", endTime, err)
-		return 0
+		log.Printf("Parase the CreateTime %#v failed and error is: %#v.", createTime, err)
+		create, err = time.Parse(UnStandardRFC3339, createTimeStr)
+		if err != nil {
+			return 0, WrapError(err)
+		}
 	}
-	return math.Floor(end.Sub(create).Hours() / 24 / 30)
+	end, err := time.Parse(time.RFC3339, endTimeStr)
+	if err != nil {
+		log.Printf("Parase the EndTime %#v failed and error is: %#v.", endTime, err)
+		end, err = time.Parse(UnStandardRFC3339, endTimeStr)
+		if err != nil {
+			return 0, WrapError(err)
+		}
+	}
+	return math.Floor(end.Sub(create).Hours() / 24 / 30), nil
 }
