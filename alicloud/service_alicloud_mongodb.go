@@ -2,6 +2,8 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"regexp"
 	"strings"
 	"time"
 
@@ -335,4 +337,104 @@ func (s *MongoDBService) ResetAccountPassword(d *schema.ResourceData, password s
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return err
+}
+
+func (s *MongoDBService) setInstanceTags(d *schema.ResourceData) error {
+	oraw, nraw := d.GetChange("tags")
+	o := oraw.(map[string]interface{})
+	n := nraw.(map[string]interface{})
+
+	create, remove := s.diffTags(s.tagsFromMap(o), s.tagsFromMap(n))
+
+	if len(remove) > 0 {
+		var tagKey []string
+		for _, v := range remove {
+			tagKey = append(tagKey, v.Key)
+		}
+		request := dds.CreateUntagResourcesRequest()
+		request.ResourceId = &[]string{d.Id()}
+		request.ResourceType = "INSTANCE"
+		request.TagKey = &tagKey
+		request.RegionId = s.client.RegionId
+		raw, err := s.client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
+			return ddsClient.UntagResources(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	}
+
+	if len(create) > 0 {
+		request := dds.CreateTagResourcesRequest()
+		request.ResourceId = &[]string{d.Id()}
+		request.Tag = &create
+		request.ResourceType = "INSTANCE"
+		request.RegionId = s.client.RegionId
+		raw, err := s.client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
+			return ddsClient.TagResources(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	}
+
+	d.SetPartial("tags")
+	return nil
+}
+
+func (s *MongoDBService) tagsToMap(tags []dds.Tag) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !s.ignoreTag(t) {
+			result[t.Key] = t.Value
+		}
+	}
+	return result
+}
+
+func (s *MongoDBService) ignoreTag(t dds.Tag) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
+		ok, _ := regexp.MatchString(v, t.Key)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.Key, t.Value)
+			return true
+		}
+	}
+	return false
+}
+
+func (s *MongoDBService) diffTags(oldTags, newTags []dds.TagResourcesTag) ([]dds.TagResourcesTag, []dds.TagResourcesTag) {
+	// First, we're creating everything we have
+	create := make(map[string]interface{})
+	for _, t := range newTags {
+		create[t.Key] = t.Value
+	}
+
+	// Build the list of what to remove
+	var remove []dds.TagResourcesTag
+	for _, t := range oldTags {
+		old, ok := create[t.Key]
+		if !ok || old != t.Value {
+			// Delete it!
+			remove = append(remove, t)
+		}
+	}
+
+	return s.tagsFromMap(create), remove
+}
+
+func (s *MongoDBService) tagsFromMap(m map[string]interface{}) []dds.TagResourcesTag {
+	result := make([]dds.TagResourcesTag, 0, len(m))
+	for k, v := range m {
+		result = append(result, dds.TagResourcesTag{
+			Key:   k,
+			Value: v.(string),
+		})
+	}
+
+	return result
 }

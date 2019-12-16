@@ -27,6 +27,17 @@ func TestAccAlicloudMongoDBInstancesDataSource(t *testing.T) {
 		}),
 	}
 
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_mongodb_instance.default.name}"`,
+			"tags":       `{Created = "TF"}`,
+		}),
+		fakeConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_mongodb_instance.default.name}"`,
+			"tags":       `{Created = "TF1"}`,
+		}),
+	}
+
 	instanceTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudMongoDBDataSourceConfig(rand, map[string]string{
 			"name_regex":    `"${alicloud_mongodb_instance.default.name}"`,
@@ -91,6 +102,9 @@ func TestAccAlicloudMongoDBInstancesDataSource(t *testing.T) {
 			"instances.0.status":          CHECKSET,
 			"instances.0.network_type":    CHECKSET,
 			"instances.0.lock_mode":       CHECKSET,
+			"instances.0.tags.%":          "2",
+			"instances.0.tags.Created":    "TF",
+			"instances.0.tags.For":        "acceptance test",
 			"ids.#":                       "1",
 			"ids.0":                       CHECKSET,
 			"names.#":                     "1",
@@ -110,7 +124,7 @@ func TestAccAlicloudMongoDBInstancesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeMapFunc,
 	}
 
-	CheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, instanceTypeConf, instanceClassConf, availabilityZoneConf, allConf)
+	CheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, tagsConf, instanceTypeConf, instanceClassConf, availabilityZoneConf, allConf)
 }
 
 func testAccCheckAlicloudMongoDBDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -145,6 +159,10 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_storage = 10
   name                = "${var.name}"
   vswitch_id          = "${alicloud_vswitch.default.id}"
+  tags = {
+    Created = "TF"
+    For     = "acceptance test"
+  }
 }
 data "alicloud_mongodb_instances" "default" {
   %s
