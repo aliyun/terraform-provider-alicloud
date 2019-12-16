@@ -63,7 +63,7 @@ func resourceAliyunEip() *schema.Resource {
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36})),
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"tags": tagsSchema(),
 			"ip_address": {
@@ -151,6 +151,13 @@ func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("bandwidth", bandwidth)
 	d.Set("internet_charge_type", object.InternetChargeType)
 	d.Set("instance_charge_type", object.ChargeType)
+	if object.ChargeType == "PrePaid" {
+		period, err := computePeriodByMonth(object.AllocationTime, object.ExpiredTime)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
+	}
 	d.Set("isp", object.ISP)
 	d.Set("ip_address", object.IpAddress)
 	d.Set("status", object.Status)

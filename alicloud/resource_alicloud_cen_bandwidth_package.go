@@ -146,6 +146,11 @@ func resourceAlicloudCenBandwidthPackageRead(d *schema.ResourceData, meta interf
 		d.Set("charge_type", PostPaid)
 	} else {
 		d.Set("charge_type", PrePaid)
+		period, err := computePeriodByMonth(object.CreationTime, object.ExpiredTime)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
 	}
 
 	return nil

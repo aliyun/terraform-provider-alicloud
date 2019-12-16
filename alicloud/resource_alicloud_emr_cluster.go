@@ -404,7 +404,13 @@ func resourceAlicloudEmrClusterRead(d *schema.ResourceData, meta interface{}) er
 
 	d.Set("name", object.ClusterInfo.Name)
 	d.Set("charge_type", object.ClusterInfo.ChargeType)
-
+	if object.ClusterInfo.ChargeType == "PrePaid" {
+		period, err := computePeriodByMonth(object.ClusterInfo.StartTime, object.ClusterInfo.ExpiredTime)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
+	}
 	d.Set("high_availability_enable", object.ClusterInfo.HighAvailabilityEnable)
 	d.Set("net_type", object.ClusterInfo.NetType)
 	d.Set("security_group_id", object.ClusterInfo.SecurityGroupId)

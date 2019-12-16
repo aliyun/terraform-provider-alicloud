@@ -132,6 +132,11 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 		sgs = append(sgs, sg)
 	}
 	d.Set("security_group_ids", sgs)
+	period, err := computePeriodByMonth(instance.StartTime, instance.ExpireTime)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("period", period)
 	return nil
 }
 

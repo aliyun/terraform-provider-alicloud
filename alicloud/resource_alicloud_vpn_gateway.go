@@ -223,6 +223,11 @@ func resourceAliyunVpnGatewayRead(d *schema.ResourceData, meta interface{}) erro
 		d.Set("instance_charge_type", string(PostPaid))
 	} else {
 		d.Set("instance_charge_type", string(PrePaid))
+		period, err := computePeriodByMonth(object.CreateTime, object.EndTime)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
 	}
 
 	return nil
