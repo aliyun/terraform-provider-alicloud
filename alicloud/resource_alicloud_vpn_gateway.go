@@ -142,7 +142,7 @@ func resourceAliyunVpnGatewayCreate(d *schema.ResourceData, meta interface{}) er
 
 	request.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
 
-	if v, ok := d.GetOk("enable_ipsec"); ok {
+	if v, ok := d.GetOkExists("enable_ipsec"); ok {
 		request.EnableIpsec = requests.NewBoolean(v.(bool))
 	}
 
