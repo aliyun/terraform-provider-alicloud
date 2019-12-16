@@ -143,6 +143,7 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -289,7 +290,7 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	if replication_factor, err := strconv.Atoi(instance.ReplicationFactor); err == nil {
 		d.Set("replication_factor", replication_factor)
 	}
-
+	d.Set("tags", ddsService.tagsToMap(instance.Tags.Tag))
 	return nil
 }
 
@@ -344,6 +345,10 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("maintain_start_time")
 		d.SetPartial("maintain_end_time")
+	}
+
+	if err := ddsService.setInstanceTags(d); err != nil {
+		return WrapError(err)
 	}
 
 	if d.IsNewResource() {
