@@ -81,20 +81,20 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				Default:          1,
-				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"auto_renew": {
 				Type:             schema.TypeBool,
 				Optional:         true,
 				Default:          false,
-				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"auto_renew_period": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validation.IntBetween(1, 12),
 				Optional:         true,
 				Default:          1,
-				DiffSuppressFunc: rkvPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidAndRenewDiffSuppressFunc,
 			},
 			"instance_type": {
 				Type:     schema.TypeString,
@@ -522,7 +522,11 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 			d.Set("auto_renew", auto_renew)
 			d.Set("auto_renew_period", renew.Duration)
 		}
-		d.Set("period", computePeriodByMonth(object.CreateTime, object.EndTime))
+		period, err := computePeriodByMonth(object.CreateTime, object.EndTime)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
 	}
 	//refresh parameters
 	if err = refreshParameters(d, meta); err != nil {

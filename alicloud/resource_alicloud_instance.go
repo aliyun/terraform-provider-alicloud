@@ -242,14 +242,14 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"period_unit": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Default:          Month,
 				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"renewal_status": {
 				Type:     schema.TypeString,
@@ -259,7 +259,7 @@ func resourceAliyunInstance() *schema.Resource {
 					string(RenewAutoRenewal),
 					string(RenewNormal),
 					string(RenewNotRenewal)}, false),
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"auto_renew_period": {
 				Type:             schema.TypeInt,
@@ -272,7 +272,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:             schema.TypeBool,
 				Optional:         true,
 				Default:          true,
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"dry_run": {
 				Type:     schema.TypeBool,
@@ -336,7 +336,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional:         true,
 				Default:          false,
 				Description:      descriptions["A behavior mark used to delete 'PrePaid' ECS instance forcibly."],
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 
 			"security_enhancement_strategy": {

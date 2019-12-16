@@ -254,8 +254,9 @@ func (s *SlbService) WaitForSlb(id string, status Status, timeout int) error {
 				if status == Deleted {
 					return nil
 				}
+			} else {
+				return WrapError(err)
 			}
-			return WrapError(err)
 		} else if strings.ToLower(object.LoadBalancerStatus) == strings.ToLower(string(status)) {
 			//TODO
 			break
@@ -277,8 +278,9 @@ func (s *SlbService) WaitForSlbListener(id string, status Status, timeout int) e
 				if status == Deleted {
 					return nil
 				}
+			} else {
+				return WrapError(err)
 			}
-			return WrapError(err)
 		}
 		gotStatus := ""
 		if value, ok := object["Status"]; ok {
@@ -306,8 +308,9 @@ func (s *SlbService) WaitForSlbRule(id string, status Status, timeout int) error
 				if status == Deleted {
 					return nil
 				}
+			} else {
+				return WrapError(err)
 			}
-			return WrapError(err)
 		}
 		if object.RuleId == id && status != Deleted {
 			break
@@ -330,8 +333,9 @@ func (s *SlbService) WaitForSlbServerGroup(id string, status Status, timeout int
 				if status == Deleted {
 					return nil
 				}
+			} else {
+				return WrapError(err)
 			}
-			return WrapError(err)
 		}
 		if object.VServerGroupId == id {
 			break

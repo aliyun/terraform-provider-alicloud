@@ -68,7 +68,7 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				Computed:         true,
-				DiffSuppressFunc: mongoDBPeriodDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -281,6 +281,13 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("db_instance_storage", instance.DBInstanceStorage)
 	d.Set("zone_id", instance.ZoneId)
 	d.Set("instance_charge_type", instance.ChargeType)
+	if instance.ChargeType == "PrePaid" {
+		period, err := computePeriodByMonth(instance.CreationTime, instance.ExpireTime)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
+	}
 	d.Set("vswitch_id", instance.VSwitchId)
 	d.Set("storage_engine", instance.StorageEngine)
 	d.Set("maintain_start_time", instance.MaintainStartTime)

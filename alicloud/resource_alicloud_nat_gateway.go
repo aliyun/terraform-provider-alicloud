@@ -109,7 +109,7 @@ func resourceAliyunNatGateway() *schema.Resource {
 				Optional:         true,
 				ForceNew:         true,
 				Default:          1,
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36})),
@@ -207,6 +207,13 @@ func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("description", object.Description)
 	d.Set("vpc_id", object.VpcId)
 	d.Set("instance_charge_type", object.InstanceChargeType)
+	if object.InstanceChargeType == "PrePaid" {
+		period, err := computePeriodByMonth(object.CreationTime, object.ExpiredTime)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
+	}
 
 	bindWidthPackages, err := flattenBandWidthPackages(object.BandwidthPackageIds.BandwidthPackageId, meta, d)
 	if err != nil {
