@@ -219,7 +219,7 @@ func resourceAlicloudRouterInterfaceRead(d *schema.ResourceData, meta interface{
 	d.Set("health_check_target_ip", object.HealthCheckTargetIp)
 	if object.ChargeType == "Prepaid" {
 		d.Set("instance_charge_type", PrePaid)
-		period, err := computePeriodByUnit(object.CreationTime, object.EndTime, "Month")
+		period, err := computePeriodByUnit(object.CreationTime, object.EndTime, d.Get("period").(int), "Month")
 		if err != nil {
 			return WrapError(err)
 		}

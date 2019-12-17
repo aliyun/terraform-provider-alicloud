@@ -282,7 +282,7 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("zone_id", instance.ZoneId)
 	d.Set("instance_charge_type", instance.ChargeType)
 	if instance.ChargeType == "PrePaid" {
-		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpireTime, "Month")
+		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpireTime, d.Get("period").(int), "Month")
 		if err != nil {
 			return WrapError(err)
 		}
@@ -464,7 +464,7 @@ func resourceAlicloudMongoDBInstanceDelete(d *schema.ResourceData, meta interfac
 	request := dds.CreateDeleteDBInstanceRequest()
 	request.DBInstanceId = d.Id()
 
-	err := resource.Retry(10*5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
 			return ddsClient.DeleteDBInstance(request)
 		})

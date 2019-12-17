@@ -771,7 +771,9 @@ func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration
 	}
 }
 
-func computePeriodByUnit(createTime, endTime interface{}, periodUnit string) (float64, error) {
+// If auto renew, the period computed from computePeriodByUnit will be changed
+// This method used to compute a period accourding to current period and unit
+func computePeriodByUnit(createTime, endTime interface{}, currentPeriod int, periodUnit string) (int, error) {
 	var createTimeStr, endTimeStr string
 	switch value := createTime.(type) {
 	case int64:
@@ -801,14 +803,27 @@ func computePeriodByUnit(createTime, endTime interface{}, periodUnit string) (fl
 			return 0, WrapError(err)
 		}
 	}
+	var period int
 	switch periodUnit {
 	case "Month":
-		return math.Floor(end.Sub(create).Hours() / 24 / 30), nil
+		period = int(math.Floor(end.Sub(create).Hours() / 24 / 30))
 	case "Week":
-		return math.Floor(end.Sub(create).Hours() / 24 / 7), nil
+		period = int(math.Floor(end.Sub(create).Hours() / 24 / 7))
 	case "Year":
-		return math.Floor(end.Sub(create).Hours() / 24 / 365), nil
+		period = int(math.Floor(end.Sub(create).Hours() / 24 / 365))
 	default:
-		return 0, WrapError(fmt.Errorf("Unexpected period unit %s", periodUnit))
+		err = fmt.Errorf("Unexpected period unit %s", periodUnit)
 	}
+	// The period at least is 1
+	if period < 1 {
+		period = 1
+	}
+	if period > 12 {
+		period = 12
+	}
+	// period can not be modified and if the new period is changed, using the previous one.
+	if currentPeriod > 0 && currentPeriod != period {
+		period = currentPeriod
+	}
+	return period, WrapError(err)
 }

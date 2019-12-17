@@ -307,7 +307,7 @@ func resourceAlicloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	d.Set("zone_id", instance.ZoneId)
 	d.Set("instance_charge_type", instance.ChargeType)
 	if instance.ChargeType == "PrePaid" {
-		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpireTime, "Month")
+		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpireTime, d.Get("period").(int), "Month")
 		if err != nil {
 			return WrapError(err)
 		}

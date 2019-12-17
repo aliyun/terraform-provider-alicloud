@@ -509,7 +509,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 			d.Set("auto_renew", renew.AutoRenew == "True")
 			d.Set("auto_renew_period", renew.Duration)
 		}
-		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpireTime, "Month")
+		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpireTime, d.Get("period").(int), "Month")
 		if err != nil {
 			return WrapError(err)
 		}
