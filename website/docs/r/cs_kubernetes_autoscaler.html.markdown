@@ -12,9 +12,13 @@ description: |-
 This resource will help you to manager cluster-autoscaler in Kubernetes Cluster. 
 
 -> **NOTE:** The scaling group must use CentOS7 or AliyunLinux2 as base image.
+
 -> **NOTE:** The cluster-autoscaler can only use the same size of instanceTypes in one scaling group. 
+
 -> **NOTE:** Add Policy to RAM role of the node to deploy cluster-autoscaler if you need.
+
 -> **NOTE:** Available in 1.65.0+.
+
 ## Example Usage
 
 cluster-autoscaler in Kubernetes Cluster
