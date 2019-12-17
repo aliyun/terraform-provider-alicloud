@@ -87,6 +87,7 @@ The following attributes are exported:
 
 * `id` - The ID of the MongoDB.
 * `retention_period` - Instance log backup retention days. Available in 1.42.0+.
+* `replica_set_name` - The name of the mongo replica set
 
 ### Timeouts
 
