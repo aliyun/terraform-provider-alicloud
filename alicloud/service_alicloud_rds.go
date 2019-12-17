@@ -478,7 +478,7 @@ func (s *RdsService) ModifyDBBackupPolicy(instanceId, backupTime, backupPeriod, 
 	request.PreferredBackupPeriod = backupPeriod
 	request.BackupRetentionPeriod = retentionPeriod
 	request.PreferredBackupTime = backupTime
-	request.BackupLog = backupLog
+	request.EnableBackupLog = backupLog
 	instance, err := s.DescribeDBInstance(instanceId)
 	if err != nil {
 		return WrapError(err)

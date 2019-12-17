@@ -152,7 +152,7 @@ func resourceAliyunEipRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("internet_charge_type", object.InternetChargeType)
 	d.Set("instance_charge_type", object.ChargeType)
 	if object.ChargeType == "PrePaid" {
-		period, err := computePeriodByUnit(object.AllocationTime, object.ExpiredTime, "Month")
+		period, err := computePeriodByUnit(object.AllocationTime, object.ExpiredTime, d.Get("period").(int), "Month")
 		if err != nil {
 			return WrapError(err)
 		}

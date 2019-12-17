@@ -516,19 +516,27 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.DescribeInstanceAutoRenewAttributeResponse)
-		perioUnit := "Month"
+		periodUnit := d.Get("period_unit").(string)
+		if periodUnit == "" {
+			periodUnit = "Month"
+		}
 		if len(response.InstanceRenewAttributes.InstanceRenewAttribute) > 0 {
 			renew := response.InstanceRenewAttributes.InstanceRenewAttribute[0]
 			d.Set("renewal_status", renew.RenewalStatus)
 			d.Set("auto_renew_period", renew.Duration)
-			perioUnit = renew.PeriodUnit
+			if renew.RenewalStatus == "AutoRenewal" {
+				periodUnit = renew.PeriodUnit
+			}
 		}
-		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpiredTime, perioUnit)
+		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpiredTime, d.Get("period").(int), periodUnit)
 		if err != nil {
 			return WrapError(err)
 		}
 		d.Set("period", period)
-		d.Set("period_unit", perioUnit)
+		if periodUnit == "Year" {
+			periodUnit = "Month"
+		}
+		d.Set("period_unit", periodUnit)
 	}
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceInstance)
 	if err != nil && !NotFoundError(err) {

@@ -287,7 +287,7 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("resource_group_id", object.ResourceGroupId)
 	if object.PayType == "PrePay" {
 		d.Set("instance_charge_type", PrePaid)
-		period, err := computePeriodByUnit(object.CreateTime, object.EndTime, "Month")
+		period, err := computePeriodByUnit(object.CreateTime, object.EndTime, d.Get("period").(int), "Month")
 		if err != nil {
 			return WrapError(err)
 		}
