@@ -469,7 +469,6 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	for _, sg := range instance.SecurityGroupIds.SecurityGroupId {
 		sgs = append(sgs, sg)
 	}
-	log.Printf("[DEBUG] Setting Security Group Ids: %#v", sgs)
 	if err := d.Set("security_groups", sgs); err != nil {
 		return WrapError(err)
 	}
@@ -517,12 +516,19 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.DescribeInstanceAutoRenewAttributeResponse)
+		perioUnit := "Month"
 		if len(response.InstanceRenewAttributes.InstanceRenewAttribute) > 0 {
 			renew := response.InstanceRenewAttributes.InstanceRenewAttribute[0]
 			d.Set("renewal_status", renew.RenewalStatus)
 			d.Set("auto_renew_period", renew.Duration)
+			perioUnit = renew.PeriodUnit
 		}
-
+		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpiredTime, perioUnit)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
+		d.Set("period_unit", perioUnit)
 	}
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceInstance)
 	if err != nil && !NotFoundError(err) {

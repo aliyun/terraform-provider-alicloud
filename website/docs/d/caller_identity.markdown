@@ -1,7 +1,7 @@
 ---
 layout: "alicloud"
 page_title: "Alicloud: alicloud_account"
-sidebar_current: "docs-alicloud-datasource-caller_identity"
+sidebar_current: "docs-alicloud-datasource-caller-identity"
 description: |-
     Provides the identity of the current Alibaba Cloud user.
 ---
@@ -10,14 +10,16 @@ description: |-
 
 This data source provides the identity of the current user.
 
+-> **NOTE:** Available in 1.65.0+.
+
 ## Example Usage
 
 ```
-data "alibaba_caller_identity" "current" {
+data "alicloud_caller_identity" "current" {
 }
 
 output "current_user_arn" {
-  value = "${data.alibaba_caller_identity.current.id}"
+  value = "${data.alicloud_caller_identity.current.id}"
 }
 ```
 

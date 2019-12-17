@@ -12,7 +12,6 @@ IMPROVEMENTS:
 - improve(kvstore_instance): set period using createtime and endtime ([#1971](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1971))
 - improve(slb_server_group): set servers to computed and avoid diff when using ess_scaling_vserver_group ([#1970](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1970))
 - improve(k8s):add AccessKey and AccessKeySecret instead of RamRole ([#1966](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1966))
-- improve(caller_identity): expose GetCallerIdentity as data source ([#1944](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1944))
 
 BUG FIXES:
 

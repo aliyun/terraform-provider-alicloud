@@ -522,7 +522,7 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 			d.Set("auto_renew", auto_renew)
 			d.Set("auto_renew_period", renew.Duration)
 		}
-		period, err := computePeriodByMonth(object.CreateTime, object.EndTime)
+		period, err := computePeriodByUnit(object.CreateTime, object.EndTime, "Month")
 		if err != nil {
 			return WrapError(err)
 		}
