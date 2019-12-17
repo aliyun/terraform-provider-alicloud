@@ -282,7 +282,7 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("zone_id", instance.ZoneId)
 	d.Set("instance_charge_type", instance.ChargeType)
 	if instance.ChargeType == "PrePaid" {
-		period, err := computePeriodByMonth(instance.CreationTime, instance.ExpireTime)
+		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpireTime, "Month")
 		if err != nil {
 			return WrapError(err)
 		}

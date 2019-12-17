@@ -771,7 +771,7 @@ func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration
 	}
 }
 
-func computePeriodByMonth(createTime, endTime interface{}) (float64, error) {
+func computePeriodByUnit(createTime, endTime interface{}, periodUnit string) (float64, error) {
 	var createTimeStr, endTimeStr string
 	switch value := createTime.(type) {
 	case int64:
@@ -801,5 +801,14 @@ func computePeriodByMonth(createTime, endTime interface{}) (float64, error) {
 			return 0, WrapError(err)
 		}
 	}
-	return math.Floor(end.Sub(create).Hours() / 24 / 30), nil
+	switch periodUnit {
+	case "Month":
+		return math.Floor(end.Sub(create).Hours() / 24 / 30), nil
+	case "Week":
+		return math.Floor(end.Sub(create).Hours() / 24 / 7), nil
+	case "Year":
+		return math.Floor(end.Sub(create).Hours() / 24 / 365), nil
+	default:
+		return 0, WrapError(fmt.Errorf("Unexpected period unit %s", periodUnit))
+	}
 }

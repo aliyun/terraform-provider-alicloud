@@ -208,7 +208,7 @@ func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("vpc_id", object.VpcId)
 	d.Set("instance_charge_type", object.InstanceChargeType)
 	if object.InstanceChargeType == "PrePaid" {
-		period, err := computePeriodByMonth(object.CreationTime, object.ExpiredTime)
+		period, err := computePeriodByUnit(object.CreationTime, object.ExpiredTime, "Month")
 		if err != nil {
 			return WrapError(err)
 		}

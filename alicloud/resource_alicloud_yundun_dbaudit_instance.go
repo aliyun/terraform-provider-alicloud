@@ -114,11 +114,6 @@ func resourceAlicloudDbauditInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("plan_code", instance.LicenseCode)
 	d.Set("region_id", client.RegionId)
 	d.Set("vswitch_id", instance.VswitchId)
-	period, err := computePeriodByMonth(instance.StartTime, instance.ExpireTime)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("period", period)
 	return nil
 }
 

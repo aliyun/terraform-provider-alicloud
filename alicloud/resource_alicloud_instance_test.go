@@ -773,7 +773,7 @@ func TestAccAlicloudInstancePrepaid(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "data_disks", "dry_run", "force_delete",
-					"include_data_disks", "period", "period_unit"},
+					"include_data_disks"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1162,7 +1162,7 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "data_disks", "dry_run", "force_delete",
-					"include_data_disks", "period", "period_unit"},
+					"include_data_disks"},
 			},
 		},
 	})

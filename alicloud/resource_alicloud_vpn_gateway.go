@@ -49,11 +49,11 @@ func resourceAliyunVpnGateway() *schema.Resource {
 			},
 
 			"period": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				ValidateFunc: validation.Any(
-					validation.IntBetween(1, 9),
-					validation.IntInSlice([]int{12, 24, 36})),
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ValidateFunc:     validation.Any(validation.IntBetween(1, 9), validation.IntInSlice([]int{12, 24, 36})),
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 
 			"bandwidth": {
@@ -223,11 +223,6 @@ func resourceAliyunVpnGatewayRead(d *schema.ResourceData, meta interface{}) erro
 		d.Set("instance_charge_type", string(PostPaid))
 	} else {
 		d.Set("instance_charge_type", string(PrePaid))
-		period, err := computePeriodByMonth(object.CreateTime, object.EndTime)
-		if err != nil {
-			return WrapError(err)
-		}
-		d.Set("period", period)
 	}
 
 	return nil
