@@ -157,9 +157,10 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"direction"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
