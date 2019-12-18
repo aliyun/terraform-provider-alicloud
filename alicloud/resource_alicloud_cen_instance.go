@@ -47,7 +47,6 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 	request := cbn.CreateCreateCenRequest()
 	request.Name = d.Get("name").(string)
 	request.Description = d.Get("description").(string)
-	request.ClientToken = buildClientToken(request.GetActionName())
 
 	var response *cbn.CreateCenResponse
 	wait := incrementalWait(3*time.Second, 5*time.Second)
