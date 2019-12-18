@@ -35,6 +35,8 @@ output "product_codes" {
 
 The following arguments are supported:
 
+* `name_regex` - (Optional, Available 1.66.0+) A regex string to apply to the product name.
+* `ids` - (Optional, Available 1.66.0+) A list of product code.
 * `sort` - (Optional, ForceNew) This field determines how to sort the filtered results, Valid values: `user_count-desc`, `created_on-desc`, `price-desc` and `score-desc`.
 * `category_id` - (Optional, ForceNew) The Category ID of products. For more information, see [DescribeProducts](https://help.aliyun.com/document_detail/89834.htm). 
 * `product_type` - (Optional, ForceNew) The type of products, Valid values: `APP`, `SERVICE`, `MIRROR`, `DOWNLOAD` and `API_SERVICE`.
@@ -45,7 +47,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of product codes.
-* `product_items` - A list of products. Each element contains the following attributes:
+* `products` - A list of products. Each element contains the following attributes:
   * `code` - The code of the product.
   * `name` - The name of the product.
   * `category_id` - The category id of the product.
