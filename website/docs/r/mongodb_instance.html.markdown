@@ -77,6 +77,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `backup_time` - (Optional, Available in 1.42.0+) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. Default to a random time, like "23:00Z-24:00Z".
 * `maintain_start_time` - (Optional, Available in v1.56.0+) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available in v1.56.0+) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
+* `tags` - (Optional, Available in v1.65.1+) A mapping of tags to assign to the resource.
 
 -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
@@ -86,6 +87,7 @@ The following attributes are exported:
 
 * `id` - The ID of the MongoDB.
 * `retention_period` - Instance log backup retention days. Available in 1.42.0+.
+* `replica_set_name` - The name of the mongo replica set
 
 ### Timeouts
 

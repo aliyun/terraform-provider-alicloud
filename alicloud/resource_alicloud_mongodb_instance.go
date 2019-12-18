@@ -68,7 +68,7 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				Computed:         true,
-				DiffSuppressFunc: mongoDBPeriodDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -143,6 +143,7 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -280,6 +281,13 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("db_instance_storage", instance.DBInstanceStorage)
 	d.Set("zone_id", instance.ZoneId)
 	d.Set("instance_charge_type", instance.ChargeType)
+	if instance.ChargeType == "PrePaid" {
+		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpireTime, d.Get("period").(int), "Month")
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
+	}
 	d.Set("vswitch_id", instance.VSwitchId)
 	d.Set("storage_engine", instance.StorageEngine)
 	d.Set("maintain_start_time", instance.MaintainStartTime)
@@ -289,7 +297,7 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	if replication_factor, err := strconv.Atoi(instance.ReplicationFactor); err == nil {
 		d.Set("replication_factor", replication_factor)
 	}
-
+	d.Set("tags", ddsService.tagsToMap(instance.Tags.Tag))
 	return nil
 }
 
@@ -344,6 +352,10 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("maintain_start_time")
 		d.SetPartial("maintain_end_time")
+	}
+
+	if err := ddsService.setInstanceTags(d); err != nil {
+		return WrapError(err)
 	}
 
 	if d.IsNewResource() {
@@ -452,7 +464,7 @@ func resourceAlicloudMongoDBInstanceDelete(d *schema.ResourceData, meta interfac
 	request := dds.CreateDeleteDBInstanceRequest()
 	request.DBInstanceId = d.Id()
 
-	err := resource.Retry(10*5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
 			return ddsClient.DeleteDBInstance(request)
 		})

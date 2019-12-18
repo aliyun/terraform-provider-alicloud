@@ -26,8 +26,8 @@ resource "alicloud_vpc" "vpc" {
 
 ## Module Support
 
-You can use to the existing [vpc module](https://registry.terraform.io/modules/alibaba/vpc/alicloud) 
-to create a VPC and several VSwitches.
+You can use the existing [vpc module](https://registry.terraform.io/modules/alibaba/vpc/alicloud) 
+to create a VPC and several VSwitches one-click.
 
 ## Argument Reference
 

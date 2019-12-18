@@ -27,7 +27,7 @@ resource "alicloud_ram_group" "group" {
 
 The following arguments are supported:
 
-* `name` - (Required, ForceNew) Name of the RAM group. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphen "-", and must not begin with a hyphen.
+* `name` - (Required, ForceNew) Name of the RAM group. This name can have a string of 1 to 128 characters, must contain only alphanumeric characters or hyphen "-", and must not begin with a hyphen.
 * `comments` - (Optional) Comment of the RAM group. This parameter can have a string of 1 to 128 characters.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
 

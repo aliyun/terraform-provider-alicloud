@@ -132,6 +132,10 @@ func TestAccAlicloudSslVpnClientCert_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":              fmt.Sprintf("tf-testAccSslVpnClientCertConfig%d", rand),
 						"ssl_vpn_server_id": CHECKSET,
+						"ca_cert":           CHECKSET,
+						"client_cert":       CHECKSET,
+						"client_key":        CHECKSET,
+						"client_config":     CHECKSET,
 						"status":            "normal",
 					}),
 				),
@@ -193,6 +197,10 @@ func TestAccAlicloudSslVpnClientCert_multi(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":              fmt.Sprintf("tf-testAccSslVpnClientCertConfig%d", rand),
 						"ssl_vpn_server_id": CHECKSET,
+						"ca_cert":           CHECKSET,
+						"client_cert":       CHECKSET,
+						"client_key":        CHECKSET,
+						"client_config":     CHECKSET,
 						"status":            "normal",
 					}),
 				),

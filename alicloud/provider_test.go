@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -151,6 +152,20 @@ func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
 func testAccPreCheckWithSmartAccessGatewaySetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("SAG_INSTANCE_ID")); v == "" {
 		t.Skipf("Skipping the test case with no sag instance id setting")
+		t.Skipped()
+	}
+}
+
+func testAccPreCheckWithSmartAccessGatewayAppSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("SAG_APP_INSTANCE_ID")); v == "" {
+		t.Skipf("Skipping the test case with no sag app instance id setting")
+		t.Skipped()
+	}
+}
+
+func testAccPreCheckWithTime(t *testing.T) {
+	if time.Now().Day() != 1 {
+		t.Skipf("Skipping the test case with not the 1st of every month")
 		t.Skipped()
 	}
 }

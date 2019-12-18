@@ -8,7 +8,8 @@ description: |-
 
 # Alibaba Cloud Provider
 
-!> **Warning:** Welcome to Join Alibaba Cloud Open Platform Developer Challenge and Win the grand prize. [See Details](https://developer.aliyun.com/article/726543).
+~> **News:** Currently, Alibaba Cloud has published [Terraform Module Web GUI](https://api.aliyun.com/#/cli?tool=Terraform) to
+ help developers to use Terraform Module more simply and conveniently. Welcome to access it and let us know your more requirements!
 
 The Alibaba Cloud provider is used to interact with the
 many resources supported by [Alibaba Cloud](https://www.alibabacloud.com). The provider needs to be configured

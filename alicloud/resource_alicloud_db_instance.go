@@ -69,7 +69,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				Default:          1,
-				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"monitoring_period": {
 				Type:         schema.TypeInt,
@@ -81,14 +81,14 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:             schema.TypeBool,
 				Optional:         true,
 				Default:          false,
-				DiffSuppressFunc: rdsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"auto_renew_period": {
 				Type:             schema.TypeInt,
 				ValidateFunc:     validation.IntBetween(1, 12),
 				Optional:         true,
 				Default:          1,
-				DiffSuppressFunc: rdsPostPaidAndRenewDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidAndRenewDiffSuppressFunc,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -225,23 +225,20 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
-	if !d.IsNewResource() && (d.HasChange("instance_charge_type")) {
+	payType := PayType(d.Get("instance_charge_type").(string))
+	if !d.IsNewResource() && d.HasChange("instance_charge_type") && payType == Prepaid {
 		prePaidRequest := rds.CreateModifyDBInstancePayTypeRequest()
 		prePaidRequest.RegionId = client.RegionId
 		prePaidRequest.DBInstanceId = d.Id()
-		payType := PayType(d.Get("instance_charge_type").(string))
 		prePaidRequest.PayType = string(payType)
-		if payType == Prepaid {
-			prePaidRequest.AutoPay = "true"
-			period := d.Get("period").(int)
-			prePaidRequest.UsedTime = requests.Integer(strconv.Itoa(period))
-			prePaidRequest.Period = string(Month)
-			if period > 9 {
-				prePaidRequest.UsedTime = requests.Integer(strconv.Itoa(period / 12))
-				prePaidRequest.Period = string(Year)
-			}
+		prePaidRequest.AutoPay = "true"
+		period := d.Get("period").(int)
+		prePaidRequest.UsedTime = requests.Integer(strconv.Itoa(period))
+		prePaidRequest.Period = string(Month)
+		if period > 9 {
+			prePaidRequest.UsedTime = requests.Integer(strconv.Itoa(period / 12))
+			prePaidRequest.Period = string(Year)
 		}
-
 		raw, err := client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
 			return client.ModifyDBInstancePayType(prePaidRequest)
 		})
@@ -258,7 +255,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	}
 
-	if d.HasChange("auto_renew") || d.HasChange("auto_renew_period") {
+	if payType == Prepaid && (d.HasChange("auto_renew") || d.HasChange("auto_renew_period")) {
 		request := rds.CreateModifyInstanceAutoRenewalAttributeRequest()
 		request.DBInstanceId = d.Id()
 		request.RegionId = client.RegionId
@@ -509,11 +506,14 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		response, _ := raw.(*rds.DescribeInstanceAutoRenewalAttributeResponse)
 		if response != nil && len(response.Items.Item) > 0 {
 			renew := response.Items.Item[0]
-			auto_renew := bool(renew.AutoRenew == "True")
-
-			d.Set("auto_renew", auto_renew)
+			d.Set("auto_renew", renew.AutoRenew == "True")
 			d.Set("auto_renew_period", renew.Duration)
 		}
+		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpireTime, d.Get("period").(int), "Month")
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
 	}
 
 	object, err := rdsService.DescribeSecurityGroupConfiguration(d.Id())

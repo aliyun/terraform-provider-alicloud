@@ -95,7 +95,7 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 	d.Set("backup_time", object.PreferredBackupTime)
 	d.Set("backup_period", strings.Split(object.PreferredBackupPeriod, ","))
 	d.Set("retention_period", object.BackupRetentionPeriod)
-	d.Set("log_backup", object.BackupLog == "Enable")
+	d.Set("log_backup", object.EnableBackupLog == "1")
 	d.Set("log_retention_period", object.LogBackupRetentionPeriod)
 
 	return nil
@@ -110,7 +110,7 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 	periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
 	backupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
 	backupTime := d.Get("backup_time").(string)
-	backupLog := "Enable"
+	backupLog := "True"
 
 	retentionPeriod := ""
 	if v, ok := d.GetOk("retention_period"); ok {
@@ -136,7 +136,7 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 
 	if d.HasChange("log_backup") {
 		if !d.Get("log_backup").(bool) {
-			backupLog = "Disabled"
+			backupLog = "False"
 		}
 		update = true
 	}
@@ -178,7 +178,7 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 	request.PreferredBackupPeriod = "Tuesday,Thursday,Saturday"
 	request.BackupRetentionPeriod = "7"
 	request.PreferredBackupTime = "02:00Z-03:00Z"
-	request.BackupLog = "Enable"
+	request.EnableBackupLog = "True"
 	instance, err := rdsService.DescribeDBInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {

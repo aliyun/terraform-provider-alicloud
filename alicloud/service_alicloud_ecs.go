@@ -1035,6 +1035,52 @@ func (s *EcsService) DescribeSnapshotPolicy(id string) (*ecs.AutoSnapshotPolicy,
 	return &response.AutoSnapshotPolicies.AutoSnapshotPolicy[0], nil
 }
 
+func (s *EcsService) DescribeReservedInstance(id string) (reservedInstance ecs.ReservedInstance, err error) {
+	request := ecs.CreateDescribeReservedInstancesRequest()
+	var balance = &[]string{id}
+	request.ReservedInstanceId = balance
+	request.RegionId = s.client.RegionId
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeReservedInstances(request)
+	})
+	if err != nil {
+		return reservedInstance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*ecs.DescribeReservedInstancesResponse)
+
+	if len(response.ReservedInstances.ReservedInstance) != 1 ||
+		response.ReservedInstances.ReservedInstance[0].ReservedInstanceId != id {
+		return reservedInstance, GetNotFoundErrorFromString(GetNotFoundMessage("PurchaseReservedInstance", id))
+	}
+	return response.ReservedInstances.ReservedInstance[0], nil
+}
+
+func (s *EcsService) WaitForReservedInstance(id string, status Status, timeout int) error {
+	deadLine := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		reservedInstance, err := s.DescribeReservedInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		if reservedInstance.Status == string(status) {
+			return nil
+		}
+
+		if time.Now().After(deadLine) {
+			return WrapErrorf(GetTimeErrorFromString("ECS WaitForSnapshotPolicy"), WaitTimeoutMsg, id, GetFunc(1), timeout, reservedInstance.Status, string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
 func (s *EcsService) WaitForSnapshotPolicy(id string, status Status, timeout int) error {
 	deadLine := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {

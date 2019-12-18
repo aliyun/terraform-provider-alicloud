@@ -95,6 +95,11 @@ resource "alicloud_cs_managed_kubernetes" "default" {
 
 ```
 
+## Module Support
+
+You can use the existing [managed-kubernetes module](https://registry.terraform.io/modules/terraform-alicloud-modules/managed-kubernetes/alicloud) 
+to create a managed kubernetes cluster one-click.
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -37,6 +37,26 @@ func resourceAliyunSslVpnClientCert() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"ca_cert": {
+				Type:      schema.TypeString,
+				Computed:  true,
+				Sensitive: true,
+			},
+			"client_cert": {
+				Type:      schema.TypeString,
+				Computed:  true,
+				Sensitive: true,
+			},
+			"client_key": {
+				Type:      schema.TypeString,
+				Computed:  true,
+				Sensitive: true,
+			},
+			"client_config": {
+				Type:      schema.TypeString,
+				Computed:  true,
+				Sensitive: true,
+			},
 		},
 	}
 }
@@ -101,6 +121,10 @@ func resourceAliyunSslVpnClientCertRead(d *schema.ResourceData, meta interface{}
 	d.Set("name", object.Name)
 	d.Set("status", object.Status)
 	d.Set("ssl_vpn_server_id", object.SslVpnServerId)
+	d.Set("ca_cert", object.CaCert)
+	d.Set("client_cert", object.ClientCert)
+	d.Set("client_key", object.ClientKey)
+	d.Set("client_config", object.ClientConfig)
 
 	return nil
 }

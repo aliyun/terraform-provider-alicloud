@@ -49,11 +49,11 @@ func resourceAliyunVpnGateway() *schema.Resource {
 			},
 
 			"period": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				ValidateFunc: validation.Any(
-					validation.IntBetween(1, 9),
-					validation.IntInSlice([]int{12, 24, 36})),
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Default:          1,
+				ValidateFunc:     validation.Any(validation.IntBetween(1, 9), validation.IntInSlice([]int{12, 24, 36})),
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 
 			"bandwidth": {
@@ -91,6 +91,7 @@ func resourceAliyunVpnGateway() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 
 			"internet_ip": {
@@ -141,7 +142,7 @@ func resourceAliyunVpnGatewayCreate(d *schema.ResourceData, meta interface{}) er
 
 	request.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
 
-	if v, ok := d.GetOk("enable_ipsec"); ok {
+	if v, ok := d.GetOkExists("enable_ipsec"); ok {
 		request.EnableIpsec = requests.NewBoolean(v.(bool))
 	}
 

@@ -1,4 +1,52 @@
-## 1.63.1 (Unreleased)
+## 1.65.1 (Unreleased)
+## 1.65.0 (December 13, 2019)
+
+- **New Resource:** `alicloud_reserved_instance` ([#1967](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1967))
+- **New Resource:** `alicloud_cs_kubernetes_autoscaler` ([#1956](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1956))
+- **New Data Source:** `alicloud_caller_identity` ([#1944](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1944))
+- **New Resource:** `alicloud_sag_client_user` ([#1807](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1807))
+
+IMPROVEMENTS:
+
+- improve(ess_vserver_groups): improve docs ([#1976](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1976))
+- improve(kvstore_instance): set period using createtime and endtime ([#1971](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1971))
+- improve(slb_server_group): set servers to computed and avoid diff when using ess_scaling_vserver_group ([#1970](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1970))
+- improve(k8s):add AccessKey and AccessKeySecret instead of RamRole ([#1966](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1966))
+
+BUG FIXES:
+
+- fix(market): remove the suggested_price check for avoid the error of testcase ([#1964](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1964))
+- fix(provider): Resolve issues from aone. ([#1963](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1963))
+- fix(market): remove the tags check for avoid the error of testcase ([#1962](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1962))
+- fix(alicloud/yundun_bastionhost): Bastionhost RAM policy authorization bug fix([#1960](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1960))
+- fix(datahub): fix updating datahub topic comment bug ([#1959](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1959))
+- fix(kms): correct test case errors  ([#1958](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1958))
+- fix(validator): update package github.com/denverdino/aliyungo/cdn ([#1946](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1946))
+
+## 1.64.0 (December 06, 2019)
+
+- **New Data Source:** `alicloud_market_products` ([#1941](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1941))
+- **New Resource:** `alicloud_cloud_connect_network_attachment` ([#1933](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1933))
+- **New Resource:** `alicloud_image` ([#1913](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1913))
+
+IMPROVEMENTS:
+
+- improve(docs): improve module guide ([#1957](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1957))
+- improve(db_account_privilege): supports more privileges ([#1945](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1945))
+- improve(datasources): remove sorted_by testcase results from some internal limitation ([#1943](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1943))
+- improve(sdk): Updated sdk to v1.60.280 and modified drds fields ([#1938](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1938))
+- improve(snat): update example to support for snat's creation with multi eips ([#1931](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1931))
+- improve(ess): resource alicloud_ess_scalinggroup_vserver_groups support parameter ([#1919](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1919))
+- improve(db_instance): make 'instance_types' 'db_instance_class' 'kvstore_instance_class' support price ([#1749](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1749))
+
+BUG FIXES:
+
+- fix(alikafka): fix bug in when doing alikafka instance multi acc test ([#1947](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1947))
+- fix(CSKubernetes): fix 3az test case ([#1942](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1942))
+- fix(cdn_domain_new): constant timeout waiting for server cert ([#1937](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1937))
+- fix(pvtz_zone_record): allow SRV records ([#1936](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1936))
+- fix(Serverless Kubernetes): fix #1867 add serverless kube_config ([#1923](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1923))
+
 ## 1.63.0 (December 02, 2019)
 
 - **New Resource:** `alicloud_cloud_connect_network_grant` ([#1921](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1921))

@@ -43,6 +43,7 @@ func dataSourceAlicloudMongoDBInstances() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -166,6 +167,10 @@ func dataSourceAlicloudMongoDBInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -175,6 +180,7 @@ func dataSourceAlicloudMongoDBInstances() *schema.Resource {
 
 func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ddsService := MongoDBService{client}
 
 	request := dds.CreateDescribeDBInstancesRequest()
 	request.RegionId = client.RegionId
@@ -183,6 +189,17 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 
 	if v, ok := d.GetOk("instance_type"); ok {
 		request.DBInstanceType = v.(string)
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		var reqTags []dds.DescribeDBInstancesTag
+		for key, value := range v.(map[string]interface{}) {
+			reqTags = append(reqTags, dds.DescribeDBInstancesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
 	}
 
 	var nameRegex *regexp.Regexp
@@ -272,6 +289,7 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 			"instance_class":    item.DBInstanceClass,
 			"storage":           item.DBInstanceStorage,
 			"replication":       item.ReplicationFactor,
+			"tags":              ddsService.tagsToMap(item.Tags.Tag),
 		}
 		mongoList := []map[string]interface{}{}
 		for _, v := range item.MongosList.MongosAttribute {

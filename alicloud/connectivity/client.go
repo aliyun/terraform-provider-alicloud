@@ -14,6 +14,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
+	officalCS "github.com/aliyun/alibaba-cloud-sdk-go/services/cs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddosbgp"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
@@ -29,6 +30,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
@@ -84,6 +86,7 @@ type AliyunClient struct {
 	dnsconn                      *alidns.Client
 	ramconn                      *ram.Client
 	csconn                       *cs.Client
+	officalCSConn                *officalCS.Client
 	cdnconn_new                  *cdn_new.Client
 	crconn                       *cr.Client
 	cdnconn                      *cdn.CdnClient
@@ -98,6 +101,7 @@ type AliyunClient struct {
 	gpdbconn                     *gpdb.Client
 	stsconn                      *sts.Client
 	rkvconn                      *r_kvstore.Client
+	polarDBconn                  *polardb.Client
 	dhconn                       *datahub.DataHub
 	mnsconn                      *ali_mns.MNSClient
 	cloudapiconn                 *cloudapi.Client
@@ -141,7 +145,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.63.0"
+var providerVersion = "1.65.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient
@@ -199,6 +203,33 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 	return do(client.ecsconn)
 }
 
+func (client *AliyunClient) WithOfficalCSClient(do func(*officalCS.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the CS client if necessary
+	if client.officalCSConn == nil {
+		endpoint := client.config.CsEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CONTAINCode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CONTAINCode), endpoint)
+		}
+		csconn, err := officalCS.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CS client: %#v", err)
+		}
+
+		csconn.AppendUserAgent(Terraform, terraformVersion)
+		csconn.AppendUserAgent(Provider, providerVersion)
+		csconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.officalCSConn = csconn
+	}
+
+	return do(client.officalCSConn)
+}
+
 func (client *AliyunClient) WithRdsClient(do func(*rds.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
@@ -224,6 +255,35 @@ func (client *AliyunClient) WithRdsClient(do func(*rds.Client) (interface{}, err
 	}
 
 	return do(client.rdsconn)
+}
+
+func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the PolarDB client if necessary
+	if client.polarDBconn == nil {
+		endpoint := client.config.PolarDBEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, POLARDBCode)
+			if endpoint == "" {
+				endpoint = fmt.Sprintf("%s.polardb.aliyuncs.com", client.config.RegionId)
+			}
+		}
+
+		polarDBconn, err := polardb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the PolarDB client: %#v", err)
+
+		}
+
+		polarDBconn.AppendUserAgent(Terraform, terraformVersion)
+		polarDBconn.AppendUserAgent(Provider, providerVersion)
+		polarDBconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.polarDBconn = polarDBconn
+	}
+
+	return do(client.polarDBconn)
 }
 
 func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, error)) (interface{}, error) {
@@ -1107,7 +1167,7 @@ func (client *AliyunClient) AccountId() (string, error) {
 
 	if client.accountId == "" {
 		log.Printf("[DEBUG] account_id not provided, attempting to retrieve it automatically...")
-		identity, err := client.getCallerIdentity()
+		identity, err := client.GetCallerIdentity()
 		if err != nil {
 			return "", err
 		}
@@ -1200,7 +1260,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (*loc
 	return nil, fmt.Errorf("There is no any available endpoint for %s in region %s.", serviceCode, client.RegionId)
 }
 
-func (client *AliyunClient) getCallerIdentity() (*sts.GetCallerIdentityResponse, error) {
+func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse, error) {
 	args := sts.CreateGetCallerIdentityRequest()
 
 	endpoint := client.config.StsEndpoint

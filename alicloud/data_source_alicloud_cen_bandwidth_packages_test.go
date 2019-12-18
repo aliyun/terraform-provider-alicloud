@@ -56,19 +56,6 @@ func TestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
 	cenBandwidthPackagesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idConf, nameRegexConf, idsConf, allConf)
 }
 
-func TestAccAlicloudCenBandwidthPackagesDataSource_multi(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 99999999)
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig_multi(rand, map[string]string{
-			"ids": `"${alicloud_cen_bandwidth_package.default.*.id}"`,
-		}),
-	}
-	preCheck := func() {
-		testAccPreCheckWithAccountSiteType(t, DomesticSite)
-	}
-	cenBandwidthPackagesCheckInfo_multi.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
-}
-
 func testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
@@ -99,28 +86,6 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 data "alicloud_cen_bandwidth_packages" "default" {
 	%s
 
-}
-`, defaultRegionToTest, rand, strings.Join(pairs, "\n  "))
-	return config
-}
-
-func testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig_multi(rand int, attrMap map[string]string) string {
-	var pairs []string
-	for k, v := range attrMap {
-		pairs = append(pairs, k+" = "+v)
-	}
-	config := fmt.Sprintf(`
-resource "alicloud_cen_bandwidth_package" "default" {
-	name = "tf-testAcc%sCenBandwidthLimitsDataSource-%d"
-    bandwidth = 5
-    geographic_region_ids = [
-		"China",
-		"China"]
-	count = 6
-}
-
-data "alicloud_cen_bandwidth_packages" "default" {
-	%s
 }
 `, defaultRegionToTest, rand, strings.Join(pairs, "\n  "))
 	return config

@@ -101,6 +101,7 @@ The following arguments are supported:
 
 * `scaling_group_id` - (Required) ID of the scaling group.
 * `vserver_groups` - (Optional) A list of vserver groups attached on scaling group. See [Block vserver_group](#block-vserver_group) below for details.
+* `force` - (Optional, Available in 1.64.0+) If instances of scaling group are attached/removed from slb backend server when attach/detach vserver group from scaling group. Default to true.
 
 ## Block vserver_group
 
@@ -108,7 +109,6 @@ the vserver_group supports the following:
 
 * `loadbalancer_id` - (Required) Loadbalancer server ID of VServer Group.
 * `vserver_attributes` - (Required) A list of VServer Group attributes. See [Block vserver_attribute](#block-vserver_attribute) below for details.
-* `force` - (Optional, Available in 1.64.0+) If instances of scaling group are attached/removed from slb backend server when attach/detach vserver group from scaling group. Default to true.
 
 ## Block vserver_attribute
 

@@ -55,7 +55,7 @@ resource "alicloud_ess_lifecycle_hook" "foo" {
 ## Module Support
 
 You can use to the existing [autoscaling module](https://registry.terraform.io/modules/terraform-alicloud-modules/autoscaling/alicloud) 
-to create a lifecycle hook, scaling group and configuration directly.
+to create a lifecycle hook, scaling group and configuration one-click.
 
 ## Argument Reference
 

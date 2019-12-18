@@ -88,7 +88,7 @@ func resourceAlicloudRouterInterface() *schema.Resource {
 				Optional:         true,
 				ForceNew:         true,
 				Default:          1,
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36})),
@@ -219,6 +219,11 @@ func resourceAlicloudRouterInterfaceRead(d *schema.ResourceData, meta interface{
 	d.Set("health_check_target_ip", object.HealthCheckTargetIp)
 	if object.ChargeType == "Prepaid" {
 		d.Set("instance_charge_type", PrePaid)
+		period, err := computePeriodByUnit(object.CreationTime, object.EndTime, d.Get("period").(int), "Month")
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
 	} else {
 		d.Set("instance_charge_type", PostPaid)
 	}

@@ -242,14 +242,14 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"period_unit": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Default:          Month,
 				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"renewal_status": {
 				Type:     schema.TypeString,
@@ -259,7 +259,7 @@ func resourceAliyunInstance() *schema.Resource {
 					string(RenewAutoRenewal),
 					string(RenewNormal),
 					string(RenewNotRenewal)}, false),
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"auto_renew_period": {
 				Type:             schema.TypeInt,
@@ -272,7 +272,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:             schema.TypeBool,
 				Optional:         true,
 				Default:          true,
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"dry_run": {
 				Type:     schema.TypeBool,
@@ -336,7 +336,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional:         true,
 				Default:          false,
 				Description:      descriptions["A behavior mark used to delete 'PrePaid' ECS instance forcibly."],
-				DiffSuppressFunc: ecsPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 
 			"security_enhancement_strategy": {
@@ -469,7 +469,6 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	for _, sg := range instance.SecurityGroupIds.SecurityGroupId {
 		sgs = append(sgs, sg)
 	}
-	log.Printf("[DEBUG] Setting Security Group Ids: %#v", sgs)
 	if err := d.Set("security_groups", sgs); err != nil {
 		return WrapError(err)
 	}
@@ -517,12 +516,27 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.DescribeInstanceAutoRenewAttributeResponse)
+		periodUnit := d.Get("period_unit").(string)
+		if periodUnit == "" {
+			periodUnit = "Month"
+		}
 		if len(response.InstanceRenewAttributes.InstanceRenewAttribute) > 0 {
 			renew := response.InstanceRenewAttributes.InstanceRenewAttribute[0]
 			d.Set("renewal_status", renew.RenewalStatus)
 			d.Set("auto_renew_period", renew.Duration)
+			if renew.RenewalStatus == "AutoRenewal" {
+				periodUnit = renew.PeriodUnit
+			}
 		}
-
+		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpiredTime, d.Get("period").(int), periodUnit)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("period", period)
+		if periodUnit == "Year" {
+			periodUnit = "Month"
+		}
+		d.Set("period_unit", periodUnit)
 	}
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceInstance)
 	if err != nil && !NotFoundError(err) {

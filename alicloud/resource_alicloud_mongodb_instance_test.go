@@ -164,10 +164,23 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
+				Config: testMongoDBInstance_classic_tags,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
 				Config: testMongoDBInstance_classic_name,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-testAccMongoDBInstance_test",
+						"name":         "tf-testAccMongoDBInstance_test",
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -235,7 +248,8 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 						"maintain_end_time":           REMOVEKEY,
 					}),
 				),
-			}},
+			},
+		},
 	})
 }
 
@@ -549,6 +563,21 @@ resource "alicloud_mongodb_instance" "default" {
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
+}`
+
+const testMongoDBInstance_classic_tags = `
+data "alicloud_zones" "default" {
+  available_resource_creation = "MongoDB"
+}
+resource "alicloud_mongodb_instance" "default" {
+  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  engine_version      = "3.4"
+  db_instance_storage = 10
+  db_instance_class   = "dds.mongo.mid"
+  tags = {
+    Created = "TF"
+    For     = "acceptance test"
+  }
 }`
 
 const testMongoDBInstance_classic_name = `
