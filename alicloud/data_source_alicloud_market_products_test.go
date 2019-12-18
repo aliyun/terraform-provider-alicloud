@@ -14,9 +14,30 @@ func TestAccAlicloudMarketProductsDataSource(t *testing.T) {
 		"",
 		dataSourceMarketProductsConfigDependence)
 
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex":   "BatchCompute Ubuntu14.04",
+			"product_type": "MIRROR",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex":   "BatchCompute_fake",
+			"product_type": "MIRROR",
+		}),
+	}
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":          []string{"cmjj022644"},
+			"product_type": "MIRROR",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":          []string{"cmjj022644_fake"},
+			"product_type": "MIRROR",
+		}),
+	}
 	sortConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"sort": "user_count-desc",
+			"sort":         "user_count-desc",
+			"product_type": "MIRROR",
 		}),
 	}
 	categoryIdConf := dataSourceTestAccConfig{
@@ -26,15 +47,24 @@ func TestAccAlicloudMarketProductsDataSource(t *testing.T) {
 	}
 	productTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"product_type": "SERVICE",
+			"product_type": "MIRROR",
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"sort":         "created_on-desc",
-			"category_id":  "53690006",
-			"product_type": "SERVICE",
+			"category_id":  "56024006",
+			"product_type": "MIRROR",
+			"name_regex":   "SQLServer2016_Ent_FullFeature_winupdate",
+			"ids":          []string{"cmjj031537"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"sort":         "created_on-desc",
+			"category_id":  "56024006",
+			"product_type": "MIRROR",
+			"name_regex":   "SQLServer2016_Ent_FullFeature_winupdate_fake",
+			"ids":          []string{"cmjj031537"},
 		}),
 	}
 
@@ -69,7 +99,7 @@ func TestAccAlicloudMarketProductsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeMarketProductsMapFunc,
 	}
 
-	pvtzZoneRecordsCheckInfo.dataSourceTestCheck(t, rand, sortConf, categoryIdConf, productTypeConf, allConf)
+	pvtzZoneRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, sortConf, categoryIdConf, productTypeConf, allConf)
 }
 
 func dataSourceMarketProductsConfigDependence(name string) string {

@@ -1,6 +1,9 @@
 package alicloud
 
 import (
+	"regexp"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
@@ -13,6 +16,11 @@ func dataSourceAlicloudProducts() *schema.Resource {
 		Read: dataSourceAlicloudProductsRead,
 
 		Schema: map[string]*schema.Schema{
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.ValidateRegexp,
+			},
 			"sort": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -37,6 +45,7 @@ func dataSourceAlicloudProducts() *schema.Resource {
 			},
 			"ids": {
 				Type:     schema.TypeList,
+				Optional: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
@@ -119,6 +128,18 @@ func dataSourceAlicloudProductsRead(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = client.RegionId
 	var productsFilter []market.DescribeProductsFilter
 	var product market.DescribeProductsFilter
+	var nameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		if r, err := regexp.Compile(v.(string)); err == nil {
+			nameRegex = r
+		}
+	}
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 	if v, ok := d.GetOk("sort"); ok && v.(string) != "" {
 		product.Key = "sort"
 		product.Value = v.(string)
@@ -135,6 +156,8 @@ func dataSourceAlicloudProductsRead(d *schema.ResourceData, meta interface{}) er
 		productsFilter = append(productsFilter, product)
 	}
 	request.Filter = &productsFilter
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
 	var allProduct []market.ProductItem
 	for {
 		raw, err := client.WithMarketClient(func(marketClient *market.Client) (interface{}, error) {
@@ -146,9 +169,25 @@ func dataSourceAlicloudProductsRead(d *schema.ResourceData, meta interface{}) er
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*market.DescribeProductsResponse)
 
-		allProduct = append(allProduct, response.ProductItems.ProductItem...)
+		if len(response.ProductItems.ProductItem) < 1 {
+			break
+		}
 
-		if len(allProduct) < PageSizeLarge {
+		for _, item := range response.ProductItems.ProductItem {
+			if nameRegex != nil {
+				if !nameRegex.MatchString(item.Name) {
+					continue
+				}
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[item.Code]; !ok {
+					continue
+				}
+			}
+			allProduct = append(allProduct, item)
+		}
+
+		if len(response.ProductItems.ProductItem) < PageSizeLarge {
 			break
 		}
 
