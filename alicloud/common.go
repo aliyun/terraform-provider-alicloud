@@ -52,6 +52,11 @@ const (
 )
 
 const (
+	Down = "Down"
+	Up   = "Up"
+)
+
+const (
 	NormalMode = "normal"
 	SafetyMode = "safety"
 )
