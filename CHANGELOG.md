@@ -1,4 +1,20 @@
 ## 1.65.1 (Unreleased)
+
+IMPROVEMENTS:
+
+- documenting the replica_set_name attribute in mongodb @chanind [GH-1989]
+- improve(period): improve computing period method [GH-1988]
+- improve(prepaid): support computing period by week [GH-1985]
+- improve(prepaid): add a method to fix period importer diff [GH-1984]
+- improve(mongoDB): supported field 'tags' [GH-1980]
+- add output to ssl vpn client cert @ionTea [GH-1979]
+
+BUG FIXES:
+
+- fix(fc): fixed bug from issue #1961 @yokzy88 [GH-1987]
+- fix(vpn): fix bug from issue #1965 @chanind [GH-1981]
+- fix(vpn): added Computed to field `vswitch_id` @chanind [GH-1977]
+
 ## 1.65.0 (December 13, 2019)
 
 - **New Resource:** `alicloud_reserved_instance` ([#1967](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1967))

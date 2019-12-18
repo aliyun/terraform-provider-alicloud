@@ -527,15 +527,16 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 			if renew.RenewalStatus == "AutoRenewal" {
 				periodUnit = renew.PeriodUnit
 			}
+			if periodUnit == "Year" {
+				periodUnit = "Month"
+				d.Set("auto_renew_period", renew.Duration*12)
+			}
 		}
 		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpiredTime, d.Get("period").(int), periodUnit)
 		if err != nil {
 			return WrapError(err)
 		}
 		d.Set("period", period)
-		if periodUnit == "Year" {
-			periodUnit = "Month"
-		}
 		d.Set("period_unit", periodUnit)
 	}
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceInstance)
