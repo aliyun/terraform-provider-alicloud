@@ -1,6 +1,7 @@
 package sls
 
 import (
+	"encoding/json"
 	"strings"
 )
 
@@ -27,10 +28,43 @@ type GetLogsResponse struct {
 	Progress string              `json:"progress"`
 	Count    int64               `json:"count"`
 	Logs     []map[string]string `json:"logs"`
+	Contents string              `json:"contents"`
 }
 
 func (resp *GetLogsResponse) IsComplete() bool {
 	return strings.ToLower(resp.Progress) == "complete"
+}
+
+func (resp *GetLogsResponse) GetKeys() (error, []string) {
+	type Content map[string][]interface{}
+	var content Content
+	err := json.Unmarshal([]byte(resp.Contents), &content)
+	if err != nil {
+		return err, nil
+	}
+	result := []string{}
+	for _, v := range content["keys"] {
+		result = append(result, v.(string))
+	}
+	return nil, result
+}
+
+type GetContextLogsResponse struct {
+	Progress     string              `json:"progress"`
+	TotalLines   int64               `json:"total_lines"`
+	BackLines    int64               `json:"back_lines"`
+	ForwardLines int64               `json:"forward_lines"`
+	Logs         []map[string]string `json:"logs"`
+}
+
+func (resp *GetContextLogsResponse) IsComplete() bool {
+	return strings.ToLower(resp.Progress) == "complete"
+}
+
+type JsonKey struct{
+	Type      string `json:"type"`
+	Alias     string `json:"alias,omitempty"`
+	DocValue  bool   `json:"doc_value,omitempty"`
 }
 
 // IndexKey ...
@@ -41,6 +75,7 @@ type IndexKey struct {
 	DocValue      bool     `json:"doc_value,omitempty"`
 	Alias         string   `json:"alias,omitempty"`
 	Chn           bool     `json:"chn"` // parse chinese or not
+	JsonKeys      map[string]*JsonKey  `json:"json_keys,omitempty"`
 }
 
 type IndexLine struct {

@@ -3,12 +3,13 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
+
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 
-	"github.com/golang/glog"
+	"github.com/go-kit/kit/log/level"
 )
 
 // ConsumerGroup type define
@@ -94,9 +95,9 @@ func (c *Client) ListConsumerGroup(project, logstore string) (cgList []*Consumer
 		err = json.Unmarshal(buf, errMsg)
 		if err != nil {
 			err = fmt.Errorf("failed to split shards")
-			if glog.V(1) {
+			if IsDebugLevelMatched(5) {
 				dump, _ := httputil.DumpResponse(r, true)
-				glog.Error(string(dump))
+				level.Error(Logger).Log("msg", string(dump))
 			}
 			return nil, NewClientError(err)
 		}
@@ -176,7 +177,7 @@ func (c *Client) UpdateCheckpoint(project, logstore string, cgName string, consu
 	} else {
 		urlVal.Add("forceSuccess", "false")
 	}
-	fmt.Println(urlVal.Encode())
+	// fmt.Println(urlVal.Encode())
 	uri := fmt.Sprintf("/logstores/%v/consumergroups/%v?%v", logstore, cgName, urlVal.Encode())
 	_, err = c.request(project, "POST", uri, h, body)
 	if err != nil {

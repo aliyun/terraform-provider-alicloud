@@ -9,10 +9,16 @@ import (
 	"net/url"
 	"strconv"
 	"sync"
+	"time"
 )
 
 // GlobalForceUsingHTTP if GlobalForceUsingHTTP is true, then all request will use HTTP(ignore LogProject's UsingHTTP flag)
 var GlobalForceUsingHTTP = false
+
+// RetryOnServerErrorEnabled if RetryOnServerErrorEnabled is false, then all error requests will not be retried
+var RetryOnServerErrorEnabled = true
+
+var GlobalDebugLevel = 0
 
 // compress type
 const (
@@ -33,8 +39,15 @@ type Error struct {
 	RequestID string `json:"requestID"`
 }
 
+func IsDebugLevelMatched(level int) bool {
+	return level <= GlobalDebugLevel
+}
+
 // NewClientError new client error
 func NewClientError(err error) *Error {
+	if err == nil {
+		return nil
+	}
 	if clientError, ok := err.(*Error); ok {
 		return clientError
 	}
@@ -73,6 +86,8 @@ type Client struct {
 	AccessKeySecret string
 	SecurityToken   string
 	UserAgent       string // default defaultLogUserAgent
+	RequestTimeOut  time.Duration
+	RetryTimeOut    time.Duration
 
 	accessKeyLock sync.RWMutex
 }
@@ -83,6 +98,13 @@ func convert(c *Client, projName string) *LogProject {
 	p, _ := NewLogProject(projName, c.Endpoint, c.AccessKeyID, c.AccessKeySecret)
 	p.SecurityToken = c.SecurityToken
 	p.UserAgent = c.UserAgent
+	if c.RequestTimeOut != time.Duration(0) {
+		p.WithRequestTimeout(c.RequestTimeOut)
+	}
+	if c.RetryTimeOut != time.Duration(0) {
+		p.WithRetryTimeout(c.RetryTimeOut)
+	}
+
 	return p
 }
 
@@ -234,9 +256,7 @@ func (c *Client) ListProjectV2(offset, size int) (projects []LogProject, count, 
 		Total    int          `json:"total"`
 	}
 
-	fmt.Println("xxx", uri, h)
 	r, err := request(proj, "GET", uri, h, nil)
-	fmt.Printf("yyy")
 	if err != nil {
 		return nil, 0, 0, NewClientError(err)
 	}
@@ -289,5 +309,10 @@ func (c *Client) DeleteProject(name string) error {
 		return err
 	}
 	defer resp.Body.Close()
+	return nil
+}
+
+// Close the client
+func (c *Client) Close() error {
 	return nil
 }

@@ -19,4 +19,7 @@ const (
 
 	// RequestIDHeader stands for the requestID in all response
 	RequestIDHeader = "x-log-requestid"
+
+	GetLogsQueryInfo = "X-Log-Query-Info"
+
 )

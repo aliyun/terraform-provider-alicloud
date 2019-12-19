@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"github.com/go-kit/kit/log/level"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
-	"github.com/golang/glog"
 	"golang.org/x/net/context"
 )
 
@@ -25,21 +25,25 @@ var (
 	}
 )
 
+
 func retryReadErrorCheck(ctx context.Context, err error) (bool, error) {
 	if err == nil {
 		return false, nil
 	}
-
 	switch e := err.(type) {
 	case *url.Error:
 		return true, e
 	case *Error:
-		if e.HTTPCode >= 500 && e.HTTPCode <= 599 {
-			return true, e
+		if RetryOnServerErrorEnabled {
+			if e.HTTPCode >= 500 && e.HTTPCode <= 599 {
+				return true, e
+			}
 		}
 	case *BadResponseError:
-		if e.HTTPCode >= 500 && e.HTTPCode <= 599 {
-			return true, e
+		if RetryOnServerErrorEnabled {
+			if e.HTTPCode >= 500 && e.HTTPCode <= 599 {
+				return true, e
+			}
 		}
 	default:
 		return false, e
@@ -55,12 +59,16 @@ func retryWriteErrorCheck(ctx context.Context, err error) (bool, error) {
 
 	switch e := err.(type) {
 	case *Error:
-		if e.HTTPCode == 502 || e.HTTPCode == 503 {
-			return true, e
+		if RetryOnServerErrorEnabled {
+			if e.HTTPCode == 500 || e.HTTPCode == 502 || e.HTTPCode == 503 {
+				return true, e
+			}
 		}
 	case *BadResponseError:
-		if e.HTTPCode == 502 || e.HTTPCode == 503 {
-			return true, e
+		if RetryOnServerErrorEnabled {
+			if e.HTTPCode == 500 || e.HTTPCode == 502 || e.HTTPCode == 503 {
+				return true, e
+			}
 		}
 	default:
 		return false, e
@@ -189,15 +197,13 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	for k, v := range headers {
 		req.Header.Add(k, v)
 	}
-
-	if glog.V(5) {
+	if IsDebugLevelMatched(5) {
 		dump, e := httputil.DumpRequest(req, true)
 		if e != nil {
-			glog.Info(e)
+			level.Info(Logger).Log("msg", e)
 		}
-		glog.Infof("HTTP Request:\n%v", string(dump))
+		level.Info(Logger).Log("msg", "HTTP Request:\n%v", string(dump))
 	}
-
 	// Get ready to do request
 	resp, err := project.httpClient.Do(req)
 	if err != nil {
@@ -219,13 +225,12 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 		err.RequestID = resp.Header.Get(RequestIDHeader)
 		return nil, err
 	}
-
-	if glog.V(5) {
+	if IsDebugLevelMatched(5) {
 		dump, e := httputil.DumpResponse(resp, true)
 		if e != nil {
-			glog.Info(e)
+			level.Info(Logger).Log("msg", e)
 		}
-		glog.Infof("HTTP Response:\n%v", string(dump))
+		level.Info(Logger).Log("msg", "HTTP Response:\n%v", string(dump))
 	}
 	return resp, nil
 }

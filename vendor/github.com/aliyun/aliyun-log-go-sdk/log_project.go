@@ -3,13 +3,15 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
+
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/go-kit/kit/log/level"
 )
 
 const (
@@ -68,8 +70,12 @@ func (p *LogProject) WithToken(token string) (*LogProject, error) {
 
 // WithRequestTimeout with custom timeout for a request
 func (p *LogProject) WithRequestTimeout(timeout time.Duration) *LogProject {
-	p.httpClient = &http.Client{
-		Timeout: timeout,
+	if p.httpClient == defaultHttpClient {
+		p.httpClient = &http.Client{
+			Timeout: timeout,
+		}
+	} else {
+		p.httpClient.Timeout = timeout
 	}
 	return p
 }
@@ -148,6 +154,7 @@ func (p *LogProject) CreateLogStore(name string, ttl, shardCnt int, autoSplit bo
 		ShardCount    int    `json:"shardCount"`
 		AutoSplit     bool   `json:"autoSplit"`
 		MaxSplitShard int    `json:"maxSplitShard"`
+		WebTracking   bool   `json:"enable_tracking"`
 	}
 	store := &Body{
 		Name:          name,
@@ -533,9 +540,8 @@ func (p *LogProject) GetConfig(name string) (c *LogConfig, err error) {
 
 	c = &LogConfig{}
 	json.Unmarshal(buf, c)
-
-	if glog.V(4) {
-		glog.Info("Get logtail config, result", *c)
+	if IsDebugLevelMatched(4) {
+		level.Info(Logger).Log("msg", "Get logtail config, result", *c)
 	}
 
 	return c, nil
@@ -574,6 +580,73 @@ func (p *LogProject) CreateConfig(c *LogConfig) (err error) {
 		return NewClientError(err)
 	}
 
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+	r, err := request(p, "POST", "/configs", h, body)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, err = ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return nil
+}
+
+// GetConfigString returns config according by config name.
+func (p *LogProject) GetConfigString(name string) (c string, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+	r, err := request(p, "GET", "/configs/"+name, h, nil)
+	if err != nil {
+		return "", NewClientError(err)
+	}
+	defer r.Body.Close()
+	buf, err := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(buf, err)
+		return "", err
+	}
+	if IsDebugLevelMatched(4) {
+		level.Info(Logger).Log("msg", "Get logtail config, result", c)
+	}
+	return string(buf), err
+}
+
+// UpdateConfigString updates a config.
+func (p *LogProject) UpdateConfigString(configName, c string) (err error) {
+	body := []byte(c)
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+	r, err := request(p, "PUT", "/configs/"+configName, h, body)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, _ = ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return nil
+}
+
+// CreateConfigString creates a new config in SLS.
+func (p *LogProject) CreateConfigString(c string) (err error) {
+	body := []byte(c)
 	h := map[string]string{
 		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
 		"Content-Type":      "application/json",
@@ -905,18 +978,19 @@ func (p *LogProject) parseEndpoint() {
 		scheme = httpScheme
 	}
 	if ipRegex.MatchString(host) { // ip format
-		if len(p.Name) == 0 {
-			p.baseURL = fmt.Sprintf("%s%s", scheme, host)
-		} else {
-			p.baseURL = fmt.Sprintf("%s%s/%s", scheme, host, p.Name)
+		// use direct ip proxy
+		url, _ := url.Parse(fmt.Sprintf("%s%s", scheme, host))
+		p.httpClient = &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyURL(url),
+			},
+			Timeout: defaultRequestTimeout,
 		}
 
+	}
+	if len(p.Name) == 0 {
+		p.baseURL = fmt.Sprintf("%s%s", scheme, host)
 	} else {
-		if len(p.Name) == 0 {
-			p.baseURL = fmt.Sprintf("%s%s", scheme, host)
-		} else {
-			p.baseURL = fmt.Sprintf("%s%s.%s", scheme, p.Name, host)
-		}
-
+		p.baseURL = fmt.Sprintf("%s%s.%s", scheme, p.Name, host)
 	}
 }

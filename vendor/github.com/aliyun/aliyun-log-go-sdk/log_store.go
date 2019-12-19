@@ -3,6 +3,7 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
+
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -10,8 +11,8 @@ import (
 	"strconv"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/glog"
 	"github.com/pierrec/lz4"
+	"github.com/go-kit/kit/log/level"
 )
 
 // this file is deprecated and no maintenance
@@ -331,8 +332,8 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 		if err != nil {
 			err = fmt.Errorf("failed to get cursor")
 			dump, _ := httputil.DumpResponse(r, true)
-			if glog.V(1) {
-				glog.Error(string(dump))
+			if IsDebugLevelMatched(1) {
+				level.Error(Logger).Log("msg", string(dump))
 			}
 			return
 		}
@@ -389,8 +390,8 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 		if err != nil {
 			err = fmt.Errorf("failed to get cursor")
 			dump, _ := httputil.DumpResponse(r, true)
-			if glog.V(1) {
-				glog.Error(string(dump))
+			if IsDebugLevelMatched(1) {
+				level.Error(Logger).Log("msg", string(dump))
 			}
 			return
 		}
@@ -554,14 +555,63 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	if err != nil {
 		return nil, err
 	}
-
+	var contents string
+	if _, ok := r.Header[GetLogsQueryInfo]; ok {
+		if len(r.Header[GetLogsQueryInfo]) > 0 {
+			contents = r.Header[GetLogsQueryInfo][0]
+		}
+	}
 	getLogsResponse := GetLogsResponse{
 		Progress: r.Header[ProgressHeader][0],
 		Count:    count,
 		Logs:     logs,
+		Contents: contents,
 	}
 
 	return &getLogsResponse, nil
+}
+
+// GetContextLogs ...
+func (s *LogStore) GetContextLogs(backLines int32, forwardLines int32,
+	packID string, packMeta string) (*GetContextLogsResponse, error) {
+
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Accept":            "application/json",
+	}
+
+	urlVal := url.Values{}
+	urlVal.Add("type", "context_log")
+	urlVal.Add("back_lines", strconv.Itoa(int(backLines)))
+	urlVal.Add("forward_lines", strconv.Itoa(int(forwardLines)))
+	urlVal.Add("pack_id", packID)
+	urlVal.Add("pack_meta", packMeta)
+
+	uri := fmt.Sprintf("/logstores/%s?%s", s.Name, urlVal.Encode())
+	r, err := request(s.project, "GET", uri, h, nil)
+	if err != nil {
+		return nil, NewClientError(err)
+
+	}
+	defer r.Body.Close()
+	body, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
+
+		}
+		return nil, err
+
+	}
+
+	resp := GetContextLogsResponse{}
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
+
+	}
+	return &resp, nil
 }
 
 // CreateIndex ...
@@ -571,6 +621,24 @@ func (s *LogStore) CreateIndex(index Index) error {
 		return err
 	}
 
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	r, err := request(s.project, "POST", uri, h, body)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
+// CreateIndexString ...
+func (s *LogStore) CreateIndexString(indexStr string) error {
+	body := []byte(indexStr)
 	h := map[string]string{
 		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
 		"Content-Type":      "application/json",
@@ -604,7 +672,25 @@ func (s *LogStore) UpdateIndex(index Index) error {
 	if r != nil {
 		r.Body.Close()
 	}
-	return nil
+	return err
+}
+
+// UpdateIndexString ...
+func (s *LogStore) UpdateIndexString(indexStr string) error {
+	body := []byte(indexStr)
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	r, err := request(s.project, "PUT", uri, h, body)
+	if r != nil {
+		r.Body.Close()
+	}
+	return err
 }
 
 // DeleteIndex ...
@@ -633,7 +719,7 @@ func (s *LogStore) DeleteIndex() error {
 	if r != nil {
 		r.Body.Close()
 	}
-	return nil
+	return err
 }
 
 // GetIndex ...
@@ -671,6 +757,37 @@ func (s *LogStore) GetIndex() (*Index, error) {
 	}
 
 	return index, nil
+}
+
+// GetIndexString ...
+func (s *LogStore) GetIndexString() (string, error) {
+	type Body struct {
+		project string `json:"projectName"`
+		store   string `json:"logstoreName"`
+	}
+
+	body, err := json.Marshal(Body{
+		project: s.project.Name,
+		store:   s.Name,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	r, err := request(s.project, "GET", uri, h, body)
+	if err != nil {
+		return "", err
+	}
+	defer r.Body.Close()
+	data, err := ioutil.ReadAll(r.Body)
+	return string(data), err
 }
 
 // CheckIndexExist check index exist or not

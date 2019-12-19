@@ -77,6 +77,7 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+
 					"full_text": []map[string]interface{}{
 						{
 							"case_sensitive": "true",
@@ -87,11 +88,21 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 						{
 							"name":             "${var.name}-1",
 							"enable_analytics": "true",
+							"token":            ` #$^*\r\n\t`,
+							"type":             "json",
+							"json_keys": []map[string]interface{}{
+								{"name": "key2222", "alias": "alisa22222"},
+								{"name": "key1111", "alias": "alisa1111"},
+							},
 						},
 						{
 							"name":  "${var.name}-2",
 							"token": ` #$^*\r\n\t`,
-							"type":  "text",
+							"type":  "json",
+							"json_keys": []map[string]interface{}{
+								{"name": "key3333", "alias": "alisa3333"},
+								{"name": "key4444", "alias": "alisa4444"},
+							},
 						},
 					},
 				}),
