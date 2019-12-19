@@ -375,6 +375,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_instance_grant":                  resourceAlicloudCenInstanceGrant(),
 			"alicloud_kvstore_instance":                    resourceAlicloudKVStoreInstance(),
 			"alicloud_kvstore_backup_policy":               resourceAlicloudKVStoreBackupPolicy(),
+			"alicloud_kvstore_account":                     resourceAlicloudKVstoreAccount(),
 			"alicloud_datahub_project":                     resourceAlicloudDatahubProject(),
 			"alicloud_datahub_subscription":                resourceAlicloudDatahubSubscription(),
 			"alicloud_datahub_topic":                       resourceAlicloudDatahubTopic(),
