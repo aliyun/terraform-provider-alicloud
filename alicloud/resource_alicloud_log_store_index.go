@@ -2,12 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
-	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -96,6 +95,32 @@ func resourceAlicloudLogStoreIndex() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 							Default:  true,
+						},
+						"json_keys": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"name": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"type": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Default:  "long",
+									},
+									"alias": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"doc_value": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Default:  true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -186,7 +211,6 @@ func resourceAlicloudLogStoreIndexRead(d *schema.ResourceData, meta interface{})
 		}
 		return WrapError(err)
 	}
-
 	if line := index.Line; line != nil {
 		mapping := map[string]interface{}{
 			"case_sensitive":  line.CaseSensitive,
@@ -209,16 +233,27 @@ func resourceAlicloudLogStoreIndexRead(d *schema.ResourceData, meta interface{})
 				"token":            strings.Join(v.Token, ""),
 				"enable_analytics": v.DocValue,
 			}
+			if len(v.JsonKeys) > 0 {
+
+				var result = []map[string]interface{}{}
+				for k1, v1 := range v.JsonKeys {
+					var value = map[string]interface{}{}
+					value["doc_value"] = v1.DocValue
+					value["alias"] = v1.Alias
+					value["type"] = v1.Type
+					value["name"] = k1
+					result = append(result, value)
+				}
+				mapping["json_keys"] = result
+			}
 			keySet = append(keySet, mapping)
 		}
 		if err := d.Set("field_search", keySet); err != nil {
 			return WrapError(err)
 		}
 	}
-
 	d.Set("project", parts[0])
 	d.Set("logstore", parts[1])
-
 	return nil
 }
 
@@ -333,14 +368,30 @@ func buildIndexKeys(d *schema.ResourceData) map[string]sls.IndexKey {
 	if field, ok := d.GetOk("field_search"); ok {
 		for _, f := range field.(*schema.Set).List() {
 			v := f.(map[string]interface{})
-			keys[v["name"].(string)] = sls.IndexKey{
+			indexKey := sls.IndexKey{
 				Type:          v["type"].(string),
 				Alias:         v["alias"].(string),
 				DocValue:      v["enable_analytics"].(bool),
 				Token:         strings.Split(v["token"].(string), ""),
 				CaseSensitive: v["case_sensitive"].(bool),
 				Chn:           v["include_chinese"].(bool),
+				JsonKeys:      map[string]*sls.JsonKey{},
 			}
+			jsonKeys := v["json_keys"].(*schema.Set).List()
+			for _, e := range jsonKeys {
+				value := e.(map[string]interface{})
+				name := value["name"].(string)
+				alias := value["alias"].(string)
+				keyType := value["type"].(string)
+				docValue := value["doc_value"].(bool)
+				indexKey.JsonKeys[name] = &sls.JsonKey{
+					Type:     keyType,
+					Alias:    alias,
+					DocValue: docValue,
+				}
+
+			}
+			keys[v["name"].(string)] = indexKey
 		}
 	}
 	return keys

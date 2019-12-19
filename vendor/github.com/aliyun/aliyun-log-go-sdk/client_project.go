@@ -3,11 +3,12 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
+
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/golang/glog"
+	"github.com/go-kit/kit/log/level"
 )
 
 // ListLogStore returns all logstore names of project p.
@@ -87,9 +88,9 @@ func (c *Client) ListMachines(project, machineGroupName string) (ms []*Machine, 
 		err = json.Unmarshal(buf, errMsg)
 		if err != nil {
 			err = fmt.Errorf("failed to remove config from machine group")
-			if glog.V(1) {
+			if IsDebugLevelMatched(1) {
 				dump, _ := httputil.DumpResponse(r, true)
-				glog.Error(string(dump))
+				level.Error(Logger).Log("msg", string(dump))
 			}
 			return
 		}
@@ -174,6 +175,24 @@ func (c *Client) UpdateConfig(project string, config *LogConfig) (err error) {
 func (c *Client) CreateConfig(project string, config *LogConfig) (err error) {
 	proj := convert(c, project)
 	return proj.CreateConfig(config)
+}
+
+// GetConfigString returns config according by config name.
+func (c *Client) GetConfigString(project string, config string) (logConfig string, err error) {
+	proj := convert(c, project)
+	return proj.GetConfigString(config)
+}
+
+// UpdateConfigString updates a config.
+func (c *Client) UpdateConfigString(project string, configName, configDetail string) (err error) {
+	proj := convert(c, project)
+	return proj.UpdateConfigString(configName, configDetail)
+}
+
+// CreateConfigString creates a new config in SLS.
+func (c *Client) CreateConfigString(project string, config string) (err error) {
+	proj := convert(c, project)
+	return proj.CreateConfigString(config)
 }
 
 // DeleteConfig deletes a config according by config name.

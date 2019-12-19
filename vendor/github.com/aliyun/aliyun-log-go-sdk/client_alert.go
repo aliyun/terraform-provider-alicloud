@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"strconv"
 )
 
@@ -16,42 +17,69 @@ type SavedSearch struct {
 	DisplayName     string `json:"displayName"`
 }
 
-// AlertDetail ...
-type AlertDetail struct {
-	AlertKey   string `json:"alertKey"`
-	AlertValue string `json:"alertValue"`
-	Comparator string `json:"comparator"`
-}
-
-// ActionDetail ...
-type ActionDetail struct {
-	PhoneNumber string `json:"phoneNumber,omitempty"`
-	MNSParam    string `json:"param,omitempty"`
-	Message     string `json:"message,omitempty"`
-	Webhook     string `json:"webhook,omitempty"`
-}
-
 const (
-	ActionTypeSMS      = "sms"
-	ActionTypeMNS      = "mns"
-	ActionTypeWebhook  = "webhook"
-	ActionTypeDingtalk = "dingtalk"
-	ActionTypeOthers   = "unknown"
+	NotificationTypeSMS           = "SMS"
+	NotificationTypeWebhook       = "Webhook"
+	NotificationTypeDingTalk      = "DingTalk"
+	NotificationTypeEmail         = "Email"
+	NotificationTypeMessageCenter = "MessageCenter"
 )
 
-// Alert ...
 type Alert struct {
-	AlertName       string       `json:"alertName"`
-	SavedSearchName string       `json:"savedsearchName"`
-	From            string       `json:"from"`
-	To              string       `json:"to"`
-	RoleArn         string       `json:"roleArn"`
-	CheckInterval   int          `json:"checkInterval"`
-	Count           int          `json:"count"`
-	AlertDetail     AlertDetail  `json:"alertDetail"`
-	ActionType      string       `json:"actionType"`
-	ActionDetail    ActionDetail `json:"actionDetail"`
-	DisplayName     string       `json:"displayName"`
+	Name             string              `json:"name"`
+	DisplayName      string              `json:"displayName"`
+	Description      string              `json:"description"`
+	State            string              `json:"state"`
+	Configuration    *AlertConfiguration `json:"configuration"`
+	Schedule         *Schedule           `json:"schedule"`
+	CreateTime       int64               `json:"createTime,omitempty"`
+	LastModifiedTime int64               `json:"lastModifiedTime,omitempty"`
+}
+
+func (alert *Alert) MarshalJSON() ([]byte, error) {
+	body := map[string]interface{}{
+		"name":          alert.Name,
+		"displayName":   alert.DisplayName,
+		"description":   alert.Description,
+		"state":         alert.State,
+		"configuration": alert.Configuration,
+		"schedule":      alert.Schedule,
+		"type":          "Alert",
+	}
+	return json.Marshal(body)
+}
+
+type AlertConfiguration struct {
+	Condition        string          `json:"condition"`
+	Dashboard        string          `json:"dashboard"`
+	QueryList        []*AlertQuery   `json:"queryList"`
+	MuteUntil        int64           `json:"muteUntil"`
+	NotificationList []*Notification `json:"notificationList"`
+	NotifyThreshold  int32           `json:"notifyThreshold"`
+	Throttling       string          `json:"throttling"`
+}
+
+type AlertQuery struct {
+	ChartTitle   string `json:"chartTitle"`
+	LogStore     string `json:"logStore"`
+	Query        string `json:"query"`
+	TimeSpanType string `json:"timeSpanType"`
+	Start        string `json:"start"`
+	End          string `json:"end"`
+}
+
+type Notification struct {
+	Type       string   `json:"type"`
+	Content    string   `json:"content"`
+	EmailList  []string `json:"emailList,omitempty"`
+	Method     string   `json:"method,omitempty"`
+	MobileList []string `json:"mobileList,omitempty"`
+	ServiceUri string   `json:"serviceUri,omitempty"`
+}
+
+type Schedule struct {
+	Type     string `json:"type"`
+	Interval string `json:"interval"`
 }
 
 func (c *Client) CreateSavedSearch(project string, savedSearch *SavedSearch) error {
@@ -164,13 +192,12 @@ func (c *Client) CreateAlert(project string, alert *Alert) error {
 	if err != nil {
 		return NewClientError(err)
 	}
-
 	h := map[string]string{
 		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
 		"Content-Type":      "application/json",
 	}
 
-	uri := "/alerts"
+	uri := "/jobs"
 	r, err := c.request(project, "POST", uri, h, body)
 	if err != nil {
 		return err
@@ -190,7 +217,7 @@ func (c *Client) UpdateAlert(project string, alert *Alert) error {
 		"Content-Type":      "application/json",
 	}
 
-	uri := "/alerts/" + alert.AlertName
+	uri := "/jobs/" + alert.Name
 	r, err := c.request(project, "PUT", uri, h, body)
 	if err != nil {
 		return err
@@ -205,8 +232,36 @@ func (c *Client) DeleteAlert(project string, alertName string) error {
 		"Content-Type":      "application/json",
 	}
 
-	uri := "/alerts/" + alertName
+	uri := "/jobs/" + alertName
 	r, err := c.request(project, "DELETE", uri, h, nil)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
+func (c *Client) DisableAlert(project string, alertName string) error {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Content-Type":      "application/json",
+	}
+	uri := fmt.Sprintf("/jobs/%s?action=disable", alertName)
+	r, err := c.request(project, "PUT", uri, h, nil)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
+func (c *Client) EnableAlert(project string, alertName string) error {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Content-Type":      "application/json",
+	}
+	uri := fmt.Sprintf("/jobs/%s?action=enable", alertName)
+	r, err := c.request(project, "PUT", uri, h, nil)
 	if err != nil {
 		return err
 	}
@@ -219,8 +274,7 @@ func (c *Client) GetAlert(project string, alertName string) (*Alert, error) {
 		"x-log-bodyrawsize": "0",
 		"Content-Type":      "application/json",
 	}
-
-	uri := "/alerts/" + alertName
+	uri := "/jobs/" + alertName
 	r, err := c.request(project, "GET", uri, h, nil)
 	if err != nil {
 		return nil, err
@@ -234,32 +288,35 @@ func (c *Client) GetAlert(project string, alertName string) (*Alert, error) {
 	return alert, err
 }
 
-func (c *Client) ListAlert(project string, alertName string, offset, size int) (alerts []string, total int, count int, err error) {
+func (c *Client) ListAlert(project, alertName, dashboard string, offset, size int) (alerts []*Alert, total int, count int, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Content-Type":      "application/json",
-		"AlertName":         alertName,
-		"offset":            strconv.Itoa(offset),
-		"size":              strconv.Itoa(size),
 	}
-
-	uri := "/alerts"
+	v := url.Values{}
+	v.Add("jobName", alertName)
+	v.Add("jobType", "Alert")
+	v.Add("offset", fmt.Sprintf("%d", offset))
+	v.Add("size", fmt.Sprintf("%d", size))
+	if dashboard != "" {
+		v.Add("resourceProvider", dashboard)
+	}
+	uri := "/jobs?" + v.Encode()
 	r, err := c.request(project, "GET", uri, h, nil)
 	if err != nil {
 		return nil, 0, 0, err
 	}
 	defer r.Body.Close()
 
-	type ListAlert struct {
+	type AlertList struct {
 		Total   int      `json:"total"`
 		Count   int      `json:"count"`
-		Alertes []string `json:"alerts"`
+		Results []*Alert `json:"results"`
 	}
-
 	buf, _ := ioutil.ReadAll(r.Body)
-	listAlert := &ListAlert{}
+	listAlert := &AlertList{}
 	if err = json.Unmarshal(buf, listAlert); err != nil {
 		err = NewClientError(err)
 	}
-	return listAlert.Alertes, listAlert.Total, listAlert.Count, err
+	return listAlert.Results, listAlert.Total, listAlert.Count, err
 }

@@ -114,6 +114,23 @@ func (c *Client) GetChart(project, dashboardName, chartName string) (chart *Char
 	return chart, err
 }
 
+func (c *Client) CreateDashboardString(project string, dashboardStr string) error {
+	body := []byte(dashboardStr)
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+	}
+
+	uri := "/dashboards"
+	r, err := c.request(project, "POST", uri, h, body)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
 func (c *Client) CreateDashboard(project string, dashboard Dashboard) error {
 	body, err := json.Marshal(dashboard)
 	if err != nil {
@@ -146,6 +163,23 @@ func (c *Client) UpdateDashboard(project string, dashboard Dashboard) error {
 	}
 
 	uri := "/dashboards/" + dashboard.DashboardName
+	r, err := c.request(project, "PUT", uri, h, body)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
+func (c *Client) UpdateDashboardString(project string, dashboardName, dashboardStr string) error {
+	body := []byte(dashboardStr)
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+	}
+
+	uri := "/dashboards/" + dashboardName
 	r, err := c.request(project, "PUT", uri, h, body)
 	if err != nil {
 		return err
@@ -187,6 +221,21 @@ func (c *Client) GetDashboard(project, name string) (dashboard *Dashboard, err e
 		err = NewClientError(err)
 	}
 	return dashboard, err
+}
+
+func (c *Client) GetDashboardString(project, name string) (dashboard string, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Content-Type":      "application/json",
+	}
+	uri := "/dashboards/" + name
+	r, err := c.request(project, "GET", uri, h, nil)
+	if err != nil {
+		return "", err
+	}
+	defer r.Body.Close()
+	buf, err := ioutil.ReadAll(r.Body)
+	return string(buf), err
 }
 
 func (c *Client) ListDashboard(project string, dashboardName string, offset, size int) (dashboardList []string, count, total int, err error) {

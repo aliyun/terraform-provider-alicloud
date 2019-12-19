@@ -6,12 +6,13 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"strings"
 
-	"github.com/golang/glog"
+	"github.com/go-kit/kit/log/level"
 )
 
 // request sends a request to alibaba cloud Log Service.
@@ -96,13 +97,12 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	for k, v := range headers {
 		req.Header.Add(k, v)
 	}
-
-	if glog.V(5) {
+	if IsDebugLevelMatched(5) {
 		dump, e := httputil.DumpRequest(req, true)
 		if e != nil {
-			glog.Info(e)
+			level.Info(Logger).Log("msg", e)
 		}
-		glog.Infof("HTTP Request:\n%v", string(dump))
+		level.Info(Logger).Log("msg", "HTTP Request:\n%v", string(dump))
 	}
 
 	// Get ready to do request
@@ -121,13 +121,13 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 		err.RequestID = resp.Header.Get("x-log-requestid")
 		return nil, err
 	}
-
-	if glog.V(5) {
+	if IsDebugLevelMatched(5) {
 		dump, e := httputil.DumpResponse(resp, true)
 		if e != nil {
-			glog.Info(e)
+			level.Info(Logger).Log("msg", e)
 		}
-		glog.Infof("HTTP Response:\n%v", string(dump))
+		level.Info(Logger).Log("msg", "HTTP Response:\n%v", string(dump))
 	}
+
 	return resp, nil
 }
