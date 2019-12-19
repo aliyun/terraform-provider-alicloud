@@ -25,6 +25,7 @@ resource "alicloud_kvstore_instance" "myredis" {
   vswitch_id     = var.vswitch_id == "" ? alicloud_vswitch.vswitch[0].id : var.vswitch_id
   security_ips   = ["1.1.1.1", "2.2.2.2", "3.3.3.3"]
   vpc_auth_mode  = "Close"
+  engine_version = "4.0"
 
   //Refer to https://help.aliyun.com/document_detail/43885.html
   parameters {
@@ -42,5 +43,11 @@ resource "alicloud_kvstore_backup_policy" "redisbackup" {
   instance_id   = alicloud_kvstore_instance.myredis.id
   backup_time   = "03:00Z-04:00Z"
   backup_period = ["Monday", "Wednesday", "Friday"]
+}
+
+resource "alicloud_kvstore_account" "account" {
+  instance_id = alicloud_kvstore_instance.myredis.id
+  account_name        = "tftestnormal"
+  account_password    = "Test12345"
 }
 

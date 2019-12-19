@@ -17,6 +17,8 @@ type KvstoreService struct {
 	client *connectivity.AliyunClient
 }
 
+var KVstoreInstanceStatusCatcher = Catcher{"OperationDenied.KVstoreInstanceStatus", 60, 5}
+
 func (s *KvstoreService) DescribeKVstoreInstance(id string) (*r_kvstore.DBInstanceAttribute, error) {
 	instance := &r_kvstore.DBInstanceAttribute{}
 	request := r_kvstore.CreateDescribeInstanceAttributeRequest()
@@ -276,4 +278,65 @@ func (s *KvstoreService) DescribeTags(resourceId string, resourceType TagResourc
 	response, _ := raw.(*r_kvstore.ListTagResourcesResponse)
 
 	return response.TagResources.TagResource, nil
+}
+
+func (s *KvstoreService) WaitForKVstoreAccount(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeKVstoreAccount(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object != nil && object.AccountStatus == string(status) {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AccountStatus, status, ProviderERROR)
+		}
+	}
+	return nil
+}
+
+func (s *KvstoreService) DescribeKVstoreAccount(id string) (*r_kvstore.Account, error) {
+	ds := &r_kvstore.Account{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return ds, WrapError(err)
+	}
+	request := r_kvstore.CreateDescribeAccountsRequest()
+	request.RegionId = s.client.RegionId
+	request.InstanceId = parts[0]
+	request.AccountName = parts[1]
+	invoker := NewInvoker()
+	invoker.AddCatcher(KVstoreInstanceStatusCatcher)
+	var response *r_kvstore.DescribeAccountsResponse
+	if err := invoker.Run(func() error {
+		raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.DescribeAccounts(request)
+		})
+		if err != nil {
+			return err
+		}
+
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		response, _ = raw.(*r_kvstore.DescribeAccountsResponse)
+		return nil
+	}); err != nil {
+		if IsExceptedError(err, InvalidKVStoreInstanceIdNotFound) {
+			return ds, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return ds, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	if len(response.Accounts.Account) < 1 {
+		return ds, WrapErrorf(Error(GetNotFoundMessage("KVstoreAccount", id)), NotFoundMsg, ProviderERROR)
+	}
+	return &response.Accounts.Account[0], nil
 }
