@@ -1,7 +1,19 @@
-## 1.65.1 (Unreleased)
+## 1.66.0 (Unreleased)
+
+- **New Resource:** `alicloud_kvstore_account` [GH-1993]
+- **New Resource:** `alicloud_copy_image` [GH-1978]
+- **New Resource:** `alicloud_polardb_database` [GH-1996]
+- **New Resource:** `alicloud_polardb_backup_policy` [GH-1991]
+- **New Resource:** `alicloud_poloardb_cluster` [GH-1978]
+- **Data Source:** `alicloud_poloardb_clusters` [GH-1978]
 
 IMPROVEMENTS:
 
+
+- improve(SLS): Support SLS logstore index json keys [GH-1999]
+- improve(acl): add missing tags for acl, keypair and son [GH-1997]
+- improve(market): product datasource supported name regex and ids filter [GH-1992]
+- improve(instance): improve auto_renew_period setting [GH-1990]
 - documenting the replica_set_name attribute in mongodb @chanind [GH-1989]
 - improve(period): improve computing period method [GH-1988]
 - improve(prepaid): support computing period by week [GH-1985]
@@ -11,6 +23,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix(db_backup_policy): fix postgresql backup policy bug [GH-2002]
 - fix(fc): fixed bug from issue #1961 @yokzy88 [GH-1987]
 - fix(vpn): fix bug from issue #1965 @chanind [GH-1981]
 - fix(vpn): added Computed to field `vswitch_id` @chanind [GH-1977]
