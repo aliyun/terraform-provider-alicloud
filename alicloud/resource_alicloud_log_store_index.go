@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"strings"
 	"time"
 
-	"github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
