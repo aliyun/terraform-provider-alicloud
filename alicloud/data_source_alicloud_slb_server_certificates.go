@@ -26,6 +26,7 @@ func dataSourceAlicloudSlbServerCertificates() *schema.Resource {
 				ForceNew: true,
 				MinItems: 1,
 			},
+			"tags": tagsSchema(),
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -104,6 +105,7 @@ func dataSourceAlicloudSlbServerCertificates() *schema.Resource {
 							Optional: true,
 							ForceNew: true,
 						},
+						"tags": tagsSchema(),
 					},
 				},
 			},
@@ -111,11 +113,35 @@ func dataSourceAlicloudSlbServerCertificates() *schema.Resource {
 	}
 }
 
+func severCertificateTagsMappings(d *schema.ResourceData, id string, meta interface{}) map[string]string {
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
+	tags, err := slbService.DescribeTags(id, nil, TagResourceCertificate)
+
+	if err != nil {
+		return nil
+	}
+
+	return slbTagsToMap(tags)
+}
+
 func dataSourceAlicloudSlbServerCertificatesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := slb.CreateDescribeServerCertificatesRequest()
 	request.RegionId = client.RegionId
+	tags := d.Get("tags").(map[string]interface{})
+	if tags != nil && len(tags) > 0 {
+		Tags := make([]slb.DescribeServerCertificatesTag, 0, len(tags))
+		for k, v := range tags {
+			certificatesTag := slb.DescribeServerCertificatesTag{
+				Key:   k,
+				Value: v.(string),
+			}
+			Tags = append(Tags, certificatesTag)
+		}
+		request.Tag = &Tags
+	}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -154,10 +180,10 @@ func dataSourceAlicloudSlbServerCertificatesRead(d *schema.ResourceData, meta in
 		filteredTemp = response.ServerCertificates.ServerCertificate
 	}
 
-	return slbServerCertificatesDescriptionAttributes(d, filteredTemp)
+	return slbServerCertificatesDescriptionAttributes(d, filteredTemp, meta)
 }
 
-func slbServerCertificatesDescriptionAttributes(d *schema.ResourceData, certificates []slb.ServerCertificate) error {
+func slbServerCertificatesDescriptionAttributes(d *schema.ResourceData, certificates []slb.ServerCertificate, meta interface{}) error {
 	var ids []string
 	var names []string
 	var s []map[string]interface{}
@@ -182,6 +208,7 @@ func slbServerCertificatesDescriptionAttributes(d *schema.ResourceData, certific
 			"alicloud_certificate_name": certificate.AliCloudCertificateName,
 			"is_alicloud_certificate":   certificate.IsAliCloudCertificate == 1,
 			"resource_group_id":         certificate.ResourceGroupId,
+			"tags":                      severCertificateTagsMappings(d, certificate.ServerCertificateId, meta),
 		}
 		ids = append(ids, certificate.ServerCertificateId)
 		names = append(names, certificate.ServerCertificateName)

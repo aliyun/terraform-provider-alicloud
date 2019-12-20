@@ -174,7 +174,11 @@ func TestAccAlicloudKeyPairBasic(t *testing.T) {
 			{
 				Config: testAccKeyPairConfigBasic(rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test123",
+					}),
 				),
 			},
 			{
@@ -183,6 +187,16 @@ func TestAccAlicloudKeyPairBasic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"public_key":        "ssh-rsa AAAAB3Nza12345678qwertyuudsfsg",
 						"resource_group_id": "",
+					}),
+				),
+			},
+			{
+				Config: testAccKeyPairConfig_tag(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF1",
+						"tags.For":     "acceptance test1231",
 					}),
 				),
 			},
@@ -198,7 +212,10 @@ func TestAccAlicloudKeyPairBasic(t *testing.T) {
 				Config: testAccKeyPairConfig_key_name_prefix(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"key_name": REGEXMATCH + fmt.Sprintf("tf-testAccKeyPairConfig%d", rand) + "*",
+						"key_name":     REGEXMATCH + fmt.Sprintf("tf-testAccKeyPairConfig%d", rand) + "*",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test123",
 					}),
 				),
 			},
@@ -249,6 +266,10 @@ func testAccKeyPairConfigBasic(rand int) string {
 	return fmt.Sprintf(`
 resource "alicloud_key_pair" "default" {
 	resource_group_id = "%s"
+    tags = {
+       Created = "TF"
+       For = "acceptance test123"
+    }
 }
 `, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
@@ -257,6 +278,21 @@ func testAccKeyPairConfig_public_key(rand int) string {
 	return fmt.Sprintf(`
 resource "alicloud_key_pair" "default" {
 	public_key = "ssh-rsa AAAAB3Nza12345678qwertyuudsfsg"
+    tags = {
+       Created = "TF"
+       For = "acceptance test123"
+    }
+}
+`)
+}
+func testAccKeyPairConfig_tag(rand int) string {
+	return fmt.Sprintf(`
+resource "alicloud_key_pair" "default" {
+	public_key = "ssh-rsa AAAAB3Nza12345678qwertyuudsfsg"
+    tags = {
+       Created = "TF1"
+       For = "acceptance test1231"
+    }
 }
 `)
 }
@@ -266,6 +302,10 @@ func testAccKeyPairConfig_key_name(rand int) string {
 resource "alicloud_key_pair" "default" {
 	key_name  = "tf-testAccKeyPairConfig%d"
 	public_key = "ssh-rsa AAAAB3Nza12345678qwertyuudsfsg"
+    tags = {
+       Created = "TF1"
+       For = "acceptance test1231"
+    }
 }
 `, rand)
 }
@@ -275,6 +315,10 @@ func testAccKeyPairConfig_key_name_prefix(rand int) string {
 resource "alicloud_key_pair" "default" {
 	key_name_prefix  = "tf-testAccKeyPairConfig%d"
 	public_key = "ssh-rsa AAAAB3Nza12345678qwertyuudsfsg"
+    tags = {
+       Created = "TF"
+       For = "acceptance test123"
+    }
 }
 `, rand)
 }

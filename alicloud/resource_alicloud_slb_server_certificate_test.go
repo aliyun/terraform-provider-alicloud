@@ -96,11 +96,19 @@ func TestAccAlicloudSlbServerCertificate_basic(t *testing.T) {
 					"server_certificate": server_certificate,
 					"private_key":        private_key,
 					"resource_group_id":  os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test123",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					// the alicloud_certificate_id/alicloud_certificate_name depend on anothor alibaba cloud certificate product.
 					// but now it is not suppot on alibaba cloud international site.
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test123",
+					}),
 				),
 			},
 			{
@@ -111,6 +119,21 @@ func TestAccAlicloudSlbServerCertificate_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF1",
+						"For":     "acceptance test1231",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF1",
+						"tags.For":     "acceptance test1231",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"name": "tf-testAccSlbServerCertificateUpdate",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -118,6 +141,25 @@ func TestAccAlicloudSlbServerCertificate_basic(t *testing.T) {
 					// but now it is not suppot on alibaba cloud international site.
 					testAccCheck(map[string]string{
 						"name": "tf-testAccSlbServerCertificateUpdate",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test123",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					// the alicloud_certificate_id/alicloud_certificate_name depend on anothor alibaba cloud certificate product.
+					// but now it is not suppot on alibaba cloud international site.
+					testAccCheck(map[string]string{
+						"name":         name,
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test123",
 					}),
 				),
 			},

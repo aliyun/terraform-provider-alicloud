@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -852,4 +854,140 @@ func (s *SlbService) WaitForSlbDomainExtension(id string, status Status, timeout
 		}
 	}
 	return nil
+}
+
+func (s *SlbService) setTags(d *schema.ResourceData, resourceType TagResourceType) error {
+	oraw, nraw := d.GetChange("tags")
+	o := oraw.(map[string]interface{})
+	n := nraw.(map[string]interface{})
+	create, remove := s.diffTags(s.tagsFromMap(o), s.tagsFromMap(n))
+
+	if len(remove) > 0 {
+		var tagKey []string
+		for _, v := range remove {
+			tagKey = append(tagKey, v.Key)
+		}
+		request := slb.CreateUntagResourcesRequest()
+		request.ResourceId = &[]string{d.Id()}
+		request.ResourceType = string(resourceType)
+		request.TagKey = &tagKey
+		request.RegionId = s.client.RegionId
+		raw, err := s.client.WithSlbClient(func(client *slb.Client) (interface{}, error) {
+			return client.UntagResources(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	}
+
+	if len(create) > 0 {
+		request := slb.CreateTagResourcesRequest()
+		request.ResourceId = &[]string{d.Id()}
+		request.Tag = &create
+		request.ResourceType = string(resourceType)
+		request.RegionId = s.client.RegionId
+		raw, err := s.client.WithSlbClient(func(client *slb.Client) (interface{}, error) {
+			return client.TagResources(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	}
+
+	d.SetPartial("tags")
+
+	return nil
+}
+
+func (s *SlbService) tagsToMap(tags []slb.TagResource) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !s.ignoreTag(t) {
+			result[t.TagKey] = t.TagValue
+		}
+	}
+	return result
+}
+
+func (s *SlbService) ignoreTag(t slb.TagResource) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
+		ok, _ := regexp.MatchString(v, t.TagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
+}
+
+func (s *SlbService) diffTags(oldTags, newTags []slb.TagResourcesTag) ([]slb.TagResourcesTag, []slb.TagResourcesTag) {
+	// First, we're creating everything we have
+	create := make(map[string]interface{})
+	for _, t := range newTags {
+		create[t.Key] = t.Value
+	}
+
+	// Build the list of what to remove
+	var remove []slb.TagResourcesTag
+	for _, t := range oldTags {
+		old, ok := create[t.Key]
+		if !ok || old != t.Value {
+			// Delete it!
+			remove = append(remove, t)
+		}
+	}
+
+	return s.tagsFromMap(create), remove
+}
+
+func (s *SlbService) tagsFromMap(m map[string]interface{}) []slb.TagResourcesTag {
+	result := make([]slb.TagResourcesTag, 0, len(m))
+	for k, v := range m {
+		result = append(result, slb.TagResourcesTag{
+			Key:   k,
+			Value: v.(string),
+		})
+	}
+
+	return result
+}
+
+func (s *SlbService) DescribeTags(resourceId string, resourceTags map[string]interface{}, resourceType TagResourceType) (tags []slb.TagResource, err error) {
+	request := slb.CreateListTagResourcesRequest()
+	request.RegionId = s.client.RegionId
+	request.ResourceType = string(resourceType)
+	request.ResourceId = &[]string{resourceId}
+	if resourceTags != nil && len(resourceTags) > 0 {
+		var reqTags []slb.ListTagResourcesTag
+		for key, value := range resourceTags {
+			reqTags = append(reqTags, slb.ListTagResourcesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
+	}
+	raw, err := s.client.WithSlbClient(func(Client *slb.Client) (interface{}, error) {
+		return Client.ListTagResources(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*slb.ListTagResourcesResponse)
+
+	return response.TagResources.TagResource, nil
+}
+
+func (s *SlbService) TagsMappings(d *schema.ResourceData, aclId string, meta interface{}) map[string]string {
+	tags, err := s.DescribeTags(aclId, nil, TagResourceAcl)
+	if err != nil {
+		return nil
+	}
+	return slbTagsToMap(tags)
 }

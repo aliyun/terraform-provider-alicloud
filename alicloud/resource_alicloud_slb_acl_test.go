@@ -105,12 +105,19 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 							"comment": "second",
 						},
 					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test123",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         "tf-testAccSlbAcl",
 						"ip_version":   "ipv4",
 						"entry_list.#": "2",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test123",
 					}),
 				),
 			},
@@ -154,6 +161,21 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF1",
+						"For":     "acceptance test1231",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF1",
+						"tags.For":     "acceptance test1231",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"name": "${var.name}",
 					"entry_list": []map[string]interface{}{
 						{
@@ -165,12 +187,19 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 							"comment": "second",
 						},
 					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test123",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         "tf-testAccSlbAcl",
 						"ip_version":   "ipv4",
 						"entry_list.#": "2",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test123",
 					}),
 				),
 			},

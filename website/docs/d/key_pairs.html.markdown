@@ -33,7 +33,7 @@ The following arguments are supported:
 * `finger_print` - (Optional) A finger print used to retrieve specified key pair.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `resource_group_id` - (Optional, ForceNew, Available in 1.57.0+) The Id of resource group which the key pair belongs.
-
+* `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
@@ -51,3 +51,4 @@ The following attributes are exported in addition to the arguments listed above:
     * `public_ip` - The public IP address or EIP of the ECS instance.
     * `private_ip` - The private IP address of the ECS instance.
     * `resource_group_id` - The Id of resource group.
+    * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
