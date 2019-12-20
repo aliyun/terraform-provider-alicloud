@@ -68,6 +68,16 @@ func TestAccAlicloudKVStoreAccountUpdateV4(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"account_privilege": "RoleRepl",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_privilege": "RoleRepl",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"account_password": "YourPassword_1234",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -78,13 +88,15 @@ func TestAccAlicloudKVStoreAccountUpdateV4(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":      "tf test",
-					"account_password": "YourPassword_123",
+					"description":       "tf test",
+					"account_password":  "YourPassword_123",
+					"account_privilege": "RoleReadOnly",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":      "tf test",
-						"account_password": "YourPassword_123",
+						"description":       "tf test",
+						"account_password":  "YourPassword_123",
+						"account_privilege": "RoleReadOnly",
 					}),
 				),
 			},
@@ -150,6 +162,16 @@ func TestAccAlicloudKVStoreAccountUpdateV5(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"account_privilege": "RoleReadOnly",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_privilege": "RoleReadOnly",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"account_password": "YourPassword_1234",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -160,13 +182,15 @@ func TestAccAlicloudKVStoreAccountUpdateV5(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":      "tf test",
-					"account_password": "YourPassword_123",
+					"description":       "tf test",
+					"account_password":  "YourPassword_123",
+					"account_privilege": "RoleReadOnly",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":      "tf test",
-						"account_password": "YourPassword_123",
+						"description":       "tf test",
+						"account_password":  "YourPassword_123",
+						"account_privilege": "RoleReadOnly",
 					}),
 				),
 			},
