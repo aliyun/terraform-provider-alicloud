@@ -145,6 +145,10 @@ const (
 	InvalidMongoDBInstanceIdNotFound = "InvalidDBInstanceId.NotFound"
 	InvalidMongoDBNameNotFound       = "InvalidDBName.NotFound"
 
+	//hbase
+	InvalidHBaseInstanceIdNotFound = "Instance.NotFound"
+	InvalidHBaseNameNotFound       = "InvalidDBName.NotFound"
+
 	// gpdb
 	InvalidGpdbNameNotFound       = "InvalidDBName.NotFound"
 	InvalidGpdbInstanceIdNotFound = "InvalidDBInstanceId.NotFound"
