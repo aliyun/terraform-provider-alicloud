@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -95,8 +94,7 @@ func dataSourceAlicloudAlikafkaSaslAclsRead(d *schema.ResourceData, meta interfa
 		return alikafkaClient.DescribeAcls(request)
 	})
 	if err != nil {
-		if e, ok := err.(*errors.ServerError); ok &&
-			(e.ErrorCode() == AlikafkaSubscriptionNotFound || e.ErrorCode() == AlikafkaTopicNotFound) {
+		if IsExceptedErrors(err, []string{AlikafkaSubscriptionNotFound, AlikafkaTopicNotFound}) {
 			var emptyValue []alikafka.KafkaAclVO
 			return alikafkaSaslAclsDecriptionAttributes(d, emptyValue, meta)
 		}
