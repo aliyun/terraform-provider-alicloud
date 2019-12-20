@@ -56,11 +56,16 @@ func resourceAlicloudKVstoreAccount() *schema.Resource {
 			"account_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Normal"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Normal", "Super"}, false),
 				ForceNew:     true,
 				Default:      "Normal",
 			},
-
+			"account_privilege": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"RoleReadOnly", "RoleReadWrite", "RoleRepl"}, false),
+				Default:      "RoleReadWrite",
+			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -146,6 +151,7 @@ func resourceAlicloudKVStoreAccountRead(d *schema.ResourceData, meta interface{}
 	d.Set("account_name", object.AccountName)
 	d.Set("account_type", object.AccountType)
 	d.Set("description", object.AccountDescription)
+	d.Set("account_privilege", object.DatabasePrivileges.DatabasePrivilege[0].AccountPrivilege)
 
 	return nil
 }
@@ -176,6 +182,26 @@ func resourceAlicloudKVStoreAccountUpdate(d *schema.ResourceData, meta interface
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("description")
+	}
+
+	if d.HasChange("account_privilege") {
+		if err := kvstoreService.WaitForKVstoreAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
+			return WrapError(err)
+		}
+		request := r_kvstore.CreateGrantAccountPrivilegeRequest()
+		request.RegionId = client.RegionId
+		request.InstanceId = instanceId
+		request.AccountName = accountName
+		request.AccountPrivilege = d.Get("account_privilege").(string)
+
+		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.GrantAccountPrivilege(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("account_privilege")
 	}
 
 	if d.HasChange("account_password") || d.HasChange("kms_encrypted_password") {

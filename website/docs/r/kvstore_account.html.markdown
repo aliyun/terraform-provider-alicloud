@@ -64,7 +64,15 @@ The following arguments are supported:
 * `description` - (Optional) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
 * `account_type` - (Optional, ForceNew)Privilege type of account.
     - Normal: Common privilege.
+    - Super: High privilege.
     Default to Normal.
+* `account_privilege` - (Optional) The privilege of account access database. Valid values: 
+    - RoleReadOnly: This value is only for Redis and Memcache
+    - RoleReadWrite: This value is only for Redis and Memcache
+    - RoleRepl: This value supports instance to read, write, and open SYNC / PSYNC commands.
+                Only for Redis which engine version is 4.0 and architecture type is standard
+     
+   Default to "RoleReadWrite". 
 
 ## Attributes Reference
 
