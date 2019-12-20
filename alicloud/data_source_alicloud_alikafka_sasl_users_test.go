@@ -30,17 +30,17 @@ func TestAccAlicloudAlikafkaSaslUsersDataSource(t *testing.T) {
 
 	var existAlikafkaSaslUsersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"names.#":               "1",
-			"sasl_users.#":          "1",
-			"sasl_users.0.username": fmt.Sprintf("tf-testacc-alikafkasasluser%v", rand),
-			"sasl_users.0.password": "password",
+			"names.#":          "1",
+			"users.#":          "1",
+			"users.0.username": fmt.Sprintf("tf-testacc-alikafkasasluser%v", rand),
+			"users.0.password": "password",
 		}
 	}
 
 	var fakeAlikafkaSaslUsersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"sasl_users.#": "0",
-			"names.#":      "0",
+			"users.#": "0",
+			"names.#": "0",
 		}
 	}
 

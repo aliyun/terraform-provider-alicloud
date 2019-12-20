@@ -34,19 +34,19 @@ func TestAccAlicloudAlikafkaSaslAclsDataSource(t *testing.T) {
 
 	var existAlikafkaSaslAclsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"sasl_acls.#":                           "1",
-			"sasl_acls.0.username":                  fmt.Sprintf("tf-testacc-alikafkasaslacl%v", rand),
-			"sasl_acls.0.acl_resource_type":         "Topic",
-			"sasl_acls.0.acl_resource_name":         fmt.Sprintf("tf-testacc-alikafkasaslacl%v", rand),
-			"sasl_acls.0.acl_resource_pattern_type": "LITERAL",
-			"sasl_acls.0.host":                      "*",
-			"sasl_acls.0.acl_operation_type":        "Write",
+			"acls.#":                           "1",
+			"acls.0.username":                  fmt.Sprintf("tf-testacc-alikafkasaslacl%v", rand),
+			"acls.0.acl_resource_type":         "Topic",
+			"acls.0.acl_resource_name":         fmt.Sprintf("tf-testacc-alikafkasaslacl%v", rand),
+			"acls.0.acl_resource_pattern_type": "LITERAL",
+			"acls.0.host":                      "*",
+			"acls.0.acl_operation_type":        "Write",
 		}
 	}
 
 	var fakeAlikafkaSaslAclsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"sasl_acls.#": "0",
+			"acls.#": "0",
 		}
 	}
 

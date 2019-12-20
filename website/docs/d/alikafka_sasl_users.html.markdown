@@ -23,7 +23,7 @@ data "alicloud_alikafka_sasl_users" "sasl_users_ds" {
 }
 
 output "first_sasl_username" {
-  value = "${data.alicloud_alikafka_sasl_users.sasl_users_ds.sasl_users.0.username}"
+  value = "${data.alicloud_alikafka_sasl_users.sasl_users_ds.users.0.username}"
 }
 ```
 
@@ -31,6 +31,7 @@ output "first_sasl_username" {
 
 The following arguments are supported:
 
+* `instance_id` - (Required) ID of the ALIKAFKA Instance that owns the sasl users.
 * `name_regex` - (Optional) A regex string to filter results by the username. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -39,6 +40,6 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of sasl usernames.
-* `sasl_users` - A list of sasl users. Each element contains the following attributes:
+* `users` - A list of sasl users. Each element contains the following attributes:
   * `username` - The username of the user.
   * `password` - The password of the user.

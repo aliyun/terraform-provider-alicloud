@@ -25,7 +25,7 @@ data "alicloud_alikafka_sasl_acls" "sasl_acls_ds" {
 }
 
 output "first_sasl_acl_username" {
-  value = "${data.alicloud_alikafka_sasl_acls.sasl_acls_ds.sasl_acls.0.username}"
+  value = "${data.alicloud_alikafka_sasl_acls.sasl_acls_ds.acls.0.username}"
 }
 ```
 
@@ -33,6 +33,7 @@ output "first_sasl_acl_username" {
 
 The following arguments are supported:
 
+* `instance_id` - (Required) ID of the ALIKAFKA Instance that owns the sasl acls.
 * `username` - (Required) Get results for the specified username. 
 * `acl_resource_type` - (Required) Get results for the specified resource type. 
 * `acl_resource_name` - (Required) Get results for the specified resource name. 
@@ -42,7 +43,7 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `sasl_acls` - A list of sasl acls. Each element contains the following attributes:
+* `acls` - A list of sasl acls. Each element contains the following attributes:
   * `username` - The username of the sasl acl.
   * `acl_resource_type` - The resource type of the sasl acl.
   * `acl_resource_name` - The resource name of the sasl acl.

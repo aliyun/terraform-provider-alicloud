@@ -43,7 +43,7 @@ func dataSourceAlicloudAlikafkaSaslAcls() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"sasl_acls": {
+			"acls": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -130,7 +130,7 @@ func alikafkaSaslAclsDecriptionAttributes(d *schema.ResourceData, kafkaAclsInfo 
 
 	d.SetId(dataResourceIdHash(names))
 
-	if err := d.Set("sasl_acls", s); err != nil {
+	if err := d.Set("acls", s); err != nil {
 		return WrapError(err)
 	}
 

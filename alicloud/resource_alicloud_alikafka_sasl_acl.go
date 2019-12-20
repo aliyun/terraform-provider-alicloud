@@ -105,7 +105,6 @@ func resourceAlicloudAlikafkaSaslAclCreate(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_sasl_acl", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	time.Sleep(2 * time.Second)
 	d.SetId(fmt.Sprintf("%s:%s:%s:%s:%s:%s", instanceId, username, aclResourceType, aclResourceName, aclResourcePatternType, aclOperationType))
 	return resourceAlicloudAlikafkaSaslAclRead(d, meta)
 }
