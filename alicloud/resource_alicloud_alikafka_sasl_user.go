@@ -47,6 +47,7 @@ func resourceAlicloudAlikafkaSaslUser() *schema.Resource {
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				ForceNew:         true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("kms_encrypted_password").(string) == ""
 				},
