@@ -1,3 +1,4 @@
+## 1.66.1 (Unreleased)
 ## 1.66.0 (December 20, 2019)
 
 - **New Resource:** `alicloud_kvstore_account` ([#1993](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1993))
