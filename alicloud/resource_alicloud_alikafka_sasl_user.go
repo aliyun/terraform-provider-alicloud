@@ -33,9 +33,24 @@ func resourceAlicloudAlikafkaSaslUser() *schema.Resource {
 			},
 			"password": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
 				ForceNew:     true,
+				Sensitive:    true,
 				ValidateFunc: validation.StringLenBetween(1, 64),
+			},
+			"kms_encrypted_password": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: kmsDiffSuppressFunc,
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
 			},
 		},
 	}
@@ -50,12 +65,27 @@ func resourceAlicloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interfa
 	regionId := client.RegionId
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
+	kmsPassword := d.Get("kms_encrypted_password").(string)
+
+	if password == "" && kmsPassword == "" {
+		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+	}
 
 	request := alikafka.CreateCreateSaslUserRequest()
 	request.InstanceId = instanceId
 	request.RegionId = regionId
 	request.Username = username
-	request.Password = password
+
+	if password != "" {
+		request.Password = password
+	} else {
+		kmsService := KmsService{client}
+		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		request.Password = decryptResp.Plaintext
+	}
 
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
@@ -76,7 +106,6 @@ func resourceAlicloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_sasl_user", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	time.Sleep(2 * time.Second)
 	d.SetId(instanceId + ":" + username)
 	return resourceAlicloudAlikafkaSaslUserRead(d, meta)
 }

@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
@@ -260,8 +258,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*ali
 	})
 
 	if err != nil {
-		if e, ok := err.(*errors.ServerError); ok &&
-			(e.ErrorCode() == AlikafkaSubscriptionNotFound || e.ErrorCode() == AlikafkaTopicNotFound) {
+		if IsExceptedErrors(err, []string{AlikafkaSubscriptionNotFound, AlikafkaTopicNotFound}) {
 			return alikafkaSaslAcl, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return alikafkaSaslAcl, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

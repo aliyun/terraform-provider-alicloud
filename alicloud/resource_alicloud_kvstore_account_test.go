@@ -2,8 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"testing"
+
+	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"

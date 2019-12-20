@@ -36,7 +36,7 @@ func dataSourceAlicloudAlikafkaSaslUsers() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"sasl_users": {
+			"users": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
@@ -113,7 +113,7 @@ func alikafkaSaslUsersDecriptionAttributes(d *schema.ResourceData, saslUsersInfo
 	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("sasl_users", s); err != nil {
+	if err := d.Set("users", s); err != nil {
 		return WrapError(err)
 	}
 
