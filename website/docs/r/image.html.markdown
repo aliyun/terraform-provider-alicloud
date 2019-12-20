@@ -12,9 +12,13 @@ description: |-
 Creates a custom image. You can then use a custom image to create ECS instances (RunInstances) or change the system disk for an existing instance (ReplaceSystemDisk).
 
 -> **NOTE:**  If you want to create a template from an ECS instance, you can specify the instance ID (InstanceId) to create a custom image. You must make sure that the status of the specified instance is Running or Stopped. After a successful invocation, each disk of the specified instance has a new snapshot created.
+
 -> **NOTE:**  If you want to create a custom image based on the system disk of your ECS instance, you can specify one of the system disk snapshots (SnapshotId) to create a custom image. However, the specified snapshot cannot be created on or before July 15, 2013.
+
 -> **NOTE:**  If you want to combine snapshots of multiple disks into an image template, you can specify DiskDeviceMapping to create a custom image.
+
 -> **NOTE:**  Available in 1.64.0+
+
 ## Example Usage
 
 ```
@@ -48,7 +52,7 @@ The following arguments are supported:
   * `size` - (Optional, ForceNew) Specifies the size of a disk in the combined custom image, in GiB. Value range: 5 to 2000.
   * `snapshot_id` - (Optional, ForceNew) Specifies a snapshot that is used to create a combined custom image.
   * `disk_type` - (Optional, ForceNew)Snapshot ID.
-* `force` - (Optional, ForceNew) Indicates whether to force delete the custom image, Default is `false`. 
+* `force` - (Optional) Indicates whether to force delete the custom image, Default is `false`. 
   - true：Force deletes the custom image, regardless of whether the image is currently being used by other instances.
   - false：Verifies that the image is not currently in use by any other instances before deleting the image.
    

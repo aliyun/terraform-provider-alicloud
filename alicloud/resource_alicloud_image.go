@@ -4,9 +4,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -196,17 +197,28 @@ func resourceAliCloudImageCreate(d *schema.ResourceData, meta interface{}) error
 	request.Description = d.Get("description").(string)
 	request.Architecture = d.Get("architecture").(string)
 
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.CreateImage(request)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.CreateImage(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{"IncorrectInstanceStatus"}) {
+				time.Sleep(time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*ecs.CreateImageResponse)
+		d.SetId(response.ImageId)
+		return nil
 	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_image", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	response, _ := raw.(*ecs.CreateImageResponse)
-	d.SetId(response.ImageId)
-	stateConf := BuildStateConf([]string{"Creating"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, ecsService.ImageStateRefreshFunc(d.Id(), []string{"CreateFailed", "UnAvailable"}))
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	stateConf := BuildStateConf([]string{"Creating"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, ecsService.ImageStateRefreshFunc(d.Id(), []string{"CreateFailed", "UnAvailable"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -214,38 +226,11 @@ func resourceAliCloudImageCreate(d *schema.ResourceData, meta interface{}) error
 }
 func resourceAliCloudImageUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	d.Partial(true)
-
-	err := setTags(client, TagResourceImage, d)
+	ecsService := EcsService{client}
+	err := ecsService.updateImage(d)
 	if err != nil {
 		return WrapError(err)
-	} else {
-		d.SetPartial("tags")
 	}
-
-	request := ecs.CreateModifyImageAttributeRequest()
-	request.RegionId = client.RegionId
-	request.ImageId = d.Id()
-
-	if d.HasChange("description") || d.HasChange("name") {
-		if description, ok := d.GetOk("description"); ok {
-			request.Description = description.(string)
-		}
-		if imageName, ok := d.GetOk("name"); ok {
-			request.ImageName = imageName.(string)
-		}
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ModifyImageAttribute(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		d.SetPartial("name")
-		d.SetPartial("description")
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	}
-
-	d.Partial(false)
 	return resourceAliCloudImageRead(d, meta)
 }
 func resourceAliCloudImageRead(d *schema.ResourceData, meta interface{}) error {
@@ -276,38 +261,8 @@ func resourceAliCloudImageRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceAliCloudImageDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
 	ecsService := EcsService{client}
-	object, err := ecsService.DescribeImageById(d.Id())
-	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
-		return WrapError(err)
-	}
-	request := ecs.CreateDeleteImageRequest()
-
-	if force, ok := d.GetOk("force"); ok {
-		request.Force = requests.NewBoolean(force.(bool))
-	}
-	request.RegionId = client.RegionId
-	request.ImageId = object.ImageId
-
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DeleteImage(request)
-	})
-
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw)
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutCreate), 3*time.Second, ecsService.ImageStateRefreshFunc(d.Id(), []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
-	}
-
-	return nil
+	return ecsService.deleteImage(d)
 }
 
 func FlattenImageDiskDeviceMappings(list []ecs.DiskDeviceMapping) []map[string]interface{} {
