@@ -10,7 +10,7 @@ cloud.google.com/go/storage
 github.com/Sirupsen/logrus
 # github.com/agext/levenshtein v1.2.2
 github.com/agext/levenshtein
-# github.com/aliyun/alibaba-cloud-sdk-go v1.60.280
+# github.com/aliyun/alibaba-cloud-sdk-go v1.60.298
 github.com/aliyun/alibaba-cloud-sdk-go/sdk
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials
@@ -41,12 +41,14 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch
 github.com/aliyun/alibaba-cloud-sdk-go/services/emr
 github.com/aliyun/alibaba-cloud-sdk-go/services/ess
 github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb
+github.com/aliyun/alibaba-cloud-sdk-go/services/hbase
 github.com/aliyun/alibaba-cloud-sdk-go/services/kms
 github.com/aliyun/alibaba-cloud-sdk-go/services/location
 github.com/aliyun/alibaba-cloud-sdk-go/services/market
 github.com/aliyun/alibaba-cloud-sdk-go/services/nas
 github.com/aliyun/alibaba-cloud-sdk-go/services/ons
 github.com/aliyun/alibaba-cloud-sdk-go/services/ots
+github.com/aliyun/alibaba-cloud-sdk-go/services/polardb
 github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz
 github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore
 github.com/aliyun/alibaba-cloud-sdk-go/services/ram
@@ -127,9 +129,7 @@ github.com/davecgh/go-spew/spew
 github.com/denverdino/aliyungo/cdn
 github.com/denverdino/aliyungo/common
 github.com/denverdino/aliyungo/cs
-github.com/denverdino/aliyungo/dns
 github.com/denverdino/aliyungo/ecs
-github.com/denverdino/aliyungo/rds
 github.com/denverdino/aliyungo/util
 # github.com/fatih/color v1.7.0
 github.com/fatih/color

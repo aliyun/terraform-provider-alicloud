@@ -24,6 +24,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/emr"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
@@ -119,6 +120,7 @@ type AliyunClient struct {
 	dbauditconn                  *yundun_dbaudit.Client
 	bastionhostconn              *yundun_bastionhost.Client
 	marketconn                   *market.Client
+	hbaseconn                    *hbase.Client
 }
 
 type ApiVersion string
@@ -1590,4 +1592,31 @@ func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{
 	}
 
 	return do(client.marketconn)
+}
+
+func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the HBase client if necessary
+	if client.hbaseconn == nil {
+		endpoint := client.config.HBaseEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, HBASECode)
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(HBASECode), endpoint)
+		}
+		hbaseconn, err := hbase.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the hbase client: %#v", err)
+		}
+
+		hbaseconn.AppendUserAgent(Terraform, terraformVersion)
+		hbaseconn.AppendUserAgent(Provider, providerVersion)
+		hbaseconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.hbaseconn = hbaseconn
+	}
+
+	return do(client.hbaseconn)
 }

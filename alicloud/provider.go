@@ -239,6 +239,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_yundun_bastionhost_instances":      dataSourceAlicloudBastionhostInstances(),
 			"alicloud_market_products":                   dataSourceAlicloudProducts(),
 			"alicloud_polardb_clusters":                  dataSourceAlicloudPolarDBClusters(),
+			"alicloud_hbase_instances":                   dataSourceAlicloudHBaseInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -424,6 +425,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_database":                    resourceAlicloudPolarDBDatabase(),
 			"alicloud_polardb_account":                     resourceAlicloudPolarDBAccount(),
 			"alicloud_polardb_account_privilege":           resourceAlicloudPolarDBAccountPrivilege(),
+			"alicloud_hbase_instance":                      resourceAlicloudHBaseInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -705,6 +707,8 @@ func init() {
 		"emr_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom EMR endpoints.",
 
 		"market_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Market Place endpoints.",
+
+		"hbase_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom HBase endpoints.",
 	}
 }
 
