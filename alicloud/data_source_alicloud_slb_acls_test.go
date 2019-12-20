@@ -19,6 +19,16 @@ func TestAccAlicloudSlbAclsDataSource_basic(t *testing.T) {
 			"name_regex": `"${alicloud_slb_acl.default.name}_fake"`,
 		}),
 	}
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_slb_acl.default.name}"`,
+			"tags":       `{Created = "TF"}`,
+		}),
+		fakeConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_slb_acl.default.name}"`,
+			"tags":       `{Created = "TF1"}`,
+		}),
+	}
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
@@ -64,6 +74,9 @@ func TestAccAlicloudSlbAclsDataSource_basic(t *testing.T) {
 			"acls.0.ip_version":          "ipv4",
 			"acls.0.entry_list.#":        "2",
 			"acls.0.related_listeners.#": "0",
+			"acls.0.tags.%":              "2",
+			"acls.0.tags.Created":        "TF",
+			"acls.0.tags.For":            "acceptance test",
 		}
 	}
 
@@ -81,7 +94,7 @@ func TestAccAlicloudSlbAclsDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeDnsRecordsMapFunc,
 	}
 
-	slbaclsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, resourceGroupIdConf, allConf)
+	slbaclsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, tagsConf, idsConf, resourceGroupIdConf, allConf)
 }
 
 func testAccCheckAlicloudSlbAclsDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -109,6 +122,10 @@ resource "alicloud_slb_acl" "default" {
       entry = "168.10.10.0/24"
       comment = "second"
   }
+   tags = {
+      Created = "TF"
+       For     = "acceptance test"
+    }
 }
 
 

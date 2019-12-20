@@ -16,6 +16,16 @@ func TestAccAlicloudKeyPairsDataSourceBasic(t *testing.T) {
 			"name_regex": `"${alicloud_key_pair.default.key_name}_fake"`,
 		}),
 	}
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
+			"name_regex": `"${alicloud_key_pair.default.key_name}"`,
+			"tags":       `{Created = "TF"}`,
+		}),
+		fakeConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
+			"name_regex": `"${alicloud_key_pair.default.key_name}"`,
+			"tags":       `{Created = "TF1"}`,
+		}),
+	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
 			"ids": `["${alicloud_key_pair.default.key_name}"]`,
@@ -46,7 +56,7 @@ func TestAccAlicloudKeyPairsDataSourceBasic(t *testing.T) {
 			"ids":               `["${alicloud_key_pair.default.key_name}_fake"]`,
 		}),
 	}
-	keyPairsCheckInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, resourceGroupIdConf, allConf)
+	keyPairsCheckInfo.dataSourceTestCheck(t, 0, nameRegexConf, tagsConf, idsConf, resourceGroupIdConf, allConf)
 }
 
 func testAccCheckAlicloudKeyPairsDataSourceConfig(attrMap map[string]string) string {
@@ -64,6 +74,10 @@ variable "resource_group_id" {
 resource "alicloud_key_pair" "default" {
 	key_name = "tf-testAcc-key-pair-datasource"
 	resource_group_id = "${var.resource_group_id}"
+    tags = {
+      Created = "TF"
+       For     = "acceptance test"
+    }
 }
 data "alicloud_key_pairs" "default" {
 	%s
@@ -80,14 +94,18 @@ var existKeyPairsMapFunc = func(rand int) map[string]string {
 		"key_pairs.0.key_name":          "tf-testAcc-key-pair-datasource",
 		"key_pairs.0.resource_group_id": CHECKSET,
 		"key_pairs.0.instances.#":       "0",
+		"key_pairs.0.tags.%":            "2",
+		"key_pairs.0.tags.Created":      "TF",
+		"key_pairs.0.tags.For":          "acceptance test",
 	}
 }
 
 var fakeKeyPairsMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"names.#":     "0",
-		"ids.#":       "0",
-		"key_pairs.#": "0",
+		"names.#":            "0",
+		"ids.#":              "0",
+		"key_pairs.#":        "0",
+		"key_pairs.0.tags.%": "0",
 	}
 }
 

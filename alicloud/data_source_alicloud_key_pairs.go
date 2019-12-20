@@ -32,6 +32,7 @@ func dataSourceAlicloudKeyPairs() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 			"finger_print": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -73,6 +74,7 @@ func dataSourceAlicloudKeyPairs() *schema.Resource {
 							Computed: true,
 							Elem:     &schema.Resource{Schema: outputInstancesSchema()},
 						},
+						"tags": tagsSchema(),
 					},
 				},
 			},
@@ -101,6 +103,18 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request.ResourceGroupId = v.(string)
+	}
+	tags := d.Get("tags").(map[string]interface{})
+	if tags != nil && len(tags) > 0 {
+		KeyPairsTags := make([]ecs.DescribeKeyPairsTag, 0, len(tags))
+		for k, v := range tags {
+			imageTag := ecs.DescribeKeyPairsTag{
+				Key:   k,
+				Value: v.(string),
+			}
+			KeyPairsTags = append(KeyPairsTags, imageTag)
+		}
+		request.Tag = &KeyPairsTags
 	}
 	request.PageNumber = requests.NewInteger(1)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
@@ -196,10 +210,10 @@ func dataSourceAlicloudKeyPairsRead(d *schema.ResourceData, meta interface{}) er
 		describeInstancesRequest.PageNumber = page
 	}
 
-	return keyPairsDescriptionAttributes(d, keyPairs, keyPairsAttach)
+	return keyPairsDescriptionAttributes(d, keyPairs, keyPairsAttach, meta)
 }
 
-func keyPairsDescriptionAttributes(d *schema.ResourceData, keyPairs []ecs.KeyPair, keyPairsAttach map[string][]map[string]interface{}) error {
+func keyPairsDescriptionAttributes(d *schema.ResourceData, keyPairs []ecs.KeyPair, keyPairsAttach map[string][]map[string]interface{}, meta interface{}) error {
 	var names []string
 	var ids []string
 	var s []map[string]interface{}
@@ -210,6 +224,7 @@ func keyPairsDescriptionAttributes(d *schema.ResourceData, keyPairs []ecs.KeyPai
 			"finger_print":      key.KeyPairFingerPrint,
 			"resource_group_id": key.ResourceGroupId,
 			"instances":         keyPairsAttach[key.KeyPairName],
+			"tags":              tagsToMap(key.Tags.Tag),
 		}
 
 		names = append(names, string(key.KeyPairName))

@@ -32,6 +32,7 @@ func dataSourceAlicloudSlbCACertificates() *schema.Resource {
 				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
 			},
+			"tags": tagsSchema(),
 			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -88,6 +89,7 @@ func dataSourceAlicloudSlbCACertificates() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": tagsSchema(),
 					},
 				},
 			},
@@ -99,6 +101,18 @@ func dataSourceAlicloudSlbCACertificatesRead(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 
 	request := slb.CreateDescribeCACertificatesRequest()
+	tags := d.Get("tags").(map[string]interface{})
+	if tags != nil && len(tags) > 0 {
+		Tags := make([]slb.DescribeCACertificatesTag, 0, len(tags))
+		for k, v := range tags {
+			certificatesTag := slb.DescribeCACertificatesTag{
+				Key:   k,
+				Value: v.(string),
+			}
+			Tags = append(Tags, certificatesTag)
+		}
+		request.Tag = &Tags
+	}
 	request.RegionId = client.RegionId
 	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	idsMap := make(map[string]string)
@@ -138,10 +152,22 @@ func dataSourceAlicloudSlbCACertificatesRead(d *schema.ResourceData, meta interf
 		filteredTemp = response.CACertificates.CACertificate
 	}
 
-	return slbCACertificatesDescriptionAttributes(d, filteredTemp)
+	return slbCACertificatesDescriptionAttributes(d, filteredTemp, meta)
 }
 
-func slbCACertificatesDescriptionAttributes(d *schema.ResourceData, certificates []slb.CACertificate) error {
+func caCertificateTagsMappings(d *schema.ResourceData, id string, meta interface{}) map[string]string {
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
+	tags, err := slbService.DescribeTags(id, nil, TagResourceCertificate)
+
+	if err != nil {
+		return nil
+	}
+
+	return slbTagsToMap(tags)
+}
+
+func slbCACertificatesDescriptionAttributes(d *schema.ResourceData, certificates []slb.CACertificate, meta interface{}) error {
 	var ids []string
 	var names []string
 	var s []map[string]interface{}
@@ -159,6 +185,7 @@ func slbCACertificatesDescriptionAttributes(d *schema.ResourceData, certificates
 			"created_timestamp": certificate.CreateTimeStamp,
 			"resource_group_id": certificate.ResourceGroupId,
 			"region_id":         certificate.RegionId,
+			"tags":              caCertificateTagsMappings(d, certificate.CACertificateId, meta),
 		}
 		ids = append(ids, certificate.CACertificateId)
 		names = append(names, certificate.CACertificateName)

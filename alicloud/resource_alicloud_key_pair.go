@@ -20,6 +20,7 @@ func resourceAlicloudKeyPair() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudKeyPairCreate,
 		Read:   resourceAlicloudKeyPairRead,
+		Update: resourceAlicloudKeyPairUpdate,
 		Delete: resourceAlicloudKeyPairDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -70,6 +71,7 @@ func resourceAlicloudKeyPair() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -122,6 +124,14 @@ func resourceAlicloudKeyPairCreate(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
+	return resourceAlicloudKeyPairUpdate(d, meta)
+}
+func resourceAlicloudKeyPairUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	err := setTags(client, TagResourceKeypair, d)
+	if err != nil {
+		return WrapError(err)
+	}
 	return resourceAlicloudKeyPairRead(d, meta)
 }
 
@@ -140,6 +150,10 @@ func resourceAlicloudKeyPairRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("key_name", keyPair.KeyPairName)
 	d.Set("resource_group_id", keyPair.ResourceGroupId)
 	d.Set("finger_print", keyPair.KeyPairFingerPrint)
+	tags := keyPair.Tags.Tag
+	if len(tags) > 0 {
+		err = d.Set("tags", tagsToMap(tags))
+	}
 	return nil
 }
 

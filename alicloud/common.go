@@ -373,7 +373,10 @@ type TagResourceType string
 const (
 	TagResourceImage         = TagResourceType("image")
 	TagResourceInstance      = TagResourceType("instance")
+	TagResourceAcl           = TagResourceType("acl")
+	TagResourceCertificate   = TagResourceType("certificate")
 	TagResourceSnapshot      = TagResourceType("snapshot")
+	TagResourceKeypair       = TagResourceType("keypair")
 	TagResourceDisk          = TagResourceType("disk")
 	TagResourceSecurityGroup = TagResourceType("securitygroup")
 	TagResourceEni           = TagResourceType("eni")

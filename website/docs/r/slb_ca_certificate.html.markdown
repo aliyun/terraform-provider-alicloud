@@ -44,7 +44,7 @@ The following arguments are supported:
 * `name` - (Optional) Name of the CA Certificate.
 * `ca_certificate` - (Required, ForceNew) the content of the CA certificate.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the slb_ca certificate belongs.
-
+* `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
 ## Attributes Reference
 
 The following attributes are exported:

@@ -50,6 +50,7 @@ func resourceAlicloudSlbAcl() *schema.Resource {
 				MaxItems: 300,
 				MinItems: 0,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -79,6 +80,12 @@ func resourceAlicloudSlbAclRead(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
+	tags, err := slbService.DescribeTags(d.Id(), nil, TagResourceAcl)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", slbService.tagsToMap(tags))
+
 	object, err := slbService.DescribeSlbAcl(d.Id())
 	if err != nil {
 		if IsExceptedError(err, SlbAclNotExists) {
@@ -89,6 +96,7 @@ func resourceAlicloudSlbAclRead(d *schema.ResourceData, meta interface{}) error 
 	}
 	d.Set("name", object.AclName)
 	d.Set("ip_version", object.AddressIPVersion)
+
 	if err := d.Set("entry_list", slbService.FlattenSlbAclEntryMappings(object.AclEntrys.AclEntry)); err != nil {
 		return WrapError(err)
 	}
@@ -100,6 +108,10 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 	slbService := SlbService{client}
 
 	d.Partial(true)
+
+	if err := slbService.setTags(d, TagResourceAcl); err != nil {
+		return WrapError(err)
+	}
 
 	if !d.IsNewResource() && d.HasChange("name") {
 		request := slb.CreateSetAccessControlListAttributeRequest()

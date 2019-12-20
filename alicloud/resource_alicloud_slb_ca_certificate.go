@@ -35,6 +35,7 @@ func resourceAlicloudSlbCACertificate() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -71,12 +72,17 @@ func resourceAlicloudSlbCACertificateCreate(d *schema.ResourceData, meta interfa
 
 	d.SetId(response.CACertificateId)
 
-	return resourceAlicloudSlbCACertificateRead(d, meta)
+	return resourceAlicloudSlbCACertificateUpdate(d, meta)
 }
 
 func resourceAlicloudSlbCACertificateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
+	tags, err := slbService.DescribeTags(d.Id(), nil, TagResourceCertificate)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", slbService.tagsToMap(tags))
 
 	object, err := slbService.DescribeSlbCACertificate(d.Id())
 	if err != nil {
@@ -98,7 +104,14 @@ func resourceAlicloudSlbCACertificateRead(d *schema.ResourceData, meta interface
 
 func resourceAlicloudSlbCACertificateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	slbService := SlbService{client}
+	if err := slbService.setTags(d, TagResourceCertificate); err != nil {
+		return WrapError(err)
+	}
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAlicloudSlbCACertificateRead(d, meta)
+	}
 	if d.HasChange("name") {
 		request := slb.CreateSetCACertificateNameRequest()
 		request.RegionId = client.RegionId

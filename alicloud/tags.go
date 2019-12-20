@@ -4,6 +4,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
@@ -299,6 +301,17 @@ func cdnTagsToMap(tags []cdn.TagItem) map[string]string {
 	return result
 }
 
+func slbTagsToMap(tags []slb.TagResource) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !slbTagIgnored(t) {
+			result[t.TagKey] = t.TagValue
+		}
+	}
+
+	return result
+}
+
 func essTagsToMap(tags []ess.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
@@ -390,6 +403,19 @@ func cdnTagIgnored(t cdn.TagItem) bool {
 		ok, _ := regexp.MatchString(v, t.Key)
 		if ok {
 			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.Key, t.Value)
+			return true
+		}
+	}
+	return false
+}
+
+func slbTagIgnored(t slb.TagResource) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
+		ok, _ := regexp.MatchString(v, t.TagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
 			return true
 		}
 	}
