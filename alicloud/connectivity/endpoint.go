@@ -53,6 +53,7 @@ const (
 	CasCode           = ServiceCode("CAS")
 	YUNDUNDBAUDITCode = ServiceCode("YUNDUNDBAUDIT")
 	MARKETCode        = ServiceCode("MARKET")
+	HBASECode         = ServiceCode("HBASE")
 )
 
 type Endpoints struct {

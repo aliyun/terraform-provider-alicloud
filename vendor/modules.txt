@@ -11,6 +11,12 @@ github.com/Sirupsen/logrus
 # github.com/agext/levenshtein v1.2.2
 github.com/agext/levenshtein
 # github.com/aliyun/alibaba-cloud-sdk-go v1.60.302
+github.com/aliyun/alibaba-cloud-sdk-go/sdk
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials/provider
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/signers
+github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses
@@ -34,6 +40,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch
 github.com/aliyun/alibaba-cloud-sdk-go/services/emr
 github.com/aliyun/alibaba-cloud-sdk-go/services/ess
 github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb
+github.com/aliyun/alibaba-cloud-sdk-go/services/hbase
 github.com/aliyun/alibaba-cloud-sdk-go/services/kms
 github.com/aliyun/alibaba-cloud-sdk-go/services/market
 github.com/aliyun/alibaba-cloud-sdk-go/services/nas

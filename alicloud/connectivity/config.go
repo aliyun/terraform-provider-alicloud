@@ -73,6 +73,7 @@ type Config struct {
 	EmrEndpoint           string
 	CasEndpoint           string
 	MarketEndpoint        string
+	HBaseEndpoint         string
 
 	SkipRegionValidation bool
 	ConfigurationSource  string

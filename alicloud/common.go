@@ -174,6 +174,7 @@ const (
 	ResourceTypeSlb           = ResourceType("Slb")
 	ResourceTypeMongoDB       = ResourceType("MongoDB")
 	ResourceTypeGpdb          = ResourceType("Gpdb")
+	ResourceTypeHBase         = ResourceType("HBase")
 )
 
 type InternetChargeType string

@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
+
 	"github.com/denverdino/aliyungo/common"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
@@ -55,6 +57,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 					string(ResourceTypeSlb),
 					string(ResourceTypeMongoDB),
 					string(ResourceTypeGpdb),
+					string(ResourceTypeHBase),
 				}, false),
 			},
 			"available_slb_address_type": {
@@ -190,6 +193,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	rkvZones := make(map[string]string)
 	mongoDBZones := make(map[string]string)
 	gpdbZones := make(map[string]string)
+	hbaseZones := make(map[string]string)
 	instanceChargeType := d.Get("instance_charge_type").(string)
 
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRds)) {
@@ -296,6 +300,30 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 					continue
 				}
 				mongoDBZones[zonid.ZoneId] = r.RegionId
+			}
+		}
+	}
+	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeHBase)) {
+		request := hbase.CreateDescribeRegionsRequest()
+		request.RegionId = client.RegionId
+		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
+			return hbaseClient.DescribeRegions(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		regions, _ := raw.(*hbase.DescribeRegionsResponse)
+		if len(regions.Regions.Region) <= 0 {
+			return WrapError(fmt.Errorf("[ERROR] There is no available region for HBase."))
+		}
+		for _, r := range regions.Regions.Region {
+			for _, zonid := range r.Zones.Zone {
+				if multi && strings.Contains(zonid.Id, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+					zoneIds = append(zoneIds, zonid.Id)
+					continue
+				}
+				hbaseZones[zonid.Id] = r.RegionId
 			}
 		}
 	}
@@ -451,6 +479,11 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			}
 			if len(mongoDBZones) > 0 {
 				if _, ok := mongoDBZones[zone.ZoneId]; !ok {
+					continue
+				}
+			}
+			if len(hbaseZones) > 0 {
+				if _, ok := hbaseZones[zone.ZoneId]; !ok {
 					continue
 				}
 			}
