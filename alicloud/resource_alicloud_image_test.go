@@ -40,17 +40,17 @@ func TestAccAliCloudImageBasic(t *testing.T) {
 					"description": fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
 					"name":        name,
 					"tags": map[string]string{
-						"key1": "value1",
-						"key2": "value2",
+						"Created": "TF",
+						"For":     "acceptance test123",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        name,
-						"description": fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
-						"tags.%":      "2",
-						"tags.key1":   "value1",
-						"tags.key2":   "value2",
+						"name":         name,
+						"description":  fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test123",
 					}),
 				),
 			},
@@ -77,15 +77,15 @@ func TestAccAliCloudImageBasic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
-						"key1": "name1",
-						"key2": "name2",
+						"Created": "TF1",
+						"For":     "acceptance test1232",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":    "2",
-						"tags.key1": "name1",
-						"tags.key2": "name2",
+						"tags.%":       "2",
+						"tags.Created": "TF1",
+						"tags.For":     "acceptance test1232",
 					}),
 				),
 			},
@@ -94,17 +94,17 @@ func TestAccAliCloudImageBasic(t *testing.T) {
 					"description": fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
 					"name":        name,
 					"tags": map[string]string{
-						"key1": "value1",
-						"key2": "value2",
+						"Created": "TF",
+						"For":     "acceptance test123",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
-						"name":        name,
-						"tags.%":      "2",
-						"tags.key1":   "value1",
-						"tags.key2":   "value2",
+						"description":  fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
+						"name":         name,
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test123",
 					}),
 				),
 			},
@@ -126,7 +126,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu*"
+  name_regex  = "^ubuntu_18.*_64"
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {

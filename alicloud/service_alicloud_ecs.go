@@ -565,6 +565,7 @@ func (s *EcsService) DescribeImageById(id string) (image ecs.Image, err error) {
 	request := ecs.CreateDescribeImagesRequest()
 	request.RegionId = s.client.RegionId
 	request.ImageId = id
+	request.Status = fmt.Sprintf("%s,%s,%s,%s,%s", "Creating", "Waiting", "Available", "UnAvailable", "CreateFailed")
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.DescribeImages(request)
 	})
@@ -577,6 +578,77 @@ func (s *EcsService) DescribeImageById(id string) (image ecs.Image, err error) {
 		return image, GetNotFoundErrorFromString(GetNotFoundMessage("Image", id))
 	}
 	return resp.Images.Image[0], nil
+}
+
+func (s *EcsService) deleteImage(d *schema.ResourceData) error {
+
+	object, err := s.DescribeImageById(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+	request := ecs.CreateDeleteImageRequest()
+
+	if force, ok := d.GetOk("force"); ok {
+		request.Force = requests.NewBoolean(force.(bool))
+	}
+	request.RegionId = s.client.RegionId
+	request.ImageId = object.ImageId
+
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DeleteImage(request)
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutCreate), 3*time.Second, s.ImageStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return nil
+}
+
+func (s *EcsService) updateImage(d *schema.ResourceData) error {
+
+	d.Partial(true)
+
+	err := setTags(s.client, TagResourceImage, d)
+	if err != nil {
+		return WrapError(err)
+	} else {
+		d.SetPartial("tags")
+	}
+
+	request := ecs.CreateModifyImageAttributeRequest()
+	request.RegionId = s.client.RegionId
+	request.ImageId = d.Id()
+
+	if d.HasChange("description") || d.HasChange("name") {
+		if description, ok := d.GetOk("description"); ok {
+			request.Description = description.(string)
+		}
+		if imageName, ok := d.GetOk("name"); ok {
+			request.ImageName = imageName.(string)
+		}
+		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifyImageAttribute(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("name")
+		d.SetPartial("description")
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	}
+
+	d.Partial(false)
+	return nil
 }
 
 func (s *EcsService) DescribeNetworkInterface(id string) (networkInterface ecs.NetworkInterfaceSet, err error) {
