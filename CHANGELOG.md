@@ -1,3 +1,19 @@
+
+## 1.66.0 (December 20, 2019)
+
+- **New Resource:** `alicloud_kvstore_account` [GH-1993]
+- **New Resource:** `alicloud_alicloud_copy_images` [GH-1978]
+
+IMPROVEMENTS:
+
+- improve(SLS): Support SLS logstore index json keys [GH-1999]
+- improve(acl): add missing tags for acl, keypair and son [GH-1997]
+- improve(polardb): feature polardb support database [GH-1996]
+- improve(market): product datasource supported name regex and ids filter [GH-1992]
+- improve(polardb): feature polardb support backup policy [GH-1991]
+- improve(instance): improve auto_renew_period setting [GH-1990]
+- improve(polardb): feature polardb support clsuters [GH-1986]
+
 ## 1.65.1 (Unreleased)
 
 IMPROVEMENTS:
