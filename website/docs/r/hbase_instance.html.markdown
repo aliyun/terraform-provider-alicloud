@@ -7,7 +7,6 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_hbase_instance"
 sidebar_current: "docs-alicloud-resource-hbase-instance"
 description: |-
-
   Provides a HBase instance resource.
 ---
 
