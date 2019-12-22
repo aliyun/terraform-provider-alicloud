@@ -1,3 +1,20 @@
+---
+subcategory: "HBase"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_hbase_instances"
+sidebar_current: "docs-alicloud-datasource-hbase-instances"
+description: |-
+    Provides a collection of HBase instances according to the specified filters.
+---
+
+# alicloud\_hbase\_instances
+
+The `alicloud_hbase_instances` data source provides a collection of HBase instances available in Alicloud account.
+Filters support regular expression for the instance name, ids or availability_zone.
+
+## Example Usage
+
+```
 data "alicloud_hbase_instances" "hbase" {
   name_regex        = "tf_testAccHBase"
   availability_zone = "cn-shenzhen-b"
