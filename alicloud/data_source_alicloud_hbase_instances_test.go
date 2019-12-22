@@ -89,12 +89,12 @@ func TestAccAlicloudHBaseInstancesDataSourceNewInstance(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
-			"name_regex":        `"${alicloud_hbase_instance.default.name}"`,
-			"ids":               `["${alicloud_hbase_instance.default.id}"]`,
+			"name_regex": `"${alicloud_hbase_instance.default.name}"`,
+			"ids":        `["${alicloud_hbase_instance.default.id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
-			"name_regex":        `"${alicloud_hbase_instance.default.name}"`,
-			"ids":               `["${alicloud_hbase_instance.default.id}_fake"]`,
+			"name_regex": `"${alicloud_hbase_instance.default.name}"`,
+			"ids":        `["${alicloud_hbase_instance.default.id}_fake"]`,
 		}),
 	}
 
