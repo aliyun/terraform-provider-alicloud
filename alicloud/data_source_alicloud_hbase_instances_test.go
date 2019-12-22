@@ -9,6 +9,14 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 )
 
+var exisFastMapFunc = func(rand int) map[string]string {
+	return map[string]string{
+		"instances.#": CHECKSET,
+		"ids.#":       CHECKSET,
+		"names.#":     CHECKSET,
+	}
+}
+
 var exisMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"instances.#":           CHECKSET,
@@ -37,52 +45,26 @@ var checkInfo = dataSourceAttr{
 	fakeMapFunc:  fakeMapFunc,
 }
 
-// had one instance id, for fast test
+var checkFastInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_hbase_instances.default",
+	existMapFunc: exisFastMapFunc,
+	fakeMapFunc:  fakeMapFunc,
+}
+
+// for fast test
 func TestAccAlicloudHBaseInstancesDataSourceFast(t *testing.T) {
 	rand := acctest.RandInt()
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudHBaseDataSourceConfigFast(rand, map[string]string{
-			"name_regex": `"${var.test_name_regex}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudHBaseDataSourceConfigFast(rand, map[string]string{
-			"name_regex": `"${var.test_name_regex}_fake"`,
-		}),
-	}
-
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudHBaseDataSourceConfigFast(rand, map[string]string{
-			"ids": `["${var.test_id}"]`,
-		}),
-		fakeConfig: testAccCheckAlicloudHBaseDataSourceConfigFast(rand, map[string]string{
-			"ids": `["${var.test_id}_fake"]`,
-		}),
-	}
-
-	availabilityZoneConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudHBaseDataSourceConfigFast(rand, map[string]string{
-			"name_regex":        `"${var.test_name_regex}"`,
-			"availability_zone": `"${var.test_zone_id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudHBaseDataSourceConfigFast(rand, map[string]string{
-			"name_regex":        `"${var.test_name_regex}_fake"`,
-			"availability_zone": `"${var.test_zone_id}_fake"`,
-		}),
-	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHBaseDataSourceConfigFast(rand, map[string]string{
-			"name_regex":        `"${var.test_name_regex}"`,
-			"ids":               `["${var.test_id}"]`,
 			"availability_zone": `"${var.test_zone_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHBaseDataSourceConfigFast(rand, map[string]string{
-			"name_regex":        `"${var.test_name_regex}_fake"`,
-			"ids":               `["${var.test_id}_fake"]`,
 			"availability_zone": `"${var.test_zone_id}_fake"`,
 		}),
 	}
 
-	checkInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, availabilityZoneConf, allConf)
+	checkFastInfo.dataSourceTestCheck(t, rand, allConf)
 }
 
 func TestAccAlicloudHBaseInstancesDataSourceNewInstance(t *testing.T) {
@@ -105,31 +87,18 @@ func TestAccAlicloudHBaseInstancesDataSourceNewInstance(t *testing.T) {
 		}),
 	}
 
-	availabilityZoneConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
-			"name_regex":        `"${alicloud_hbase_instance.default.name}"`,
-			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
-			"name_regex":        `"${alicloud_hbase_instance.default.name}"`,
-			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}_fake"`,
-		}),
-	}
-
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
 			"name_regex":        `"${alicloud_hbase_instance.default.name}"`,
 			"ids":               `["${alicloud_hbase_instance.default.id}"]`,
-			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
 			"name_regex":        `"${alicloud_hbase_instance.default.name}"`,
 			"ids":               `["${alicloud_hbase_instance.default.id}_fake"]`,
-			"availability_zone": `"${data.alicloud_zones.default.zones.0.id}_fake"`,
 		}),
 	}
 
-	checkInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, availabilityZoneConf, allConf)
+	checkInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 }
 
 // not need new a instance
@@ -139,17 +108,11 @@ func testAccCheckAlicloudHBaseDataSourceConfigFast(rand int, attrMap map[string]
 		pairs = append(pairs, k+" = "+v)
 	}
 	config := fmt.Sprintf(`
-variable "test_name_regex" {
-  default = "terraform-hbase-instance-test3"
-}
-variable "test_id" {
-  default = "hb-wz9cjurcbkwaw2ox2"
-}
 variable "test_zone_id" {
   default = "cn-shenzhen-b"
 }
 
-variable "name" {
+variable "no_use" {
   default = "tf-testAccHBaseInstance_datasource_%d"
 }
 

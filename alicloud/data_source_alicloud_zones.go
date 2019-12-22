@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"reflect"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 
 	"github.com/denverdino/aliyungo/common"
 
