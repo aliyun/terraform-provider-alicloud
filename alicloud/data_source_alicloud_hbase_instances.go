@@ -24,7 +24,6 @@ func dataSourceAlicloudHBaseInstances() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-
 			"availability_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -33,7 +32,6 @@ func dataSourceAlicloudHBaseInstances() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			// Computed values
 			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
