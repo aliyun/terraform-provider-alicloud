@@ -2,22 +2,13 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
 )
 
-var exisFastMapFunc = func(rand int) map[string]string {
-	return map[string]string{
-		"instances.#": CHECKSET,
-		"ids.#":       CHECKSET,
-		"names.#":     CHECKSET,
-	}
-}
-
-var exisMapFunc = func(rand int) map[string]string {
+var existMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"instances.#":           CHECKSET,
 		"instances.0.id":        CHECKSET,
@@ -41,30 +32,8 @@ var fakeMapFunc = func(rand int) map[string]string {
 
 var checkInfo = dataSourceAttr{
 	resourceId:   "data.alicloud_hbase_instances.default",
-	existMapFunc: exisMapFunc,
+	existMapFunc: existMapFunc,
 	fakeMapFunc:  fakeMapFunc,
-}
-
-var checkFastInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_hbase_instances.default",
-	existMapFunc: exisFastMapFunc,
-	fakeMapFunc:  fakeMapFunc,
-}
-
-// for fast test
-func TestAccAlicloudHBaseInstancesDataSourceFast(t *testing.T) {
-	rand := acctest.RandInt()
-
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudHBaseDataSourceConfigFast(rand, map[string]string{
-			"availability_zone": `"${var.test_zone_id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudHBaseDataSourceConfigFast(rand, map[string]string{
-			"availability_zone": `"${var.test_zone_id}_fake"`,
-		}),
-	}
-
-	checkFastInfo.dataSourceTestCheck(t, rand, allConf)
 }
 
 func TestAccAlicloudHBaseInstancesDataSourceNewInstance(t *testing.T) {
@@ -101,28 +70,6 @@ func TestAccAlicloudHBaseInstancesDataSourceNewInstance(t *testing.T) {
 	checkInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 }
 
-// not need new a instance
-func testAccCheckAlicloudHBaseDataSourceConfigFast(rand int, attrMap map[string]string) string {
-	var pairs []string
-	for k, v := range attrMap {
-		pairs = append(pairs, k+" = "+v)
-	}
-	config := fmt.Sprintf(`
-variable "test_zone_id" {
-  default = "cn-shenzhen-b"
-}
-
-variable "no_use" {
-  default = "tf-testAccHBaseInstance_datasource_%d"
-}
-
-data "alicloud_hbase_instances" "default" {
-  %s
-}
-`, rand, strings.Join(pairs, "\n  "))
-	return config
-}
-
 // new a instance
 func testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -156,6 +103,5 @@ data "alicloud_hbase_instances" "default" {
   %s
 }
 `, rand, strings.Join(pairs, "\n  "))
-	log.Println(config)
 	return config
 }

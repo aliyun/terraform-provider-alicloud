@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"log"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -57,7 +55,7 @@ func (s *HBaseService) NotFoundHBaseInstance(err error) bool {
 	return false
 }
 
-func (s *HBaseService) DescribeHBaseInstance(id string) (instance hbase.Instance, err error) {
+func (s *HBaseService) DescribeHBaseInstance(id string) (instance hbase.DescribeInstanceResponse, err error) {
 	request := hbase.CreateDescribeInstanceRequest()
 	request.RegionId = s.client.RegionId
 	request.ClusterId = id
@@ -66,51 +64,24 @@ func (s *HBaseService) DescribeHBaseInstance(id string) (instance hbase.Instance
 	})
 	response, _ := raw.(*hbase.DescribeInstanceResponse)
 	if err != nil {
-		log.Println("[DEBUG] hbase-log", err)
 		if IsExceptedErrors(err, []string{InvalidHBaseInstanceIdNotFound}) {
 			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	log.Println("[DEBUG] hbase-log", response)
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if response == nil || response.InstanceId == "" {
 		return instance, WrapErrorf(Error(GetNotFoundMessage("HBase Instance", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 	}
 	// hbase 响应值参数填充
-	instance = hbase.Instance{
-		InstanceId:         response.InstanceId,
-		InstanceName:       response.InstanceName,
-		Status:             response.Status,
-		PayType:            response.PayType,
-		CreatedTime:        response.CreatedTime,
-		ExpireTime:         response.ExpireTime,
-		MajorVersion:       response.MajorVersion,
-		Engine:             response.Engine,
-		IsHa:               response.IsHa,
-		NetworkType:        response.NetworkType,
-		VpcId:              response.VpcId,
-		VswitchId:          response.VswitchId,
-		MasterInstanceType: response.MasterInstanceType,
-		MasterNodeCount:    response.MasterNodeCount,
-		MasterDiskType:     response.MasterDiskType,
-		MasterDiskSize:     response.MasterDiskSize,
-		CoreInstanceType:   response.CoreInstanceType,
-		CoreNodeCount:      response.CoreNodeCount,
-		CoreDiskType:       response.CoreDiskType,
-		CoreDiskSize:       response.CoreDiskSize,
-		RegionId:           response.RegionId,
-		ZoneId:             response.ZoneId,
-		ColdStorageStatus:  response.ColdStorageStatus,
-		BackupStatus:       response.BackupStatus,
-	}
+	instance = *response
 	return instance, nil
 }
 
 /**
-hbase sdk 存在问题
+pop has limit, support next.
 */
-func (s *HBaseService) DescribeIpWhitelist(id string) (instance hbase.Instance, err error) {
+func (s *HBaseService) DescribeIpWhitelist(id string) (instance hbase.DescribeIpWhitelistResponse, err error) {
 	request := hbase.CreateDescribeIpWhitelistRequest()
 	request.RegionId = s.client.RegionId
 	request.ClusterId = id
@@ -124,13 +95,8 @@ func (s *HBaseService) DescribeIpWhitelist(id string) (instance hbase.Instance, 
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	log.Println("[DEBUG] hbase-log", response)
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	//if response == nil || response.IpList == nil {
-	//	return instance, WrapErrorf(Error(GetNotFoundMessage("HBase Instance", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
-	//}
-	// hbase 响应值参数填充
-	return instance, nil
+	return *response, nil
 }
 
 func (s *HBaseService) HBaseClusterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
@@ -149,7 +115,6 @@ func (s *HBaseService) HBaseClusterStateRefreshFunc(id string, failStates []stri
 				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
 			}
 		}
-		log.Println("[DEBUG] hbase-log", object)
 		return object, object.Status, nil
 	}
 }

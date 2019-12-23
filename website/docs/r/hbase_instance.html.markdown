@@ -16,7 +16,7 @@ Provides a HBase instance resource supports replica set instances only. the HBas
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
 You can see detail product introduction [here](https://help.aliyun.com/product/49055.html?spm=5176.124785.766162.1.67273094TcUuke)
 
--> **NOTE:**  Available in 1.37.0+
+-> **NOTE:**  Available in 1.67.0+
 
 -> **NOTE:**  The following regions don't support create Classic network HBase instance.
 [`cn-hangzhou`,`cn-shanghai`,`cn-qingdao`,`cn-beijing`,`cn-shenzhen`,.....]
@@ -50,21 +50,22 @@ this is a example for class netType instance. you can find more detail with the 
 
 The following arguments are supported:
 
-* `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. it supports multiple zone.
-* `engine_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateInstance](https://help.aliyun.com/document_detail/144607.html?spm=a2c4g.11186623.6.768.5d3d2767CyQfIS)
-* `master_instance_type`、`core_instance_type` - (Required) Instance specification. see [Instance specifications](https://help.aliyun.com/document_detail/53532.html?spm=a2c4g.11186623.6.547.56cb6233fyWh0Q).
+* `zone_id` - (Optional) The Zone to launch the HBase instance. if vswitch_id is not empty, this zone_id can be "" or consistent.
+* `engine` - (Optional) default value = hbase. examples: hbase,hbaseue,serverlesshbase,spark,bds.
+* `engine_version` - (Required) hbase major version. hbase:1.1, 2.0; serverless:2.0, bds:1.0. Value options can refer to the latest docs [CreateInstance](https://help.aliyun.com/document_detail/144607.html?spm=a2c4g.11186623.6.768.5d3d2767CyQfIS).
+* `master_instance_type`、`core_instance_type` - (Required) Instance specification. see [Instance specifications](https://help.aliyun.com/document_detail/53532.html?spm=a2c4g.11186623.6.547.56cb6233fyWh0Q). or you can call describeInstanceType api.
 * `core_instance_quantity`- (Optional. default=2) if core_instance_quantity > 1,this is a cluster.  if core_instance_quantity > 1,this is a single. 
-* `core_disk_type`-  (Required) Valid values are `cloud_ssd`, `cloud_efficiency`
-* `core_disk_size` -  (Required) User-defined DB instance storage space.Unit: GB. Value range:
+* `core_disk_type`-  (Required) Valid values are `cloud_ssd`, `cloud_efficiency`, `local_hdd_pro`, `local_ssd_pro`. local_disk size is fixed.
+* `core_disk_size` -  (Optional) User-defined HBase Cluster one core node's storage space.Unit: GB. Value range:
   - Custom storage space; value range: [100,2000]
   - 10-GB increments. 
 * `pay_type` - (Optional) Valid values are `Prepaid`, `Postpaid`,System default to `Postpaid`.
-* `pricing_cycle` - (Optional) `year` or `month`.  valid when pay_type = Prepaid.
-* `duration` - (Optional) use with pricing_cycle, valid when pay_type = Prepaid.
+* `pricing_cycle` - (Optional) `year` or `month`.  valid when pay_type = month.
+* `duration` - (Optional) use with pricing_cycle, valid when pay_type = Prepaid. unit: pricing_cycle.
 * `auto_renew` - (Optional) `true`, `false`, System default to `false`, valid when pay_type = Prepaid.
-* `vswitch_id` - (Optional) valid when net_type = vpc and has a same region_id.
-* `is_cold_storage` - (Optional) `true`, `false`, System default to `false`
-* `security_ip_list` - (Optional) default to '127.0.0.1',
+* `vswitch_id` - (Optional) if vswitch_id is not empty, that mean net_type = vpc and has a same region_id. if vswitch_id is empty, net_type_classic
+* `is_cold_storage` - (Optional) `true`, `false`, System default to `false`.
+* `security_ip_list` - (Optional) default to '127.0.0.1'.
 
 ## Attributes Reference
 
@@ -74,7 +75,7 @@ The following attributes are exported:
 
 ### Timeouts
 
--> **NOTE:** Available in 1.53.0+.
+-> **NOTE:** Available in 1.67.0+.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
