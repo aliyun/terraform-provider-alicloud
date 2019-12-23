@@ -1,4 +1,3 @@
-// export ALICLOUD_REGION="***"
 variable "zone_id" {
   default = "cn-shenzhen-b"
 }
@@ -23,7 +22,7 @@ variable "core_instance_quantity" {
 variable "core_disk_type" {
   default = "cloud_ssd"
 }
-// one disk size, unit: GB, default 4 disk per core node; all disk size = coreNodeSize * 4 * core_disk_size(2 * 4 * 100 =800GB)
+# one disk size, unit: GB, default 4 disk per core node; all disk size = coreNodeSize * 4 * core_disk_size(2 * 4 * 100 =800GB)
 variable "core_disk_size" {
   default = 100
 }
@@ -31,11 +30,11 @@ variable "pay_type" {
   default = "Postpaid"
 }
 
-// valid when pay_type = "Prepaid"
+# valid when pay_type = "Prepaid"
 variable "duration" {
   default = 0
 }
-// valid when pay_type = "Prepaid"
+# valid when pay_type = "Prepaid"
 variable "auto_renew" {
   default = "false"
 }
@@ -82,7 +81,7 @@ variable "vswitch_cidr" {
   default     = "172.16.132.0/24"
 }
 
-// override  data.alicloud_zones.default.zones[0].id
+# override  data.alicloud_zones.default.zones[0].id
 variable "availability_zone" {
   description = "The available zone to launch ecs instance and other resources."
   default     = ""

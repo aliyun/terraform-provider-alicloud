@@ -26,7 +26,7 @@ data "alicloud_hbase_instances" "hbase" {
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to apply to the instance name.
-* `ids` - (Optional, Available 1.53.0+) The ids list of HBase instances
+* `ids` - The ids list of HBase instances
 * `availability_zone` - (Optional) Instance availability zone.
 * `output_file` - (Optional) The name of file that can save the collection of instances after running `terraform plan`.
 
@@ -46,9 +46,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `network_type` - Classic network or VPC.
   * `core_disk_type` - cloud_ssd or cloud_efficiency
   * `core_instance_type` - hbase.n1.medium, hbase.n1.large, hbase.n1.2xlarge and so on.
-  
-  
-  
   * `master_instance_type` - hbase.n1.medium, hbase.n1.large, hbase.n1.2xlarge and so on.
   * `core_disk_size` - core node disk size, unit:GB.
   * `pay_type` - Billing method. Value options are `PostPaid` for  Pay-As-You-Go and `PrePaid` for yearly or monthly subscription.

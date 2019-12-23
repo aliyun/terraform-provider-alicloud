@@ -105,7 +105,7 @@ resource "alicloud_hbase_instance" "default" {
 `
 
 func TestAccAlicloudHBaseInstanceClassic(t *testing.T) {
-	var instance hbase.Instance
+	var instance hbase.DescribeInstanceResponse
 
 	resourceId := "alicloud_hbase_instance.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -156,7 +156,7 @@ func TestAccAlicloudHBaseInstanceClassic(t *testing.T) {
 }
 
 func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
-	var instance hbase.Instance
+	var instance hbase.DescribeInstanceResponse
 
 	resourceId := "alicloud_hbase_instance.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -206,7 +206,7 @@ func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
 }
 
 func TestAccAlicloudHBaseInstanceMultiInstance(t *testing.T) {
-	var instance hbase.Instance
+	var instance hbase.DescribeInstanceResponse
 
 	resourceId := "alicloud_hbase_instance.default.1"
 	ra := resourceAttrInit(resourceId, nil)
