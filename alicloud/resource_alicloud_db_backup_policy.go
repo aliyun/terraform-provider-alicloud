@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -56,9 +54,15 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 			},
 
 			"log_backup": {
+				Type:       schema.TypeBool,
+				Computed:   true,
+				Deprecated: "Attribute 'log_backup' has been deprecated from version 1.67.0. Use `enable_backup_log`",
+			},
+
+			"enable_backup_log": {
 				Type:     schema.TypeBool,
-				Optional: true,
 				Computed: true,
+				Optional: true,
 			},
 
 			"log_retention_period": {
@@ -66,6 +70,28 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 				ValidateFunc:     validation.IntBetween(7, 730),
 				Optional:         true,
 				Computed:         true,
+				DiffSuppressFunc: logRetentionPeriodDiffSuppressFunc,
+			},
+
+			"local_log_retention_hours": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validation.IntBetween(0, 7*24),
+				Optional:         true,
+				DiffSuppressFunc: logRetentionPeriodDiffSuppressFunc,
+			},
+
+			"local_log_retention_space": {
+				Type:             schema.TypeInt,
+				ValidateFunc:     validation.IntBetween(5, 50),
+				Optional:         true,
+				DiffSuppressFunc: logRetentionPeriodDiffSuppressFunc,
+			},
+
+			"high_space_usage_protection": {
+				Type:             schema.TypeString,
+				ValidateFunc:     validation.StringInSlice([]string{"Enable", "Disable"}, false),
+				Default:          "Enable",
+				Optional:         true,
 				DiffSuppressFunc: logRetentionPeriodDiffSuppressFunc,
 			},
 		},
@@ -96,65 +122,37 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 	d.Set("backup_period", strings.Split(object.PreferredBackupPeriod, ","))
 	d.Set("retention_period", object.BackupRetentionPeriod)
 	d.Set("log_backup", object.BackupLog == "Enable")
+	d.Set("enable_backup_log", object.EnableBackupLog == "1")
 	d.Set("log_retention_period", object.LogBackupRetentionPeriod)
+	d.Set("local_log_retention_hours", object.LocalLogRetentionHours)
+	d.Set("local_log_retention_space", object.LocalLogRetentionSpace)
+	d.Set("high_space_usage_protection", object.HighSpaceUsageProtection)
 
 	return nil
 }
 
 func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
-	update := false
 
-	periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
-	backupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
-	backupTime := d.Get("backup_time").(string)
-	backupLog := "Enable"
-
-	retentionPeriod := ""
-	if v, ok := d.GetOk("retention_period"); ok {
-		retentionPeriod = strconv.Itoa(v.(int))
+	updateForData := false
+	updateForLog := false
+	if d.HasChange("backup_period") || d.HasChange("backup_time") || d.HasChange("retention_period") {
+		updateForData = true
 	}
 
-	logBackupRetentionPeriod := ""
-	if v, ok := d.GetOk("log_retention_period"); ok {
-		logBackupRetentionPeriod = strconv.Itoa(v.(int))
+	if d.HasChange("log_backup") || d.HasChange("enable_backup_log") || d.HasChange("log_retention_period") ||
+		d.HasChange("local_log_retention_hours") || d.HasChange("local_log_retention_space") || d.HasChange("high_space_usage_protection") {
+		updateForLog = true
 	}
 
-	if d.HasChange("backup_period") {
-		update = true
-	}
-
-	if d.HasChange("backup_time") {
-		update = true
-	}
-
-	if d.HasChange("retention_period") {
-		update = true
-	}
-
-	if d.HasChange("log_backup") {
-		if !d.Get("log_backup").(bool) {
-			backupLog = "Disabled"
-		}
-		update = true
-	}
-
-	if d.HasChange("log_retention_period") {
-		if d.Get("log_retention_period").(int) > d.Get("retention_period").(int) {
-			logBackupRetentionPeriod = retentionPeriod
-		}
-		update = true
-	}
-
-	if update {
+	if updateForData || updateForLog {
 		// wait instance running before modifying
 		if err := rdsService.WaitForDBInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
 		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			if err := rdsService.ModifyDBBackupPolicy(d.Id(), backupTime, backupPeriod, retentionPeriod, backupLog, logBackupRetentionPeriod); err != nil {
+			if err := rdsService.ModifyDBBackupPolicy(d, updateForData, updateForLog); err != nil {
 				if IsExceptedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(err)
 				}
@@ -178,7 +176,7 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 	request.PreferredBackupPeriod = "Tuesday,Thursday,Saturday"
 	request.BackupRetentionPeriod = "7"
 	request.PreferredBackupTime = "02:00Z-03:00Z"
-	request.EnableBackupLog = "True"
+	request.EnableBackupLog = "1"
 	instance, err := rdsService.DescribeDBInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
