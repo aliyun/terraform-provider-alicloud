@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -31,13 +30,9 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"region_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -45,9 +40,10 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Computed: true,
 			},
 			"engine": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "hbase",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "hbase",
+				ValidateFunc: validation.StringInSlice([]string{"hbase", "hbaseue", "serverlesshbase", "spark", "bds"}, false),
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
@@ -68,8 +64,9 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Default:      2,
 			},
 			"core_disk_type": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "cloud_efficiency", "local_hdd_pro", "local_ssd_pro"}, false),
 			},
 			"core_disk_size": {
 				Type:         schema.TypeInt,
@@ -98,9 +95,10 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Default:  "false",
 			},
 			"net_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Vpc", "Classic"}, false),
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -123,7 +121,6 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-			// hbase 后续的参数，增加参数校验，
 		},
 	}
 }
@@ -184,7 +181,6 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 }
 
 func resourceAlicloudHBaseInstanceCreate(d *schema.ResourceData, meta interface{}) error {
-	log.Println("[DEBUG] hbase-log id=", d)
 	client := meta.(*connectivity.AliyunClient)
 	hBaseService := HBaseService{client}
 
@@ -216,7 +212,6 @@ func resourceAlicloudHBaseInstanceCreate(d *schema.ResourceData, meta interface{
 }
 
 func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{}) error {
-	log.Println("resourceAlicloudHBaseInstanceRead id=", d.Id())
 	client := meta.(*connectivity.AliyunClient)
 	hbaseService := HBaseService{client}
 
@@ -230,27 +225,24 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	_ = d.Set("name", instance.InstanceName)
-	_ = d.Set("region_id", instance.RegionId)
-	_ = d.Set("zone_id", instance.ZoneId)
-	_ = d.Set("engine", instance.Engine)
-	_ = d.Set("engine_version", instance.MajorVersion)
-	_ = d.Set("master_instance_type", instance.MasterInstanceType)
-	_ = d.Set("core_instance_type", instance.CoreInstanceType)
-	_ = d.Set("core_instance_quantity", instance.CoreNodeCount)
-	_ = d.Set("core_disk_size", instance.CoreDiskSize)
-	_ = d.Set("core_disk_type", instance.CoreDiskType)
-	_ = d.Set("pay_type", instance.PayType)
-	_ = d.Set("status", instance.Status)
-	_ = d.Set("net_type", instance.NetworkType)
-	_ = d.Set("vpc_id", instance.VpcId)
-	_ = d.Set("vswitch_id", instance.VswitchId)
-	log.Println("[DEBUG] hbase-log result d=", d)
+	d.Set("name", instance.InstanceName)
+	d.Set("zone_id", instance.ZoneId)
+	d.Set("engine", instance.Engine)
+	d.Set("engine_version", instance.MajorVersion)
+	d.Set("master_instance_type", instance.MasterInstanceType)
+	d.Set("core_instance_type", instance.CoreInstanceType)
+	d.Set("core_instance_quantity", instance.CoreNodeCount)
+	d.Set("core_disk_size", instance.CoreDiskSize)
+	d.Set("core_disk_type", instance.CoreDiskType)
+	d.Set("pay_type", instance.PayType)
+	d.Set("status", instance.Status)
+	d.Set("net_type", instance.NetworkType)
+	d.Set("vpc_id", instance.VpcId)
+	d.Set("vswitch_id", instance.VswitchId)
 	return nil
 }
 
 func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Println("[DEBUG] hbase-log id=", d)
 	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
@@ -275,7 +267,6 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 }
 
 func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Println("[DEBUG] hbase-log id=", d)
 	client := meta.(*connectivity.AliyunClient)
 	hbaseService := HBaseService{client}
 
