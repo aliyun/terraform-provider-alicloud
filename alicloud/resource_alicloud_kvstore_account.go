@@ -56,7 +56,7 @@ func resourceAlicloudKVstoreAccount() *schema.Resource {
 			"account_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Normal", "Super"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Normal"}, false),
 				ForceNew:     true,
 				Default:      "Normal",
 			},
