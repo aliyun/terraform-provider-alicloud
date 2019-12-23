@@ -1,6 +1,6 @@
-### ALIKAFKA instance Example
+### ALIKAFKA consumer group Example
 
-The example launches ALIKAFKA group. The parameter in variables.tf can let you specify the group.
+The example launches ALIKAFKA consumer group. The parameter in variables.tf can let you specify the consumer group.
 
 ### Get up and running
 
@@ -9,7 +9,7 @@ The example launches ALIKAFKA group. The parameter in variables.tf can let you s
 		terraform plan 
 	    	var.instance_id
 	    		Enter a value: {var.instance_id}
-			var.group
+			var.consumer_id
   				Enter a value: {var.consumer_id} 
 	    
 
@@ -18,7 +18,7 @@ The example launches ALIKAFKA group. The parameter in variables.tf can let you s
 		terraform apply 
 	    	var.instance_id
 	    		Enter a value: {var.instance_id}
-			var.group
+			var.consumer_id
   				Enter a value: {var.consumer_id} 
 
 * Destroy 

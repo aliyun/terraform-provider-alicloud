@@ -346,7 +346,10 @@ const (
 	OnsThrottlingUser      = "Throttling.User"
 
 	// ALIKAFKA
-	AlikafkaThrottlingUser = "Throttling.User"
+	AlikafkaThrottlingUser       = "Throttling.User"
+	AlikafkaFlowControl          = "ONS_SYSTEM_FLOW_CONTROL"
+	AlikafkaTopicNotFound        = "BIZ_TOPIC_NOT_FOUND"
+	AlikafkaSubscriptionNotFound = "BIZ_SUBSCRIPTION_NOT_FOUND"
 
 	//HaVip
 	InvalidHaVipIdNotFound = "InvalidHaVipId.NotFound"

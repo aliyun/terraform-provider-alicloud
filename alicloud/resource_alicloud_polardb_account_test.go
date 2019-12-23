@@ -2,34 +2,33 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"testing"
-
-	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudKVStoreAccountUpdateV4(t *testing.T) {
-	var v *r_kvstore.Account
+func TestAccAlicloudPolarDBAccount_update(t *testing.T) {
+	var v *polardb.DBAccount
 	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testAccKVstoreAccount-%d", rand)
+	name := fmt.Sprintf("tf-testAccdbaccount-%d", rand)
 	var basicMap = map[string]string{
-		"instance_id":      CHECKSET,
+		"db_cluster_id":    CHECKSET,
 		"account_name":     "tftestnormal",
 		"account_password": "YourPassword_123",
 		"account_type":     "Normal",
 	}
-	resourceId := "alicloud_kvstore_account.default"
+	resourceId := "alicloud_polardb_account.default"
 	ra := resourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &KvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeKVstoreAccount")
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBAccount")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceKVstoreAccountConfigDependenceV4)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBAccountConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -43,9 +42,10 @@ func TestAccAlicloudKVStoreAccountUpdateV4(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":      "${alicloud_kvstore_instance.instance.id}",
+					"db_cluster_id":    "${alicloud_polardb_cluster.cluster.id}",
 					"account_name":     "tftestnormal",
 					"account_password": "YourPassword_123",
+					"account_type":     "Normal",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -59,21 +59,11 @@ func TestAccAlicloudKVStoreAccountUpdateV4(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "from terraform",
+					"account_description": "from terraform",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "from terraform",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"account_privilege": "RoleRepl",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_privilege": "RoleRepl",
+						"account_description": "from terraform",
 					}),
 				),
 			},
@@ -89,41 +79,39 @@ func TestAccAlicloudKVStoreAccountUpdateV4(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":       "tf test",
-					"account_password":  "YourPassword_123",
-					"account_privilege": "RoleReadOnly",
+					"account_description": "tf test",
+					"account_password":    "YourPassword_123",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":       "tf test",
-						"account_password":  "YourPassword_123",
-						"account_privilege": "RoleReadOnly",
+						"account_description": "tf test",
+						"account_password":    "YourPassword_123",
 					}),
 				),
 			},
 		},
 	})
-}
 
-func TestAccAlicloudKVStoreAccountUpdateV5(t *testing.T) {
-	var v *r_kvstore.Account
+}
+func TestAccAlicloudPolarDBAccount_update_forSuper(t *testing.T) {
+	var v *polardb.DBAccount
 	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testAccKVstoreAccount-%d", rand)
+	name := fmt.Sprintf("tf-testAccdbaccount-%d", rand)
 	var basicMap = map[string]string{
-		"instance_id":      CHECKSET,
-		"account_name":     "tftestnormal",
+		"db_cluster_id":    CHECKSET,
+		"account_name":     "tftestsuper",
 		"account_password": "YourPassword_123",
-		"account_type":     "Normal",
+		"account_type":     "Super",
 	}
-	resourceId := "alicloud_kvstore_account.default"
+	resourceId := "alicloud_polardb_account.default"
 	ra := resourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &KvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeKVstoreAccount")
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBAccount")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceKVstoreAccountConfigDependenceV5)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBAccountConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -137,9 +125,10 @@ func TestAccAlicloudKVStoreAccountUpdateV5(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":      "${alicloud_kvstore_instance.instance.id}",
-					"account_name":     "tftestnormal",
+					"db_cluster_id":    "${alicloud_polardb_cluster.cluster.id}",
+					"account_name":     "tftestsuper",
 					"account_password": "YourPassword_123",
+					"account_type":     "Super",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -153,78 +142,58 @@ func TestAccAlicloudKVStoreAccountUpdateV5(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "from terraform",
+					"account_description": "from terraform super",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "from terraform",
+						"account_description": "from terraform super",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_privilege": "RoleReadOnly",
+					"account_password": "YourPassword_12345",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_privilege": "RoleReadOnly",
+						"account_password": "YourPassword_12345",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "YourPassword_1234",
+					"account_description": "tf test super",
+					"account_password":    "YourPassword_1234",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "YourPassword_1234",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description":       "tf test",
-					"account_password":  "YourPassword_123",
-					"account_privilege": "RoleReadOnly",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description":       "tf test",
-						"account_password":  "YourPassword_123",
-						"account_privilege": "RoleReadOnly",
+						"account_description": "tf test super",
+						"account_password":    "YourPassword_1234",
 					}),
 				),
 			},
 		},
 	})
+
 }
 
-func resourceKVstoreAccountConfigDependenceV4(name string) string {
+func resourcePolarDBAccountConfigDependence(name string) string {
 	return fmt.Sprintf(`
-	variable "name" {
-		default = "%v"
+	%s
+	variable "creation" {
+		default = "PolarDB"
 	}
-	resource "alicloud_kvstore_instance" "instance" {
-		availability_zone = "ap-southeast-1b"
-		instance_class = "redis.master.small.default"
-		instance_name  = "${var.name}"
-		instance_charge_type = "PostPaid"
-		engine_version = "4.0"
-	}
-	`, name)
-}
 
-func resourceKVstoreAccountConfigDependenceV5(name string) string {
-	return fmt.Sprintf(`
 	variable "name" {
-		default = "%v"
+		default = "%s"
 	}
-	resource "alicloud_kvstore_instance" "instance" {
-		availability_zone = "ap-southeast-1b"
-		instance_class = "redis.master.small.default"
-		instance_name  = "${var.name}"
-		instance_charge_type = "PostPaid"
-		engine_version = "5.0"
-	}
-	`, name)
+
+	resource "alicloud_polardb_cluster" "cluster" {
+		db_type = "MySQL"
+		db_version = "8.0"
+		pay_type = "PostPaid"
+		db_node_class = "polar.mysql.x4.large"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		description = "${var.name}"
+	}`, PolarDBCommonTestCase, name)
 }

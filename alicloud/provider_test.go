@@ -170,6 +170,15 @@ func testAccPreCheckWithTime(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithAlikafkaAclEnable(t *testing.T) {
+	aclEnable := os.Getenv("ALICLOUD_ALIKAFKA_ACL_ENABLE")
+
+	if aclEnable != "true" {
+		t.Skipf("Skipping the test case because the acl is not enabled.")
+		t.Skipped()
+	}
+}
+
 func testAccPreCheckWithNoDefaultVswitch(t *testing.T) {
 	region := os.Getenv("ALICLOUD_REGION")
 	rawClient, err := sharedClientForRegion(region)

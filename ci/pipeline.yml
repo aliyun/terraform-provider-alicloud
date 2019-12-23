@@ -92,6 +92,7 @@ groups:
       - YundunDbaudit
       - YundunBastionhost
       - Market
+      - PolarDB
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -154,6 +155,7 @@ groups:
       # MongoDB
       - MongoDB
       - Gpdb
+      - PolarDB
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -1177,6 +1179,19 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "Market"
+
+  - name: PolarDB
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 17
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "PolarDB"
 
   - name: SweeperAfter
     plan:

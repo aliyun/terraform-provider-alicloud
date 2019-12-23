@@ -1,19 +1,33 @@
-## 1.65.1 (Unreleased)
+## 1.66.1 (Unreleased)
+## 1.66.0 (December 20, 2019)
+
+- **New Resource:** `alicloud_kvstore_account` ([#1993](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1993))
+- **New Resource:** `alicloud_copy_image` ([#1978](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1978))
+- **New Resource:** `alicloud_polardb_database` ([#1996](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1996))
+- **New Resource:** `alicloud_polardb_backup_policy` ([#1991](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1991))
+- **New Resource:** `alicloud_poloardb_cluster` ([#1978](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1978))
+- **Data Source:** `alicloud_poloardb_clusters` ([#1978](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1978))
 
 IMPROVEMENTS:
 
-- documenting the replica_set_name attribute in mongodb @chanind [GH-1989]
-- improve(period): improve computing period method [GH-1988]
-- improve(prepaid): support computing period by week [GH-1985]
-- improve(prepaid): add a method to fix period importer diff [GH-1984]
-- improve(mongoDB): supported field 'tags' [GH-1980]
-- add output to ssl vpn client cert @ionTea [GH-1979]
+
+- improve(SLS): Support SLS logstore index json keys ([#1999](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1999))
+- improve(acl): add missing tags for acl, keypair and son ([#1997](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1997))
+- improve(market): product datasource supported name regex and ids filter ([#1992](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1992))
+- improve(instance): improve auto_renew_period setting ([#1990](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1990))
+- documenting the replica_set_name attribute in mongodb @chanind ([#1989](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1989))
+- improve(period): improve computing period method ([#1988](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1988))
+- improve(prepaid): support computing period by week ([#1985](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1985))
+- improve(prepaid): add a method to fix period importer diff ([#1984](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1984))
+- improve(mongoDB): supported field 'tags' ([#1980](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1980))
+- add output to ssl vpn client cert @ionTea ([#1979](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1979))
 
 BUG FIXES:
 
-- fix(fc): fixed bug from issue #1961 @yokzy88 [GH-1987]
-- fix(vpn): fix bug from issue #1965 @chanind [GH-1981]
-- fix(vpn): added Computed to field `vswitch_id` @chanind [GH-1977]
+- fix(db_backup_policy): fix postgresql backup policy bug ([#2002](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2002))
+- fix(fc): fixed bug from issue #1961 @yokzy88 ([#1987](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1987))
+- fix(vpn): fix bug from issue #1965 @chanind ([#1981](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1981))
+- fix(vpn): added Computed to field `vswitch_id` @chanind ([#1977](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1977))
 
 ## 1.65.0 (December 13, 2019)
 
