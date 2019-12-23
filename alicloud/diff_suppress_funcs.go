@@ -201,10 +201,12 @@ func zoneIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 }
 
 func logRetentionPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("enable_backup_log").(bool) {
+		return false
+	}
 	if d.Get("log_backup").(bool) {
 		return false
 	}
-
 	if v, err := strconv.Atoi(new); err != nil && v > d.Get("retention_period").(int) {
 		return false
 	}

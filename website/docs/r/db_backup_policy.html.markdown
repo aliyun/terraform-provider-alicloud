@@ -62,8 +62,12 @@ The following arguments are supported:
 * `backup_period` - (Optional) DB Instance backup period. Please set at least two days to ensure backing up at least twice a week. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].
 * `backup_time` - (Optional) DB instance backup time, in the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. Default to "02:00Z-03:00Z". China time is 8 hours behind it.
 * `retention_period` - (Optional) Instance backup retention days. Valid values: [7-730]. Default to 7.
-* `log_backup` - (Optional) Whether to backup instance log. Note: The 'Basic Edition' category Rds instance does not support setting log backup. [What is Basic Edition](https://www.alibabacloud.com/help/doc-detail/48980.htm).
-* `log_retention_period` - (Optional) Instance log backup retention days. Valid when the `log_backup` is `true`. Valid values: [7-730]. Default to 7. It cannot be larger than `retention_period`.
+* `log_backup` - (Deprecated) It has been deprecated from version 1.67.0, and use field 'enable_backup_log' to replace. Whether to backup instance log. Note: The 'Basic Edition' category Rds instance does not support setting log backup. [What is Basic Edition](https://www.alibabacloud.com/help/doc-detail/48980.htm).
+* `enable_backup_log` - (Optional, available in 1.67.0+) Whether to backup instance log. Valid values are `true`, `false`, Default to `true`. Note: The 'Basic Edition' category Rds instance does not support setting log backup. [What is Basic Edition](https://www.alibabacloud.com/help/doc-detail/48980.htm).
+* `log_retention_period` - (Optional) Instance log backup retention days. Valid when the `enable_backup_log` is `1`. Valid values: [7-730]. Default to 7. It cannot be larger than `retention_period`.
+* `local_log_retention_hours` - (Optional, available in 1.67.0+) Instance log backup local retention hours. Valid when the `enable_backup_log` is `true`. Valid values: [0-7*24].
+* `local_log_retention_space` - (Optional, available in 1.67.0+) Instance log backup local retention space. Valid when the `enable_backup_log` is `true`. Valid values: [5-50].
+* `high_space_usage_protection` - (Optional, available in 1.67.0+) Instance high space usage protection policy. Valid when the `enable_backup_log` is `true`. Valid values are `Enable`, `Disable`.
 
 -> **NOTE:** Currently, the SQLServer instance does not support to modify `log_retention_period`.
 
@@ -77,6 +81,7 @@ The following attributes are exported:
 * `backup_time` - DB instance backup time.
 * `retention_period` - Instance backup retention days.
 * `log_backup` - Whether to backup instance log.
+* `enable_backup_log` - Whether to backup instance log.
 * `log_retention_period` - Instance log backup retention days.
 
 ## Import

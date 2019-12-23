@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"regexp"
 	"strconv"
@@ -470,35 +471,97 @@ func (s *RdsService) ReleaseDBPublicConnection(instanceId, connection string) er
 	return nil
 }
 
-func (s *RdsService) ModifyDBBackupPolicy(instanceId, backupTime, backupPeriod, retentionPeriod, backupLog, LogBackupRetentionPeriod string) error {
+func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData, updateForLog bool) error {
 
-	request := rds.CreateModifyBackupPolicyRequest()
-	request.RegionId = s.client.RegionId
-	request.DBInstanceId = instanceId
-	request.PreferredBackupPeriod = backupPeriod
-	request.BackupRetentionPeriod = retentionPeriod
-	request.PreferredBackupTime = backupTime
-	request.BackupLog = backupLog
-	instance, err := s.DescribeDBInstance(instanceId)
+	periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
+	backupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
+	backupTime := d.Get("backup_time").(string)
+	enableBackupLog := "1"
+
+	retentionPeriod := ""
+	if v, ok := d.GetOk("retention_period"); ok {
+		retentionPeriod = strconv.Itoa(v.(int))
+	}
+
+	logBackupRetentionPeriod := ""
+	if v, ok := d.GetOk("log_retention_period"); ok {
+		logBackupRetentionPeriod = strconv.Itoa(v.(int))
+	}
+
+	localLogRetentionHours := ""
+	if v, ok := d.GetOk("local_log_retention_hours"); ok {
+		localLogRetentionHours = strconv.Itoa(v.(int))
+	}
+
+	localLogRetentionSpace := ""
+	if v, ok := d.GetOk("local_log_retention_space"); ok {
+		localLogRetentionSpace = strconv.Itoa(v.(int))
+	}
+
+	highSpaceUsageProtection := d.Get("high_space_usage_protection").(string)
+
+	if !d.Get("enable_backup_log").(bool) {
+		enableBackupLog = "0"
+	}
+
+	if d.HasChange("log_retention_period") {
+		if d.Get("log_retention_period").(int) > d.Get("retention_period").(int) {
+			logBackupRetentionPeriod = retentionPeriod
+		}
+	}
+	if updateForData {
+		request := rds.CreateModifyBackupPolicyRequest()
+		request.RegionId = s.client.RegionId
+		request.DBInstanceId = d.Id()
+		request.PreferredBackupPeriod = backupPeriod
+		request.PreferredBackupTime = backupTime
+		request.BackupRetentionPeriod = retentionPeriod
+		request.BackupPolicyMode = "DataBackupPolicy"
+
+		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifyBackupPolicy(request)
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		if err := s.WaitForDBInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
+			return WrapError(err)
+		}
+	}
+
+	instance, err := s.DescribeDBInstance(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
 	// At present, the sql server database does not support setting logBackupRetentionPeriod
-	if instance.Engine != "SQLServer" {
-		request.LogBackupRetentionPeriod = LogBackupRetentionPeriod
-	}
+	if updateForLog && instance.Engine != "SQLServer" {
+		request := rds.CreateModifyBackupPolicyRequest()
+		request.RegionId = s.client.RegionId
+		request.DBInstanceId = d.Id()
+		request.EnableBackupLog = enableBackupLog
+		request.LocalLogRetentionHours = localLogRetentionHours
+		request.LocalLogRetentionSpace = localLogRetentionSpace
+		request.HighSpaceUsageProtection = highSpaceUsageProtection
+		request.BackupPolicyMode = "LogBackupPolicy"
+		request.LogBackupRetentionPeriod = logBackupRetentionPeriod
 
-	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-		return rdsClient.ModifyBackupPolicy(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
+		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifyBackupPolicy(request)
+		})
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
 
-	if err := s.WaitForDBInstance(instanceId, Running, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		if err := s.WaitForDBInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
+			return WrapError(err)
+		}
 	}
 	return nil
 }
