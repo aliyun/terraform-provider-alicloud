@@ -80,7 +80,6 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 
 	request := ons.CreateOnsInstanceInServiceListRequest()
 	request.RegionId = client.RegionId
-	request.PreventCache = onsService.GetPreventCache()
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {

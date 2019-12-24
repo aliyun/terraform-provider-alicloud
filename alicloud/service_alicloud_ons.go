@@ -25,7 +25,6 @@ func (s *OnsService) DescribeOnsInstance(id string) (*ons.OnsInstanceBaseInfoRes
 	response := &ons.OnsInstanceBaseInfoResponse{}
 	request := ons.CreateOnsInstanceBaseInfoRequest()
 	request.RegionId = s.client.RegionId
-	request.PreventCache = s.GetPreventCache()
 	request.InstanceId = id
 
 	raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
@@ -57,7 +56,6 @@ func (s *OnsService) DescribeOnsTopic(id string) (*ons.PublishInfoDo, error) {
 	request := ons.CreateOnsTopicListRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceId = instanceId
-	request.PreventCache = s.GetPreventCache()
 
 	raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 		return onsClient.OnsTopicList(request)
@@ -93,7 +91,6 @@ func (s *OnsService) DescribeOnsGroup(id string) (*ons.SubscribeInfoDo, error) {
 	request := ons.CreateOnsGroupListRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceId = instanceId
-	request.PreventCache = s.GetPreventCache()
 
 	raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 		return onsClient.OnsGroupList(request)

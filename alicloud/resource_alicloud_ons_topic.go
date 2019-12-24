@@ -66,7 +66,6 @@ func resourceAlicloudOnsTopicCreate(d *schema.ResourceData, meta interface{}) er
 	request.Topic = topic
 	request.InstanceId = instanceId
 	request.MessageType = requests.NewInteger(d.Get("message_type").(int))
-	request.PreventCache = onsService.GetPreventCache()
 
 	if v, ok := d.GetOk("remark"); ok {
 		request.Remark = v.(string)
@@ -134,7 +133,6 @@ func resourceAlicloudOnsTopicUpdate(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = client.RegionId
 	request.InstanceId = instanceId
 	request.Topic = topic
-	request.PreventCache = onsService.GetPreventCache()
 
 	var perm int
 	if d.HasChange("perm") {
@@ -167,7 +165,6 @@ func resourceAlicloudOnsTopicDelete(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = client.RegionId
 	request.Topic = topic
 	request.InstanceId = instanceId
-	request.PreventCache = onsService.GetPreventCache()
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {

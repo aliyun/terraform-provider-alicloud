@@ -58,7 +58,6 @@ func resourceAlicloudOnsGroupCreate(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = client.RegionId
 	request.GroupId = groupId
 	request.InstanceId = instanceId
-	request.PreventCache = onsService.GetPreventCache()
 
 	if v, ok := d.GetOk("remark"); ok {
 		request.Remark = v.(string)
@@ -127,7 +126,6 @@ func resourceAlicloudOnsGroupUpdate(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = client.RegionId
 	request.InstanceId = instanceId
 	request.GroupId = groupId
-	request.PreventCache = onsService.GetPreventCache()
 
 	if d.HasChange("read_enable") {
 		readEnable := d.Get("read_enable").(bool)
@@ -159,7 +157,6 @@ func resourceAlicloudOnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = client.RegionId
 	request.InstanceId = instanceId
 	request.GroupId = groupId
-	request.PreventCache = onsService.GetPreventCache()
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
