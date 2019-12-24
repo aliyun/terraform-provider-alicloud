@@ -60,7 +60,6 @@ func resourceAlicloudOnsInstanceCreate(d *schema.ResourceData, meta interface{})
 	request := ons.CreateOnsInstanceCreateRequest()
 	request.RegionId = client.RegionId
 	request.InstanceName = d.Get("name").(string)
-	request.PreventCache = onsService.GetPreventCache()
 	if v, ok := d.GetOk("remark"); ok {
 		request.Remark = v.(string)
 	}
@@ -123,7 +122,6 @@ func resourceAlicloudOnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	request := ons.CreateOnsInstanceUpdateRequest()
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
-	request.PreventCache = onsService.GetPreventCache()
 
 	if d.HasChange("name") {
 		var name string
@@ -163,7 +161,6 @@ func resourceAlicloudOnsInstanceDelete(d *schema.ResourceData, meta interface{})
 	request := ons.CreateOnsInstanceDeleteRequest()
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
-	request.PreventCache = onsService.GetPreventCache()
 
 	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {

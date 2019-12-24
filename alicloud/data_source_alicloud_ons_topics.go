@@ -87,7 +87,6 @@ func dataSourceAlicloudOnsTopicsRead(d *schema.ResourceData, meta interface{}) e
 
 	request := ons.CreateOnsTopicListRequest()
 	request.RegionId = client.RegionId
-	request.PreventCache = onsService.GetPreventCache()
 	request.InstanceId = d.Get("instance_id").(string)
 
 	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
