@@ -4,7 +4,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -17,15 +16,10 @@ func (s *OnsService) InstanceNotExistFunc(err error) bool {
 	return strings.Contains(err.Error(), OnsInstanceNotExist)
 }
 
-func (s *OnsService) GetPreventCache() requests.Integer {
-	return requests.NewInteger(int(time.Now().UnixNano() / 1e6))
-}
-
 func (s *OnsService) DescribeOnsInstance(id string) (*ons.OnsInstanceBaseInfoResponse, error) {
 	response := &ons.OnsInstanceBaseInfoResponse{}
 	request := ons.CreateOnsInstanceBaseInfoRequest()
 	request.RegionId = s.client.RegionId
-	request.PreventCache = s.GetPreventCache()
 	request.InstanceId = id
 
 	raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
@@ -57,7 +51,6 @@ func (s *OnsService) DescribeOnsTopic(id string) (*ons.PublishInfoDo, error) {
 	request := ons.CreateOnsTopicListRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceId = instanceId
-	request.PreventCache = s.GetPreventCache()
 
 	raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 		return onsClient.OnsTopicList(request)
@@ -93,7 +86,6 @@ func (s *OnsService) DescribeOnsGroup(id string) (*ons.SubscribeInfoDo, error) {
 	request := ons.CreateOnsGroupListRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceId = instanceId
-	request.PreventCache = s.GetPreventCache()
 
 	raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 		return onsClient.OnsGroupList(request)

@@ -42,7 +42,6 @@ func testSweepOnsInstance(region string) error {
 	}
 
 	request := ons.CreateOnsInstanceInServiceListRequest()
-	request.PreventCache = onsService.GetPreventCache()
 
 	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 		return onsClient.OnsInstanceInServiceList(request)
@@ -71,7 +70,6 @@ func testSweepOnsInstance(region string) error {
 
 		request := ons.CreateOnsInstanceDeleteRequest()
 		request.InstanceId = v.InstanceId
-		request.PreventCache = onsService.GetPreventCache()
 
 		_, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 			return onsClient.OnsInstanceDelete(request)

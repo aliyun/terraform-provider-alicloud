@@ -84,8 +84,9 @@ type DescribeParameterGroupsRequest struct {
 // DescribeParameterGroupsResponse is the response struct for api DescribeParameterGroups
 type DescribeParameterGroupsResponse struct {
 	*responses.BaseResponse
-	RequestId       string          `json:"RequestId" xml:"RequestId"`
-	ParameterGroups ParameterGroups `json:"ParameterGroups" xml:"ParameterGroups"`
+	RequestId               string          `json:"RequestId" xml:"RequestId"`
+	SignalForOptimizeParams bool            `json:"SignalForOptimizeParams" xml:"SignalForOptimizeParams"`
+	ParameterGroups         ParameterGroups `json:"ParameterGroups" xml:"ParameterGroups"`
 }
 
 // CreateDescribeParameterGroupsRequest creates a request to invoke DescribeParameterGroups API
@@ -93,7 +94,7 @@ func CreateDescribeParameterGroupsRequest() (request *DescribeParameterGroupsReq
 	request = &DescribeParameterGroupsRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeParameterGroups", "", "")
+	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeParameterGroups", "rds", "openAPI")
 	return
 }
 

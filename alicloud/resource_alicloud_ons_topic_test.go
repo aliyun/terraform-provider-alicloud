@@ -34,7 +34,6 @@ func testSweepOnsTopic(region string) error {
 	}
 
 	instanceListReq := ons.CreateOnsInstanceInServiceListRequest()
-	instanceListReq.PreventCache = onsService.GetPreventCache()
 
 	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 		return onsClient.OnsInstanceInServiceList(instanceListReq)
@@ -53,7 +52,6 @@ func testSweepOnsTopic(region string) error {
 	for _, instanceId := range instanceIds {
 		request := ons.CreateOnsTopicListRequest()
 		request.InstanceId = instanceId
-		request.PreventCache = onsService.GetPreventCache()
 
 		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 			return onsClient.OnsTopicList(request)
@@ -84,7 +82,6 @@ func testSweepOnsTopic(region string) error {
 			request := ons.CreateOnsTopicDeleteRequest()
 			request.InstanceId = instanceId
 			request.Topic = v.Topic
-			request.PreventCache = onsService.GetPreventCache()
 
 			_, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 				return onsClient.OnsTopicDelete(request)

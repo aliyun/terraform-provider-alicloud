@@ -36,7 +36,6 @@ func testSweepOnsGroup(region string) error {
 	}
 
 	instanceListReq := ons.CreateOnsInstanceInServiceListRequest()
-	instanceListReq.PreventCache = onsService.GetPreventCache()
 
 	raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 		return onsClient.OnsInstanceInServiceList(instanceListReq)
@@ -55,7 +54,6 @@ func testSweepOnsGroup(region string) error {
 	for _, instanceId := range instanceIds {
 		request := ons.CreateOnsGroupListRequest()
 		request.InstanceId = instanceId
-		request.PreventCache = onsService.GetPreventCache()
 
 		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 			return onsClient.OnsGroupList(request)
@@ -86,7 +84,6 @@ func testSweepOnsGroup(region string) error {
 			request := ons.CreateOnsGroupDeleteRequest()
 			request.InstanceId = instanceId
 			request.GroupId = v.GroupId
-			request.PreventCache = onsService.GetPreventCache()
 
 			_, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 				return onsClient.OnsGroupDelete(request)
