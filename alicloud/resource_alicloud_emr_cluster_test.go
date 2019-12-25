@@ -126,6 +126,10 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 					"user_defined_emr_ecs_role": "${alicloud_ram_role.default.name}",
 					"ssh_enable":                "true",
 					"master_pwd":                "ABCtest1234!",
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
 
 					"host_group": []map[string]interface{}{
 						{
@@ -157,6 +161,9 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 						"cluster_type": CHECKSET,
 						"charge_type":  "PostPaid",
 						"zone_id":      CHECKSET,
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
 					}),
 				),
 			},
@@ -379,6 +386,9 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 						"cluster_type": CHECKSET,
 						"charge_type":  "PostPaid",
 						"zone_id":      CHECKSET,
+						"tags.%":       NOSET,
+						"tags.Created": NOSET,
+						"tags.For":     NOSET,
 					}),
 				),
 			},

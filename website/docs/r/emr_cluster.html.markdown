@@ -566,6 +566,7 @@ The following arguments are supported:
 * `deposit_type` (Optional, ForceNew) Cluster deposit type, HALF_MANAGED or FULL_MANAGED.
 * `related_cluster_id` (Optional, ForceNew) This specify the related cluster id, if this cluster is a Gateway.
 * `host_group` - (Optional) Groups of Host, You can specify MASTER as a group, CORE as a group (just like the above example).
+* `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
 
 #### Block host_group
 
