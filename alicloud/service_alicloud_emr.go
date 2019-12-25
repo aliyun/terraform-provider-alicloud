@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/emr"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -79,4 +80,110 @@ func (s *EmrService) EmrClusterStateRefreshFunc(id string, failStates []string) 
 
 		return object, object.ClusterInfo.Status, nil
 	}
+}
+
+func (s *EmrService) setEmrClusterTags(d *schema.ResourceData) error {
+	if d.HasChange("tags") {
+		oraw, nraw := d.GetChange("tags")
+		o := oraw.(map[string]interface{})
+		n := nraw.(map[string]interface{})
+		create, remove := s.diffTags(s.tagsFromMap(o), s.tagsFromMap(n))
+
+		if len(remove) > 0 {
+			var tagKey []string
+			for _, v := range remove {
+				tagKey = append(tagKey, v.Key)
+			}
+			request := emr.CreateUntagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.ResourceType = string(TagResourceInstance)
+			request.TagKey = &tagKey
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithEmrClient(func(client *emr.Client) (interface{}, error) {
+				return client.UntagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+
+		if len(create) > 0 {
+			request := emr.CreateTagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.Tag = &create
+			request.ResourceType = string(TagResourceInstance)
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithEmrClient(func(client *emr.Client) (interface{}, error) {
+				return client.TagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+
+		d.SetPartial("tags")
+	}
+
+	return nil
+}
+
+func (s *EmrService) DescribeEmrClusterTags(resourceId string, resourceType TagResourceType) (tags []emr.TagResource, err error) {
+	request := emr.CreateListTagResourcesRequest()
+	request.RegionId = s.client.RegionId
+	request.ResourceType = string(resourceType)
+	request.ResourceId = &[]string{resourceId}
+	raw, err := s.client.WithEmrClient(func(client *emr.Client) (interface{}, error) {
+		return client.ListTagResources(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*emr.ListTagResourcesResponse)
+	tags = response.TagResources.TagResource
+
+	return
+}
+
+func (s *EmrService) diffTags(oldTags, newTags []emr.TagResourcesTag) ([]emr.TagResourcesTag, []emr.TagResourcesTag) {
+	// First, we're creating everything we have
+	create := make(map[string]interface{})
+	for _, t := range newTags {
+		create[t.Key] = t.Value
+	}
+
+	// Build the list of what to remove
+	var remove []emr.TagResourcesTag
+	for _, t := range oldTags {
+		old, ok := create[t.Key]
+		if !ok || old != t.Value {
+			// Delete it!
+			remove = append(remove, t)
+		}
+	}
+
+	return s.tagsFromMap(create), remove
+}
+
+func (s *EmrService) tagsFromMap(m map[string]interface{}) []emr.TagResourcesTag {
+	result := make([]emr.TagResourcesTag, 0, len(m))
+	for k, v := range m {
+		result = append(result, emr.TagResourcesTag{
+			Key:   k,
+			Value: v.(string),
+		})
+	}
+
+	return result
+}
+
+func (s *EmrService) tagsToMap(tags []emr.TagResource) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		result[t.TagKey] = t.TagValue
+	}
+	return result
 }
