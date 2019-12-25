@@ -73,11 +73,11 @@ func TestAccAlicloudVpnConnectionBasic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpn_gateway_id":      "${alicloud_vpn_gateway.default.id}",
-					"customer_gateway_id": "${alicloud_vpn_customer_gateway.default.id}",
+					"vpn_gateway_id":      alicloud_vpn_gateway.default.id,
+					"customer_gateway_id": alicloud_vpn_customer_gateway.default.id,
 					"local_subnet":        []string{"172.16.0.0/24", "172.16.1.0/24"},
 					"remote_subnet":       []string{"10.0.0.0/24", "10.0.1.0/24"},
-					"name":                "${var.name}",
+					"name":                var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -194,7 +194,7 @@ func TestAccAlicloudVpnConnectionBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":               "${var.name}",
+					"name":               var.name,
 					"local_subnet":       []string{"172.16.0.0/24", "172.16.1.0/24"},
 					"remote_subnet":      []string{"10.0.0.0/24", "10.0.1.0/24"},
 					"effect_immediately": REMOVEKEY,
@@ -247,11 +247,11 @@ func TestAccAlicloudVpnConnectionMulti(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":               "2",
-					"vpn_gateway_id":      "${alicloud_vpn_gateway.default.id}",
-					"customer_gateway_id": "${alicloud_vpn_customer_gateway.default.id}",
+					"vpn_gateway_id":      alicloud_vpn_gateway.default.id,
+					"customer_gateway_id": alicloud_vpn_customer_gateway.default.id,
 					"local_subnet":        []string{"172.16.0.0/24", "172.16.1.0/24"},
 					"remote_subnet":       []string{"10.0.0.0/24", "10.0.1.0/24"},
-					"name":                "${var.name}",
+					"name":                var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -296,7 +296,7 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 
 data "alicloud_zones" "default" {
@@ -304,15 +304,15 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"
@@ -320,7 +320,7 @@ resource "alicloud_vpn_gateway" "default" {
 }
 
 resource "alicloud_vpn_customer_gateway" "default" {
-	name = "${var.name}"
+	name = var.name
 	ip_address = "42.104.22.210"
 	description = "testAccVpnConnectionDesc"
 }

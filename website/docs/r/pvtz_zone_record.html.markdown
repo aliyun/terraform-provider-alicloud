@@ -23,7 +23,7 @@ resource "alicloud_pvtz_zone" "zone" {
 }
 
 resource "alicloud_pvtz_zone_record" "foo" {
-  zone_id         = "${alicloud_pvtz_zone.zone.id}"
+  zone_id         = alicloud_pvtz_zone.zone.id
   resource_record = "www"
   type            = "CNAME"
   value           = "bbb.test.com"

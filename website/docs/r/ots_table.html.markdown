@@ -21,8 +21,8 @@ variable "name" {
   default = "terraformtest"
 }
 resource "alicloud_ots_instance" "foo" {
-  name        = "${var.name}"
-  description = "${var.name}"
+  name        = var.name
+  description = var.name
   accessed_by = "Any"
   tags = {
     Created = "TF"
@@ -31,8 +31,8 @@ resource "alicloud_ots_instance" "foo" {
 }
 
 resource "alicloud_ots_table" "basic" {
-  instance_name = "${alicloud_ots_instance.foo.name}"
-  table_name    = "${var.name}"
+  instance_name = alicloud_ots_instance.foo.name
+  table_name    = var.name
   primary_key {
       name = "pk1"
       type = "Integer"

@@ -15,11 +15,11 @@ This data source provides the VServer groups related to a server load balancer.
 
 ```
 data "alicloud_slb_server_groups" "sample_ds" {
-  load_balancer_id = "${alicloud_slb.sample_slb.id}"
+  load_balancer_id = alicloud_slb.sample_slb.id
 }
 
 output "first_slb_server_group_id" {
-  value = "${data.alicloud_slb_server_groups.sample_ds.slb_server_groups.0.id}"
+  value = data.alicloud_slb_server_groups.sample_ds.slb_server_groups.0.id
 }
 ```
 

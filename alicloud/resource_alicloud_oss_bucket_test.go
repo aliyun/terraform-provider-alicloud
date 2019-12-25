@@ -228,7 +228,7 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"logging": []map[string]interface{}{
 						{
-							"target_bucket": "${alicloud_oss_bucket.target.id}",
+							"target_bucket": alicloud_oss_bucket.target.id,
 							"target_prefix": "log/",
 						},
 					},

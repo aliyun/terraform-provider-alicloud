@@ -19,7 +19,7 @@ data "alicloud_api_gateway_apis" "data_apigatway_apis" {
 }
 
 output "first_api_id" {
-  value = "${data.alicloud_api_gateway_apis.data_apigatway.apis.0.id}"
+  value = data.alicloud_api_gateway_apis.data_apigatway.apis.0.id
 }
 ```
 

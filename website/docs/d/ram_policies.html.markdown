@@ -22,7 +22,7 @@ data "alicloud_ram_policies" "policies_ds" {
 }
 
 output "first_policy_name" {
-  value = "${data.alicloud_ram_policies.policies_ds.policies.0.name}"
+  value = data.alicloud_ram_policies.policies_ds.policies.0.name
 }
 ```
 

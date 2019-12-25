@@ -242,21 +242,21 @@ func TestAccAlicloudProviderEcs(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_id":        "${data.alicloud_images.default.images.0.id}",
-					"security_groups": []string{"${alicloud_security_group.default.0.id}"},
-					"instance_type":   "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"image_id":        data.alicloud_images.default.images.0.id,
+					"security_groups": []string{alicloud_security_group.default.0.id},
+					"instance_type":   data.alicloud_instance_types.default.instance_types.0.id,
 
-					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"availability_zone":             data.alicloud_instance_types.default.instance_types.0.availability_zones.0,
 					"system_disk_category":          "cloud_efficiency",
-					"instance_name":                 "${var.name}",
-					"key_name":                      "${alicloud_key_pair.default.key_name}",
+					"instance_name":                 var.name,
+					"key_name":                      alicloud_key_pair.default.key_name,
 					"spot_strategy":                 "NoSpot",
 					"spot_price_limit":              "0",
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "I_am_user_data",
 
-					"vswitch_id": "${alicloud_vswitch.default.id}",
-					"role_name":  "${alicloud_ram_role.default.name}",
+					"vswitch_id": alicloud_vswitch.default.id,
+					"role_name":  alicloud_ram_role.default.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -302,13 +302,13 @@ func TestAccAlicloudProviderFC(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"service":     "${alicloud_fc_service.default.name}",
-					"name":        "${var.name}",
+					"service":     alicloud_fc_service.default.name,
+					"name":        var.name,
 					"runtime":     "python2.7",
 					"description": "tf",
 					"handler":     "hello.handler",
-					"oss_bucket":  "${alicloud_oss_bucket.default.id}",
-					"oss_key":     "${alicloud_oss_bucket_object.default.key}",
+					"oss_bucket":  alicloud_oss_bucket.default.id,
+					"oss_key":     alicloud_oss_bucket_object.default.key,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),

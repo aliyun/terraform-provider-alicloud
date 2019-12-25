@@ -19,7 +19,7 @@ data "alicloud_oss_buckets" "oss_buckets_ds" {
 }
 
 output "first_oss_bucket_name" {
-  value = "${data.alicloud_oss_buckets.oss_buckets_ds.buckets.0.name}"
+  value = data.alicloud_oss_buckets.oss_buckets_ds.buckets.0.name
 }
 ```
 

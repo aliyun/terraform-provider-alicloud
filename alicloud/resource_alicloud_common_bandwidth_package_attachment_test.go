@@ -198,19 +198,19 @@ func testAccCommonBandwidthPackageAttachmentConfigBasic(rand int) string {
 
 	resource "alicloud_common_bandwidth_package" "default" {
 		bandwidth = "2"
-		name = "${var.name}"
+		name = var.name
 		description = "${var.name}_description"
 	}
 
 	resource "alicloud_eip" "default" {
-		name = "${var.name}"
+		name = var.name
 		bandwidth            = "2"
 		internet_charge_type = "PayByTraffic"
 	}
 
 	resource "alicloud_common_bandwidth_package_attachment" "default" {
-		bandwidth_package_id = "${alicloud_common_bandwidth_package.default.id}"
-		instance_id = "${alicloud_eip.default.id}"
+		bandwidth_package_id = alicloud_common_bandwidth_package.default.id
+		instance_id = alicloud_eip.default.id
 	}
 	`, rand)
 }
@@ -226,21 +226,21 @@ func testAccCommonBandwidthPackageAttachmentConfigMulti(rand int) string {
     }
 
 	resource "alicloud_common_bandwidth_package" "default" {
-		count = "${var.number}"
+		count = var.number
 		bandwidth = "2"
-		name = "${var.name}"
+		name = var.name
 		description = "${var.name}_description"
 	}
 
 	resource "alicloud_eip" "default" {
-		count = "${var.number}"
-		name = "${var.name}"
+		count = var.number
+		name = var.name
 		bandwidth            = "2"
 		internet_charge_type = "PayByTraffic"
 	}
 
 	resource "alicloud_common_bandwidth_package_attachment" "default" {
-		count = "${var.number}"
+		count = var.number
 		bandwidth_package_id = "${element(alicloud_common_bandwidth_package.default.*.id,count.index)}"
 		instance_id = "${element(alicloud_eip.default.*.id,count.index)}"
 	}

@@ -23,7 +23,7 @@ data "alicloud_cs_serverless_kubernetes_clusters" "k8s_clusters" {
 }
 
 output "output" {
-  value = "${data.alicloud_cs_serverless_kubernetes_clusters.k8s_clusters.clusters}"
+  value = data.alicloud_cs_serverless_kubernetes_clusters.k8s_clusters.clusters
 }
 ```
 

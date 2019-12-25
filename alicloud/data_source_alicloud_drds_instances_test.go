@@ -19,7 +19,7 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_drds_instance.default.description}",
+			"name_regex": alicloud_drds_instance.default.description,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_drds_instance.default.description}-fake",
@@ -28,7 +28,7 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_drds_instance.default.id}"},
+			"ids": []string{alicloud_drds_instance.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_drds_instance.default.id}-fake"},
@@ -37,8 +37,8 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_drds_instance.default.description}",
-			"ids":        []string{"${alicloud_drds_instance.default.id}"},
+			"name_regex": alicloud_drds_instance.default.description,
+			"ids":        []string{alicloud_drds_instance.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_drds_instance.default.description}-fake",
@@ -93,22 +93,22 @@ func dataSourceDRDSInstancesConfigDependence(name string) string {
 		default = "%s"
 	}
  	resource "alicloud_vpc" "default" {
-		name = "${var.name}"
+		name = var.name
 		cidr_block = "172.16.0.0/12"
 	}
  	resource "alicloud_vswitch" "default" {
- 		vpc_id = "${alicloud_vpc.default.id}"
+ 		vpc_id = alicloud_vpc.default.id
  		cidr_block = "172.16.0.0/21"
- 		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
- 		name = "${var.name}"
+ 		availability_zone = data.alicloud_zones.default.zones.0.id
+ 		name = var.name
 	}
 
  	resource "alicloud_drds_instance" "default" {
-  		description = "${var.name}"
-  		zone_id = "${data.alicloud_zones.default.zones.0.id}"
+  		description = var.name
+  		zone_id = data.alicloud_zones.default.zones.0.id
   		instance_series = "drds.sn1.4c8g"
   		instance_charge_type = "PostPaid"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = alicloud_vswitch.default.id
   		specification = "drds.sn1.4c8g.8C16G"
 }
  `, name)

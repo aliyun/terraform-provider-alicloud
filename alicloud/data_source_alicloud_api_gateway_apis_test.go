@@ -18,7 +18,7 @@ func TestAccAlicloudApigatewayApisDataSource(t *testing.T) {
 
 	groupAndIdsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_api_gateway_api.default.api_id}"},
+			"ids": []string{alicloud_api_gateway_api.default.api_id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_api_gateway_api.default.api_id}_fake"},
@@ -27,7 +27,7 @@ func TestAccAlicloudApigatewayApisDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_api_gateway_api.default.name}",
+			"name_regex": alicloud_api_gateway_api.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_api_gateway_api.default.name}_fake",
@@ -36,14 +36,14 @@ func TestAccAlicloudApigatewayApisDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"group_id":   "${alicloud_api_gateway_group.default.id}",
-			"ids":        []string{"${alicloud_api_gateway_api.default.api_id}"},
-			"name_regex": "${alicloud_api_gateway_api.default.name}",
+			"group_id":   alicloud_api_gateway_group.default.id,
+			"ids":        []string{alicloud_api_gateway_api.default.api_id},
+			"name_regex": alicloud_api_gateway_api.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"group_id":   "${alicloud_api_gateway_group.default.id}_fake",
-			"ids":        []string{"${alicloud_api_gateway_api.default.api_id}"},
-			"name_regex": "${alicloud_api_gateway_api.default.name}",
+			"ids":        []string{alicloud_api_gateway_api.default.api_id},
+			"name_regex": alicloud_api_gateway_api.default.name,
 		}),
 	}
 
@@ -89,13 +89,13 @@ func dataSourceApigatewayApisConfigDependence(name string) string {
 	}
 
 	resource "alicloud_api_gateway_group" "default" {
-	  name = "${var.name}"
-	  description = "${var.apigateway_group_description_test}"
+	  name = var.name
+	  description = var.apigateway_group_description_test
 	}
 
 	resource "alicloud_api_gateway_api" "default" {
-	  name = "${var.name}"
-	  group_id = "${alicloud_api_gateway_group.default.id}"
+	  name = var.name
+	  group_id = alicloud_api_gateway_group.default.id
 	  description = "tf_testAcc_api description"
 	  auth_type = "APP"
 	  request_config {

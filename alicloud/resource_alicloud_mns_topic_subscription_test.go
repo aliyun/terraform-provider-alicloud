@@ -35,7 +35,7 @@ func TestAccAlicloudMnsTopicSubscription_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                  name,
-					"topic_name":            "${alicloud_mns_topic.default.name}",
+					"topic_name":            alicloud_mns_topic.default.name,
 					"endpoint":              "http://www.test.com/test",
 					"filter_tag":            "tf-test",
 					"notify_content_format": "SIMPLIFIED",
@@ -103,7 +103,7 @@ func TestAccAlicloudMnsTopicSubscription_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                  name + "${count.index}",
-					"topic_name":            "${alicloud_mns_topic.default.name}",
+					"topic_name":            alicloud_mns_topic.default.name,
 					"endpoint":              "http://www.test.com/test${count.index}",
 					"filter_tag":            "tf-test",
 					"notify_content_format": "SIMPLIFIED",
@@ -123,7 +123,7 @@ func resourceMnsTopicSubscriptionConfigDependence(name string) string {
 		default = "%s"
 	}
 	resource "alicloud_mns_topic" "default"{
-		name="${var.name}"
+		name=var.name
 		maximum_message_size=12357
 		logging_enabled=true
 	}

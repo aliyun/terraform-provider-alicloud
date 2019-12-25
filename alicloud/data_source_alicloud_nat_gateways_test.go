@@ -12,7 +12,7 @@ func TestAccAlicloudNatGatewaysDataSourceBasic(t *testing.T) {
 	rand := acctest.RandInt()
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_nat_gateway.default.name}"`,
+			"name_regex": `alicloud_nat_gateway.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_nat_gateway.default.name}_fake"`,
@@ -20,7 +20,7 @@ func TestAccAlicloudNatGatewaysDataSourceBasic(t *testing.T) {
 	}
 	IdsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
-			"ids": `[ "${alicloud_nat_gateway.default.id}" ]`,
+			"ids": `[ alicloud_nat_gateway.default.id ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
 			"ids": `[ "${alicloud_nat_gateway.default.id}_fake" ]`,
@@ -29,7 +29,7 @@ func TestAccAlicloudNatGatewaysDataSourceBasic(t *testing.T) {
 
 	vpcIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
-			"vpc_id": `"${alicloud_vpc.default.id}"`,
+			"vpc_id": `alicloud_vpc.default.id`,
 		}),
 		fakeConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
 			"vpc_id": `"${alicloud_vpc.default.id}_fake"`,
@@ -38,13 +38,13 @@ func TestAccAlicloudNatGatewaysDataSourceBasic(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_nat_gateway.default.name}"`,
-			"vpc_id":     `"${alicloud_vpc.default.id}"`,
-			"ids":        `[ "${alicloud_nat_gateway.default.id}" ]`,
+			"name_regex": `alicloud_nat_gateway.default.name`,
+			"vpc_id":     `alicloud_vpc.default.id`,
+			"ids":        `[ alicloud_nat_gateway.default.id ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudNatGatewaysDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_nat_gateway.default.name}"`,
-			"ids":        `[ "${alicloud_nat_gateway.default.id}" ]`,
+			"name_regex": `alicloud_nat_gateway.default.name`,
+			"ids":        `[ alicloud_nat_gateway.default.id ]`,
 			"vpc_id":     `"${alicloud_vpc.default.id}_fake"`,
 		}),
 	}
@@ -68,14 +68,14 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_nat_gateway" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	specification = "Small"
-	name = "${var.name}"
+	name = var.name
     description = "${var.name}_decription"
 }
 

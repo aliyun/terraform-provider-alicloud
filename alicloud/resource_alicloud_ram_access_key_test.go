@@ -138,7 +138,7 @@ resource "alicloud_ram_user" "default" {
 }
 
 resource "alicloud_ram_access_key" "default" {
-  user_name = "${alicloud_ram_user.default.name}"
+  user_name = alicloud_ram_user.default.name
   status = "Active"
   secret_file = "/hello.txt"
   pgp_key = <<EOF
@@ -158,7 +158,7 @@ resource "alicloud_ram_user" "default" {
 }
 
 resource "alicloud_ram_access_key" "default" {
-  user_name = "${alicloud_ram_user.default.name}"
+  user_name = alicloud_ram_user.default.name
   status = "Inactive"
   secret_file = "/hello.txt"
 }`, defaultRegionToTest, rand)
@@ -175,7 +175,7 @@ resource "alicloud_ram_user" "default" {
 }
 
 resource "alicloud_ram_access_key" "default" {     
-  user_name = "${alicloud_ram_user.default.name}"
+  user_name = alicloud_ram_user.default.name
   status = "Active"
   secret_file = "/hello.txt"
   count = 2

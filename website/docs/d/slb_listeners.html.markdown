@@ -15,11 +15,11 @@ This data source provides the listeners related to a server load balancer of the
 
 ```
 data "alicloud_slb_listeners" "sample_ds" {
-  load_balancer_id = "${alicloud_slb.sample_slb.id}"
+  load_balancer_id = alicloud_slb.sample_slb.id
 }
 
 output "first_slb_listener_protocol" {
-  value = "${data.alicloud_slb_listeners.sample_ds.slb_listeners.0.protocol}"
+  value = data.alicloud_slb_listeners.sample_ds.slb_listeners.0.protocol
 }
 ```
 

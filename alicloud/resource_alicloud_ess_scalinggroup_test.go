@@ -538,18 +538,18 @@ func testAccEssScalingGroup(common string, rand int) string {
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 20
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}`, common, rand)
 }
@@ -562,18 +562,18 @@ func testAccEssScalingGroupUpdateMaxSize(common string, rand int) string {
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 2
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 20
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}`, common, rand)
 }
@@ -586,18 +586,18 @@ func testAccEssScalingGroupUpdateScalingGroupName(common string, rand int) strin
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 2
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 20
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}`, common, rand)
 }
@@ -610,18 +610,18 @@ func testAccEssScalingGroupUpdateRemovalPolicies(common string, rand int) string
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 2
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 20
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance"]
 	}`, common, rand)
 }
@@ -634,18 +634,18 @@ func testAccEssScalingGroupUpdateDefaultCooldown(common string, rand int) string
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 2
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 200
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance"]
 	}`, common, rand)
 }
@@ -658,18 +658,18 @@ func testAccEssScalingGroupUpdateMinSize(common string, rand int) string {
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 2
 		max_size = 2
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 200
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance"]
 	}`, common, rand)
 }
@@ -681,18 +681,18 @@ func testAccEssScalingGroupVpc(common string, rand int) string {
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 20
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 		multi_az_policy = "BALANCE"
 	}`, common, rand)
@@ -706,18 +706,18 @@ func testAccEssScalingGroupVpcUpdateMaxSize(common string, rand int) string {
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 2
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 20
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 		multi_az_policy = "BALANCE"
 	}`, common, rand)
@@ -731,18 +731,18 @@ func testAccEssScalingGroupVpcUpdateScalingGroupName(common string, rand int) st
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 2
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 20
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 		multi_az_policy = "BALANCE"
 	}`, common, rand)
@@ -756,18 +756,18 @@ func testAccEssScalingGroupVpcUpdateRemovalPolicies(common string, rand int) str
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 2
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 20
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance"]
 		multi_az_policy = "BALANCE"
 	}`, common, rand)
@@ -781,18 +781,18 @@ func testAccEssScalingGroupVpcUpdateDefaultCooldown(common string, rand int) str
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 2
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 200
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance"]
 		multi_az_policy = "BALANCE"
 	}`, common, rand)
@@ -806,18 +806,18 @@ func testAccEssScalingGroupVpcUpdateMinSize(common string, rand int) string {
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 2
 		max_size = 2
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 200
-		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance"]
 		multi_az_policy = "BALANCE"
 	}`, common, rand)
@@ -833,17 +833,17 @@ func testAccEssScalingGroupSlb(common string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 	  min_size = "1"
 	  max_size = "1"
-	  scaling_group_name = "${var.name}"
+	  scaling_group_name = var.name
 	  removal_policies = ["OldestInstance", "NewestInstance"]
-	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  vswitch_ids = [alicloud_vswitch.default.id]
+	  loadbalancer_ids = [alicloud_slb.default.0.id,alicloud_slb.default.1.id]
 	  depends_on = ["alicloud_slb_listener.default"]
 	}
 
 	resource "alicloud_slb" "default" {
 	  count=2
-	  name = "${var.name}"
-	  vswitch_id = "${alicloud_vswitch.default.id}"
+	  name = var.name
+	  vswitch_id = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -868,17 +868,17 @@ func testAccEssScalingGroupSlbDetach(common string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 	  min_size = "1"
 	  max_size = "1"
-	  scaling_group_name = "${var.name}"
+	  scaling_group_name = var.name
 	  removal_policies = ["OldestInstance", "NewestInstance"]
-	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	  loadbalancer_ids = ["${alicloud_slb.default.0.id}"]
+	  vswitch_ids = [alicloud_vswitch.default.id]
+	  loadbalancer_ids = [alicloud_slb.default.0.id]
 	  depends_on = ["alicloud_slb_listener.default"]
 	}
 
 	resource "alicloud_slb" "default" {
 	  count=2
-	  name = "${var.name}"
-	  vswitch_id = "${alicloud_vswitch.default.id}"
+	  name = var.name
+	  vswitch_id = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -903,9 +903,9 @@ func testAccEssScalingGroupSlbempty(common string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 	  min_size = "1"
 	  max_size = "1"
-	  scaling_group_name = "${var.name}"
+	  scaling_group_name = var.name
 	  removal_policies = ["OldestInstance", "NewestInstance"]
-	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	  vswitch_ids = [alicloud_vswitch.default.id]
 	  loadbalancer_ids = []
 	}`, common, rand)
 }
@@ -920,17 +920,17 @@ func testAccEssScalingGroupSlbUpdateMaxSize(common string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 	  min_size = "1"
 	  max_size = "2"
-	  scaling_group_name = "${var.name}"
+	  scaling_group_name = var.name
 	  removal_policies = ["OldestInstance", "NewestInstance"]
-	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  vswitch_ids = [alicloud_vswitch.default.id]
+	  loadbalancer_ids = [alicloud_slb.default.0.id,alicloud_slb.default.1.id]
 	  depends_on = ["alicloud_slb_listener.default"]
 	}
 
 	resource "alicloud_slb" "default" {
 	  count=2
-	  name = "${var.name}"
-	  vswitch_id = "${alicloud_vswitch.default.id}"
+	  name = var.name
+	  vswitch_id = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -955,17 +955,17 @@ func testAccEssScalingGroupSlbUpdateScalingGroupName(common string, rand int) st
 	resource "alicloud_ess_scaling_group" "default" {
 	  min_size = "1"
 	  max_size = "2"
-	  scaling_group_name = "${var.name}"
+	  scaling_group_name = var.name
 	  removal_policies = ["OldestInstance", "NewestInstance"]
-	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  vswitch_ids = [alicloud_vswitch.default.id]
+	  loadbalancer_ids = [alicloud_slb.default.0.id,alicloud_slb.default.1.id]
 	  depends_on = ["alicloud_slb_listener.default"]
 	}
 
 	resource "alicloud_slb" "default" {
 	  count=2
-	  name = "${var.name}"
-	  vswitch_id = "${alicloud_vswitch.default.id}"
+	  name = var.name
+	  vswitch_id = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -990,17 +990,17 @@ func testAccEssScalingGroupSlbUpdateRemovalPolicies(common string, rand int) str
 	resource "alicloud_ess_scaling_group" "default" {
 	  min_size = "1"
 	  max_size = "2"
-	  scaling_group_name = "${var.name}"
+	  scaling_group_name = var.name
 	  removal_policies = ["OldestInstance"]
-	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  vswitch_ids = [alicloud_vswitch.default.id]
+	  loadbalancer_ids = [alicloud_slb.default.0.id,alicloud_slb.default.1.id]
 	  depends_on = ["alicloud_slb_listener.default"]
 	}
 
 	resource "alicloud_slb" "default" {
 	  count=2
-	  name = "${var.name}"
-	  vswitch_id = "${alicloud_vswitch.default.id}"
+	  name = var.name
+	  vswitch_id = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -1026,17 +1026,17 @@ func testAccEssScalingGroupSlbUpdateDefaultCooldown(common string, rand int) str
 	  min_size = "1"
 	  max_size = "2"
       default_cooldown = 200
-	  scaling_group_name = "${var.name}"
+	  scaling_group_name = var.name
 	  removal_policies = ["OldestInstance"]
-	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  vswitch_ids = [alicloud_vswitch.default.id]
+	  loadbalancer_ids = [alicloud_slb.default.0.id,alicloud_slb.default.1.id]
 	  depends_on = ["alicloud_slb_listener.default"]
 	}
 
 	resource "alicloud_slb" "default" {
 	  count=2
-	  name = "${var.name}"
-	  vswitch_id = "${alicloud_vswitch.default.id}"
+	  name = var.name
+	  vswitch_id = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -1062,17 +1062,17 @@ func testAccEssScalingGroupSlbUpdateMinSize(common string, rand int) string {
 	  min_size = "2"
 	  max_size = "2"
       default_cooldown = 200
-	  scaling_group_name = "${var.name}"
+	  scaling_group_name = var.name
 	  removal_policies = ["OldestInstance"]
-	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  vswitch_ids = [alicloud_vswitch.default.id]
+	  loadbalancer_ids = [alicloud_slb.default.0.id,alicloud_slb.default.1.id]
 	  depends_on = ["alicloud_slb_listener.default"]
 	}
 
 	resource "alicloud_slb" "default" {
 	  count=2
-	  name = "${var.name}"
-	  vswitch_id = "${alicloud_vswitch.default.id}"
+	  name = var.name
+	  vswitch_id = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_slb_listener" "default" {
@@ -1095,18 +1095,18 @@ func testAccEssScalingGroupModifyVSwitchIds(common string, rand int) string {
 	}
 	
 	resource "alicloud_vswitch" "default2" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 		  name = "${var.name}-bar"
 	}
 
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 2
 		max_size = 2
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		default_cooldown = 200
-		vswitch_ids = ["${alicloud_vswitch.default2.id}"]
+		vswitch_ids = [alicloud_vswitch.default2.id]
 		removal_policies = ["OldestInstance"]
 	}`, common, rand)
 }
@@ -1119,18 +1119,18 @@ func testAccEssScalingGroupCostOptimized(common string, rand int) string {
     }
     
     resource "alicloud_vswitch" "default2" {
-          vpc_id = "${alicloud_vpc.default.id}"
+          vpc_id = alicloud_vpc.default.id
           cidr_block = "172.16.1.0/24"
-          availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+          availability_zone = data.alicloud_zones.default.zones.0.id
           name = "${var.name}-bar"
     }
     
     resource "alicloud_ess_scaling_group" "default" {
         min_size = 1
         max_size = 1
-        scaling_group_name = "${var.name}"
+        scaling_group_name = var.name
         default_cooldown = 20
-        vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+        vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
         removal_policies = ["OldestInstance", "NewestInstance"]
         multi_az_policy = "COST_OPTIMIZED"
         on_demand_base_capacity = "10"
@@ -1147,18 +1147,18 @@ func testAccEssScalingGroupSpotInstanceRemedy(common string, rand int) string {
     }
     
     resource "alicloud_vswitch" "default2" {
-          vpc_id = "${alicloud_vpc.default.id}"
+          vpc_id = alicloud_vpc.default.id
           cidr_block = "172.16.1.0/24"
-          availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+          availability_zone = data.alicloud_zones.default.zones.0.id
           name = "${var.name}-bar"
     }
     
     resource "alicloud_ess_scaling_group" "default" {
         min_size = 1
         max_size = 1
-        scaling_group_name = "${var.name}"
+        scaling_group_name = var.name
         default_cooldown = 20
-        vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+        vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
         removal_policies = ["OldestInstance", "NewestInstance"]
         multi_az_policy = "COST_OPTIMIZED"
         on_demand_base_capacity = "10"
@@ -1176,18 +1176,18 @@ func testAccEssScalingGroupOnDemandBaseCapacity(common string, rand int) string 
     }
     
     resource "alicloud_vswitch" "default2" {
-          vpc_id = "${alicloud_vpc.default.id}"
+          vpc_id = alicloud_vpc.default.id
           cidr_block = "172.16.1.0/24"
-          availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+          availability_zone = data.alicloud_zones.default.zones.0.id
           name = "${var.name}-bar"
     }
     
     resource "alicloud_ess_scaling_group" "default" {
         min_size = 1
         max_size = 1
-        scaling_group_name = "${var.name}"
+        scaling_group_name = var.name
         default_cooldown = 20
-        vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+        vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
         removal_policies = ["OldestInstance", "NewestInstance"]
         multi_az_policy = "COST_OPTIMIZED"
         on_demand_base_capacity = "8"
@@ -1205,18 +1205,18 @@ func testAccEssScalingGroupOnDemandPercentageAboveBaseCapacity(common string, ra
     }
     
     resource "alicloud_vswitch" "default2" {
-          vpc_id = "${alicloud_vpc.default.id}"
+          vpc_id = alicloud_vpc.default.id
           cidr_block = "172.16.1.0/24"
-          availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+          availability_zone = data.alicloud_zones.default.zones.0.id
           name = "${var.name}-bar"
     }
     
     resource "alicloud_ess_scaling_group" "default" {
         min_size = 1
         max_size = 1
-        scaling_group_name = "${var.name}"
+        scaling_group_name = var.name
         default_cooldown = 20
-        vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+        vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
         removal_policies = ["OldestInstance", "NewestInstance"]
         multi_az_policy = "COST_OPTIMIZED"
         on_demand_base_capacity = "8"
@@ -1234,18 +1234,18 @@ func testAccEssScalingGroupSpotInstancePools(common string, rand int) string {
     }
     
     resource "alicloud_vswitch" "default2" {
-          vpc_id = "${alicloud_vpc.default.id}"
+          vpc_id = alicloud_vpc.default.id
           cidr_block = "172.16.1.0/24"
-          availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+          availability_zone = data.alicloud_zones.default.zones.0.id
           name = "${var.name}-bar"
     }
     
     resource "alicloud_ess_scaling_group" "default" {
         min_size = 1
         max_size = 1
-        scaling_group_name = "${var.name}"
+        scaling_group_name = var.name
         default_cooldown = 20
-        vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+        vswitch_ids = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
         removal_policies = ["OldestInstance", "NewestInstance"]
         multi_az_policy = "COST_OPTIMIZED"
         on_demand_base_capacity = "8"

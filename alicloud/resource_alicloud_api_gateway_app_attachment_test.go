@@ -39,10 +39,10 @@ func SkipTestAccAlicloudApigatewayAppAttachment(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"api_id":     "${alicloud_api_gateway_api.default.api_id}",
-					"group_id":   "${alicloud_api_gateway_group.default.id}",
+					"api_id":     alicloud_api_gateway_api.default.api_id,
+					"group_id":   alicloud_api_gateway_group.default.id,
 					"stage_name": "PRE",
-					"app_id":     "${alicloud_api_gateway_app.default.id}",
+					"app_id":     alicloud_api_gateway_app.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -58,12 +58,12 @@ variable "name" {
   default = "%s"
 }
 resource "alicloud_api_gateway_group" "default" {
-  name        = "${var.name}"
+  name        = var.name
   description = "tf_testAccApiGroup Description"
 }
 resource "alicloud_api_gateway_api" "default" {
-  name        = "${var.name}"
-  group_id    = "${alicloud_api_gateway_group.default.id}"
+  name        = var.name
+  group_id    = alicloud_api_gateway_group.default.id
   description = "description"
   auth_type   = "APP"
 
@@ -95,7 +95,7 @@ resource "alicloud_api_gateway_api" "default" {
 }
 
 resource "alicloud_api_gateway_app" "default" {
-  name        = "${var.name}"
+  name        = var.name
   description = "tf_testAccApiAPP Description"
 }
 

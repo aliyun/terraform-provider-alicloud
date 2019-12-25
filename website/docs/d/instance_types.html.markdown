@@ -27,7 +27,7 @@ data "alicloud_instance_types" "types_ds" {
 # Create ECS instance with the first matched instance_type
 
 resource "alicloud_instance" "instance" {
-  instance_type = "${data.alicloud_instance_types.types_ds.instance_types.0.id}"
+  instance_type = data.alicloud_instance_types.types_ds.instance_types.0.id
 
   # Other properties...
 }

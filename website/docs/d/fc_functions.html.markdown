@@ -20,7 +20,7 @@ data "alicloud_fc_functions" "functions_ds" {
 }
 
 output "first_fc_function_name" {
-  value = "${data.alicloud_fc_functions.functions_ds.functions.0.name}"
+  value = data.alicloud_fc_functions.functions_ds.functions.0.name
 }
 ```
 

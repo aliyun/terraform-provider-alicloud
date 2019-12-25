@@ -43,7 +43,7 @@ func TestAccAlicloudDBAccountUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_db_instance.instance.id}",
+					"instance_id": alicloud_db_instance.instance.id,
 					"name":        "tftestnormal",
 					"password":    "YourPassword_123",
 				}),
@@ -110,17 +110,17 @@ func resourceDBAccountConfigDependence(name string) string {
 	}
 
 	data "alicloud_db_instance_classes" "default" {
- 	 	engine = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-		engine_version = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
+ 	 	engine = data.alicloud_db_instance_engines.default.instance_engines.0.engine
+		engine_version = data.alicloud_db_instance_engines.default.instance_engines.0.engine_version
 	}
 
 	resource "alicloud_db_instance" "instance" {
-		engine = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-		engine_version = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
-		instance_type = "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}"
-		instance_storage = "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-	    instance_name = "${var.name}"
+		engine = data.alicloud_db_instance_engines.default.instance_engines.0.engine
+		engine_version = data.alicloud_db_instance_engines.default.instance_engines.0.engine_version
+		instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+		vswitch_id = alicloud_vswitch.default.id
+	    instance_name = var.name
 	}
 	`, RdsCommonTestCase, name)
 }

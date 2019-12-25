@@ -32,24 +32,24 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_vswitch" "default" {
   name              = "tf_test"
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "10.1.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vpn_gateway" "default" {
   name                 = "tf_vpn_gateway_test"
-  vpc_id               = "${alicloud_vpc.default.id}"
+  vpc_id               = alicloud_vpc.default.id
   bandwidth            = 10
   instance_charge_type = "PayByTraffic"
   enable_ssl           = false
-  vswitch_id		   = "${alicloud_vswitch.default.id}"
+  vswitch_id		   = alicloud_vswitch.default.id
 }
 
 resource "alicloud_vpn_connection" "default" {
   name                = "tf_vpn_connection_test"
-  customer_gateway_id = "${alicloud_vpn_customer_gateway.default.id}"
-  vpn_gateway_id      = "${alicloud_vpn_gateway.default.id}"
+  customer_gateway_id = alicloud_vpn_customer_gateway.default.id
+  vpn_gateway_id      = alicloud_vpn_gateway.default.id
   local_subnet        = ["192.168.2.0/24"]
   remote_subnet       = ["192.168.3.0/24"]
 }
@@ -60,9 +60,9 @@ resource "alicloud_vpn_customer_gateway" "default" {
 }
 
 resource "alicloud_vpn_route_entry" "default" {
-  vpn_gateway_id = "${alicloud_vpn_gateway.default.id}"
+  vpn_gateway_id = alicloud_vpn_gateway.default.id
   route_dest     = "10.0.0.0/24"
-  next_hop       = "${alicloud_vpn_connection.default.id}"
+  next_hop       = alicloud_vpn_connection.default.id
   weight         = 0
   publish_vpc    = false
 }

@@ -26,7 +26,7 @@ resource "alicloud_ram_user" "user" {
 }
 
 resource "alicloud_ram_login_profile" "profile" {
-  user_name = "${alicloud_ram_user.user.name}"
+  user_name = alicloud_ram_user.user.name
   password  = "Yourpassword1234"
 }
 ```

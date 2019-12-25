@@ -237,10 +237,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   resource_group_id = "%s"
   inner_access = false
-  name = "${var.name}"
+  name = var.name
   description = "${var.name}_describe"
   tags = {
 		foo  = "foo"
@@ -263,10 +263,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   resource_group_id = "%s"
   inner_access_policy = "Accept"
-  name = "${var.name}"
+  name = var.name
   description = "${var.name}_describe"
   tags = {
 		foo  = "foo"
@@ -289,7 +289,7 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   resource_group_id = "%s"
   inner_access = true
   name = "${var.name}_change"
@@ -315,7 +315,7 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   resource_group_id = "%s"
   inner_access = true
   name = "${var.name}_change"
@@ -340,7 +340,7 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   resource_group_id = "%s"
   inner_access = true
   name = "${var.name}_change"
@@ -364,10 +364,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   resource_group_id = "%s"
   inner_access_policy = "Drop"
-  name = "${var.name}"
+  name = var.name
   description = "${var.name}_describe"
   tags = {
 		foo  = "foo"
@@ -391,10 +391,10 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_security_group" "default" {
   count = 10
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   resource_group_id = "%s"
   inner_access = false
-  name = "${var.name}"
+  name = var.name
   description = "${var.name}_describe"
   tags = {
 		foo  = "foo"

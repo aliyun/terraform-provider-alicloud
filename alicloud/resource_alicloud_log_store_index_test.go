@@ -34,8 +34,8 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project":  "${alicloud_log_project.default.name}",
-					"logstore": "${alicloud_log_store.default.name}",
+					"project":  alicloud_log_project.default.name,
+					"logstore": alicloud_log_store.default.name,
 					"full_text": []map[string]interface{}{
 						{
 							"case_sensitive": "true",
@@ -61,7 +61,7 @@ func TestAccAlicloudLogStoreIndex_basic(t *testing.T) {
 					"full_text": REMOVEKEY,
 					"field_search": []map[string]interface{}{
 						{
-							"name":             "${var.name}",
+							"name":             var.name,
 							"enable_analytics": "true",
 							"token":            ` #$^*\r\n\t`,
 							"type":             "text",
@@ -123,12 +123,12 @@ func resourceLogStoreIndexConfigDependence(name string) string {
 	    default = "%s"
 	}
 	resource "alicloud_log_project" "default" {
-	    name = "${var.name}"
+	    name = var.name
 	    description = "tf unit test"
 	}
 	resource "alicloud_log_store" "default" {
-	    project = "${alicloud_log_project.default.name}"
-	    name = "${var.name}"
+	    project = alicloud_log_project.default.name
+	    name = var.name
 	    retention_period = "3000"
 	    shard_count = 1
 	}

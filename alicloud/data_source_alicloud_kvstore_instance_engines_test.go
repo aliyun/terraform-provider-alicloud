@@ -14,12 +14,12 @@ func TestAccAlicloudKVStoreInstanceEngines(t *testing.T) {
 
 	EngineVersionConfRedis := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":        "${data.alicloud_zones.resources.zones.0.id}",
+			"zone_id":        data.alicloud_zones.resources.zones.0.id,
 			"engine":         "Redis",
 			"engine_version": "5.0",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"zone_id":        "${data.alicloud_zones.resources.zones.0.id}",
+			"zone_id":        data.alicloud_zones.resources.zones.0.id,
 			"engine":         "Redis",
 			"engine_version": "4.9",
 		}),
@@ -28,27 +28,27 @@ func TestAccAlicloudKVStoreInstanceEngines(t *testing.T) {
 	// At present, the datasource does not support memcache
 	//EngineVersionConfMemcache := dataSourceTestAccConfig{
 	//	existConfig: testAccConfig(map[string]interface{}{
-	//		"zone_id": "${data.alicloud_zones.resources.zones.0.id}",
+	//		"zone_id": data.alicloud_zones.resources.zones.0.id,
 	//		"engine":  "Memcache",
 	//	}),
 	//}
 
 	ChargeTypeConfPostpaid := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
+			"zone_id":              data.alicloud_zones.resources.zones.0.id,
 			"instance_charge_type": "PostPaid",
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
+			"zone_id":              data.alicloud_zones.resources.zones.0.id,
 			"instance_charge_type": "PostPaid",
 			"engine":               "Redis",
 			"engine_version":       "5.0",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
+			"zone_id":              data.alicloud_zones.resources.zones.0.id,
 			"instance_charge_type": "PostPaid",
 			"engine":               "Fake",
 			"engine_version":       "5.6",

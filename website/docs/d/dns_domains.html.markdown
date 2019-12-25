@@ -20,7 +20,7 @@ data "alicloud_dns_domains" "domains_ds" {
 }
 
 output "first_domain_id" {
-  value = "${data.alicloud_dns_domains.domains_ds.domains.0.domain_id}"
+  value = data.alicloud_dns_domains.domains_ds.domains.0.domain_id
 }
 ```
 

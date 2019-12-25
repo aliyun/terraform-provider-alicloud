@@ -19,11 +19,11 @@ func TestAccAlicloudAlikafkaTopicsDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${alicloud_alikafka_instance.default.id}",
-			"name_regex":  "${alicloud_alikafka_topic.default.topic}",
+			"instance_id": alicloud_alikafka_instance.default.id,
+			"name_regex":  alicloud_alikafka_topic.default.topic,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${alicloud_alikafka_instance.default.id}",
+			"instance_id": alicloud_alikafka_instance.default.id,
 			"name_regex":  "fake_tf-testacc*",
 		}),
 	}
@@ -70,14 +70,14 @@ func dataSourceAlikafkaTopicsConfigDependence(name string) string {
 		}
 		resource "alicloud_vpc" "default" {
 		  cidr_block = "172.16.0.0/12"
-		  name       = "${var.name}"
+		  name       = var.name
 		}
 		
 		resource "alicloud_vswitch" "default" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.0.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name       = "${var.name}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
+		  name       = var.name
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
@@ -87,12 +87,12 @@ func dataSourceAlikafkaTopicsConfigDependence(name string) string {
 		  disk_size = "500"
 		  deploy_type = "5"
 		  io_max = "20"
-          vswitch_id = "${alicloud_vswitch.default.id}"
+          vswitch_id = alicloud_vswitch.default.id
 		}
 		
 		resource "alicloud_alikafka_topic" "default" {
-		  instance_id = "${alicloud_alikafka_instance.default.id}"
-		  topic = "${var.name}"
+		  instance_id = alicloud_alikafka_instance.default.id
+		  topic = var.name
 		  local_topic = "false"
 		  compact_topic = "false"
 		  partition_num = "12"

@@ -20,7 +20,7 @@ func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
-			"ids":            []string{"${alicloud_cs_managed_kubernetes.default.id}"},
+			"ids":            []string{alicloud_cs_managed_kubernetes.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
@@ -31,7 +31,7 @@ func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
-			"name_regex":     "${alicloud_cs_managed_kubernetes.default.name}",
+			"name_regex":     alicloud_cs_managed_kubernetes.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
@@ -42,12 +42,12 @@ func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
-			"ids":            []string{"${alicloud_cs_managed_kubernetes.default.id}"},
-			"name_regex":     "${alicloud_cs_managed_kubernetes.default.name}",
+			"ids":            []string{alicloud_cs_managed_kubernetes.default.id},
+			"name_regex":     alicloud_cs_managed_kubernetes.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
-			"ids":            []string{"${alicloud_cs_managed_kubernetes.default.id}"},
+			"ids":            []string{alicloud_cs_managed_kubernetes.default.id},
 			"name_regex":     "${alicloud_cs_managed_kubernetes.default.name}-fake",
 		}),
 	}
@@ -105,22 +105,22 @@ data "alicloud_zones" default {
 }
 
 data "alicloud_instance_types" "default" {
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
 	cpu_core_count = 2
 	memory_size = 4
 	kubernetes_node_role = "Worker"
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name = var.name
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_log_project" "log" {
@@ -129,11 +129,11 @@ resource "alicloud_log_project" "log" {
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
-  name_prefix = "${var.name}"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+  name_prefix = var.name
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  vswitch_ids = [alicloud_vswitch.default.id]
   new_nat_gateway = true
-  worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+  worker_instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
   worker_number = 2
   password = "Yourpassword1234"
   pod_cidr = "172.20.0.0/16"
@@ -145,7 +145,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_data_disk_size =  200
   log_config {
     type = "SLS"
-    project = "${alicloud_log_project.log.name}"
+    project = alicloud_log_project.log.name
   }
 }
 `, name)

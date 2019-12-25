@@ -20,7 +20,7 @@ data "alicloud_cen_route_entries" "entry" {
 }
 
 output "first_route_entries_route_entry_cidr_block" {
-  value = "${data.alicloud_cen_route_entries.entry.entries.0.cidr_block}"
+  value = data.alicloud_cen_route_entries.entry.entries.0.cidr_block
 }
 ```
 

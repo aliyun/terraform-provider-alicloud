@@ -24,7 +24,7 @@ data "alicloud_images" "ecs_image" {
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
   cpu_core_count    = 1
   memory_size       = 2
 }
@@ -36,16 +36,16 @@ resource "alicloud_vpc" "foo" {
 
 resource "alicloud_vswitch" "foo" {
   name              = "tf-testAccEssAlarm_basic_foo"
-  vpc_id            = "${alicloud_vpc.foo.id}"
+  vpc_id            = alicloud_vpc.foo.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "bar" {
   name              = "tf-testAccEssAlarm_basic_bar"
-  vpc_id            = "${alicloud_vpc.foo.id}"
+  vpc_id            = alicloud_vpc.foo.id
   cidr_block        = "172.16.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_ess_scaling_group" "foo" {
@@ -53,12 +53,12 @@ resource "alicloud_ess_scaling_group" "foo" {
   max_size           = 1
   scaling_group_name = "tf-testAccEssAlarm_basic"
   removal_policies   = ["OldestInstance", "NewestInstance"]
-  vswitch_ids        = ["${alicloud_vswitch.foo.id}", "${alicloud_vswitch.bar.id}"]
+  vswitch_ids        = [alicloud_vswitch.foo.id, alicloud_vswitch.bar.id]
 }
 
 resource "alicloud_ess_scaling_rule" "foo" {
   scaling_rule_name = "tf-testAccEssAlarm_basic"
-  scaling_group_id  = "${alicloud_ess_scaling_group.foo.id}"
+  scaling_group_id  = alicloud_ess_scaling_group.foo.id
   adjustment_type   = "TotalCapacity"
   adjustment_value  = 2
   cooldown          = 60
@@ -67,8 +67,8 @@ resource "alicloud_ess_scaling_rule" "foo" {
 resource "alicloud_ess_alarm" "foo" {
   name                = "tf-testAccEssAlarm_basic"
   description         = "Acc alarm test"
-  alarm_actions       = ["${alicloud_ess_scaling_rule.foo.ari}"]
-  scaling_group_id    = "${alicloud_ess_scaling_group.foo.id}"
+  alarm_actions       = [alicloud_ess_scaling_rule.foo.ari]
+  scaling_group_id    = alicloud_ess_scaling_group.foo.id
   metric_type         = "system"
   metric_name         = "CpuUtilization"
   period              = 300

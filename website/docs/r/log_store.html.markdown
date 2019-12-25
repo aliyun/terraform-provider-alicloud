@@ -23,7 +23,7 @@ resource "alicloud_log_project" "example" {
 }
 
 resource "alicloud_log_store" "example" {
-  project               = "${alicloud_log_project.example.name}"
+  project               = alicloud_log_project.example.name
   name                  = "tf-log-store"
   shard_count           = 3
   auto_split            = true

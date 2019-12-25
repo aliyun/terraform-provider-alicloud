@@ -158,37 +158,37 @@ data "alicloud_zones" main {
   available_resource_creation = "VSwitch"
 }
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+ 	availability_zone = data.alicloud_zones.main.zones.0.id
 	cpu_core_count = 1
 	memory_size = 2
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
+  vpc_id = alicloud_vpc.foo.id
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.main.zones.0.id
+  name = var.name
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Yourpassword1234"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  name_prefix = "${var.name}"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
+  name_prefix = var.name
   node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
   cidr_block = "172.20.0.0/24"
-  image_id = "${data.alicloud_images.main.images.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
+  image_id = data.alicloud_images.main.images.0.id
+  vswitch_id = alicloud_vswitch.foo.id
 }
 
 resource "alicloud_cs_application" "basic" {
-  cluster_name = "${alicloud_cs_swarm.cs_vpc.name}"
+  cluster_name = alicloud_cs_swarm.cs_vpc.name
   name = "${var.name}-app-basic"
   version = "1.0"
   description = "from tf creation"
@@ -199,7 +199,7 @@ resource "alicloud_cs_application" "basic" {
 }
 
 resource "alicloud_cs_application" "env" {
-  cluster_name = "${alicloud_cs_swarm.cs_vpc.name}"
+  cluster_name = alicloud_cs_swarm.cs_vpc.name
   name = "${var.name}-app-env"
   version = "1.0"
   template = <<DEFINITION
@@ -229,38 +229,38 @@ data "alicloud_zones" main {
   available_resource_creation = "VSwitch"
 }
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+ 	availability_zone = data.alicloud_zones.main.zones.0.id
 	cpu_core_count = 1
 	memory_size = 2
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
+  vpc_id = alicloud_vpc.foo.id
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.main.zones.0.id
+  name = var.name
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Yourpassword1234"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  name_prefix = "${var.name}"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
+  name_prefix = var.name
   node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
   cidr_block = "172.20.0.0/24"
-  image_id = "${data.alicloud_images.main.images.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
+  image_id = data.alicloud_images.main.images.0.id
+  vswitch_id = alicloud_vswitch.foo.id
 }
 
 resource "alicloud_cs_application" "basic" {
-  cluster_name = "${alicloud_cs_swarm.cs_vpc.name}"
-  name = "${var.name}"
+  cluster_name = alicloud_cs_swarm.cs_vpc.name
+  name = var.name
   version = "1.0"
   description = "from tf creation"
   template = <<DEFINITION
@@ -285,38 +285,38 @@ data "alicloud_zones" main {
   	available_resource_creation = "VSwitch"
 }
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+ 	availability_zone = data.alicloud_zones.main.zones.0.id
 	cpu_core_count = 1
 	memory_size = 2
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
+  vpc_id = alicloud_vpc.foo.id
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.main.zones.0.id
+  name = var.name
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Yourpassword1234"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  name_prefix = "${var.name}"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
+  name_prefix = var.name
   node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
   cidr_block = "172.20.0.0/24"
-  image_id = "${data.alicloud_images.main.images.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
+  image_id = data.alicloud_images.main.images.0.id
+  vswitch_id = alicloud_vswitch.foo.id
 }
 
 resource "alicloud_cs_application" "basic" {
-  cluster_name = "${alicloud_cs_swarm.cs_vpc.name}"
-  name = "${var.name}"
+  cluster_name = alicloud_cs_swarm.cs_vpc.name
+  name = var.name
   version = "1.1"
   description = "from tf creation"
   template = <<DEFINITION
@@ -342,38 +342,38 @@ data "alicloud_zones" main {
   	available_resource_creation = "VSwitch"
 }
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.main.zones.0.id}"
+ 	availability_zone = data.alicloud_zones.main.zones.0.id
 	cpu_core_count = 1
 	memory_size = 2
 }
 
 resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "foo" {
-  vpc_id = "${alicloud_vpc.foo.id}"
+  vpc_id = alicloud_vpc.foo.id
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.main.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.main.zones.0.id
+  name = var.name
 }
 
 resource "alicloud_cs_swarm" "cs_vpc" {
   password = "Yourpassword1234"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  name_prefix = "${var.name}"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
+  name_prefix = var.name
   node_number = 2
   disk_category = "cloud_efficiency"
   disk_size = 20
   cidr_block = "172.20.0.0/24"
-  image_id = "${data.alicloud_images.main.images.0.id}"
-  vswitch_id = "${alicloud_vswitch.foo.id}"
+  image_id = data.alicloud_images.main.images.0.id
+  vswitch_id = alicloud_vswitch.foo.id
 }
 
 resource "alicloud_cs_application" "basic" {
-  cluster_name = "${alicloud_cs_swarm.cs_vpc.name}"
-  name = "${var.name}"
+  cluster_name = alicloud_cs_swarm.cs_vpc.name
+  name = var.name
   version = "1.1"
   description = "from tf creation"
   template = <<DEFINITION

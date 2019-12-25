@@ -19,7 +19,7 @@ data "alicloud_caller_identity" "current" {
 }
 
 output "current_user_arn" {
-  value = "${data.alicloud_caller_identity.current.id}"
+  value = data.alicloud_caller_identity.current.id
 }
 ```
 

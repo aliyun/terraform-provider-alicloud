@@ -13,7 +13,7 @@ func TestAccAlicloudDnsResolutionLinesDataSource(t *testing.T) {
 	testAccConfig := dataSourceTestAccConfigFunc("data.alicloud_dns_resolution_lines.default", name, dataSourceDnsResolutionLinesConfigDependence)
 	lineCodesConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"line_codes": []string{"${alicloud_dns_record.default.routing}"},
+			"line_codes": []string{alicloud_dns_record.default.routing},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"line_codes": []string{"${alicloud_dns_record.default.routing}_fake"},
@@ -29,29 +29,29 @@ func TestAccAlicloudDnsResolutionLinesDataSource(t *testing.T) {
 	}
 	lineNamesConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"line_codes": []string{"${alicloud_dns_record.default.routing}"},
+			"line_codes": []string{alicloud_dns_record.default.routing},
 			"line_names": []string{"中国联通"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"line_codes": []string{"${alicloud_dns_record.default.routing}"},
+			"line_codes": []string{alicloud_dns_record.default.routing},
 			"line_names": []string{"中国联通-fake"},
 		}),
 	}
 
 	domainNameConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"line_codes":  []string{"${alicloud_dns_record.default.routing}"},
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"line_codes":  []string{alicloud_dns_record.default.routing},
+			"domain_name": alicloud_dns_record.default.name,
 		}),
 		//fakeConfig: testAccConfig(map[string]interface{}{
-		//	"line_codes":  []string{"${alicloud_dns_record.default.routing}"},
+		//	"line_codes":  []string{alicloud_dns_record.default.routing},
 		//	"domain_name": "${alicloud_dns_record.default.name}_fake",
 		//}),
 	}
 
 	userClientIpConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"line_codes":     []string{"${alicloud_dns_record.default.routing}"},
+			"line_codes":     []string{alicloud_dns_record.default.routing},
 			"user_client_ip": "205.204.117.106",
 		}),
 		/*fakeConfig: testAccConfig(map[string]interface{}{
@@ -61,7 +61,7 @@ func TestAccAlicloudDnsResolutionLinesDataSource(t *testing.T) {
 	}
 	langConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"line_codes": []string{"${alicloud_dns_record.default.routing}"},
+			"line_codes": []string{alicloud_dns_record.default.routing},
 			"lang":       "zh",
 		}),
 		// if the lang were set fake, it will be reset as default en(english)
@@ -72,17 +72,17 @@ func TestAccAlicloudDnsResolutionLinesDataSource(t *testing.T) {
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"line_codes":         []string{"${alicloud_dns_record.default.routing}"},
+			"line_codes":         []string{alicloud_dns_record.default.routing},
 			"line_display_names": []string{"中国联通"},
-			"domain_name":        "${alicloud_dns_record.default.name}",
+			"domain_name":        alicloud_dns_record.default.name,
 			"user_client_ip":     "205.204.117.106",
 			"lang":               "zh",
 			"line_names":         []string{"中国联通"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"line_codes":         []string{"${alicloud_dns_record.default.routing}"},
+			"line_codes":         []string{alicloud_dns_record.default.routing},
 			"line_display_names": []string{"中国联通"},
-			"domain_name":        "${alicloud_dns_record.default.name}",
+			"domain_name":        alicloud_dns_record.default.name,
 			"user_client_ip":     "205.204.117.106",
 			"lang":               "zh",
 			"line_names":         []string{"中国联通_fake"},
@@ -98,7 +98,7 @@ resource "alicloud_dns" "default" {
 }
 
 resource "alicloud_dns_record" "default" {
-  name = "${alicloud_dns.default.name}"
+  name = alicloud_dns.default.name
   host_record = "alimail"
   routing = "unicom"
   type = "CNAME"

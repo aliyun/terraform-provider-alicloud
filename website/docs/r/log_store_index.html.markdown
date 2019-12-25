@@ -22,13 +22,13 @@ resource "alicloud_log_project" "example" {
   description = "created by terraform"
 }
 resource "alicloud_log_store" "example" {
-  project     = "${alicloud_log_project.example.name}"
+  project     = alicloud_log_project.example.name
   name        = "tf-log-store"
   description = "created by terraform"
 }
 resource "alicloud_log_store_index" "example" {
-  project  = "${alicloud_log_project.example.name}"
-  logstore = "${alicloud_log_store.example.name}"
+  project  = alicloud_log_project.example.name
+  logstore = alicloud_log_store.example.name
   full_text {
     case_sensitive = true
     token          = " #$%^*\r\n\t"

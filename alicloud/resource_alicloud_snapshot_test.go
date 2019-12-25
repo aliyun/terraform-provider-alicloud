@@ -133,9 +133,9 @@ func TestAccAlicloudSnapshotBasic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"disk_id":     "${alicloud_disk_attachment.default.0.disk_id}",
-					"name":        "${var.name}",
-					"description": "${var.name}",
+					"disk_id":     alicloud_disk_attachment.default.0.disk_id,
+					"name":        var.name,
+					"description": var.name,
 					"tags": map[string]string{
 						"version": "1.0",
 					},
@@ -217,8 +217,8 @@ func TestAccAlicloudSnapshotMulti(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"count":       "2",
 					"disk_id":     "${element(alicloud_disk_attachment.default.*.disk_id,count.index)}",
-					"name":        "${var.name}",
-					"description": "${var.name}",
+					"name":        var.name,
+					"description": var.name,
 					"tags": map[string]string{
 						"version": "1.0",
 					},
@@ -244,28 +244,28 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "192.168.0.0/16"
 }
 
 
 resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "192.168.0.0/24"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-  name = "${var.name}"
+  name = var.name
   description = "New security group"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_disk" "default" {
   count = "2"
-  name = "${var.name}"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+  name = var.name
+  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
   category          = "cloud_efficiency"
   size              = "20"
 }
@@ -275,19 +275,19 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_instance" "default" {
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  instance_name   = "${var.name}"
+  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  instance_name   = var.name
   host_name       = "tf-testAcc"
-  image_id        = "${data.alicloud_images.default.images.0.id}"
-  instance_type   = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = ["${alicloud_security_group.default.id}"]
-  vswitch_id      = "${alicloud_vswitch.default.id}"
+  image_id        = data.alicloud_images.default.images.0.id
+  instance_type   = data.alicloud_instance_types.default.instance_types.0.id
+  security_groups = [alicloud_security_group.default.id]
+  vswitch_id      = alicloud_vswitch.default.id
 }
 
 resource "alicloud_disk_attachment" "default" {
   count = "2"
   disk_id     = "${element(alicloud_disk.default.*.id,count.index)}"
-  instance_id = "${alicloud_instance.default.id}"
+  instance_id = alicloud_instance.default.id
 }
 
 `, name)

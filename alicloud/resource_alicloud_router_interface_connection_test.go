@@ -96,7 +96,7 @@ func testAccRouterInterfaceConnectionConfigBasic(rand int) string {
 	return fmt.Sprintf(
 		`
 provider "alicloud" {
-  region = "${var.region}"
+  region = var.region
 }
 variable "region" {
   default = "cn-hangzhou"
@@ -105,43 +105,43 @@ variable "name" {
   default = "tf-testAccAlicloudRIConnection_basic%d"
 }
 resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
 }
 resource "alicloud_vpc" "bar" {
   provider = "alicloud"
-  name = "${var.name}"
+  name = var.name
   cidr_block = "192.168.0.0/16"
 }
 resource "alicloud_router_interface" "initiate" {
-  opposite_region = "${var.region}"
+  opposite_region = var.region
   router_type = "VRouter"
-  router_id = "${alicloud_vpc.foo.router_id}"
+  router_id = alicloud_vpc.foo.router_id
   role = "InitiatingSide"
   specification = "Large.2"
-  name = "${var.name}"
-	description = "${var.name}"
+  name = var.name
+	description = var.name
 	instance_charge_type = "PostPaid"
 }
 resource "alicloud_router_interface" "opposite" {
   provider = "alicloud"
-  opposite_region = "${var.region}"
+  opposite_region = var.region
   router_type = "VRouter"
-  router_id = "${alicloud_vpc.bar.router_id}"
+  router_id = alicloud_vpc.bar.router_id
   role = "AcceptingSide"
   specification = "Large.1"
   name = "${var.name}-opposite"
   description = "${var.name}-opposite"
 }
 resource "alicloud_router_interface_connection" "foo" {
-  interface_id = "${alicloud_router_interface.initiate.id}"
-  opposite_interface_id = "${alicloud_router_interface.opposite.id}"
+  interface_id = alicloud_router_interface.initiate.id
+  opposite_interface_id = alicloud_router_interface.opposite.id
   depends_on = ["alicloud_router_interface_connection.bar"]
 }
 resource "alicloud_router_interface_connection" "bar" {
   provider = "alicloud"
-  interface_id = "${alicloud_router_interface.opposite.id}"
-  opposite_interface_id = "${alicloud_router_interface.initiate.id}"
+  interface_id = alicloud_router_interface.opposite.id
+  opposite_interface_id = alicloud_router_interface.initiate.id
 }
 `, rand)
 }

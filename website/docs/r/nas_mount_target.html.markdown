@@ -40,8 +40,8 @@ resource "alicloud_nas_access_group" "bar" {
   description = "tf-testAccNasConfig-2"
 }
 resource "alicloud_nas_mount_target" "foo" {
-  file_system_id    = "${alicloud_nas_file_system.foo.id}"
-  access_group_name = "${alicloud_nas_access_group.foo.id}"
+  file_system_id    = alicloud_nas_file_system.foo.id
+  access_group_name = alicloud_nas_access_group.foo.id
 }
 ```
 

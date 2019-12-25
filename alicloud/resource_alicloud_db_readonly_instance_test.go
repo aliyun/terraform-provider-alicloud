@@ -51,13 +51,13 @@ func TestAccAlicloudDBReadonlyInstance_update(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"master_db_instance_id": "${alicloud_db_instance.default.id}",
-					"zone_id":               "${alicloud_db_instance.default.zone_id}",
-					"engine_version":        "${alicloud_db_instance.default.engine_version}",
-					"instance_type":         "${alicloud_db_instance.default.instance_type}",
-					"instance_storage":      "${alicloud_db_instance.default.instance_storage}",
-					"instance_name":         "${var.name}",
-					"vswitch_id":            "${alicloud_vswitch.default.id}",
+					"master_db_instance_id": alicloud_db_instance.default.id,
+					"zone_id":               alicloud_db_instance.default.zone_id,
+					"engine_version":        alicloud_db_instance.default.engine_version,
+					"instance_type":         alicloud_db_instance.default.instance_type,
+					"instance_storage":      alicloud_db_instance.default.instance_storage,
+					"instance_name":         var.name,
+					"vswitch_id":            alicloud_vswitch.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -80,7 +80,7 @@ func TestAccAlicloudDBReadonlyInstance_update(t *testing.T) {
 			// upgrade instanceType
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+					"instance_type": data.alicloud_db_instance_classes.default.instance_classes.1.instance_class,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{"instance_type": CHECKSET}),
@@ -98,13 +98,13 @@ func TestAccAlicloudDBReadonlyInstance_update(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"master_db_instance_id": "${alicloud_db_instance.default.id}",
-					"zone_id":               "${alicloud_db_instance.default.zone_id}",
-					"engine_version":        "${alicloud_db_instance.default.engine_version}",
-					"instance_type":         "${alicloud_db_instance.default.instance_type}",
+					"master_db_instance_id": alicloud_db_instance.default.id,
+					"zone_id":               alicloud_db_instance.default.zone_id,
+					"engine_version":        alicloud_db_instance.default.engine_version,
+					"instance_type":         alicloud_db_instance.default.instance_type,
 					"instance_storage":      "${alicloud_db_instance.default.instance_storage + 2*data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
-					"instance_name":         "${var.name}",
-					"vswitch_id":            "${alicloud_vswitch.default.id}",
+					"instance_name":         var.name,
+					"vswitch_id":            alicloud_vswitch.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -158,13 +158,13 @@ func TestAccAlicloudDBReadonlyInstance_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":                 "2",
-					"master_db_instance_id": "${alicloud_db_instance.default.id}",
-					"zone_id":               "${alicloud_db_instance.default.zone_id}",
-					"engine_version":        "${alicloud_db_instance.default.engine_version}",
-					"instance_type":         "${alicloud_db_instance.default.instance_type}",
-					"instance_storage":      "${alicloud_db_instance.default.instance_storage}",
-					"instance_name":         "${var.name}",
-					"vswitch_id":            "${alicloud_vswitch.default.id}",
+					"master_db_instance_id": alicloud_db_instance.default.id,
+					"zone_id":               alicloud_db_instance.default.zone_id,
+					"engine_version":        alicloud_db_instance.default.engine_version,
+					"instance_type":         alicloud_db_instance.default.instance_type,
+					"instance_storage":      alicloud_db_instance.default.instance_storage,
+					"instance_name":         var.name,
+					"vswitch_id":            alicloud_vswitch.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -200,13 +200,13 @@ data "alicloud_db_instance_classes" "default" {
 }
 
 	resource "alicloud_db_instance" "default" {
-		engine = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-		engine_version = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
-		instance_type = "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}"
-		instance_storage = "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}"
+		engine = data.alicloud_db_instance_engines.default.instance_engines.0.engine
+		engine_version = data.alicloud_db_instance_engines.default.instance_engines.0.engine_version
+		instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 		instance_charge_type = "Postpaid"
-		instance_name = "${var.name}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = var.name
+		vswitch_id = alicloud_vswitch.default.id
 		security_ips = ["10.168.1.12", "100.69.7.112"]
 	}
 `, RdsCommonTestCase, name)

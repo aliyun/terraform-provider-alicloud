@@ -15,49 +15,49 @@ func TestAccAlicloudFCTriggersDataSource_basic(t *testing.T) {
 
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"service_name":  "${alicloud_fc_trigger.default.service}",
-			"function_name": "${alicloud_fc_trigger.default.function}",
+			"service_name":  alicloud_fc_trigger.default.service,
+			"function_name": alicloud_fc_trigger.default.function,
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"service_name":  "${alicloud_fc_trigger.default.service}",
-			"function_name": "${alicloud_fc_trigger.default.function}",
-			"ids":           []string{"${alicloud_fc_trigger.default.trigger_id}"},
+			"service_name":  alicloud_fc_trigger.default.service,
+			"function_name": alicloud_fc_trigger.default.function,
+			"ids":           []string{alicloud_fc_trigger.default.trigger_id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"service_name":  "${alicloud_fc_trigger.default.service}",
-			"function_name": "${alicloud_fc_trigger.default.function}",
+			"service_name":  alicloud_fc_trigger.default.service,
+			"function_name": alicloud_fc_trigger.default.function,
 			"ids":           []string{"${alicloud_fc_trigger.default.trigger_id}-fake"},
 		}),
 	}
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex":    "${alicloud_fc_trigger.default.name}",
-			"service_name":  "${alicloud_fc_trigger.default.service}",
-			"function_name": "${alicloud_fc_trigger.default.function}",
+			"name_regex":    alicloud_fc_trigger.default.name,
+			"service_name":  alicloud_fc_trigger.default.service,
+			"function_name": alicloud_fc_trigger.default.function,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex":    "${alicloud_fc_trigger.default.name}_fake",
-			"service_name":  "${alicloud_fc_trigger.default.service}",
-			"function_name": "${alicloud_fc_trigger.default.function}",
+			"service_name":  alicloud_fc_trigger.default.service,
+			"function_name": alicloud_fc_trigger.default.function,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex":    "${alicloud_fc_trigger.default.name}",
-			"service_name":  "${alicloud_fc_trigger.default.service}",
-			"function_name": "${alicloud_fc_trigger.default.function}",
-			"ids":           []string{"${alicloud_fc_trigger.default.trigger_id}"},
+			"name_regex":    alicloud_fc_trigger.default.name,
+			"service_name":  alicloud_fc_trigger.default.service,
+			"function_name": alicloud_fc_trigger.default.function,
+			"ids":           []string{alicloud_fc_trigger.default.trigger_id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex":    "${alicloud_fc_trigger.default.name}_fake",
-			"service_name":  "${alicloud_fc_trigger.default.service}",
-			"function_name": "${alicloud_fc_trigger.default.function}",
-			"ids":           []string{"${alicloud_fc_trigger.default.trigger_id}"},
+			"service_name":  alicloud_fc_trigger.default.service,
+			"function_name": alicloud_fc_trigger.default.function,
+			"ids":           []string{alicloud_fc_trigger.default.trigger_id},
 		}),
 	}
 
@@ -108,33 +108,33 @@ data "alicloud_account" "default" {
 }
 
 resource "alicloud_log_project" "default" {
-  name = "${var.name}"
+  name = var.name
   description = "tf unit test"
 }
 resource "alicloud_log_store" "default" {
-  project = "${alicloud_log_project.default.name}"
+  project = alicloud_log_project.default.name
   name = "${var.name}-source"
   retention_period = "3000"
   shard_count = 1
 }
 resource "alicloud_log_store" "default1" {
-  project = "${alicloud_log_project.default.name}"
-  name = "${var.name}"
+  project = alicloud_log_project.default.name
+  name = var.name
   retention_period = "3000"
   shard_count = 1
 }
 
 resource "alicloud_fc_service" "default" {
-  name = "${var.name}"
+  name = var.name
   internet_access = false
 }
 
 resource "alicloud_oss_bucket" "default" {
-  bucket = "${var.name}"
+  bucket = var.name
 }
 
 resource "alicloud_oss_bucket_object" "default" {
-  bucket = "${alicloud_oss_bucket.default.id}"
+  bucket = alicloud_oss_bucket.default.id
   key = "fc/hello.zip"
   content = <<EOF
   	# -*- coding: utf-8 -*-
@@ -145,20 +145,20 @@ resource "alicloud_oss_bucket_object" "default" {
 }
 
 resource "alicloud_fc_function" "default" {
-  service = "${alicloud_fc_service.default.name}"
-  name = "${var.name}"
-  oss_bucket = "${alicloud_oss_bucket.default.id}"
-  oss_key = "${alicloud_oss_bucket_object.default.key}"
+  service = alicloud_fc_service.default.name
+  name = var.name
+  oss_bucket = alicloud_oss_bucket.default.id
+  oss_key = alicloud_oss_bucket_object.default.key
   memory_size = 512
   runtime = "python2.7"
   handler = "hello.handler"
 }
 
 resource "alicloud_fc_trigger" "default" {
-  service = "${alicloud_fc_service.default.name}"
-  function = "${alicloud_fc_function.default.name}"
-  name = "${var.name}"
-  role = "${alicloud_ram_role.default.arn}"
+  service = alicloud_fc_service.default.name
+  function = alicloud_fc_function.default.name
+  name = var.name
+  role = alicloud_ram_role.default.arn
   source_arn = "acs:log:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:project/${alicloud_log_project.default.name}"
   type = "log"
   config = <<EOF
@@ -186,8 +186,8 @@ resource "alicloud_ram_policy" "default" {
 }
 
 resource "alicloud_ram_role_policy_attachment" "default" {
-  role_name = "${alicloud_ram_role.default.name}"
-  policy_name = "${alicloud_ram_policy.default.name}"
+  role_name = alicloud_ram_role.default.name
+  policy_name = alicloud_ram_policy.default.name
   policy_type = "Custom"
 }`, name, testTriggerLogTemplateDs, testFCLogRoleTemplateDs, testFCLogPolicyTemplateDs)
 }
@@ -195,7 +195,7 @@ resource "alicloud_ram_role_policy_attachment" "default" {
 var testTriggerLogTemplateDs = `
     {
         "sourceConfig": {
-            "logstore": "${alicloud_log_store.default.name}"
+            "logstore": alicloud_log_store.default.name
         },
         "jobConfig": {
             "maxRetryTime": 3,
@@ -206,8 +206,8 @@ var testTriggerLogTemplateDs = `
             "c": "d"
         },
         "logConfig": {
-            "project": "${alicloud_log_project.default.name}",
-            "logstore": "${alicloud_log_store.default1.name}"
+            "project": alicloud_log_project.default.name,
+            "logstore": alicloud_log_store.default1.name
         },
         "enable": true
     }

@@ -164,14 +164,14 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/24"
 }
 
 resource "alicloud_security_group" "default" {
   count  = 2
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
+  vpc_id = alicloud_vpc.default.id
+  name = var.name
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -181,8 +181,8 @@ resource "alicloud_security_group_rule" "default" {
   policy = "drop"
   port_range = "22/22"
   priority = 100
-  security_group_id = "${alicloud_security_group.default.0.id}"
-  source_security_group_id = "${alicloud_security_group.default.1.id}"
+  security_group_id = alicloud_security_group.default.0.id
+  source_security_group_id = alicloud_security_group.default.1.id
   description = "abc"
 }
 `
@@ -193,14 +193,14 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/24"
 }
 
 resource "alicloud_security_group" "default" {
   count = 2
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
+  vpc_id = alicloud_vpc.default.id
+  name = var.name
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -210,7 +210,7 @@ resource "alicloud_security_group_rule" "default" {
   policy = "drop"
   port_range = "22/22"
   priority = 100
-  security_group_id = "${alicloud_security_group.default.0.id}"
+  security_group_id = alicloud_security_group.default.0.id
   cidr_ip = "0.0.0.0/0"
   description = "abcd"
 }
@@ -223,14 +223,14 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/24"
 }
 
 resource "alicloud_security_group" "default" {
   count = 2
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
+  vpc_id = alicloud_vpc.default.id
+  name = var.name
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -240,7 +240,7 @@ resource "alicloud_security_group_rule" "default" {
   policy = "drop"
   port_range = "22/22"
   priority = 100
-  security_group_id = "${alicloud_security_group.default.0.id}"
+  security_group_id = alicloud_security_group.default.0.id
   cidr_ip = "0.0.0.0/0"
   description = "description"
 }
@@ -253,14 +253,14 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/24"
 }
 
 resource "alicloud_security_group" "default" {
   count = 2
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
+  vpc_id = alicloud_vpc.default.id
+  name = var.name
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -270,7 +270,7 @@ resource "alicloud_security_group_rule" "default" {
   policy = "drop"
   port_range = "22/22"
   priority = 100
-  security_group_id = "${alicloud_security_group.default.0.id}"
+  security_group_id = alicloud_security_group.default.0.id
   cidr_ip = "0.0.0.0/0"
   description = "abcd"
 }
@@ -287,19 +287,19 @@ variable "cidr_ip_list" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_security_group" "default" {
-  name = "${var.name}"
+  name = var.name
   description = "Security group for rules"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group_rule" "default" {
   count = "${length(compact(var.cidr_ip_list))}"
-  security_group_id = "${alicloud_security_group.default.id}"
+  security_group_id = alicloud_security_group.default.id
   type = "ingress"
   policy = "drop"
   port_range = "22/22"
@@ -347,13 +347,13 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/24"
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
+  vpc_id = alicloud_vpc.default.id
+  name = var.name
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -363,7 +363,7 @@ resource "alicloud_security_group_rule" "default" {
   policy = "accept"
   port_range = "443/443"
   priority = "1"
-  security_group_id = "${alicloud_security_group.default.id}"
+  security_group_id = alicloud_security_group.default.id
   cidr_ip = "182.254.11.243/32"
   description = "SHDRP-7513"
 }
@@ -375,13 +375,13 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/24"
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
+  vpc_id = alicloud_vpc.default.id
+  name = var.name
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -391,7 +391,7 @@ resource "alicloud_security_group_rule" "default" {
   policy = "accept"
   port_range = "443/443"
   priority = "1"
-  security_group_id = "${alicloud_security_group.default.id}"
+  security_group_id = alicloud_security_group.default.id
   cidr_ip = "182.254.11.243/32"
   description = "SHDRP-7512"
 }

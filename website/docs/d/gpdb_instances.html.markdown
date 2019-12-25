@@ -24,7 +24,7 @@ data "alicloud_gpdb_instances" "gpdb" {
 }
 
 output "instance_id" {
-  value = "${data.alicloud_gpdb_instances.gpdb.instances.0.id}"
+  value = data.alicloud_gpdb_instances.gpdb.instances.0.id
 }
 ```
 

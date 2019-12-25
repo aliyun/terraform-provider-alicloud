@@ -14,7 +14,7 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 
 	KvstoreNameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"name_regex": `alicloud_kvstore_instance.default.instance_name`,
 		}),
 		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
 			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}-fake"`,
@@ -23,7 +23,7 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 
 	KvstoreIdsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"ids": `["${alicloud_kvstore_instance.default.id}"]`,
+			"ids": `[alicloud_kvstore_instance.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
 			"ids": `["${alicloud_kvstore_instance.default.id}-fake"]`,
@@ -32,58 +32,58 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 
 	KvstoreStatusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"name_regex": `alicloud_kvstore_instance.default.instance_name`,
 			"status":     `"Normal"`,
 		}),
 		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"name_regex": `alicloud_kvstore_instance.default.instance_name`,
 			"status":     `"Creating"`,
 		}),
 	}
 
 	KvstoreInstanceTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"name_regex":    `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"name_regex":    `alicloud_kvstore_instance.default.instance_name`,
 			"instance_type": `"Redis"`,
 		}),
 		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"name_regex":    `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"name_regex":    `alicloud_kvstore_instance.default.instance_name`,
 			"instance_type": `"Memcache"`,
 		}),
 	}
 
 	KvstoreVpcIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
-			"vpc_id":     `"${alicloud_vpc.default.id}"`,
+			"name_regex": `alicloud_kvstore_instance.default.instance_name`,
+			"vpc_id":     `alicloud_vpc.default.id`,
 		}),
 		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"name_regex": `alicloud_kvstore_instance.default.instance_name`,
 			"vpc_id":     `"${alicloud_vpc.default.id}-fake"`,
 		}),
 	}
 
 	KvstoreVswitchIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
-			"vswitch_id": `"${alicloud_vswitch.default.id}"`,
+			"name_regex": `alicloud_kvstore_instance.default.instance_name`,
+			"vswitch_id": `alicloud_vswitch.default.id`,
 		}),
 		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"name_regex": `alicloud_kvstore_instance.default.instance_name`,
 			"vswitch_id": `"${alicloud_vswitch.default.id}-fake"`,
 		}),
 	}
 
 	KvstoreTagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"name_regex": `alicloud_kvstore_instance.default.instance_name`,
 			"tags": `{
 				Created = "TF"
 				For 	= "acceptance test"
 			}`,
 		}),
 		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"name_regex": `"${alicloud_kvstore_instance.default.instance_name}"`,
+			"name_regex": `alicloud_kvstore_instance.default.instance_name`,
 			"tags": `{
 				Created = "TF"
 				For 	= "acceptance test fake"
@@ -93,23 +93,23 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
-			"name_regex":    `"${alicloud_kvstore_instance.default.instance_name}"`,
-			"ids":           `["${alicloud_kvstore_instance.default.id}"]`,
+			"name_regex":    `alicloud_kvstore_instance.default.instance_name`,
+			"ids":           `[alicloud_kvstore_instance.default.id]`,
 			"status":        `"Normal"`,
 			"instance_type": `"Redis"`,
-			"vpc_id":        `"${alicloud_vpc.default.id}"`,
-			"vswitch_id":    `"${alicloud_vswitch.default.id}"`,
+			"vpc_id":        `alicloud_vpc.default.id`,
+			"vswitch_id":    `alicloud_vswitch.default.id`,
 			"tags": `{
 				Created = "TF"
 				For 	= "acceptance test"
 			}`}),
 		fakeConfig: testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8), map[string]string{
 			"name_regex":    `"${alicloud_kvstore_instance.default.instance_name}-fake"`,
-			"ids":           `["${alicloud_kvstore_instance.default.id}"]`,
+			"ids":           `[alicloud_kvstore_instance.default.id]`,
 			"status":        `"Normal"`,
 			"instance_type": `"Redis"`,
-			"vpc_id":        `"${alicloud_vpc.default.id}"`,
-			"vswitch_id":    `"${alicloud_vswitch.default.id}"`,
+			"vpc_id":        `alicloud_vpc.default.id`,
+			"vswitch_id":    `alicloud_vswitch.default.id`,
 			"tags": `{
 				Created = "TF"
 				For 	= "acceptance test"
@@ -138,8 +138,8 @@ func testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand int, instanceType,
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		instance_name  = var.name
+		vswitch_id     = alicloud_vswitch.default.id
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"

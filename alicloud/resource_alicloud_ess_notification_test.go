@@ -111,17 +111,17 @@ func testAccEssNotification(common string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id]
 	}
 
 	resource "alicloud_mns_queue" "default"{
-		name="${var.name}"
+		name=var.name
 	}
 	
 	resource "alicloud_ess_notification" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		notification_types = ["AUTOSCALING:SCALE_OUT_SUCCESS","AUTOSCALING:SCALE_OUT_ERROR"]
 		notification_arn = "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}"
 	}
@@ -145,17 +145,17 @@ func testAccEssNotification_update_notification_types(common string, rand int) s
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id]
 	}
 
 	resource "alicloud_mns_queue" "default"{
-		name="${var.name}"
+		name=var.name
 	}
 	
 	resource "alicloud_ess_notification" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		notification_types = ["AUTOSCALING:SCALE_OUT_SUCCESS","AUTOSCALING:SCALE_OUT_ERROR","AUTOSCALING:SCALE_IN_SUCCESS","AUTOSCALING:SCALE_IN_ERROR"]
 		notification_arn = "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}"
 	}
@@ -183,17 +183,17 @@ func testAccEssNotification_update_scaling_group_id(common string, rand int) str
 	resource "alicloud_ess_scaling_group" "default1" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.newname}"
+		scaling_group_name = var.newname
 		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id]
 	}
 
 	resource "alicloud_mns_queue" "default"{
-		name="${var.name}"
+		name=var.name
 	}
 	
 	resource "alicloud_ess_notification" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default1.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default1.id
 		notification_types = ["AUTOSCALING:SCALE_OUT_SUCCESS","AUTOSCALING:SCALE_OUT_ERROR","AUTOSCALING:SCALE_IN_SUCCESS","AUTOSCALING:SCALE_IN_ERROR"]
 		notification_arn = "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}"
 	}
@@ -221,17 +221,17 @@ func testAccEssNotification_update_notification_arn(common string, rand int) str
 	resource "alicloud_ess_scaling_group" "default1" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.newname}"
+		scaling_group_name = var.newname
 		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id]
 	}
 
 	resource "alicloud_mns_queue" "default1"{
-		name="${var.newname}"
+		name=var.newname
 	}
 	
 	resource "alicloud_ess_notification" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default1.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default1.id
 		notification_types = ["AUTOSCALING:SCALE_OUT_SUCCESS","AUTOSCALING:SCALE_OUT_ERROR","AUTOSCALING:SCALE_IN_SUCCESS","AUTOSCALING:SCALE_IN_ERROR"]
 		notification_arn = "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default1.name}"
 	}

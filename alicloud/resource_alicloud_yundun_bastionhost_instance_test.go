@@ -129,11 +129,11 @@ func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":        "${var.name}",
+					"description":        var.name,
 					"license_code":       "bhah_ent_50_asset",
 					"period":             "1",
-					"vswitch_id":         "${alicloud_vswitch.default.id}",
-					"security_group_ids": []string{"${alicloud_security_group.default.0.id}"},
+					"vswitch_id":         alicloud_vswitch.default.id,
+					"security_group_ids": []string{alicloud_security_group.default.0.id},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -159,7 +159,7 @@ func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}",
+					"description": var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -179,7 +179,7 @@ func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_group_ids": []string{"${alicloud_security_group.default.1.id}"},
+					"security_group_ids": []string{alicloud_security_group.default.1.id},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -223,9 +223,9 @@ func TestAccAlicloudYundunBastionhostInstance_Multi(t *testing.T) {
 					"count":              "2",
 					"description":        "${var.name}-${count.index}",
 					"period":             "1",
-					"vswitch_id":         "${alicloud_vswitch.default.id}",
+					"vswitch_id":         alicloud_vswitch.default.id,
 					"license_code":       "bhah_ent_50_asset",
-					"security_group_ids": []string{"${alicloud_security_group.default.0.id}"},
+					"security_group_ids": []string{alicloud_security_group.default.0.id},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -246,21 +246,21 @@ func resourceBastionhostInstanceDependence(name string) string {
 				}
 				
 				resource "alicloud_vpc" "default" {
-				  name       = "${var.name}"
+				  name       = var.name
 				  cidr_block = "172.16.0.0/12"
 				}
 				
 				resource "alicloud_vswitch" "default" {
-				  vpc_id            = "${alicloud_vpc.default.id}"
+				  vpc_id            = alicloud_vpc.default.id
 				  cidr_block        = "172.16.0.0/21"
-				  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-				  name              = "${var.name}"
+				  availability_zone = data.alicloud_zones.default.zones.0.id
+				  name              = var.name
 				}
 				
 				resource "alicloud_security_group" "default" {
 				  count  = 2
-				  name   = "${var.name}"
-				  vpc_id = "${alicloud_vpc.default.id}"
+				  name   = var.name
+				  vpc_id = alicloud_vpc.default.id
 				}
 				
 				provider "alicloud" {

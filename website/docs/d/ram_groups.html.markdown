@@ -21,7 +21,7 @@ data "alicloud_ram_groups" "groups_ds" {
 }
 
 output "first_group_name" {
-  value = "${data.alicloud_ram_groups.groups_ds.groups.0.name}"
+  value = data.alicloud_ram_groups.groups_ds.groups.0.name
 }
 ```
 

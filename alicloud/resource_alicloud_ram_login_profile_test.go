@@ -102,7 +102,7 @@ func testAccRamLoginProfileCreateConfig(rand int) string {
 	}
 
 	resource "alicloud_ram_login_profile" "default" {
-	  user_name = "${alicloud_ram_user.default.name}"
+	  user_name = alicloud_ram_user.default.name
 	  password = "Yourpassword_1234"
 	}`, defaultRegionToTest, rand)
 }
@@ -117,7 +117,7 @@ func testAccRamLoginProfileUserNameConfig(rand int) string {
 	}
 
 	resource "alicloud_ram_login_profile" "default" {
-	  user_name = "${alicloud_ram_user.default.name}"
+	  user_name = alicloud_ram_user.default.name
 	  password = "Yourpassword_1234"
 	}`, defaultRegionToTest, rand)
 }
@@ -132,7 +132,7 @@ func testAccRamLoginProfilePasswordConfig(rand int) string {
 	}
 
 	resource "alicloud_ram_login_profile" "default" {
-	  user_name = "${alicloud_ram_user.default.name}"
+	  user_name = alicloud_ram_user.default.name
 	  password = "Yourpassword_1235"
 	}`, defaultRegionToTest, rand)
 }
@@ -147,7 +147,7 @@ func testAccRamLoginProfilePasswordResetRequiredConfig(rand int) string {
 	}
 
 	resource "alicloud_ram_login_profile" "default" {
-	  user_name = "${alicloud_ram_user.default.name}"
+	  user_name = alicloud_ram_user.default.name
 	  password = "Yourpassword_1235"
 	  password_reset_required = "true"
 	}`, defaultRegionToTest, rand)
@@ -163,7 +163,7 @@ func testAccRamLoginProfileMfaBindRequiredConfig(rand int) string {
 	}
 
 	resource "alicloud_ram_login_profile" "default" {
-	  user_name = "${alicloud_ram_user.default.name}"
+	  user_name = alicloud_ram_user.default.name
 	  password = "Yourpassword_1235"
 	  password_reset_required = "true"
 	  mfa_bind_required = "true"
@@ -180,7 +180,7 @@ func testAccRamLoginProfileAllConfig(rand int) string {
 	}
 
 	resource "alicloud_ram_login_profile" "default" {
-	  user_name = "${alicloud_ram_user.default.name}"
+	  user_name = alicloud_ram_user.default.name
 	  password = "Yourpassword_1234"
 	  password_reset_required = "false"
 	  mfa_bind_required = "false"

@@ -23,7 +23,7 @@ data "alicloud_polardb_clusters" "polardb_clusters_ds" {
 }
 
 output "first_polardb_cluster_id" {
-  value = "${data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id}"
+  value = data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id
 }
 ```
 

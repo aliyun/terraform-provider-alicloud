@@ -13,7 +13,7 @@ func TestAccAlicloudNasProtocolsDataSource(t *testing.T) {
 	AllConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNasDataSource(map[string]string{
 			"type":    `"Performance"`,
-			"zone_id": `"${data.alicloud_zones.default.zones.0.id}"`,
+			"zone_id": `data.alicloud_zones.default.zones.0.id`,
 		}),
 		fakeConfig: testAccCheckAlicloudNasDataSource(map[string]string{
 			"type":    `"Performance"`,

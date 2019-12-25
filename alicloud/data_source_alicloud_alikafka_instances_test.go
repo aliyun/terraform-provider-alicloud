@@ -19,7 +19,7 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_alikafka_instance.default.name}",
+			"name_regex": alicloud_alikafka_instance.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "fake_tf-testacc*",
@@ -28,7 +28,7 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_alikafka_instance.default.id}"},
+			"ids": []string{alicloud_alikafka_instance.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_alikafka_instance.default.id}_fake"},
@@ -37,12 +37,12 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids":        []string{"${alicloud_alikafka_instance.default.id}"},
-			"name_regex": "${alicloud_alikafka_instance.default.name}",
+			"ids":        []string{alicloud_alikafka_instance.default.id},
+			"name_regex": alicloud_alikafka_instance.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"${alicloud_alikafka_instance.default.id}_fake"},
-			"name_regex": "${alicloud_alikafka_instance.default.name}",
+			"name_regex": alicloud_alikafka_instance.default.name,
 		}),
 	}
 
@@ -90,24 +90,24 @@ func dataSourceAlikafkaInstancesConfigDependence(name string) string {
 		}
 		resource "alicloud_vpc" "default" {
 		  cidr_block = "172.16.0.0/12"
-		  name       = "${var.name}"
+		  name       = var.name
 		}
 		
 		resource "alicloud_vswitch" "default" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.0.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name       = "${var.name}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
+		  name       = var.name
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
-          name = "${var.name}"
+          name = var.name
 		  topic_quota = "50"
 		  disk_type = "1"
 		  disk_size = "500"
 		  deploy_type = "5"
 		  io_max = "20"
-          vswitch_id = "${alicloud_vswitch.default.id}"
+          vswitch_id = alicloud_vswitch.default.id
 		}
 		`, name)
 }

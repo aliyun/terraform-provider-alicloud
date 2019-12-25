@@ -89,11 +89,11 @@ func TestAccAlicloudLaunchTemplateBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                          name,
 					"description":                   name,
-					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"image_id":                      data.alicloud_images.default.images.0.id,
 					"host_name":                     name,
 					"instance_charge_type":          "PrePaid",
 					"instance_name":                 name,
-					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"instance_type":                 data.alicloud_instance_types.default.instance_types.0.id,
 					"internet_charge_type":          "PayByBandwidth",
 					"internet_max_bandwidth_in":     "5",
 					"internet_max_bandwidth_out":    "0",
@@ -104,7 +104,7 @@ func TestAccAlicloudLaunchTemplateBasic(t *testing.T) {
 					"security_enhancement_strategy": "Active",
 					"spot_price_limit":              "5",
 					"spot_strategy":                 "SpotWithPriceLimit",
-					"security_group_id":             "${alicloud_security_group.default.id}",
+					"security_group_id":             alicloud_security_group.default.id,
 					"system_disk_category":          "cloud_ssd",
 					"system_disk_description":       name,
 					"system_disk_name":              name,
@@ -547,11 +547,11 @@ func TestAccAlicloudLaunchTemplateBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                          name,
 					"description":                   name,
-					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"image_id":                      data.alicloud_images.default.images.0.id,
 					"host_name":                     name,
 					"instance_charge_type":          "PrePaid",
 					"instance_name":                 name,
-					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"instance_type":                 data.alicloud_instance_types.default.instance_types.0.id,
 					"internet_charge_type":          "PayByBandwidth",
 					"internet_max_bandwidth_in":     "5",
 					"internet_max_bandwidth_out":    "0",
@@ -562,7 +562,7 @@ func TestAccAlicloudLaunchTemplateBasic(t *testing.T) {
 					"security_enhancement_strategy": "Active",
 					"spot_price_limit":              "5",
 					"spot_strategy":                 "SpotWithPriceLimit",
-					"security_group_id":             "${alicloud_security_group.default.id}",
+					"security_group_id":             alicloud_security_group.default.id,
 					"system_disk_category":          "cloud_ssd",
 					"system_disk_description":       name,
 					"system_disk_name":              name,
@@ -678,11 +678,11 @@ func TestAccAlicloudLaunchTemplateMulti(t *testing.T) {
 					"count":                         "5",
 					"name":                          name + "${count.index}",
 					"description":                   name,
-					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"image_id":                      data.alicloud_images.default.images.0.id,
 					"host_name":                     name,
 					"instance_charge_type":          "PrePaid",
 					"instance_name":                 name,
-					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"instance_type":                 data.alicloud_instance_types.default.instance_types.0.id,
 					"internet_charge_type":          "PayByBandwidth",
 					"internet_max_bandwidth_in":     "5",
 					"internet_max_bandwidth_out":    "0",
@@ -693,7 +693,7 @@ func TestAccAlicloudLaunchTemplateMulti(t *testing.T) {
 					"security_enhancement_strategy": "Active",
 					"spot_price_limit":              "5",
 					"spot_strategy":                 "SpotWithPriceLimit",
-					"security_group_id":             "${alicloud_security_group.default.id}",
+					"security_group_id":             alicloud_security_group.default.id,
 					"system_disk_category":          "cloud_ssd",
 					"system_disk_description":       name,
 					"system_disk_name":              name,
@@ -755,7 +755,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu_18.*_64"
@@ -763,18 +763,18 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 resource "alicloud_security_group_rule" "default" {
   	type = "ingress"
@@ -783,7 +783,7 @@ resource "alicloud_security_group_rule" "default" {
   	policy = "accept"
   	port_range = "22/22"
   	priority = 1
-  	security_group_id = "${alicloud_security_group.default.id}"
+  	security_group_id = alicloud_security_group.default.id
   	cidr_ip = "172.16.0.0/24"
 }
 

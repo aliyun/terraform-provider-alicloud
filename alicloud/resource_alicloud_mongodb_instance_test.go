@@ -559,7 +559,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
@@ -570,7 +570,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
@@ -585,7 +585,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
@@ -597,7 +597,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -609,7 +609,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -622,7 +622,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -636,7 +636,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -652,7 +652,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -670,7 +670,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -686,20 +686,20 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_vpc"
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
@@ -710,20 +710,20 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_vpc"
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
@@ -735,20 +735,20 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_vpc"
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -760,20 +760,20 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_vpc"
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -786,20 +786,20 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_vpc"
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -813,20 +813,20 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_vpc"
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -842,20 +842,20 @@ data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_vpc"
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -872,21 +872,21 @@ data "alicloud_zones" "default" {
   multi                       = true
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.multi_zone_ids[0]}"
-  name              = "${var.name}"
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_multiAZ"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
@@ -898,21 +898,21 @@ data "alicloud_zones" "default" {
   multi                       = true
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.multi_zone_ids[0]}"
-  name              = "${var.name}"
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_multiAZ"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 10
   db_instance_class   = "dds.mongo.mid"
@@ -925,21 +925,21 @@ data "alicloud_zones" "default" {
   multi                       = true
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.multi_zone_ids[0]}"
-  name              = "${var.name}"
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_multiAZ"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -952,21 +952,21 @@ data "alicloud_zones" "default" {
   multi                       = true
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.multi_zone_ids[0]}"
-  name              = "${var.name}"
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_multiAZ"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -980,21 +980,21 @@ data "alicloud_zones" "default" {
   multi                       = true
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.multi_zone_ids[0]}"
-  name              = "${var.name}"
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_multiAZ"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -1009,21 +1009,21 @@ data "alicloud_zones" "default" {
   multi                       = true
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.multi_zone_ids[0]}"
-  name              = "${var.name}"
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_multiAZ"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -1040,21 +1040,21 @@ data "alicloud_zones" "default" {
   multi                       = true
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.multi_zone_ids[0]}"
-  name              = "${var.name}"
+  name              = var.name
 }
 variable "name" {
   default = "tf-testAccMongoDBInstance_multiAZ"
 }
 resource "alicloud_mongodb_instance" "default" {
-  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  zone_id             = data.alicloud_zones.default.zones.0.id
+  vswitch_id          = alicloud_vswitch.default.id
   engine_version      = "3.4"
   db_instance_storage = 30
   db_instance_class   = "dds.mongo.standard"
@@ -1073,17 +1073,17 @@ variable "name" {
   default = "tf-testAccMongoDBInstance_multi_instance"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   count               = 3
   engine_version      = "3.4"
   db_instance_storage = 10
@@ -1098,17 +1098,17 @@ variable "name" {
   default = "tf-testAccMongoDBInstance_multi_instance"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   count               = 3
   engine_version      = "3.4"
   db_instance_storage = 10
@@ -1124,17 +1124,17 @@ variable "name" {
   default = "tf-testAccMongoDBInstance_multi_instance"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   count               = 3
   engine_version      = "3.4"
   db_instance_storage = 30
@@ -1150,17 +1150,17 @@ variable "name" {
   default = "tf-testAccMongoDBInstance_multi_instance"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   count               = 3
   engine_version      = "3.4"
   db_instance_storage = 30
@@ -1177,17 +1177,17 @@ variable "name" {
   default = "tf-testAccMongoDBInstance_multi_instance"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   count               = 3
   engine_version      = "3.4"
   db_instance_storage = 30
@@ -1205,17 +1205,17 @@ variable "name" {
   default = "tf-testAccMongoDBInstance_multi_instance"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   count               = 3
   engine_version      = "3.4"
   db_instance_storage = 30
@@ -1235,17 +1235,17 @@ variable "name" {
   default = "tf-testAccMongoDBInstance_multi_instance"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.default.id
   count               = 3
   engine_version      = "3.4"
   db_instance_storage = 30

@@ -10,7 +10,7 @@ func TestAccAlicloudEssScalingrulesDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScalingrulesDataSourceConfig(map[string]string{
-			"ids": `["${alicloud_ess_scaling_rule.default.id}"]`,
+			"ids": `[alicloud_ess_scaling_rule.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScalingrulesDataSourceConfig(map[string]string{
 			"ids": `["${alicloud_ess_scaling_rule.default.id}_fake"]`,
@@ -19,7 +19,7 @@ func TestAccAlicloudEssScalingrulesDataSource(t *testing.T) {
 
 	scalingGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScalingrulesDataSourceConfig(map[string]string{
-			"scaling_group_id": `"${alicloud_ess_scaling_rule.default.scaling_group_id}"`,
+			"scaling_group_id": `alicloud_ess_scaling_rule.default.scaling_group_id`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScalingrulesDataSourceConfig(map[string]string{
 			"scaling_group_id": `"${alicloud_ess_scaling_rule.default.scaling_group_id}_fake"`,
@@ -28,7 +28,7 @@ func TestAccAlicloudEssScalingrulesDataSource(t *testing.T) {
 
 	typeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScalingrulesDataSourceConfig(map[string]string{
-			"scaling_group_id": `"${alicloud_ess_scaling_rule.default.scaling_group_id}"`,
+			"scaling_group_id": `alicloud_ess_scaling_rule.default.scaling_group_id`,
 			"type":             `"SimpleScalingRule"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScalingrulesDataSourceConfig(map[string]string{
@@ -39,7 +39,7 @@ func TestAccAlicloudEssScalingrulesDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScalingrulesDataSourceConfig(map[string]string{
-			"name_regex": `"${alicloud_ess_scaling_rule.default.scaling_rule_name}"`,
+			"name_regex": `alicloud_ess_scaling_rule.default.scaling_rule_name`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScalingrulesDataSourceConfig(map[string]string{
 			"name_regex": `"${alicloud_ess_scaling_rule.default.scaling_rule_name}_fake"`,
@@ -48,16 +48,16 @@ func TestAccAlicloudEssScalingrulesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScalingrulesDataSourceConfig(map[string]string{
-			"ids":              `["${alicloud_ess_scaling_rule.default.id}"]`,
-			"scaling_group_id": `"${alicloud_ess_scaling_rule.default.scaling_group_id}"`,
+			"ids":              `[alicloud_ess_scaling_rule.default.id]`,
+			"scaling_group_id": `alicloud_ess_scaling_rule.default.scaling_group_id`,
 			"type":             `"SimpleScalingRule"`,
-			"name_regex":       `"${alicloud_ess_scaling_rule.default.scaling_rule_name}"`,
+			"name_regex":       `alicloud_ess_scaling_rule.default.scaling_rule_name`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScalingrulesDataSourceConfig(map[string]string{
-			"ids":              `["${alicloud_ess_scaling_rule.default.id}"]`,
+			"ids":              `[alicloud_ess_scaling_rule.default.id]`,
 			"scaling_group_id": `"${alicloud_ess_scaling_rule.default.scaling_group_id}_fake"`,
 			"type":             `"SimpleScalingRule"`,
-			"name_regex":       `"${alicloud_ess_scaling_rule.default.scaling_rule_name}"`,
+			"name_regex":       `alicloud_ess_scaling_rule.default.scaling_rule_name`,
 		}),
 	}
 
@@ -113,7 +113,7 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
   cpu_core_count    = 2
   memory_size       = 4
 }
@@ -125,20 +125,20 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 
 resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -148,7 +148,7 @@ resource "alicloud_security_group_rule" "default" {
   	policy = "accept"
   	port_range = "22/22"
   	priority = 1
-  	security_group_id = "${alicloud_security_group.default.id}"
+  	security_group_id = alicloud_security_group.default.id
   	cidr_ip = "172.16.0.0/24"
 }
 
@@ -157,13 +157,13 @@ resource "alicloud_ess_scaling_group" "default" {
 	max_size = 2
 	default_cooldown = 20
 	removal_policies = ["OldestInstance", "NewestInstance"]
-	scaling_group_name = "${var.name}"
-	vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	scaling_group_name = var.name
+	vswitch_ids = [alicloud_vswitch.default.id]
 }
 
 resource "alicloud_ess_scaling_rule" "default"{
-	scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-	scaling_rule_name = "${var.name}"
+	scaling_group_id = alicloud_ess_scaling_group.default.id
+	scaling_rule_name = var.name
 	adjustment_type = "QuantityChangeInCapacity"
 	adjustment_value = 1
 }

@@ -302,7 +302,7 @@ func TestAccAlicloudSlb_vpctest(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":              name,
-					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"vswitch_id":        alicloud_vswitch.default.id,
 					"delete_protection": "on",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -439,7 +439,7 @@ func TestAccAlicloudSlb_vpcmulti(t *testing.T) {
 					"count":         "10",
 					"name":          name,
 					"specification": "slb.s2.small",
-					"vswitch_id":    "${alicloud_vswitch.default.id}",
+					"vswitch_id":    alicloud_vswitch.default.id,
 					"tags": map[string]string{
 						"tag_A1": "value_A1",
 						"tag_B2": "value_B2",

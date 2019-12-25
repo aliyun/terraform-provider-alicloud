@@ -13,49 +13,49 @@ func TestAccAlicloudRouteEntriesDataSourceBasic(t *testing.T) {
 
 	instanceIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteEntriesDataSourceConfig(rand, map[string]string{
-			"instance_id":    `"${alicloud_route_entry.default.nexthop_id}"`,
-			"route_table_id": `"${alicloud_route_entry.default.route_table_id}"`,
+			"instance_id":    `alicloud_route_entry.default.nexthop_id`,
+			"route_table_id": `alicloud_route_entry.default.route_table_id`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteEntriesDataSourceConfig(rand, map[string]string{
-			"instance_id":    `"${alicloud_route_entry.default.nexthop_id}"`,
+			"instance_id":    `alicloud_route_entry.default.nexthop_id`,
 			"route_table_id": `"${alicloud_route_entry.default.route_table_id}_fake"`,
 		}),
 	}
 
 	typeConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteEntriesDataSourceConfig(rand, map[string]string{
-			"instance_id":    `"${alicloud_route_entry.default.nexthop_id}"`,
-			"route_table_id": `"${alicloud_route_entry.default.route_table_id}"`,
+			"instance_id":    `alicloud_route_entry.default.nexthop_id`,
+			"route_table_id": `alicloud_route_entry.default.route_table_id`,
 			"type":           `"Custom"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteEntriesDataSourceConfig(rand, map[string]string{
-			"instance_id":    `"${alicloud_route_entry.default.nexthop_id}"`,
-			"route_table_id": `"${alicloud_route_entry.default.route_table_id}"`,
+			"instance_id":    `alicloud_route_entry.default.nexthop_id`,
+			"route_table_id": `alicloud_route_entry.default.route_table_id`,
 			"type":           `"System"`,
 		}),
 	}
 
 	cidrBlockConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteEntriesDataSourceConfig(rand, map[string]string{
-			"route_table_id": `"${alicloud_route_entry.default.route_table_id}"`,
-			"cidr_block":     `"${alicloud_route_entry.default.destination_cidrblock}"`,
+			"route_table_id": `alicloud_route_entry.default.route_table_id`,
+			"cidr_block":     `alicloud_route_entry.default.destination_cidrblock`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteEntriesDataSourceConfig(rand, map[string]string{
-			"route_table_id": `"${alicloud_route_entry.default.route_table_id}"`,
+			"route_table_id": `alicloud_route_entry.default.route_table_id`,
 			"cidr_block":     `"${alicloud_route_entry.default.destination_cidrblock}_fake"`,
 		}),
 	}
 
 	allConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteEntriesDataSourceConfig(rand, map[string]string{
-			"instance_id":    `"${alicloud_instance.default.id}"`,
-			"route_table_id": `"${alicloud_route_entry.default.route_table_id}"`,
+			"instance_id":    `alicloud_instance.default.id`,
+			"route_table_id": `alicloud_route_entry.default.route_table_id`,
 			"type":           `"Custom"`,
-			"cidr_block":     `"${alicloud_route_entry.default.destination_cidrblock}"`,
+			"cidr_block":     `alicloud_route_entry.default.destination_cidrblock`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteEntriesDataSourceConfig(rand, map[string]string{
-			"instance_id":    `"${alicloud_instance.default.id}"`,
-			"route_table_id": `"${alicloud_route_entry.default.route_table_id}"`,
+			"instance_id":    `alicloud_instance.default.id`,
+			"route_table_id": `alicloud_route_entry.default.route_table_id`,
 			"type":           `"Custom"`,
 			"cidr_block":     `"${alicloud_route_entry.default.destination_cidrblock}_fake"`,
 		}),
@@ -75,7 +75,7 @@ data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	availability_zone = data.alicloud_zones.default.zones.0.id
 	cpu_core_count = 1
 	memory_size = 2
 }
@@ -89,21 +89,21 @@ variable "name" {
 	default = "tf-testAcc-for-route-entries-datasource%d"
 }
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "10.1.1.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_security_group" "default" {
-	name = "${var.name}"
-	description = "${var.name}"
-	vpc_id = "${alicloud_vpc.default.id}"
+	name = var.name
+	description = var.name
+	vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -113,33 +113,33 @@ resource "alicloud_security_group_rule" "default" {
 	policy = "accept"
 	port_range = "22/22"
 	priority = 1
-	security_group_id = "${alicloud_security_group.default.id}"
+	security_group_id = alicloud_security_group.default.id
 	cidr_ip = "0.0.0.0/0"
 }
 
 resource "alicloud_instance" "default" {
 	# cn-beijing
-	security_groups = ["${alicloud_security_group.default.id}"]
+	security_groups = [alicloud_security_group.default.id]
 
-	vswitch_id = "${alicloud_vswitch.default.id}"
+	vswitch_id = alicloud_vswitch.default.id
 	allocate_public_ip = true
 
 	# series III
 	instance_charge_type = "PostPaid"
-	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+	instance_type = data.alicloud_instance_types.default.instance_types.0.id
 	internet_charge_type = "PayByTraffic"
 	internet_max_bandwidth_out = 5
 
 	system_disk_category = "cloud_efficiency"
-	image_id = "${data.alicloud_images.default.images.0.id}"
-	instance_name = "${var.name}"
+	image_id = data.alicloud_images.default.images.0.id
+	instance_name = var.name
 }
 
 resource "alicloud_route_entry" "default" {
-	route_table_id = "${alicloud_vpc.default.route_table_id}"
+	route_table_id = alicloud_vpc.default.route_table_id
 	destination_cidrblock = "172.11.1.1/32"
 	nexthop_type = "Instance"
-	nexthop_id = "${alicloud_instance.default.id}"
+	nexthop_id = alicloud_instance.default.id
 }
 
 data "alicloud_route_entries" "default" {

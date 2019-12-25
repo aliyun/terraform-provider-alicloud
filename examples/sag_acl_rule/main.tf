@@ -23,7 +23,7 @@ resource "alicloud_sag_acl" "default" {
 }
 
 resource "alicloud_sag_acl_rule" "default" {
-  acl_id = "${alicloud_sag_acl.default.id}"
+  acl_id = alicloud_sag_acl.default.id
   description = "tf-testSagAclRule"
   policy = "accept"
   ip_protocol= "ALL"

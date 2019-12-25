@@ -37,8 +37,8 @@ resource "alicloud_fc_trigger" "foo" {
   config = <<EOF
     {
         "sourceConfig": {
-            "project": "${alicloud_log_project.foo.name}",
-            "logstore": "${alicloud_log_store.source_store.name}"
+            "project": alicloud_log_project.foo.name,
+            "logstore": alicloud_log_store.source_store.name
         },
         "jobConfig": {
             "maxRetryTime": 3,
@@ -49,8 +49,8 @@ resource "alicloud_fc_trigger" "foo" {
             "c": "d"
         },
         "logConfig": {
-            "project": "${alicloud_log_project.foo.name}",
-            "logstore": "${alicloud_log_store.fc_store.name}"
+            "project": alicloud_log_project.foo.name,
+            "logstore": alicloud_log_store.fc_store.name
         },
         "enable": true
     }

@@ -18,7 +18,7 @@ This data source provides a list of Common Bandwidth Packages owned by an Alibab
 ```
 data "alicloud_common_bandwidth_packages" "foo" {
   name_regex = "^tf-testAcc.*"
-  ids        = ["${alicloud_common_bandwidth_package.foo.id}"]
+  ids        = [alicloud_common_bandwidth_package.foo.id]
 }
 
 resource "alicloud_common_bandwidth_package" "foo" {

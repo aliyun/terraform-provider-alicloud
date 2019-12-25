@@ -13,7 +13,7 @@ func TestAccAlicloudNasAccessGroupDataSource(t *testing.T) {
 	vpcTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
 			"name_regex": `"testAccAccessGroupsdatasource*"`,
-			"type":       `"${alicloud_nas_access_group.default.type}"`,
+			"type":       `alicloud_nas_access_group.default.type`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
 			"name_regex": `"testAccAccessGroupsdatasource*"`,
@@ -23,7 +23,7 @@ func TestAccAlicloudNasAccessGroupDataSource(t *testing.T) {
 	descriptionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
 			"name_regex":  `"testAccAccessGroupsdatasource*"`,
-			"description": `"${alicloud_nas_access_group.default.description}"`,
+			"description": `alicloud_nas_access_group.default.description`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
 			"name_regex":  `"testAccAccessGroupsdatasource*"`,
@@ -32,7 +32,7 @@ func TestAccAlicloudNasAccessGroupDataSource(t *testing.T) {
 	}
 	accessGroupNameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_nas_access_group.default.name}"`,
+			"name_regex": `alicloud_nas_access_group.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_nas_access_group.default.name}_fake"`,
@@ -41,8 +41,8 @@ func TestAccAlicloudNasAccessGroupDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
 			"name_regex":  `"testAccAccessGroupsdatasource*"`,
-			"type":        `"${alicloud_nas_access_group.default.type}"`,
-			"description": `"${alicloud_nas_access_group.default.description}"`,
+			"type":        `alicloud_nas_access_group.default.type`,
+			"description": `alicloud_nas_access_group.default.description`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
 			"name_regex":  `"testAccAccessGroupsdatasource*"`,
@@ -58,7 +58,7 @@ func TestAccAlicloudNasAccessGroupDataSourceClassic(t *testing.T) {
 	classicTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
 			"name_regex": `"testAccAccessGroupsdatasource*"`,
-			"type":       `"${alicloud_nas_access_group.default.type}"`,
+			"type":       `alicloud_nas_access_group.default.type`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
 			"name_regex": `"testAccAccessGroupsdatasource*"`,
@@ -68,7 +68,7 @@ func TestAccAlicloudNasAccessGroupDataSourceClassic(t *testing.T) {
 	descriptionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
 			"name_regex":  `"testAccAccessGroupsdatasource*"`,
-			"description": `"${alicloud_nas_access_group.default.description}"`,
+			"description": `alicloud_nas_access_group.default.description`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
 			"name_regex":  `"testAccAccessGroupsdatasource*"`,
@@ -77,7 +77,7 @@ func TestAccAlicloudNasAccessGroupDataSourceClassic(t *testing.T) {
 	}
 	accessGroupNameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_nas_access_group.default.name}"`,
+			"name_regex": `alicloud_nas_access_group.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_nas_access_group.default.name}_fake"`,
@@ -86,8 +86,8 @@ func TestAccAlicloudNasAccessGroupDataSourceClassic(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
 			"name_regex":  `"testAccAccessGroupsdatasource*"`,
-			"type":        `"${alicloud_nas_access_group.default.type}"`,
-			"description": `"${alicloud_nas_access_group.default.description}"`,
+			"type":        `alicloud_nas_access_group.default.type`,
+			"description": `alicloud_nas_access_group.default.description`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
 			"name_regex":  `"testAccAccessGroupsdatasource*"`,
@@ -108,7 +108,7 @@ variable "name" {
 		default = "tf-testAccAccessGroupsdatasource-%d"
 }
 resource "alicloud_nas_access_group" "default" {
-		name = "${var.name}"
+		name = var.name
 		type = "Vpc"
 		description = "tf-testAccAccessGroupsdatasource"
 }
@@ -128,7 +128,7 @@ variable "name" {
 		default = "tf-testAccAccessGroupsdatasource-%d"
 }
 resource "alicloud_nas_access_group" "default" {
-		name = "${var.name}"
+		name = var.name
 		type = "Classic"
 		description = "tf-testAccAccessGroupsdatasource"
 }

@@ -28,8 +28,8 @@ resource "alicloud_cs_swarm" "my_cluster" {
   disk_category = "cloud_efficiency"
   disk_size     = 20
   cidr_block    = "172.18.0.0/24"
-  image_id      = "${var.image_id}"
-  vswitch_id    = "${var.vswitch_id}"
+  image_id      = var.image_id
+  vswitch_id    = var.vswitch_id
 }
 ```
 ## Argument Reference

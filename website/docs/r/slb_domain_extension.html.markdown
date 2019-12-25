@@ -34,7 +34,7 @@ resource "alicloud_slb_server_certificate" "foo" {
 }
 
 resource "alicloud_slb_listener" "https" {
-  load_balancer_id          = "${alicloud_slb.instance.id}"
+  load_balancer_id          = alicloud_slb.instance.id
   backend_port              = 80
   frontend_port             = 443
   protocol                  = "https"
@@ -51,14 +51,14 @@ resource "alicloud_slb_listener" "https" {
   health_check_interval     = 5
   health_check_http_code    = "http_2xx,http_3xx"
   bandwidth                 = 10
-  ssl_certificate_id        = "${alicloud_slb_server_certificate.foo.id}"
+  ssl_certificate_id        = alicloud_slb_server_certificate.foo.id
 }
 
 resource "alicloud_slb_domain_extension" "example1" {
-  load_balancer_id      = "${alicloud_slb.instance.id}"
-  frontend_port         = "${alicloud_slb_listener.https.frontend_port}"
+  load_balancer_id      = alicloud_slb.instance.id
+  frontend_port         = alicloud_slb_listener.https.frontend_port
   domain                = "www.test.com"
-  server_certificate_id = "${alicloud_slb_server_certificate.foo.id}"
+  server_certificate_id = alicloud_slb_server_certificate.foo.id
 }
 
 ```

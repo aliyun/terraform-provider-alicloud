@@ -27,7 +27,7 @@ resource "alicloud_sag_qos" "default" {
   name        = "tf-testAccSagQosName"
 }
 resource "alicloud_sag_qos_car" "default" {
-  qos_id =       "${alicloud_sag_qos.default.id}"
+  qos_id =       alicloud_sag_qos.default.id
   name =       "tf-testSagQosCarName"
   description = 	"tf-testSagQosCarDescription"
   priority =         "1"

@@ -238,7 +238,7 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 
 data "alicloud_zones" "default" {
@@ -246,19 +246,19 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = false
 	instance_charge_type = "PostPaid"
-	vswitch_id = "${alicloud_vswitch.default.id}"
+	vswitch_id = alicloud_vswitch.default.id
 }
 `, rand)
 }
@@ -270,7 +270,7 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 
 data "alicloud_zones" "default" {
@@ -278,20 +278,20 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_vpn_gateway" "default" {
 	count = 5
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = false
 	instance_charge_type = "PostPaid"
-	vswitch_id = "${alicloud_vswitch.default.id}"
+	vswitch_id = alicloud_vswitch.default.id
 }
 `, rand)
 }
@@ -303,7 +303,7 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 
 data "alicloud_zones" "default" {
@@ -311,19 +311,19 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_vpn_gateway" "default" {
 	name = "${var.name}_change"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = false
 	instance_charge_type = "PostPaid"
-	vswitch_id = "${alicloud_vswitch.default.id}"
+	vswitch_id = alicloud_vswitch.default.id
 }
 `, rand)
 }
@@ -334,7 +334,7 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 
 data "alicloud_zones" "default" {
@@ -342,20 +342,20 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_vpn_gateway" "default" {
 	name = "${var.name}_change"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = false
 	instance_charge_type = "PostPaid"
 	description = "${var.name}_description"
-	vswitch_id = "${alicloud_vswitch.default.id}"
+	vswitch_id = alicloud_vswitch.default.id
 }
 `, rand)
 }
@@ -367,7 +367,7 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 
 data "alicloud_zones" "default" {
@@ -375,20 +375,20 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = false
 	instance_charge_type = "PostPaid"
-	description = "${var.name}"
-	vswitch_id = "${alicloud_vswitch.default.id}"
+	description = var.name
+	vswitch_id = alicloud_vswitch.default.id
 }
 `, rand)
 }

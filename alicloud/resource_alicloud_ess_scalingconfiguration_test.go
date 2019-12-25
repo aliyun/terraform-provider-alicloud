@@ -43,10 +43,10 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default.images.0.id}",
-					"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"security_group_id": "${alicloud_security_group.default.id}",
+					"scaling_group_id":  alicloud_ess_scaling_group.default.id,
+					"image_id":          data.alicloud_images.default.images.0.id,
+					"instance_type":     data.alicloud_instance_types.default.instance_types.0.id,
+					"security_group_id": alicloud_security_group.default.id,
 					"force_delete":      "true",
 					"password":          "123-abcABC",
 				}),
@@ -152,7 +152,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"role_name": "${alicloud_ram_role.default.id}",
+					"role_name": alicloud_ram_role.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -162,7 +162,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"key_name": "${alicloud_key_pair.default.id}",
+					"key_name": alicloud_key_pair.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -195,7 +195,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_type":  REMOVEKEY,
-					"instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.1.id}"},
+					"instance_types": []string{data.alicloud_instance_types.default.instance_types.0.id, data.alicloud_instance_types.default.instance_types.1.id},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -207,7 +207,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"security_group_id":  REMOVEKEY,
-					"security_group_ids": []string{"${alicloud_security_group.default.id}", "${alicloud_security_group.default1.id}"},
+					"security_group_ids": []string{alicloud_security_group.default.id, alicloud_security_group.default1.id},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -218,7 +218,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_id": "${data.alicloud_images.default1.images.0.id}",
+					"image_id": data.alicloud_images.default1.images.0.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -250,10 +250,10 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 					"tags":                       REMOVEKEY,
 					"user_data":                  REMOVEKEY,
 					"scaling_configuration_name": REMOVEKEY,
-					"scaling_group_id":           "${alicloud_ess_scaling_group.default.id}",
-					"image_id":                   "${data.alicloud_images.default.images.0.id}",
-					"instance_type":              "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"security_group_id":          "${alicloud_security_group.default.id}",
+					"scaling_group_id":           alicloud_ess_scaling_group.default.id,
+					"image_id":                   data.alicloud_images.default.images.0.id,
+					"instance_type":              data.alicloud_instance_types.default.instance_types.0.id,
+					"security_group_id":          alicloud_security_group.default.id,
 					"force_delete":               "true",
 					"override":                   "true",
 					"system_disk_size":           "100",
@@ -324,10 +324,10 @@ func TestAccAlicloudEssScalingConfigurationMulti(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":             "10",
-					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_id":          "${data.alicloud_images.default.images.0.id}",
-					"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"security_group_id": "${alicloud_security_group.default.id}",
+					"scaling_group_id":  alicloud_ess_scaling_group.default.id,
+					"image_id":          data.alicloud_images.default.images.0.id,
+					"instance_type":     data.alicloud_instance_types.default.instance_types.0.id,
+					"security_group_id": alicloud_security_group.default.id,
 					"force_delete":      "true",
 					"password":          "123-abcABC",
 				}),
@@ -348,11 +348,11 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 	}
 	
 	resource "alicloud_key_pair" "default" {
-  		key_name = "${var.name}"
+  		key_name = var.name
 	}
 
 	resource "alicloud_ram_role" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -374,8 +374,8 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 	}
 
 	resource "alicloud_security_group" "default1" {
-	  name   = "${var.name}"
-	  vpc_id = "${alicloud_vpc.default.id}"
+	  name   = var.name
+	  vpc_id = alicloud_vpc.default.id
 	}
 
 	data "alicloud_images" "default1" {
@@ -387,8 +387,8 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id]
 	}`, EcsInstanceCommonTestCase, name)
 }

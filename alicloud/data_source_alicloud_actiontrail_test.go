@@ -15,7 +15,7 @@ func TestAccAlicloudActiontrailDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudActiontrailDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_actiontrail.default.name}"`,
+			"name_regex": `alicloud_actiontrail.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudActiontrailDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_actiontrail.default.name}_fake"`,
@@ -69,7 +69,7 @@ variable "name" {
 }
 
 resource "alicloud_ram_role" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 			{
 			  "Statement": [
@@ -92,11 +92,11 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_oss_bucket" "default" {
-    bucket  = "${var.name}"
+    bucket  = var.name
 }
 
 resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -119,16 +119,16 @@ resource "alicloud_ram_policy" "default" {
 	}
 
 resource "alicloud_ram_role_policy_attachment" "default" {
-	policy_name = "${alicloud_ram_policy.default.name}"
-	role_name = "${alicloud_ram_role.default.name}"
-	policy_type = "${alicloud_ram_policy.default.type}"
+	policy_name = alicloud_ram_policy.default.name
+	role_name = alicloud_ram_role.default.name
+	policy_type = alicloud_ram_policy.default.type
 }
 	
 resource "alicloud_actiontrail" "default" {
-	name = "${var.name}"
+	name = var.name
 	event_rw = "Write"
-	oss_bucket_name = "${alicloud_oss_bucket.default.id}"
-	role_name = "${alicloud_ram_role_policy_attachment.default.role_name}"
+	oss_bucket_name = alicloud_oss_bucket.default.id
+	role_name = alicloud_ram_role_policy_attachment.default.role_name
 	oss_key_prefix = "at-product-account-audit-B"
 }
 

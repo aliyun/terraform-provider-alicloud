@@ -22,7 +22,7 @@ data "alicloud_dns_resolution_lines" "resolution_lines_ds" {
 }
 
 output "first_line_code" {
-  value = "${data.alicloud_dns_resolution_lines.resolution_lines_ds.lines.0.line_code}"
+  value = data.alicloud_dns_resolution_lines.resolution_lines_ds.lines.0.line_code
 }
 ```
 

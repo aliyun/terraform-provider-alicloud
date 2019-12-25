@@ -24,7 +24,7 @@ data "alicloud_db_instance_classes" "resources" {
 }
 
 output "first_db_instance_class" {
-  value = "${data.alicloud_db_instance_classes.resources.instance_classes.0.instance_class}"
+  value = data.alicloud_db_instance_classes.resources.instance_classes.0.instance_class
 }
 ```
 

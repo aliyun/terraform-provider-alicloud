@@ -25,19 +25,19 @@ variable "name" {
 }
 
 data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+  available_resource_creation = var.creation
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 
 resource "alicloud_polardb_cluster" "default" {
@@ -45,27 +45,27 @@ resource "alicloud_polardb_cluster" "default" {
   db_version = "8.0"
   pay_type = "PostPaid"
   db_node_class    = "polar.mysql.x4.large"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  description = "${var.name}"
+  vswitch_id = alicloud_vswitch.default.id
+  description = var.name
 }
 
 resource "alicloud_polardb_database" "db" {
   count       = 2
-  instance_id = "${alicloud_polardb_instance.cluster.id}"
+  instance_id = alicloud_polardb_instance.cluster.id
   name        = "tfaccountpri_${count.index}"
   description = "from terraform"
 }
 
 resource "alicloud_polardb_account" "account" {
-  instance_id = "${alicloud_polardb_instance.cluster.id}"
+  instance_id = alicloud_polardb_instance.cluster.id
   name        = "tftestprivilege"
   password    = "Test12345"
   description = "from terraform"
 }
 
 resource "alicloud_polardb_account_privilege" "privilege" {
-  cluster_id    = "${alicloud_polardb_instance.cluster.id}"
-  account_name  = "${alicloud_polardb_account.account.name}"
+  cluster_id    = alicloud_polardb_instance.cluster.id
+  account_name  = alicloud_polardb_account.account.name
   privilege     = "ReadOnly"
   db_names      = "${alicloud_polardb_database.db.*.name}"
 }

@@ -21,7 +21,7 @@ data "alicloud_router_interfaces" "router_interfaces_ds" {
 }
 
 output "first_router_interface_id" {
-  value = "${data.alicloud_router_interfaces.router_interfaces_ds.interfaces.0.id}"
+  value = data.alicloud_router_interfaces.router_interfaces_ds.interfaces.0.id
 }
 ```
 

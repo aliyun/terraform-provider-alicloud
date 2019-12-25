@@ -29,13 +29,13 @@ variable "group_id" {
 }
 
 resource "alicloud_ons_instance" "default" {
-  name = "${var.name}"
+  name = var.name
   remark = "default_ons_instance_remark"
 }
 
 resource "alicloud_ons_group" "default" {
-  group_id = "${var.group_id}"
-  instance_id = "${alicloud_ons_instance.default.id}"
+  group_id = var.group_id
+  instance_id = alicloud_ons_instance.default.id
   remark = "dafault_ons_group_remark"
 }
 ```

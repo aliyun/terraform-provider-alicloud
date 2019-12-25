@@ -241,12 +241,12 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }	
 
 resource "alicloud_route_table" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
+  vpc_id = alicloud_vpc.default.id
+  name = var.name
 }
 `, rand)
 }
@@ -259,11 +259,11 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }	
 
 resource "alicloud_route_table" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   name = "${var.name}_change"
 }
 `, rand)
@@ -277,11 +277,11 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }	
 
 resource "alicloud_route_table" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   name = "${var.name}_change"
   description = "${var.name}_description"
 }
@@ -296,11 +296,11 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }	
 
 resource "alicloud_route_table" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   name = "${var.name}_change"
   description = "${var.name}_description"
   tags 		= {
@@ -319,11 +319,11 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }	
 
 resource "alicloud_route_table" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   name = "${var.name}_all"
   description = "${var.name}_description_all"
 }
@@ -338,13 +338,13 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }	
 
 resource "alicloud_route_table" "default" {
   count = 5
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
+  vpc_id = alicloud_vpc.default.id
+  name = var.name
 }
 `, rand)
 }

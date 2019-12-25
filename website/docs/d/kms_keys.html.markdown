@@ -21,7 +21,7 @@ data "alicloud_kms_keys" "kms_keys_ds" {
 }
 
 output "first_key_id" {
-  value = "${data.alicloud_kms_keys.kms_keys_ds.keys.0.id}"
+  value = data.alicloud_kms_keys.kms_keys_ds.keys.0.id
 }
 ```
 

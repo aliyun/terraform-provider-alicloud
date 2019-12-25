@@ -20,7 +20,7 @@ data "alicloud_file_crc64_checksum" "default" {
 }
 
 output "file_crc64_checksum" {
-  value = "${data.alicloud_file_crc64_checksum.defualt.checksum}"
+  value = data.alicloud_file_crc64_checksum.defualt.checksum
 }
 ```
 ## Argument Reference

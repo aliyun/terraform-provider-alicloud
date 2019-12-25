@@ -12,7 +12,7 @@ func TestAccAlicloudVpnCgwsDataSourceBasic(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpnCustomerGatewaysConfig(rand, map[string]string{
-			"ids": `[ "${alicloud_vpn_customer_gateway.default.id}" ]`,
+			"ids": `[ alicloud_vpn_customer_gateway.default.id ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpnCustomerGatewaysConfig(rand, map[string]string{
 			"ids": `[ "${alicloud_vpn_customer_gateway.default.id}_fake" ]`,
@@ -21,7 +21,7 @@ func TestAccAlicloudVpnCgwsDataSourceBasic(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpnCustomerGatewaysConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_vpn_customer_gateway.default.name}"`,
+			"name_regex": `alicloud_vpn_customer_gateway.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpnCustomerGatewaysConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_vpn_customer_gateway.default.name}_fake"`,
@@ -30,11 +30,11 @@ func TestAccAlicloudVpnCgwsDataSourceBasic(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpnCustomerGatewaysConfig(rand, map[string]string{
-			"ids":        `[ "${alicloud_vpn_customer_gateway.default.id}" ]`,
-			"name_regex": `"${alicloud_vpn_customer_gateway.default.name}"`,
+			"ids":        `[ alicloud_vpn_customer_gateway.default.id ]`,
+			"name_regex": `alicloud_vpn_customer_gateway.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpnCustomerGatewaysConfig(rand, map[string]string{
-			"ids":        `[ "${alicloud_vpn_customer_gateway.default.id}" ]`,
+			"ids":        `[ alicloud_vpn_customer_gateway.default.id ]`,
 			"name_regex": `"${alicloud_vpn_customer_gateway.default.name}_fake"`,
 		}),
 	}

@@ -46,8 +46,8 @@ func TestAccAlicloudDBAccountPrivilege_update(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":  "${alicloud_db_instance.default.id}",
-					"account_name": "${alicloud_db_account.default.name}",
+					"instance_id":  alicloud_db_instance.default.id,
+					"account_name": alicloud_db_account.default.name,
 					"privilege":    "ReadOnly",
 					"db_names":     "${alicloud_db_database.default.*.name}",
 				}),
@@ -62,10 +62,10 @@ func TestAccAlicloudDBAccountPrivilege_update(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":  "${alicloud_db_instance.default.id}",
-					"account_name": "${alicloud_db_account.default.name}",
+					"instance_id":  alicloud_db_instance.default.id,
+					"account_name": alicloud_db_account.default.name,
 					"privilege":    "ReadOnly",
-					"db_names":     []string{"${alicloud_db_database.default.0.name}"},
+					"db_names":     []string{alicloud_db_database.default.0.name},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -75,8 +75,8 @@ func TestAccAlicloudDBAccountPrivilege_update(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":  "${alicloud_db_instance.default.id}",
-					"account_name": "${alicloud_db_account.default.name}",
+					"instance_id":  alicloud_db_instance.default.id,
+					"account_name": alicloud_db_account.default.name,
 					"privilege":    "ReadOnly",
 					"db_names":     "${alicloud_db_database.default.*.name}",
 				}),
@@ -109,28 +109,28 @@ func resourceDBAccountPrivilegeConfigDependence(name string) string {
 	}
 
 	data "alicloud_db_instance_classes" "default" {
- 	 	engine = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-		engine_version = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
+ 	 	engine = data.alicloud_db_instance_engines.default.instance_engines.0.engine
+		engine_version = data.alicloud_db_instance_engines.default.instance_engines.0.engine_version
 	}
 
 	resource "alicloud_db_instance" "default" {
-		engine = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-		engine_version = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
-		instance_type = "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}"
-		instance_storage = "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		instance_name = "${var.name}"
+		engine = data.alicloud_db_instance_engines.default.instance_engines.0.engine
+		engine_version = data.alicloud_db_instance_engines.default.instance_engines.0.engine_version
+		instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+		vswitch_id = alicloud_vswitch.default.id
+		instance_name = var.name
 	}
 
 	resource "alicloud_db_database" "default" {
 	  count = 2
-	  instance_id = "${alicloud_db_instance.default.id}"
+	  instance_id = alicloud_db_instance.default.id
 	  name = "tfaccountpri_${count.index}"
 	  description = "from terraform"
 	}
 
 	resource "alicloud_db_account" "default" {
-	  instance_id = "${alicloud_db_instance.default.id}"
+	  instance_id = alicloud_db_instance.default.id
 	  name = "tftestprivilege"
 	  password = "Test12345"
 	  description = "from terraform"

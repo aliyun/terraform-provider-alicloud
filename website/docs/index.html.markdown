@@ -25,9 +25,9 @@ Use the navigation on the left to read about the available resources.
 ```hcl
 # Configure the Alicloud Provider
 provider "alicloud" {
-  access_key = "${var.access_key}"
-  secret_key = "${var.secret_key}"
-  region     = "${var.region}"
+  access_key = var.access_key
+  secret_key = var.secret_key
+  region     = var.region
 }
 
 data "alicloud_instance_types" "c2g4" {
@@ -43,12 +43,12 @@ data "alicloud_images" "default" {
 
 # Create a web server
 resource "alicloud_instance" "web" {
-  image_id              = "${data.alicloud_images.default.images.0.id}"
+  image_id              = data.alicloud_images.default.images.0.id
   internet_charge_type  = "PayByBandwidth"
 
-  instance_type        = "${data.alicloud_instance_types.c2g4.instance_types.0.id}"
+  instance_type        = data.alicloud_instance_types.c2g4.instance_types.0.id
   system_disk_category = "cloud_efficiency"
-  security_groups      = ["${alicloud_security_group.default.id}"]
+  security_groups      = [alicloud_security_group.default.id]
   instance_name        = "web"
   vswitch_id           = "vsw-abc12345"
 }
@@ -80,9 +80,9 @@ Usage:
 
 ```hcl
 provider "alicloud" {
-  access_key = "${var.access_key}"
-  secret_key = "${var.secret_key}"
-  region     = "${var.region}"
+  access_key = var.access_key
+  secret_key = var.secret_key
+  region     = var.region
 }
 ```
 
@@ -124,7 +124,7 @@ Usage:
 ```hcl
 provider "alicloud" {
   ecs_role_name = "terraform-provider-alicloud"
-  region        = "${var.region}"
+  region        = var.region
 }
 ```
 

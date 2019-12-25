@@ -19,7 +19,7 @@ data "alicloud_actiontrails" "trails" {
 }
 
 output "first_trail_name" {
-  value = "${data.alicloud_actiontrails.trails.actiontrails.0.name}"
+  value = data.alicloud_actiontrails.trails.actiontrails.0.name
 }
 ```
 

@@ -147,8 +147,8 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":   "${alicloud_alikafka_instance.default.id}",
-					"topic":         "${var.name}",
+					"instance_id":   alicloud_alikafka_instance.default.id,
+					"topic":         var.name,
 					"local_topic":   "false",
 					"compact_topic": "false",
 					"partition_num": "6",
@@ -196,7 +196,7 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 			// alicloud_alikafka_instance only support create post pay instance.
 			// Post pay instance does not support create local or compact topic, so skip the following two test case temporarily.
 			//{
-			//	SkipFunc: shouldSkipLocalAndCompact("${alicloud_alikafka_instance.default.id}"),
+			//	SkipFunc: shouldSkipLocalAndCompact(alicloud_alikafka_instance.default.id),
 			//	Config: testAccConfig(map[string]interface{}{
 			//		"local_topic": "true",
 			//	}),
@@ -208,7 +208,7 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 			//},
 
 			//{
-			//	SkipFunc: shouldSkipLocalAndCompact("${alicloud_alikafka_instance.default.id}"),
+			//	SkipFunc: shouldSkipLocalAndCompact(alicloud_alikafka_instance.default.id),
 			//	Config: testAccConfig(map[string]interface{}{
 			//		"compact_topic": "true",
 			//	}),
@@ -255,7 +255,7 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"topic":         "${var.name}",
+					"topic":         var.name,
 					"local_topic":   "false",
 					"compact_topic": "false",
 					"partition_num": "12",
@@ -310,7 +310,7 @@ func TestAccAlicloudAlikafkaTopic_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":         "5",
-					"instance_id":   "${alicloud_alikafka_instance.default.id}",
+					"instance_id":   alicloud_alikafka_instance.default.id,
 					"topic":         "${var.name}-${count.index}",
 					"local_topic":   "false",
 					"compact_topic": "false",
@@ -372,14 +372,14 @@ func resourceAlikafkaTopicConfigDependence(name string) string {
 		}
 		resource "alicloud_vpc" "default" {
 		  cidr_block = "172.16.0.0/12"
-		  name       = "${var.name}"
+		  name       = var.name
 		}
 		
 		resource "alicloud_vswitch" "default" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.0.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name       = "${var.name}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
+		  name       = var.name
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
@@ -389,13 +389,13 @@ func resourceAlikafkaTopicConfigDependence(name string) string {
 		  disk_size = "500"
 		  deploy_type = "5"
 		  io_max = "20"
-          vswitch_id = "${alicloud_vswitch.default.id}"
+          vswitch_id = alicloud_vswitch.default.id
 		}
 		`, name)
 }
 
 var alikafkaTopicBasicMap = map[string]string{
-	"topic":         "${var.name}",
+	"topic":         var.name,
 	"local_topic":   "false",
 	"compact_topic": "false",
 	"partition_num": "12",

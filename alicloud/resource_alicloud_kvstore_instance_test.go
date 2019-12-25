@@ -692,7 +692,7 @@ func testAccKVStoreInstance_classic(instanceType, instanceClass, engineVersion s
 
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"
@@ -712,7 +712,7 @@ func testAccKVStoreInstance_classicUpdateParameter(instanceType, instanceClass, 
 
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"
@@ -736,7 +736,7 @@ func testAccKVStoreInstance_classicAddParameter(instanceType, instanceClass, eng
 
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"
@@ -764,7 +764,7 @@ func testAccKVStoreInstance_classicDeleteParameter(instanceType, instanceClass, 
 
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"
@@ -788,7 +788,7 @@ func testAccKVStoreInstance_classicUpdateSecuirtyIps(instanceType, instanceClass
 
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		instance_type = "%s"
 		instance_class = "%s"
@@ -807,7 +807,7 @@ func testAccKVStoreInstance_classicUpdateClass(instanceType, instanceClass, engi
 
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"
@@ -827,7 +827,7 @@ func testAccKVStoreInstance_classicUpdateAttr(instanceType, instanceClass, engin
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		password = "Yourpassword1234"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"
@@ -847,7 +847,7 @@ func testAccKVStoreInstance_classicUpdateTags(instanceType, instanceClass, engin
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		password = "Yourpassword1234"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"
@@ -871,7 +871,7 @@ func testAccKVStoreInstance_classicUpdateMaintainStartTime(instanceType, instanc
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		password = "Yourpassword1234"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"
@@ -897,7 +897,7 @@ func testAccKVStoreInstance_classicUpdateAll(instanceType, instanceClass, engine
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		password = "Yourpassword1234"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.2","10.0.0.3"]
 		instance_type = "%s"
 		instance_class = "%s"
@@ -917,8 +917,8 @@ func testAccKVStoreInstance_vpc(common, instanceClass, instanceType, engineVersi
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		instance_name  = var.name
+		vswitch_id     = alicloud_vswitch.default.id
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
@@ -937,8 +937,8 @@ func testAccKVStoreInstance_vpcUpdateSecurityIps(common, instanceClass, instance
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		instance_name  = var.name
+		vswitch_id     = alicloud_vswitch.default.id
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		instance_type = "%s"
@@ -958,8 +958,8 @@ func testAccKVStoreInstance_vpcUpdateVpcAuthMode(common, instanceClass, instance
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		instance_name  = var.name
+		vswitch_id     = alicloud_vswitch.default.id
 		vpc_auth_mode = "Close"
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.3", "10.0.0.2"]
@@ -980,8 +980,8 @@ func testAccKVStoreInstance_vpcUpdateParameter(common, instanceClass, instanceTy
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		instance_name  = var.name
+		vswitch_id     = alicloud_vswitch.default.id
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		parameters {
@@ -1005,8 +1005,8 @@ func testAccKVStoreInstance_vpcAddParameter(common, instanceClass, instanceType,
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		instance_name  = var.name
+		vswitch_id     = alicloud_vswitch.default.id
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		parameters {
@@ -1034,8 +1034,8 @@ func testAccKVStoreInstance_vpcDeleteParameter(common, instanceClass, instanceTy
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		instance_name  = var.name
+		vswitch_id     = alicloud_vswitch.default.id
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		parameters {
@@ -1059,8 +1059,8 @@ func testAccKVStoreInstance_vpcUpdateClass(common, instanceClass, instanceType, 
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		instance_name  = var.name
+		vswitch_id     = alicloud_vswitch.default.id
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		instance_type = "%s"
@@ -1079,9 +1079,9 @@ func testAccKVStoreInstance_vpcUpdateAll(common, instanceClass, instanceType, en
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		password       = "Yourpassword1234"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		vswitch_id     = alicloud_vswitch.default.id
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
@@ -1102,9 +1102,9 @@ func testAccKVStoreInstance_vpcmulti(common, instanceClass, instanceType, engine
 	resource "alicloud_kvstore_instance" "default" {
 		count		   = 10
 		instance_class = "%s"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		password       = "Yourpassword1234"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		vswitch_id     = alicloud_vswitch.default.id
 		security_ips   = ["10.0.0.1"]
 		instance_type  = "%s"
 		engine_version = "%s"
@@ -1124,7 +1124,7 @@ func testAccKVStoreInstance_classicmulti(instanceType, instanceClass, engineVers
 	resource "alicloud_kvstore_instance" "default" {
 		count = 10
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"

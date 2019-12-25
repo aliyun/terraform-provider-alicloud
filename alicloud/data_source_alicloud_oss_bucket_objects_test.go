@@ -18,41 +18,41 @@ func TestAccAlicloudOssBucketObjectsDataSource_basic(t *testing.T) {
 
 	bucketNameConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
 		}),
 	}
 
 	keyRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
-			"key_regex":   "${alicloud_oss_bucket_object.default.key}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
+			"key_regex":   alicloud_oss_bucket_object.default.key,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
 			"key_regex":   "${alicloud_oss_bucket_object.default.key}-fake",
 		}),
 	}
 
 	keyPrefixConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
 			"key_prefix":  "tf-sample/",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
 			"key_prefix":  "tf-sample-fake/",
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
-			"key_regex":   "${alicloud_oss_bucket_object.default.key}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
+			"key_regex":   alicloud_oss_bucket_object.default.key,
 			"key_prefix":  "tf-sample/",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
-			"key_regex":   "${alicloud_oss_bucket_object.default.key}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
+			"key_regex":   alicloud_oss_bucket_object.default.key,
 			"key_prefix":  "tf-sample-fake/",
 		}),
 	}
@@ -100,41 +100,41 @@ func TestAccAlicloudOssBucketObjectsDataSource_versioning(t *testing.T) {
 
 	bucketNameConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
 		}),
 	}
 
 	keyRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
-			"key_regex":   "${alicloud_oss_bucket_object.default.key}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
+			"key_regex":   alicloud_oss_bucket_object.default.key,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
 			"key_regex":   "${alicloud_oss_bucket_object.default.key}-fake",
 		}),
 	}
 
 	keyPrefixConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
 			"key_prefix":  "tf-sample/",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
 			"key_prefix":  "tf-sample-fake/",
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
-			"key_regex":   "${alicloud_oss_bucket_object.default.key}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
+			"key_regex":   alicloud_oss_bucket_object.default.key,
 			"key_prefix":  "tf-sample/",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"bucket_name": "${alicloud_oss_bucket_object.default.bucket}",
-			"key_regex":   "${alicloud_oss_bucket_object.default.key}",
+			"bucket_name": alicloud_oss_bucket_object.default.bucket,
+			"key_regex":   alicloud_oss_bucket_object.default.key,
 			"key_prefix":  "tf-sample-fake/",
 		}),
 	}
@@ -183,12 +183,12 @@ variable "name" {
 }
 
 resource "alicloud_oss_bucket" "default" {
-	bucket = "${var.name}"
+	bucket = var.name
 	acl = "private"
 }
 
 resource "alicloud_oss_bucket_object" "default" {
-	bucket = "${alicloud_oss_bucket.default.bucket}"
+	bucket = alicloud_oss_bucket.default.bucket
 	key = "tf-sample/${var.name}-object"
 	content = "sample content"
 	content_type = "text/plain"
@@ -207,7 +207,7 @@ variable "name" {
 }
 
 resource "alicloud_oss_bucket" "default" {
-	bucket = "${var.name}"
+	bucket = var.name
 	acl = "private"
 	force_destroy = true
 	versioning {
@@ -216,7 +216,7 @@ resource "alicloud_oss_bucket" "default" {
 }
 
 resource "alicloud_oss_bucket_object" "default" {
-	bucket = "${alicloud_oss_bucket.default.bucket}"
+	bucket = alicloud_oss_bucket.default.bucket
 	key = "tf-sample/${var.name}-object"
 	content = "sample content"
 	content_type = "text/plain"

@@ -106,7 +106,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -115,15 +115,15 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
     availability_zone = "${reverse(data.alicloud_zones.default.zones).0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 data "alicloud_instance_types" "default" {
@@ -139,25 +139,25 @@ data "alicloud_images" "default" {
 
 resource "alicloud_instance" "default" {
     availability_zone = "${reverse(data.alicloud_zones.default.zones).0.id}"
-    security_groups = ["${alicloud_security_group.default.id}"]
+    security_groups = [alicloud_security_group.default.id]
 
-    instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+    instance_type = data.alicloud_instance_types.default.instance_types.0.id
     system_disk_category = "cloud_efficiency"
-    image_id             = "${data.alicloud_images.default.images.0.id}"
-    instance_name        = "${var.name}"
-    vswitch_id = "${alicloud_vswitch.default.id}"
+    image_id             = data.alicloud_images.default.images.0.id
+    instance_name        = var.name
+    vswitch_id = alicloud_vswitch.default.id
     internet_max_bandwidth_out = 10
 }
 
 resource "alicloud_network_interface" "default" {
-    name = "${var.name}"
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    name = var.name
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
 }
 
 resource "alicloud_network_interface_attachment" "default" {
-    instance_id = "${alicloud_instance.default.id}"
-    network_interface_id = "${alicloud_network_interface.default.id}"
+    instance_id = alicloud_instance.default.id
+    network_interface_id = alicloud_network_interface.default.id
 }
 `
 
@@ -171,7 +171,7 @@ variable "number" {
 	}
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -180,15 +180,15 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
     availability_zone = "${reverse(data.alicloud_zones.default.zones).0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 data "alicloud_instance_types" "default" {
@@ -203,27 +203,27 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_instance" "default" {
-	count = "${var.number}"
+	count = var.number
     availability_zone = "${reverse(data.alicloud_zones.default.zones).0.id}"
-    security_groups = ["${alicloud_security_group.default.id}"]
+    security_groups = [alicloud_security_group.default.id]
 
-    instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+    instance_type = data.alicloud_instance_types.default.instance_types.0.id
     system_disk_category = "cloud_efficiency"
-    image_id             = "${data.alicloud_images.default.images.0.id}"
-    instance_name        = "${var.name}"
-    vswitch_id = "${alicloud_vswitch.default.id}"
+    image_id             = data.alicloud_images.default.images.0.id
+    instance_name        = var.name
+    vswitch_id = alicloud_vswitch.default.id
     internet_max_bandwidth_out = 10
 }
 
 resource "alicloud_network_interface" "default" {
-    count = "${var.number}"
-    name = "${var.name}"
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    count = var.number
+    name = var.name
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
 }
 
 resource "alicloud_network_interface_attachment" "default" {
-	count = "${var.number}"
+	count = var.number
     instance_id = "${element(alicloud_instance.default.*.id, count.index)}"
     network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
 }

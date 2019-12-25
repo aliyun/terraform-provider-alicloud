@@ -272,7 +272,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -281,12 +281,12 @@ data "alicloud_regions" "default" {
 }
 
 resource "alicloud_router_interface" "default" {
-	opposite_region = "${data.alicloud_regions.default.regions.0.id}"
+	opposite_region = data.alicloud_regions.default.regions.0.id
 	router_type = "VRouter"
-	router_id = "${alicloud_vpc.default.router_id}"
+	router_id = alicloud_vpc.default.router_id
 	role = "AcceptingSide"
     instance_charge_type = "PostPaid"
-	name = "${var.name}"
+	name = var.name
 }`, rand)
 }
 
@@ -297,7 +297,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -307,12 +307,12 @@ data "alicloud_regions" "default" {
 
 resource "alicloud_router_interface" "default" {
 	count = 3
-	opposite_region = "${data.alicloud_regions.default.regions.0.id}"
+	opposite_region = data.alicloud_regions.default.regions.0.id
 	router_type = "VRouter"
-	router_id = "${alicloud_vpc.default.router_id}"
+	router_id = alicloud_vpc.default.router_id
 	role = "AcceptingSide"
     instance_charge_type = "PostPaid"
-	name = "${var.name}"
+	name = var.name
 }`, rand)
 }
 
@@ -323,7 +323,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -332,13 +332,13 @@ data "alicloud_regions" "default" {
 }
 
 resource "alicloud_router_interface" "default" {
-	opposite_region = "${data.alicloud_regions.default.regions.0.id}"
+	opposite_region = data.alicloud_regions.default.regions.0.id
 	router_type = "VRouter"
-	router_id = "${alicloud_vpc.default.router_id}"
+	router_id = alicloud_vpc.default.router_id
 	role = "InitiatingSide"
 	specification = "Large.1"
     instance_charge_type = "PostPaid"
-	name = "${var.name}"
+	name = var.name
 }`, rand)
 }
 
@@ -349,7 +349,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -358,12 +358,12 @@ data "alicloud_regions" "default" {
 }
 
 resource "alicloud_router_interface" "default" {
-	opposite_region = "${data.alicloud_regions.default.regions.0.id}"
+	opposite_region = data.alicloud_regions.default.regions.0.id
 	router_type = "VRouter"
-	router_id = "${alicloud_vpc.default.router_id}"
+	router_id = alicloud_vpc.default.router_id
 	role = "InitiatingSide"
     instance_charge_type = "PostPaid"
-	name = "${var.name}"
+	name = var.name
 	specification = "Large.2"
 }`, rand)
 }
@@ -375,7 +375,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -384,9 +384,9 @@ data "alicloud_regions" "default" {
 }
 
 resource "alicloud_router_interface" "default" {
-	opposite_region = "${data.alicloud_regions.default.regions.0.id}"
+	opposite_region = data.alicloud_regions.default.regions.0.id
 	router_type = "VRouter"
-	router_id = "${alicloud_vpc.default.router_id}"
+	router_id = alicloud_vpc.default.router_id
 	role = "InitiatingSide"
     instance_charge_type = "PostPaid"
 	name = "${var.name}_change"
@@ -401,7 +401,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -410,9 +410,9 @@ data "alicloud_regions" "default" {
 }
 
 resource "alicloud_router_interface" "default" {
-	opposite_region = "${data.alicloud_regions.default.regions.0.id}"
+	opposite_region = data.alicloud_regions.default.regions.0.id
 	router_type = "VRouter"
-	router_id = "${alicloud_vpc.default.router_id}"
+	router_id = alicloud_vpc.default.router_id
 	role = "InitiatingSide"
     instance_charge_type = "PostPaid"
 	name = "${var.name}_change"
@@ -428,7 +428,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -437,14 +437,14 @@ data "alicloud_regions" "default" {
 }
 
 resource "alicloud_router_interface" "default" {
-	opposite_region = "${data.alicloud_regions.default.regions.0.id}"
+	opposite_region = data.alicloud_regions.default.regions.0.id
 	router_type = "VRouter"
-	router_id = "${alicloud_vpc.default.router_id}"
+	router_id = alicloud_vpc.default.router_id
 	role = "InitiatingSide"
     instance_charge_type = "PostPaid"
-	name = "${var.name}"
+	name = var.name
 	specification = "Large.1"
-	description = "${var.name}"
+	description = var.name
 }`, rand)
 }
 

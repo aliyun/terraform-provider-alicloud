@@ -37,9 +37,9 @@ func TestAccAlicloudRamGroupPolicyAttachment_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"policy_name": "${alicloud_ram_policy.default.name}",
-					"group_name":  "${alicloud_ram_group.default.name}",
-					"policy_type": "${alicloud_ram_policy.default.type}",
+					"policy_name": alicloud_ram_policy.default.name,
+					"group_name":  alicloud_ram_group.default.name,
+					"policy_type": alicloud_ram_policy.default.type,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -66,7 +66,7 @@ func resourceRamGroupPolicyAttachmentConfigDependence(name string) string {
 	  default = "%s"
 	}
 	resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -90,7 +90,7 @@ func resourceRamGroupPolicyAttachmentConfigDependence(name string) string {
 	}
 
 	resource "alicloud_ram_group" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  comments = "group comments"
 	  force=true
 	}

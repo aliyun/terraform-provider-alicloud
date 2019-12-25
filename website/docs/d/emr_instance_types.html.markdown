@@ -26,7 +26,7 @@ data "alicloud_emr_instance_types" "default" {
 }
 
 output "first_instance_type" {
-  value = "${data.alicloud_emr_instance_types.default.types.0.id}"
+  value = data.alicloud_emr_instance_types.default.types.0.id
 }
 ```
 

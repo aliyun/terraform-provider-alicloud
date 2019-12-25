@@ -16,11 +16,11 @@ func TestAccAlicloudOnsTopicsDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${alicloud_ons_instance.default.id}",
-			"name_regex":  "${alicloud_ons_topic.default.topic}",
+			"instance_id": alicloud_ons_instance.default.id,
+			"name_regex":  alicloud_ons_topic.default.topic,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${alicloud_ons_instance.default.id}",
+			"instance_id": alicloud_ons_instance.default.id,
 			"name_regex":  "fake_tf-testacc*",
 		}),
 	}
@@ -64,8 +64,8 @@ name = "tf-testaccOnsInstanceTopicbasic"
 }
 
 resource "alicloud_ons_topic" "default" {
-  instance_id = "${alicloud_ons_instance.default.id}"
-  topic = "${var.topic}"
+  instance_id = alicloud_ons_instance.default.id
+  topic = var.topic
   message_type = "0"
   remark = "alicloud_ons_topic_remark"
   perm = "6"

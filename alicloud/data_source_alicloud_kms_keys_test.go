@@ -37,7 +37,7 @@ func TestAccAlicloudKmsKeysDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_kms_key.default.id}"},
+			"ids": []string{alicloud_kms_key.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_kms_key.default.id}-fake"},
@@ -48,12 +48,12 @@ func TestAccAlicloudKmsKeysDataSource(t *testing.T) {
 		existConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "^${alicloud_kms_key.default.description}",
 			"status":            "Enabled",
-			"ids":               []string{"${alicloud_kms_key.default.id}"},
+			"ids":               []string{alicloud_kms_key.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "^${alicloud_kms_key.default.description}-fake",
 			"status":            "Enabled",
-			"ids":               []string{"${alicloud_kms_key.default.id}"},
+			"ids":               []string{alicloud_kms_key.default.id},
 		}),
 	}
 

@@ -18,11 +18,11 @@ func TestAccAlicloudMnsTopicSubscriptionDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"topic_name":  "${alicloud_mns_topic.default.name}",
-			"name_prefix": "${alicloud_mns_topic_subscription.default.name}",
+			"topic_name":  alicloud_mns_topic.default.name,
+			"name_prefix": alicloud_mns_topic_subscription.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"topic_name":  "${alicloud_mns_topic.default.name}",
+			"topic_name":  alicloud_mns_topic.default.name,
 			"name_prefix": "${alicloud_mns_topic_subscription.default.name}-fake",
 		}),
 	}
@@ -64,14 +64,14 @@ func dataSourceMnsTopicSubscriptionConfigDependence(name string) string {
 	}
 
 	resource "alicloud_mns_topic" "default"{
-		name="${var.name}"
+		name=var.name
 		maximum_message_size=12357
 		logging_enabled=true
 	}
 
 	resource "alicloud_mns_topic_subscription" "default"{
-		topic_name="${alicloud_mns_topic.default.name}"
-		name="${var.name}"
+		topic_name=alicloud_mns_topic.default.name
+		name=var.name
 		endpoint="http://www.test.com/test"
 		notify_strategy="EXPONENTIAL_DECAY_RETRY"
 		notify_content_format="SIMPLIFIED"

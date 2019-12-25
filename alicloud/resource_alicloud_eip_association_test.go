@@ -151,7 +151,7 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 data "alicloud_images" "default" {
@@ -165,44 +165,44 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name = var.name
 }
 
 resource "alicloud_security_group" "default" {
-  name = "${var.name}"
+  name = var.name
   description = "New security group"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_instance" "default" {
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  vswitch_id = alicloud_vswitch.default.id
+  image_id = data.alicloud_images.default.images.0.id
+  availability_zone = data.alicloud_zones.default.zones.0.id
   system_disk_category = "cloud_ssd"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
 
-  security_groups = ["${alicloud_security_group.default.id}"]
-  instance_name = "${var.name}"
+  security_groups = [alicloud_security_group.default.id]
+  instance_name = var.name
   tags = {
     Name = "TerraformTest-instance"
   }
 }
 
 resource "alicloud_eip" "default" {
-	name = "${var.name}"
+	name = var.name
 }
 
 resource "alicloud_eip_association" "default" {
-  allocation_id = "${alicloud_eip.default.id}"
-  instance_id = "${alicloud_instance.default.id}"
+  allocation_id = alicloud_eip.default.id
+  instance_id = alicloud_instance.default.id
 }
 `, rand)
 }
@@ -213,7 +213,7 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 data "alicloud_images" "default" {
@@ -231,45 +231,45 @@ variable "number" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name = var.name
 }
 
 resource "alicloud_security_group" "default" {
-  name = "${var.name}"
+  name = var.name
   description = "New security group"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_instance" "default" {
-  count = "${var.number}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  count = var.number
+  vswitch_id = alicloud_vswitch.default.id
+  image_id = data.alicloud_images.default.images.0.id
+  availability_zone = data.alicloud_zones.default.zones.0.id
   system_disk_category = "cloud_ssd"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
 
-  security_groups = ["${alicloud_security_group.default.id}"]
-  instance_name = "${var.name}"
+  security_groups = [alicloud_security_group.default.id]
+  instance_name = var.name
   tags = {
     Name = "TerraformTest-instance"
   }
 }
 
 resource "alicloud_eip" "default" {
-	count = "${var.number}"
-	name = "${var.name}"
+	count = var.number
+	name = var.name
 }
 
 resource "alicloud_eip_association" "default" {
-  count = "${var.number}"
+  count = var.number
   allocation_id = "${element(alicloud_eip.default.*.id,count.index)}"
   instance_id = "${element(alicloud_instance.default.*.id,count.index)}"
 }
@@ -283,7 +283,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -292,31 +292,31 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_network_interface" "default" {
-	name = "${var.name}"
-    vswitch_id = "${alicloud_vswitch.default.id}"
-	security_groups = [ "${alicloud_security_group.default.id}" ]
+	name = var.name
+    vswitch_id = alicloud_vswitch.default.id
+	security_groups = [ alicloud_security_group.default.id ]
 	private_ip = "192.168.0.2"
 }
 
 resource "alicloud_eip" "default" {
-	name = "${var.name}"
+	name = var.name
 }
 
 resource "alicloud_eip_association" "default" {
-  allocation_id = "${alicloud_eip.default.id}"
-  instance_id = "${alicloud_network_interface.default.id}"
+  allocation_id = alicloud_eip.default.id
+  instance_id = alicloud_network_interface.default.id
   instance_type = "NetworkInterface"
   private_ip_address = "192.168.0.2"
 }

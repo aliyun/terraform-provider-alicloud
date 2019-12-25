@@ -21,18 +21,18 @@ variable "name" {
 }
 
 resource "alicloud_ons_instance" "default" {
-  name   = "${var.name}"
+  name   = var.name
   remark = "default_ons_instance_remark"
 }
 
 data "alicloud_ons_instances" "instances_ds" {
-  ids         = ["${alicloud_ons_instance.default.id}"]
-  name_regex  = "${alicloud_ons_instance.default.name}"
+  ids         = [alicloud_ons_instance.default.id]
+  name_regex  = alicloud_ons_instance.default.name
   output_file = "instances.txt"
 }
 
 output "first_instance_id" {
-  value = "${data.alicloud_ons_instances.instances_ds.instances.0.instance_id}"
+  value = data.alicloud_ons_instances.instances_ds.instances.0.instance_id
 }
 ```
 

@@ -293,28 +293,28 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"
 	description = "test_create_description"
 }
 resource "alicloud_ssl_vpn_server" "default" {
-	name = "${var.name}"
-	vpn_gateway_id = "${alicloud_vpn_gateway.default.id}"
+	name = var.name
+	vpn_gateway_id = alicloud_vpn_gateway.default.id
 	client_ip_pool = "192.168.0.0/16"
 	local_subnet = "172.16.1.0/24,172.16.2.0/24"
 }
@@ -328,28 +328,28 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"
 	description = "test_create_description"
 }
 resource "alicloud_ssl_vpn_server" "default" {
-	name = "${var.name}"
-	vpn_gateway_id = "${alicloud_vpn_gateway.default.id}"
+	name = var.name
+	vpn_gateway_id = alicloud_vpn_gateway.default.id
 	client_ip_pool = "192.168.0.0/17"
 	local_subnet = "172.16.1.0/24,172.16.2.0/24"
 }
@@ -363,28 +363,28 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"
 	description = "test_create_description"
 }
 resource "alicloud_ssl_vpn_server" "default" {
-	name = "${var.name}"
-	vpn_gateway_id = "${alicloud_vpn_gateway.default.id}"
+	name = var.name
+	vpn_gateway_id = alicloud_vpn_gateway.default.id
 	client_ip_pool = "192.168.0.0/17"
 	local_subnet = "172.16.1.0/24"
 }
@@ -398,20 +398,20 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"
@@ -419,7 +419,7 @@ resource "alicloud_vpn_gateway" "default" {
 }
 resource "alicloud_ssl_vpn_server" "default" {
 	name = "${var.name}_change"
-	vpn_gateway_id = "${alicloud_vpn_gateway.default.id}"
+	vpn_gateway_id = alicloud_vpn_gateway.default.id
 	client_ip_pool = "192.168.0.0/17"
 	local_subnet = "172.16.1.0/24"
 }
@@ -433,20 +433,20 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"
@@ -454,7 +454,7 @@ resource "alicloud_vpn_gateway" "default" {
 }
 resource "alicloud_ssl_vpn_server" "default" {
 	name = "${var.name}_change"
-	vpn_gateway_id = "${alicloud_vpn_gateway.default.id}"
+	vpn_gateway_id = alicloud_vpn_gateway.default.id
 	client_ip_pool = "192.168.0.0/17"
 	local_subnet = "172.16.1.0/24"
 	protocol = "TCP"
@@ -469,20 +469,20 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"
@@ -490,7 +490,7 @@ resource "alicloud_vpn_gateway" "default" {
 }
 resource "alicloud_ssl_vpn_server" "default" {
 	name = "${var.name}_change"
-	vpn_gateway_id = "${alicloud_vpn_gateway.default.id}"
+	vpn_gateway_id = alicloud_vpn_gateway.default.id
 	client_ip_pool = "192.168.0.0/17"
 	local_subnet = "172.16.1.0/24"
 	protocol = "TCP"
@@ -506,20 +506,20 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"
@@ -527,7 +527,7 @@ resource "alicloud_vpn_gateway" "default" {
 }
 resource "alicloud_ssl_vpn_server" "default" {
 	name = "${var.name}_change"
-	vpn_gateway_id = "${alicloud_vpn_gateway.default.id}"
+	vpn_gateway_id = alicloud_vpn_gateway.default.id
 	client_ip_pool = "192.168.0.0/17"
 	local_subnet = "172.16.1.0/24"
 	protocol = "TCP"
@@ -544,20 +544,20 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"
@@ -565,7 +565,7 @@ resource "alicloud_vpn_gateway" "default" {
 }
 resource "alicloud_ssl_vpn_server" "default" {
 	name = "${var.name}_change"
-	vpn_gateway_id = "${alicloud_vpn_gateway.default.id}"
+	vpn_gateway_id = alicloud_vpn_gateway.default.id
 	client_ip_pool = "192.168.0.0/17"
 	local_subnet = "172.16.1.0/24"
 	protocol = "TCP"
@@ -583,21 +583,21 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 resource "alicloud_vpn_gateway" "default" {
 	count = "2"
-	name = "${var.name}"
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	name = var.name
+	vpc_id = alicloud_vswitch.default.vpc_id
 	bandwidth = "10"
 	enable_ssl = true
 	instance_charge_type = "PostPaid"
@@ -605,7 +605,7 @@ resource "alicloud_vpn_gateway" "default" {
 }
 resource "alicloud_ssl_vpn_server" "default" {
 	count = "2"
-	name = "${var.name}"
+	name = var.name
 	vpn_gateway_id = "${element(alicloud_vpn_gateway.default.*.id,count.index)}"
 	client_ip_pool = "192.${count.index + 168}.0.0/16"
 	local_subnet = "172.16.1.0/24,172.16.2.0/24"

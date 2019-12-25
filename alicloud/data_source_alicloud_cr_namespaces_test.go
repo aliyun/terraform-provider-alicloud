@@ -19,7 +19,7 @@ func TestAccAlicloudCRNamespacesDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_cr_namespace.default.name}",
+			"name_regex": alicloud_cr_namespace.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_cr_namespace.default.name}-fake",
@@ -62,7 +62,7 @@ func dataSourceCRNamespacesConfigDependence(name string) string {
 	}
 	
 	resource "alicloud_cr_namespace" "default" {
-		name = "${var.name}"
+		name = var.name
 		auto_create	= false
 		default_visibility = "PUBLIC"
 	}

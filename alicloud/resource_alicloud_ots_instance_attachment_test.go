@@ -40,9 +40,9 @@ func TestAccAlicloudOtsInstanceAttachment_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name": "${alicloud_ots_instance.default.name}",
+					"instance_name": alicloud_ots_instance.default.name,
 					"vpc_name":      "test",
-					"vswitch_id":    "${alicloud_vswitch.default.id}",
+					"vswitch_id":    alicloud_vswitch.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -85,9 +85,9 @@ func TestAccAlicloudOtsInstanceAttachment_highPerformance(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name": "${alicloud_ots_instance.default.name}",
+					"instance_name": alicloud_ots_instance.default.name,
 					"vpc_name":      "test",
-					"vswitch_id":    "${alicloud_vswitch.default.id}",
+					"vswitch_id":    alicloud_vswitch.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -107,8 +107,8 @@ func resourceOtsInstanceAttachmentConfigDependence(name string) string {
 	}
 
 	resource "alicloud_ots_instance" "default" {
-	  name = "${var.name}"
-	  description = "${var.name}"
+	  name = var.name
+	  description = var.name
 	  accessed_by = "Vpc"
 	  instance_type = "%s"
 	}
@@ -118,14 +118,14 @@ func resourceOtsInstanceAttachmentConfigDependence(name string) string {
 	}
 	resource "alicloud_vpc" "default" {
 	  cidr_block = "172.16.0.0/16"
-	  name = "${var.name}"
+	  name = var.name
 	}
 
 	resource "alicloud_vswitch" "default" {
-	  vpc_id = "${alicloud_vpc.default.id}"
-	  name = "${var.name}"
+	  vpc_id = alicloud_vpc.default.id
+	  name = var.name
 	  cidr_block = "172.16.1.0/24"
-	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  availability_zone = data.alicloud_zones.default.zones.0.id
 	}
 	`, name, string(OtsCapacity))
 }
@@ -137,8 +137,8 @@ func resourceOtsInstanceAttachmentConfigDependenceHighperformance(name string) s
 	}
 
 	resource "alicloud_ots_instance" "default" {
-	  name = "${var.name}"
-	  description = "${var.name}"
+	  name = var.name
+	  description = var.name
 	  accessed_by = "Vpc"
 	  instance_type = "%s"
 	}
@@ -148,14 +148,14 @@ func resourceOtsInstanceAttachmentConfigDependenceHighperformance(name string) s
 	}
 	resource "alicloud_vpc" "default" {
 	  cidr_block = "172.16.0.0/16"
-	  name = "${var.name}"
+	  name = var.name
 	}
 
 	resource "alicloud_vswitch" "default" {
-	  vpc_id = "${alicloud_vpc.default.id}"
-	  name = "${var.name}"
+	  vpc_id = alicloud_vpc.default.id
+	  name = var.name
 	  cidr_block = "172.16.1.0/24"
-	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  availability_zone = data.alicloud_zones.default.zones.0.id
 	}
 	`, name, string(OtsHighPerformance))
 }

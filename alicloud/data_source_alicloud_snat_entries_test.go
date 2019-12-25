@@ -12,36 +12,36 @@ func TestAccAlicloudSnatEntriesDataSourceBasic(t *testing.T) {
 	rand := acctest.RandInt()
 	snatIpConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
-			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
-			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}"`,
+			"snat_table_id": `alicloud_snat_entry.default.snat_table_id`,
+			"snat_ip":       `alicloud_snat_entry.default.snat_ip`,
 		}),
 		fakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
-			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
+			"snat_table_id": `alicloud_snat_entry.default.snat_table_id`,
 			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}_fake"`,
 		}),
 	}
 
 	sourceCidrConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
-			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
-			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}"`,
+			"snat_table_id": `alicloud_snat_entry.default.snat_table_id`,
+			"snat_ip":       `alicloud_snat_entry.default.snat_ip`,
 			"source_cidr":   `"172.16.0.0/21"`,
 		}),
 		fakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
-			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
-			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}"`,
+			"snat_table_id": `alicloud_snat_entry.default.snat_table_id`,
+			"snat_ip":       `alicloud_snat_entry.default.snat_ip`,
 			"source_cidr":   `"172.16.0.0/20"`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
-			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
-			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}"`,
+			"snat_table_id": `alicloud_snat_entry.default.snat_table_id`,
+			"snat_ip":       `alicloud_snat_entry.default.snat_ip`,
 			"source_cidr":   `"172.16.0.0/21"`,
 		}),
 		fakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
-			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
+			"snat_table_id": `alicloud_snat_entry.default.snat_table_id`,
 			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}_fake"`,
 			"source_cidr":   `"172.16.0.0/21"`,
 		}),
@@ -67,36 +67,36 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_nat_gateway" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	specification = "Small"
-	name = "${var.name}"
+	name = var.name
 }
 
 resource "alicloud_eip" "default" {
-	name = "${var.name}"
+	name = var.name
 }
 
 resource "alicloud_eip_association" "default" {
-	allocation_id = "${alicloud_eip.default.id}"
-	instance_id = "${alicloud_nat_gateway.default.id}"
+	allocation_id = alicloud_eip.default.id
+	instance_id = alicloud_nat_gateway.default.id
 }
 
 resource "alicloud_snat_entry" "default" {
-	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
-	source_vswitch_id = "${alicloud_vswitch.default.id}"
-	snat_ip = "${alicloud_eip.default.ip_address}"
+	snat_table_id = alicloud_nat_gateway.default.snat_table_ids
+	source_vswitch_id = alicloud_vswitch.default.id
+	snat_ip = alicloud_eip.default.ip_address
 }
 
 data "alicloud_snat_entries" "default" {

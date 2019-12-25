@@ -31,7 +31,7 @@ Provides a ECS instance resource.
 resource "alicloud_security_group" "group" {
   name        = "tf_test_foo"
   description = "foo"
-  vpc_id      = "${alicloud_vpc.vpc.id}"
+  vpc_id      = alicloud_vpc.vpc.id
 }
 
 resource "alicloud_instance" "instance" {
@@ -44,7 +44,7 @@ resource "alicloud_instance" "instance" {
   system_disk_category       = "cloud_efficiency"
   image_id                   = "ubuntu_18_04_64_20G_alibase_20190624.vhd"
   instance_name              = "test_foo"
-  vswitch_id                 = "${alicloud_vswitch.vswitch.id}"
+  vswitch_id                 = alicloud_vswitch.vswitch.id
   internet_max_bandwidth_out = 10
 }
 
@@ -54,14 +54,14 @@ resource "alicloud_vpc" "vpc" {
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  vpc_id = "${alicloud_vpc.vpc.id}"
+  vpc_id = alicloud_vpc.vpc.id
   # Other parameters...
 }
 
 resource "alicloud_slb" "slb" {
   name       = "test-slb-tf"
-  vpc_id     = "${alicloud_vpc.vpc.id}"
-  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  vpc_id     = alicloud_vpc.vpc.id
+  vswitch_id = alicloud_vswitch.vswitch.id
 }
 ```
 

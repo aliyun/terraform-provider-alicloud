@@ -704,18 +704,18 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  name              = var.name
 }
 resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 resource "alicloud_security_group_rule" "default" {
   	type = "ingress"
@@ -724,7 +724,7 @@ resource "alicloud_security_group_rule" "default" {
   	policy = "accept"
   	port_range = "22/22"
   	priority = 1
-  	security_group_id = "${alicloud_security_group.default.id}"
+  	security_group_id = alicloud_security_group.default.id
   	cidr_ip = "172.16.0.0/24"
 }
 `
@@ -735,7 +735,7 @@ data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu_18.*_64"
@@ -743,18 +743,18 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 resource "alicloud_security_group_rule" "default" {
   	type = "ingress"
@@ -763,87 +763,87 @@ resource "alicloud_security_group_rule" "default" {
   	policy = "accept"
   	port_range = "22/22"
   	priority = 1
-  	security_group_id = "${alicloud_security_group.default.id}"
+  	security_group_id = alicloud_security_group.default.id
   	cidr_ip = "172.16.0.0/24"
 }
 `
 
 const RdsCommonTestCase = `
 data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+  available_resource_creation = var.creation
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0
+  name              = var.name
 }
 `
 const PolarDBCommonTestCase = `
 data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+  available_resource_creation = var.creation
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%length(data.alicloud_zones.default.zones)], "id")}"
-  name              = "${var.name}"
+  name              = var.name
 }
 `
 const KVStoreCommonTestCase = `
 data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+  available_resource_creation = var.creation
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%length(data.alicloud_zones.default.zones)], "id")}"
-  name              = "${var.name}"
+  name              = var.name
 }
 `
 
 const DBMultiAZCommonTestCase = `
 data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+  available_resource_creation = var.creation
   multi = true
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${data.alicloud_zones.default.zones.0.multi_zone_ids[0]}"
-  name              = "${var.name}"
+  name              = var.name
 }
 `
 
 const ElasticsearchInstanceCommonTestCase = `
 data "alicloud_zones" "default" {
-    available_resource_creation = "${var.creation}"
+    available_resource_creation = var.creation
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${lookup(data.alicloud_zones.default.zones[length(data.alicloud_zones.default.zones)-1], "id")}"
-  name              = "${var.name}"
+  name              = var.name
 }`
 
 const SlbVpcCommonTestCase = `
@@ -852,15 +852,15 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name = var.name
 }
 `
 
@@ -893,24 +893,24 @@ data "alicloud_emr_disk_types" "system_disk" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_emr_instance_types.default.types.0.zone_id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_emr_instance_types.default.types.0.zone_id
+  name = var.name
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_ram_role" "default" {
-	name = "${var.name}"
+	name = var.name
 	document = <<EOF
     {
         "Statement": [
@@ -962,24 +962,24 @@ data "alicloud_emr_disk_types" "system_disk" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_emr_instance_types.default.types.0.zone_id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_emr_instance_types.default.types.0.zone_id
+  name = var.name
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_ram_role" "default" {
-	name = "${var.name}"
+	name = var.name
 	document = <<EOF
     {
         "Statement": [
@@ -1002,7 +1002,7 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_emr_cluster" "default" {
-    name = "${var.name}"
+    name = var.name
 
     emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 
@@ -1080,24 +1080,24 @@ data "alicloud_emr_disk_types" "system_disk" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_emr_instance_types.cloud_disk.types.0.zone_id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_emr_instance_types.cloud_disk.types.0.zone_id
+  name = var.name
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_ram_role" "default" {
-	name = "${var.name}"
+	name = var.name
 	document = <<EOF
     {
         "Statement": [
@@ -1125,14 +1125,14 @@ variable "ip_version" {
   default = "ipv4"
 }	
 resource "alicloud_slb" "default" {
-  name = "${var.name}"
+  name = var.name
   internet_charge_type = "PayByTraffic"
   address_type = "internet"
   specification = "slb.s1.small"
 }
 resource "alicloud_slb_acl" "default" {
-  name = "${var.name}"
-  ip_version = "${var.ip_version}"
+  name = var.name
+  ip_version = var.ip_version
   entry_list {
       entry="10.10.10.0/24"
       comment="first"
@@ -1150,7 +1150,7 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 data "alicloud_images" "default" {
@@ -1160,57 +1160,57 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name = var.name
 }
 
 resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  instance_name = "${var.name}"
+  image_id = data.alicloud_images.default.images.0.id
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
+  instance_name = var.name
   count = "2"
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  name = var.name
+  vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  name = "${var.name}"
+  load_balancer_id = alicloud_slb.default.id
+  name = var.name
 }
 
 resource "alicloud_slb_master_slave_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  name = "${var.name}"
+  load_balancer_id = alicloud_slb.default.id
+  name = var.name
   servers {
-      server_id = "${alicloud_instance.default.0.id}"
+      server_id = alicloud_instance.default.0.id
       port = 80
       weight = 100
       server_type = "Master"
   }
   servers {
-      server_id = "${alicloud_instance.default.1.id}"
+      server_id = alicloud_instance.default.1.id
       port = 80
       weight = 100
       server_type = "Slave"

@@ -21,7 +21,7 @@ data "alicloud_fc_triggers" "fc_triggers_ds" {
 }
 
 output "first_fc_trigger_name" {
-  value = "${data.alicloud_fc_triggers.fc_triggers_ds.triggers.0.name}"
+  value = data.alicloud_fc_triggers.fc_triggers_ds.triggers.0.name
 }
 ```
 

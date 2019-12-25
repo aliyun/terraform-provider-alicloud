@@ -37,7 +37,7 @@ func TestAccAlicloudSagQosPolicy_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"qos_id":            "${alicloud_sag_qos.default.id}",
+					"qos_id":            alicloud_sag_qos.default.id,
 					"priority":          "2",
 					"ip_protocol":       "ALL",
 					"source_cidr":       "192.168.0.0/24",
@@ -291,7 +291,7 @@ func TestAccAlicloudSagQosPolicy_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"qos_id":            "${alicloud_sag_qos.default.id}",
+					"qos_id":            alicloud_sag_qos.default.id,
 					"description":       "${var.name}-${count.index}",
 					"count":             "7",
 					"priority":          "${count.index+1}",
@@ -329,7 +329,7 @@ variable "name" {
 }
 
 resource "alicloud_sag_qos" "default" {
-  name = "${var.name}"
+  name = var.name
 }
 `, name)
 }

@@ -20,7 +20,7 @@ data "alicloud_cen_bandwidth_packages" "bwp" {
 }
 
 output "first_cen_bandwidth_package_id" {
-  value = "${data.alicloud_cen_bandwidth_packages.bwp.packages.0.id}"
+  value = data.alicloud_cen_bandwidth_packages.bwp.packages.0.id
 }
 ```
 

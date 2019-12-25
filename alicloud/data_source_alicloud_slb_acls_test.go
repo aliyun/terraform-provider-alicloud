@@ -13,7 +13,7 @@ func TestAccAlicloudSlbAclsDataSource_basic(t *testing.T) {
 	rand := acctest.RandInt()
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_slb_acl.default.name}"`,
+			"name_regex": `alicloud_slb_acl.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_slb_acl.default.name}_fake"`,
@@ -21,18 +21,18 @@ func TestAccAlicloudSlbAclsDataSource_basic(t *testing.T) {
 	}
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_slb_acl.default.name}"`,
+			"name_regex": `alicloud_slb_acl.default.name`,
 			"tags":       `{Created = "TF"}`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_slb_acl.default.name}"`,
+			"name_regex": `alicloud_slb_acl.default.name`,
 			"tags":       `{Created = "TF1"}`,
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_slb_acl.default.id}"]`,
+			"ids": `[alicloud_slb_acl.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_slb_acl.default.id}_fake"]`,
@@ -41,7 +41,7 @@ func TestAccAlicloudSlbAclsDataSource_basic(t *testing.T) {
 
 	resourceGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
-			"ids":               `["${alicloud_slb_acl.default.id}"]`,
+			"ids":               `[alicloud_slb_acl.default.id]`,
 			"resource_group_id": `""`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
@@ -52,14 +52,14 @@ func TestAccAlicloudSlbAclsDataSource_basic(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_slb_acl.default.id}"]`,
-			"name_regex": `"${alicloud_slb_acl.default.name}"`,
+			"ids":        `[alicloud_slb_acl.default.id]`,
+			"name_regex": `alicloud_slb_acl.default.name`,
 			// The resource route tables do not support resource_group_id, so it was set empty.
 			"resource_group_id": `""`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbAclsDataSourceConfig(rand, map[string]string{
 			"ids":               `["${alicloud_slb_acl.default.id}_fake"]`,
-			"name_regex":        `"${alicloud_slb_acl.default.name}"`,
+			"name_regex":        `alicloud_slb_acl.default.name`,
 			"resource_group_id": `""`,
 		}),
 	}
@@ -112,8 +112,8 @@ variable "ip_version" {
 }
 
 resource "alicloud_slb_acl" "default" {
-  name = "${var.name}"
-  ip_version = "${var.ip_version}"
+  name = var.name
+  ip_version = var.ip_version
   entry_list {
     entry = "10.10.10.0/24"
     comment = "first"

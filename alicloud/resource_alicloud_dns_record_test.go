@@ -39,7 +39,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${alicloud_dns.default.name}",
+					"name":        alicloud_dns.default.name,
 					"host_record": "alimail",
 					"type":        "CNAME",
 					"value":       "mail.mxhichina.com",
@@ -119,7 +119,7 @@ func TestAccAlicloudDnsRecord_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${alicloud_dns.default.name}",
+					"name":        alicloud_dns.default.name,
 					"host_record": "alimail",
 					"type":        "CNAME",
 					"value":       "mail.mxhichin.com",
@@ -160,7 +160,7 @@ func TestAccAlicloudDnsRecord_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${alicloud_dns.default.name}",
+					"name":        alicloud_dns.default.name,
 					"host_record": "alimail",
 					"type":        "CNAME",
 					"value":       "mail.mxhichina${count.index}.com",

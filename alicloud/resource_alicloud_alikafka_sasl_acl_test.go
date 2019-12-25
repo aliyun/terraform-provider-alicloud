@@ -242,10 +242,10 @@ func TestAccAlicloudAlikafkaSaslAcl_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":               "${alicloud_alikafka_instance.default.id}",
-					"username":                  "${alicloud_alikafka_sasl_user.default.username}",
+					"instance_id":               alicloud_alikafka_instance.default.id,
+					"username":                  alicloud_alikafka_sasl_user.default.username,
 					"acl_resource_type":         "Topic",
-					"acl_resource_name":         "${alicloud_alikafka_topic.default.topic}",
+					"acl_resource_name":         alicloud_alikafka_topic.default.topic,
 					"acl_resource_pattern_type": "LITERAL",
 					"acl_operation_type":        "Write",
 				}),
@@ -286,7 +286,7 @@ func TestAccAlicloudAlikafkaSaslAcl_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"acl_resource_type": "Group",
-					"acl_resource_name": "${alicloud_alikafka_consumer_group.default.consumer_id}",
+					"acl_resource_name": alicloud_alikafka_consumer_group.default.consumer_id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -297,9 +297,9 @@ func TestAccAlicloudAlikafkaSaslAcl_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"username":           "${alicloud_alikafka_sasl_user.default.username}",
+					"username":           alicloud_alikafka_sasl_user.default.username,
 					"acl_resource_type":  "Topic",
-					"acl_resource_name":  "${alicloud_alikafka_topic.default.topic}",
+					"acl_resource_name":  alicloud_alikafka_topic.default.topic,
 					"acl_operation_type": "Write",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -345,10 +345,10 @@ func TestAccAlicloudAlikafkaSaslAcl_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":                     "2",
-					"instance_id":               "${alicloud_alikafka_instance.default.id}",
-					"username":                  "${alicloud_alikafka_sasl_user.default.username}",
+					"instance_id":               alicloud_alikafka_instance.default.id,
+					"username":                  alicloud_alikafka_sasl_user.default.username,
 					"acl_resource_type":         "Topic",
-					"acl_resource_name":         "${alicloud_alikafka_topic.default.topic}",
+					"acl_resource_name":         alicloud_alikafka_topic.default.topic,
 					"acl_resource_pattern_type": "LITERAL",
 					"acl_operation_type":        "${element(var.operation, count.index)}",
 				}),
@@ -376,14 +376,14 @@ func resourceAlikafkaSaslAclConfigDependence(name string) string {
 		}
 		resource "alicloud_vpc" "default" {
 		  cidr_block = "172.16.0.0/12"
-		  name       = "${var.name}"
+		  name       = var.name
 		}
 		
 		resource "alicloud_vswitch" "default" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.0.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name       = "${var.name}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
+		  name       = var.name
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
@@ -393,23 +393,23 @@ func resourceAlikafkaSaslAclConfigDependence(name string) string {
 		  disk_size = "500"
 		  deploy_type = "5"
 		  io_max = "20"
-          vswitch_id = "${alicloud_vswitch.default.id}"
+          vswitch_id = alicloud_vswitch.default.id
 		}
 
 		resource "alicloud_alikafka_topic" "default" {
-          instance_id = "${alicloud_alikafka_instance.default.id}"
-          topic = "${var.name}"
+          instance_id = alicloud_alikafka_instance.default.id
+          topic = var.name
 		  remark = "topic-remark"
 		}
 
 		resource "alicloud_alikafka_consumer_group" "default" {
-          instance_id = "${alicloud_alikafka_instance.default.id}"
-          consumer_id = "${var.name}"
+          instance_id = alicloud_alikafka_instance.default.id
+          consumer_id = var.name
 		}
 
 		resource "alicloud_alikafka_sasl_user" "default" {
-          instance_id = "${alicloud_alikafka_instance.default.id}"
-          username = "${var.name}"
+          instance_id = alicloud_alikafka_instance.default.id
+          username = var.name
           password = "password"
 		}
 		`, name)
@@ -430,14 +430,14 @@ func resourceAlikafkaSaslAclConfigDependenceForMulti(name string) string {
 		}
 		resource "alicloud_vpc" "default" {
 		  cidr_block = "172.16.0.0/12"
-		  name       = "${var.name}"
+		  name       = var.name
 		}
 		
 		resource "alicloud_vswitch" "default" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.0.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name       = "${var.name}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
+		  name       = var.name
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
@@ -447,27 +447,27 @@ func resourceAlikafkaSaslAclConfigDependenceForMulti(name string) string {
 		  disk_size = "500"
 		  deploy_type = "5"
 		  io_max = "20"
-          vswitch_id = "${alicloud_vswitch.default.id}"
+          vswitch_id = alicloud_vswitch.default.id
 		}
 
 		resource "alicloud_alikafka_topic" "default" {
-          instance_id = "${alicloud_alikafka_instance.default.id}"
-          topic = "${var.name}"
+          instance_id = alicloud_alikafka_instance.default.id
+          topic = var.name
 		  remark = "topic-remark"
 		}
 
 		resource "alicloud_alikafka_sasl_user" "default" {
-          instance_id = "${alicloud_alikafka_instance.default.id}"
-          username = "${var.name}"
+          instance_id = alicloud_alikafka_instance.default.id
+          username = var.name
           password = "password"
 		}
 		`, name)
 }
 
 var alikafkaSaslAclBasicMap = map[string]string{
-	"username":                  "${var.name}",
+	"username":                  var.name,
 	"acl_resource_type":         "Topic",
-	"acl_resource_name":         "${var.name}",
+	"acl_resource_name":         var.name,
 	"acl_resource_pattern_type": "LITERAL",
 	"acl_operation_type":        "Write",
 }

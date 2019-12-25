@@ -18,7 +18,7 @@ func TestAccAlicloudPvtzZonesDataSource(t *testing.T) {
 
 	keywordConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"keyword": "${alicloud_pvtz_zone.basic.name}",
+			"keyword": alicloud_pvtz_zone.basic.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"keyword": "${alicloud_pvtz_zone.basic.name}-fake",
@@ -27,7 +27,7 @@ func TestAccAlicloudPvtzZonesDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_pvtz_zone.basic.id}"},
+			"ids": []string{alicloud_pvtz_zone.basic.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_pvtz_zone.basic.id}_fake"},
@@ -36,11 +36,11 @@ func TestAccAlicloudPvtzZonesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"keyword": "${alicloud_pvtz_zone.basic.name}",
-			"ids":     []string{"${alicloud_pvtz_zone.basic.id}"},
+			"keyword": alicloud_pvtz_zone.basic.name,
+			"ids":     []string{alicloud_pvtz_zone.basic.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"keyword": "${alicloud_pvtz_zone.basic.name}",
+			"keyword": alicloud_pvtz_zone.basic.name,
 			"ids":     []string{"${alicloud_pvtz_zone.basic.id}-fake"},
 		}),
 	}

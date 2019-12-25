@@ -75,7 +75,7 @@ data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 data "alicloud_instance_types" "default" {
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	availability_zone = data.alicloud_zones.default.zones.0.id
 }
 data "alicloud_images" "default" {
 	name_regex = "^ubuntu_18.*_64"
@@ -87,29 +87,29 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name = var.name
 }
 resource "alicloud_security_group" "default" {
-  name = "${var.name}"
+  name = var.name
   description = "New security group"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_instance" "default" {
   instance_name = "${var.name}-${count.index+1}"
-  image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  image_id = data.alicloud_images.default.images.0.id
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
   count = 2
-  security_groups = ["${alicloud_security_group.default.id}"]
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  security_groups = [alicloud_security_group.default.id]
+  vswitch_id = alicloud_vswitch.default.id
 
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = 5
@@ -120,11 +120,11 @@ resource "alicloud_instance" "default" {
 }
 
 resource "alicloud_key_pair" "default" {
-  key_name = "${var.name}"
+  key_name = var.name
 }
 
 resource "alicloud_key_pair_attachment" "default" {
-  key_name = "${alicloud_key_pair.default.id}"
+  key_name = alicloud_key_pair.default.id
   instance_ids = "${alicloud_instance.default.*.id}"
 }
 `

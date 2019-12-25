@@ -23,7 +23,7 @@ data "alicloud_alikafka_sasl_users" "sasl_users_ds" {
 }
 
 output "first_sasl_username" {
-  value = "${data.alicloud_alikafka_sasl_users.sasl_users_ds.users.0.username}"
+  value = data.alicloud_alikafka_sasl_users.sasl_users_ds.users.0.username
 }
 ```
 

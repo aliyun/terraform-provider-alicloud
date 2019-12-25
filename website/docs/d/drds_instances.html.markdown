@@ -22,7 +22,7 @@ data "alicloud_drds_instances" "drds_instances_ds" {
   ids        = "drdsfacbz68g3299test"
 }
 output "first_db_instance_id" {
-  value = "${data.alicloud_drds_instances.drds_instances_ds.instances.0.drdsInstanceId}"
+  value = data.alicloud_drds_instances.drds_instances_ds.instances.0.drdsInstanceId
 }
 ```
 

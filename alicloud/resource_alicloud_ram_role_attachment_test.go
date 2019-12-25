@@ -67,22 +67,22 @@ func testAccRamRoleAttachmentConfig(common string, rand int) string {
 	}
 
 	resource "alicloud_instance" "default" {
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		image_id = "${data.alicloud_images.default.images.0.id}"
+		vswitch_id = alicloud_vswitch.default.id
+		image_id = data.alicloud_images.default.images.0.id
 
 		# series III
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		instance_name = "${var.name}"
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		instance_name = var.name
 		system_disk_category = "cloud_efficiency"
 		count = 2
 
 		internet_charge_type = "PayByTraffic"
 		internet_max_bandwidth_out = 5
-		security_groups = ["${alicloud_security_group.default.id}"]
+		security_groups = [alicloud_security_group.default.id]
 	}
 
 	resource "alicloud_ram_role" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -104,7 +104,7 @@ func testAccRamRoleAttachmentConfig(common string, rand int) string {
 	}
 
 	resource "alicloud_ram_role_attachment" "default" {
-	  role_name = "${alicloud_ram_role.default.name}"
+	  role_name = alicloud_ram_role.default.name
 	  instance_ids = "${alicloud_instance.default.*.id}"
 	}`, common, defaultRegionToTest, rand)
 }

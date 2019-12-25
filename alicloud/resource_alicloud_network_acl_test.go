@@ -230,7 +230,7 @@ resource "alicloud_vpc" "default" {
   name = "tf-testAccVpcConfig"
 }	
 resource "alicloud_network_acl" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   name = "tf-testAcc_network_acl%v.abc"
   description = "tf-testAcc_network_acl"
 }
@@ -244,7 +244,7 @@ resource "alicloud_vpc" "default" {
   name = "tf-testAccVpcConfig"
 }	
 resource "alicloud_network_acl" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   name = "tf-testAcc_network_acl_modify%v.abc"
   description = "tf-testAcc_network_acl"
 }
@@ -258,7 +258,7 @@ resource "alicloud_vpc" "default" {
   name = "tf-testAccVpcConfig"
 }	
 resource "alicloud_network_acl" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   name = "tf-testAcc_network_acl_modify%v.abc"
   description = "tf-testAcc_network_acl_modify"
 }
@@ -272,7 +272,7 @@ resource "alicloud_vpc" "default" {
   name = "tf-testAccVpcConfig"
 }	
 resource "alicloud_network_acl" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   name = "tf-testAcc_network_acl%v.abc"
   description = "tf-testAcc_network_acl"
 }
@@ -286,7 +286,7 @@ resource "alicloud_vpc" "default" {
   name = "tf-testAccVpcConfig%v.abc"
 }	
 resource "alicloud_network_acl" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   name = "tf-testAcc_network_acl"
   description = "tf-testAcc_network_acl${count.index}"
   count = 3

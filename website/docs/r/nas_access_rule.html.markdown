@@ -26,7 +26,7 @@ resource "alicloud_nas_access_group" "foo" {
   description = "tf-testAccNasConfig"
 }
 resource "alicloud_nas_access_rule" "foo" {
-  access_group_name = "${alicloud_nas_access_group.foo.id}"
+  access_group_name = alicloud_nas_access_group.foo.id
   source_cidr_ip    = "168.1.1.0/16"
   rw_access_type    = "RDWR"
   user_access_type  = "no_squash"

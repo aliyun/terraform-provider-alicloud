@@ -132,8 +132,8 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_alikafka_instance.default.id}",
-					"consumer_id": "${var.name}",
+					"instance_id": alicloud_alikafka_instance.default.id,
+					"consumer_id": var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -184,7 +184,7 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"consumer_id": "${var.name}",
+					"consumer_id": var.name,
 					"tags":        REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -231,7 +231,7 @@ func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":       "5",
-					"instance_id": "${alicloud_alikafka_instance.default.id}",
+					"instance_id": alicloud_alikafka_instance.default.id,
 					"consumer_id": "${var.name}-${count.index}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -256,14 +256,14 @@ func resourceAlikafkaConsumerGroupConfigDependence(name string) string {
 		}
 		resource "alicloud_vpc" "default" {
 		  cidr_block = "172.16.0.0/12"
-		  name       = "${var.name}"
+		  name       = var.name
 		}
 		
 		resource "alicloud_vswitch" "default" {
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.0.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name       = "${var.name}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
+		  name       = var.name
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
@@ -273,11 +273,11 @@ func resourceAlikafkaConsumerGroupConfigDependence(name string) string {
 		  disk_size = "500"
 		  deploy_type = "5"
 		  io_max = "20"
-          vswitch_id = "${alicloud_vswitch.default.id}"
+          vswitch_id = alicloud_vswitch.default.id
 		}
 		`, name)
 }
 
 var alikafkaConsumerGroupBasicMap = map[string]string{
-	"consumer_id": "${var.name}",
+	"consumer_id": var.name,
 }

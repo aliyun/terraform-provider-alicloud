@@ -135,18 +135,18 @@ func testAccCenInstanceAttachmentBasic(rand int, region string) string {
 	}
 
 	resource "alicloud_cen_instance" "default" {
-	    name = "${var.name}"
+	    name = var.name
 	    description = "tf-testAccCenInstanceAttachmentBasicDescription"
 	}
 
 	resource "alicloud_vpc" "default" {
-	    name = "${var.name}"
+	    name = var.name
 	    cidr_block = "192.168.0.0/16"
 	}
 
 	resource "alicloud_cen_instance_attachment" "default" {
-	    instance_id = "${alicloud_cen_instance.default.id}"
-	    child_instance_id = "${alicloud_vpc.default.id}"
+	    instance_id = alicloud_cen_instance.default.id
+	    child_instance_id = alicloud_vpc.default.id
 	    child_instance_region_id = "%s"
 	}
 	`, region, rand, region)
@@ -158,29 +158,29 @@ func testAccCenInstanceAttachmentMultiSameRegion(rand int, region string) string
 	}
 
 	resource "alicloud_cen_instance" "default" {
-	    name = "${var.name}"
+	    name = var.name
 	    description = "tf-testAccCenInstanceAttachmentBasicDescription"
 	}
 
 	resource "alicloud_vpc" "default" {
-	    name = "${var.name}"
+	    name = var.name
 	    cidr_block = "192.168.0.0/16"
 	}
 
 	resource "alicloud_vpc" "default1" {
-	    name = "${var.name}"
+	    name = var.name
 	    cidr_block = "172.16.0.0/12"
 	}
 
 	resource "alicloud_cen_instance_attachment" "default" {
-	    instance_id = "${alicloud_cen_instance.default.id}"
-	    child_instance_id = "${alicloud_vpc.default.id}"
+	    instance_id = alicloud_cen_instance.default.id
+	    child_instance_id = alicloud_vpc.default.id
 	    child_instance_region_id = "%s"
 	}
 
 	resource "alicloud_cen_instance_attachment" "default1" {
-	    instance_id = "${alicloud_cen_instance.default.id}"
-	    child_instance_id = "${alicloud_vpc.default1.id}"
+	    instance_id = alicloud_cen_instance.default.id
+	    child_instance_id = alicloud_vpc.default1.id
 	    child_instance_region_id = "%s"
 	}
 	`, region, rand, region, region)
@@ -205,30 +205,30 @@ provider "alicloud" {
 
 resource "alicloud_vpc" "default" {
     provider = "alicloud.fra"
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_vpc" "default1" {
     provider = "alicloud.sh"
-    name = "${var.name}"
+    name = var.name
     cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_cen_instance" "default" {
-    name = "${var.name}"
+    name = var.name
     description = "tf-testAccCenInstanceAttachmentMultiDifferentRegionsDescription"
 }
 
 resource "alicloud_cen_instance_attachment" "default" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default.id}"
+    instance_id = alicloud_cen_instance.default.id
+    child_instance_id = alicloud_vpc.default.id
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default1.id}"
+    instance_id = alicloud_cen_instance.default.id
+    child_instance_id = alicloud_vpc.default1.id
     child_instance_region_id = "cn-shanghai"
 }
 `, region, rand)

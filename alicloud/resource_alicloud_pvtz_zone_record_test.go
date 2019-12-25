@@ -43,7 +43,7 @@ func TestAccAlicloudPvtzZoneRecord_basic(t *testing.T) {
 					"resource_record": "www",
 					"type":            "A",
 					"value":           "2.2.2.2",
-					"zone_id":         "${alicloud_pvtz_zone.default.id}",
+					"zone_id":         alicloud_pvtz_zone.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -152,7 +152,7 @@ func TestAccAlicloudPvtzZoneRecord_multi(t *testing.T) {
 					"resource_record": "www",
 					"type":            "A",
 					"value":           "2.2.2.${count.index}",
-					"zone_id":         "${alicloud_pvtz_zone.default.id}",
+					"zone_id":         alicloud_pvtz_zone.default.id,
 					"count":           "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(

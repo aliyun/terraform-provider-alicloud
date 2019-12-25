@@ -22,7 +22,7 @@ Basic Usage
 ```
 resource "alicloud_api_gateway_api" "apiGatewayApi" {
   name        = "terraformapi"
-  group_id    = "${alicloud_api_gateway_group.apiGatewayGroup.id}"
+  group_id    = alicloud_api_gateway_group.apiGatewayGroup.id
   description = "description"
   auth_type   = "APP"
 

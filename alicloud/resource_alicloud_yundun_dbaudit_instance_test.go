@@ -131,10 +131,10 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}",
+					"description": var.name,
 					"plan_code":   "alpha.professional",
 					"period":      "1",
-					"vswitch_id":  "${alicloud_vswitch.default.id}",
+					"vswitch_id":  alicloud_vswitch.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -159,7 +159,7 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}",
+					"description": var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -214,7 +214,7 @@ func TestAccAlicloudYundunDbauditInstance_Multi(t *testing.T) {
 					"description": "${var.name}-${count.index}",
 					"plan_code":   "alpha.professional",
 					"period":      "1",
-					"vswitch_id":  "${alicloud_vswitch.default.id}",
+					"vswitch_id":  alicloud_vswitch.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -235,15 +235,15 @@ func resourceDbauditInstanceDependence(name string) string {
 			  }
 
 			  resource "alicloud_vpc" "default" {
-				name = "${var.name}"
+				name = var.name
 				cidr_block = "172.16.0.0/12"
 			  }
 
 			  resource "alicloud_vswitch" "default" {
-				vpc_id = "${alicloud_vpc.default.id}"
+				vpc_id = alicloud_vpc.default.id
 				cidr_block = "172.16.0.0/21"
-				availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-				name = "${var.name}"
+				availability_zone = data.alicloud_zones.default.zones.0.id
+				name = var.name
 			  }
 			
 			  provider "alicloud" {

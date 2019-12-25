@@ -53,7 +53,7 @@ func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_db_instance.default.id}",
+					"instance_id": alicloud_db_instance.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -129,7 +129,7 @@ func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":          "${alicloud_db_instance.default.id}",
+					"instance_id":          alicloud_db_instance.default.id,
 					"backup_period":        []string{"Tuesday", "Monday", "Wednesday"},
 					"backup_time":          "10:00Z-11:00Z",
 					"retention_period":     "10",
@@ -163,27 +163,27 @@ data "alicloud_zones" "default" {
 	}
 
 	data "alicloud_db_instance_classes" "default" {
- 	 	engine = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-		engine_version = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
+ 	 	engine = data.alicloud_db_instance_engines.default.instance_engines.0.engine
+		engine_version = data.alicloud_db_instance_engines.default.instance_engines.0.engine_version
 	}
 
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0
+  name              = var.name
 }
 resource "alicloud_db_instance" "default" {
-  	vswitch_id       = "${alicloud_vswitch.default.id}"
-  	instance_name    = "${var.name}"
-  	engine 			 = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-	engine_version   = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
-	instance_type    = "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}"
-  	instance_storage = "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}"
+  	vswitch_id       = alicloud_vswitch.default.id
+  	instance_name    = var.name
+  	engine 			 = data.alicloud_db_instance_engines.default.instance_engines.0.engine
+	engine_version   = data.alicloud_db_instance_engines.default.instance_engines.0.engine_version
+	instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 }`, name)
 }
 
@@ -209,7 +209,7 @@ func TestAccAlicloudDBBackupPolicy_pgdb(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_db_instance.default.id}",
+					"instance_id": alicloud_db_instance.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -313,23 +313,23 @@ data "alicloud_db_instance_classes" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id
+  name              = var.name
 }
 resource "alicloud_db_instance" "default" {
-  	vswitch_id       = "${alicloud_vswitch.default.id}"
-  	instance_name    = "${var.name}"
-  	engine 			 = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-	engine_version   = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
-	instance_type    = "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}"
-  	instance_storage = "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}"
-	zone_id          = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id}"
+  	vswitch_id       = alicloud_vswitch.default.id
+  	instance_name    = var.name
+  	engine 			 = data.alicloud_db_instance_engines.default.instance_engines.0.engine
+	engine_version   = data.alicloud_db_instance_engines.default.instance_engines.0.engine_version
+	instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	zone_id          = data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id
 }`, name)
 }
 
@@ -355,7 +355,7 @@ func TestAccAlicloudDBBackupPolicy_SQLServer(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_db_instance.default.id}",
+					"instance_id": alicloud_db_instance.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -422,26 +422,26 @@ data "alicloud_db_instance_engines" "default" {
 }
 
 data "alicloud_db_instance_classes" "default" {
-	engine = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-	engine_version = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
+	engine = data.alicloud_db_instance_engines.default.instance_engines.0.engine
+	engine_version = data.alicloud_db_instance_engines.default.instance_engines.0.engine_version
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0
+  name              = var.name
 }
 resource "alicloud_db_instance" "default" {
-  	vswitch_id       = "${alicloud_vswitch.default.id}"
-  	instance_name    = "${var.name}"
-  	engine 			 = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-	engine_version   = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
-	instance_type    = "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}"
-  	instance_storage = "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}"
+  	vswitch_id       = alicloud_vswitch.default.id
+  	instance_name    = var.name
+  	engine 			 = data.alicloud_db_instance_engines.default.instance_engines.0.engine
+	engine_version   = data.alicloud_db_instance_engines.default.instance_engines.0.engine_version
+	instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 }`, name)
 }
 
@@ -469,7 +469,7 @@ func TestAccAlicloudDBBackupPolicy_PPAS(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_db_instance.default.id}",
+					"instance_id": alicloud_db_instance.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -576,22 +576,22 @@ data "alicloud_db_instance_classes" "default" {
     multi_zone           = true
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0
+  name              = var.name
 }
 resource "alicloud_db_instance" "default" {
-  	vswitch_id       = "${alicloud_vswitch.default.id}"
-  	instance_name    = "${var.name}"
-  	engine 			 = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-	engine_version   = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
-	instance_type    = "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}"
-  	instance_storage = "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}"
-	zone_id          = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id}"
+  	vswitch_id       = alicloud_vswitch.default.id
+  	instance_name    = var.name
+  	engine 			 = data.alicloud_db_instance_engines.default.instance_engines.0.engine
+	engine_version   = data.alicloud_db_instance_engines.default.instance_engines.0.engine_version
+	instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	zone_id          = data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id
 }`, name)
 }

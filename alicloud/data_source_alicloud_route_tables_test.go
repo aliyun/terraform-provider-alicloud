@@ -20,7 +20,7 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 
 	nameRegexConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
-			"name_regex": `"${alicloud_route_table.default.name}"`,
+			"name_regex": `alicloud_route_table.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
 			"name_regex": `"${alicloud_route_table.default.name}_fake"`,
@@ -29,18 +29,18 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 
 	vpcIdConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
-			"name_regex": `"${alicloud_route_table.default.name}"`,
-			"vpc_id":     `"${alicloud_vpc.default.id}"`,
+			"name_regex": `alicloud_route_table.default.name`,
+			"vpc_id":     `alicloud_vpc.default.id`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
-			"name_regex": `"${alicloud_route_table.default.name}"`,
+			"name_regex": `alicloud_route_table.default.name`,
 			"vpc_id":     `"${alicloud_vpc.default.id}_fake"`,
 		}),
 	}
 
 	idsConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
-			"ids": `[ "${alicloud_route_table.default.id}" ]`,
+			"ids": `[ alicloud_route_table.default.id ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
 			"ids": `[ "${alicloud_route_table.default.id}_fake" ]`,
@@ -49,14 +49,14 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 
 	tagsConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
-			"name_regex": `"${alicloud_route_table.default.name}"`,
+			"name_regex": `alicloud_route_table.default.name`,
 			"tags": `{
 							Created = "TF"
 							For 	= "acceptance test"
 					  }`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
-			"name_regex": `"${alicloud_route_table.default.name}"`,
+			"name_regex": `alicloud_route_table.default.name`,
 			"tags": `{
 							Created = "TF-fake"
 							For 	= "acceptance test-fake"
@@ -66,27 +66,27 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 
 	resourceGroupIdConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
-			"name_regex": `"${alicloud_route_table.default.name}"`,
+			"name_regex": `alicloud_route_table.default.name`,
 			// The resource route tables do not support resource_group_id, so it was set empty.
 			"resource_group_id": `""`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
-			"name_regex":        `"${alicloud_route_table.default.name}"`,
+			"name_regex":        `alicloud_route_table.default.name`,
 			"resource_group_id": fmt.Sprintf(`"%s_fake"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 		}),
 	}
 
 	allConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
-			"name_regex":        `"${alicloud_route_table.default.name}"`,
-			"vpc_id":            `"${alicloud_vpc.default.id}"`,
-			"ids":               `[ "${alicloud_route_table.default.id}" ]`,
+			"name_regex":        `alicloud_route_table.default.name`,
+			"vpc_id":            `alicloud_vpc.default.id`,
+			"ids":               `[ alicloud_route_table.default.id ]`,
 			"resource_group_id": `""`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
 			"name_regex":        `"${alicloud_route_table.default.name}_fake"`,
-			"vpc_id":            `"${alicloud_vpc.default.id}"`,
-			"ids":               `[ "${alicloud_route_table.default.id}" ]`,
+			"vpc_id":            `alicloud_vpc.default.id`,
+			"ids":               `[ alicloud_route_table.default.id ]`,
 			"resource_group_id": `""`,
 		}),
 	}
@@ -107,12 +107,12 @@ variable "name" {
 
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
 
 resource "alicloud_route_table" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  name = "${var.name}"
+  vpc_id = alicloud_vpc.default.id
+  name = var.name
   description = "${var.name}_description"
   tags 		= {
 		Created = "TF"

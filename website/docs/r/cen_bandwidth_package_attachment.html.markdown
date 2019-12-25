@@ -30,8 +30,8 @@ resource "alicloud_cen_bandwidth_package" "bwp" {
 }
 
 resource "alicloud_cen_bandwidth_package_attachment" "foo" {
-  instance_id          = "${alicloud_cen_instance.cen.id}"
-  bandwidth_package_id = "${alicloud_cen_bandwidth_package.bwp.id}"
+  instance_id          = alicloud_cen_instance.cen.id
+  bandwidth_package_id = alicloud_cen_bandwidth_package.bwp.id
 }
 ```
 ## Argument Reference

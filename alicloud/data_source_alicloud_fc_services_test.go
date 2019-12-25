@@ -15,7 +15,7 @@ func TestAccAlicloudFCServicesDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_fc_service.default.name}",
+			"name_regex": alicloud_fc_service.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_fc_service.default.name}_fake",
@@ -23,7 +23,7 @@ func TestAccAlicloudFCServicesDataSource(t *testing.T) {
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_fc_service.default.service_id}"},
+			"ids": []string{alicloud_fc_service.default.service_id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_fc_service.default.service_id}_fake"},
@@ -31,12 +31,12 @@ func TestAccAlicloudFCServicesDataSource(t *testing.T) {
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_fc_service.default.name}",
-			"ids":        []string{"${alicloud_fc_service.default.service_id}"},
+			"name_regex": alicloud_fc_service.default.name,
+			"ids":        []string{alicloud_fc_service.default.service_id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_fc_service.default.name}_fake",
-			"ids":        []string{"${alicloud_fc_service.default.service_id}"},
+			"ids":        []string{alicloud_fc_service.default.service_id},
 		}),
 	}
 
@@ -86,12 +86,12 @@ resource "alicloud_log_project" "default" {
 }
 
 resource "alicloud_log_store" "default" {
-    project = "${alicloud_log_project.default.name}"
+    project = alicloud_log_project.default.name
     name = "${var.name}-store"
 }
 
 resource "alicloud_ram_role" "default" {
-    name = "${var.name}"
+    name = var.name
     document = <<DEFINITION
     {
         "Statement": [
@@ -113,19 +113,19 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_ram_role_policy_attachment" "default" {
-    role_name = "${alicloud_ram_role.default.name}"
+    role_name = alicloud_ram_role.default.name
     policy_name = "AliyunLogFullAccess"
     policy_type = "System"
 }
 
 resource "alicloud_fc_service" "default" {
-    name = "${var.name}"
+    name = var.name
     description = "${var.name}-description"
     log_config {
-	    project = "${alicloud_log_store.default.project}"
-	    logstore = "${alicloud_log_store.default.name}"
+	    project = alicloud_log_store.default.project
+	    logstore = alicloud_log_store.default.name
     }
-    role = "${alicloud_ram_role.default.arn}"
+    role = alicloud_ram_role.default.arn
     depends_on = ["alicloud_ram_role_policy_attachment.default"]
     internet_access = true
 }

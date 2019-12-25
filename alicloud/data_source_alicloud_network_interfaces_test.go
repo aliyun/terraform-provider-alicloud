@@ -15,7 +15,7 @@ func TestAccAlicloudNetworkInterfacesDataSourceBasic(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids": `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"ids": `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
 			"ids": `[ "${alicloud_network_interface_attachment.default.network_interface_id}_fake" ]`,
@@ -24,11 +24,11 @@ func TestAccAlicloudNetworkInterfacesDataSourceBasic(t *testing.T) {
 
 	instanceIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":         `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
-			"instance_id": `"${alicloud_instance.default.id}"`,
+			"ids":         `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
+			"instance_id": `alicloud_instance.default.id`,
 		}),
 		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":         `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"ids":         `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
 			"instance_id": `"${alicloud_instance.default.id}_fake"`,
 		}),
 	}
@@ -44,62 +44,62 @@ func TestAccAlicloudNetworkInterfacesDataSourceBasic(t *testing.T) {
 
 	vpcIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":    `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
-			"vpc_id": `"${alicloud_vpc.default.id}"`,
+			"ids":    `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
+			"vpc_id": `alicloud_vpc.default.id`,
 		}),
 	}
 
 	vswitchIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":        `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
-			"vswitch_id": `"${alicloud_vswitch.default.id}"`,
+			"ids":        `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
+			"vswitch_id": `alicloud_vswitch.default.id`,
 		}),
 		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":        `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"ids":        `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
 			"vswitch_id": `"${alicloud_vswitch.default.id}_fake"`,
 		}),
 	}
 
 	privateIpConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":        `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"ids":        `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
 			"private_ip": `"192.168.0.2"`,
 		}),
 		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":        `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"ids":        `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
 			"private_ip": `"192.168.0.1"`,
 		}),
 	}
 
 	securityGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":               `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
-			"security_group_id": `"${alicloud_security_group.default.id}"`,
+			"ids":               `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
+			"security_group_id": `alicloud_security_group.default.id`,
 		}),
 		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":               `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"ids":               `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
 			"security_group_id": `"${alicloud_security_group.default.id}_fake"`,
 		}),
 	}
 
 	typeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":  `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"ids":  `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
 			"type": `"Secondary"`,
 		}),
 		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":  `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"ids":  `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
 			"type": `"Primary"`,
 		}),
 	}
 
 	resourceGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":               `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
-			"resource_group_id": `"${var.resource_group_id}"`,
+			"ids":               `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
+			"resource_group_id": `var.resource_group_id`,
 		}),
 		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":               `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"ids":               `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
 			"resource_group_id": `"${var.resource_group_id}_fake"`,
 		}),
 	}
@@ -119,32 +119,32 @@ func TestAccAlicloudNetworkInterfacesDataSourceBasic(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":        `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"ids":        `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
 			"name_regex": fmt.Sprintf(`"tf-testAccNetworkInterfacesBasic%d"`, rand),
 			"tags": fmt.Sprintf(`{
 							 TF-VER = "0.11.3%d"
 						   }`, rand),
-			"vpc_id":            `"${alicloud_vpc.default.id}"`,
-			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
+			"vpc_id":            `alicloud_vpc.default.id`,
+			"vswitch_id":        `alicloud_vswitch.default.id`,
 			"private_ip":        `"192.168.0.2"`,
-			"security_group_id": `"${alicloud_security_group.default.id}"`,
+			"security_group_id": `alicloud_security_group.default.id`,
 			"type":              `"Secondary"`,
-			"instance_id":       `"${alicloud_instance.default.id}"`,
-			"resource_group_id": `"${var.resource_group_id}"`,
+			"instance_id":       `alicloud_instance.default.id`,
+			"resource_group_id": `var.resource_group_id`,
 		}),
 		fakeConfig: testAccCheckAlicloudNetworkInterfacesDataSourceConfig(rand, map[string]string{
-			"ids":        `[ "${alicloud_network_interface_attachment.default.network_interface_id}" ]`,
+			"ids":        `[ alicloud_network_interface_attachment.default.network_interface_id ]`,
 			"name_regex": fmt.Sprintf(`"tf-testAccNetworkInterfacesBasic%d"`, rand),
 			"tags": fmt.Sprintf(`{
 							 TF-VER = "0.11.3%d_fake"
 						   }`, rand),
-			"vpc_id":            `"${alicloud_vpc.default.id}"`,
-			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
+			"vpc_id":            `alicloud_vpc.default.id`,
+			"vswitch_id":        `alicloud_vswitch.default.id`,
 			"private_ip":        `"192.168.0.2"`,
-			"security_group_id": `"${alicloud_security_group.default.id}"`,
+			"security_group_id": `alicloud_security_group.default.id`,
 			"type":              `"Primary"`,
-			"instance_id":       `"${alicloud_instance.default.id}"`,
-			"resource_group_id": `"${var.resource_group_id}"`,
+			"instance_id":       `alicloud_instance.default.id`,
+			"resource_group_id": `var.resource_group_id`,
 		}),
 	}
 
@@ -168,7 +168,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -177,31 +177,31 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_network_interface" "default" {
     name = "${var.name}%d"
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
 	description = "Basic test"
 	private_ip = "192.168.0.2"
 	tags = {
 		TF-VER = "0.11.3%d"
 	}
-	resource_group_id = "${var.resource_group_id}"
+	resource_group_id = var.resource_group_id
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
   eni_amount = 2
 }
 
@@ -212,19 +212,19 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_instance" "default" {
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    security_groups = ["${alicloud_security_group.default.id}"]
-    instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    security_groups = [alicloud_security_group.default.id]
+    instance_type = data.alicloud_instance_types.default.instance_types.0.id
     system_disk_category = "cloud_efficiency"
-    image_id             = "${data.alicloud_images.default.images.0.image_id}"
-    instance_name        = "${var.name}"
-    vswitch_id = "${alicloud_vswitch.default.id}"
+    image_id             = data.alicloud_images.default.images.0.image_id
+    instance_name        = var.name
+    vswitch_id = alicloud_vswitch.default.id
     internet_max_bandwidth_out = 10
 }
 
 resource "alicloud_network_interface_attachment" "default" {
-    instance_id = "${alicloud_instance.default.id}"
-    network_interface_id = "${alicloud_network_interface.default.id}"
+    instance_id = alicloud_instance.default.id
+    network_interface_id = alicloud_network_interface.default.id
 }
 
 data "alicloud_network_interfaces" "default"  {

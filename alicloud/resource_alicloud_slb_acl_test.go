@@ -93,7 +93,7 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":       "${var.name}",
+					"name":       var.name,
 					"ip_version": "ipv4",
 					"entry_list": []map[string]interface{}{
 						{
@@ -176,7 +176,7 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.name}",
+					"name": var.name,
 					"entry_list": []map[string]interface{}{
 						{
 							"entry":   "10.10.10.0/24",

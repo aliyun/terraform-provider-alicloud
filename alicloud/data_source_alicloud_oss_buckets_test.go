@@ -18,7 +18,7 @@ func TestAccAlicloudOssBucketsDataSource_basic(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_oss_bucket.default.bucket}",
+			"name_regex": alicloud_oss_bucket.default.bucket,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_oss_bucket.default.bucket}-fake",
@@ -115,7 +115,7 @@ func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_oss_bucket.default.bucket}",
+			"name_regex": alicloud_oss_bucket.default.bucket,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_oss_bucket.default.bucket}-fake",
@@ -166,7 +166,7 @@ func TestAccAlicloudOssBucketsDataSource_versioning(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_oss_bucket.default.bucket}",
+			"name_regex": alicloud_oss_bucket.default.bucket,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_oss_bucket.default.bucket}-fake",
@@ -240,7 +240,7 @@ resource "alicloud_oss_bucket" "default" {
 	}
 
 	logging {
-		target_bucket = "${alicloud_oss_bucket.target.id}"
+		target_bucket = alicloud_oss_bucket.target.id
 		target_prefix = "log/"
 	}
 

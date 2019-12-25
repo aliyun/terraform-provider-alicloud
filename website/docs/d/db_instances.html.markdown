@@ -26,7 +26,7 @@ data "alicloud_db_instances" "db_instances_ds" {
 }
 
 output "first_db_instance_id" {
-  value = "${data.alicloud_db_instances.db_instances_ds.instances.0.id}"
+  value = data.alicloud_db_instances.db_instances_ds.instances.0.id
 }
 ```
 

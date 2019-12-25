@@ -16,41 +16,41 @@ func TestAccAlicloudFCFunctionsDataSourceUpdate(t *testing.T) {
 
 	serviceNameConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"service_name": "${alicloud_fc_function.default.service}",
+			"service_name": alicloud_fc_function.default.service,
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"service_name": "${alicloud_fc_function.default.service}",
-			"ids":          []string{"${alicloud_fc_function.default.function_id}"},
+			"service_name": alicloud_fc_function.default.service,
+			"ids":          []string{alicloud_fc_function.default.function_id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"service_name": "${alicloud_fc_function.default.service}",
+			"service_name": alicloud_fc_function.default.service,
 			"ids":          []string{"${alicloud_fc_function.default.function_id}_fake"},
 		}),
 	}
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"service_name": "${alicloud_fc_function.default.service}",
-			"name_regex":   "${alicloud_fc_function.default.name}",
+			"service_name": alicloud_fc_function.default.service,
+			"name_regex":   alicloud_fc_function.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"service_name": "${alicloud_fc_function.default.service}",
+			"service_name": alicloud_fc_function.default.service,
 			"name_regex":   "${alicloud_fc_function.default.name}_fake",
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"service_name": "${alicloud_fc_function.default.service}",
-			"ids":          []string{"${alicloud_fc_function.default.function_id}"},
-			"name_regex":   "${alicloud_fc_function.default.name}",
+			"service_name": alicloud_fc_function.default.service,
+			"ids":          []string{alicloud_fc_function.default.function_id},
+			"name_regex":   alicloud_fc_function.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"service_name": "${alicloud_fc_function.default.service}",
-			"ids":          []string{"${alicloud_fc_function.default.function_id}"},
+			"service_name": alicloud_fc_function.default.service,
+			"ids":          []string{alicloud_fc_function.default.function_id},
 			"name_regex":   "${alicloud_fc_function.default.name}_fake",
 		}),
 	}
@@ -99,15 +99,15 @@ variable "name" {
 }
 
 resource "alicloud_fc_service" "default" {
-    name = "${var.name}"
+    name = var.name
 }
 
 resource "alicloud_oss_bucket" "default" {
-	bucket = "${var.name}"
+	bucket = var.name
 }
 
 resource "alicloud_oss_bucket_object" "default" {
-	bucket = "${alicloud_oss_bucket.default.id}"
+	bucket = alicloud_oss_bucket.default.id
 	key = "fc/hello.zip"
 	content = <<EOF
 		# -*- coding: utf-8 -*-
@@ -118,11 +118,11 @@ resource "alicloud_oss_bucket_object" "default" {
 }
 
 resource "alicloud_fc_function" "default" {
-	service = "${alicloud_fc_service.default.name}"
-	name = "${var.name}"
+	service = alicloud_fc_service.default.name
+	name = var.name
 	description = "${var.name}-description"
-	oss_bucket = "${alicloud_oss_bucket.default.id}"
-	oss_key = "${alicloud_oss_bucket_object.default.key}"
+	oss_bucket = alicloud_oss_bucket.default.id
+	oss_key = alicloud_oss_bucket_object.default.key
 	memory_size = "512"
 	runtime = "python2.7"
 	handler = "hello.handler"

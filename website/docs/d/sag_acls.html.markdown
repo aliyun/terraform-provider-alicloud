@@ -21,7 +21,7 @@ Basic Usage
 
 ```
 data "alicloud_sag_acls" "default" {
-  ids        = ["${alicloud_sag_acls.default.id}"]
+  ids        = [alicloud_sag_acls.default.id]
   name_regex = "^tf-testAcc.*"
 }
 resource "alicloud_sag_acl" "default" {

@@ -89,32 +89,32 @@ func testAccEssScalingGroupVserverGroup(common string, rand int) string {
 	  min_size = "2"
 	  max_size = "2"
       default_cooldown = 200
-	  scaling_group_name = "${var.name}"
+	  scaling_group_name = var.name
 	  removal_policies = ["OldestInstance"]
-	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  vswitch_ids = [alicloud_vswitch.default.id]
+	  loadbalancer_ids = [alicloud_slb.default.0.id,alicloud_slb.default.1.id]
 	  depends_on = ["alicloud_slb_listener.default"]
 	}
 
 	resource "alicloud_ess_scalinggroup_vserver_groups" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		vserver_groups {
-				loadbalancer_id = "${alicloud_slb.default.0.id}"
+				loadbalancer_id = alicloud_slb.default.0.id
 				vserver_attributes {
-					vserver_group_id = "${alicloud_slb_server_group.vserver0.0.id}"
+					vserver_group_id = alicloud_slb_server_group.vserver0.0.id
 					port = "100"
 					weight = "60"
 				}
 			}
       vserver_groups {
-				loadbalancer_id = "${alicloud_slb.default.1.id}"
+				loadbalancer_id = alicloud_slb.default.1.id
 				vserver_attributes {
-					vserver_group_id = "${alicloud_slb_server_group.vserver1.0.id}"
+					vserver_group_id = alicloud_slb_server_group.vserver1.0.id
 					port = "200"
 					weight = "60"
 				}
 				vserver_attributes {
-					vserver_group_id = "${alicloud_slb_server_group.vserver1.1.id}"
+					vserver_group_id = alicloud_slb_server_group.vserver1.1.id
 					port = "210"
 					weight = "60"
 				}
@@ -124,19 +124,19 @@ func testAccEssScalingGroupVserverGroup(common string, rand int) string {
 
 	resource "alicloud_slb" "default" {
 	  count=2
-	  name = "${var.name}"
-	  vswitch_id = "${alicloud_vswitch.default.id}"
+	  name = var.name
+	  vswitch_id = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_slb_server_group" "vserver0" {
  	  count = "2"
-	  load_balancer_id = "${alicloud_slb.default.0.id}"
+	  load_balancer_id = alicloud_slb.default.0.id
 	  name = "test"
 	}
 
 	resource "alicloud_slb_server_group" "vserver1" {
  	  count = "2"
-	  load_balancer_id = "${alicloud_slb.default.1.id}"
+	  load_balancer_id = alicloud_slb.default.1.id
 	  name = "test"
 	}
 
@@ -163,19 +163,19 @@ func testAccEssScalingGroupVserverGroupUpdate(common string, rand int) string {
 	  min_size = "2"
 	  max_size = "2"
       default_cooldown = 200
-	  scaling_group_name = "${var.name}"
+	  scaling_group_name = var.name
 	  removal_policies = ["OldestInstance"]
-	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  vswitch_ids = [alicloud_vswitch.default.id]
+	  loadbalancer_ids = [alicloud_slb.default.0.id,alicloud_slb.default.1.id]
 	  depends_on = ["alicloud_slb_listener.default"]
 	}
 
 	resource "alicloud_ess_scalinggroup_vserver_groups" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		vserver_groups {
-				loadbalancer_id = "${alicloud_slb.default.0.id}"
+				loadbalancer_id = alicloud_slb.default.0.id
 				vserver_attributes {
-					vserver_group_id = "${alicloud_slb_server_group.vserver0.1.id}"
+					vserver_group_id = alicloud_slb_server_group.vserver0.1.id
 					port = "110"
 					weight = "60"
 				}
@@ -185,19 +185,19 @@ func testAccEssScalingGroupVserverGroupUpdate(common string, rand int) string {
 
 	resource "alicloud_slb" "default" {
 	  count=2
-	  name = "${var.name}"
-	  vswitch_id = "${alicloud_vswitch.default.id}"
+	  name = var.name
+	  vswitch_id = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_slb_server_group" "vserver0" {
  	  count = "2"
-	  load_balancer_id = "${alicloud_slb.default.0.id}"
+	  load_balancer_id = alicloud_slb.default.0.id
 	  name = "test"
 	}
 
 	resource "alicloud_slb_server_group" "vserver1" {
  	  count = "2"
-	  load_balancer_id = "${alicloud_slb.default.1.id}"
+	  load_balancer_id = alicloud_slb.default.1.id
 	  name = "test"
 	}
 

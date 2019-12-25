@@ -23,7 +23,7 @@ data "alicloud_alikafka_topics" "topics_ds" {
 }
 
 output "first_topic_name" {
-  value = "${data.alicloud_alikafka_topics.topics_ds.topics.0.topic}"
+  value = data.alicloud_alikafka_topics.topics_ds.topics.0.topic
 }
 ```
 

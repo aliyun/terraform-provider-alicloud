@@ -23,7 +23,7 @@ data "alicloud_nas_protocols" "default" {
 }
 
 output "nas_protocols_protocol" {
-  value = "${data.alicloud_nas_protocols.default.protocols.0}"
+  value = data.alicloud_nas_protocols.default.protocols.0
 }
 ```
 

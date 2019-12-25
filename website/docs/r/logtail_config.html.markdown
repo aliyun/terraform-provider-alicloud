@@ -24,7 +24,7 @@ resource "alicloud_log_project" "example" {
   description = "create by terraform"
 }
 resource "alicloud_log_store" "example" {
-  project               = "${alicloud_log_project.example.name}"
+  project               = alicloud_log_project.example.name
   name                  = "tf-test-logstore"
   retention_period      = 3650
   shard_count           = 3
@@ -33,8 +33,8 @@ resource "alicloud_log_store" "example" {
   append_meta           = true
 }
 resource "alicloud_logtail_config" "example" {
-  project      = "${alicloud_log_project.example.name}"
-  logstore     = "${alicloud_log_store.example.name}"
+  project      = alicloud_log_project.example.name
+  logstore     = alicloud_log_store.example.name
   input_type   = "file"
   log_sample   = "test"
   name         = "tf-log-config"

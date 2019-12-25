@@ -230,35 +230,35 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_network_acl" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	name = "${var.name}%d"
 }
 
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_vswitch" "default2" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.1.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_network_acl_attachment" "default" {
-	network_acl_id = "${alicloud_network_acl.default.id}"
+	network_acl_id = alicloud_network_acl.default.id
     resources = [
         {
-          resource_id = "${alicloud_vswitch.default.id}"
+          resource_id = alicloud_vswitch.default.id
           resource_type = "VSwitch"
         }
     ]
@@ -277,39 +277,39 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_network_acl" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	name = "${var.name}%d"
 }
 
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_vswitch" "default2" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.1.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_network_acl_attachment" "default" {
-	network_acl_id = "${alicloud_network_acl.default.id}"
+	network_acl_id = alicloud_network_acl.default.id
     resources = [
         {
-          resource_id = "${alicloud_vswitch.default.id}"
+          resource_id = alicloud_vswitch.default.id
           resource_type = "VSwitch"
         },
         {
-          resource_id = "${alicloud_vswitch.default2.id}"
+          resource_id = alicloud_vswitch.default2.id
           resource_type = "VSwitch"
         }
     ]
@@ -328,35 +328,35 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_network_acl" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	name = "${var.name}%d"
 }
 
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_vswitch" "default2" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.1.0/24"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_network_acl_attachment" "default" {
-	network_acl_id = "${alicloud_network_acl.default.id}"
+	network_acl_id = alicloud_network_acl.default.id
     resources = [
         {
-          resource_id = "${alicloud_vswitch.default.id}"
+          resource_id = alicloud_vswitch.default.id
           resource_type = "VSwitch"
         }
     ]

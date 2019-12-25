@@ -12,7 +12,7 @@ func TestAccAlicloudEssScalingconfigurationsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	scalingGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScalingconfigurationsDataSourceConfig(rand, map[string]string{
-			"scaling_group_id": `"${alicloud_ess_scaling_configuration.default.scaling_group_id}"`,
+			"scaling_group_id": `alicloud_ess_scaling_configuration.default.scaling_group_id`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScalingconfigurationsDataSourceConfig(rand, map[string]string{
 			"scaling_group_id": `"${alicloud_ess_scaling_configuration.default.scaling_group_id}_fake"`,
@@ -21,7 +21,7 @@ func TestAccAlicloudEssScalingconfigurationsDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScalingconfigurationsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_ess_scaling_configuration.default.scaling_configuration_name}"`,
+			"name_regex": `alicloud_ess_scaling_configuration.default.scaling_configuration_name`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScalingconfigurationsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_ess_scaling_configuration.default.scaling_configuration_name}_fake"`,
@@ -30,7 +30,7 @@ func TestAccAlicloudEssScalingconfigurationsDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScalingconfigurationsDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_ess_scaling_configuration.default.id}"]`,
+			"ids": `[alicloud_ess_scaling_configuration.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScalingconfigurationsDataSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_ess_scaling_configuration.default.id}_fake"]`,
@@ -39,14 +39,14 @@ func TestAccAlicloudEssScalingconfigurationsDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScalingconfigurationsDataSourceConfig(rand, map[string]string{
-			"scaling_group_id": `"${alicloud_ess_scaling_configuration.default.scaling_group_id}"`,
-			"ids":              `["${alicloud_ess_scaling_configuration.default.id}"]`,
-			"name_regex":       `"${alicloud_ess_scaling_configuration.default.scaling_configuration_name}"`,
+			"scaling_group_id": `alicloud_ess_scaling_configuration.default.scaling_group_id`,
+			"ids":              `[alicloud_ess_scaling_configuration.default.id]`,
+			"name_regex":       `alicloud_ess_scaling_configuration.default.scaling_configuration_name`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScalingconfigurationsDataSourceConfig(rand, map[string]string{
-			"scaling_group_id": `"${alicloud_ess_scaling_configuration.default.scaling_group_id}"`,
+			"scaling_group_id": `alicloud_ess_scaling_configuration.default.scaling_group_id`,
 			"ids":              `["${alicloud_ess_scaling_configuration.default.id}_fake"]`,
-			"name_regex":       `"${alicloud_ess_scaling_configuration.default.scaling_configuration_name}"`,
+			"name_regex":       `alicloud_ess_scaling_configuration.default.scaling_configuration_name`,
 		}),
 	}
 
@@ -105,16 +105,16 @@ resource "alicloud_ess_scaling_group" "default" {
 	max_size = 2
 	default_cooldown = 20
 	removal_policies = ["OldestInstance", "NewestInstance"]
-	scaling_group_name = "${var.name}"
-	vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	scaling_group_name = var.name
+	vswitch_ids = [alicloud_vswitch.default.id]
 }
 
 resource "alicloud_ess_scaling_configuration" "default"{
-	scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-	scaling_configuration_name = "${var.name}"
-	image_id = "${data.alicloud_images.default.images.0.id}"
-	instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-	security_group_id = "${alicloud_security_group.default.id}"
+	scaling_group_id = alicloud_ess_scaling_group.default.id
+	scaling_configuration_name = var.name
+	image_id = data.alicloud_images.default.images.0.id
+	instance_type = data.alicloud_instance_types.default.instance_types.0.id
+	security_group_id = alicloud_security_group.default.id
 	force_delete = true
 }
 

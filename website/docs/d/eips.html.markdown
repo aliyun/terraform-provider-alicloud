@@ -18,7 +18,7 @@ data "alicloud_eips" "eips_ds" {
 }
 
 output "first_eip_id" {
-  value = "${data.alicloud_eips.eips_ds.eips.0.id}"
+  value = data.alicloud_eips.eips_ds.eips.0.id
 }
 ```
 

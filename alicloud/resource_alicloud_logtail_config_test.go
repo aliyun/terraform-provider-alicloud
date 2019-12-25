@@ -103,8 +103,8 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project":      "${alicloud_log_project.default.name}",
-					"logstore":     "${alicloud_log_store.default.name}",
+					"project":      alicloud_log_project.default.name,
+					"logstore":     alicloud_log_store.default.name,
 					"input_type":   "file",
 					"name":         name,
 					"output_type":  "LogService",
@@ -147,8 +147,8 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project":      "${alicloud_log_project.default.name}",
-					"logstore":     "${alicloud_log_store.default.name}",
+					"project":      alicloud_log_project.default.name,
+					"logstore":     alicloud_log_store.default.name,
 					"input_type":   "file",
 					"name":         name,
 					"output_type":  "LogService",
@@ -190,8 +190,8 @@ func TestAccAlicloudLogTail_plugin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project":      "${alicloud_log_project.default.name}",
-					"logstore":     "${alicloud_log_store.default.name}",
+					"project":      alicloud_log_project.default.name,
+					"logstore":     alicloud_log_store.default.name,
 					"input_type":   "plugin",
 					"name":         name,
 					"output_type":  "LogService",
@@ -239,8 +239,8 @@ func TestAccAlicloudLogTail_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project":      "${alicloud_log_project.default.name}",
-					"logstore":     "${alicloud_log_store.default.name}",
+					"project":      alicloud_log_project.default.name,
+					"logstore":     alicloud_log_store.default.name,
 					"input_type":   "file",
 					"name":         name + "${count.index}",
 					"output_type":  "LogService",
@@ -261,12 +261,12 @@ variable "name" {
 	default = "%s"
 }
 resource "alicloud_log_project" "default"{
-	name = "${var.name}"
+	name = var.name
 	description = "create by terraform"
 }
 resource "alicloud_log_store" "default"{
-  	project = "${alicloud_log_project.default.name}"
-  	name = "${var.name}"
+  	project = alicloud_log_project.default.name
+  	name = var.name
   	retention_period = 3650
   	shard_count = 3
   	auto_split = true

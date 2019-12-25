@@ -108,13 +108,13 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${var.name}",
+					"name":        var.name,
 					"topic_quota": "50",
 					"disk_type":   "1",
 					"disk_size":   "500",
 					"deploy_type": "5",
 					"io_max":      "20",
-					"vswitch_id":  "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":  data.alicloud_vswitches.default.ids.0,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -228,7 +228,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${var.name}",
+					"name":        var.name,
 					"topic_quota": "50",
 					"disk_type":   "1",
 					"disk_size":   "500",
@@ -297,7 +297,7 @@ func TestAccAlicloudAlikafkaInstance_multi(t *testing.T) {
 					"disk_size":   "500",
 					"deploy_type": "5",
 					"io_max":      "20",
-					"vswitch_id":  "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":  data.alicloud_vswitches.default.ids.0,
 					"paid_type":   "PostPaid",
 					"spec_type":   "normal",
 				}),

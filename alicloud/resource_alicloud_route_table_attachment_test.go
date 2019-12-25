@@ -196,27 +196,27 @@ variable "name" {
 }
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
  data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
  resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_route_table" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
-    name = "${var.name}"
+	vpc_id = alicloud_vpc.default.id
+    name = var.name
     description = "${var.name}_description"
 }
 
 resource "alicloud_route_table_attachment" "default" {
-	vswitch_id = "${alicloud_vswitch.default.id}"
-	route_table_id = "${alicloud_route_table.default.id}"
+	vswitch_id = alicloud_vswitch.default.id
+	route_table_id = alicloud_route_table.default.id
 }
 `, rand)
 }
@@ -234,29 +234,29 @@ variable "number" {
 
 resource "alicloud_vpc" "default" {
 	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
+	name = var.name
 }
  data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 
 resource "alicloud_vswitch" "default" {
-  count = "${var.number}"
+  count = var.number
   vpc_id = "${ alicloud_vpc.default.id }"
   cidr_block = "172.16.${count.index}.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name = var.name
 }
 
 resource "alicloud_route_table" "default" {
-	count = "${var.number}"
-	vpc_id = "${alicloud_vpc.default.id}"
-    name = "${var.name}"
+	count = var.number
+	vpc_id = alicloud_vpc.default.id
+    name = var.name
     description = "${var.name}_description"
 }
 
 resource "alicloud_route_table_attachment" "default" {
-    count = "${var.number}"
+    count = var.number
 	vswitch_id = "${element(alicloud_vswitch.default.*.id,count.index)}"
 	route_table_id = "${element(alicloud_route_table.default.*.id,count.index)}"
 }

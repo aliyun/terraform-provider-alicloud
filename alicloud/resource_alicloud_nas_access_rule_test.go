@@ -135,7 +135,7 @@ func testAccNasAccessRuleVpcConfig(rand int) string {
                 description = "tf-testAccNasConfig"
         }
         resource "alicloud_nas_access_rule" "default" {
-                access_group_name = "${alicloud_nas_access_group.default.id}"
+                access_group_name = alicloud_nas_access_group.default.id
                 source_cidr_ip = "168.1.1.0/16"
                 rw_access_type = "RDWR"
                 user_access_type = "no_squash"
@@ -151,7 +151,7 @@ func testAccNasAccessRuleConfigUpdateIp(rand int) string {
                 description = "tf-testAccNasConfig"
 	}
 	resource "alicloud_nas_access_rule" "default" {
-		access_group_name = "${alicloud_nas_access_group.default.id}"
+		access_group_name = alicloud_nas_access_group.default.id
                 source_cidr_ip = "172.168.1.0/16"
 		rw_access_type = "RDWR"
                 user_access_type = "root_squash"
@@ -168,7 +168,7 @@ func testAccNasAccessRuleConfigUpdaterw_type(rand int) string {
                 description = "tf-testAccNasConfig"
         }
         resource "alicloud_nas_access_rule" "default" {
-                access_group_name = "${alicloud_nas_access_group.default.id}"
+                access_group_name = alicloud_nas_access_group.default.id
                 source_cidr_ip = "172.168.1.0/16"
                 rw_access_type = "RDONLY"
                 user_access_type = "root_squash"
@@ -185,7 +185,7 @@ func testAccNasAccessRuleConfigUpdateuser_type(rand int) string {
                 description = "tf-testAccNasConfig"
         }
         resource "alicloud_nas_access_rule" "default" {
-                access_group_name = "${alicloud_nas_access_group.default.id}"
+                access_group_name = alicloud_nas_access_group.default.id
                 source_cidr_ip = "172.168.1.0/16"
                 rw_access_type = "RDWR"
                 user_access_type = "all_squash"
@@ -202,7 +202,7 @@ func testAccNasAccessRuleConfigUpdatepriority(rand int) string {
                 description = "tf-testAccNasConfig"
         }
         resource "alicloud_nas_access_rule" "default" {
-                access_group_name = "${alicloud_nas_access_group.default.id}"
+                access_group_name = alicloud_nas_access_group.default.id
                 source_cidr_ip = "172.168.1.0/16"
                 rw_access_type = "RDWR"
                 user_access_type = "all_squash"

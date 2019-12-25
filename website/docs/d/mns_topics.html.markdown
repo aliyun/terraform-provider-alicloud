@@ -19,7 +19,7 @@ data "alicloud_mns_topics" "topics" {
 }
 
 output "first_topic_id" {
-  value = "${data.alicloud_mns_topics.topics.topics.0.id}"
+  value = data.alicloud_mns_topics.topics.topics.0.id
 }
 ```
 

@@ -22,18 +22,18 @@ variable "name" {
 }
 
 resource "alicloud_cen_instance" "cen" {
-  name        = "${var.name}"
+  name        = var.name
   description = "terraform01"
 }
 
 resource "alicloud_vpc" "vpc" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_cen_instance_attachment" "foo" {
-  instance_id              = "${alicloud_cen_instance.cen.id}"
-  child_instance_id        = "${alicloud_vpc.vpc.id}"
+  instance_id              = alicloud_cen_instance.cen.id
+  child_instance_id        = alicloud_vpc.vpc.id
   child_instance_region_id = "cn-beijing"
 }
 ```

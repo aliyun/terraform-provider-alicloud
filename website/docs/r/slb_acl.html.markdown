@@ -45,8 +45,8 @@ variable "ip_version" {
 }
 
 resource "alicloud_slb_acl" "default" {
-  name       = "${var.name}"
-  ip_version = "${var.ip_version}"
+  name       = var.name
+  ip_version = var.ip_version
   entry_list {
     entry   = "10.10.10.0/24"
     comment = "first"

@@ -12,7 +12,7 @@ func TestAccAlicloudPolarDBClustersDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	nameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudPolarClusterDataSourceConfig(rand, map[string]string{
-			"description_regex": `"${alicloud_polardb_cluster.default.description}"`,
+			"description_regex": `alicloud_polardb_cluster.default.description`,
 		}),
 		fakeConfig: testAccCheckAlicloudPolarClusterDataSourceConfig(rand, map[string]string{
 			"description_regex": `"^test1234"`,
@@ -20,32 +20,32 @@ func TestAccAlicloudPolarDBClustersDataSource(t *testing.T) {
 	}
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudPolarClusterDataSourceConfig(rand, map[string]string{
-			"description_regex": `"${alicloud_polardb_cluster.default.description}"`,
+			"description_regex": `alicloud_polardb_cluster.default.description`,
 			"status":            `"Running"`,
 		}),
 		fakeConfig: testAccCheckAlicloudPolarClusterDataSourceConfig(rand, map[string]string{
-			"description_regex": `"${alicloud_polardb_cluster.default.description}"`,
+			"description_regex": `alicloud_polardb_cluster.default.description`,
 			"status":            `"run"`,
 		}),
 	}
 	dbtypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudPolarClusterDataSourceConfig(rand, map[string]string{
-			"description_regex": `"${alicloud_polardb_cluster.default.description}"`,
-			"db_type":           `"${alicloud_polardb_cluster.default.db_type}"`,
+			"description_regex": `alicloud_polardb_cluster.default.description`,
+			"db_type":           `alicloud_polardb_cluster.default.db_type`,
 		}),
 		fakeConfig: testAccCheckAlicloudPolarClusterDataSourceConfig(rand, map[string]string{
-			"description_regex": `"${alicloud_polardb_cluster.default.description}"`,
+			"description_regex": `alicloud_polardb_cluster.default.description`,
 			"db_type":           `"Oracle"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudPolarClusterDataSourceConfig(rand, map[string]string{
-			"description_regex": `"${alicloud_polardb_cluster.default.description}"`,
+			"description_regex": `alicloud_polardb_cluster.default.description`,
 			"status":            `"Running"`,
-			"db_type":           `"${alicloud_polardb_cluster.default.db_type}"`,
+			"db_type":           `alicloud_polardb_cluster.default.db_type`,
 		}),
 		fakeConfig: testAccCheckAlicloudPolarClusterDataSourceConfig(rand, map[string]string{
-			"description_regex": `"${alicloud_polardb_cluster.default.description}"`,
+			"description_regex": `alicloud_polardb_cluster.default.description`,
 			"status":            `"run"`,
 			"db_type":           `"Oracle"`,
 		}),
@@ -115,8 +115,8 @@ func testAccCheckAlicloudPolarClusterDataSourceConfig(rand int, attrMap map[stri
 		db_version = "8.0"
 		pay_type = "PostPaid"
 		db_node_class = "polar.mysql.x4.large"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		description = "${var.name}"
+		vswitch_id = alicloud_vswitch.default.id
+		description = var.name
 	}
 	data "alicloud_polardb_clusters" "default" {
 	  %s

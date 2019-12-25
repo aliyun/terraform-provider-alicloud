@@ -10,7 +10,7 @@ import (
 func TestAccAlicloudKeyPairsDataSourceBasic(t *testing.T) {
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
-			"name_regex": `"${alicloud_key_pair.default.key_name}"`,
+			"name_regex": `alicloud_key_pair.default.key_name`,
 		}),
 		fakeConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
 			"name_regex": `"${alicloud_key_pair.default.key_name}_fake"`,
@@ -18,17 +18,17 @@ func TestAccAlicloudKeyPairsDataSourceBasic(t *testing.T) {
 	}
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
-			"name_regex": `"${alicloud_key_pair.default.key_name}"`,
+			"name_regex": `alicloud_key_pair.default.key_name`,
 			"tags":       `{Created = "TF"}`,
 		}),
 		fakeConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
-			"name_regex": `"${alicloud_key_pair.default.key_name}"`,
+			"name_regex": `alicloud_key_pair.default.key_name`,
 			"tags":       `{Created = "TF1"}`,
 		}),
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
-			"ids": `["${alicloud_key_pair.default.key_name}"]`,
+			"ids": `[alicloud_key_pair.default.key_name]`,
 		}),
 		fakeConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
 			"ids": `["${alicloud_key_pair.default.key_name}_fake"]`,
@@ -36,23 +36,23 @@ func TestAccAlicloudKeyPairsDataSourceBasic(t *testing.T) {
 	}
 	resourceGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
-			"name_regex":        `"${alicloud_key_pair.default.key_name}"`,
-			"resource_group_id": `"${var.resource_group_id}"`,
+			"name_regex":        `alicloud_key_pair.default.key_name`,
+			"resource_group_id": `var.resource_group_id`,
 		}),
 		fakeConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
-			"name_regex":        `"${alicloud_key_pair.default.key_name}"`,
+			"name_regex":        `alicloud_key_pair.default.key_name`,
 			"resource_group_id": `"${var.resource_group_id}_fake"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
-			"name_regex":        `"${alicloud_key_pair.default.key_name}"`,
-			"resource_group_id": `"${var.resource_group_id}"`,
-			"ids":               `["${alicloud_key_pair.default.key_name}"]`,
+			"name_regex":        `alicloud_key_pair.default.key_name`,
+			"resource_group_id": `var.resource_group_id`,
+			"ids":               `[alicloud_key_pair.default.key_name]`,
 		}),
 		fakeConfig: testAccCheckAlicloudKeyPairsDataSourceConfig(map[string]string{
-			"name_regex":        `"${alicloud_key_pair.default.key_name}"`,
-			"resource_group_id": `"${var.resource_group_id}"`,
+			"name_regex":        `alicloud_key_pair.default.key_name`,
+			"resource_group_id": `var.resource_group_id`,
 			"ids":               `["${alicloud_key_pair.default.key_name}_fake"]`,
 		}),
 	}
@@ -73,7 +73,7 @@ variable "resource_group_id" {
 
 resource "alicloud_key_pair" "default" {
 	key_name = "tf-testAcc-key-pair-datasource"
-	resource_group_id = "${var.resource_group_id}"
+	resource_group_id = var.resource_group_id
     tags = {
       Created = "TF"
        For     = "acceptance test"

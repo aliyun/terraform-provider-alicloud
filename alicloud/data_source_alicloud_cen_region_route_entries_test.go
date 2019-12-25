@@ -14,7 +14,7 @@ func TestAccAlicloudCenRegionRouteEntriesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckCenRegionRouteEntriesDataSourceConfig(rand, map[string]string{
-			"instance_id": `"${alicloud_cen_route_entry.default.instance_id}"`,
+			"instance_id": `alicloud_cen_route_entry.default.instance_id`,
 			"region_id":   fmt.Sprintf(`"%s"`, defaultRegionToTest),
 		}),
 		fakeConfig: testAccCheckCenRegionRouteEntriesDataSourceConfig(rand, map[string]string{
@@ -41,15 +41,15 @@ func testAccCheckCenRegionRouteEntriesDataSourceConfig(rand int, attrMap map[str
 	}
 	
 	resource "alicloud_instance" "default" {
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		image_id = "${data.alicloud_images.default.images.0.id}"
+		vswitch_id = alicloud_vswitch.default.id
+		image_id = data.alicloud_images.default.images.0.id
 	
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
 		system_disk_category = "cloud_efficiency"
 	
 		internet_charge_type = "PayByTraffic"
 		internet_max_bandwidth_out = 5
-		security_groups = ["${alicloud_security_group.default.id}"]
+		security_groups = [alicloud_security_group.default.id]
 		instance_name = "${var.name}-region-route-entry"
 	}
 	
@@ -59,24 +59,24 @@ func testAccCheckCenRegionRouteEntriesDataSourceConfig(rand int, attrMap map[str
 	}
 	
 	resource "alicloud_cen_instance_attachment" "default" {
-	    instance_id = "${alicloud_cen_instance.default.id}"
-	    child_instance_id = "${alicloud_vpc.default.id}"
+	    instance_id = alicloud_cen_instance.default.id
+	    child_instance_id = alicloud_vpc.default.id
 	    child_instance_region_id = "%s"
 	    depends_on = [
 	        "alicloud_vswitch.default"]
 	}
 	
 	resource "alicloud_route_entry" "default" {
-	    route_table_id = "${alicloud_vpc.default.route_table_id}"
+	    route_table_id = alicloud_vpc.default.route_table_id
 	    destination_cidrblock = "11.0.0.0/16"
 	    nexthop_type = "Instance"
-	    nexthop_id = "${alicloud_instance.default.id}"
+	    nexthop_id = alicloud_instance.default.id
 	}
 	
 	resource "alicloud_cen_route_entry" "default" {
-	    instance_id = "${alicloud_cen_instance.default.id}"
-	    route_table_id = "${alicloud_vpc.default.route_table_id}"
-	    cidr_block = "${alicloud_route_entry.default.destination_cidrblock}"
+	    instance_id = alicloud_cen_instance.default.id
+	    route_table_id = alicloud_vpc.default.route_table_id
+	    cidr_block = alicloud_route_entry.default.destination_cidrblock
 	    depends_on = [
 			"alicloud_cen_instance_attachment.default"]
 	}

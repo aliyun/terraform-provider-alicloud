@@ -108,8 +108,8 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${alicloud_api_gateway_group.default.name}",
-					"group_id":    "${alicloud_api_gateway_group.default.id}",
+					"name":        alicloud_api_gateway_group.default.name,
+					"group_id":    alicloud_api_gateway_group.default.id,
 					"description": "tf_testAcc_api description",
 					"auth_type":   "APP",
 					"request_config": []map[string]string{{
@@ -222,8 +222,8 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${alicloud_api_gateway_group.default.name}",
-					"group_id":    "${alicloud_api_gateway_group.default.id}",
+					"name":        alicloud_api_gateway_group.default.name,
+					"group_id":    alicloud_api_gateway_group.default.id,
 					"description": "tf_testAcc_api description",
 					"auth_type":   "APP",
 					"request_config": []map[string]string{{
@@ -287,8 +287,8 @@ func TestAccAlicloudApigatewayApi_vpc(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${alicloud_api_gateway_group.default.name}",
-					"group_id":    "${alicloud_api_gateway_group.default.id}",
+					"name":        alicloud_api_gateway_group.default.name,
+					"group_id":    alicloud_api_gateway_group.default.id,
 					"description": "tf_testAcc_api description",
 					"auth_type":   "APP",
 					"request_config": []map[string]string{{
@@ -299,7 +299,7 @@ func TestAccAlicloudApigatewayApi_vpc(t *testing.T) {
 					}},
 					"service_type": "HTTP-VPC",
 					"http_vpc_service_config": []map[string]string{{
-						"name":      "${alicloud_api_gateway_vpc_access.default.name}",
+						"name":      alicloud_api_gateway_vpc_access.default.name,
 						"method":    "GET",
 						"path":      "/web/cloudapi/vpc",
 						"timeout":   "20",
@@ -354,8 +354,8 @@ func TestAccAlicloudApigatewayApi_fc(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${alicloud_api_gateway_group.default.name}",
-					"group_id":    "${alicloud_api_gateway_group.default.id}",
+					"name":        alicloud_api_gateway_group.default.name,
+					"group_id":    alicloud_api_gateway_group.default.id,
 					"description": "tf_testAcc_api description",
 					"auth_type":   "APP",
 					"request_config": []map[string]string{{
@@ -420,8 +420,8 @@ func TestAccAlicloudApigatewayApi_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${alicloud_api_gateway_group.default.name}",
-					"group_id":    "${alicloud_api_gateway_group.default.id}",
+					"name":        alicloud_api_gateway_group.default.name,
+					"group_id":    alicloud_api_gateway_group.default.id,
 					"description": "tf_testAcc_api description",
 					"auth_type":   "APP",
 					"request_config": []map[string]string{{
@@ -468,8 +468,8 @@ func resourceApigatewayApiConfigDependence(name string) string {
 	}
 	
 	resource "alicloud_api_gateway_group" "default" {
-	  name = "${var.name}"
-	  description = "${var.apigateway_group_description_test}"
+	  name = var.name
+	  description = var.apigateway_group_description_test
 	}
 	`, name)
 }
@@ -481,14 +481,14 @@ func resourceApigatewayApiConfigDependence_vpc(name string) string {
 	  default = "%s"
 	}
 	resource "alicloud_api_gateway_group" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  description = "tf_testAcc_api group description"
 	}
 
 	resource "alicloud_api_gateway_vpc_access" "default" {
-	  name = "${var.name}"
-	  vpc_id = "${alicloud_vpc.default.id}"
-	  instance_id = "${alicloud_instance.default.id}"
+	  name = var.name
+	  vpc_id = alicloud_vpc.default.id
+	  instance_id = alicloud_instance.default.id
 	  port = "8080"
 	}
 	%s

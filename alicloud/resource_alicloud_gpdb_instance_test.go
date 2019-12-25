@@ -128,7 +128,7 @@ func TestAccAlicloudGpdbInstance_classic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"availability_zone":    "${data.alicloud_zones.default.zones.0.id}",
+					"availability_zone":    data.alicloud_zones.default.zones.0.id,
 					"engine":               "gpdb",
 					"engine_version":       "4.3",
 					"instance_class":       "gpdb.group.segsdx2",
@@ -241,8 +241,8 @@ func TestAccAlicloudGpdbInstance_vpc(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"availability_zone":    "${data.alicloud_zones.default.zones.0.id}",
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"availability_zone":    data.alicloud_zones.default.zones.0.id,
+					"vswitch_id":           alicloud_vswitch.default.id,
 					"engine":               "gpdb",
 					"engine_version":       "4.3",
 					"instance_class":       "gpdb.group.segsdx2",
@@ -297,13 +297,13 @@ func resourceGpdbVpcConfigDependence(s string) string {
             default                = "tf-testAccGpdbInstance_vpc"
         }
         resource "alicloud_vpc" "default" {
-            name                   = "${var.name}"
+            name                   = var.name
             cidr_block             = "172.16.0.0/16"
         }
         resource "alicloud_vswitch" "default" {
-            availability_zone      = "${data.alicloud_zones.default.zones.0.id}"
-            vpc_id                 = "${alicloud_vpc.default.id}"
+            availability_zone      = data.alicloud_zones.default.zones.0.id
+            vpc_id                 = alicloud_vpc.default.id
             cidr_block             = "172.16.0.0/24"
-            name                   = "${var.name}"
+            name                   = var.name
         }`)
 }

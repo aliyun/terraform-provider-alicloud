@@ -21,7 +21,7 @@ data "alicloud_images" "images_ds" {
 }
 
 output "first_image_id" {
-  value = "${data.alicloud_images.images_ds.images.0.id}"
+  value = data.alicloud_images.images_ds.images.0.id
 }
 ```
 

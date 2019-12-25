@@ -17,7 +17,7 @@ data "alicloud_account" "current" {
 }
 
 output "current_account_id" {
-  value = "${data.alicloud_account.current.id}"
+  value = data.alicloud_account.current.id
 }
 ```
 

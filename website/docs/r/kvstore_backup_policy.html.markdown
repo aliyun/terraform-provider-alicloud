@@ -26,29 +26,29 @@ variable "name" {
   default = "kvstorebackuppolicyvpc"
 }
 data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+  available_resource_creation = var.creation
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 resource "alicloud_kvstore_instance" "default" {
   instance_class = "Memcache"
-  instance_name  = "${var.name}"
-  vswitch_id     = "${alicloud_vswitch.default.id}"
+  instance_name  = var.name
+  vswitch_id     = alicloud_vswitch.default.id
   private_ip     = "172.16.0.10"
   security_ips   = ["10.0.0.1"]
   instance_type  = "memcache.master.small.default"
   engine_version = "2.8"
 }
 resource "alicloud_kvstore_backup_policy" "default" {
-  instance_id   = "${alicloud_kvstore_instance.default.id}"
+  instance_id   = alicloud_kvstore_instance.default.id
   backup_period = ["Tuesday", "Wednesday"]
   backup_time   = "10:00Z-11:00Z"
 }

@@ -14,7 +14,7 @@ func TestAccAlicloudCommonBandwidthPackagesDataSourceBasic(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
-			"name_regex": `"${alicloud_common_bandwidth_package.default.name}"`,
+			"name_regex": `alicloud_common_bandwidth_package.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
 			"name_regex": `"${alicloud_common_bandwidth_package.default.name}_fake"`,
@@ -23,7 +23,7 @@ func TestAccAlicloudCommonBandwidthPackagesDataSourceBasic(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
-			"ids": `[ "${alicloud_common_bandwidth_package.default.id}" ]`,
+			"ids": `[ alicloud_common_bandwidth_package.default.id ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
 			"ids": `[ "${alicloud_common_bandwidth_package.default.id}_fake" ]`,
@@ -32,8 +32,8 @@ func TestAccAlicloudCommonBandwidthPackagesDataSourceBasic(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
-			"ids":        `[ "${alicloud_common_bandwidth_package.default.id}" ]`,
-			"name_regex": `"${alicloud_common_bandwidth_package.default.name}"`,
+			"ids":        `[ alicloud_common_bandwidth_package.default.id ]`,
+			"name_regex": `alicloud_common_bandwidth_package.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
 			"ids":        `[ "${alicloud_common_bandwidth_package.default.id}_fake" ]`,
@@ -56,7 +56,7 @@ variable "name" {
 
 resource "alicloud_common_bandwidth_package" "default" {
   bandwidth = "2"
-  name = "${var.name}"
+  name = var.name
   description = "${var.name}_description"
   resource_group_id = "%s"
 }

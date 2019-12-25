@@ -34,15 +34,15 @@ resource "alicloud_vpc" "foo" {
 }
 
 resource "alicloud_vswitch" "foo" {
-  vpc_id            = "${alicloud_vpc.foo.id}"
+  vpc_id            = alicloud_vpc.foo.id
   name              = "for-ots-instance"
   cidr_block        = "172.16.1.0/24"
-  availability_zone = "${data.alicloud_zones.foo.zones.0.id}"
+  availability_zone = data.alicloud_zones.foo.zones.0.id
 }
 resource "alicloud_ots_instance_attachment" "foo" {
-  instance_name = "${alicloud_ots_instance.foo.name}"
+  instance_name = alicloud_ots_instance.foo.name
   vpc_name      = "attachment1"
-  vswitch_id    = "${alicloud_vswitch.foo.id}"
+  vswitch_id    = alicloud_vswitch.foo.id
 }
 ```
 

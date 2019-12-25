@@ -13,7 +13,7 @@ func TestAccAlicloudEipsDataSourceBasic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
-			"ids": `[ "${alicloud_eip.default.0.id}" ]`,
+			"ids": `[ alicloud_eip.default.0.id ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
 			"ids": `[ "${alicloud_eip.default.0.id}_fake" ]`,
@@ -22,7 +22,7 @@ func TestAccAlicloudEipsDataSourceBasic(t *testing.T) {
 
 	ipsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
-			"ip_addresses": `[ "${alicloud_eip.default.0.ip_address}" ]`,
+			"ip_addresses": `[ alicloud_eip.default.0.ip_address ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
 			"ip_addresses": `[ "${alicloud_eip.default.0.ip_address}_fake" ]`,
@@ -31,14 +31,14 @@ func TestAccAlicloudEipsDataSourceBasic(t *testing.T) {
 
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
-			"ids": `[ "${alicloud_eip.default.0.id}" ]`,
+			"ids": `[ alicloud_eip.default.0.id ]`,
 			"tags": `{
 							Created = "TF"
 							For 	= "acceptance test"
 					  }`,
 		}),
 		fakeConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
-			"ids": `[ "${alicloud_eip.default.0.id}" ]`,
+			"ids": `[ alicloud_eip.default.0.id ]`,
 			"tags": `{
 							Created = "TF-fake"
 							For 	= "acceptance test"
@@ -48,15 +48,15 @@ func TestAccAlicloudEipsDataSourceBasic(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
-			"ids":          `[ "${alicloud_eip.default.0.id}" ]`,
-			"ip_addresses": `[ "${alicloud_eip.default.0.ip_address}" ]`,
+			"ids":          `[ alicloud_eip.default.0.id ]`,
+			"ip_addresses": `[ alicloud_eip.default.0.ip_address ]`,
 			"tags": `{
 							Created = "TF"
 							For 	= "acceptance test"
 					  }`,
 		}),
 		fakeConfig: testAccCheckAlicloudEipsDataSourceConfig(rand, map[string]string{
-			"ids":          `[ "${alicloud_eip.default.0.id}" ]`,
+			"ids":          `[ alicloud_eip.default.0.id ]`,
 			"ip_addresses": `[ "${alicloud_eip.default.0.ip_address}_fake" ]`,
 			"tags": `{
 							Created = "TF"

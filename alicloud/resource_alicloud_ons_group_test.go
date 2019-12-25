@@ -123,8 +123,8 @@ func TestAccAlicloudOnsGroup_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_ons_instance.default.id}",
-					"group_id":    "${var.group_id}",
+					"instance_id": alicloud_ons_instance.default.id,
+					"group_id":    var.group_id,
 					"remark":      "alicloud_ons_group_remark",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -153,7 +153,7 @@ func TestAccAlicloudOnsGroup_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"group_id": "${var.group_id}",
+					"group_id": var.group_id,
 					"remark":   "alicloud_ons_group_remark",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -181,6 +181,6 @@ variable "group_id" {
 }
 
 var onsGroupBasicMap = map[string]string{
-	"group_id": "${var.group_id}",
+	"group_id": var.group_id,
 	"remark":   "alicloud_ons_group_remark",
 }

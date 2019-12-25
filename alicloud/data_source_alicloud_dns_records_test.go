@@ -17,107 +17,107 @@ func TestAccAlicloudDnsRecordsDataSource(t *testing.T) {
 
 	domainNameConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"domain_name": alicloud_dns_record.default.name,
 		}),
 	}
 
 	hostRecordRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name":       "${alicloud_dns_record.default.name}",
+			"domain_name":       alicloud_dns_record.default.name,
 			"host_record_regex": "^ali",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"domain_name":       "${alicloud_dns_record.default.name}",
+			"domain_name":       alicloud_dns_record.default.name,
 			"host_record_regex": "anyother",
 		}),
 	}
 
 	typeConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"domain_name": alicloud_dns_record.default.name,
 			"type":        "CNAME",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"domain_name": alicloud_dns_record.default.name,
 			"type":        "TXT",
 		}),
 	}
 
 	valueRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"domain_name": alicloud_dns_record.default.name,
 			"value_regex": "^mail",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"domain_name": alicloud_dns_record.default.name,
 			"value_regex": "anyother",
 		}),
 	}
 
 	lineConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"domain_name": alicloud_dns_record.default.name,
 			"line":        "default",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"domain_name": alicloud_dns_record.default.name,
 			"line":        "telecom",
 		}),
 	}
 
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"domain_name": alicloud_dns_record.default.name,
 			"status":      "enable",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"domain_name": alicloud_dns_record.default.name,
 			"status":      "disable",
 		}),
 	}
 
 	isLockConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"domain_name": alicloud_dns_record.default.name,
 			"is_locked":   "false",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"domain_name": alicloud_dns_record.default.name,
 			"is_locked":   "true",
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
-			"ids":         []string{"${alicloud_dns_record.default.id}"},
+			"domain_name": alicloud_dns_record.default.name,
+			"ids":         []string{alicloud_dns_record.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"domain_name": "${alicloud_dns_record.default.name}",
+			"domain_name": alicloud_dns_record.default.name,
 			"ids":         []string{"${alicloud_dns_record.default.id}-fake"},
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name":       "${alicloud_dns_record.default.name}",
+			"domain_name":       alicloud_dns_record.default.name,
 			"host_record_regex": "^ali",
 			"value_regex":       "^mail",
 			"type":              "CNAME",
 			"line":              "default",
 			"status":            "enable",
 			"is_locked":         "false",
-			"ids":               []string{"${alicloud_dns_record.default.id}"},
+			"ids":               []string{alicloud_dns_record.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"domain_name":       "${alicloud_dns_record.default.name}",
+			"domain_name":       alicloud_dns_record.default.name,
 			"host_record_regex": "^ali",
 			"value_regex":       "^mail",
 			"type":              "CNAME",
 			"line":              "default",
 			"status":            "enable",
 			"is_locked":         "true",
-			"ids":               []string{"${alicloud_dns_record.default.id}"},
+			"ids":               []string{alicloud_dns_record.default.id},
 		}),
 	}
 
@@ -166,7 +166,7 @@ resource "alicloud_dns" "default" {
 }
 
 resource "alicloud_dns_record" "default" {
-  name = "${alicloud_dns.default.name}"
+  name = alicloud_dns.default.name
   host_record = "alimail"
   type = "CNAME"
   value = "mail.mxhichin.com"

@@ -19,7 +19,7 @@ data "alicloud_ram_account_aliases" "alias_ds" {
 }
 
 output "account_alias" {
-  value = "${data.alicloud_ram_account_aliases.alias_ds.account_alias}"
+  value = data.alicloud_ram_account_aliases.alias_ds.account_alias
 }
 ```
 

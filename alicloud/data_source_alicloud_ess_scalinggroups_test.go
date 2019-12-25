@@ -12,7 +12,7 @@ func TestAccAlicloudEssScalinggroupsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_ess_scaling_group.default.scaling_group_name}"`,
+			"name_regex": `alicloud_ess_scaling_group.default.scaling_group_name`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_ess_scaling_group.default.scaling_group_name}_fake"`,
@@ -21,7 +21,7 @@ func TestAccAlicloudEssScalinggroupsDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_ess_scaling_group.default.id}"]`,
+			"ids": `[alicloud_ess_scaling_group.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_ess_scaling_group.default.id}_fake"]`,
@@ -30,12 +30,12 @@ func TestAccAlicloudEssScalinggroupsDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_ess_scaling_group.default.id}"]`,
-			"name_regex": `"${alicloud_ess_scaling_group.default.scaling_group_name}"`,
+			"ids":        `[alicloud_ess_scaling_group.default.id]`,
+			"name_regex": `alicloud_ess_scaling_group.default.scaling_group_name`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssScalinggroupsDataSourceConfig(rand, map[string]string{
 			"ids":        `["${alicloud_ess_scaling_group.default.id}_fake"]`,
-			"name_regex": `"${alicloud_ess_scaling_group.default.scaling_group_name}"`,
+			"name_regex": `alicloud_ess_scaling_group.default.scaling_group_name`,
 		}),
 	}
 
@@ -98,10 +98,10 @@ variable "name" {
 resource "alicloud_ess_scaling_group" "default" {
 	min_size = 0
 	max_size = 2
-	scaling_group_name = "${var.name}"
+	scaling_group_name = var.name
 	default_cooldown = 20
 	removal_policies = ["OldestInstance", "NewestInstance"]
-	vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	vswitch_ids = [alicloud_vswitch.default.id]
 }
 
 data "alicloud_ess_scaling_groups" "default" {

@@ -45,8 +45,8 @@ resource "alicloud_cloud_connect_network" "ccn" {
 }
 
 resource "alicloud_cloud_connect_network_grant" "default" {
-  ccn_id  = "${alicloud_cloud_connect_network.ccn.id}"
-  cen_id  = "${alicloud_cen_instance.cen.id}"
+  ccn_id  = alicloud_cloud_connect_network.ccn.id
+  cen_id  = alicloud_cen_instance.cen.id
   cen_uid = "xxxxxx"
   depends_on = [
     "alicloud_cloud_connect_network.ccn",

@@ -292,22 +292,22 @@ func testAccEssScalingRuleConfig(common string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 1
 		cooldown = 0
@@ -325,22 +325,22 @@ func testAccEssScalingRuleUpdateAdjustmentType(common string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "PercentChangeInCapacity"
 		adjustment_value = 1
 		cooldown = 0
@@ -358,22 +358,22 @@ func testAccEssScalingRuleUpdateAdjustmentValue(common string, rand int) string 
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "PercentChangeInCapacity"
 		adjustment_value = 2
 		cooldown = 0
@@ -391,25 +391,25 @@ func testAccEssScalingRuleUpdateScalingRuleName(common string, rand int) string 
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "PercentChangeInCapacity"
 		adjustment_value = 2
-		scaling_rule_name = "${var.name}"
+		scaling_rule_name = var.name
 		cooldown = 0
 	}
 	`, common, rand)
@@ -425,25 +425,25 @@ func testAccEssScalingRuleUpdateCooldown(common string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "PercentChangeInCapacity"
 		adjustment_value = 2
-		scaling_rule_name = "${var.name}"
+		scaling_rule_name = var.name
 		cooldown = 200
 	}
 	`, common, rand)
@@ -459,23 +459,23 @@ func testAccEssScalingRuleConfigMulti(common string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
 		count = 10
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 1
 	}
@@ -492,12 +492,12 @@ func testAccEssTargetTrackingScalingRuleConfig(common string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		scaling_rule_type = "TargetTrackingScalingRule"
 		metric_name = "CpuUtilization"
 		target_value = 20.1
@@ -517,12 +517,12 @@ func testAccEssTargetTrackingScalingRuleUpdateDisableScaleIn(common string, rand
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		scaling_rule_type = "TargetTrackingScalingRule"
 		metric_name = "CpuUtilization"
 		target_value = 20.1
@@ -542,12 +542,12 @@ func testAccEssTargetTrackingScalingRuleUpdateEstimatedInstanceWarmup(common str
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		scaling_rule_type = "TargetTrackingScalingRule"
 		metric_name = "CpuUtilization"
 		target_value = 20.1
@@ -567,12 +567,12 @@ func testAccEssTargetTrackingScalingRuleUpdateTargetValue(common string, rand in
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		scaling_rule_type = "TargetTrackingScalingRule"
 		metric_name = "CpuUtilization"
 		target_value = 20.212
@@ -592,12 +592,12 @@ func testAccEssTargetTrackingScalingRuleUpdateMetricName(common string, rand int
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		scaling_rule_type = "TargetTrackingScalingRule"
 		metric_name = "IntranetRx"
 		target_value = 20.212
@@ -617,12 +617,12 @@ func testAccEssStepScalingRuleConfig(common string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		scaling_rule_type = "StepScalingRule"
 		adjustment_type = "TotalCapacity"
 		estimated_instance_warmup = 200
@@ -649,12 +649,12 @@ func testAccEssStepScalingRuleUpdate_step(common string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		scaling_rule_type = "StepScalingRule"
 		adjustment_type = "TotalCapacity"
 		estimated_instance_warmup = 200

@@ -275,30 +275,30 @@ func testAccEssScheduleConfig(common, scheduleTime string, rand int) string {
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 	
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 	
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 2
 		cooldown = 60
 	}
 	
 	resource "alicloud_ess_scheduled_task" "default" {
-		scheduled_action = "${alicloud_ess_scaling_rule.default.ari}"
+		scheduled_action = alicloud_ess_scaling_rule.default.ari
 		launch_time = "%s"
-		scheduled_task_name = "${var.name}"
+		scheduled_task_name = var.name
 	}
 	`, common, rand, scheduleTime)
 }
@@ -313,30 +313,30 @@ func testAccEssScheduleUpdateScheduledTaskName(common, scheduleTime string, rand
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 	
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 	
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 2
 		cooldown = 60
 	}
 	
 	resource "alicloud_ess_scheduled_task" "default" {
-		scheduled_action = "${alicloud_ess_scaling_rule.default.ari}"
+		scheduled_action = alicloud_ess_scaling_rule.default.ari
 		launch_time = "%s"
-		scheduled_task_name = "${var.name}"
+		scheduled_task_name = var.name
 	}
 	`, common, rand, scheduleTime)
 }
@@ -351,30 +351,30 @@ func testAccEssScheduleUpdateDescription(common, scheduleTime string, rand int) 
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 	
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 	
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 2
 		cooldown = 60
 	}
 	
 	resource "alicloud_ess_scheduled_task" "default" {
-		scheduled_action = "${alicloud_ess_scaling_rule.default.ari}"
+		scheduled_action = alicloud_ess_scaling_rule.default.ari
 		launch_time = "%s"
-		scheduled_task_name = "${var.name}"
+		scheduled_task_name = var.name
 		description = "terraform test"
 	}
 	`, common, rand, scheduleTime)
@@ -390,30 +390,30 @@ func testAccEssScheduleUpdateLaunchExpirationTime(common, scheduleTime string, r
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 	
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 	
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 2
 		cooldown = 60
 	}
 	
 	resource "alicloud_ess_scheduled_task" "default" {
-		scheduled_action = "${alicloud_ess_scaling_rule.default.ari}"
+		scheduled_action = alicloud_ess_scaling_rule.default.ari
 		launch_time = "%s"
-		scheduled_task_name = "${var.name}"
+		scheduled_task_name = var.name
 		description = "terraform test"
 		launch_expiration_time = 500
 	}
@@ -429,30 +429,30 @@ func testAccEssScheduleUpdateRecurrenceType(common, scheduleTime string, rand in
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 	
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 	
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 2
 		cooldown = 60
 	}
 	
 	resource "alicloud_ess_scheduled_task" "default" {
-		scheduled_action = "${alicloud_ess_scaling_rule.default.ari}"
+		scheduled_action = alicloud_ess_scaling_rule.default.ari
 		launch_time = "%s"
-		scheduled_task_name = "${var.name}"
+		scheduled_task_name = var.name
 		description = "terraform test"
 		launch_expiration_time = 500
 		recurrence_type = "Weekly"
@@ -472,30 +472,30 @@ func testAccEssScheduleUpdateTaskEnabled(common, scheduleTime string, rand int) 
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 	
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 	
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 2
 		cooldown = 60
 	}
 	
 	resource "alicloud_ess_scheduled_task" "default" {
-		scheduled_action = "${alicloud_ess_scaling_rule.default.ari}"
+		scheduled_action = alicloud_ess_scaling_rule.default.ari
 		launch_time = "%s"
-		scheduled_task_name = "${var.name}"
+		scheduled_task_name = var.name
 		description = "terraform test"
 		launch_expiration_time = 500
 		recurrence_type = "Weekly"
@@ -515,21 +515,21 @@ func testAccEssScheduleConfigMulti(common, scheduleTime string, rand int) string
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
-		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		scaling_group_name = var.name
+		vswitch_ids = [alicloud_vswitch.default.id]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 	}
 	
 	resource "alicloud_ess_scaling_configuration" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_group_id = "${alicloud_security_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
+		image_id = data.alicloud_images.default.images.0.id
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_group_id = alicloud_security_group.default.id
 		force_delete = "true"
 	}
 	
 	resource "alicloud_ess_scaling_rule" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 2
 		cooldown = 60
@@ -537,7 +537,7 @@ func testAccEssScheduleConfigMulti(common, scheduleTime string, rand int) string
 	
 	resource "alicloud_ess_scheduled_task" "default" {
 		count = 10
-		scheduled_action = "${alicloud_ess_scaling_rule.default.ari}"
+		scheduled_action = alicloud_ess_scaling_rule.default.ari
 		launch_time = "%s"
 		scheduled_task_name = "${var.name}-${count.index}"
 	}

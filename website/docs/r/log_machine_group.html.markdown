@@ -22,7 +22,7 @@ resource "alicloud_log_project" "example" {
   description = "created by terraform"
 }
 resource "alicloud_log_machine_group" "example" {
-  project       = "${alicloud_log_project.example.name}"
+  project       = alicloud_log_project.example.name
   name          = "tf-machine-group"
   identify_type = "ip"
   topic         = "terraform"

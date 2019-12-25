@@ -19,7 +19,7 @@ func TestAccAlicloudCasCertificatesDataSource_basic(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_cas_certificate.default.id}"},
+			"ids": []string{alicloud_cas_certificate.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_cas_certificate.default.id}_fake"},
@@ -28,7 +28,7 @@ func TestAccAlicloudCasCertificatesDataSource_basic(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_cas_certificate.default.name}",
+			"name_regex": alicloud_cas_certificate.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_cas_certificate.default.name}_fake",
@@ -37,11 +37,11 @@ func TestAccAlicloudCasCertificatesDataSource_basic(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids":        []string{"${alicloud_cas_certificate.default.id}"},
-			"name_regex": "${alicloud_cas_certificate.default.name}",
+			"ids":        []string{alicloud_cas_certificate.default.id},
+			"name_regex": alicloud_cas_certificate.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":        []string{"${alicloud_cas_certificate.default.id}"},
+			"ids":        []string{alicloud_cas_certificate.default.id},
 			"name_regex": "${alicloud_cas_certificate.default.name}_fake",
 		}),
 	}

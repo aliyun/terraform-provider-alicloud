@@ -40,8 +40,8 @@ func TestAccAlicloudDatahubSubscription_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project_name": "${alicloud_datahub_project.basic.name}",
-					"topic_name":   "${alicloud_datahub_topic.basic.name}",
+					"project_name": alicloud_datahub_project.basic.name,
+					"topic_name":   alicloud_datahub_topic.basic.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -105,8 +105,8 @@ func TestAccAlicloudDatahubSubscription_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project_name": "${alicloud_datahub_project.basic.name}",
-					"topic_name":   "${alicloud_datahub_topic.basic.name}",
+					"project_name": alicloud_datahub_project.basic.name,
+					"topic_name":   alicloud_datahub_topic.basic.name,
 					"count":        "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -128,13 +128,13 @@ func resourceDatahubSubscriptionConfigDependence(name string) string {
 	  default = "BLOB"
 	}
 	resource "alicloud_datahub_project" "basic" {
-	  name = "${var.project_name}"
+	  name = var.project_name
 	  comment = "project for basic."
 	}
 	resource "alicloud_datahub_topic" "basic" {
-	  project_name = "${alicloud_datahub_project.basic.name}"
-	  name = "${var.topic_name}"
-	  record_type = "${var.record_type}"
+	  project_name = alicloud_datahub_project.basic.name
+	  name = var.topic_name
+	  record_type = var.record_type
 	  shard_count = 3
 	  life_cycle = 7
 	  comment = "topic for basic."

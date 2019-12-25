@@ -23,7 +23,7 @@ data "alicloud_dns_records" "records_ds" {
 }
 
 output "first_record_id" {
-  value = "${data.alicloud_dns_records.records_ds.records.0.record_id}"
+  value = data.alicloud_dns_records.records_ds.records.0.record_id
 }
 ```
 

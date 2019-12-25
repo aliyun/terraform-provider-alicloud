@@ -23,11 +23,11 @@ data "alicloud_market_products" "default" {
 }
 
 output "first_product_code" {
-  value = "${data.alicloud_market_products.default.product_items.0.code}"
+  value = data.alicloud_market_products.default.product_items.0.code
 }
 
 output "product_codes" {
-  value = "${data.alicloud_market_products.default.ids}"
+  value = data.alicloud_market_products.default.ids
 }
 ```
 

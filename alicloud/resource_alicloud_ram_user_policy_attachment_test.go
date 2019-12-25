@@ -64,7 +64,7 @@ func testAccRamUserPolicyAttachmentConfig(rand int) string {
 	  default = "tf-testAcc%sRamUserPolicyAttachmentConfig-%d"
 	}
 	resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -88,7 +88,7 @@ func testAccRamUserPolicyAttachmentConfig(rand int) string {
 	}
 
 	resource "alicloud_ram_user" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  display_name = "displayname"
 	  mobile = "86-18888888888"
 	  email = "hello.uuu@aaa.com"
@@ -96,9 +96,9 @@ func testAccRamUserPolicyAttachmentConfig(rand int) string {
 	}
 
 	resource "alicloud_ram_user_policy_attachment" "default" {
-	  policy_name = "${alicloud_ram_policy.default.name}"
-	  user_name = "${alicloud_ram_user.default.name}"
-	  policy_type = "${alicloud_ram_policy.default.type}"
+	  policy_name = alicloud_ram_policy.default.name
+	  user_name = alicloud_ram_user.default.name
+	  policy_type = alicloud_ram_policy.default.type
 	}`, defaultRegionToTest, rand)
 }
 

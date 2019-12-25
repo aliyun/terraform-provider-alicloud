@@ -126,23 +126,23 @@ provider "alicloud" {
 
 resource "alicloud_vpc" "default" {
   provider = "alicloud.fra"
-  name = "${var.name}"
+  name = var.name
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_vpc" "default1" {
   provider = "alicloud.sh"
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_cen_instance" "default" {
-     name = "${var.name}"
+     name = var.name
      description = "tf-testAccCenBandwidthLimitConfigDescription"
 }
 
 resource "alicloud_cen_bandwidth_package" "default" {
-	name = "${var.name}"
+	name = var.name
     bandwidth = 5
     geographic_region_ids = [
 		"Europe",
@@ -150,24 +150,24 @@ resource "alicloud_cen_bandwidth_package" "default" {
 }
 
 resource "alicloud_cen_bandwidth_package_attachment" "default" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    bandwidth_package_id = "${alicloud_cen_bandwidth_package.default.id}"
+    instance_id = alicloud_cen_instance.default.id
+    bandwidth_package_id = alicloud_cen_bandwidth_package.default.id
 }
 
 resource "alicloud_cen_instance_attachment" "default" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default.id}"
+    instance_id = alicloud_cen_instance.default.id
+    child_instance_id = alicloud_vpc.default.id
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default1.id}"
+    instance_id = alicloud_cen_instance.default.id
+    child_instance_id = alicloud_vpc.default1.id
     child_instance_region_id = "cn-shanghai"
 }
 
 resource "alicloud_cen_bandwidth_limit" "default" {
-    instance_id = "${alicloud_cen_instance.default.id}"
+    instance_id = alicloud_cen_instance.default.id
     region_ids = [
         "eu-central-1",
         "cn-shanghai"]
@@ -198,23 +198,23 @@ provider "alicloud" {
 
 resource "alicloud_vpc" "default" {
   provider = "alicloud.fra"
-  name = "${var.name}"
+  name = var.name
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_vpc" "default1" {
   provider = "alicloud.sh"
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_cen_instance" "default" {
-     name = "${var.name}"
+     name = var.name
      description = "tf-testAccCenBandwidthLimitConfigDescription"
 }
 
 resource "alicloud_cen_bandwidth_package" "default" {
-	name = "${var.name}"
+	name = var.name
     bandwidth = 5
     geographic_region_ids = [
 		"Europe",
@@ -222,24 +222,24 @@ resource "alicloud_cen_bandwidth_package" "default" {
 }
 
 resource "alicloud_cen_bandwidth_package_attachment" "default" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    bandwidth_package_id = "${alicloud_cen_bandwidth_package.default.id}"
+    instance_id = alicloud_cen_instance.default.id
+    bandwidth_package_id = alicloud_cen_bandwidth_package.default.id
 }
 
 resource "alicloud_cen_instance_attachment" "default" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default.id}"
+    instance_id = alicloud_cen_instance.default.id
+    child_instance_id = alicloud_vpc.default.id
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default1.id}"
+    instance_id = alicloud_cen_instance.default.id
+    child_instance_id = alicloud_vpc.default1.id
     child_instance_region_id = "cn-shanghai"
 }
 
 resource "alicloud_cen_bandwidth_limit" "default" {
-    instance_id = "${alicloud_cen_instance.default.id}"
+    instance_id = alicloud_cen_instance.default.id
     region_ids = [
         "eu-central-1",
         "cn-shanghai"]
@@ -275,28 +275,28 @@ provider "alicloud" {
 
 resource "alicloud_vpc" "default" {
   provider = "alicloud.fra"
-  name = "${var.name}"
+  name = var.name
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_vpc" "default1" {
   provider = "alicloud.sh"
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vpc" "default2" {
   provider = "alicloud.hz"
-  name = "${var.name}"
+  name = var.name
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_cen_instance" "default" {
-    name = "${var.name}"
+    name = var.name
 }
 
 resource "alicloud_cen_bandwidth_package" "default" {
-    name = "${var.name}"
+    name = var.name
     bandwidth = 5
     geographic_region_ids = [
 		"Europe",
@@ -304,31 +304,31 @@ resource "alicloud_cen_bandwidth_package" "default" {
 }
 
 resource "alicloud_cen_bandwidth_package_attachment" "default" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    bandwidth_package_id = "${alicloud_cen_bandwidth_package.default.id}"
+    instance_id = alicloud_cen_instance.default.id
+    bandwidth_package_id = alicloud_cen_bandwidth_package.default.id
 }
 
 resource "alicloud_cen_instance_attachment" "default" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default.id}"
+    instance_id = alicloud_cen_instance.default.id
+    child_instance_id = alicloud_vpc.default.id
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default1.id}"
+    instance_id = alicloud_cen_instance.default.id
+    child_instance_id = alicloud_vpc.default1.id
     child_instance_region_id = "cn-shanghai"
 }
 
 resource "alicloud_cen_instance_attachment" "default2" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default2.id}"
+    instance_id = alicloud_cen_instance.default.id
+    child_instance_id = alicloud_vpc.default2.id
     child_instance_region_id = "cn-hangzhou"
 }
 
 resource "alicloud_cen_bandwidth_limit" "default" {
 	provider = "alicloud.fra"
-    instance_id = "${alicloud_cen_instance.default.id}"
+    instance_id = alicloud_cen_instance.default.id
     region_ids = [
         "eu-central-1",
         "cn-shanghai"]
@@ -341,7 +341,7 @@ resource "alicloud_cen_bandwidth_limit" "default" {
 
 resource "alicloud_cen_bandwidth_limit" "default1" {
 	provider = "alicloud.fra"
-    instance_id = "${alicloud_cen_instance.default.id}"
+    instance_id = alicloud_cen_instance.default.id
     region_ids = [
         "eu-central-1",
         "cn-hangzhou"]

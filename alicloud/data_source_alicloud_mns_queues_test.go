@@ -18,7 +18,7 @@ func TestAccAlicloudMnsQueueDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_prefix": "${alicloud_mns_queue.queue.name}",
+			"name_prefix": alicloud_mns_queue.queue.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_prefix": "${alicloud_mns_queue.queue.name}-fake",

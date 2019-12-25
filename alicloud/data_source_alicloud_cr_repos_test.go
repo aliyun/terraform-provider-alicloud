@@ -17,7 +17,7 @@ func TestAccAlicloudCRReposDataSource(t *testing.T) {
 
 	namespaceConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"namespace": "${alicloud_cr_repo.default.name}",
+			"namespace": alicloud_cr_repo.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"namespace": "${alicloud_cr_repo.default.name}_fake",
@@ -26,7 +26,7 @@ func TestAccAlicloudCRReposDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_cr_repo.default.name}",
+			"name_regex": alicloud_cr_repo.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_cr_repo.default.name}_fake",
@@ -35,20 +35,20 @@ func TestAccAlicloudCRReposDataSource(t *testing.T) {
 
 	enableDetailsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex":     "${alicloud_cr_repo.default.name}",
+			"name_regex":     alicloud_cr_repo.default.name,
 			"enable_details": "true",
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"namespace":      "${alicloud_cr_repo.default.name}",
-			"name_regex":     "${alicloud_cr_repo.default.name}",
+			"namespace":      alicloud_cr_repo.default.name,
+			"name_regex":     alicloud_cr_repo.default.name,
 			"enable_details": "true",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"namespace":      "${alicloud_cr_repo.default.name}_fake",
-			"name_regex":     "${alicloud_cr_repo.default.name}",
+			"name_regex":     alicloud_cr_repo.default.name,
 			"enable_details": "true",
 		}),
 	}
@@ -89,14 +89,14 @@ variable "name" {
 }
 
 resource "alicloud_cr_namespace" "default" {
-    name = "${var.name}"
+    name = var.name
     auto_create	= false
     default_visibility = "PUBLIC"
 }
 
 resource "alicloud_cr_repo" "default" {
-    namespace = "${alicloud_cr_namespace.default.name}"
-    name = "${var.name}"
+    namespace = alicloud_cr_namespace.default.name
+    name = var.name
     summary = "OLD"
     repo_type = "PUBLIC"
     detail  = "OLD"

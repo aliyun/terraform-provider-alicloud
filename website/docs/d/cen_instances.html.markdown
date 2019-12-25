@@ -20,7 +20,7 @@ data "alicloud_cen_instances" "cen_instances_ds" {
 }
 
 output "first_cen_instance_id" {
-  value = "${data.alicloud_cen_instances.cen_instances_ds.instances.0.id}"
+  value = data.alicloud_cen_instances.cen_instances_ds.instances.0.id
 }
 ```
 

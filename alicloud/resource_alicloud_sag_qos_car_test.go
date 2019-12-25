@@ -33,7 +33,7 @@ func TestAccAlicloudSagQosCar_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"qos_id":            "${alicloud_sag_qos.default.id}",
+					"qos_id":            alicloud_sag_qos.default.id,
 					"priority":          "2",
 					"limit_type":        "Absolute",
 					"min_bandwidth_abs": "5",
@@ -124,7 +124,7 @@ func TestAccAlicloudSagQosCar_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"qos_id":            "${alicloud_sag_qos.default.id}",
+					"qos_id":            alicloud_sag_qos.default.id,
 					"description":       "${var.name}-${count.index}",
 					"count":             "3",
 					"priority":          "${count.index+1}",
@@ -154,7 +154,7 @@ variable "name" {
 }
 
 resource "alicloud_sag_qos" "default" {
-  name = "${var.name}"
+  name = var.name
 }
 `, name)
 }

@@ -159,9 +159,9 @@ func testAccForwardEntryConfigBasic(rand int) string {
 %s
 
 resource "alicloud_forward_entry" "default"{
-	name = "${var.name}"
-	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-	external_ip = "${alicloud_eip.default.0.ip_address}"
+	name = var.name
+	forward_table_id = alicloud_nat_gateway.default.forward_table_ids
+	external_ip = alicloud_eip.default.0.ip_address
 	external_port = "80"
 	ip_protocol = "tcp"
 	internal_ip = "172.16.0.3"
@@ -176,9 +176,9 @@ func testAccForwardEntryConfig_external_ip(rand int) string {
 %s
 
 resource "alicloud_forward_entry" "default"{
-	name = "${var.name}"
-	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-	external_ip = "${alicloud_eip.default.1.ip_address}"
+	name = var.name
+	forward_table_id = alicloud_nat_gateway.default.forward_table_ids
+	external_ip = alicloud_eip.default.1.ip_address
 	external_port = "80"
 	ip_protocol = "tcp"
 	internal_ip = "172.16.0.3"
@@ -193,9 +193,9 @@ func testAccForwardEntryConfig_external_port(rand int) string {
 %s
 
 resource "alicloud_forward_entry" "default"{
-	name = "${var.name}"
-	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-	external_ip = "${alicloud_eip.default.1.ip_address}"
+	name = var.name
+	forward_table_id = alicloud_nat_gateway.default.forward_table_ids
+	external_ip = alicloud_eip.default.1.ip_address
 	external_port = "81"
 	ip_protocol = "tcp"
 	internal_ip = "172.16.0.3"
@@ -209,9 +209,9 @@ func testAccForwardEntryConfig_ip_protocol(rand int) string {
 %s
 
 resource "alicloud_forward_entry" "default"{
-	name = "${var.name}"
-	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-	external_ip = "${alicloud_eip.default.1.ip_address}"
+	name = var.name
+	forward_table_id = alicloud_nat_gateway.default.forward_table_ids
+	external_ip = alicloud_eip.default.1.ip_address
 	external_port = "81"
 	ip_protocol = "udp"
 	internal_ip = "172.16.0.3"
@@ -225,9 +225,9 @@ func testAccForwardEntryConfig_internal_ip(rand int) string {
 %s
 
 resource "alicloud_forward_entry" "default"{
-	name = "${var.name}"
-	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-	external_ip = "${alicloud_eip.default.1.ip_address}"
+	name = var.name
+	forward_table_id = alicloud_nat_gateway.default.forward_table_ids
+	external_ip = alicloud_eip.default.1.ip_address
 	external_port = "81"
 	ip_protocol = "udp"
 	internal_ip = "172.16.0.4"
@@ -241,9 +241,9 @@ func testAccForwardEntryConfig_internal_port(rand int) string {
 %s
 
 resource "alicloud_forward_entry" "default"{
-	name = "${var.name}"
-	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-	external_ip = "${alicloud_eip.default.1.ip_address}"
+	name = var.name
+	forward_table_id = alicloud_nat_gateway.default.forward_table_ids
+	external_ip = alicloud_eip.default.1.ip_address
 	external_port = "81"
 	ip_protocol = "udp"
 	internal_ip = "172.16.0.4"
@@ -258,8 +258,8 @@ func testAccForwardEntryConfig_name(rand int) string {
 
 resource "alicloud_forward_entry" "default"{
 	name = "${var.name}_change"
-	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-	external_ip = "${alicloud_eip.default.1.ip_address}"
+	forward_table_id = alicloud_nat_gateway.default.forward_table_ids
+	external_ip = alicloud_eip.default.1.ip_address
 	external_port = "81"
 	ip_protocol = "udp"
 	internal_ip = "172.16.0.4"
@@ -274,9 +274,9 @@ func testAccForwardEntryConfig_multi(rand int) string {
 
 resource "alicloud_forward_entry" "default"{
 	count = 5
-	name = "${var.name}"
-	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-	external_ip = "${alicloud_eip.default.0.ip_address}"
+	name = var.name
+	forward_table_id = alicloud_nat_gateway.default.forward_table_ids
+	external_ip = alicloud_eip.default.0.ip_address
 	external_port = "${80 + count.index}"
 	ip_protocol = "tcp"
 	internal_ip = "172.16.0.3"
@@ -302,32 +302,32 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_nat_gateway" "default" {
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	vpc_id = alicloud_vswitch.default.vpc_id
 	specification = "Small"
-	name = "${var.name}"
+	name = var.name
 }
 
 resource "alicloud_eip" "default" {
-	count = "${var.number}"
-	name = "${var.name}"
+	count = var.number
+	name = var.name
 }
 
 resource "alicloud_eip_association" "default" {
-	count = "${var.number}"
+	count = var.number
 	allocation_id = "${element(alicloud_eip.default.*.id,count.index)}"
-	instance_id = "${alicloud_nat_gateway.default.id}"
+	instance_id = alicloud_nat_gateway.default.id
 }
 `, rand)
 }

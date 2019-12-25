@@ -114,9 +114,9 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":          "${var.name}",
-					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
-					"instance_series":      "${var.instance_series}",
+					"description":          var.name,
+					"zone_id":              data.alicloud_zones.default.zones.0.id,
+					"instance_series":      var.instance_series,
 					"instance_charge_type": "PostPaid",
 					"specification":        "drds.sn1.4c8g.8C16G",
 				}),
@@ -143,7 +143,7 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}",
+					"description": var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -186,11 +186,11 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":          "${var.name}",
-					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
-					"instance_series":      "${var.instance_series}",
+					"description":          var.name,
+					"zone_id":              data.alicloud_zones.default.zones.0.id,
+					"instance_series":      var.instance_series,
 					"instance_charge_type": "PostPaid",
-					"vswitch_id":           "${alicloud_vswitch.foo.id}",
+					"vswitch_id":           alicloud_vswitch.foo.id,
 					"specification":        "drds.sn1.4c8g.8C16G",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -216,7 +216,7 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}",
+					"description": var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -261,8 +261,8 @@ func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          "${var.name}-${count.index}",
-					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
-					"instance_series":      "${var.instance_series}",
+					"zone_id":              data.alicloud_zones.default.zones.0.id,
+					"instance_series":      var.instance_series,
 					"instance_charge_type": "PostPaid",
 					"specification":        "drds.sn1.4c8g.8C16G",
 					"count":                "5",
@@ -291,15 +291,15 @@ variable "instance_series" {
 }
 
 resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "foo" {
- 	vpc_id = "${alicloud_vpc.foo.id}"
+ 	vpc_id = alicloud_vpc.foo.id
  	cidr_block = "172.16.0.0/21"
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
- 	name = "${var.name}"
+ 	availability_zone = data.alicloud_zones.default.zones.0.id
+ 	name = var.name
 }
 
 `, name)

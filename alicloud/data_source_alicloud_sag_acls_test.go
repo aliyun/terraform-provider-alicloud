@@ -13,7 +13,7 @@ func TestAccAlicloudSagAclsDataSource_basic(t *testing.T) {
 	rand := acctest.RandInt()
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSagAclsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_sag_acl.default.name}"`,
+			"name_regex": `alicloud_sag_acl.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudSagAclsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_sag_acl.default.name}_fake"`,
@@ -22,7 +22,7 @@ func TestAccAlicloudSagAclsDataSource_basic(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSagAclsDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_sag_acl.default.id}"]`,
+			"ids": `[alicloud_sag_acl.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudSagAclsDataSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_sag_acl.default.id}_fake"]`,
@@ -31,12 +31,12 @@ func TestAccAlicloudSagAclsDataSource_basic(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSagAclsDataSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_sag_acl.default.id}"]`,
-			"name_regex": `"${alicloud_sag_acl.default.name}"`,
+			"ids":        `[alicloud_sag_acl.default.id]`,
+			"name_regex": `alicloud_sag_acl.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudSagAclsDataSourceConfig(rand, map[string]string{
 			"ids":        `["${alicloud_sag_acl.default.id}_fake"]`,
-			"name_regex": `"${alicloud_sag_acl.default.name}"`,
+			"name_regex": `alicloud_sag_acl.default.name`,
 		}),
 	}
 
@@ -81,7 +81,7 @@ func testAccCheckAlicloudSagAclsDataSourceConfig(rand int, attrMap map[string]st
 			default = "tf-testAccSagAclDataSourceBisic-%d"
 		}
 		resource "alicloud_sag_acl" "default" {
-			name = "${var.name}"
+			name = var.name
 		}
 
 		data "alicloud_sag_acls" "default" {

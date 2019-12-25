@@ -32,31 +32,31 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-    name       = "${var.name}"
+    name       = var.name
     cidr_block = "172.16.0.0/16"
 }
     
 resource "alicloud_vswitch" "default" {
-    vpc_id            = "${alicloud_vpc.default.id}"
+    vpc_id            = alicloud_vpc.default.id
     cidr_block        = "172.16.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    name              = "${var.name}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    name              = var.name
 }
 
 resource "alicloud_ess_scaling_group" "default" {
     min_size = 1
     max_size = 1
-    scaling_group_name = "${var.name}"
+    scaling_group_name = var.name
     removal_policies = ["OldestInstance", "NewestInstance"]
-    vswitch_ids = ["${alicloud_vswitch.default.id}"]
+    vswitch_ids = [alicloud_vswitch.default.id]
 }
 
 resource "alicloud_mns_queue" "default"{
-    name="${var.name}"
+    name=var.name
 }
 
 resource "alicloud_ess_notification" "default" {
-    scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+    scaling_group_id = alicloud_ess_scaling_group.default.id
     notification_types = ["AUTOSCALING:SCALE_OUT_SUCCESS","AUTOSCALING:SCALE_OUT_ERROR"]
     notification_arn = "acs:ess:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}"
 }

@@ -18,40 +18,40 @@ func TestAccAlicloudPvtzZoneRecordsDataSource(t *testing.T) {
 
 	zoneIdConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
+			"zone_id": alicloud_pvtz_zone_record.foo.zone_id,
 		}),
 	}
 	keyWordConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
-			"keyword": "${alicloud_pvtz_zone_record.foo.value}",
+			"zone_id": alicloud_pvtz_zone_record.foo.zone_id,
+			"keyword": alicloud_pvtz_zone_record.foo.value,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
+			"zone_id": alicloud_pvtz_zone_record.foo.zone_id,
 			"keyword": "${alicloud_pvtz_zone_record.foo.value}-fake",
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
-			"ids":     []string{"${alicloud_pvtz_zone_record.foo.record_id}"},
+			"zone_id": alicloud_pvtz_zone_record.foo.zone_id,
+			"ids":     []string{alicloud_pvtz_zone_record.foo.record_id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
+			"zone_id": alicloud_pvtz_zone_record.foo.zone_id,
 			"ids":     []string{"${alicloud_pvtz_zone_record.foo.record_id}-fake"},
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
-			"ids":     []string{"${alicloud_pvtz_zone_record.foo.record_id}"},
-			"keyword": "${alicloud_pvtz_zone_record.foo.value}",
+			"zone_id": alicloud_pvtz_zone_record.foo.zone_id,
+			"ids":     []string{alicloud_pvtz_zone_record.foo.record_id},
+			"keyword": alicloud_pvtz_zone_record.foo.value,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
-			"ids":     []string{"${alicloud_pvtz_zone_record.foo.record_id}"},
+			"zone_id": alicloud_pvtz_zone_record.foo.zone_id,
+			"ids":     []string{alicloud_pvtz_zone_record.foo.record_id},
 			"keyword": "${alicloud_pvtz_zone_record.foo.value}-fake",
 		}),
 	}
@@ -94,7 +94,7 @@ func dataSourcePvtzZoneRecordsConfigDependence(name string) string {
 	}
 
 	resource "alicloud_pvtz_zone_record" "foo" {
-		zone_id = "${alicloud_pvtz_zone.basic.id}"
+		zone_id = alicloud_pvtz_zone.basic.id
 		resource_record = "www"
 		type = "A"
 		value = "2.2.2.2"

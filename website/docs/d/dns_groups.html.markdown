@@ -20,7 +20,7 @@ data "alicloud_dns_groups" "groups_ds" {
 }
 
 output "first_group_name" {
-  value = "${data.alicloud_dns_groups.groups_ds.groups.0.group_name}"
+  value = data.alicloud_dns_groups.groups_ds.groups.0.group_name
 }
 ```
 

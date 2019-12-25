@@ -318,7 +318,7 @@ resource "alicloud_common_bandwidth_package" "default" {
   internet_charge_type = "%s"
   bandwidth = "10"
   resource_group_id = "%s"
-  name = "${var.name}"
+  name = var.name
 }
 `, rand, internetChargeType, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }
@@ -400,7 +400,7 @@ resource "alicloud_common_bandwidth_package" "default" {
   internet_charge_type = "%s"
   resource_group_id = "%s"
   bandwidth = "10"
-  name = "${var.name}"
+  name = var.name
 }
 `, rand, internetChargeType, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
 }

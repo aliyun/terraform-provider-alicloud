@@ -39,8 +39,8 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id": "${alicloud_pvtz_zone.default.id}",
-					"vpc_ids": []string{"${alicloud_vpc.default.id}"},
+					"zone_id": alicloud_pvtz_zone.default.id,
+					"vpc_ids": []string{alicloud_vpc.default.id},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -56,7 +56,7 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_ids": []string{"${alicloud_vpc.default1.id}"},
+					"vpc_ids": []string{alicloud_vpc.default1.id},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -81,10 +81,10 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 					"vpc_ids": REMOVEKEY,
 					"vpcs": []map[string]interface{}{
 						{
-							"vpc_id": "${alicloud_vpc.default.id}",
+							"vpc_id": alicloud_vpc.default.id,
 						},
 						{
-							"vpc_id": "${alicloud_vpc.default1.id}",
+							"vpc_id": alicloud_vpc.default1.id,
 						},
 					},
 				}),
@@ -118,7 +118,7 @@ func TestAccAlicloudPvtzZoneAttachment_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"vpcs":           REMOVEKEY,
-					"vpc_ids":        []string{"${alicloud_vpc.default1.id}"},
+					"vpc_ids":        []string{alicloud_vpc.default1.id},
 					"lang":           "zh",
 					"user_client_ip": "192.168.1.2",
 				}),
@@ -163,7 +163,7 @@ func TestAccAlicloudPvtzZoneAttachment_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id": "${alicloud_pvtz_zone.default.id}",
+					"zone_id": alicloud_pvtz_zone.default.id,
 					"vpc_ids": "${alicloud_vpc.defaults.*.id}",
 					"count":   "5",
 				}),
@@ -191,7 +191,7 @@ func resourcePvtzZoneAttachmentConfigDependence(name string) string {
 	}
 
 	resource "alicloud_vpc" "defaults" {
-		count = "${var.number}"
+		count = var.number
 		cidr_block = "172.16.0.0/12"
 		name = "tf-testaccPvtzZoneAttachmentConfigMulti"
 	}

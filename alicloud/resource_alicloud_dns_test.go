@@ -107,7 +107,7 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":              "${var.dnsName}",
+					"name":              var.dnsName,
 					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -125,7 +125,7 @@ func TestAccAlicloudDns_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"group_id": "${alicloud_dns_group.default.id}",
+					"group_id": alicloud_dns_group.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -148,7 +148,7 @@ variable "dnsGroupName"{
 }
 
 resource "alicloud_dns_group" "default" {
-  name = "${var.dnsGroupName}"
+  name = var.dnsGroupName
 }
 `, defaultRegionToTest, name, name)
 }

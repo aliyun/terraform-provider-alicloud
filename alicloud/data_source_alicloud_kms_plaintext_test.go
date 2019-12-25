@@ -11,7 +11,7 @@ func TestAccAlicloudKmsPlaintextDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ciphertext_blob": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+			"ciphertext_blob": alicloud_kms_ciphertext.default.ciphertext_blob,
 		}),
 	}
 
@@ -43,7 +43,7 @@ func dataSourceKmsPlaintextDependence(name string) string {
 	}
 
 	resource "alicloud_kms_ciphertext" "default" {
-		key_id = "${alicloud_kms_key.default.id}"
+		key_id = alicloud_kms_key.default.id
 		plaintext = "plaintext"
 	}
 

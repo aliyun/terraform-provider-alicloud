@@ -20,7 +20,7 @@ func TestAccAlicloudCSServerlessKubernetesClustersDataSource(t *testing.T) {
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
-			"ids":            []string{"${alicloud_cs_serverless_kubernetes.default.id}"},
+			"ids":            []string{alicloud_cs_serverless_kubernetes.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
@@ -31,7 +31,7 @@ func TestAccAlicloudCSServerlessKubernetesClustersDataSource(t *testing.T) {
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
-			"name_regex":     "${alicloud_cs_serverless_kubernetes.default.name}",
+			"name_regex":     alicloud_cs_serverless_kubernetes.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
@@ -42,12 +42,12 @@ func TestAccAlicloudCSServerlessKubernetesClustersDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
-			"ids":            []string{"${alicloud_cs_serverless_kubernetes.default.id}"},
-			"name_regex":     "${alicloud_cs_serverless_kubernetes.default.name}",
+			"ids":            []string{alicloud_cs_serverless_kubernetes.default.id},
+			"name_regex":     alicloud_cs_serverless_kubernetes.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
-			"ids":            []string{"${alicloud_cs_serverless_kubernetes.default.id}"},
+			"ids":            []string{alicloud_cs_serverless_kubernetes.default.id},
 			"name_regex":     "${alicloud_cs_serverless_kubernetes.default.name}-fake",
 		}),
 	}
@@ -101,21 +101,21 @@ data "alicloud_zones" default {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name = var.name
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_cs_serverless_kubernetes" "default" {
-  name_prefix = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  name_prefix = var.name
+  vpc_id = alicloud_vpc.default.id
+  vswitch_id = alicloud_vswitch.default.id
   new_nat_gateway = true
   endpoint_public_access_enabled = true
   private_zone = false

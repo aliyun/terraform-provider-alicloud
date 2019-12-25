@@ -11,13 +11,13 @@ func TestAccAlicloudKmsCiphertextDataSource(t *testing.T) {
 
 	plaintextConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"key_id":    "${alicloud_kms_key.default.id}",
+			"key_id":    alicloud_kms_key.default.id,
 			"plaintext": "plaintext",
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"key_id":    "${alicloud_kms_key.default.id}",
+			"key_id":    alicloud_kms_key.default.id,
 			"plaintext": "plaintext",
 			"encryption_context": map[string]string{
 				"key": "value",

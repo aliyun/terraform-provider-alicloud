@@ -18,7 +18,7 @@ func TestAccAlicloudCenBandwidthLimitsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 	idConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenBandwidthLimitsDataSourceConfig(rand, map[string]string{
-			"instance_ids": `["${alicloud_cen_bandwidth_limit.default.instance_id}"]`,
+			"instance_ids": `[alicloud_cen_bandwidth_limit.default.instance_id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenBandwidthLimitsDataSourceConfig(rand, map[string]string{
 			"instance_ids": `["${alicloud_cen_bandwidth_limit.default.instance_id}-fake"]`,
@@ -86,12 +86,12 @@ resource "alicloud_vpc" "default1" {
 }
 
 resource "alicloud_cen_instance" "default" {
-     name = "${var.name}"
+     name = var.name
      description = "tf-testAccTerraform01"
 }
 
 resource "alicloud_cen_bandwidth_package" "default" {
-    name = "${var.name}"
+    name = var.name
     bandwidth = 20
     geographic_region_ids = [
 		"China",
@@ -99,24 +99,24 @@ resource "alicloud_cen_bandwidth_package" "default" {
 }
 
 resource "alicloud_cen_bandwidth_package_attachment" "default" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    bandwidth_package_id = "${alicloud_cen_bandwidth_package.default.id}"
+    instance_id = alicloud_cen_instance.default.id
+    bandwidth_package_id = alicloud_cen_bandwidth_package.default.id
 }
 
 resource "alicloud_cen_instance_attachment" "default" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default.id}"
+    instance_id = alicloud_cen_instance.default.id
+    child_instance_id = alicloud_vpc.default.id
     child_instance_region_id = "cn-beijing"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
-    instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default1.id}"
+    instance_id = alicloud_cen_instance.default.id
+    child_instance_id = alicloud_vpc.default1.id
     child_instance_region_id = "us-west-1"
 }
 
 resource "alicloud_cen_bandwidth_limit" "default" {
-     instance_id = "${alicloud_cen_instance.default.id}"
+     instance_id = alicloud_cen_instance.default.id
      region_ids = ["cn-beijing",
                    "us-west-1"]
      bandwidth_limit = 15

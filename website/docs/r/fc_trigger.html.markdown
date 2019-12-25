@@ -27,15 +27,15 @@ variable "account" {
 }
 
 provider "alicloud" {
-  account_id = "${var.account}"
-  region     = "${var.region}"
+  account_id = var.account
+  region     = var.region
 }
 
 resource "alicloud_fc_trigger" "foo" {
   service    = "my-fc-service"
   function   = "hello-world"
   name       = "hello-trigger"
-  role       = "${alicloud_ram_role.foo.arn}"
+  role       = alicloud_ram_role.foo.arn
   source_arn = "acs:log:${var.region}:${var.account}:project/${alicloud_log_project.foo.name}"
   type       = "log"
   config     = <<EOF
@@ -85,7 +85,7 @@ resource "alicloud_ram_role" "foo" {
 }
 
 resource "alicloud_ram_role_policy_attachment" "foo" {
-  role_name   = "${alicloud_ram_role.foo.name}"
+  role_name   = alicloud_ram_role.foo.name
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }
@@ -103,33 +103,33 @@ data "alicloud_regions" "current_region" {
 data "alicloud_account" "current" {
 }
 resource "alicloud_log_project" "foo" {
-  name        = "${var.name}"
+  name        = var.name
   description = "tf unit test"
 }
 resource "alicloud_log_store" "bar" {
-  project          = "${alicloud_log_project.foo.name}"
+  project          = alicloud_log_project.foo.name
   name             = "${var.name}-source"
   retention_period = "3000"
   shard_count      = 1
 }
 resource "alicloud_log_store" "foo" {
-  project          = "${alicloud_log_project.foo.name}"
-  name             = "${var.name}"
+  project          = alicloud_log_project.foo.name
+  name             = var.name
   retention_period = "3000"
   shard_count      = 1
 }
 resource "alicloud_mns_topic" "foo" {
-  name = "${var.name}"
+  name = var.name
 }
 resource "alicloud_fc_service" "foo" {
-  name            = "${var.name}"
+  name            = var.name
   internet_access = false
 }
 resource "alicloud_oss_bucket" "foo" {
-  bucket = "${var.name}"
+  bucket = var.name
 }
 resource "alicloud_oss_bucket_object" "foo" {
-  bucket  = "${alicloud_oss_bucket.foo.id}"
+  bucket  = alicloud_oss_bucket.foo.id
   key     = "fc/hello.zip"
   content = <<EOF
   	# -*- coding: utf-8 -*-
@@ -139,10 +139,10 @@ resource "alicloud_oss_bucket_object" "foo" {
   EOF
 }
 resource "alicloud_fc_function" "foo" {
-  service = "${alicloud_fc_service.foo.name}"
-  name = "${var.name}"
-  oss_bucket = "${alicloud_oss_bucket.foo.id}"
-  oss_key = "${alicloud_oss_bucket_object.foo.key}"
+  service = alicloud_fc_service.foo.name
+  name = var.name
+  oss_bucket = alicloud_oss_bucket.foo.id
+  oss_key = alicloud_oss_bucket_object.foo.key
   memory_size = 512
   runtime = "python2.7"
   handler = "hello.handler"
@@ -188,15 +188,15 @@ resource "alicloud_ram_policy" "foo" {
   force = true
 }
 resource "alicloud_ram_role_policy_attachment" "foo" {
-  role_name = "${alicloud_ram_role.foo.name}"
-  policy_name = "${alicloud_ram_policy.foo.name}"
+  role_name = alicloud_ram_role.foo.name
+  policy_name = alicloud_ram_policy.foo.name
   policy_type = "Custom"
 }
 resource "alicloud_fc_trigger" "foo" {
-  service = "${alicloud_fc_service.foo.name}"
-  function = "${alicloud_fc_function.foo.name}"
-  name = "${var.name}"
-  role = "${alicloud_ram_role.foo.arn}"
+  service = alicloud_fc_service.foo.name
+  function = alicloud_fc_function.foo.name
+  name = var.name
+  role = alicloud_ram_role.foo.arn
   source_arn = "acs:mns:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:/topics/${alicloud_mns_topic.foo.name}"
   type = "mns_topic"
   config_mns = <<EOF
@@ -233,14 +233,14 @@ resource "alicloud_cdn_domain_new" "domain" {
 }
 
 resource "alicloud_fc_service" "foo" {
-    name = "${var.name}"
+    name = var.name
     internet_access = false
 }
 resource "alicloud_oss_bucket" "foo" {
-    bucket = "${var.name}"
+    bucket = var.name
 }
 resource "alicloud_oss_bucket_object" "foo" {
-    bucket = "${alicloud_oss_bucket.foo.id}"
+    bucket = alicloud_oss_bucket.foo.id
     key = "fc/hello.zip"
     content = <<EOF
         # -*- coding: utf-8 -*-
@@ -250,10 +250,10 @@ resource "alicloud_oss_bucket_object" "foo" {
     EOF
 }
 resource "alicloud_fc_function" "foo" {
-    service = "${alicloud_fc_service.foo.name}"
-    name = "${var.name}"
-    oss_bucket = "${alicloud_oss_bucket.foo.id}"
-    oss_key = "${alicloud_oss_bucket_object.foo.key}"
+    service = alicloud_fc_service.foo.name
+    name = var.name
+    oss_bucket = alicloud_oss_bucket.foo.id
+    oss_key = alicloud_oss_bucket_object.foo.key
     memory_size = 512
     runtime = "python2.7"
     handler = "hello.handler"
@@ -303,15 +303,15 @@ resource "alicloud_ram_policy" "foo" {
     force = true
 }
 resource "alicloud_ram_role_policy_attachment" "foo" {
-    role_name = "${alicloud_ram_role.foo.name}"
-    policy_name = "${alicloud_ram_policy.foo.name}"
+    role_name = alicloud_ram_role.foo.name
+    policy_name = alicloud_ram_policy.foo.name
     policy_type = "Custom"
 }
 resource "alicloud_fc_trigger" "default" {
-    service = "${alicloud_fc_service.foo.name}"
-    function = "${alicloud_fc_function.foo.name}"
-    name = "${var.name}"
-    role = "${alicloud_ram_role.foo.arn}"
+    service = alicloud_fc_service.foo.name
+    function = alicloud_fc_function.foo.name
+    name = var.name
+    role = alicloud_ram_role.foo.arn
     source_arn = "acs:cdn:*:${data.alicloud_account.current.id}"
     type = "cdn_events"
     config = <<EOF
@@ -319,7 +319,7 @@ resource "alicloud_fc_trigger" "default" {
      "eventVersion":"1.0.0",
      "notes":"cdn events trigger",
      "filter":{
-        "domain": ["${alicloud_cdn_domain_new.domain.domain_name}"]
+        "domain": [alicloud_cdn_domain_new.domain.domain_name]
         }
     }EOF
     depends_on = ["alicloud_ram_role_policy_attachment.foo"]

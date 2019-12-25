@@ -134,18 +134,18 @@ func testAccDiskAttachmentConfig() string {
       owners      = "system"
     }
     resource "alicloud_vpc" "default" {
-      name       = "${var.name}"
+      name       = var.name
       cidr_block = "172.16.0.0/16"
     }
     resource "alicloud_vswitch" "default" {
-      vpc_id            = "${alicloud_vpc.default.id}"
+      vpc_id            = alicloud_vpc.default.id
       cidr_block        = "172.16.0.0/24"
-      availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-      name              = "${var.name}"
+      availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+      name              = var.name
     }
     resource "alicloud_security_group" "default" {
-      name   = "${var.name}"
-      vpc_id = "${alicloud_vpc.default.id}"
+      name   = var.name
+      vpc_id = alicloud_vpc.default.id
     }
     resource "alicloud_security_group_rule" "default" {
       	type = "ingress"
@@ -154,7 +154,7 @@ func testAccDiskAttachmentConfig() string {
       	policy = "accept"
       	port_range = "22/22"
       	priority = 1
-      	security_group_id = "${alicloud_security_group.default.id}"
+      	security_group_id = alicloud_security_group.default.id
       	cidr_ip = "172.16.0.0/24"
     }	
 
@@ -163,9 +163,9 @@ func testAccDiskAttachmentConfig() string {
 	}
 
 	resource "alicloud_disk" "default" {
-	  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+	  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 	  size = "50"
-	  name = "${var.name}"
+	  name = var.name
 	  category = "cloud_efficiency"
 
 	  tags = {
@@ -174,19 +174,19 @@ func testAccDiskAttachmentConfig() string {
 	}
 
 	resource "alicloud_instance" "default" {
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+		image_id = data.alicloud_images.default.images.0.id
+		availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 		system_disk_category = "cloud_ssd"
 		system_disk_size = 40
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_groups = ["${alicloud_security_group.default.id}"]
-		instance_name = "${var.name}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_groups = [alicloud_security_group.default.id]
+		instance_name = var.name
+		vswitch_id = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_disk_attachment" "default" {
-	  disk_id = "${alicloud_disk.default.id}"
-	  instance_id = "${alicloud_instance.default.id}"
+	  disk_id = alicloud_disk.default.id
+	  instance_id = alicloud_instance.default.id
 	}
 	`)
 }
@@ -204,18 +204,18 @@ func testAccDiskAttachmentConfigResize() string {
       owners      = "system"
     }
     resource "alicloud_vpc" "default" {
-      name       = "${var.name}"
+      name       = var.name
       cidr_block = "172.16.0.0/16"
     }
     resource "alicloud_vswitch" "default" {
-      vpc_id            = "${alicloud_vpc.default.id}"
+      vpc_id            = alicloud_vpc.default.id
       cidr_block        = "172.16.0.0/24"
-      availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-      name              = "${var.name}"
+      availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+      name              = var.name
     }
     resource "alicloud_security_group" "default" {
-      name   = "${var.name}"
-      vpc_id = "${alicloud_vpc.default.id}"
+      name   = var.name
+      vpc_id = alicloud_vpc.default.id
     }
     resource "alicloud_security_group_rule" "default" {
       	type = "ingress"
@@ -224,7 +224,7 @@ func testAccDiskAttachmentConfigResize() string {
       	policy = "accept"
       	port_range = "22/22"
       	priority = 1
-      	security_group_id = "${alicloud_security_group.default.id}"
+      	security_group_id = alicloud_security_group.default.id
       	cidr_ip = "172.16.0.0/24"
     }	
 
@@ -233,9 +233,9 @@ func testAccDiskAttachmentConfigResize() string {
 	}
 
 	resource "alicloud_disk" "default" {
-	  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+	  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 	  size = "70"
-	  name = "${var.name}"
+	  name = var.name
 	  category = "cloud_efficiency"
 
 	  tags = {
@@ -244,19 +244,19 @@ func testAccDiskAttachmentConfigResize() string {
 	}
 
 	resource "alicloud_instance" "default" {
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+		image_id = data.alicloud_images.default.images.0.id
+		availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 		system_disk_category = "cloud_ssd"
 		system_disk_size = 40
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_groups = ["${alicloud_security_group.default.id}"]
-		instance_name = "${var.name}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_groups = [alicloud_security_group.default.id]
+		instance_name = var.name
+		vswitch_id = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_disk_attachment" "default" {
-	  disk_id = "${alicloud_disk.default.id}"
-	  instance_id = "${alicloud_instance.default.id}"
+	  disk_id = alicloud_disk.default.id
+	  instance_id = alicloud_instance.default.id
 	}
 	`)
 }
@@ -273,8 +273,8 @@ func testAccMultiDiskAttachmentConfig(common string) string {
 
 	resource "alicloud_disk" "default" {
 		name = "${var.name}-${count.index}"
-		count = "${var.number}"
-		availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+		count = var.number
+		availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 		size = "50"
 
 		tags = {
@@ -283,20 +283,20 @@ func testAccMultiDiskAttachmentConfig(common string) string {
 	}
 
 	resource "alicloud_instance" "default" {
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+		image_id = data.alicloud_images.default.images.0.id
+		availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 		system_disk_category = "cloud_ssd"
 		system_disk_size = 40
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-		security_groups = ["${alicloud_security_group.default.id}"]
-		instance_name = "${var.name}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+		security_groups = [alicloud_security_group.default.id]
+		instance_name = var.name
+		vswitch_id = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_disk_attachment" "default" {
-		count = "${var.number}"
+		count = var.number
 		disk_id     = "${element(alicloud_disk.default.*.id, count.index)}"
-		instance_id = "${alicloud_instance.default.id}"
+		instance_id = alicloud_instance.default.id
 	}
 	`, common)
 }

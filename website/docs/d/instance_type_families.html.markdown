@@ -21,11 +21,11 @@ data "alicloud_instance_type_families" "default" {
 }
 
 output "first_instance_type_family_id" {
-  value = "${data.alicloud_instance_type_families.default.instance_type_families.0.id}"
+  value = data.alicloud_instance_type_families.default.instance_type_families.0.id
 }
 
 output "instance_ids" {
-  value = "${data.alicloud_instance_type_families.default.ids}"
+  value = data.alicloud_instance_type_families.default.ids
 }
 ```
 

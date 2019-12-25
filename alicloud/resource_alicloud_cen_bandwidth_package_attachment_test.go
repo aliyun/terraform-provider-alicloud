@@ -42,8 +42,8 @@ func TestAccAlicloudCenBandwidthPackageAttachment_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":          "${alicloud_cen_instance.default.id}",
-					"bandwidth_package_id": "${alicloud_cen_bandwidth_package.default.id}",
+					"instance_id":          alicloud_cen_instance.default.id,
+					"bandwidth_package_id": alicloud_cen_bandwidth_package.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(cenBandwidthPackageAttachmentMap),
@@ -57,8 +57,8 @@ func TestAccAlicloudCenBandwidthPackageAttachment_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":          "${alicloud_cen_instance.default.id}",
-					"bandwidth_package_id": "${alicloud_cen_bandwidth_package.default.id}",
+					"instance_id":          alicloud_cen_instance.default.id,
+					"bandwidth_package_id": alicloud_cen_bandwidth_package.default.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(cenBandwidthPackageAttachmentMap),

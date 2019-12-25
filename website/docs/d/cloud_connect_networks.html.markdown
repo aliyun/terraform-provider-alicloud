@@ -19,7 +19,7 @@ This data source provides Cloud Connect Networks available to the user.
 
 ```
 data "alicloud_cloud_connect_networks" "default" {
-  ids        = ["${alicloud_cloud_connect_networks.default.id}"]
+  ids        = [alicloud_cloud_connect_networks.default.id]
   name_regex = "^tf-testAcc.*"
 }
 resource "alicloud_cloud_connect_network" "default" {

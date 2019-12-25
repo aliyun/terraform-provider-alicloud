@@ -130,36 +130,36 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_nat_gateway" "default" {
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	vpc_id = alicloud_vswitch.default.vpc_id
 	specification = "Small"
-	name = "${var.name}"
+	name = var.name
 }
 
 resource "alicloud_eip" "default" {
-	name = "${var.name}"
+	name = var.name
 }
 
 resource "alicloud_eip_association" "default" {
-	allocation_id = "${alicloud_eip.default.id}"
-	instance_id = "${alicloud_nat_gateway.default.id}"
+	allocation_id = alicloud_eip.default.id
+	instance_id = alicloud_nat_gateway.default.id
 }
 
 resource "alicloud_snat_entry" "default"{
-	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
-	source_vswitch_id = "${alicloud_vswitch.default.id}"
-	snat_ip = "${alicloud_eip.default.ip_address}"
+	snat_table_id = alicloud_nat_gateway.default.snat_table_ids
+	source_vswitch_id = alicloud_vswitch.default.id
+	snat_ip = alicloud_eip.default.ip_address
 }
 `, rand)
 }
@@ -175,37 +175,37 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	name = "${var.name}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
+	name = var.name
 }
 
 resource "alicloud_nat_gateway" "default" {
-	vpc_id = "${alicloud_vswitch.default.vpc_id}"
+	vpc_id = alicloud_vswitch.default.vpc_id
 	specification = "Small"
-	name = "${var.name}"
+	name = var.name
 }
 
 resource "alicloud_eip" "default" {
 	period = "2"
-	name = "${var.name}"
+	name = var.name
 }
 
 resource "alicloud_eip_association" "default" {
-	allocation_id = "${alicloud_eip.default.id}"
-	instance_id = "${alicloud_nat_gateway.default.id}"
+	allocation_id = alicloud_eip.default.id
+	instance_id = alicloud_nat_gateway.default.id
 }
 
 resource "alicloud_snat_entry" "default"{
-	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
-	source_vswitch_id = "${alicloud_vswitch.default.id}"
-	snat_ip = "${alicloud_eip.default.ip_address}"
+	snat_table_id = alicloud_nat_gateway.default.snat_table_ids
+	source_vswitch_id = alicloud_vswitch.default.id
+	snat_ip = alicloud_eip.default.ip_address
 }
 `, rand)
 }
@@ -222,38 +222,38 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "10.1.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
     count = 10
-    vpc_id            = "${alicloud_vpc.default.id}"
+    vpc_id            = alicloud_vpc.default.id
     cidr_block        = "10.1.${count.index + 1}.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    name = "${var.name}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    name = var.name
 }
 
 resource "alicloud_nat_gateway" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = alicloud_vpc.default.id
 	specification = "Small"
-	name = "${var.name}"
+	name = var.name
 }
 
 resource "alicloud_eip" "default" {
-	name = "${var.name}"
+	name = var.name
 }
 
 resource "alicloud_eip_association" "default" {
-	allocation_id = "${alicloud_eip.default.id}"
-	instance_id = "${alicloud_nat_gateway.default.id}"
+	allocation_id = alicloud_eip.default.id
+	instance_id = alicloud_nat_gateway.default.id
 }
 
 resource "alicloud_snat_entry" "default"{
 	count = "10"
-	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
+	snat_table_id = alicloud_nat_gateway.default.snat_table_ids
 	source_vswitch_id = "${element(alicloud_vswitch.default.*.id, count.index)}"
-	snat_ip = "${alicloud_eip.default.ip_address}"
+	snat_ip = alicloud_eip.default.ip_address
 }
 `, rand)
 }

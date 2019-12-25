@@ -111,7 +111,7 @@ func SkipTestAccAlicloudApigatewayApp_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.name}",
+					"name": var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -126,7 +126,7 @@ func SkipTestAccAlicloudApigatewayApp_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.description}",
+					"description": var.description,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -171,8 +171,8 @@ func SkipTestAccAlicloudApigatewayApp_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${var.name}",
-					"description": "${var.description}",
+					"name":        var.name,
+					"description": var.description,
 					"tags":        REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -213,8 +213,8 @@ func SkipTestAccAlicloudApigatewayApp_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${var.name}",
-					"description": "${var.description}",
+					"name":        var.name,
+					"description": var.description,
 					"count":       "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(

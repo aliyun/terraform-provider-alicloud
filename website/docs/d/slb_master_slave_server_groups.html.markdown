@@ -17,11 +17,11 @@ This data source provides the master slave server groups related to a server loa
 
 ```
 data "alicloud_slb_master_slave_server_groups" "sample_ds" {
-  load_balancer_id = "${alicloud_slb.sample_slb.id}"
+  load_balancer_id = alicloud_slb.sample_slb.id
 }
 
 output "first_slb_server_group_id" {
-  value = "${data.alicloud_slb_master_slave_server_groups.sample_ds.groups.0.id}"
+  value = data.alicloud_slb_master_slave_server_groups.sample_ds.groups.0.id
 }
 ```
 

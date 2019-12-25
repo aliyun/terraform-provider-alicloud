@@ -23,7 +23,7 @@ data "alicloud_alikafka_consumer_groups" "consumer_groups_ds" {
 }
 
 output "first_group_name" {
-  value = "${data.alicloud_alikafka_consumer_groups.consumer_groups_ds.consumer_ids.0}"
+  value = data.alicloud_alikafka_consumer_groups.consumer_groups_ds.consumer_ids.0
 }
 ```
 

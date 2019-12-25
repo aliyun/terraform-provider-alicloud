@@ -295,11 +295,11 @@ variable "storage_type" {
   default = "Performance"
 }
 data "alicloud_nas_protocols" "default" {
-        type = "${var.storage_type}"
+        type = var.storage_type
 }
 resource "alicloud_nas_file_system" "default" {
-	protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
-	storage_type = "${var.storage_type}"
+	protocol_type = data.alicloud_nas_protocols.default.protocols.0
+	storage_type = var.storage_type
 	description = "tf-testAccNasConfig"
 }`)
 }
@@ -310,11 +310,11 @@ variable "storage_type" {
   default = "Capacity"
 }
 data "alicloud_nas_protocols" "default" {
-        type = "${var.storage_type}"
+        type = var.storage_type
 }
 resource "alicloud_nas_file_system" "default" {
-        protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
-        storage_type = "${var.storage_type}"
+        protocol_type = data.alicloud_nas_protocols.default.protocols.0
+        storage_type = var.storage_type
         description = "tf-testAccNasConfig"
 }`)
 }
@@ -325,11 +325,11 @@ variable "storage_type" {
   default = "Performance"
 }
 data "alicloud_nas_protocols" "default" {
-        type = "${var.storage_type}"
+        type = var.storage_type
 }
 resource "alicloud_nas_file_system" "default" {
-        protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
-        storage_type = "${var.storage_type}"
+        protocol_type = data.alicloud_nas_protocols.default.protocols.0
+        storage_type = var.storage_type
         description = "tf-testAccNasConfigUpdateName"
 }`)
 }
@@ -340,11 +340,11 @@ variable "storage_type" {
   default = "Capacity"
 }
 data "alicloud_nas_protocols" "default" {
-        type = "${var.storage_type}"
+        type = var.storage_type
 }
 resource "alicloud_nas_file_system" "default" {
-        protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
-        storage_type = "${var.storage_type}"
+        protocol_type = data.alicloud_nas_protocols.default.protocols.0
+        storage_type = var.storage_type
         description = "tf-testAccNasConfigUpdateName"
 }`)
 }
@@ -360,7 +360,7 @@ data "alicloud_nas_protocols" "bar_1" {
 }
 
 resource "alicloud_nas_file_system" "default" {
-        protocol_type = "${data.alicloud_nas_protocols.bar_1.protocols.0}"
+        protocol_type = data.alicloud_nas_protocols.bar_1.protocols.0
         storage_type = "Performance"
         description = "${var.description}-1"
 	count = 3
@@ -378,7 +378,7 @@ data "alicloud_nas_protocols" "bar_1" {
 }
 
 resource "alicloud_nas_file_system" "default" {
-        protocol_type = "${data.alicloud_nas_protocols.bar_1.protocols.0}"
+        protocol_type = data.alicloud_nas_protocols.bar_1.protocols.0
         storage_type = "Capacity"
         description = "${var.description}-1"
         count = 3

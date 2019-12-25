@@ -19,7 +19,7 @@ data "alicloud_cen_bandwidth_limits" "bwl" {
 }
 
 output "first_cen_bandwidth_limits_local_region_id" {
-  value = "${data.alicloud_cen_bandwidth_limits.bwl.limits.0.local_region_id}"
+  value = data.alicloud_cen_bandwidth_limits.bwl.limits.0.local_region_id
 }
 ```
 

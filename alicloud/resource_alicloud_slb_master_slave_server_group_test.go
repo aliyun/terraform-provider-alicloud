@@ -39,17 +39,17 @@ func TestAccAlicloudSlbMasterSlaveServerGroup_vpc(t *testing.T) {
 			{
 				//Config: testAccSlbMasterSlaveServerGroupVpc,
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name":             "${var.name}",
+					"load_balancer_id": alicloud_slb.default.id,
+					"name":             var.name,
 					"servers": []map[string]interface{}{
 						{
-							"server_id":   "${alicloud_instance.default.0.id}",
+							"server_id":   alicloud_instance.default.0.id,
 							"port":        "100",
 							"weight":      "100",
 							"server_type": "Master",
 						},
 						{
-							"server_id":   "${alicloud_instance.default.1.id}",
+							"server_id":   alicloud_instance.default.1.id,
 							"port":        "100",
 							"weight":      "100",
 							"server_type": "Slave",
@@ -101,17 +101,17 @@ func TestAccAlicloudSlbMasterSlaveServerGroup_multi_vpc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":            "10",
-					"load_balancer_id": "${alicloud_slb.default.id}",
-					"name":             "${var.name}",
+					"load_balancer_id": alicloud_slb.default.id,
+					"name":             var.name,
 					"servers": []map[string]interface{}{
 						{
-							"server_id":   "${alicloud_instance.default.0.id}",
+							"server_id":   alicloud_instance.default.0.id,
 							"port":        "100",
 							"weight":      "100",
 							"server_type": "Master",
 						},
 						{
-							"server_id":   "${alicloud_instance.default.1.id}",
+							"server_id":   alicloud_instance.default.1.id,
 							"port":        "100",
 							"weight":      "100",
 							"server_type": "Slave",
@@ -147,47 +147,47 @@ data "alicloud_images" "default" {
     owners = "system"
 }
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-    vpc_id = "${alicloud_vpc.default.id}"
+    vpc_id = alicloud_vpc.default.id
     cidr_block = "172.16.0.0/16"
-    availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-    name = "${var.name}"
+    availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+    name = var.name
 }
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 resource "alicloud_network_interface" "default" {
     count = 1
-    name = "${var.name}"
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    name = var.name
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
 }
 
 resource "alicloud_network_interface_attachment" "default" {
     count = 1
-    instance_id = "${alicloud_instance.default.0.id}"
+    instance_id = alicloud_instance.default.0.id
     network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
 }
 resource "alicloud_instance" "default" {
-    image_id = "${data.alicloud_images.default.images.0.id}"
-    instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
-    instance_name = "${var.name}"
+    image_id = data.alicloud_images.default.images.0.id
+    instance_type = data.alicloud_instance_types.default.instance_types.0.id
+    instance_name = var.name
     count = "2"
     security_groups = "${alicloud_security_group.default.*.id}"
     internet_charge_type = "PayByTraffic"
     internet_max_bandwidth_out = "10"
-    availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+    availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
     instance_charge_type = "PostPaid"
     system_disk_category = "cloud_efficiency"
-    vswitch_id = "${alicloud_vswitch.default.id}"
+    vswitch_id = alicloud_vswitch.default.id
 }
 resource "alicloud_slb" "default" {
-    name = "${var.name}"
-    vswitch_id = "${alicloud_vswitch.default.id}"
+    name = var.name
+    vswitch_id = alicloud_vswitch.default.id
     specification  = "slb.s2.small"
 }
 `, name)

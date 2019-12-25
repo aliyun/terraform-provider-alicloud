@@ -12,7 +12,7 @@ func TestAccAlicloudNasFileSystem_DataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100000, 999999)
 	storageTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
-			"storage_type":      `"${alicloud_nas_file_system.default.storage_type}"`,
+			"storage_type":      `alicloud_nas_file_system.default.storage_type`,
 			"description_regex": `"^${alicloud_nas_file_system.default.description}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
@@ -22,7 +22,7 @@ func TestAccAlicloudNasFileSystem_DataSource(t *testing.T) {
 	}
 	protocolTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
-			"protocol_type":     `"${alicloud_nas_file_system.default.protocol_type}"`,
+			"protocol_type":     `alicloud_nas_file_system.default.protocol_type`,
 			"description_regex": `"^${alicloud_nas_file_system.default.description}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
@@ -40,7 +40,7 @@ func TestAccAlicloudNasFileSystem_DataSource(t *testing.T) {
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_nas_file_system.default.id}"]`,
+			"ids": `[alicloud_nas_file_system.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_nas_file_system.default.id}_fake"]`,
@@ -48,10 +48,10 @@ func TestAccAlicloudNasFileSystem_DataSource(t *testing.T) {
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
-			"storage_type":      `"${alicloud_nas_file_system.default.storage_type}"`,
-			"protocol_type":     `"${alicloud_nas_file_system.default.protocol_type}"`,
+			"storage_type":      `alicloud_nas_file_system.default.storage_type`,
+			"protocol_type":     `alicloud_nas_file_system.default.protocol_type`,
 			"description_regex": `"^${alicloud_nas_file_system.default.description}"`,
-			"ids":               `["${alicloud_nas_file_system.default.id}"]`,
+			"ids":               `[alicloud_nas_file_system.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
 			"storage_type":      `"${alicloud_nas_file_system.default.storage_type}_fake"`,
@@ -79,12 +79,12 @@ variable "storage_type" {
   default = "Capacity"
 }
 data "alicloud_nas_protocols" "default" {
-        type = "${var.storage_type}"
+        type = var.storage_type
 }
 resource "alicloud_nas_file_system" "default" {
-  description = "${var.description}"
-  storage_type = "${var.storage_type}"
-  protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
+  description = var.description
+  storage_type = var.storage_type
+  protocol_type = data.alicloud_nas_protocols.default.protocols.0
 }
 data "alicloud_nas_file_systems" "default" {
 	%s

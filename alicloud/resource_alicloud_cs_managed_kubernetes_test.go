@@ -43,9 +43,9 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                        name,
-					"availability_zone":           "${data.alicloud_zones.default.zones.0.id}",
-					"vswitch_ids":                 []string{"${alicloud_vswitch.default.id}"},
-					"worker_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"availability_zone":           data.alicloud_zones.default.zones.0.id,
+					"vswitch_ids":                 []string{alicloud_vswitch.default.id},
+					"worker_instance_types":       []string{data.alicloud_instance_types.default.instance_types.0.id},
 					"password":                    "Test12345",
 					"pod_cidr":                    "172.20.0.0/16",
 					"service_cidr":                "172.21.0.0/20",
@@ -59,7 +59,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"log_config": []map[string]interface{}{
 						{
 							"type":    "SLS",
-							"project": "${alicloud_log_project.log.name}",
+							"project": alicloud_log_project.log.name,
 						},
 					},
 				}),
@@ -165,9 +165,9 @@ func TestAccAlicloudCSManagedKubernetes_multiAZ(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name_prefix":               name,
-					"availability_zone":         "${data.alicloud_zones.default.zones.0.id}",
-					"vswitch_ids":               []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default1.id}", "${alicloud_vswitch.default2.id}"},
-					"worker_instance_types":     []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"availability_zone":         data.alicloud_zones.default.zones.0.id,
+					"vswitch_ids":               []string{alicloud_vswitch.default.id, alicloud_vswitch.default1.id, alicloud_vswitch.default2.id},
+					"worker_instance_types":     []string{data.alicloud_instance_types.default.instance_types.0.id},
 					"password":                  "Test12345",
 					"pod_cidr":                  "172.20.0.0/16",
 					"service_cidr":              "172.21.0.0/20",
@@ -249,26 +249,26 @@ data "alicloud_zones" default {
 }
 
 data "alicloud_instance_types" "default" {
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
 	cpu_core_count = 2
 	memory_size = 4
 	kubernetes_node_role = "Worker"
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name = var.name
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_log_project" "log" {
-  name        = "${var.name}"
+  name        = var.name
   description = "created by terraform for managedkubernetes cluster"
 }
 `, name)
@@ -285,7 +285,7 @@ data "alicloud_zones" default {
 }
 
 data "alicloud_instance_types" "default" {
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	availability_zone = data.alicloud_zones.default.zones.0.id
 	cpu_core_count = 2
 	memory_size = 4
 	kubernetes_node_role = "Worker"
@@ -306,63 +306,63 @@ data "alicloud_instance_types" "default2" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name = var.name
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "default1" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name = var.name
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "10.1.2.0/24"
   availability_zone = "${lookup(data.alicloud_zones.default.zones[length(data.alicloud_zones.default.zones)-1], "id")}"
 }
 
 resource "alicloud_vswitch" "default2" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name = var.name
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "10.1.3.0/24"
   availability_zone = "${lookup(data.alicloud_zones.default.zones[length(data.alicloud_zones.default.zones)-2], "id")}"
 }
 
 resource "alicloud_nat_gateway" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name = var.name
+  vpc_id = alicloud_vpc.default.id
   specification = "Small"
 }
 
 resource "alicloud_snat_entry" "default" {
-  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids}"
-  source_vswitch_id = "${alicloud_vswitch.default.id}"
-  snat_ip           = "${alicloud_eip.default.ip_address}"
+  snat_table_id     = alicloud_nat_gateway.default.snat_table_ids
+  source_vswitch_id = alicloud_vswitch.default.id
+  snat_ip           = alicloud_eip.default.ip_address
 }
 
 resource "alicloud_snat_entry" "default1" {
-  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids}"
-  source_vswitch_id = "${alicloud_vswitch.default1.id}"
-  snat_ip           = "${alicloud_eip.default.ip_address}"
+  snat_table_id     = alicloud_nat_gateway.default.snat_table_ids
+  source_vswitch_id = alicloud_vswitch.default1.id
+  snat_ip           = alicloud_eip.default.ip_address
 }
 
 resource "alicloud_snat_entry" "default2" {
-  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids}"
-  source_vswitch_id = "${alicloud_vswitch.default2.id}"
-  snat_ip           = "${alicloud_eip.default.ip_address}"
+  snat_table_id     = alicloud_nat_gateway.default.snat_table_ids
+  source_vswitch_id = alicloud_vswitch.default2.id
+  snat_ip           = alicloud_eip.default.ip_address
 }
 
 resource "alicloud_eip" "default" {
-  name = "${var.name}"
+  name = var.name
   bandwidth = "100"
 }
 
 resource "alicloud_eip_association" "default" {
-  allocation_id = "${alicloud_eip.default.id}"
-  instance_id   = "${alicloud_nat_gateway.default.id}"
+  allocation_id = alicloud_eip.default.id
+  instance_id   = alicloud_nat_gateway.default.id
 }
 `, name)
 }

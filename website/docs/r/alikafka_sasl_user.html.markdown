@@ -37,9 +37,9 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_alikafka_instance" "default" {
@@ -49,13 +49,13 @@ resource "alicloud_alikafka_instance" "default" {
   disk_size = "500"
   deploy_type = "5"
   io_max = "20"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_alikafka_sasl_user" "default" {
-  instance_id = "${alicloud_alikafka_instance.default.id}"
-  username = "${var.username}"
-  password = "${var.password}"
+  instance_id = alicloud_alikafka_instance.default.id
+  username = var.username
+  password = var.password
 }
 ```
 

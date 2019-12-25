@@ -26,11 +26,11 @@ resource "alicloud_vpc" "primary_vpc_ds" {
 }
 
 data "alicloud_security_groups" "primary_sec_groups_ds" {
-  vpc_id = "${alicloud_vpc.primary_vpc_ds.id}"
+  vpc_id = alicloud_vpc.primary_vpc_ds.id
 }
 
 output "first_group_id" {
-  value = "${data.alicloud_security_groups.primary_sec_groups_ds.groups.0.id}"
+  value = data.alicloud_security_groups.primary_sec_groups_ds.groups.0.id
 }
 ```
 

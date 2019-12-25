@@ -18,7 +18,7 @@ func TestAccAlicloudMnsTopicDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_prefix": "${alicloud_mns_topic.default.name}",
+			"name_prefix": alicloud_mns_topic.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_prefix": "${alicloud_mns_topic.default.name}-fake",

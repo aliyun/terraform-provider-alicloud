@@ -12,17 +12,17 @@ func TestAccAlicloudSlbAttachmentsDataSource_basic(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbAttachmentsDataSourceConfig(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_attachment.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_attachment.default.load_balancer_id`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbAttachmentsDataSourceConfig(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_attachment.default.load_balancer_id}"`,
-			"instance_ids":     `["${alicloud_instance.default.id}"]`,
+			"load_balancer_id": `alicloud_slb_attachment.default.load_balancer_id`,
+			"instance_ids":     `[alicloud_instance.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbAttachmentsDataSourceConfig(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_attachment.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_attachment.default.load_balancer_id`,
 			"instance_ids":     `["${alicloud_instance.default.id}_fake"]`,
 		}),
 	}
@@ -72,43 +72,43 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  name = var.name
 }
 
 resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  name = var.name
+  vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_security_group" "default" {
-	name = "${var.name}"
-	vpc_id = "${alicloud_vpc.default.id}"
+	name = var.name
+	vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_instance" "default" {
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  image_id = "${data.alicloud_images.default.images.0.id}"
+  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  image_id = data.alicloud_images.default.images.0.id
 
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
   internet_charge_type = "PayByTraffic"
   system_disk_category = "cloud_efficiency"
 
-  security_groups = ["${alicloud_security_group.default.id}"]
-  instance_name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  security_groups = [alicloud_security_group.default.id]
+  instance_name = var.name
+  vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_attachment" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
-  instance_ids = ["${alicloud_instance.default.id}"]
+  load_balancer_id = alicloud_slb.default.id
+  instance_ids = [alicloud_instance.default.id]
   weight = 42
 }
 

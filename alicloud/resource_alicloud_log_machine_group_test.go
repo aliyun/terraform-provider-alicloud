@@ -35,7 +35,7 @@ func TestAccAlicloudLogMachineGroup_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":          name,
-					"project":       "${alicloud_log_project.default.name}",
+					"project":       alicloud_log_project.default.name,
 					"identify_list": []string{"10.0.0.1", "10.0.0.3", "10.0.0.2"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -115,7 +115,7 @@ func TestAccAlicloudLogMachineGroup_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":          name + "${count.index}",
-					"project":       "${alicloud_log_project.default.name}",
+					"project":       alicloud_log_project.default.name,
 					"identify_list": []string{"10.0.0.1", "10.0.0.3", "10.0.0.2"},
 					"count":         "5",
 				}),
@@ -133,7 +133,7 @@ func resourceLogMachineGroupConfigDependence(name string) string {
 	    default = "%s"
 	}
 	resource "alicloud_log_project" "default" {
-	    name = "${var.name}"
+	    name = var.name
 	    description = "tf unit test"
 	}
 	`, name)

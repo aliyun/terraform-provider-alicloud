@@ -70,7 +70,7 @@ func testAccRamGroupMembershipCreateConfig(rand int) string {
 	  default = "tf-testAcc%sRamGroupMembershipConfig-%d"
 	}
 	resource "alicloud_ram_user" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  display_name = "displayname"
 	  mobile = "86-18888888888"
 	  email = "hello.uuu@aaa.com"
@@ -86,14 +86,14 @@ func testAccRamGroupMembershipCreateConfig(rand int) string {
 	}
 
 	resource "alicloud_ram_group" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  comments = "group comments"
 	  force=true
 	}
 
 	resource "alicloud_ram_group_membership" "default" {
-	  group_name = "${alicloud_ram_group.default.name}"
-	  user_names = ["${alicloud_ram_user.default.name}", "${alicloud_ram_user.default1.name}"]
+	  group_name = alicloud_ram_group.default.name
+	  user_names = [alicloud_ram_user.default.name, alicloud_ram_user.default1.name]
 	}`, defaultRegionToTest, rand)
 }
 
@@ -103,7 +103,7 @@ func testAccRamGroupMembershipUserNameConfig(rand int) string {
 	  default = "tf-testAcc%sRamGroupMembershipConfig-%d"
 	}
 	resource "alicloud_ram_user" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  display_name = "displayname"
 	  mobile = "86-18888888888"
 	  email = "hello.uuu@aaa.com"
@@ -111,14 +111,14 @@ func testAccRamGroupMembershipUserNameConfig(rand int) string {
 	}
 
 	resource "alicloud_ram_group" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  comments = "group comments"
 	  force=true
 	}
 
 	resource "alicloud_ram_group_membership" "default" {
-	  group_name = "${alicloud_ram_group.default.name}"
-	  user_names = ["${alicloud_ram_user.default.name}"]
+	  group_name = alicloud_ram_group.default.name
+	  user_names = [alicloud_ram_user.default.name]
 	}`, defaultRegionToTest, rand)
 }
 
@@ -128,7 +128,7 @@ func testAccRamGroupMembershipAllConfig(rand int) string {
 	  default = "tf-testAcc%sRamGroupMembershipConfig-%d"
 	}
 	resource "alicloud_ram_user" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  display_name = "displayname"
 	  mobile = "86-18888888888"
 	  email = "hello.uuu@aaa.com"
@@ -143,14 +143,14 @@ func testAccRamGroupMembershipAllConfig(rand int) string {
 	}
 
 	resource "alicloud_ram_group" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  comments = "group comments"
 	  force=true
 	}
 
 	resource "alicloud_ram_group_membership" "default" {
-	  group_name = "${alicloud_ram_group.default.name}"
-	  user_names = ["${alicloud_ram_user.default.name}", "${alicloud_ram_user.default1.name}"]
+	  group_name = alicloud_ram_group.default.name
+	  user_names = [alicloud_ram_user.default.name, alicloud_ram_user.default1.name]
 	}`, defaultRegionToTest, rand)
 }
 

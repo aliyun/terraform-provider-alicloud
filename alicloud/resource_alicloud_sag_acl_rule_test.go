@@ -33,7 +33,7 @@ func TestAccAlicloudSagAclRule_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"acl_id":            "${alicloud_sag_acl.default.id}",
+					"acl_id":            alicloud_sag_acl.default.id,
 					"description":       "tf-testSagAclRule",
 					"policy":            "drop",
 					"ip_protocol":       "ALL",
@@ -250,7 +250,7 @@ func TestAccAlicloudSagAclRule_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"acl_id":            "${alicloud_sag_acl.default.id}",
+					"acl_id":            alicloud_sag_acl.default.id,
 					"description":       "tf-testSagAclRule",
 					"policy":            "drop",
 					"ip_protocol":       "ALL",
@@ -287,7 +287,7 @@ variable "name" {
 }
 
 resource "alicloud_sag_acl" "default" {
-  name = "${var.name}"
+  name = var.name
 }
 
 `, name)

@@ -36,7 +36,7 @@ resource "alicloud_instance" "ecs_instance" {
   image_id              = "ubuntu_18_04_64_20G_alibase_20190624.vhd"
   instance_type         = "ecs.n4.small"
   availability_zone     = "cn-beijing-a"
-  security_groups       = ["${alicloud_security_group.ecs_sg.id}"]
+  security_groups       = [alicloud_security_group.ecs_sg.id]
   instance_name         = "Hello"
   instance_network_type = "classic"
   internet_charge_type  = "PayByBandwidth"
@@ -47,8 +47,8 @@ resource "alicloud_instance" "ecs_instance" {
 }
 
 resource "alicloud_disk_attachment" "ecs_disk_att" {
-  disk_id     = "${alicloud_disk.ecs_disk.id}"
-  instance_id = "${alicloud_instance.ecs_instance.id}"
+  disk_id     = alicloud_disk.ecs_disk.id
+  instance_id = alicloud_instance.ecs_instance.id
 }
 ```
 ## Argument Reference

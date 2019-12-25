@@ -14,26 +14,26 @@ func TestAccAlicloudRamPoliciesDataSource(t *testing.T) {
 
 	groupConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamPoliciesDataSourceConfig(rand, map[string]string{
-			"group_name": `"${alicloud_ram_group_policy_attachment.default.group_name}"`,
+			"group_name": `alicloud_ram_group_policy_attachment.default.group_name`,
 		}),
 	}
 
 	roleConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamPoliciesDataSourceConfig(rand, map[string]string{
-			"role_name": `"${alicloud_ram_role_policy_attachment.default.role_name}"`,
+			"role_name": `alicloud_ram_role_policy_attachment.default.role_name`,
 			"type":      `"Custom"`,
 		}),
 	}
 
 	userConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamPoliciesDataSourceConfig(rand, map[string]string{
-			"user_name": `"${alicloud_ram_user_policy_attachment.default.user_name}"`,
+			"user_name": `alicloud_ram_user_policy_attachment.default.user_name`,
 		}),
 	}
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamPoliciesDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_ram_policy.default.name}"`,
+			"name_regex": `alicloud_ram_policy.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudRamPoliciesDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_ram_policy.default.name}_fake"`,
@@ -42,7 +42,7 @@ func TestAccAlicloudRamPoliciesDataSource(t *testing.T) {
 
 	policyType := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamPoliciesDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_ram_policy.default.name}"`,
+			"name_regex": `alicloud_ram_policy.default.name`,
 			"type":       `"Custom"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRamPoliciesDataSourceConfig(rand, map[string]string{
@@ -53,16 +53,16 @@ func TestAccAlicloudRamPoliciesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamPoliciesDataSourceConfig(rand, map[string]string{
-			"group_name": `"${alicloud_ram_group_policy_attachment.default.group_name}"`,
-			"role_name":  `"${alicloud_ram_role_policy_attachment.default.role_name}"`,
-			"user_name":  `"${alicloud_ram_user_policy_attachment.default.user_name}"`,
-			"name_regex": `"${alicloud_ram_policy.default.name}"`,
+			"group_name": `alicloud_ram_group_policy_attachment.default.group_name`,
+			"role_name":  `alicloud_ram_role_policy_attachment.default.role_name`,
+			"user_name":  `alicloud_ram_user_policy_attachment.default.user_name`,
+			"name_regex": `alicloud_ram_policy.default.name`,
 			"type":       `"Custom"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRamPoliciesDataSourceConfig(rand, map[string]string{
-			"group_name": `"${alicloud_ram_group_policy_attachment.default.group_name}"`,
-			"role_name":  `"${alicloud_ram_role_policy_attachment.default.role_name}"`,
-			"user_name":  `"${alicloud_ram_user_policy_attachment.default.user_name}"`,
+			"group_name": `alicloud_ram_group_policy_attachment.default.group_name`,
+			"role_name":  `alicloud_ram_role_policy_attachment.default.role_name`,
+			"user_name":  `alicloud_ram_user_policy_attachment.default.user_name`,
 			"name_regex": `"${alicloud_ram_policy.default.name}_fake"`,
 			"type":       `"Custom"`,
 		}),
@@ -82,7 +82,7 @@ func testAccCheckAlicloudRamPoliciesDataSourceConfig(rand int, attrMap map[strin
 	  default = "tf-testAcc%sRamPoliciessDataSource-%d"
 	}
 	resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -106,12 +106,12 @@ func testAccCheckAlicloudRamPoliciesDataSourceConfig(rand int, attrMap map[strin
 	}
 
 	resource "alicloud_ram_group" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  comments = "group comments"
 	  force=true
 	}
 	resource "alicloud_ram_role" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -133,7 +133,7 @@ func testAccCheckAlicloudRamPoliciesDataSourceConfig(rand int, attrMap map[strin
 	  force = true
 	}
 	resource "alicloud_ram_user" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  display_name = "displayname"
 	  mobile = "86-18888888888"
 	  email = "hello.uuu@aaa.com"
@@ -141,19 +141,19 @@ func testAccCheckAlicloudRamPoliciesDataSourceConfig(rand int, attrMap map[strin
 	}
 
 	resource "alicloud_ram_user_policy_attachment" "default" {
-	  policy_name = "${alicloud_ram_policy.default.name}"
-	  user_name = "${alicloud_ram_user.default.name}"
-	  policy_type = "${alicloud_ram_policy.default.type}"
+	  policy_name = alicloud_ram_policy.default.name
+	  user_name = alicloud_ram_user.default.name
+	  policy_type = alicloud_ram_policy.default.type
 	}
 	resource "alicloud_ram_role_policy_attachment" "default" {
-	  policy_name = "${alicloud_ram_policy.default.name}"
-	  role_name = "${alicloud_ram_role.default.name}"
-	  policy_type = "${alicloud_ram_policy.default.type}"
+	  policy_name = alicloud_ram_policy.default.name
+	  role_name = alicloud_ram_role.default.name
+	  policy_type = alicloud_ram_policy.default.type
 	}
 	resource "alicloud_ram_group_policy_attachment" "default" {
-	  policy_name = "${alicloud_ram_policy.default.name}"
-	  group_name = "${alicloud_ram_group.default.name}"
-	  policy_type = "${alicloud_ram_policy.default.type}"
+	  policy_name = alicloud_ram_policy.default.name
+	  group_name = alicloud_ram_group.default.name
+	  policy_type = alicloud_ram_policy.default.type
 	}
 	data "alicloud_ram_policies" "default" {
 	  %s

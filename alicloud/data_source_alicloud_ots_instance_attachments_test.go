@@ -19,16 +19,16 @@ func TestAccAlicloudOtsInstanceAttachmentsDataSource_basic(t *testing.T) {
 
 	instanceNameConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_name": "${alicloud_ots_instance_attachment.foo.instance_name}",
+			"instance_name": alicloud_ots_instance_attachment.foo.instance_name,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_name": "${alicloud_ots_instance_attachment.foo.instance_name}",
-			"name_regex":    "${alicloud_ots_instance_attachment.foo.vpc_name}",
+			"instance_name": alicloud_ots_instance_attachment.foo.instance_name,
+			"name_regex":    alicloud_ots_instance_attachment.foo.vpc_name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_name": "${alicloud_ots_instance_attachment.foo.instance_name}",
+			"instance_name": alicloud_ots_instance_attachment.foo.instance_name,
 			"name_regex":    "${alicloud_ots_instance_attachment.foo.vpc_name}-fake",
 		}),
 	}
@@ -76,8 +76,8 @@ func dataSourceOtsInstanceAttachmentsConfigDependence(name string) string {
 	}
 
 	resource "alicloud_ots_instance" "foo" {
-	  name = "${var.name}"
-	  description = "${var.name}"
+	  name = var.name
+	  description = var.name
 	  accessed_by = "Vpc"
 	  instance_type = "Capacity"
 	}
@@ -87,19 +87,19 @@ func dataSourceOtsInstanceAttachmentsConfigDependence(name string) string {
 	}
 	resource "alicloud_vpc" "foo" {
 	  cidr_block = "172.16.0.0/16"
-	  name = "${var.name}"
+	  name = var.name
 	}
 
 	resource "alicloud_vswitch" "foo" {
-	  vpc_id = "${alicloud_vpc.foo.id}"
-	  name = "${var.name}"
+	  vpc_id = alicloud_vpc.foo.id
+	  name = var.name
 	  cidr_block = "172.16.1.0/24"
-	  availability_zone = "${data.alicloud_zones.foo.zones.0.id}"
+	  availability_zone = data.alicloud_zones.foo.zones.0.id
 	}
 	resource "alicloud_ots_instance_attachment" "foo" {
-	  instance_name = "${alicloud_ots_instance.foo.name}"
+	  instance_name = alicloud_ots_instance.foo.name
 	  vpc_name = "testvpc"
-	  vswitch_id = "${alicloud_vswitch.foo.id}"
+	  vswitch_id = alicloud_vswitch.foo.id
 	}
 	`, name)
 }

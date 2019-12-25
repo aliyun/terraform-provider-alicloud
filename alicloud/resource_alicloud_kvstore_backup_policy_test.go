@@ -303,14 +303,14 @@ func testAccKVStoreBackupPolicy_classic(instanceType, instanceClass, engineVersi
 
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"
 		engine_version = "%s"
 	}
 	resource "alicloud_kvstore_backup_policy" "default" {
-		instance_id = "${alicloud_kvstore_instance.default.id}"
+		instance_id = alicloud_kvstore_instance.default.id
 		backup_period = ["Tuesday", "Wednesday"]
 		backup_time = "10:00Z-11:00Z"
 	}
@@ -328,14 +328,14 @@ func testAccKVStoreBackupPolicy_classicUpdatePeriod(instanceType, instanceClass,
 
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"
 		engine_version = "%s"
 	}
 	resource "alicloud_kvstore_backup_policy" "default" {
-		instance_id = "${alicloud_kvstore_instance.default.id}"
+		instance_id = alicloud_kvstore_instance.default.id
 		backup_period = ["Tuesday", "Wednesday", "Sunday"]
 		backup_time = "10:00Z-11:00Z"
 	}
@@ -353,14 +353,14 @@ func testAccKVStoreBackupPolicy_classicUpdateTime(instanceType, instanceClass, e
 
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"
 		engine_version = "%s"
 	}
 	resource "alicloud_kvstore_backup_policy" "default" {
-		instance_id = "${alicloud_kvstore_instance.default.id}"
+		instance_id = alicloud_kvstore_instance.default.id
 		backup_period = ["Tuesday", "Wednesday", "Sunday"]
 		backup_time = "12:00Z-13:00Z"
 	}
@@ -378,14 +378,14 @@ func testAccKVStoreBackupPolicy_classicUpdateAll(instanceType, instanceClass, en
 
 	resource "alicloud_kvstore_instance" "default" {
 		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		instance_class = "%s"
 		engine_version = "%s"
 	}
 	resource "alicloud_kvstore_backup_policy" "default" {
-		instance_id = "${alicloud_kvstore_instance.default.id}"
+		instance_id = alicloud_kvstore_instance.default.id
 		backup_period = ["Sunday"]
 		backup_time = "13:00Z-14:00Z"
 	}
@@ -406,15 +406,15 @@ func testAccKVStoreBackupPolicy_vpc(common, instanceType, instanceClass, engineV
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		instance_name  = var.name
+		vswitch_id     = alicloud_vswitch.default.id
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		engine_version = "%s"
 	}
 	resource "alicloud_kvstore_backup_policy" "default" {
-		instance_id = "${alicloud_kvstore_instance.default.id}"
+		instance_id = alicloud_kvstore_instance.default.id
 		backup_period = ["Tuesday", "Wednesday"]
 		backup_time = "10:00Z-11:00Z"
 	}
@@ -435,15 +435,15 @@ func testAccKVStoreBackupPolicy_vpcUpdatePeriod(common, instanceType, instanceCl
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		instance_name  = var.name
+		vswitch_id     = alicloud_vswitch.default.id
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		engine_version = "%s"
 	}
 	resource "alicloud_kvstore_backup_policy" "default" {
-		instance_id = "${alicloud_kvstore_instance.default.id}"
+		instance_id = alicloud_kvstore_instance.default.id
 		backup_period = ["Tuesday", "Wednesday", "Sunday"]
 		backup_time = "10:00Z-11:00Z"
 	}
@@ -463,15 +463,15 @@ func testAccKVStoreBackupPolicy_vpcUpdateTime(common, instanceType, instanceClas
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		instance_name  = var.name
+		vswitch_id     = alicloud_vswitch.default.id
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		engine_version = "%s"
 	}
 	resource "alicloud_kvstore_backup_policy" "default" {
-		instance_id = "${alicloud_kvstore_instance.default.id}"
+		instance_id = alicloud_kvstore_instance.default.id
 		backup_period = ["Tuesday", "Wednesday", "Sunday"]
 		backup_time = "11:00Z-12:00Z"
 	}
@@ -491,15 +491,15 @@ func testAccKVStoreBackupPolicy_vpcUpdateAll(common, instanceType, instanceClass
 	}
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
-		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		instance_name  = var.name
+		vswitch_id     = alicloud_vswitch.default.id
 		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		engine_version = "%s"
 	}
 	resource "alicloud_kvstore_backup_policy" "default" {
-		instance_id = "${alicloud_kvstore_instance.default.id}"
+		instance_id = alicloud_kvstore_instance.default.id
 		backup_period = ["Tuesday"]
 		backup_time = "12:00Z-13:00Z"
 	}

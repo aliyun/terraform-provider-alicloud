@@ -21,7 +21,7 @@ data "alicloud_zones" "resources" {
 }
 
 data "alicloud_kvstore_instance_classes" "resources" {
-  zone_id              = "${data.alicloud_zones.resources.zones.0.id}"
+  zone_id              = data.alicloud_zones.resources.zones.0.id
   instance_charge_type = "PrePaid"
   engine               = "Redis"
   engine_version       = "5.0"
@@ -29,7 +29,7 @@ data "alicloud_kvstore_instance_classes" "resources" {
 }
 
 output "first_kvstore_instance_class" {
-  value = "${data.alicloud_kvstore_instance_classes.resources.instance_classes}"
+  value = data.alicloud_kvstore_instance_classes.resources.instance_classes
 }
 ```
 

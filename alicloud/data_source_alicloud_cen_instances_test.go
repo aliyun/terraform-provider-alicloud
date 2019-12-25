@@ -15,7 +15,7 @@ func TestAccAlicloudCenInstancesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_cen_instance.default.id}"]`,
+			"ids": `[alicloud_cen_instance.default.id]`,
 		}),
 		fakeConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_cen_instance.default.id}_fake"]`,
@@ -24,7 +24,7 @@ func TestAccAlicloudCenInstancesDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_cen_instance.default.name}"`,
+			"name_regex": `alicloud_cen_instance.default.name`,
 		}),
 		fakeConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_cen_instance.default.name}_fake"`,
@@ -33,11 +33,11 @@ func TestAccAlicloudCenInstancesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_cen_instance.default.id}"]`,
-			"name_regex": `"${alicloud_cen_instance.default.name}"`,
+			"ids":        `[alicloud_cen_instance.default.id]`,
+			"name_regex": `alicloud_cen_instance.default.name`,
 		}),
 		fakeConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_cen_instance.default.id}"]`,
+			"ids":        `[alicloud_cen_instance.default.id]`,
 			"name_regex": `"${alicloud_cen_instance.default.name}_fake"`,
 		}),
 	}

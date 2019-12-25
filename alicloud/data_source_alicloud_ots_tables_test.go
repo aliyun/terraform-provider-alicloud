@@ -19,40 +19,40 @@ func TestAccAlicloudOtsTablesDataSource_basic(t *testing.T) {
 
 	instanceNameConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_name": "${alicloud_ots_table.default.instance_name}",
+			"instance_name": alicloud_ots_table.default.instance_name,
 		}),
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_name": "${alicloud_ots_table.default.instance_name}",
-			"ids":           []string{"${alicloud_ots_table.default.id}"},
+			"instance_name": alicloud_ots_table.default.instance_name,
+			"ids":           []string{alicloud_ots_table.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_name": "${alicloud_ots_table.default.instance_name}",
+			"instance_name": alicloud_ots_table.default.instance_name,
 			"ids":           []string{"${alicloud_ots_table.default.id}-fake"},
 		}),
 	}
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_name": "${alicloud_ots_table.default.instance_name}",
-			"name_regex":    "${alicloud_ots_table.default.table_name}",
+			"instance_name": alicloud_ots_table.default.instance_name,
+			"name_regex":    alicloud_ots_table.default.table_name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_name": "${alicloud_ots_table.default.instance_name}",
+			"instance_name": alicloud_ots_table.default.instance_name,
 			"name_regex":    "${alicloud_ots_table.default.table_name}-fake",
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_name": "${alicloud_ots_table.default.instance_name}",
-			"ids":           []string{"${alicloud_ots_table.default.id}"},
-			"name_regex":    "${alicloud_ots_table.default.table_name}",
+			"instance_name": alicloud_ots_table.default.instance_name,
+			"ids":           []string{alicloud_ots_table.default.id},
+			"name_regex":    alicloud_ots_table.default.table_name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_name": "${alicloud_ots_table.default.instance_name}",
-			"ids":           []string{"${alicloud_ots_table.default.id}"},
+			"instance_name": alicloud_ots_table.default.instance_name,
+			"ids":           []string{alicloud_ots_table.default.id},
 			"name_regex":    "${alicloud_ots_table.default.table_name}-fake",
 		}),
 	}
@@ -96,7 +96,7 @@ func dataSourceOtsTablesConfigDependence(name string) string {
 	}
 	resource "alicloud_ots_instance" "default" {
 	  name = "tf-${var.name}"
-	  description = "${var.name}"
+	  description = var.name
 	  accessed_by = "Any"
 	  instance_type = "Capacity"
 	  tags = {
@@ -106,8 +106,8 @@ func dataSourceOtsTablesConfigDependence(name string) string {
 	}
 
 	resource "alicloud_ots_table" "default" {
-	  instance_name = "${alicloud_ots_instance.default.name}"
-	  table_name = "${var.name}"
+	  instance_name = alicloud_ots_instance.default.name
+	  table_name = var.name
 	  primary_key {
           name = "pk1"
 	      type = "Integer"

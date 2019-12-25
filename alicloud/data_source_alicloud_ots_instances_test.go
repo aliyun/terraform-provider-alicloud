@@ -19,7 +19,7 @@ func TestAccAlicloudOtsInstancesDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_ots_instance.default.id}"},
+			"ids": []string{alicloud_ots_instance.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_ots_instance.default.id}-fake"},
@@ -28,7 +28,7 @@ func TestAccAlicloudOtsInstancesDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_ots_instance.default.name}",
+			"name_regex": alicloud_ots_instance.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_ots_instance.default.name}-fake",
@@ -37,7 +37,7 @@ func TestAccAlicloudOtsInstancesDataSource(t *testing.T) {
 
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"tags": "${alicloud_ots_instance.default.tags}",
+			"tags": alicloud_ots_instance.default.tags,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"tags": map[string]string{
@@ -49,13 +49,13 @@ func TestAccAlicloudOtsInstancesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids":        []string{"${alicloud_ots_instance.default.id}"},
-			"name_regex": "${alicloud_ots_instance.default.name}",
-			"tags":       "${alicloud_ots_instance.default.tags}",
+			"ids":        []string{alicloud_ots_instance.default.id},
+			"name_regex": alicloud_ots_instance.default.name,
+			"tags":       alicloud_ots_instance.default.tags,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":        []string{"${alicloud_ots_instance.default.id}"},
-			"name_regex": "${alicloud_ots_instance.default.name}",
+			"ids":        []string{alicloud_ots_instance.default.id},
+			"name_regex": alicloud_ots_instance.default.name,
 			"tags": map[string]string{
 				"Created": "TF-fake",
 				"For":     "acceptance test fake",
@@ -108,8 +108,8 @@ func dataSourceOtsInstancesConfigDependence(name string) string {
 	  default = "%s"
 	}
 	resource "alicloud_ots_instance" "default" {
-	  name = "${var.name}"
-	  description = "${var.name}"
+	  name = var.name
+	  description = var.name
 	  instance_type = "Capacity"
 	  tags = {
 		Created = "TF-${var.name}"

@@ -23,7 +23,7 @@ data "alicloud_ram_users" "users_ds" {
 }
 
 output "first_user_id" {
-  value = "${data.alicloud_ram_users.users_ds.users.0.id}"
+  value = data.alicloud_ram_users.users_ds.users.0.id
 }
 ```
 

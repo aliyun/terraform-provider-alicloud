@@ -121,8 +121,8 @@ func TestAccAlicloudOnsTopic_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":  "${alicloud_ons_instance.default.id}",
-					"topic":        "${var.topic}",
+					"instance_id":  alicloud_ons_instance.default.id,
+					"topic":        var.topic,
 					"message_type": "1",
 					"remark":       "alicloud_ons_topic_remark",
 					"perm":         "6",
@@ -175,7 +175,7 @@ func TestAccAlicloudOnsTopic_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"topic":        "${var.topic}",
+					"topic":        var.topic,
 					"message_type": "0",
 					"remark":       "alicloud_ons_topic_remark",
 					"perm":         "2",
@@ -207,7 +207,7 @@ variable "topic" {
 }
 
 var onsTopicBasicMap = map[string]string{
-	"topic":        "${var.topic}",
+	"topic":        var.topic,
 	"message_type": "1",
 	"remark":       "alicloud_ons_topic_remark",
 	"perm":         "6",

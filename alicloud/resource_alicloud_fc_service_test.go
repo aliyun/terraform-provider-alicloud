@@ -184,7 +184,7 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.name}",
+					"name": var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -218,7 +218,7 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"role":       "${alicloud_ram_role.default.arn}",
+					"role":       alicloud_ram_role.default.arn,
 					"depends_on": []string{"alicloud_ram_role_policy_attachment.default"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -231,8 +231,8 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"log_config": []map[string]string{
 						{
-							"project":  "${alicloud_log_store.default.project}",
-							"logstore": "${alicloud_log_store.default.name}",
+							"project":  alicloud_log_store.default.project,
+							"logstore": alicloud_log_store.default.name,
 						},
 					},
 				}),
@@ -291,12 +291,12 @@ func TestAccAlicloudFCServiceVpcUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.name}",
-					"role": "${alicloud_ram_role.default.arn}",
+					"name": var.name,
+					"role": alicloud_ram_role.default.arn,
 					"vpc_config": []map[string]interface{}{
 						{
 							"vswitch_ids":       "${alicloud_vswitch.default.*.id}",
-							"security_group_id": "${alicloud_security_group.default.id}",
+							"security_group_id": alicloud_security_group.default.id,
 						},
 					},
 					"depends_on": []string{"alicloud_ram_role_policy_attachment.default", "alicloud_ram_role_policy_attachment.default1"},
@@ -335,8 +335,8 @@ func TestAccAlicloudFCServiceVpcUpdate(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"log_config": []map[string]string{
 						{
-							"project":  "${alicloud_log_store.default.project}",
-							"logstore": "${alicloud_log_store.default.name}",
+							"project":  alicloud_log_store.default.project,
+							"logstore": alicloud_log_store.default.name,
 						},
 					},
 				}),
@@ -394,7 +394,7 @@ func TestAccAlicloudFCServiceMulti(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"count":      "10",
 					"name":       "${var.name}_${count.index}",
-					"role":       "${alicloud_ram_role.default.arn}",
+					"role":       alicloud_ram_role.default.arn,
 					"depends_on": []string{"alicloud_ram_role_policy_attachment.default"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -412,16 +412,16 @@ variable "name" {
 }
 
 resource "alicloud_log_project" "default" {
-    name = "${var.name}"
+    name = var.name
 }
 
 resource "alicloud_log_store" "default" {
-    project = "${alicloud_log_project.default.name}"
-    name = "${var.name}"
+    project = alicloud_log_project.default.name
+    name = var.name
 }
 
 resource "alicloud_ram_role" "default" {
-  name = "${var.name}"
+  name = var.name
   document = <<DEFINITION
   %s
   DEFINITION
@@ -430,7 +430,7 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_ram_role_policy_attachment" "default" {
-  role_name = "${alicloud_ram_role.default.name}"
+  role_name = alicloud_ram_role.default.name
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }`, name, testFCRoleTemplate)
@@ -443,16 +443,16 @@ variable "name" {
 }
 
 resource "alicloud_log_project" "default" {
-    name = "${var.name}"
+    name = var.name
 }
 
 resource "alicloud_log_store" "default" {
-    project = "${alicloud_log_project.default.name}"
-    name = "${var.name}"
+    project = alicloud_log_project.default.name
+    name = var.name
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/16"
 }
 
@@ -461,18 +461,18 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  vpc_id = alicloud_vpc.default.id
 }
 resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_ram_role" "default" {
-  name = "${var.name}"
+  name = var.name
   document = <<DEFINITION
   %s
   DEFINITION
@@ -481,20 +481,20 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_ram_role_policy_attachment" "default" {
-  role_name = "${alicloud_ram_role.default.name}"
+  role_name = alicloud_ram_role.default.name
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }
 
 resource "alicloud_ram_policy" "default" {
-  name = "${var.name}"
+  name = var.name
   document = <<DEFINITION
   %s
   DEFINITION
 }
 resource "alicloud_ram_role_policy_attachment" "default1" {
-  role_name = "${alicloud_ram_role.default.name}"
-  policy_name = "${alicloud_ram_policy.default.name}"
+  role_name = alicloud_ram_role.default.name
+  policy_name = alicloud_ram_policy.default.name
   policy_type = "Custom"
 }`, name, testFCRoleTemplate, testFCVpcPolicyTemplate)
 }

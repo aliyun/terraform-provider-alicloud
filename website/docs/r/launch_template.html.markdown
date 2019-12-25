@@ -26,11 +26,11 @@ data "alicloud_instances" "instances" {
 resource "alicloud_launch_template" "template" {
   name                          = "tf-test-template"
   description                   = "test1"
-  image_id                      = "${data.alicloud_images.images.images.0.id}"
+  image_id                      = data.alicloud_images.images.images.0.id
   host_name                     = "tf-test-host"
   instance_charge_type          = "PrePaid"
   instance_name                 = "tf-instance-name"
-  instance_type                 = "${data.alicloud_instances.instances.instances.0.instance_type}"
+  instance_type                 = data.alicloud_instances.instances.instances.0.instance_type
   internet_charge_type          = "PayByBandwidth"
   internet_max_bandwidth_in     = 5
   internet_max_bandwidth_out    = 0

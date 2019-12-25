@@ -38,7 +38,7 @@ func TestAccAlicloudCloudConnectNetworkAttachment_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ccn_id":     "${alicloud_cloud_connect_network.ccn.id}",
+					"ccn_id":     alicloud_cloud_connect_network.ccn.id,
 					"sag_id":     os.Getenv("SAG_INSTANCE_ID"),
 					"depends_on": []string{"alicloud_cloud_connect_network.ccn"},
 				}),
@@ -68,7 +68,7 @@ func resourceCcnAttachmentDependence(name string) string {
 		default = "%s"
 	}
 	resource "alicloud_cloud_connect_network" "ccn" {
-	  	name = "${var.name}"
+	  	name = var.name
 	  	is_default = "true"
 	}
 `, name)

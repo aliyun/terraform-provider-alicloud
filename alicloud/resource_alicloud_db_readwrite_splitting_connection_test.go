@@ -56,8 +56,8 @@ func TestAccAlicloudDBReadWriteSplittingConnection_update(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       "${alicloud_db_readonly_instance.default.master_db_instance_id}",
-					"connection_prefix": "${var.prefix}",
+					"instance_id":       alicloud_db_readonly_instance.default.master_db_instance_id,
+					"connection_prefix": var.prefix,
 					"distribution_type": "Standard",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -74,8 +74,8 @@ func TestAccAlicloudDBReadWriteSplittingConnection_update(t *testing.T) {
 					"max_delay_time":    "300",
 					"distribution_type": "Custom",
 					"weight": `${map(
-						"${alicloud_db_instance.default.id}", "0",
-						"${alicloud_db_readonly_instance.default.id}", "500"
+						alicloud_db_instance.default.id, "0",
+						alicloud_db_readonly_instance.default.id, "500"
 					)}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -90,8 +90,8 @@ func TestAccAlicloudDBReadWriteSplittingConnection_update(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       "${alicloud_db_readonly_instance.default.master_db_instance_id}",
-					"connection_prefix": "${var.prefix}",
+					"instance_id":       alicloud_db_readonly_instance.default.master_db_instance_id,
+					"connection_prefix": var.prefix,
 					"distribution_type": "Standard",
 					"max_delay_time":    "30",
 					"weight":            REMOVEKEY,
@@ -141,24 +141,24 @@ func resourceDBReadWriteSplittingConfigDependence(prefix string) string {
 	}
 
 	resource "alicloud_db_instance" "default" {
-		engine = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}"
-		engine_version = "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}"
-		instance_type = "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}"
-		instance_storage = "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}"
+		engine = data.alicloud_db_instance_engines.default.instance_engines.0.engine
+		engine_version = data.alicloud_db_instance_engines.default.instance_engines.0.engine_version
+		instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 		instance_charge_type = "Postpaid"
-		instance_name = "${var.name}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = var.name
+		vswitch_id = alicloud_vswitch.default.id
 		security_ips = ["10.168.1.12", "100.69.7.112"]
 	}
 
 	resource "alicloud_db_readonly_instance" "default" {
-		master_db_instance_id = "${alicloud_db_instance.default.id}"
-		zone_id = "${alicloud_db_instance.default.zone_id}"
-		engine_version = "${alicloud_db_instance.default.engine_version}"
-		instance_type = "${alicloud_db_instance.default.instance_type}"
-		instance_storage = "${alicloud_db_instance.default.instance_storage}"
+		master_db_instance_id = alicloud_db_instance.default.id
+		zone_id = alicloud_db_instance.default.zone_id
+		engine_version = alicloud_db_instance.default.engine_version
+		instance_type = alicloud_db_instance.default.instance_type
+		instance_storage = alicloud_db_instance.default.instance_storage
 		instance_name = "${var.name}_ro"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = alicloud_vswitch.default.id
 	}
 `, RdsCommonTestCase, prefix)
 }

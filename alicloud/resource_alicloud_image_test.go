@@ -36,7 +36,7 @@ func TestAccAliCloudImageBasic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_instance.default.id}",
+					"instance_id": alicloud_instance.default.id,
 					"description": fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
 					"name":        name,
 					"tags": map[string]string{
@@ -130,25 +130,25 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  name              = var.name
 }
 resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 resource "alicloud_instance" "default" {
   image_id = "${data.alicloud_images.default.ids[0]}"
   instance_type = "${data.alicloud_instance_types.default.ids[0]}"
   security_groups = "${[alicloud_security_group.default.id]}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
+  vswitch_id = alicloud_vswitch.default.id
+  instance_name = var.name
 }
 `, name)
 }

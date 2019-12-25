@@ -17,7 +17,7 @@ data "alicloud_slb_ca_certificates" "sample_ds" {
 }
 
 output "first_slb_ca_certificate_id" {
-  value = "${data.alicloud_slb_ca_certificates.sample_ds.certificates.0.id}"
+  value = data.alicloud_slb_ca_certificates.sample_ds.certificates.0.id
 }
 ```
 

@@ -22,7 +22,7 @@ data "alicloud_ram_roles" "roles_ds" {
 }
 
 output "first_role_id" {
-  value = "${data.alicloud_ram_roles.roles_ds.roles.0.id}"
+  value = data.alicloud_ram_roles.roles_ds.roles.0.id
 }
 ```
 

@@ -23,7 +23,7 @@ data "alicloud_ots_tables" "tables_ds" {
 }
 
 output "first_table_id" {
-  value = "${data.alicloud_ots_tables.tables_ds.tables.0.id}"
+  value = data.alicloud_ots_tables.tables_ds.tables.0.id
 }
 ```
 

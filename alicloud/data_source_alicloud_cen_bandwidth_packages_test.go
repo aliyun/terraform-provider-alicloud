@@ -15,7 +15,7 @@ func TestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 	idConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
-			"instance_id": `"${alicloud_cen_bandwidth_package_attachment.default.instance_id}"`,
+			"instance_id": `alicloud_cen_bandwidth_package_attachment.default.instance_id`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
 			"instance_id": `"${alicloud_cen_bandwidth_package_attachment.default.instance_id}-fake"`,
@@ -23,7 +23,7 @@ func TestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
 	}
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_cen_bandwidth_package.default.name}"`,
+			"name_regex": `alicloud_cen_bandwidth_package.default.name`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_cen_bandwidth_package.default.name}-fake"`,
@@ -31,7 +31,7 @@ func TestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_cen_bandwidth_package.default.id}"]`,
+			"ids": `[alicloud_cen_bandwidth_package.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_cen_bandwidth_package.default.id}-fake"]`,
@@ -39,14 +39,14 @@ func TestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
-			"instance_id": `"${alicloud_cen_bandwidth_package_attachment.default.instance_id}"`,
-			"name_regex":  `"${alicloud_cen_bandwidth_package.default.name}"`,
-			"ids":         `["${alicloud_cen_bandwidth_package.default.id}"]`,
+			"instance_id": `alicloud_cen_bandwidth_package_attachment.default.instance_id`,
+			"name_regex":  `alicloud_cen_bandwidth_package.default.name`,
+			"ids":         `[alicloud_cen_bandwidth_package.default.id]`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
 			"instance_id": `"${alicloud_cen_bandwidth_package_attachment.default.instance_id}-fake"`,
-			"name_regex":  `"${alicloud_cen_bandwidth_package.default.name}"`,
-			"ids":         `["${alicloud_cen_bandwidth_package.default.id}"]`,
+			"name_regex":  `alicloud_cen_bandwidth_package.default.name`,
+			"ids":         `[alicloud_cen_bandwidth_package.default.id]`,
 		}),
 	}
 	preCheck := func() {
@@ -66,21 +66,21 @@ variable "name" {
 	  default = "tf-testAcc%sCenBandwidthLimitsDataSource-%d"
 	}
 resource "alicloud_cen_instance" "default" {
-	name = "${var.name}"
+	name = var.name
 	description = "tf-testAccCenConfigDescription"
 }
 
 resource "alicloud_cen_bandwidth_package" "default" {
     bandwidth = 5
-	name = "${var.name}"
+	name = var.name
     geographic_region_ids = [
 		"China",
 		"Asia-Pacific"]
 }
 
 resource "alicloud_cen_bandwidth_package_attachment" "default" {
-	instance_id = "${alicloud_cen_instance.default.id}"
-	bandwidth_package_id = "${alicloud_cen_bandwidth_package.default.id}"
+	instance_id = alicloud_cen_instance.default.id
+	bandwidth_package_id = alicloud_cen_bandwidth_package.default.id
 }
 
 data "alicloud_cen_bandwidth_packages" "default" {

@@ -21,7 +21,7 @@ data "alicloud_ots_instance_attachments" "attachments_ds" {
 }
 
 output "first_ots_attachment_id" {
-  value = "${data.alicloud_ots_instance_attachments.attachments_ds.attachments.0.id}"
+  value = data.alicloud_ots_instance_attachments.attachments_ds.attachments.0.id
 }
 ```
 

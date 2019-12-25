@@ -21,18 +21,18 @@ data "alicloud_zones" "default" {}
 
 resource "alicloud_vpc" "vpc" {
   cidr_block = "172.16.0.0/16"
-  name       = "${var.name}"
+  name       = var.name
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  name              = "${var.name}"
+  name              = var.name
   cidr_block        = "172.16.0.0/24"
-  vpc_id            = "${alicloud_vpc.vpc.id}"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  vpc_id            = alicloud_vpc.vpc.id
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 data "alicloud_vswitches" "default" {
-  name_regex = "${alicloud_vswitch.vswitch.name}"
+  name_regex = alicloud_vswitch.vswitch.name
 }
 ```
 

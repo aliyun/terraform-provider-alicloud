@@ -24,7 +24,7 @@ data "alicloud_zones" "zones_ds" {
 
 # Create an ECS instance with the first matched zone
 resource "alicloud_instance" "instance" {
-  availability_zone = "${data.alicloud_zones.zones_ds.zones.0.id}"
+  availability_zone = data.alicloud_zones.zones_ds.zones.0.id
 
   # Other properties...
 }

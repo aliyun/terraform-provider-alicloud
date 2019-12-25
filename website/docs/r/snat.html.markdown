@@ -24,32 +24,32 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "vpc" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  vpc_id            = "${alicloud_vpc.vpc.id}"
+  vpc_id            = alicloud_vpc.vpc.id
   cidr_block        = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
 }
 
 resource "alicloud_nat_gateway" "default" {
-  vpc_id        = "${alicloud_vswitch.vswitch.vpc_id}"
+  vpc_id        = alicloud_vswitch.vswitch.vpc_id
   specification = "Small"
-  name          = "${var.name}"
+  name          = var.name
 }
 
 resource "alicloud_eip" "eip" {
   count = 2
-  name  = "${var.name}"
+  name  = var.name
 }
 
 resource "alicloud_eip_association" "default" {
   count         = 2
   allocation_id = "${element(alicloud_eip.default.*.id, count.index)}"
-  instance_id   = "${alicloud_nat_gateway.default.id}"
+  instance_id   = alicloud_nat_gateway.default.id
 }
 
 resource "alicloud_common_bandwidth_package" "default" {
@@ -61,13 +61,13 @@ resource "alicloud_common_bandwidth_package" "default" {
 
 resource "alicloud_common_bandwidth_package_attachment" "default" {
   count                = 2
-  bandwidth_package_id = "${alicloud_common_bandwidth_package.default.id}"
+  bandwidth_package_id = alicloud_common_bandwidth_package.default.id
   instance_id          = "${element(alicloud_eip.default.*.id, count.index)}"
 }
 
 resource "alicloud_snat_entry" "default" {
-  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids}"
-  source_vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  snat_table_id     = alicloud_nat_gateway.default.snat_table_ids
+  source_vswitch_id = alicloud_vswitch.vswitch.id
   snat_ip           = "${join(",", alicloud_eip.default.*.ip_address)}"
 }
 ```

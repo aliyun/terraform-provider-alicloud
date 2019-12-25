@@ -12,18 +12,18 @@ func TestAccAlicloudSlbListenersDataSourceUpdate_http(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfig(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_listener.default.load_balancer_id`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfig(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_listener.default.load_balancer_id`,
 			"frontend_port":    `"80"`,
 			"protocol":         `"http"`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbListenersDataSourceConfig(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_listener.default.load_balancer_id`,
 			"frontend_port":    `"81"`,
 			"protocol":         `"http"`,
 		}),
@@ -78,18 +78,18 @@ func TestAccAlicloudSlbListenersDataSource_https(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigHttps(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_listener.default.load_balancer_id`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigHttps(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_listener.default.load_balancer_id`,
 			"frontend_port":    `"80"`,
 			"protocol":         `"https"`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbListenersDataSourceConfigHttps(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_listener.default.load_balancer_id`,
 			"frontend_port":    `"81"`,
 			"protocol":         `"https"`,
 		}),
@@ -144,18 +144,18 @@ func TestAccAlicloudSlbListenersDataSource_tcp(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigTcp(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_listener.default.load_balancer_id`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigTcp(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_listener.default.load_balancer_id`,
 			"frontend_port":    `"22"`,
 			"protocol":         `"tcp"`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbListenersDataSourceConfigTcp(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_listener.default.load_balancer_id`,
 			"frontend_port":    `"21"`,
 			"protocol":         `"tcp"`,
 		}),
@@ -201,18 +201,18 @@ func TestAccAlicloudSlbListenersDataSource_udp(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigUdp(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_listener.default.load_balancer_id`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigUdp(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_listener.default.load_balancer_id`,
 			"frontend_port":    `"11"`,
 			"protocol":         `"udp"`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbListenersDataSourceConfigUdp(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"load_balancer_id": `alicloud_slb_listener.default.load_balancer_id`,
 			"frontend_port":    `"21"`,
 			"protocol":         `"udp"`,
 		}),
@@ -268,30 +268,30 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name = var.name
 }
 
 resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  name = var.name
+  vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = alicloud_slb.default.id
   backend_port = 80
   frontend_port = 80
   protocol = "http"
   sticky_session = "on"
   sticky_session_type = "insert"
-  cookie = "${var.name}"
+  cookie = var.name
   cookie_timeout = 86400
   health_check = "on"
   health_check_uri = "/cons"
@@ -329,20 +329,20 @@ variable "name" {
 }
 
 resource "alicloud_slb" "default" {
-  name = "${var.name}"
+  name = var.name
   internet_charge_type = "PayByTraffic"
   internet = true
   specification = "slb.s2.small"
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = alicloud_slb.default.id
   backend_port = 80
   frontend_port = 80
   protocol = "https"
   sticky_session = "on"
   sticky_session_type = "insert"
-  cookie = "${var.name}"
+  cookie = var.name
   cookie_timeout = 86400
   health_check = "on"
   health_check_uri = "/cons"
@@ -359,8 +359,8 @@ resource "alicloud_slb_listener" "default" {
   }
   acl_status = "on"
   acl_type   = "white"
-  acl_id     = "${alicloud_slb_acl.default.id}"
-  server_certificate_id        = "${alicloud_slb_server_certificate.default.id}"
+  acl_id     = alicloud_slb_acl.default.id
+  server_certificate_id        = alicloud_slb_server_certificate.default.id
   request_timeout           = 80
   idle_timeout              = 30
   enable_http2              = "on"
@@ -371,8 +371,8 @@ variable "ip_version" {
   default = "ipv4"
 }
 resource "alicloud_slb_acl" "default" {
-  name = "${var.name}"
-  ip_version = "${var.ip_version}"
+  name = var.name
+  ip_version = var.ip_version
   entry_list {
       entry="10.10.10.0/24"
       comment="first"
@@ -383,7 +383,7 @@ resource "alicloud_slb_acl" "default" {
     }
 }
 resource "alicloud_slb_server_certificate" "default" {
-  name = "${var.name}"
+  name = var.name
   server_certificate = "-----BEGIN CERTIFICATE-----\nMIIDRjCCAq+gAwIBAgIJAJn3ox4K13PoMA0GCSqGSIb3DQEBBQUAMHYxCzAJBgNV\nBAYTAkNOMQswCQYDVQQIEwJCSjELMAkGA1UEBxMCQkoxDDAKBgNVBAoTA0FMSTEP\nMA0GA1UECxMGQUxJWVVOMQ0wCwYDVQQDEwR0ZXN0MR8wHQYJKoZIhvcNAQkBFhB0\nZXN0QGhvdG1haWwuY29tMB4XDTE0MTEyNDA2MDQyNVoXDTI0MTEyMTA2MDQyNVow\ndjELMAkGA1UEBhMCQ04xCzAJBgNVBAgTAkJKMQswCQYDVQQHEwJCSjEMMAoGA1UE\nChMDQUxJMQ8wDQYDVQQLEwZBTElZVU4xDTALBgNVBAMTBHRlc3QxHzAdBgkqhkiG\n9w0BCQEWEHRlc3RAaG90bWFpbC5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJ\nAoGBAM7SS3e9+Nj0HKAsRuIDNSsS3UK6b+62YQb2uuhKrp1HMrOx61WSDR2qkAnB\ncoG00Uz38EE+9DLYNUVQBK7aSgLP5M1Ak4wr4GqGyCgjejzzh3DshUzLCCy2rook\nKOyRTlPX+Q5l7rE1fcSNzgepcae5i2sE1XXXzLRIDIvQxcspAgMBAAGjgdswgdgw\nHQYDVR0OBBYEFBdy+OuMsvbkV7R14f0OyoLoh2z4MIGoBgNVHSMEgaAwgZ2AFBdy\n+OuMsvbkV7R14f0OyoLoh2z4oXqkeDB2MQswCQYDVQQGEwJDTjELMAkGA1UECBMC\nQkoxCzAJBgNVBAcTAkJKMQwwCgYDVQQKEwNBTEkxDzANBgNVBAsTBkFMSVlVTjEN\nMAsGA1UEAxMEdGVzdDEfMB0GCSqGSIb3DQEJARYQdGVzdEBob3RtYWlsLmNvbYIJ\nAJn3ox4K13PoMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEFBQADgYEAY7KOsnyT\ncQzfhiiG7ASjiPakw5wXoycHt5GCvLG5htp2TKVzgv9QTliA3gtfv6oV4zRZx7X1\nOfi6hVgErtHaXJheuPVeW6eAW8mHBoEfvDAfU3y9waYrtUevSl07643bzKL6v+Qd\nDUBTxOAvSYfXTtI90EAxEG/bJJyOm5LqoiA=\n-----END CERTIFICATE-----"
   private_key = "-----BEGIN RSA PRIVATE KEY-----\nMIICXAIBAAKBgQDO0kt3vfjY9BygLEbiAzUrEt1Cum/utmEG9rroSq6dRzKzsetV\nkg0dqpAJwXKBtNFM9/BBPvQy2DVFUASu2koCz+TNQJOMK+BqhsgoI3o884dw7IVM\nywgstq6KJCjskU5T1/kOZe6xNX3Ejc4HqXGnuYtrBNV118y0SAyL0MXLKQIDAQAB\nAoGAfe3NxbsGKhN42o4bGsKZPQDfeCHMxayGp5bTd10BtQIE/ST4BcJH+ihAS7Bd\n6FwQlKzivNd4GP1MckemklCXfsVckdL94e8ZbJl23GdWul3v8V+KndJHqv5zVJmP\nhwWoKimwIBTb2s0ctVryr2f18N4hhyFw1yGp0VxclGHkjgECQQD9CvllsnOwHpP4\nMdrDHbdb29QrobKyKW8pPcDd+sth+kP6Y8MnCVuAKXCKj5FeIsgVtfluPOsZjPzz\n71QQWS1dAkEA0T0KXO8gaBQwJhIoo/w6hy5JGZnrNSpOPp5xvJuMAafs2eyvmhJm\nEv9SN/Pf2VYa1z6FEnBaLOVD6hf6YQIsPQJAX/CZPoW6dzwgvimo1/GcY6eleiWE\nqygqjWhsh71e/3bz7yuEAnj5yE3t7Zshcp+dXR3xxGo0eSuLfLFxHgGxwQJAAxf8\n9DzQ5NkPkTCJi0sqbl8/03IUKTgT6hcbpWdDXa7m8J3wRr3o5nUB+TPQ5nzAbthM\nzWX931YQeACcwhxvHQJBAN5mTzzJD4w4Ma6YTaNHyXakdYfyAWrOkPIWZxfhMfXe\nDrlNdiysTI4Dd1dLeErVpjsckAaOW/JDG5PCSwkaMxk=\n-----END RSA PRIVATE KEY-----"
 }
@@ -411,24 +411,24 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name = var.name
 }
 
 resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  name = var.name
+  vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = alicloud_slb.default.id
   backend_port = 22
   frontend_port = 22
   protocol = "tcp"
@@ -464,24 +464,24 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name = var.name
 }
 
 resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  name = var.name
+  vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = alicloud_slb.default.id
   backend_port = 10
   frontend_port = 11
   protocol = "udp"

@@ -40,8 +40,8 @@ func TestAccAlicloudOtsTable_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name": "${alicloud_ots_instance.default.name}",
-					"table_name":    "${var.name}",
+					"instance_name": alicloud_ots_instance.default.name,
+					"table_name":    var.name,
 					"primary_key": []map[string]interface{}{
 						{
 							"name": "pk1",
@@ -140,8 +140,8 @@ func TestAccAlicloudOtsTable_highPerformance(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name": "${alicloud_ots_instance.default.name}",
-					"table_name":    "${var.name}",
+					"instance_name": alicloud_ots_instance.default.name,
+					"table_name":    var.name,
 					"primary_key": []map[string]interface{}{
 						{
 							"name": "pk1",
@@ -240,7 +240,7 @@ func TestAccAlicloudOtsTable_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name": "${alicloud_ots_instance.default.name}",
+					"instance_name": alicloud_ots_instance.default.name,
 					"table_name":    "${var.name}${count.index}",
 					"primary_key": []map[string]interface{}{
 						{
@@ -266,7 +266,7 @@ func resourceOtsTableConfigDependence(name string) string {
 	}
 	resource "alicloud_ots_instance" "default" {
 	  name = "tf-${var.name}"
-	  description = "${var.name}"
+	  description = var.name
 	  accessed_by = "Any"
 	  instance_type = "%s"
 	  tags = {
@@ -284,7 +284,7 @@ func resourceOtsTableConfigDependenceHighperformance(name string) string {
 	}
 	resource "alicloud_ots_instance" "default" {
 	  name = "tf-${var.name}"
-	  description = "${var.name}"
+	  description = var.name
 	  accessed_by = "Any"
 	  instance_type = "%s"
 	  tags = {

@@ -69,7 +69,7 @@ resource "alicloud_kms_key" "default" {
 }
 
 resource "alicloud_kms_ciphertext" "default" {
-	key_id = "${alicloud_kms_key.default.id}"
+	key_id = alicloud_kms_key.default.id
 	plaintext = "plaintext"
 }
 `, keyId)
@@ -83,12 +83,12 @@ var testAccAlicloudKmsCiphertextConfig_validate = func(keyId string) string {
 	}
 	
 	resource "alicloud_kms_ciphertext" "default" {
-		key_id = "${alicloud_kms_key.default.id}"
+		key_id = alicloud_kms_key.default.id
 		plaintext = "plaintext"
 	}
 	
 	data "alicloud_kms_plaintext" "default" {
-	  ciphertext_blob = "${alicloud_kms_ciphertext.default.ciphertext_blob}"
+	  ciphertext_blob = alicloud_kms_ciphertext.default.ciphertext_blob
 	}
 	`, keyId)
 }
@@ -101,7 +101,7 @@ var testAccAlicloudKmsCiphertextConfig_validate_withContext = func(keyId string)
 	}
 	
 	resource "alicloud_kms_ciphertext" "default" {
-		key_id = "${alicloud_kms_key.default.id}"
+		key_id = alicloud_kms_key.default.id
 		plaintext = "plaintext"
         encryption_context = {
     		name = "value"
@@ -109,7 +109,7 @@ var testAccAlicloudKmsCiphertextConfig_validate_withContext = func(keyId string)
 	}
 	
 	data "alicloud_kms_plaintext" "default" {
-	  ciphertext_blob = "${alicloud_kms_ciphertext.default.ciphertext_blob}"
+	  ciphertext_blob = alicloud_kms_ciphertext.default.ciphertext_blob
 	  encryption_context = {
 		name = "value"
 	  }

@@ -16,7 +16,7 @@ func TestAccAlicloudSnapshotsDataSourceBasic(t *testing.T) {
 
 	idsConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_snapshot.default.id}"},
+			"ids": []string{alicloud_snapshot.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_snapshot.default.id}_fake"},
@@ -25,7 +25,7 @@ func TestAccAlicloudSnapshotsDataSourceBasic(t *testing.T) {
 
 	instanceIdConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${alicloud_instance.default.id}",
+			"instance_id": alicloud_instance.default.id,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"instance_id": "${alicloud_instance.default.id}_fake",
@@ -34,7 +34,7 @@ func TestAccAlicloudSnapshotsDataSourceBasic(t *testing.T) {
 
 	diskIdConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"disk_id": "${alicloud_disk_attachment.default.disk_id}",
+			"disk_id": alicloud_disk_attachment.default.disk_id,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"disk_id": "${alicloud_disk_attachment.default.disk_id}_fake",
@@ -43,11 +43,11 @@ func TestAccAlicloudSnapshotsDataSourceBasic(t *testing.T) {
 
 	encryptedConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids":       []string{"${alicloud_snapshot.default.id}"},
+			"ids":       []string{alicloud_snapshot.default.id},
 			"encrypted": "false",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":       []string{"${alicloud_snapshot.default.id}"},
+			"ids":       []string{alicloud_snapshot.default.id},
 			"encrypted": "true",
 		}),
 	}
@@ -63,57 +63,57 @@ func TestAccAlicloudSnapshotsDataSourceBasic(t *testing.T) {
 
 	statusConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids":    []string{"${alicloud_snapshot.default.id}"},
+			"ids":    []string{alicloud_snapshot.default.id},
 			"status": "accomplished",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":    []string{"${alicloud_snapshot.default.id}"},
+			"ids":    []string{alicloud_snapshot.default.id},
 			"status": "failed",
 		}),
 	}
 
 	typeConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids":  []string{"${alicloud_snapshot.default.id}"},
+			"ids":  []string{alicloud_snapshot.default.id},
 			"type": "user",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":  []string{"${alicloud_snapshot.default.id}"},
+			"ids":  []string{alicloud_snapshot.default.id},
 			"type": "auto",
 		}),
 	}
 
 	sourceDiskTypeConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids":              []string{"${alicloud_snapshot.default.id}"},
+			"ids":              []string{alicloud_snapshot.default.id},
 			"source_disk_type": "Data",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":              []string{"${alicloud_snapshot.default.id}"},
+			"ids":              []string{alicloud_snapshot.default.id},
 			"source_disk_type": "System",
 		}),
 	}
 
 	usageConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids":   []string{"${alicloud_snapshot.default.id}"},
+			"ids":   []string{alicloud_snapshot.default.id},
 			"usage": "none",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":   []string{"${alicloud_snapshot.default.id}"},
+			"ids":   []string{alicloud_snapshot.default.id},
 			"usage": "image",
 		}),
 	}
 
 	tagsConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_snapshot.default.id}"},
+			"ids": []string{alicloud_snapshot.default.id},
 			"tags": map[string]interface{}{
 				"version": "1.0",
 			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_snapshot.default.id}"},
+			"ids": []string{alicloud_snapshot.default.id},
 			"tags": map[string]interface{}{
 				"version": "1.0_fake",
 			},
@@ -122,9 +122,9 @@ func TestAccAlicloudSnapshotsDataSourceBasic(t *testing.T) {
 
 	allConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids":              []string{"${alicloud_snapshot.default.id}"},
-			"instance_id":      "${alicloud_instance.default.id}",
-			"disk_id":          "${alicloud_disk_attachment.default.disk_id}",
+			"ids":              []string{alicloud_snapshot.default.id},
+			"instance_id":      alicloud_instance.default.id,
+			"disk_id":          alicloud_disk_attachment.default.disk_id,
 			"encrypted":        "false",
 			"name_regex":       name,
 			"status":           "accomplished",
@@ -136,9 +136,9 @@ func TestAccAlicloudSnapshotsDataSourceBasic(t *testing.T) {
 			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":              []string{"${alicloud_snapshot.default.id}"},
-			"instance_id":      "${alicloud_instance.default.id}",
-			"disk_id":          "${alicloud_disk_attachment.default.disk_id}",
+			"ids":              []string{alicloud_snapshot.default.id},
+			"instance_id":      alicloud_instance.default.id,
+			"disk_id":          alicloud_disk_attachment.default.disk_id,
 			"encrypted":        "false",
 			"name_regex":       name,
 			"status":           "accomplished",
@@ -202,26 +202,26 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "192.168.0.0/16"
 }
 
 
 resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "192.168.0.0/24"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-  name        = "${var.name}"
-  description = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name        = var.name
+  description = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_disk" "default" {
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
   category          = "cloud_efficiency"
   size              = "20"
 }
@@ -231,23 +231,23 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_instance" "default" {
-  instance_name   = "${var.name}"
-  image_id        = "${data.alicloud_images.default.images.0.id}"
-  instance_type   = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_groups = ["${alicloud_security_group.default.id}"]
-  vswitch_id      = "${alicloud_vswitch.default.id}"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+  instance_name   = var.name
+  image_id        = data.alicloud_images.default.images.0.id
+  instance_type   = data.alicloud_instance_types.default.instance_types.0.id
+  security_groups = [alicloud_security_group.default.id]
+  vswitch_id      = alicloud_vswitch.default.id
+  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
 
 resource "alicloud_disk_attachment" "default" {
-  disk_id     = "${alicloud_disk.default.id}"
-  instance_id = "${alicloud_instance.default.id}"
+  disk_id     = alicloud_disk.default.id
+  instance_id = alicloud_instance.default.id
 }
 
 resource "alicloud_snapshot" "default" {
-  disk_id = "${alicloud_disk_attachment.default.disk_id}"
-  name = "${var.name}"
-  description = "${var.name}"
+  disk_id = alicloud_disk_attachment.default.disk_id
+  name = var.name
+  description = var.name
   tags = {
     version = "1.0"
   }

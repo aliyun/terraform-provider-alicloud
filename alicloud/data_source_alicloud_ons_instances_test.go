@@ -16,7 +16,7 @@ func TestAccAlicloudOnsInstancesDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_ons_instance.default.name}",
+			"name_regex": alicloud_ons_instance.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_ons_instance.default.name}_fake",
@@ -25,7 +25,7 @@ func TestAccAlicloudOnsInstancesDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_ons_instance.default.id}"},
+			"ids": []string{alicloud_ons_instance.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_ons_instance.default.id}_fake"},
@@ -34,12 +34,12 @@ func TestAccAlicloudOnsInstancesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids":        []string{"${alicloud_ons_instance.default.id}"},
-			"name_regex": "${alicloud_ons_instance.default.name}",
+			"ids":        []string{alicloud_ons_instance.default.id},
+			"name_regex": alicloud_ons_instance.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"${alicloud_ons_instance.default.id}_fake"},
-			"name_regex": "${alicloud_ons_instance.default.name}",
+			"name_regex": alicloud_ons_instance.default.name,
 		}),
 	}
 
@@ -79,7 +79,7 @@ variable "name" {
 }
 
 resource "alicloud_ons_instance" "default" {
-  name = "${var.name}"
+  name = var.name
   remark = "default-remark"
 }
 

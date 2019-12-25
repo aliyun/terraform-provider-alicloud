@@ -48,7 +48,7 @@ func TestAccAlicloudOssBucketObject_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bucket":       "${alicloud_oss_bucket.default.bucket}",
+					"bucket":       alicloud_oss_bucket.default.bucket,
 					"key":          "test-object-source-key",
 					"source":       tmpFile.Name(),
 					"content_type": "binary/octet-stream",
@@ -97,7 +97,7 @@ func TestAccAlicloudOssBucketObject_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bucket":                 "${alicloud_oss_bucket.default.bucket}",
+					"bucket":                 alicloud_oss_bucket.default.bucket,
 					"server_side_encryption": "AES256",
 					"kms_key_id":             REMOVEKEY,
 					"key":                    "test-object-source-key",

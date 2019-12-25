@@ -17,7 +17,7 @@ func SkipTestAccAlicloudApigatewayAppsDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_api_gateway_app.default.name}",
+			"name_regex": alicloud_api_gateway_app.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_api_gateway_app.default.name}_fake",
@@ -25,7 +25,7 @@ func SkipTestAccAlicloudApigatewayAppsDataSource(t *testing.T) {
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_api_gateway_app.default.id}"},
+			"ids": []string{alicloud_api_gateway_app.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_api_gateway_app.default.id}_fake"},
@@ -47,15 +47,15 @@ func SkipTestAccAlicloudApigatewayAppsDataSource(t *testing.T) {
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_api_gateway_app.default.name}",
-			"ids":        []string{"${alicloud_api_gateway_app.default.id}"},
+			"name_regex": alicloud_api_gateway_app.default.name,
+			"ids":        []string{alicloud_api_gateway_app.default.id},
 			"tags": map[string]interface{}{
 				"Created": "TF",
 				"For":     "acceptance test",
 			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_api_gateway_app.default.name}",
+			"name_regex": alicloud_api_gateway_app.default.name,
 			"ids":        []string{"${alicloud_api_gateway_app.default.id}_fake"},
 			"tags": map[string]interface{}{
 				"Created": "TF",
@@ -104,8 +104,8 @@ variable "description" {
 }
 
 resource "alicloud_api_gateway_app" "default" {
-  name = "${var.name}"
-  description = "${var.description}"
+  name = var.name
+  description = var.description
   tags 		= {
 		Created = "TF"
 		For 	= "acceptance test"

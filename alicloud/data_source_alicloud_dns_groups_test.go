@@ -14,7 +14,7 @@ func TestAccAlicloudDnsGroupsDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_dns_group.default.name}",
+			"name_regex": alicloud_dns_group.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_dns_group.default.name}_fake",
@@ -22,7 +22,7 @@ func TestAccAlicloudDnsGroupsDataSource(t *testing.T) {
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_dns_group.default.id}"},
+			"ids": []string{alicloud_dns_group.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_dns_group.default.id}_fake"},
@@ -30,12 +30,12 @@ func TestAccAlicloudDnsGroupsDataSource(t *testing.T) {
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_dns_group.default.name}",
-			"ids":        []string{"${alicloud_dns_group.default.id}"},
+			"name_regex": alicloud_dns_group.default.name,
+			"ids":        []string{alicloud_dns_group.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_dns_group.default.name}_fake",
-			"ids":        []string{"${alicloud_dns_group.default.id}"},
+			"ids":        []string{alicloud_dns_group.default.id},
 		}),
 	}
 	existChangeMap := map[string]string{

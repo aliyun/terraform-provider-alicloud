@@ -51,8 +51,8 @@ func TestAccAlicloudPolarDBCluster(t *testing.T) {
 					"db_version":    "8.0",
 					"pay_type":      "PostPaid",
 					"db_node_class": "polar.mysql.x4.large",
-					"vswitch_id":    "${alicloud_vswitch.default.id}",
-					"description":   "${var.name}",
+					"vswitch_id":    alicloud_vswitch.default.id,
+					"description":   var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -150,8 +150,8 @@ func TestAccAlicloudPolarDBClusterMulti(t *testing.T) {
 					"db_version":    "8.0",
 					"pay_type":      "PostPaid",
 					"db_node_class": "polar.mysql.x4.large",
-					"vswitch_id":    "${alicloud_vswitch.default.id}",
-					"description":   "${var.name}",
+					"vswitch_id":    alicloud_vswitch.default.id,
+					"description":   var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),

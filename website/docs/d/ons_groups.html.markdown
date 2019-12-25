@@ -25,24 +25,24 @@ variable "group_id" {
 }
 
 resource "alicloud_ons_instance" "default" {
-  name = "${var.name}"
+  name = var.name
   remark = "default_ons_instance_remark"
 }
 
 resource "alicloud_ons_group" "default" {
-  group_id = "${var.group_id}"
-  instance_id = "${alicloud_ons_instance.default.id}"
+  group_id = var.group_id
+  instance_id = alicloud_ons_instance.default.id
   remark = "dafault_ons_group_remark"
 }
 
 data "alicloud_ons_groups" "groups_ds" {
-  instance_id = "${alicloud_ons_group.default.instance_id}"
-  group_id_regex = "${var.group_id}"
+  instance_id = alicloud_ons_group.default.instance_id
+  group_id_regex = var.group_id
   output_file = "groups.txt"
 }
 
 output "first_group_name" {
-  value = "${data.alicloud_ons_groups.groups_ds.groups.0.group_id}"
+  value = data.alicloud_ons_groups.groups_ds.groups.0.group_id
 }
 ```
 

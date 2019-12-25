@@ -23,7 +23,7 @@ data "alicloud_cr_repos" "my_repos" {
 }
 
 output "output" {
-  value = "${data.alicloud_cr_repos.my_repos.repos}"
+  value = data.alicloud_cr_repos.my_repos.repos
 }
 ```
 

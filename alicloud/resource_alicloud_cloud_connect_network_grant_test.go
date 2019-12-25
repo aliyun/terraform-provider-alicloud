@@ -45,8 +45,8 @@ func TestAccAlicloudCloudConnectNetworkGrant_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ccn_id":  "${alicloud_cloud_connect_network.ccn.id}",
-					"cen_id":  "${alicloud_cen_instance.cen.id}",
+					"ccn_id":  alicloud_cloud_connect_network.ccn.id,
+					"cen_id":  alicloud_cen_instance.cen.id,
 					"cen_uid": os.Getenv("ALICLOUD_ACCOUNT_ID_2"),
 					"depends_on": []string{
 						"alicloud_cloud_connect_network.ccn",
@@ -98,8 +98,8 @@ func TestAccAlicloudCloudConnectNetworkGrant_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":   "3",
-					"ccn_id":  "${alicloud_cloud_connect_network.ccn.id}",
-					"cen_id":  "${alicloud_cen_instance.cen.id}",
+					"ccn_id":  alicloud_cloud_connect_network.ccn.id,
+					"cen_id":  alicloud_cen_instance.cen.id,
 					"cen_uid": os.Getenv("ALICLOUD_ACCOUNT_ID_2"),
 					"depends_on": []string{
 						"alicloud_cloud_connect_network.ccn",
@@ -142,12 +142,12 @@ func resourceCcnGrantBasicDependence(name string) string {
 
 	resource "alicloud_cen_instance" "cen" {
 		provider = "alicloud.cen_account"
-	  	name = "${var.name}"
+	  	name = var.name
 	}
 
 	resource "alicloud_cloud_connect_network" "ccn" {
 		provider = "alicloud.ccn_account"
-	  	name = "${var.name}"
+	  	name = var.name
 	  	is_default = "true"
 	}
 `, access2, secret2, name)

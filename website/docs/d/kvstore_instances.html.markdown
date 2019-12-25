@@ -19,7 +19,7 @@ Filters support regular expression for the instance name, searches by tags, and 
         name_regex: "checkalicloudkvinstancesdatasoource`
     }
     output "first_instance_name" {
-        value = "${data.alicloud_kvstore_instances.default.instances.name}"
+        value = data.alicloud_kvstore_instances.default.instances.name
     }
 ```
 

@@ -125,13 +125,13 @@ func TestAccAlicloudFCFunction_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"service":     "${alicloud_fc_service.default.name}",
-					"name":        "${var.name}",
+					"service":     alicloud_fc_service.default.name,
+					"name":        var.name,
 					"runtime":     "python2.7",
 					"description": "tf",
 					"handler":     "hello.handler",
-					"oss_bucket":  "${alicloud_oss_bucket.default.id}",
-					"oss_key":     "${alicloud_oss_bucket_object.default.key}",
+					"oss_bucket":  alicloud_oss_bucket.default.id,
+					"oss_key":     alicloud_oss_bucket_object.default.key,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -199,13 +199,13 @@ func TestAccAlicloudFCFunction_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"service":     "${alicloud_fc_service.default.name}",
-					"name":        "${var.name}",
+					"service":     alicloud_fc_service.default.name,
+					"name":        var.name,
 					"runtime":     "python2.7",
 					"description": "tf",
 					"handler":     "hello.handler",
-					"oss_bucket":  "${alicloud_oss_bucket.default.id}",
-					"oss_key":     "${alicloud_oss_bucket_object.default.key}",
+					"oss_bucket":  alicloud_oss_bucket.default.id,
+					"oss_key":     alicloud_oss_bucket_object.default.key,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(basicMap),
@@ -246,13 +246,13 @@ func TestAccAlicloudFCFunctionMulti(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":       "10",
-					"service":     "${alicloud_fc_service.default.name}",
+					"service":     alicloud_fc_service.default.name,
 					"name":        "${var.name}-${count.index}",
 					"runtime":     "python2.7",
 					"description": "tf",
 					"handler":     "hello.handler",
-					"oss_bucket":  "${alicloud_oss_bucket.default.id}",
-					"oss_key":     "${alicloud_oss_bucket_object.default.key}",
+					"oss_bucket":  alicloud_oss_bucket.default.id,
+					"oss_key":     alicloud_oss_bucket_object.default.key,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -268,32 +268,32 @@ variable "name" {
     default = "%v"
 }
 resource "alicloud_log_project" "default" {
-  name = "${var.name}"
+  name = var.name
   description = "tf unit test"
 }
 
 resource "alicloud_log_store" "default" {
-  project = "${alicloud_log_project.default.name}"
-  name = "${var.name}"
+  project = alicloud_log_project.default.name
+  name = var.name
   retention_period = "3000"
   shard_count = 1
 }
 resource "alicloud_fc_service" "default" {
-    name = "${var.name}"
+    name = var.name
     description = "tf unit test"
     log_config {
-	project = "${alicloud_log_project.default.name}"
-	logstore = "${alicloud_log_store.default.name}"
+	project = alicloud_log_project.default.name
+	logstore = alicloud_log_store.default.name
     }
-    role = "${alicloud_ram_role.default.arn}"
+    role = alicloud_ram_role.default.arn
     depends_on = ["alicloud_ram_role_policy_attachment.default"]
 }
 resource "alicloud_oss_bucket" "default" {
-  bucket = "${var.name}"
+  bucket = var.name
 }
 
 resource "alicloud_oss_bucket_object" "default" {
-  bucket = "${alicloud_oss_bucket.default.id}"
+  bucket = alicloud_oss_bucket.default.id
   key = "fc/hello.zip"
   content = <<EOF
   	# -*- coding: utf-8 -*-
@@ -304,7 +304,7 @@ resource "alicloud_oss_bucket_object" "default" {
 }
 
 resource "alicloud_ram_role" "default" {
-  name = "${var.name}"
+  name = var.name
   document = <<EOF
   %s
   EOF
@@ -312,7 +312,7 @@ resource "alicloud_ram_role" "default" {
   force = true
 }
 resource "alicloud_ram_role_policy_attachment" "default" {
-  role_name = "${alicloud_ram_role.default.name}"
+  role_name = alicloud_ram_role.default.name
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }
@@ -362,29 +362,29 @@ func TestAccAlicloudFCFunction_code_checksum(t *testing.T) {
 		    default = "%v"
 		}
 		resource "alicloud_log_project" "default" {
-		  name = "${var.name}"
+		  name = var.name
 		  description = "tf unit test"
 		}
 		
 		resource "alicloud_log_store" "default" {
-		  project = "${alicloud_log_project.default.name}"
-		  name = "${var.name}"
+		  project = alicloud_log_project.default.name
+		  name = var.name
 		  retention_period = "3000"
 		  shard_count = 1
 		}
 		resource "alicloud_fc_service" "default" {
-		    name = "${var.name}"
+		    name = var.name
 		    description = "tf unit test"
 		    log_config {
-			project = "${alicloud_log_project.default.name}"
-			logstore = "${alicloud_log_store.default.name}"
+			project = alicloud_log_project.default.name
+			logstore = alicloud_log_store.default.name
 		    }
-		    role = "${alicloud_ram_role.default.arn}"
+		    role = alicloud_ram_role.default.arn
 		    depends_on = ["alicloud_ram_role_policy_attachment.default"]
 		}
 		
 		resource "alicloud_ram_role" "default" {
-		  name = "${var.name}"
+		  name = var.name
 		  document = <<EOF
 		  %s
 		  EOF
@@ -397,7 +397,7 @@ func TestAccAlicloudFCFunction_code_checksum(t *testing.T) {
 		}
 		
 		resource "alicloud_ram_role_policy_attachment" "default" {
-		  role_name = "${alicloud_ram_role.default.name}"
+		  role_name = alicloud_ram_role.default.name
 		  policy_name = "AliyunLogFullAccess"
 		  policy_type = "System"
 		}
@@ -412,13 +412,13 @@ func TestAccAlicloudFCFunction_code_checksum(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"service":       "${alicloud_fc_service.default.name}",
-					"name":          "${var.name}",
+					"service":       alicloud_fc_service.default.name,
+					"name":          var.name,
 					"runtime":       "python2.7",
 					"description":   "tf",
 					"handler":       "hello.handler",
 					"filename":      path,
-					"code_checksum": "${data.alicloud_file_crc64_checksum.default.checksum}",
+					"code_checksum": data.alicloud_file_crc64_checksum.default.checksum,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

@@ -113,8 +113,8 @@ func TestAccAlicloudApigatewayGroup_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${var.name}",
-					"description": "${var.description}",
+					"name":        var.name,
+					"description": var.description,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -149,8 +149,8 @@ func TestAccAlicloudApigatewayGroup_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${var.name}",
-					"description": "${var.description}",
+					"name":        var.name,
+					"description": var.description,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -187,7 +187,7 @@ func TestAccAlicloudApigatewayGroup_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":        "${var.name}${count.index}",
-					"description": "${var.description}",
+					"description": var.description,
 					"count":       "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(

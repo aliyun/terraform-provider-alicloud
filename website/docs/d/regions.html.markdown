@@ -18,7 +18,7 @@ data "alicloud_regions" "current_region_ds" {
 }
 
 output "current_region_id" {
-  value = "${data.alicloud_regions.current_region_ds.regions.0.id}"
+  value = data.alicloud_regions.current_region_ds.regions.0.id
 }
 ```
 

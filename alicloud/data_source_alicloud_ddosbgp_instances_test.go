@@ -18,7 +18,7 @@ func TestAccAlicloudDdosbgpInstanceDataSource_basic(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_ddosbgp_instance.default.name}",
+			"name_regex": alicloud_ddosbgp_instance.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_ddosbgp_instance.default.name}-fake",
@@ -26,7 +26,7 @@ func TestAccAlicloudDdosbgpInstanceDataSource_basic(t *testing.T) {
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_ddosbgp_instance.default.id}"},
+			"ids": []string{alicloud_ddosbgp_instance.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_ddosbgp_instance.default.id}-fake"},
@@ -34,12 +34,12 @@ func TestAccAlicloudDdosbgpInstanceDataSource_basic(t *testing.T) {
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_ddosbgp_instance.default.name}",
-			"ids":        []string{"${alicloud_ddosbgp_instance.default.id}"},
+			"name_regex": alicloud_ddosbgp_instance.default.name,
+			"ids":        []string{alicloud_ddosbgp_instance.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_ddosbgp_instance.default.name}-fake",
-			"ids":        []string{"${alicloud_ddosbgp_instance.default.id}"},
+			"ids":        []string{alicloud_ddosbgp_instance.default.id},
 		}),
 	}
 

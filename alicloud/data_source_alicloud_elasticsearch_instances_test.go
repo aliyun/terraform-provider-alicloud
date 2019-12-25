@@ -17,7 +17,7 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 
 	descriptionRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"description_regex": "${alicloud_elasticsearch_instance.default.description}",
+			"description_regex": alicloud_elasticsearch_instance.default.description,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_elasticsearch_instance.default.description}-F",
@@ -26,7 +26,7 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_elasticsearch_instance.default.id}"},
+			"ids": []string{alicloud_elasticsearch_instance.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_elasticsearch_instance.default.id}-F"},
@@ -35,13 +35,13 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"description_regex": "${alicloud_elasticsearch_instance.default.description}",
-			"ids":               []string{"${alicloud_elasticsearch_instance.default.id}"},
+			"description_regex": alicloud_elasticsearch_instance.default.description,
+			"ids":               []string{alicloud_elasticsearch_instance.default.id},
 			"version":           "5.5.3_with_X-Pack",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_elasticsearch_instance.default.description}-F",
-			"ids":               []string{"${alicloud_elasticsearch_instance.default.id}"},
+			"ids":               []string{alicloud_elasticsearch_instance.default.id},
 			"version":           "6.7.0_with_X-Pack",
 		}),
 	}
@@ -95,21 +95,21 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${lookup(data.alicloud_zones.default.zones[length(data.alicloud_zones.default.zones)-1], "id")}"
-  name              = "${var.name}"
+  name              = var.name
 }
 
 resource "alicloud_elasticsearch_instance" "default" {
-  description          = "${var.name}"
+  description          = var.name
   password             = "Yourpassword1234"
-  vswitch_id           = "${alicloud_vswitch.default.id}"
+  vswitch_id           = alicloud_vswitch.default.id
   data_node_amount     = "2"
   data_node_spec       = "elasticsearch.sn2ne.large"
   data_node_disk_size  = "20"

@@ -17,7 +17,7 @@ func TestAccAlicloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_yundun_dbaudit_instance.default.id}"},
+			"ids": []string{alicloud_yundun_dbaudit_instance.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_yundun_dbaudit_instance.default.id}-fake"},
@@ -26,7 +26,7 @@ func TestAccAlicloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"description_regex": "${alicloud_yundun_dbaudit_instance.default.description}",
+			"description_regex": alicloud_yundun_dbaudit_instance.default.description,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_yundun_dbaudit_instance.default.description}-fake",
@@ -35,8 +35,8 @@ func TestAccAlicloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"description_regex": "${alicloud_yundun_dbaudit_instance.default.description}",
-			"ids":               []string{"${alicloud_yundun_dbaudit_instance.default.id}"},
+			"description_regex": alicloud_yundun_dbaudit_instance.default.description,
+			"ids":               []string{alicloud_yundun_dbaudit_instance.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_yundun_dbaudit_instance.default.description}-fake",
@@ -91,15 +91,15 @@ func dataSourceYundunDbauditInstanceConfigDependency(description string) string 
 			  }
 
 			  resource "alicloud_vpc" "default" {
-				name = "${var.name}"
+				name = var.name
 				cidr_block = "172.16.0.0/12"
 			  }
 
 			  resource "alicloud_vswitch" "default" {
-				vpc_id = "${alicloud_vpc.default.id}"
+				vpc_id = alicloud_vpc.default.id
 				cidr_block = "172.16.0.0/21"
-				availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-				name = "${var.name}"
+				availability_zone = data.alicloud_zones.default.zones.0.id
+				name = var.name
 			  }
 			
 			  provider "alicloud" {
@@ -109,9 +109,9 @@ func dataSourceYundunDbauditInstanceConfigDependency(description string) string 
 			  }
 			
 			  resource "alicloud_yundun_dbaudit_instance" "default" {
-					description       = "${var.name}"
+					description       = var.name
 					plan_code         = "alpha.professional"
 					period            = "1"
-					vswitch_id        = "${alicloud_vswitch.default.id}"
+					vswitch_id        = alicloud_vswitch.default.id
 			  }`, description)
 }

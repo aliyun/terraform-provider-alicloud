@@ -43,7 +43,7 @@ func TestAccAlicloudPolarDBAccount_update(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id":    "${alicloud_polardb_cluster.cluster.id}",
+					"db_cluster_id":    alicloud_polardb_cluster.cluster.id,
 					"account_name":     "tftestnormal",
 					"account_password": "YourPassword_123",
 					"account_type":     "Normal",
@@ -126,7 +126,7 @@ func TestAccAlicloudPolarDBAccount_update_forSuper(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id":    "${alicloud_polardb_cluster.cluster.id}",
+					"db_cluster_id":    alicloud_polardb_cluster.cluster.id,
 					"account_name":     "tftestsuper",
 					"account_password": "YourPassword_123",
 					"account_type":     "Super",
@@ -194,7 +194,7 @@ func resourcePolarDBAccountConfigDependence(name string) string {
 		db_version = "8.0"
 		pay_type = "PostPaid"
 		db_node_class = "polar.mysql.x4.large"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		description = "${var.name}"
+		vswitch_id = alicloud_vswitch.default.id
+		description = var.name
 	}`, PolarDBCommonTestCase, name)
 }

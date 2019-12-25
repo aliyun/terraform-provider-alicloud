@@ -24,7 +24,7 @@ data "alicloud_db_instance_engines" "resources" {
 }
 
 output "first_db_category" {
-  value = "${data.alicloud_db_instance_engines.resources.instance_engines.0.category}"
+  value = data.alicloud_db_instance_engines.resources.instance_engines.0.category
 }
 ```
 

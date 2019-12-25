@@ -26,7 +26,7 @@ data "alicloud_emr_disk_types" "default" {
 }
 
 output "data_disk_type" {
-  value = "${data.alicloud_emr_disk_types.default.types.0.value}"
+  value = data.alicloud_emr_disk_types.default.types.0.value
 }
 ```
 

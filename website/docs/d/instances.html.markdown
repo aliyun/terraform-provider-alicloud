@@ -20,11 +20,11 @@ data "alicloud_instances" "instances_ds" {
 }
 
 output "first_instance_id" {
-  value = "${data.alicloud_instances.instances_ds.instances.0.id}"
+  value = data.alicloud_instances.instances_ds.instances.0.id
 }
 
 output "instance_ids" {
-  value = "${data.alicloud_instances.instances_ds.ids}"
+  value = data.alicloud_instances.instances_ds.ids
 }
 ```
 

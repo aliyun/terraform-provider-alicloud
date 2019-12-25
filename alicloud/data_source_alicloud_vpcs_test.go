@@ -13,7 +13,7 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 	rand := acctest.RandInt()
 	initVswitchConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"vswitch_id": `"${alicloud_vswitch.default.id}"`,
+			"vswitch_id": `alicloud_vswitch.default.id`,
 		}),
 	}
 	nameRegexConf := dataSourceTestAccConfig{
@@ -26,7 +26,7 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"ids": `[ "${alicloud_vpc.default.id}" ]`,
+			"ids": `[ alicloud_vpc.default.id ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
 			"ids": `[ "${alicloud_vpc.default.id}_fake" ]`,
@@ -34,54 +34,54 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 	}
 	cidrBlockConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${var.name}"`,
+			"name_regex": `var.name`,
 			"cidr_block": `"172.16.0.0/12"`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${var.name}"`,
+			"name_regex": `var.name`,
 			"cidr_block": `"172.16.0.0/0"`,
 		}),
 	}
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${var.name}"`,
+			"name_regex": `var.name`,
 			"status":     `"Available"`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${var.name}"`,
+			"name_regex": `var.name`,
 			"status":     `"Pending"`,
 		}),
 	}
 	idDefaultConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${var.name}"`,
+			"name_regex": `var.name`,
 			"is_default": `"false"`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${var.name}"`,
+			"name_regex": `var.name`,
 			"is_default": `"true"`,
 		}),
 	}
 	vswitchIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${var.name}"`,
-			"vswitch_id": `"${alicloud_vswitch.default.id}"`,
+			"name_regex": `var.name`,
+			"vswitch_id": `alicloud_vswitch.default.id`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${var.name}"`,
+			"name_regex": `var.name`,
 			"vswitch_id": `"${alicloud_vswitch.default.id}_fake"`,
 		}),
 	}
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${var.name}"`,
+			"name_regex": `var.name`,
 			"tags": `{
 							Created = "TF"
 							For 	= "acceptance test"
 					  }`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${var.name}"`,
+			"name_regex": `var.name`,
 			"tags": `{
 							Created = "TF-fake"
 							For 	= "acceptance test-fake"
@@ -90,23 +90,23 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 	}
 	resourceGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex":        `"${var.name}"`,
+			"name_regex":        `var.name`,
 			"resource_group_id": fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex":        `"${var.name}"`,
-			"ids":               `[ "${alicloud_vpc.default.id}" ]`,
+			"name_regex":        `var.name`,
+			"ids":               `[ alicloud_vpc.default.id ]`,
 			"cidr_block":        `"172.16.0.0/12"`,
 			"status":            `"Available"`,
 			"is_default":        `"false"`,
-			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
+			"vswitch_id":        `alicloud_vswitch.default.id`,
 			"resource_group_id": fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 		}),
 		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
-			"name_regex":        `"${var.name}"`,
-			"ids":               `[ "${alicloud_vpc.default.id}" ]`,
+			"name_regex":        `var.name`,
+			"ids":               `[ alicloud_vpc.default.id ]`,
 			"cidr_block":        `"172.16.0.0/16"`,
 			"status":            `"Available"`,
 			"is_default":        `"false"`,
@@ -130,7 +130,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "172.16.0.0/12"
   tags 		= {
 		Created = "TF"
@@ -144,10 +144,10 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-	name = "${var.name}"
+	name = var.name
 	cidr_block = "172.16.0.0/16"
-	vpc_id = "${alicloud_vpc.default.id}"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	vpc_id = alicloud_vpc.default.id
+	availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 data "alicloud_vpcs" "default" {

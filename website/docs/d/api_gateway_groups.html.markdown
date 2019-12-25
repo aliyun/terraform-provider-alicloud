@@ -19,7 +19,7 @@ data "alicloud_api_gateway_groups" "data_apigatway" {
 }
 
 output "first_group_id" {
-  value = "${data.alicloud_api_gateway_groups.data_apigatway.groups.0.id}"
+  value = data.alicloud_api_gateway_groups.data_apigatway.groups.0.id
 }
 ```
 

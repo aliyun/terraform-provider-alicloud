@@ -17,7 +17,7 @@ func TestAccAlicloudInstanceTypeFamiliesDataSource(t *testing.T) {
 
 	zoneIdConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id": "${data.alicloud_zones.default.zones.0.id}",
+			"zone_id": data.alicloud_zones.default.zones.0.id,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"zone_id": "${data.alicloud_zones.default.zones.0.id}-F",
@@ -44,7 +44,7 @@ func TestAccAlicloudInstanceTypeFamiliesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
+			"zone_id":              data.alicloud_zones.default.zones.0.id,
 			"generation":           "ecs-3",
 			"instance_charge_type": "PrePaid",
 			"spot_strategy":        "SpotAsPriceGo",

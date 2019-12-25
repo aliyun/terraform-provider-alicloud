@@ -24,15 +24,15 @@ resource "alicloud_vpc" "foo" {
 }
 
 resource "alicloud_vswitch" "foo" {
-  vpc_id            = "${alicloud_vpc.foo.id}"
+  vpc_id            = alicloud_vpc.foo.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "bar" {
-  vpc_id            = "${alicloud_vpc.foo.id}"
+  vpc_id            = alicloud_vpc.foo.id
   cidr_block        = "172.16.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_ess_scaling_group" "foo" {
@@ -40,11 +40,11 @@ resource "alicloud_ess_scaling_group" "foo" {
   max_size           = 1
   scaling_group_name = "testAccEssScaling_group"
   removal_policies   = ["OldestInstance", "NewestInstance"]
-  vswitch_ids        = ["${alicloud_vswitch.foo.id}", "${alicloud_vswitch.bar.id}"]
+  vswitch_ids        = [alicloud_vswitch.foo.id, alicloud_vswitch.bar.id]
 }
 
 resource "alicloud_ess_lifecycle_hook" "foo" {
-  scaling_group_id      = "${alicloud_ess_scaling_group.foo.id}"
+  scaling_group_id      = alicloud_ess_scaling_group.foo.id
   name                  = "testAccEssLifecycle_hook"
   lifecycle_transition  = "SCALE_OUT"
   heartbeat_timeout     = 400

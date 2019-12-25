@@ -49,9 +49,9 @@ resource "alicloud_ram_policy" "policy" {
 }
 
 resource "alicloud_ram_user_policy_attachment" "attach" {
-  policy_name = "${alicloud_ram_policy.policy.name}"
-  policy_type = "${alicloud_ram_policy.policy.type}"
-  user_name = "${alicloud_ram_user.user.name}"
+  policy_name = alicloud_ram_policy.policy.name
+  policy_type = alicloud_ram_policy.policy.type
+  user_name = alicloud_ram_user.user.name
 }
 ```
 ## Argument Reference

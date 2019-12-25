@@ -40,8 +40,8 @@ func TestAccAlicloudSagClientUser_basic(t *testing.T) {
 					"sag_id":    os.Getenv("SAG_APP_INSTANCE_ID"),
 					"bandwidth": "20",
 					"user_mail": "${var.name}@test.com",
-					"user_name": "${var.name}",
-					"password":  "${var.name}",
+					"user_name": var.name,
+					"password":  var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -123,7 +123,7 @@ func TestAccAlicloudSagClientUser_multi(t *testing.T) {
 					"bandwidth": "20",
 					"user_mail": "${var.name}-${count.index}@test.com",
 					"user_name": "${var.name}-${count.index}",
-					"password":  "${var.name}",
+					"password":  var.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),

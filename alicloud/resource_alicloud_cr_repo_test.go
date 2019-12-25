@@ -38,8 +38,8 @@ func TestAccAlicloudCRRepo_Basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"namespace": "${alicloud_cr_namespace.default.name}",
-					"name":      "${var.name}",
+					"namespace": alicloud_cr_namespace.default.name,
+					"name":      var.name,
 					"summary":   "summary",
 					"repo_type": "PUBLIC",
 				}),
@@ -138,7 +138,7 @@ func TestAccAlicloudCRRepo_Multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"namespace": "${alicloud_cr_namespace.default.name}",
+					"namespace": alicloud_cr_namespace.default.name,
 					"name":      "${var.name}${count.index}",
 					"summary":   "summary",
 					"repo_type": "PUBLIC",
@@ -159,7 +159,7 @@ variable "name" {
 }
 
 resource "alicloud_cr_namespace" "default" {
-	name = "${var.name}"
+	name = var.name
 	auto_create	= false
 	default_visibility = "PRIVATE"
 }

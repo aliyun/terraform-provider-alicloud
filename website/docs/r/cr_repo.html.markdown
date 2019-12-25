@@ -27,7 +27,7 @@ resource "alicloud_cr_namespace" "my-namespace" {
 }
 
 resource "alicloud_cr_repo" "my-repo" {
-  namespace = "${alicloud_cr_namespace.my-namespace.name}"
+  namespace = alicloud_cr_namespace.my-namespace.name
   name      = "my-repo"
   summary   = "this is summary of my new repo"
   repo_type = "PUBLIC"

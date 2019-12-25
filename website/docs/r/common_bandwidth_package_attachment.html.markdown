@@ -32,8 +32,8 @@ resource "alicloud_eip" "foo" {
 }
 
 resource "alicloud_common_bandwidth_package_attachment" "foo" {
-  bandwidth_package_id = "${alicloud_common_bandwidth_package.foo.id}"
-  instance_id          = "${alicloud_eip.foo.id}"
+  bandwidth_package_id = alicloud_common_bandwidth_package.foo.id
+  instance_id          = alicloud_eip.foo.id
 }
 
 ```

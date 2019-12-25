@@ -53,8 +53,8 @@ func TestAccAlicloudEssAlarmBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                name,
 					"description":         "Acc alarm test",
-					"alarm_actions":       []string{"${alicloud_ess_scaling_rule.default.0.ari}"},
-					"scaling_group_id":    "${alicloud_ess_scaling_group.default.id}",
+					"alarm_actions":       []string{alicloud_ess_scaling_rule.default.0.ari},
+					"scaling_group_id":    alicloud_ess_scaling_group.default.id,
 					"metric_type":         "system",
 					"metric_name":         "CpuUtilization",
 					"period":              "300",
@@ -198,8 +198,8 @@ func TestAccAlicloudEssAlarmBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                name,
 					"description":         "Acc alarm test",
-					"alarm_actions":       []string{"${alicloud_ess_scaling_rule.default.0.ari}"},
-					"scaling_group_id":    "${alicloud_ess_scaling_group.default.id}",
+					"alarm_actions":       []string{alicloud_ess_scaling_rule.default.0.ari},
+					"scaling_group_id":    alicloud_ess_scaling_group.default.id,
 					"metric_type":         "system",
 					"metric_name":         "CpuUtilization",
 					"period":              "300",
@@ -226,7 +226,7 @@ func TestAccAlicloudEssAlarmBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"scaling_group_id": "${alicloud_ess_scaling_group.new.id}",
+					"scaling_group_id": alicloud_ess_scaling_group.new.id,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -280,8 +280,8 @@ func TestAccAlicloudEssAlarmMulti(t *testing.T) {
 					"count":               "10",
 					"name":                name,
 					"description":         "Acc alarm test",
-					"alarm_actions":       []string{"${alicloud_ess_scaling_rule.default.0.ari}"},
-					"scaling_group_id":    "${alicloud_ess_scaling_group.default.id}",
+					"alarm_actions":       []string{alicloud_ess_scaling_rule.default.0.ari},
+					"scaling_group_id":    alicloud_ess_scaling_group.default.id,
 					"metric_type":         "system",
 					"metric_name":         "CpuUtilization",
 					"period":              "300",
@@ -307,17 +307,17 @@ func resourceEssAlarmConfigDependence(name string) string {
 	}
 	resource "alicloud_vswitch" "default1" {
 		name = "${var.name}_bar"
-		  vpc_id = "${alicloud_vpc.default.id}"
+		  vpc_id = alicloud_vpc.default.id
 		  cidr_block = "172.16.1.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
 	}
 
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
-		scaling_group_name = "${var.name}"
+		scaling_group_name = var.name
 		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.default1.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id,alicloud_vswitch.default1.id]
 	}
 
 	resource "alicloud_ess_scaling_group" "new" {
@@ -325,13 +325,13 @@ func resourceEssAlarmConfigDependence(name string) string {
 		max_size = 1
 		scaling_group_name = "${var.name}-new"
 		removal_policies = ["OldestInstance", "NewestInstance"]
-		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.default1.id}"]
+		vswitch_ids = [alicloud_vswitch.default.id,alicloud_vswitch.default1.id]
 	}
 
 	resource "alicloud_ess_scaling_rule" "default" {
 		count = 2
 		scaling_rule_name = "${var.name}-${count.index}"
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		scaling_group_id = alicloud_ess_scaling_group.default.id
 		adjustment_type = "TotalCapacity"
 		adjustment_value = 2
 		cooldown = 60

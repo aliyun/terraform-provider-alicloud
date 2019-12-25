@@ -20,7 +20,7 @@ data "alicloud_mns_topic_subscriptions" "subscriptions" {
 }
 
 output "first_topic_subscription_id" {
-  value = "${data.alicloud_mns_topic_subscriptions.subscriptions.subscriptions.0.id}"
+  value = data.alicloud_mns_topic_subscriptions.subscriptions.subscriptions.0.id
 }
 ```
 

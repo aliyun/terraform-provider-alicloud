@@ -20,7 +20,7 @@ data "alicloud_oss_bucket_objects" "bucket_objects_ds" {
 }
 
 output "first_object_key" {
-  value = "${data.alicloud_oss_bucket_objects.bucket_objects_ds.objects.0.key}"
+  value = data.alicloud_oss_bucket_objects.bucket_objects_ds.objects.0.key
 }
 ```
 

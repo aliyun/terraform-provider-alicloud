@@ -20,13 +20,13 @@ resource "alicloud_polardb_cluster" "cluster" {
     db_type = "MySQL"
     db_version = "8.0"
     pay_type = "PostPaid"
-    db_node_class = "${var.clusterclass}"
+    db_node_class = var.clusterclass
     vswitch_id = "polar.mysql.x4.large"
     description = "testDB"
 }
 
 resource "alicloud_polardb_database" "default" {
-  db_cluster_id = "${alicloud_polardb_cluster.cluster.id}"
+  db_cluster_id = alicloud_polardb_cluster.cluster.id
   db_name        = "tftestdatabase"
 }
 ```

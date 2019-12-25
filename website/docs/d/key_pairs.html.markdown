@@ -19,7 +19,7 @@ resource "alicloud_key_pair" "default" {
   key_name = "keyPairDatasource"
 }
 data "alicloud_key_pairs" "default" {
-  name_regex = "${alicloud_key_pair.default.key_name}"
+  name_regex = alicloud_key_pair.default.key_name
 }
 
 ```

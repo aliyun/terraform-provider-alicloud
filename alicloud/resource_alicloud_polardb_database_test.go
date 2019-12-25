@@ -35,7 +35,7 @@ func TestAccAlicloudPolarDBDatabase_update(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id":  "${alicloud_polardb_cluster.instance.id}",
+					"db_cluster_id":  alicloud_polardb_cluster.instance.id,
 					"db_name":        "tftestdatabase",
 					"db_description": "test",
 				}),
@@ -90,11 +90,11 @@ func resourcePolarDBDatabaseConfigDependence(name string) string {
 	}
 
 	resource "alicloud_polardb_cluster" "instance" {
-		db_type = "${var.engine}"
-		db_version = "${var.engineversion}"
-		pay_type = "${var.instancechargetype}"
-		db_node_class = "${var.instanceclass}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
-		description = "${var.name}"
+		db_type = var.engine
+		db_version = var.engineversion
+		pay_type = var.instancechargetype
+		db_node_class = var.instanceclass
+		vswitch_id = alicloud_vswitch.default.id
+		description = var.name
 	}`, PolarDBCommonTestCase, name)
 }

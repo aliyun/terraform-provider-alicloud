@@ -17,7 +17,7 @@ func TestAccAlicloudApigatewayGroupsDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_api_gateway_group.default.name}",
+			"name_regex": alicloud_api_gateway_group.default.name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_api_gateway_group.default.name}_fake",
@@ -26,7 +26,7 @@ func TestAccAlicloudApigatewayGroupsDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_api_gateway_group.default.id}"},
+			"ids": []string{alicloud_api_gateway_group.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_api_gateway_group.default.id}_fake"},
@@ -35,12 +35,12 @@ func TestAccAlicloudApigatewayGroupsDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_api_gateway_group.default.name}",
-			"ids":        []string{"${alicloud_api_gateway_group.default.id}"},
+			"name_regex": alicloud_api_gateway_group.default.name,
+			"ids":        []string{alicloud_api_gateway_group.default.id},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_api_gateway_group.default.name}_fake",
-			"ids":        []string{"${alicloud_api_gateway_group.default.id}"},
+			"ids":        []string{alicloud_api_gateway_group.default.id},
 		}),
 	}
 
@@ -87,8 +87,8 @@ func dataSourceApiGatewayGroupsConfigDependence(name string) string {
 	}
 
 	resource "alicloud_api_gateway_group" "default" {
-	  name = "${var.name}"
-	  description = "${var.description}"
+	  name = var.name
+	  description = var.description
 	}
 	`, name)
 }

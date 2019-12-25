@@ -43,8 +43,8 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                           name,
-					"vpc_id":                         "${alicloud_vpc.default.id}",
-					"vswitch_id":                     "${alicloud_vswitch.default.id}",
+					"vpc_id":                         alicloud_vpc.default.id,
+					"vswitch_id":                     alicloud_vswitch.default.id,
 					"new_nat_gateway":                "true",
 					"deletion_protection":            "false",
 					"endpoint_public_access_enabled": "true",
@@ -70,15 +70,15 @@ data "alicloud_zones" default {
 }
 
 resource "alicloud_vpc" "default" {
-  name = "${var.name}"
+  name = var.name
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name = var.name
+  vpc_id = alicloud_vpc.default.id
   cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
 }
 `, name)
 }

@@ -23,7 +23,7 @@ data "alicloud_cr_namespaces" "my_namespaces" {
 }
 
 output "output" {
-  value = "${data.alicloud_cr_namespaces.my_namespaces.namespaces}"
+  value = data.alicloud_cr_namespaces.my_namespaces.namespaces
 }
 ```
 

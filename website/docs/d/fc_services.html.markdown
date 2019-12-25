@@ -19,7 +19,7 @@ data "alicloud_fc_services" "fc_services_ds" {
 }
 
 output "first_fc_service_name" {
-  value = "${data.alicloud_fc_services.fc_services_ds.services.0.name}"
+  value = data.alicloud_fc_services.fc_services_ds.services.0.name
 }
 ```
 

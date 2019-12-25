@@ -33,9 +33,9 @@ func TestAccAlicloudLogtailAttachmentBasic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project":             "${alicloud_log_project.default.name}",
-					"logtail_config_name": "${alicloud_logtail_config.default.name}",
-					"machine_group_name":  "${alicloud_log_machine_group.default.name}",
+					"project":             alicloud_log_project.default.name,
+					"logtail_config_name": alicloud_logtail_config.default.name,
+					"machine_group_name":  alicloud_log_machine_group.default.name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -79,8 +79,8 @@ func TestAccAlicloudLogtailAttachmentMultipleGroup(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project":             "${alicloud_log_project.default.name}",
-					"logtail_config_name": "${alicloud_logtail_config.default.name}",
+					"project":             alicloud_log_project.default.name,
+					"logtail_config_name": alicloud_logtail_config.default.name,
 					"machine_group_name":  "${element(alicloud_log_machine_group.default.*.name,count.index)}",
 					"count":               "2",
 				}),
@@ -116,9 +116,9 @@ func TestAccAlicloudLogtailAttachmentMultipleConfig(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project":             "${alicloud_log_project.default.name}",
+					"project":             alicloud_log_project.default.name,
 					"logtail_config_name": "${element(alicloud_logtail_config.default.*.name, count.index)}",
-					"machine_group_name":  "${alicloud_log_machine_group.default.name}",
+					"machine_group_name":  alicloud_log_machine_group.default.name,
 					"count":               "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -135,12 +135,12 @@ variable "name" {
   default = "%s"
 }
 resource "alicloud_log_project" "default"{
-	name = "${var.name}"
+	name = var.name
 	description = "create by terraform"
 }
 resource "alicloud_log_store" "default"{
-  	project = "${alicloud_log_project.default.name}"
-  	name = "${var.name}"
+  	project = alicloud_log_project.default.name
+  	name = var.name
   	retention_period = 3650
   	shard_count = 3
   	auto_split = true
@@ -148,17 +148,17 @@ resource "alicloud_log_store" "default"{
   	append_meta = true
 }
 resource "alicloud_log_machine_group" "default" {
-	    project = "${alicloud_log_project.default.name}"
-	    name = "${var.name}"
+	    project = alicloud_log_project.default.name
+	    name = var.name
 	    topic = "terraform"
 	    identify_list = ["10.0.0.1", "10.0.0.3", "10.0.0.2"]
 }
 resource "alicloud_logtail_config" "default"{
-	project = "${alicloud_log_project.default.name}"
-  	logstore = "${alicloud_log_store.default.name}"
+	project = alicloud_log_project.default.name
+  	logstore = alicloud_log_store.default.name
   	input_type = "file"
   	log_sample = "test-update"
-  	name = "${var.name}"
+  	name = var.name
 	output_type = "LogService"
   	input_detail = <<DEFINITION
   	{
@@ -183,12 +183,12 @@ variable "name" {
 }
 
 resource "alicloud_log_project" "default"{
-	name = "${var.name}"
+	name = var.name
 	description = "create by terraform"
 }
 resource "alicloud_log_store" "default"{
-  	project = "${alicloud_log_project.default.name}"
-  	name = "${var.name}"
+  	project = alicloud_log_project.default.name
+  	name = var.name
   	retention_period = 3650
   	shard_count = 3
   	auto_split = true
@@ -197,17 +197,17 @@ resource "alicloud_log_store" "default"{
 }
 resource "alicloud_log_machine_group" "default" {
 	count = 2
-	project = "${alicloud_log_project.default.name}"
+	project = alicloud_log_project.default.name
 	name = "${var.name}-${count.index}"
 	topic = "terraform"
 	identify_list = ["10.0.0.1", "10.0.0.3", "10.0.0.2"]
 }
 resource "alicloud_logtail_config" "default"{
-	project = "${alicloud_log_project.default.name}"
-  	logstore = "${alicloud_log_store.default.name}"
+	project = alicloud_log_project.default.name
+  	logstore = alicloud_log_store.default.name
   	input_type = "file"
   	log_sample = "test-update"
-  	name = "${var.name}"
+  	name = var.name
 	output_type = "LogService"
   	input_detail = <<DEFINITION
   	{
@@ -232,12 +232,12 @@ variable "name" {
 }
 
 resource "alicloud_log_project" "default"{
-	name = "${var.name}"
+	name = var.name
 	description = "create by terraform"
 }
 resource "alicloud_log_store" "default"{
-  	project = "${alicloud_log_project.default.name}"
-  	name = "${var.name}"
+  	project = alicloud_log_project.default.name
+  	name = var.name
   	retention_period = 3650
   	shard_count = 3
   	auto_split = true
@@ -245,15 +245,15 @@ resource "alicloud_log_store" "default"{
   	append_meta = true
 }
 resource "alicloud_log_machine_group" "default" {
-	    project = "${alicloud_log_project.default.name}"
-	    name = "${var.name}"
+	    project = alicloud_log_project.default.name
+	    name = var.name
 	    topic = "terraform"
 	    identify_list = ["10.0.0.1", "10.0.0.3", "10.0.0.2"]
 }
 resource "alicloud_logtail_config" "default"{
 	count = 2
-	project = "${alicloud_log_project.default.name}"
-  	logstore = "${alicloud_log_store.default.name}"
+	project = alicloud_log_project.default.name
+  	logstore = alicloud_log_store.default.name
   	input_type = "file"
   	log_sample = "test-json-sample"
   	name = "${var.name}-${count.index}"

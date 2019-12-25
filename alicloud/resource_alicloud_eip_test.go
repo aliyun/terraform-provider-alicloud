@@ -376,7 +376,7 @@ resource "alicloud_eip" "default" {
 	internet_charge_type = "%s"
 	bandwidth = "10"
 	period = "1"
-	name = "${var.name}"
+	name = var.name
 	resource_group_id = "%s"
 }
 `, rand, internet_charge_type, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
@@ -393,7 +393,7 @@ resource "alicloud_eip" "default" {
 	internet_charge_type = "%s"
 	bandwidth = "10"
 	period = "1"
-	name = "${var.name}"
+	name = var.name
     description = "${var.name}_description"
 	resource_group_id = "%s"
 }
@@ -411,7 +411,7 @@ resource "alicloud_eip" "default" {
 	internet_charge_type = "%s"
 	bandwidth = "10"
 	period = "1"
-	name = "${var.name}"
+	name = var.name
     description = "${var.name}_description"
 	tags 		= {
 		Created = "TF"

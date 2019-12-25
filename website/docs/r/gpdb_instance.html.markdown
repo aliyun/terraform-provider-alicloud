@@ -34,8 +34,8 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  vpc_id            = "${alicloud_vpc.default.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
   name              = "vpc-123456"
 }
@@ -46,7 +46,7 @@ resource "alicloud_gpdb_instance" "example" {
   engine_version       = "4.3"
   instance_class       = "gpdb.group.segsdx2"
   instance_group_count = "2"
-  vswitch_id           = "${alicloud_vswitch.default.id}"
+  vswitch_id           = alicloud_vswitch.default.id
   security_ip_list     = ["10.168.1.12", "100.69.7.112"]
 }
 

@@ -17,7 +17,7 @@ func TestAccAlicloudRouterInterfacesDataSourceBasic(t *testing.T) {
 
 	oppositeInterfaceIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"opposite_interface_id": `"${alicloud_router_interface_connection.foo.opposite_interface_id}"`,
+			"opposite_interface_id": `alicloud_router_interface_connection.foo.opposite_interface_id`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
 			"opposite_interface_id": `"${alicloud_router_interface_connection.foo.opposite_interface_id}_fake"`,
@@ -26,11 +26,11 @@ func TestAccAlicloudRouterInterfacesDataSourceBasic(t *testing.T) {
 
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"opposite_interface_id": `"${alicloud_router_interface_connection.foo.opposite_interface_id}"`,
+			"opposite_interface_id": `alicloud_router_interface_connection.foo.opposite_interface_id`,
 			"status":                `"Active"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"opposite_interface_id": `"${alicloud_router_interface_connection.foo.opposite_interface_id}"`,
+			"opposite_interface_id": `alicloud_router_interface_connection.foo.opposite_interface_id`,
 			"status":                `"Inactive"`,
 		}),
 	}
@@ -46,18 +46,18 @@ func TestAccAlicloudRouterInterfacesDataSourceBasic(t *testing.T) {
 
 	specificationConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"opposite_interface_id": `"${alicloud_router_interface_connection.foo.opposite_interface_id}"`,
+			"opposite_interface_id": `alicloud_router_interface_connection.foo.opposite_interface_id`,
 			"specification":         `"Large.2"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"opposite_interface_id": `"${alicloud_router_interface_connection.foo.opposite_interface_id}"`,
+			"opposite_interface_id": `alicloud_router_interface_connection.foo.opposite_interface_id`,
 			"specification":         `"Large.1"`,
 		}),
 	}
 
 	routerIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"router_id": `"${alicloud_vpc.default.0.router_id}"`,
+			"router_id": `alicloud_vpc.default.0.router_id`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
 			"router_id": `"${alicloud_vpc.default.0.router_id}_fake"`,
@@ -66,29 +66,29 @@ func TestAccAlicloudRouterInterfacesDataSourceBasic(t *testing.T) {
 
 	routerTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"opposite_interface_id": `"${alicloud_router_interface_connection.foo.opposite_interface_id}"`,
+			"opposite_interface_id": `alicloud_router_interface_connection.foo.opposite_interface_id`,
 			"router_type":           `"VRouter"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"opposite_interface_id": `"${alicloud_router_interface_connection.foo.opposite_interface_id}"`,
+			"opposite_interface_id": `alicloud_router_interface_connection.foo.opposite_interface_id`,
 			"router_type":           `"VBR"`,
 		}),
 	}
 
 	roleConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"opposite_interface_id": `"${alicloud_router_interface_connection.foo.opposite_interface_id}"`,
+			"opposite_interface_id": `alicloud_router_interface_connection.foo.opposite_interface_id`,
 			"role":                  `"InitiatingSide"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"opposite_interface_id": `"${alicloud_router_interface_connection.foo.opposite_interface_id}"`,
+			"opposite_interface_id": `alicloud_router_interface_connection.foo.opposite_interface_id`,
 			"role":                  `"AcceptingSide"`,
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"ids": `[ "${alicloud_router_interface.initiating.id}" ]`,
+			"ids": `[ alicloud_router_interface.initiating.id ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
 			"ids": `[ "${alicloud_router_interface.initiating.id}_fake" ]`,
@@ -97,22 +97,22 @@ func TestAccAlicloudRouterInterfacesDataSourceBasic(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"opposite_interface_id": `"${alicloud_router_interface_connection.foo.opposite_interface_id}"`,
+			"opposite_interface_id": `alicloud_router_interface_connection.foo.opposite_interface_id`,
 			"role":                  `"InitiatingSide"`,
 			"name_regex":            `"${var.name}_initiating"`,
 			"specification":         `"Large.2"`,
-			"router_id":             `"${alicloud_vpc.default.0.router_id}"`,
+			"router_id":             `alicloud_vpc.default.0.router_id`,
 			"router_type":           `"VRouter"`,
-			"ids":                   `[ "${alicloud_router_interface.initiating.id}" ]`,
+			"ids":                   `[ alicloud_router_interface.initiating.id ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouterInterfacesDataSourceConfig(rand, map[string]string{
-			"opposite_interface_id": `"${alicloud_router_interface_connection.foo.opposite_interface_id}"`,
+			"opposite_interface_id": `alicloud_router_interface_connection.foo.opposite_interface_id`,
 			"role":                  `"AcceptingSide"`,
 			"name_regex":            `"${var.name}_initiating"`,
 			"specification":         `"Large.2"`,
-			"router_id":             `"${alicloud_vpc.default.0.router_id}"`,
+			"router_id":             `alicloud_vpc.default.0.router_id`,
 			"router_type":           `"VRouter"`,
-			"ids":                   `[ "${alicloud_router_interface.initiating.id}" ]`,
+			"ids":                   `[ alicloud_router_interface.initiating.id ]`,
 		}),
 	}
 
@@ -139,7 +139,7 @@ variable cidr_block_list {
 
 resource "alicloud_vpc" "default" {
   count = 2
-  name = "${var.name}"
+  name = var.name
   cidr_block = "${element(var.cidr_block_list,count.index)}"
 }
 
@@ -147,9 +147,9 @@ data "alicloud_regions" "current_regions" {
   current = true
 }
 resource "alicloud_router_interface" "initiating" {
-  opposite_region = "${data.alicloud_regions.current_regions.regions.0.id}"
+  opposite_region = data.alicloud_regions.current_regions.regions.0.id
   router_type = "VRouter"
-  router_id = "${alicloud_vpc.default.0.router_id}"
+  router_id = alicloud_vpc.default.0.router_id
   role = "InitiatingSide"
   specification = "Large.2"
   name = "${var.name}_initiating"
@@ -157,9 +157,9 @@ resource "alicloud_router_interface" "initiating" {
   depends_on = [ "alicloud_vpc.default" ]
 }
 resource "alicloud_router_interface" "accepting" {
-  opposite_region = "${data.alicloud_regions.current_regions.regions.0.id}"
+  opposite_region = data.alicloud_regions.current_regions.regions.0.id
   router_type = "VRouter"
-  router_id = "${alicloud_vpc.default.1.router_id}"
+  router_id = alicloud_vpc.default.1.router_id
   role = "AcceptingSide"
   specification = "Negative"
   name = "${var.name}_accepting"
@@ -167,12 +167,12 @@ resource "alicloud_router_interface" "accepting" {
   depends_on = [ "alicloud_vpc.default" ]
 }
 resource "alicloud_router_interface_connection" "bar" {
-  interface_id = "${alicloud_router_interface.accepting.id}"
-  opposite_interface_id = "${alicloud_router_interface.initiating.id}"
+  interface_id = alicloud_router_interface.accepting.id
+  opposite_interface_id = alicloud_router_interface.initiating.id
 }
 resource "alicloud_router_interface_connection" "foo" {
-  interface_id = "${alicloud_router_interface.initiating.id}"
-  opposite_interface_id = "${alicloud_router_interface.accepting.id}"
+  interface_id = alicloud_router_interface.initiating.id
+  opposite_interface_id = alicloud_router_interface.accepting.id
   depends_on = [
     "alicloud_router_interface_connection.bar"
   ]

@@ -12,7 +12,7 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 	rand := acctest.RandInt()
 	ZoneIDConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
-			"zone_id": `"${data.alicloud_zones.default.zones.0.id}"`,
+			"zone_id": `data.alicloud_zones.default.zones.0.id`,
 		}),
 		fakeConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"zone_id": `"fake_zoneid"`,
@@ -22,13 +22,13 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 	ChargeTypeConf_Postpaid := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PostPaid"`,
-			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
+			"zone_id":              `data.alicloud_zones.default.zones.0.id`,
 		}),
 	}
 	ChargeTypeConf_Prepaid := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
 			"instance_charge_type": `"PrePaid"`,
-			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
+			"zone_id":              `data.alicloud_zones.default.zones.0.id`,
 		}),
 	}
 	EngineConf := dataSourceTestAccConfig{
@@ -64,10 +64,10 @@ func TestAccAlicloudDBEngines_base(t *testing.T) {
 			"instance_charge_type": `"PostPaid"`,
 			"engine":               `"MySQL"`,
 			"engine_version":       `"5.6"`,
-			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
+			"zone_id":              `data.alicloud_zones.default.zones.0.id`,
 		}),
 		fakeConfig: testAccCheckAlicloudDBEnginesDataSourceConfig(map[string]string{
-			"zone_id":              `"${data.alicloud_zones.default.zones.0.id}"`,
+			"zone_id":              `data.alicloud_zones.default.zones.0.id`,
 			"instance_charge_type": `"PostPaid"`,
 			"engine":               `"MySQL"`,
 			"engine_version":       `"3.0"`,

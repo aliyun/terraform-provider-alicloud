@@ -211,7 +211,7 @@ variable "name" {
 
 
 resource "alicloud_ram_role" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 			{
 			  "Statement": [
@@ -234,11 +234,11 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_oss_bucket" "default" {
-    bucket  = "${var.name}"
+    bucket  = var.name
 }
 
 resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -261,15 +261,15 @@ resource "alicloud_ram_policy" "default" {
 	}
 
 	resource "alicloud_ram_role_policy_attachment" "default" {
-    	  policy_name = "${alicloud_ram_policy.default.name}"
-    	  role_name = "${alicloud_ram_role.default.name}"
-    	  policy_type = "${alicloud_ram_policy.default.type}"
+    	  policy_name = alicloud_ram_policy.default.name
+    	  role_name = alicloud_ram_role.default.name
+    	  policy_type = alicloud_ram_policy.default.type
 	}
 	
 resource "alicloud_actiontrail" "default" {
 	name = "tf-testacc-actiontrail"
-	oss_bucket_name = "${alicloud_oss_bucket.default.id}"
-	role_name = "${alicloud_ram_role_policy_attachment.default.role_name}"
+	oss_bucket_name = alicloud_oss_bucket.default.id
+	role_name = alicloud_ram_role_policy_attachment.default.role_name
 }
 `, randInt)
 }
@@ -282,7 +282,7 @@ variable "name" {
 }
 
 	resource "alicloud_ram_role" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 			{
 			  "Statement": [
@@ -305,11 +305,11 @@ variable "name" {
 }
 
 resource "alicloud_oss_bucket" "default" {
-    bucket  = "${var.name}"
+    bucket  = var.name
 }
 
 resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -332,16 +332,16 @@ resource "alicloud_ram_policy" "default" {
 	}
 
 	resource "alicloud_ram_role_policy_attachment" "default" {
-    	  policy_name = "${alicloud_ram_policy.default.name}"
-    	  role_name = "${alicloud_ram_role.default.name}"
-    	  policy_type = "${alicloud_ram_policy.default.type}"
+    	  policy_name = alicloud_ram_policy.default.name
+    	  role_name = alicloud_ram_role.default.name
+    	  policy_type = alicloud_ram_policy.default.type
     	}
 
 	resource "alicloud_actiontrail" "default" {
 		name = "tf-testacc-actiontrail"
 		event_rw = "All"
-		oss_bucket_name = "${alicloud_oss_bucket.default.id}"
-		role_name = "${alicloud_ram_role_policy_attachment.default.role_name}"
+		oss_bucket_name = alicloud_oss_bucket.default.id
+		role_name = alicloud_ram_role_policy_attachment.default.role_name
 	}
 `, randInt)
 
@@ -354,7 +354,7 @@ variable "name" {
 }
 
 	resource "alicloud_ram_role" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 			{
 			  "Statement": [
@@ -377,11 +377,11 @@ variable "name" {
 }
 
 resource "alicloud_oss_bucket" "default" {
-    bucket  = "${var.name}"
+    bucket  = var.name
 }
 
 resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -404,16 +404,16 @@ resource "alicloud_ram_policy" "default" {
 	}
 
 	resource "alicloud_ram_role_policy_attachment" "default" {
-    	  policy_name = "${alicloud_ram_policy.default.name}"
-    	  role_name = "${alicloud_ram_role.default.name}"
-    	  policy_type = "${alicloud_ram_policy.default.type}"
+    	  policy_name = alicloud_ram_policy.default.name
+    	  role_name = alicloud_ram_role.default.name
+    	  policy_type = alicloud_ram_policy.default.type
     	}
 
 	resource "alicloud_actiontrail" "default" {
 		name = "tf-testacc-actiontrail"
 		event_rw = "All"
-		oss_bucket_name = "${alicloud_oss_bucket.default.id}"
-		role_name = "${alicloud_ram_role_policy_attachment.default.role_name}"
+		oss_bucket_name = alicloud_oss_bucket.default.id
+		role_name = alicloud_ram_role_policy_attachment.default.role_name
 		oss_key_prefix = "at-product-account-audit-B"
 	}
 `, randInt)
@@ -449,11 +449,11 @@ variable "name" {
 }
 
 resource "alicloud_oss_bucket" "default" {
-    bucket  = "${var.name}"
+    bucket  = var.name
 }
 
 resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -476,16 +476,16 @@ resource "alicloud_ram_policy" "default" {
 	}
 
 	resource "alicloud_ram_role_policy_attachment" "default" {
-    	  policy_name = "${alicloud_ram_policy.default.name}"
-    	  role_name = "${alicloud_ram_role.default.name}"
-    	  policy_type = "${alicloud_ram_policy.default.type}"
+    	  policy_name = alicloud_ram_policy.default.name
+    	  role_name = alicloud_ram_role.default.name
+    	  policy_type = alicloud_ram_policy.default.type
     	}
 
 	resource "alicloud_actiontrail" "default" {
 		name = "tf-testacc-actiontrail"
 		event_rw = "All"
-		oss_bucket_name = "${alicloud_oss_bucket.default.id}"
-		role_name = "${alicloud_ram_role_policy_attachment.default.role_name}"
+		oss_bucket_name = alicloud_oss_bucket.default.id
+		role_name = alicloud_ram_role_policy_attachment.default.role_name
 		oss_key_prefix = "at-product-account-audit-B"
 	}
 `, rand_1, rand_2)
@@ -521,11 +521,11 @@ variable "name" {
 }
 
 resource "alicloud_oss_bucket" "default" {
-    bucket  = "${var.name}"
+    bucket  = var.name
 }
 
 resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -548,16 +548,16 @@ resource "alicloud_ram_policy" "default" {
 	}
 
 	resource "alicloud_ram_role_policy_attachment" "default" {
-    	  policy_name = "${alicloud_ram_policy.default.name}"
-    	  role_name = "${alicloud_ram_role.default.name}"
-    	  policy_type = "${alicloud_ram_policy.default.type}"
+    	  policy_name = alicloud_ram_policy.default.name
+    	  role_name = alicloud_ram_role.default.name
+    	  policy_type = alicloud_ram_policy.default.type
     	}
 
 	resource "alicloud_actiontrail" "default" {
 		name = "tf-testacc-actiontrail"
 		event_rw = "All"
-		oss_bucket_name = "${alicloud_oss_bucket.default.id}"
-		role_name = "${alicloud_ram_role_policy_attachment.default.role_name}"
+		oss_bucket_name = alicloud_oss_bucket.default.id
+		role_name = alicloud_ram_role_policy_attachment.default.role_name
 		oss_key_prefix = "at-product-account-audit-B"
 	}
 `, rand_1, rand_2)
@@ -576,7 +576,7 @@ data "alicloud_account" "current" {
 }
 
 resource "alicloud_log_project" "foo" {
-  name = "${var.name}"
+  name = var.name
   description = "tf unit test"
 }
 
@@ -604,11 +604,11 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_oss_bucket" "default" {
-    bucket  = "${var.name}"
+    bucket  = var.name
 }
 
 resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  document = <<EOF
 		{
 		  "Statement": [
@@ -631,19 +631,19 @@ resource "alicloud_ram_policy" "default" {
 	}
 
 	resource "alicloud_ram_role_policy_attachment" "default" {
-    	  policy_name = "${alicloud_ram_policy.default.name}"
-    	  role_name = "${alicloud_ram_role.default.name}"
-    	  policy_type = "${alicloud_ram_policy.default.type}"
+    	  policy_name = alicloud_ram_policy.default.name
+    	  role_name = alicloud_ram_role.default.name
+    	  policy_type = alicloud_ram_policy.default.type
     	}
 
 	resource "alicloud_actiontrail" "default" {
 		name = "tf-testacc-actiontrail"
 		event_rw = "All"
-		oss_bucket_name = "${alicloud_oss_bucket.default.id}"
-		role_name = "${alicloud_ram_role_policy_attachment.default.role_name}"
+		oss_bucket_name = alicloud_oss_bucket.default.id
+		role_name = alicloud_ram_role_policy_attachment.default.role_name
 		oss_key_prefix = "at-product-account-audit-B"
 	    sls_project_arn = "acs:log:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:project/${alicloud_log_project.foo.name}"
-		sls_write_role_arn = "${alicloud_ram_role_policy_attachment.default.role_name}"
+		sls_write_role_arn = alicloud_ram_role_policy_attachment.default.role_name
 	}
 `, rand_1, rand_2)
 }

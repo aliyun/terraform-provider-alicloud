@@ -45,7 +45,7 @@ func TestAccAlicloudCdnDomainConfig_ip_allow_list(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "ip_allow_list_set",
 					"function_args": []map[string]interface{}{
 						{
@@ -105,7 +105,7 @@ func TestAccAlicloudCdnDomainConfig_referer_white_list(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "referer_white_list_set",
 					"function_args": []map[string]interface{}{
 						{
@@ -165,7 +165,7 @@ func TestAccAlicloudCdnDomainConfig_referer_black_list(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "referer_black_list_set",
 					"function_args": []map[string]interface{}{
 						{
@@ -234,7 +234,7 @@ func TestAccAlicloudCdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "filetype_based_ttl_set",
 					"function_args": []map[string]interface{}{
 						{
@@ -303,12 +303,12 @@ func TestAccAlicloudCdnDomainConfig_oss_auth(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "oss_auth",
 					"function_args": []map[string]interface{}{
 						{
 							"arg_name":  "oss_bucket_id",
-							"arg_value": "${alicloud_oss_bucket.default.id}",
+							"arg_value": alicloud_oss_bucket.default.id,
 						},
 					},
 				}),
@@ -364,7 +364,7 @@ func TestAccAlicloudCdnDomainConfig_ip_black_list(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "ip_black_list_set",
 					"function_args": []map[string]interface{}{
 						{
@@ -425,7 +425,7 @@ func TestAccAlicloudCdnDomainConfig_ip_white_list(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "ip_white_list_set",
 					"function_args": []map[string]interface{}{
 						{
@@ -489,7 +489,7 @@ func TestAccAlicloudCdnDomainConfig_error_page(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "error_page",
 					"function_args": []map[string]interface{}{
 						{
@@ -556,7 +556,7 @@ func TestAccAlicloudCdnDomainConfig_set_req_host_header(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "set_req_host_header",
 					"function_args": []map[string]interface{}{
 						{
@@ -617,7 +617,7 @@ func TestAccAlicloudCdnDomainConfig_set_hashkey_args(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "set_hashkey_args",
 					"function_args": []map[string]interface{}{
 						{
@@ -682,7 +682,7 @@ func TestAccAlicloudCdnDomainConfig_aliauth(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "aliauth",
 					"function_args": []map[string]interface{}{
 						{
@@ -753,7 +753,7 @@ func TestAccAlicloudCdnDomainConfig_set_resp_header(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "set_resp_header",
 					"function_args": []map[string]interface{}{
 						{
@@ -820,7 +820,7 @@ func TestAccAlicloudCdnDomainConfig_https_force(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "https_force",
 					"function_args": []map[string]interface{}{
 						{
@@ -881,7 +881,7 @@ func TestAccAlicloudCdnDomainConfig_http_force(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "http_force",
 					"function_args": []map[string]interface{}{
 						{
@@ -942,7 +942,7 @@ func TestAccAlicloudCdnDomainConfig_https_option(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "https_option",
 					"function_args": []map[string]interface{}{
 						{
@@ -1003,7 +1003,7 @@ func TestAccAlicloudCdnDomainConfig_l2_oss_key(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "l2_oss_key",
 					"function_args": []map[string]interface{}{
 						{
@@ -1068,7 +1068,7 @@ func TestAccAlicloudCdnDomainConfig_forward_scheme(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "forward_scheme",
 					"function_args": []map[string]interface{}{
 						{
@@ -1135,7 +1135,7 @@ func TestAccAlicloudCdnDomainConfig_green_manager(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "green_manager",
 					"function_args": []map[string]interface{}{
 						{
@@ -1219,7 +1219,7 @@ func TestAccAlicloudCdnDomainConfig_tmd_signature(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "tmd_signature",
 					"function_args": []map[string]interface{}{
 						{
@@ -1316,7 +1316,7 @@ func TestAccAlicloudCdnDomainConfig_dynamic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "dynamic",
 					"function_args": []map[string]interface{}{
 						{
@@ -1381,7 +1381,7 @@ func TestAccAlicloudCdnDomainConfig_set_req_header(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "set_req_header",
 					"function_args": []map[string]interface{}{
 						{
@@ -1448,7 +1448,7 @@ func TestAccAlicloudCdnDomainConfig_range(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "range",
 					"function_args": []map[string]interface{}{
 						{
@@ -1509,7 +1509,7 @@ func TestAccAlicloudCdnDomainConfig_video_seek(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "video_seek",
 					"function_args": []map[string]interface{}{
 						{
@@ -1570,7 +1570,7 @@ func TestAccAlicloudCdnDomainConfig_https_tls_version(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "https_tls_version",
 					"function_args": []map[string]interface{}{
 						{
@@ -1635,7 +1635,7 @@ func TestAccAlicloudCdnDomainConfig_HSTS(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "HSTS",
 					"function_args": []map[string]interface{}{
 						{
@@ -1706,7 +1706,7 @@ func TestAccAlicloudCdnDomainConfig_filetype_force_ttl_code(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "filetype_force_ttl_code",
 					"function_args": []map[string]interface{}{
 						{
@@ -1777,7 +1777,7 @@ func TestAccAlicloudCdnDomainConfig_path_force_ttl_code(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "path_force_ttl_code",
 					"function_args": []map[string]interface{}{
 						{
@@ -1844,7 +1844,7 @@ func TestAccAlicloudCdnDomainConfig_gzip(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "gzip",
 					"function_args": []map[string]interface{}{
 						{
@@ -1905,7 +1905,7 @@ func TestAccAlicloudCdnDomainConfig_tesla(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "tesla",
 					"function_args": []map[string]interface{}{
 						{
@@ -1969,7 +1969,7 @@ func TestAccAlicloudCdnDomainConfig_https_origin_sni(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "https_origin_sni",
 					"function_args": []map[string]interface{}{
 						{
@@ -2040,7 +2040,7 @@ func TestAccAlicloudCdnDomainConfig_brotli(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "brotli",
 					"function_args": []map[string]interface{}{
 						{
@@ -2111,7 +2111,7 @@ func TestAccAlicloudCdnDomainConfig_ali_ua(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "ali_ua",
 					"function_args": []map[string]interface{}{
 						{
@@ -2186,7 +2186,7 @@ func TestAccAlicloudCdnDomainConfig_host_redirect(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"domain_name":   alicloud_cdn_domain_new.default.domain_name,
 					"function_name": "host_redirect",
 					"function_args": []map[string]interface{}{
 						{

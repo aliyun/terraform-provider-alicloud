@@ -206,20 +206,20 @@ variable "name" {
 }
 resource "alicloud_vpc" "foo" {
   cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+  name = var.name
 }
 
 resource "alicloud_security_group" "group" {
-  name = "${var.name}"
+  name = var.name
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = alicloud_vpc.foo.id
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
   type              = "ingress"
   ip_protocol       = "tcp"
   port_range        = "5000/5001"
-  security_group_id = "${alicloud_security_group.group.id}"
+  security_group_id = alicloud_security_group.group.id
   cidr_ip           = "0.0.0.0/0"
 }
 
@@ -227,13 +227,13 @@ resource "alicloud_security_group_rule" "rule_egress" {
   type              = "egress"
   ip_protocol       = "udp"
   port_range        = "6000/6001"
-  security_group_id = "${alicloud_security_group.group.id}"
+  security_group_id = alicloud_security_group.group.id
   cidr_ip           = "0.0.0.0/0"
 }
 
 data "alicloud_security_group_rules" "ingress" {
   direction   = "ingress"
-  group_id    = "${alicloud_security_group_rule.rule_ingress.security_group_id}"
+  group_id    = alicloud_security_group_rule.rule_ingress.security_group_id
 }
 `
 
@@ -243,26 +243,26 @@ variable "name" {
 }
 resource "alicloud_vpc" "foo" {
   cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+  name = var.name
 }
 
 resource "alicloud_security_group" "group" {
-  name = "${var.name}"
+  name = var.name
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = alicloud_vpc.foo.id
 }
 
 resource "alicloud_security_group" "bar" {
   name = "tf-testAccCheckAlicloudSecurityGroupRules"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = alicloud_vpc.foo.id
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
   type              = "ingress"
   ip_protocol       = "tcp"
   port_range        = "5000/5001"
-  security_group_id = "${alicloud_security_group.bar.id}"
+  security_group_id = alicloud_security_group.bar.id
   cidr_ip           = "0.0.0.0/0"
 }
 
@@ -270,12 +270,12 @@ resource "alicloud_security_group_rule" "rule_egress" {
   type              = "egress"
   ip_protocol       = "udp"
   port_range        = "6000/6001"
-  security_group_id = "${alicloud_security_group.group.id}"
+  security_group_id = alicloud_security_group.group.id
   cidr_ip           = "0.0.0.0/0"
 }
 
 data "alicloud_security_group_rules" "egress" {
-  group_id    = "${alicloud_security_group_rule.rule_egress.security_group_id}"
+  group_id    = alicloud_security_group_rule.rule_egress.security_group_id
 }
 `
 
@@ -285,7 +285,7 @@ variable "name" {
 }
 
 resource "alicloud_security_group" "group" {
-  name = "${var.name}"
+  name = var.name
   description = "alicloud security group"
 }
 
@@ -293,7 +293,7 @@ resource "alicloud_security_group_rule" "rule_ingress" {
   type              = "ingress"
   ip_protocol       = "tcp"
   port_range        = "5000/5001"
-  security_group_id = "${alicloud_security_group.group.id}"
+  security_group_id = alicloud_security_group.group.id
   cidr_ip           = "0.0.0.0/0"
   nic_type          = "internet"
 }
@@ -302,14 +302,14 @@ resource "alicloud_security_group_rule" "rule_egress" {
   type              = "egress"
   ip_protocol       = "udp"
   port_range        = "6000/6001"
-  security_group_id = "${alicloud_security_group.group.id}"
+  security_group_id = alicloud_security_group.group.id
   cidr_ip           = "0.0.0.0/0"
   nic_type          = "intranet"
 }
 
 data "alicloud_security_group_rules" "egress" {
   nic_type   = "intranet"
-  group_id    = "${alicloud_security_group_rule.rule_egress.security_group_id}"
+  group_id    = alicloud_security_group_rule.rule_egress.security_group_id
 }
 `
 
@@ -319,20 +319,20 @@ variable "name" {
 }
 resource "alicloud_vpc" "foo" {
   cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+  name = var.name
 }
 
 resource "alicloud_security_group" "group" {
-  name = "${var.name}"
+  name = var.name
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = alicloud_vpc.foo.id
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
   type              = "ingress"
   ip_protocol       = "tcp"
   port_range        = "5000/5001"
-  security_group_id = "${alicloud_security_group.group.id}"
+  security_group_id = alicloud_security_group.group.id
   cidr_ip           = "0.0.0.0/0"
   nic_type          = "intranet"
 }
@@ -341,14 +341,14 @@ resource "alicloud_security_group_rule" "rule_egress" {
   type              = "egress"
   ip_protocol       = "udp"
   port_range        = "6000/6001"
-  security_group_id = "${alicloud_security_group.group.id}"
+  security_group_id = alicloud_security_group.group.id
   cidr_ip           = "0.0.0.0/0"
   nic_type          = "intranet"
 }
 
 data "alicloud_security_group_rules" "egress" {
   ip_protocol   = "udp"
-  group_id    = "${alicloud_security_group_rule.rule_egress.security_group_id}"
+  group_id    = alicloud_security_group_rule.rule_egress.security_group_id
 }
 `
 
@@ -358,20 +358,20 @@ variable "name" {
 }
 resource "alicloud_vpc" "foo" {
   cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+  name = var.name
 }
 
 resource "alicloud_security_group" "group" {
-  name = "${var.name}"
+  name = var.name
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = alicloud_vpc.foo.id
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
   type              = "ingress"
   ip_protocol       = "tcp"
   port_range        = "5000/5001"
-  security_group_id = "${alicloud_security_group.group.id}"
+  security_group_id = alicloud_security_group.group.id
   cidr_ip           = "0.0.0.0/0"
   nic_type          = "intranet"
 }
@@ -381,14 +381,14 @@ resource "alicloud_security_group_rule" "rule_egress" {
   ip_protocol       = "udp"
   port_range        = "6000/6001"
   policy            = "drop"
-  security_group_id = "${alicloud_security_group.group.id}"
+  security_group_id = alicloud_security_group.group.id
   cidr_ip           = "0.0.0.0/0"
   nic_type          = "intranet"
 }
 
 data "alicloud_security_group_rules" "egress" {
   policy   = "drop"
-  group_id   ="${alicloud_security_group_rule.rule_egress.security_group_id}"
+  group_id   =alicloud_security_group_rule.rule_egress.security_group_id
 }
 `
 
@@ -398,16 +398,16 @@ variable "name" {
 }
 resource "alicloud_vpc" "foo" {
   cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+  name = var.name
 }
 
 resource "alicloud_security_group" "group" {
-  name = "${var.name}"
+  name = var.name
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = alicloud_vpc.foo.id
 }
 
 data "alicloud_security_group_rules" "empty" {
-  group_id    = "${alicloud_security_group.group.id}"
+  group_id    = alicloud_security_group.group.id
 }
 `

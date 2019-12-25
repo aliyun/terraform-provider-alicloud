@@ -42,7 +42,7 @@ func TestAccAliCloudCopyImageBasic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"provider":         "alicloud.sh",
-					"source_image_id":  "${alicloud_image.default.id}",
+					"source_image_id":  alicloud_image.default.id,
 					"source_region_id": "cn-hangzhou",
 					"description":      fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
 					"name":             name,
@@ -222,33 +222,33 @@ data "alicloud_images" "default" {
 }
 resource "alicloud_vpc" "default" {
   provider = "alicloud.hz"
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
   provider = "alicloud.hz"
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  name              = var.name
 }
 resource "alicloud_security_group" "default" {
   provider = "alicloud.hz"
-  name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 resource "alicloud_instance" "default" {
   provider = "alicloud.hz"
   image_id = "${data.alicloud_images.default.ids[0]}"
   instance_type = "${data.alicloud_instance_types.default.ids[0]}"
   security_groups = "${[alicloud_security_group.default.id]}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  instance_name = "${var.name}"
+  vswitch_id = alicloud_vswitch.default.id
+  instance_name = var.name
 }
 resource "alicloud_image" "default" {
   provider = "alicloud.hz"
-  instance_id = "${alicloud_instance.default.id}"
-  name        = "${var.name}"
+  instance_id = alicloud_instance.default.id
+  name        = var.name
 }
 `, name)
 }

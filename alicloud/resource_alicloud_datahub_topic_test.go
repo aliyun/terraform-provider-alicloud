@@ -43,7 +43,7 @@ func TestAccAlicloudDatahubTopic_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":         name,
-					"project_name": "${alicloud_datahub_project.default.name}",
+					"project_name": alicloud_datahub_project.default.name,
 					"record_schema": map[string]string{
 						"bigint_field":    "BIGINT",
 						"timestamp_field": "TIMESTAMP",
@@ -120,7 +120,7 @@ func TestAccAlicloudDatahubTopic_blob(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":         name,
-					"project_name": "${alicloud_datahub_project.default.name}",
+					"project_name": alicloud_datahub_project.default.name,
 					"record_type":  "BLOB",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -191,7 +191,7 @@ func TestAccAlicloudDatahubTopic_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":         name + "${count.index}",
-					"project_name": "${alicloud_datahub_project.default.name}",
+					"project_name": alicloud_datahub_project.default.name,
 					"record_schema": map[string]string{
 						"bigint_field":    "BIGINT",
 						"timestamp_field": "TIMESTAMP",
@@ -215,7 +215,7 @@ func resourceDatahubTopicConfigDependence(name string) string {
 	  default = "%s"
 	}
 	resource "alicloud_datahub_project" "default" {
-	  name = "${var.name}"
+	  name = var.name
 	  comment = "project for basic."
 	}
 	`, name)

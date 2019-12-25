@@ -302,7 +302,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -311,21 +311,21 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_network_interface" "default" {
 	name = "${var.name}%d"
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
 	resource_group_id = "%s"
 }
 `, rand, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
@@ -338,7 +338,7 @@ variable "name" {
 	default = "tf-testAccNetworkInterface"
 }
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -347,21 +347,21 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_network_interface" "default" {
 	name = "${var.name}%d"
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
     private_ip = "192.168.0.2"
 	resource_group_id = "%s"
 }
@@ -375,7 +375,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -384,21 +384,21 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_network_interface" "default" {
 	name = "${var.name}%d"
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
 	private_ip = "192.168.0.2"
 	private_ips = ["192.168.0.3", "192.168.0.5", "192.168.0.6"]
 	resource_group_id = "%s"
@@ -413,7 +413,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -422,21 +422,21 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_network_interface" "default" {
 	name = "${var.name}%d"
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
 	private_ip = "192.168.0.2"
 	private_ips_count = 4
 	resource_group_id = "%s"
@@ -451,7 +451,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -460,20 +460,20 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_network_interface" "default" {
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
 	private_ip = "192.168.0.2"
 	private_ips_count = 4
     name = "${var.name}Change%d"
@@ -490,7 +490,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -499,20 +499,20 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_network_interface" "default" {
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
 	private_ip = "192.168.0.2"
 	private_ips_count = 4
     name = "${var.name}Change%d"
@@ -529,7 +529,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -538,20 +538,20 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_network_interface" "default" {
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
 	private_ip = "192.168.0.2"
 	private_ips_count = 4
     name = "${var.name}Change%d"
@@ -571,7 +571,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -582,18 +582,18 @@ data "alicloud_zones" "default" {
 resource "alicloud_vswitch" "default" {
     name = "tf-testAcc-vswitch"
     cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_network_interface" "default" {
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
 	private_ip = "192.168.0.2"
 	private_ips_count = 1
     name = "${var.name}%d"
@@ -610,7 +610,7 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
 }
 
@@ -619,22 +619,22 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-    name = "${var.name}"
+    name = var.name
     cidr_block = "192.168.0.0/24"
-    availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    availability_zone = data.alicloud_zones.default.zones.0.id
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+    name = var.name
+    vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_network_interface" "default" {
 	name = "${var.name}%d"
     count = 3
-    vswitch_id = "${alicloud_vswitch.default.id}"
-    security_groups = [ "${alicloud_security_group.default.id}" ]
+    vswitch_id = alicloud_vswitch.default.id
+    security_groups = [ alicloud_security_group.default.id ]
 	resource_group_id = "%s"
 }
 `, rand, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))

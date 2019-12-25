@@ -35,7 +35,7 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":        name,
-					"project":     "${alicloud_log_project.foo.name}",
+					"project":     alicloud_log_project.foo.name,
 					"shard_count": "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -148,7 +148,7 @@ func TestAccAlicloudLogStore_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":    name + "${count.index}",
-					"project": "${alicloud_log_project.foo.name}",
+					"project": alicloud_log_project.foo.name,
 					"count":   "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -165,7 +165,7 @@ func resourceLogStoreConfigDependence(name string) string {
 	    default = "%s"
 	}
 	resource "alicloud_log_project" "foo" {
-	    name = "${var.name}"
+	    name = var.name
 	    description = "tf unit test"
 	}
 	`, name)

@@ -43,7 +43,7 @@ func TestAccAlicloudKVStoreAccountUpdateV4(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":      "${alicloud_kvstore_instance.instance.id}",
+					"instance_id":      alicloud_kvstore_instance.instance.id,
 					"account_name":     "tftestnormal",
 					"account_password": "YourPassword_123",
 				}),
@@ -137,7 +137,7 @@ func TestAccAlicloudKVStoreAccountUpdateV5(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":      "${alicloud_kvstore_instance.instance.id}",
+					"instance_id":      alicloud_kvstore_instance.instance.id,
 					"account_name":     "tftestnormal",
 					"account_password": "YourPassword_123",
 				}),
@@ -207,7 +207,7 @@ func resourceKVstoreAccountConfigDependenceV4(name string) string {
 	resource "alicloud_kvstore_instance" "instance" {
 		availability_zone = "ap-southeast-1b"
 		instance_class = "redis.master.small.default"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		instance_charge_type = "PostPaid"
 		engine_version = "4.0"
 	}
@@ -222,7 +222,7 @@ func resourceKVstoreAccountConfigDependenceV5(name string) string {
 	resource "alicloud_kvstore_instance" "instance" {
 		availability_zone = "ap-southeast-1b"
 		instance_class = "redis.master.small.default"
-		instance_name  = "${var.name}"
+		instance_name  = var.name
 		instance_charge_type = "PostPaid"
 		engine_version = "5.0"
 	}

@@ -22,7 +22,7 @@ data "alicloud_emr_main_versions" "default" {
 }
 
 output "first_main_version" {
-  value = "${data.alicloud_emr_main_versions.default.main_versions.0.emr_version}"
+  value = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 }
 ```
 
