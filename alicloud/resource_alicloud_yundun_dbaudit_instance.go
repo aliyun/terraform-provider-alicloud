@@ -55,6 +55,7 @@ func resourceAlicloudDbauditInstance() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -111,9 +112,20 @@ func resourceAlicloudDbauditInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	d.Set("description", instance.Description)
+	period, err := computePeriodByUnit(instance.StartTime/1000, instance.ExpireTime/1000, d.Get("period").(int), "Month")
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("period", period)
 	d.Set("plan_code", instance.LicenseCode)
 	d.Set("region_id", client.RegionId)
 	d.Set("vswitch_id", instance.VswitchId)
+
+	tags, err := dbauditService.DescribeTags(d.Id(), nil, TagResourceInstance)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", dbauditService.tagsToMap(tags))
 	return nil
 }
 
@@ -122,6 +134,13 @@ func resourceAlicloudDbauditInstanceUpdate(d *schema.ResourceData, meta interfac
 	dbauditService := DbauditService{client}
 
 	d.Partial(true)
+
+	if d.HasChange("tags") {
+		if err := dbauditService.setInstanceTags(d, TagResourceInstance); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
 
 	if d.HasChange("description") {
 		if err := dbauditService.UpdateDbauditInstanceDescription(d.Id(), d.Get("description").(string)); err != nil {

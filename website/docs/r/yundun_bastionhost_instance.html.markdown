@@ -40,11 +40,12 @@ Basic Usage
 
 The following arguments are supported:
 
-* `plan_code` - (Required) Plan code of the Cloud DBaudit to produce. (alpha.professional, alpha.basic, alpha.premium) 
+* `plan_code` - (Required) Plan code of the Cloud Bastionhost to produce. (alpha.professional, alpha.basic, alpha.premium) 
 * `description` - (Required) Description of the instance. This name can have a string of 1 to 63 characters.
 * `period` - (ForceNew) Duration for initially producing the instance. Valid values: [1~9], 12, 24, 36. Default to 1. At present, the provider does not support modify "period".
-* `vswitch_id` - (Required, ForceNew) vSwtich ID configured to audit
-* `security_group_ids` - (Required) vSwtich ID configured to audit
+* `vswitch_id` - (Required, ForceNew) vSwtich ID configured to bastionhost
+* `security_group_ids` - (Required) security group IDs configured to bastionhost
+* `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 

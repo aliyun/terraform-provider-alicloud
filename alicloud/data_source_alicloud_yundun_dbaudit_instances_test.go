@@ -33,14 +33,35 @@ func TestAccAlicloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
 		}),
 	}
 
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_yundun_dbaudit_instance.default.id}"},
+			"tags": map[string]interface{}{
+				"Created": "TF",
+			},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_yundun_dbaudit_instance.default.id}-fake"},
+			"tags": map[string]interface{}{
+				"Created": "TF-fake",
+			},
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_yundun_dbaudit_instance.default.description}",
 			"ids":               []string{"${alicloud_yundun_dbaudit_instance.default.id}"},
+			"tags": map[string]interface{}{
+				"For": "acceptance test",
+			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_yundun_dbaudit_instance.default.description}-fake",
 			"ids":               []string{"${alicloud_yundun_dbaudit_instance.default.id}-fake"},
+			"tags": map[string]interface{}{
+				"For": "acceptance test-fake",
+			},
 		}),
 	}
 
@@ -76,7 +97,7 @@ func TestAccAlicloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
 		testAccPreCheckWithAccountSiteType(t, DomesticSite)
 	}
 
-	yundunDbauditInstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+	yundunDbauditInstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, tagsConf, allConf)
 
 }
 
@@ -113,5 +134,9 @@ func dataSourceYundunDbauditInstanceConfigDependency(description string) string 
 					plan_code         = "alpha.professional"
 					period            = "1"
 					vswitch_id        = "${alicloud_vswitch.default.id}"
+					tags 				 = {
+						Created = "TF"
+						For 	= "acceptance test"
+				  }
 			  }`, description)
 }

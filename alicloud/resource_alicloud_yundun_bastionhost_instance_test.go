@@ -138,6 +138,7 @@ func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":          name,
+						"period":               "1",
 						"security_group_ids.#": "1",
 					}),
 				),
@@ -184,6 +185,51 @@ func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_group_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+						"Updated": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "3",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+						"tags.Updated": "TF",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+						"tags.Updated": REMOVEKEY,
 					}),
 				),
 			},

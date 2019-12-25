@@ -61,6 +61,7 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -124,6 +125,11 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	d.Set("description", instance.Description)
+	period, err := computePeriodByUnit(instance.StartTime/1000, instance.ExpireTime/1000, d.Get("period").(int), "Month")
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("period", period)
 	d.Set("license_code", instance.LicenseCode)
 	d.Set("region_id", client.RegionId)
 	d.Set("vswitch_id", instance.VswitchId)
@@ -132,6 +138,12 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 		sgs = append(sgs, sg)
 	}
 	d.Set("security_group_ids", sgs)
+
+	tags, err := BastionhostService.DescribeTags(d.Id(), nil, TagResourceInstance)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", BastionhostService.tagsToMap(tags))
 	return nil
 }
 
@@ -140,6 +152,12 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 	bastionhostService := bastionhostService{client}
 
 	d.Partial(true)
+	if d.HasChange("tags") {
+		if err := bastionhostService.setInstanceTags(d, TagResourceInstance); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
 
 	if d.HasChange("description") {
 		if err := bastionhostService.UpdateBastionhostInstanceDescription(d.Id(), d.Get("description").(string)); err != nil {

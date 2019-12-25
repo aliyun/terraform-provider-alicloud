@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"log"
 	"regexp"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -80,9 +82,11 @@ func dataSourceAlicloudBastionhostInstances() *schema.Resource {
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
+						"tags": tagsSchema(),
 					},
 				},
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -110,6 +114,17 @@ func dataSourceAlicloudBastionhostInstancesRead(d *schema.ResourceData, meta int
 			ids_str = append(ids_str, v_instance_id.(string))
 		}
 		request.InstanceId = &ids_str
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		var tags []yundun_bastionhost.DescribeInstanceBastionhostTag
+		for key, value := range v.(map[string]interface{}) {
+			tags = append(tags, yundun_bastionhost.DescribeInstanceBastionhostTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &tags
 	}
 	for {
 		raw, err := client.WithBastionhostClient(func(bastionhostClient *yundun_bastionhost.Client) (interface{}, error) {
@@ -148,44 +163,64 @@ func dataSourceAlicloudBastionhostInstancesRead(d *schema.ResourceData, meta int
 		instanceIds = append(instanceIds, instance.InstanceId)
 	}
 	if len(instanceIds) < 1 {
-		return WrapError(extractBastionhostInstance(d, nil))
+		return WrapError(extractBastionhostInstance(d, nil, nil))
 	}
 	var specs []yundun_bastionhost.InstanceAttribute
+	var tags []yundun_bastionhost.TagResources
 	for _, instanceId := range instanceIds {
-		request := yundun_bastionhost.CreateDescribeInstanceAttributeRequest()
-		request.InstanceId = instanceId
-		raw, err := client.WithBastionhostClient(func(bastionhostClient *yundun_bastionhost.Client) (interface{}, error) {
-			return bastionhostClient.DescribeInstanceAttribute(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_bastionhost_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		{
+			request := yundun_bastionhost.CreateDescribeInstanceAttributeRequest()
+			request.InstanceId = instanceId
+			raw, err := client.WithBastionhostClient(func(bastionhostClient *yundun_bastionhost.Client) (interface{}, error) {
+				return bastionhostClient.DescribeInstanceAttribute(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_bastionhost_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			res, _ := raw.(*yundun_bastionhost.DescribeInstanceAttributeResponse)
+			specs = append(specs, res.InstanceAttribute)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		res, _ := raw.(*yundun_bastionhost.DescribeInstanceAttributeResponse)
-		specs = append(specs, res.InstanceAttribute)
+
+		{
+			request := yundun_bastionhost.CreateListTagResourcesRequest()
+			request.RegionId = client.RegionId
+			request.ResourceType = strings.ToUpper(string(TagResourceInstance))
+			request.ResourceId = &[]string{instanceId}
+			raw, err := client.WithBastionhostClient(func(client *yundun_bastionhost.Client) (interface{}, error) {
+				return client.ListTagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_bastionhost_tags ", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			res, _ := raw.(*yundun_bastionhost.ListTagResourcesResponse)
+			tags = append(tags, res.TagResources)
+		}
 	}
-	return WrapError(extractBastionhostInstance(d, specs))
+	return WrapError(extractBastionhostInstance(d, specs, tags))
 }
 
-func extractBastionhostInstance(d *schema.ResourceData, specs []yundun_bastionhost.InstanceAttribute) error {
+func extractBastionhostInstance(d *schema.ResourceData, specs []yundun_bastionhost.InstanceAttribute, tags []yundun_bastionhost.TagResources) error {
 	var instanceIds []string
 	var descriptions []string
 	var instances []map[string]interface{}
 
-	for _, item := range specs {
+	for i := 0; i < len(specs); i++ {
 		instanceMap := map[string]interface{}{
-			"id":                    item.InstanceId,
-			"description":           item.Description,
-			"user_vswitch_id":       item.VswitchId,
-			"private_domain":        item.IntranetEndpoint,
-			"public_domain":         item.InternetEndpoint,
-			"instance_status":       item.InstanceStatus,
-			"license_code":          item.LicenseCode,
-			"public_network_access": item.PublicNetworkAccess,
-			"security_group_ids":    item.ReferredSecurityGroups,
+			"id":                    specs[i].InstanceId,
+			"description":           specs[i].Description,
+			"user_vswitch_id":       specs[i].VswitchId,
+			"private_domain":        specs[i].IntranetEndpoint,
+			"public_domain":         specs[i].InternetEndpoint,
+			"instance_status":       specs[i].InstanceStatus,
+			"license_code":          specs[i].LicenseCode,
+			"public_network_access": specs[i].PublicNetworkAccess,
+			"security_group_ids":    specs[i].ReferredSecurityGroups,
+			"tags":                  bastionhostTagsToMap(tags[i].TagResource),
 		}
-		instanceIds = append(instanceIds, item.InstanceId)
-		descriptions = append(descriptions, item.Description)
+		instanceIds = append(instanceIds, specs[i].InstanceId)
+		descriptions = append(descriptions, specs[i].Description)
 		instances = append(instances, instanceMap)
 	}
 
@@ -206,4 +241,28 @@ func extractBastionhostInstance(d *schema.ResourceData, specs []yundun_bastionho
 		writeToFile(output.(string), instances)
 	}
 	return nil
+}
+
+func bastionhostTagsToMap(tags []yundun_bastionhost.TagResource) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !bastionhostTagIgnored(t) {
+			result[t.TagKey] = t.TagValue
+		}
+	}
+
+	return result
+}
+
+func bastionhostTagIgnored(t yundun_bastionhost.TagResource) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
+		ok, _ := regexp.MatchString(v, t.TagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
 }
