@@ -43,6 +43,7 @@ The following arguments are supported:
 * `description` - (Required) Description of the instance. This name can have a string of 1 to 63 characters.
 * `period` - (Required, ForceNew) Duration for initially producing the instance. Valid values: [1~9], 12, 24, 36. Default to 12. At present, the provider does not support modify "period".
 * `vswitch_id` - (Required, ForceNew) vSwtich ID configured to audit
+* `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 

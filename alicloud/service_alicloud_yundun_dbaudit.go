@@ -2,6 +2,8 @@ package alicloud
 
 import (
 	"log"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -280,4 +282,136 @@ func (s *DbauditService) WaitForYundunDbauditInstance(instanceId string, status 
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
+}
+
+func (s *DbauditService) DescribeTags(resourceId string, resourceTags map[string]interface{}, resourceType TagResourceType) (tags []yundun_dbaudit.TagResource, err error) {
+	request := yundun_dbaudit.CreateListTagResourcesRequest()
+	request.RegionId = s.client.RegionId
+	request.ResourceType = strings.ToUpper(string(resourceType))
+	request.ResourceId = &[]string{resourceId}
+	if resourceTags != nil && len(resourceTags) > 0 {
+		var reqTags []yundun_dbaudit.ListTagResourcesTag
+		for key, value := range resourceTags {
+			reqTags = append(reqTags, yundun_dbaudit.ListTagResourcesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
+	}
+
+	var raw interface{}
+	raw, err = s.client.WithDbauditClient(func(dbauditClient *yundun_dbaudit.Client) (interface{}, error) {
+		return dbauditClient.ListTagResources(request)
+	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	response, _ := raw.(*yundun_dbaudit.ListTagResourcesResponse)
+
+	return response.TagResources, nil
+}
+
+func (s *DbauditService) tagsToMap(tags []yundun_dbaudit.TagResource) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !s.ignoreTag(t) {
+			result[t.TagKey] = t.TagValue
+		}
+	}
+	return result
+}
+
+func (s *DbauditService) ignoreTag(t yundun_dbaudit.TagResource) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
+		ok, _ := regexp.MatchString(v, t.TagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
+}
+
+func (s *DbauditService) setInstanceTags(d *schema.ResourceData, resourceType TagResourceType) error {
+	if d.HasChange("tags") {
+		oraw, nraw := d.GetChange("tags")
+		o := oraw.(map[string]interface{})
+		n := nraw.(map[string]interface{})
+		create, remove := s.diffTags(s.tagsFromMap(o), s.tagsFromMap(n))
+
+		if len(remove) > 0 {
+			var tagKey []string
+			for _, v := range remove {
+				tagKey = append(tagKey, v.Key)
+			}
+			request := yundun_dbaudit.CreateUntagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.ResourceType = strings.ToUpper(string(resourceType))
+			request.TagKey = &tagKey
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithDbauditClient(func(client *yundun_dbaudit.Client) (interface{}, error) {
+				return client.UntagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+
+		if len(create) > 0 {
+			request := yundun_dbaudit.CreateTagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.Tag = &create
+			request.ResourceType = strings.ToUpper(string(resourceType))
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithDbauditClient(func(client *yundun_dbaudit.Client) (interface{}, error) {
+				return client.TagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+
+	}
+
+	return nil
+}
+
+func (s *DbauditService) diffTags(oldTags, newTags []yundun_dbaudit.TagResourcesTag) ([]yundun_dbaudit.TagResourcesTag, []yundun_dbaudit.TagResourcesTag) {
+	// First, we're creating everything we have
+	create := make(map[string]interface{})
+	for _, t := range newTags {
+		create[t.Key] = t.Value
+	}
+
+	// Build the list of what to remove
+	var remove []yundun_dbaudit.TagResourcesTag
+	for _, t := range oldTags {
+		old, ok := create[t.Key]
+		if !ok || old != t.Value {
+			// Delete it!
+			remove = append(remove, t)
+		}
+	}
+
+	return s.tagsFromMap(create), remove
+}
+
+func (s *DbauditService) tagsFromMap(m map[string]interface{}) []yundun_dbaudit.TagResourcesTag {
+	result := make([]yundun_dbaudit.TagResourcesTag, 0, len(m))
+	for k, v := range m {
+		result = append(result, yundun_dbaudit.TagResourcesTag{
+			Key:   k,
+			Value: v.(string),
+		})
+	}
+
+	return result
 }

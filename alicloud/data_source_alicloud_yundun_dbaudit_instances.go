@@ -1,9 +1,9 @@
 package alicloud
 
 import (
-	"regexp"
-
 	"log"
+	"regexp"
+	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
@@ -76,9 +76,11 @@ func dataSourceAlicloudDbauditInstances() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
+						"tags": tagsSchema(),
 					},
 				},
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -106,6 +108,17 @@ func dataSourceAlicloudDbauditInstancesRead(d *schema.ResourceData, meta interfa
 			ids_str = append(ids_str, v_instance_id.(string))
 		}
 		request.InstanceId = &ids_str
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		var tags []yundun_dbaudit.DescribeInstancesTag
+		for key, value := range v.(map[string]interface{}) {
+			tags = append(tags, yundun_dbaudit.DescribeInstancesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &tags
 	}
 	for {
 		raw, err := client.WithDbauditClient(func(dbauditClient *yundun_dbaudit.Client) (interface{}, error) {
@@ -139,28 +152,45 @@ func dataSourceAlicloudDbauditInstancesRead(d *schema.ResourceData, meta interfa
 			request.CurrentPage = page
 		}
 	}
-	return WrapError(extractDbauditInstance(d, instances))
+
+	var instanceTags []yundun_dbaudit.TagResources
+	for _, inst := range instances {
+		request := yundun_dbaudit.CreateListTagResourcesRequest()
+		request.RegionId = client.RegionId
+		request.ResourceType = strings.ToUpper(string(TagResourceInstance))
+		request.ResourceId = &[]string{inst.InstanceId}
+		raw, err := client.WithDbauditClient(func(dbauditClient *yundun_dbaudit.Client) (interface{}, error) {
+			return dbauditClient.ListTagResources(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_dbaudit_tags", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*yundun_dbaudit.ListTagResourcesResponse)
+		instanceTags = append(instanceTags, yundun_dbaudit.TagResources{response.TagResources})
+	}
+	return WrapError(extractDbauditInstance(d, instances, instanceTags))
 }
 
-func extractDbauditInstance(d *schema.ResourceData, specs []yundun_dbaudit.Instance) error {
+func extractDbauditInstance(d *schema.ResourceData, specs []yundun_dbaudit.Instance, tags []yundun_dbaudit.TagResources) error {
 
 	var instanceIds []string
 	var descriptions []string
 	var instances []map[string]interface{}
-
-	for _, item := range specs {
+	for i := 0; i < len(specs); i++ {
 		instanceMap := map[string]interface{}{
-			"id":                    item.InstanceId,
-			"description":           item.Description,
-			"user_vswitch_id":       item.VswitchId,
-			"private_domain":        item.IntranetEndpoint,
-			"public_domain":         item.InternetEndpoint,
-			"instance_status":       item.InstanceStatus,
-			"license_code":          item.LicenseCode,
-			"public_network_access": item.PublicNetworkAccess,
+			"id":                    specs[i].InstanceId,
+			"description":           specs[i].Description,
+			"user_vswitch_id":       specs[i].VswitchId,
+			"private_domain":        specs[i].IntranetEndpoint,
+			"public_domain":         specs[i].InternetEndpoint,
+			"instance_status":       specs[i].InstanceStatus,
+			"license_code":          specs[i].LicenseCode,
+			"public_network_access": specs[i].PublicNetworkAccess,
+			"tags":                  dbauditTagsToMap(tags[i].TagResource),
 		}
-		instanceIds = append(instanceIds, item.InstanceId)
-		descriptions = append(descriptions, item.Description)
+		instanceIds = append(instanceIds, specs[i].InstanceId)
+		descriptions = append(descriptions, specs[i].Description)
 		instances = append(instances, instanceMap)
 	}
 
@@ -182,4 +212,28 @@ func extractDbauditInstance(d *schema.ResourceData, specs []yundun_dbaudit.Insta
 	}
 	log.Printf("DEBUF data source finnished")
 	return nil
+}
+
+func dbauditTagsToMap(tags []yundun_dbaudit.TagResource) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !dbauditTagIgnored(t) {
+			result[t.TagKey] = t.TagValue
+		}
+	}
+
+	return result
+}
+
+func dbauditTagIgnored(t yundun_dbaudit.TagResource) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
+		ok, _ := regexp.MatchString(v, t.TagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
 }

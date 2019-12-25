@@ -33,6 +33,14 @@ The following arguments are supported:
 * `ids` - (Optional) Matched instance IDs to filter data source result.
 * `output_file` - (Optional) File name to persist data source output.
 * `descriptions` - (Optional) Descriptions to filter data source result.
+* `tags` - (Optional, Available in v1.67.0+) A map of tags assigned to the bastionhost instance. It must be in the format:
+  ```
+  data "alicloud_yundun_bastionhost_instances" "instance" {
+    tags = {
+      tagKey1 = "tagValue1"
+    }
+  }
+  ```
 
 
 ## Attributes Reference
@@ -47,3 +55,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `instance_status` - The instance's status.
   * `public_network_access` - The instance's public network access configuration.
   * `security_group_ids` - The instance's security group configuration.
+  * `tags` - A map of tags assigned to the bastionhost instance.
