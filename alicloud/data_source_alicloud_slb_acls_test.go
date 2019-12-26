@@ -70,6 +70,7 @@ func TestAccAlicloudSlbAclsDataSource_basic(t *testing.T) {
 			"ids.#":                      "1",
 			"names.#":                    "1",
 			"acls.0.id":                  CHECKSET,
+			"acls.0.resource_group_id":   CHECKSET,
 			"acls.0.name":                fmt.Sprintf("tf-testAccSlbAclDataSourceBisic-%d", rand),
 			"acls.0.ip_version":          "ipv4",
 			"acls.0.entry_list.#":        "2",

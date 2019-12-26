@@ -43,7 +43,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `name` - Acl name.
   * `entry_list` - A list of entry (IP addresses or CIDR blocks).  Each entry contains two sub-fields as `Entry Block` follows.
   * `related_listeners` - A list of listener are attached by the acl.  Each listener contains four sub-fields as `Listener Block` follows.
-  * `tags` - (Available in v1.66.0+) A mapping of tags to assign to the resource.
+  * `tags` - A mapping of tags to assign to the resource.
+  * `resource_group_id` - Resource group ID.
 ## Entry Block
 
 The entry mapping supports the following:

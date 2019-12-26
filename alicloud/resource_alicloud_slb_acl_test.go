@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -109,15 +110,17 @@ func TestAccAlicloudSlbAcl_basic(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test123",
 					},
+					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":         "tf-testAccSlbAcl",
-						"ip_version":   "ipv4",
-						"entry_list.#": "2",
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "acceptance test123",
+						"name":              "tf-testAccSlbAcl",
+						"ip_version":        "ipv4",
+						"entry_list.#":      "2",
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "acceptance test123",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
