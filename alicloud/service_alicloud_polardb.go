@@ -632,22 +632,32 @@ func (s *PolarDBService) WaitForCluster(id string, status Status, timeout int) e
 	return nil
 }
 
-func (s *PolarDBService) GetSecurityIps(clusterId string) ([]string, error) {
-	object, err := s.DescribeDBSecurityIps(clusterId)
-	if err != nil {
-		return nil, WrapError(err)
-	}
+func (s *PolarDBService) DescribeDBSecurityIps(clusterId string) (ips []string, err error) {
 
-	var ips, separator string
+	request := polardb.CreateDescribeDBClusterAccessWhitelistRequest()
+	request.RegionId = s.client.RegionId
+	request.DBClusterId = clusterId
+
+	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+		return polarDBClient.DescribeDBClusterAccessWhitelist(request)
+	})
+	if err != nil {
+		return ips, WrapErrorf(err, DefaultErrorMsg, clusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	resp, _ := raw.(*polardb.DescribeDBClusterAccessWhitelistResponse)
+
+	var ipstr, separator string
 	ipsMap := make(map[string]string)
-	for _, ip := range object {
+	for _, ip := range resp.Items.DBClusterIPArray {
 		if ip.DBClusterIPArrayAttribute != "hidden" {
-			ips += separator + ip.SecurityIps
+			ipstr += separator + ip.SecurityIps
 			separator = COMMA_SEPARATED
 		}
 	}
 
-	for _, ip := range strings.Split(ips, COMMA_SEPARATED) {
+	for _, ip := range strings.Split(ipstr, COMMA_SEPARATED) {
 		ipsMap[ip] = ip
 	}
 
@@ -659,24 +669,6 @@ func (s *PolarDBService) GetSecurityIps(clusterId string) ([]string, error) {
 	}
 
 	return finalIps, nil
-}
-
-func (s *PolarDBService) DescribeDBSecurityIps(clusterId string) (ips []polardb.DBClusterIPArray, err error) {
-
-	request := polardb.CreateDescribeDBClusterAccessWhitelistRequest()
-	request.RegionId = s.client.RegionId
-	request.DBClusterId = clusterId
-
-	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-		return polarDBClient.DescribeDBClusterAccessWhitelist(request)
-	})
-	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, clusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	resp, _ := raw.(*polardb.DescribeDBClusterAccessWhitelistResponse)
-	return resp.Items.DBClusterIPArray, nil
 }
 
 func (s *PolarDBService) ModifyDBSecurityIps(clusterId, ips string) error {

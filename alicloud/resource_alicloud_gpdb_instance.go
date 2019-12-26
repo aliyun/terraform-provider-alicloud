@@ -107,7 +107,7 @@ func resourceAlicloudGpdbInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("instance_class", instance.DBInstanceClass)
 	d.Set("instance_group_count", instance.DBInstanceGroupCount)
 	d.Set("instance_network_type", instance.InstanceNetworkType)
-	security_ips, err := gpdbService.GetSecurityIps(d.Id())
+	security_ips, err := gpdbService.DescribeGpdbSecurityIps(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
