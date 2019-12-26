@@ -40,6 +40,7 @@ func init() {
 			"alicloud_mongodb_sharding_instance",
 			"alicloud_gpdb_instance",
 			"alicloud_yundun_bastionhost_instance",
+			"alicloud_emr_cluster",
 		},
 	})
 }
