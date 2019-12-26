@@ -116,6 +116,10 @@ func resourceAlicloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{
 		if args.ArgName == "aliyun_id" || args.ArgName == "scheme_origin_port" {
 			continue
 		}
+		// private_oss_tbl always is changed and used to enable Alibaba Cloud OSS Private Bucket Back to Source Authorization
+		if args.ArgName == "private_oss_tbl" {
+			continue
+		}
 		funArgs = append(funArgs, map[string]string{
 			"arg_name":  args.ArgName,
 			"arg_value": args.ArgValue,
