@@ -103,21 +103,31 @@ func (s *MongoDBService) RdsMongodbDBInstanceStateRefreshFunc(id string, failSta
 	}
 }
 
-func (s *MongoDBService) GetSecurityIps(instanceId string) ([]string, error) {
-	arr, err := s.DescribeMongoDBSecurityIps(instanceId)
+func (s *MongoDBService) DescribeMongoDBSecurityIps(instanceId string) (ips []string, err error) {
+	request := dds.CreateDescribeSecurityIpsRequest()
+	request.RegionId = s.client.RegionId
+	request.DBInstanceId = instanceId
 
+	raw, err := s.client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
+		return client.DescribeSecurityIps(request)
+	})
 	if err != nil {
-		return nil, WrapError(err)
+		return ips, WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+	response, _ := raw.(*dds.DescribeSecurityIpsResponse)
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	var ips, separator string
+	var ipstr, separator string
 	ipsMap := make(map[string]string)
-	for _, ip := range arr {
-		ips += separator + ip.SecurityIpList
+	for _, ip := range response.SecurityIpGroups.SecurityIpGroup {
+		if ip.SecurityIpGroupAttribute == "hidden" {
+			continue
+		}
+		ipstr += separator + ip.SecurityIpList
 		separator = COMMA_SEPARATED
 	}
 
-	for _, ip := range strings.Split(ips, COMMA_SEPARATED) {
+	for _, ip := range strings.Split(ipstr, COMMA_SEPARATED) {
 		ipsMap[ip] = ip
 	}
 
@@ -127,24 +137,8 @@ func (s *MongoDBService) GetSecurityIps(instanceId string) ([]string, error) {
 			finalIps = append(finalIps, key)
 		}
 	}
+
 	return finalIps, nil
-}
-
-func (s *MongoDBService) DescribeMongoDBSecurityIps(instanceId string) (ips []dds.SecurityIpGroup, err error) {
-	request := dds.CreateDescribeSecurityIpsRequest()
-	request.RegionId = s.client.RegionId
-	request.DBInstanceId = instanceId
-
-	raw, err := s.client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
-		return client.DescribeSecurityIps(request)
-	})
-	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	response, _ := raw.(*dds.DescribeSecurityIpsResponse)
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	return response.SecurityIpGroups.SecurityIpGroup, nil
 }
 
 func (s *MongoDBService) ModifyMongoDBSecurityIps(instanceId, ips string) error {

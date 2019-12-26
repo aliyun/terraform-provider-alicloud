@@ -269,7 +269,7 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("backup_period", strings.Split(backupPolicy.PreferredBackupPeriod, ","))
 	d.Set("retention_period", backupPolicy.BackupRetentionPeriod)
 
-	ips, err := ddsService.GetSecurityIps(d.Id())
+	ips, err := ddsService.DescribeMongoDBSecurityIps(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}

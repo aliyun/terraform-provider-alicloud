@@ -344,7 +344,7 @@ func resourceAlicloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 		return WrapError(err)
 	}
 
-	ips, err := ddsService.GetSecurityIps(d.Id())
+	ips, err := ddsService.DescribeMongoDBSecurityIps(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}

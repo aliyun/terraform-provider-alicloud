@@ -45,32 +45,7 @@ func (s *GpdbService) DescribeGpdbInstance(id string) (instanceAttribute gpdb.DB
 	return response.Items.DBInstanceAttribute[0], nil
 }
 
-func (s *GpdbService) GetSecurityIps(id string) ([]string, error) {
-	arr, err := s.DescribeGpdbSecurityIps(id)
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
-	var ips, separator string
-	ipsMap := make(map[string]string)
-	for _, ip := range arr {
-		ips += separator + ip.SecurityIPList
-		separator = COMMA_SEPARATED
-	}
-	for _, ip := range strings.Split(ips, COMMA_SEPARATED) {
-		ipsMap[ip] = ip
-	}
-
-	var finalIps []string
-	if len(ipsMap) > 0 {
-		for key := range ipsMap {
-			finalIps = append(finalIps, key)
-		}
-	}
-	return finalIps, nil
-}
-
-func (s *GpdbService) DescribeGpdbSecurityIps(id string) (ips []gpdb.DBInstanceIPArray, err error) {
+func (s *GpdbService) DescribeGpdbSecurityIps(id string) (ips []string, err error) {
 	request := gpdb.CreateDescribeDBInstanceIPArrayListRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -88,7 +63,26 @@ func (s *GpdbService) DescribeGpdbSecurityIps(id string) (ips []gpdb.DBInstanceI
 	}
 	response, _ := raw.(*gpdb.DescribeDBInstanceIPArrayListResponse)
 	addDebug(request.GetActionName(), response, request.RpcRequest, request)
-	return response.Items.DBInstanceIPArray, nil
+	var ipstr, separator string
+	ipsMap := make(map[string]string)
+	for _, ip := range response.Items.DBInstanceIPArray {
+		if ip.DBInstanceIPArrayAttribute == "hidden" {
+			continue
+		}
+		ipstr += separator + ip.SecurityIPList
+		separator = COMMA_SEPARATED
+	}
+	for _, ip := range strings.Split(ipstr, COMMA_SEPARATED) {
+		ipsMap[ip] = ip
+	}
+
+	var finalIps []string
+	if len(ipsMap) > 0 {
+		for key := range ipsMap {
+			finalIps = append(finalIps, key)
+		}
+	}
+	return finalIps, nil
 }
 
 func (s *GpdbService) ModifyGpdbSecurityIps(id, ips string) error {
