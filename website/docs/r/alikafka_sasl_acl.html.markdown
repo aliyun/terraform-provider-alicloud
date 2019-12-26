@@ -67,7 +67,6 @@ resource "alicloud_alikafka_sasl_user" "default" {
 resource "alicloud_alikafka_sasl_acl" "default" {
   instance_id = "${alicloud_alikafka_instance.default.id}"
   username = "${alicloud_alikafka_sasl_user.default.username}"
-  password = "${alicloud_alikafka_sasl_user.default.password}"
   acl_resource_type = "Topic"
   acl_resource_name = "${alicloud_alikafka_topic.default.topic}"
   acl_resource_pattern_type = "LITERAL"

@@ -14,6 +14,7 @@ func resourceAlicloudAlikafkaSaslUser() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudAlikafkaSaslUserCreate,
 		Read:   resourceAlicloudAlikafkaSaslUserRead,
+		Update: resourceAlicloudAlikafkaSaslUserUpdate,
 		Delete: resourceAlicloudAlikafkaSaslUserDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -34,20 +35,17 @@ func resourceAlicloudAlikafkaSaslUser() *schema.Resource {
 			"password": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Sensitive:    true,
 				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
 			"kms_encrypted_password": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				ForceNew:         true,
 				DiffSuppressFunc: kmsDiffSuppressFunc,
 			},
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
 				Optional: true,
-				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("kms_encrypted_password").(string) == ""
 				},
@@ -107,8 +105,10 @@ func resourceAlicloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_sasl_user", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
+	// Server may have cache, sleep a while.
+	time.Sleep(2 * time.Second)
 	d.SetId(instanceId + ":" + username)
-	return resourceAlicloudAlikafkaSaslUserRead(d, meta)
+	return resourceAlicloudAlikafkaSaslUserUpdate(d, meta)
 }
 
 func resourceAlicloudAlikafkaSaslUserRead(d *schema.ResourceData, meta interface{}) error {
@@ -135,6 +135,68 @@ func resourceAlicloudAlikafkaSaslUserRead(d *schema.ResourceData, meta interface
 	d.Set("password", object.Password)
 
 	return nil
+}
+
+func resourceAlicloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	alikafkaService := AlikafkaService{client}
+
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	instanceId := parts[0]
+	username := parts[1]
+
+	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
+
+		request := alikafka.CreateCreateSaslUserRequest()
+		request.InstanceId = instanceId
+		request.RegionId = client.RegionId
+		request.Username = username
+
+		password := d.Get("password").(string)
+		kmsPassword := d.Get("kms_encrypted_password").(string)
+
+		if password == "" && kmsPassword == "" {
+			return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+		}
+
+		if password != "" {
+			request.Password = password
+		} else {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			request.Password = decryptResp.Plaintext
+		}
+
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+				return alikafkaClient.CreateSaslUser(request)
+			})
+			if err != nil {
+				if IsExceptedErrors(err, []string{AlikafkaThrottlingUser, AlikafkaFlowControl}) {
+					time.Sleep(2 * time.Second)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_sasl_user", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+
+		// Server may have cache, sleep a while.
+		time.Sleep(1000)
+	}
+	return resourceAlicloudAlikafkaSaslUserRead(d, meta)
 }
 
 func resourceAlicloudAlikafkaSaslUserDelete(d *schema.ResourceData, meta interface{}) error {
