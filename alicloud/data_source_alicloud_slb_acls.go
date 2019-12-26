@@ -104,6 +104,10 @@ func dataSourceAlicloudSlbAcls() *schema.Resource {
 							MinItems: 0,
 						},
 						"tags": tagsSchema(),
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -205,6 +209,7 @@ func slbAclsDescriptionAttributes(d *schema.ResourceData, acls []slb.Acl, client
 			"entry_list":        slbService.FlattenSlbAclEntryMappings(response.AclEntrys.AclEntry),
 			"related_listeners": slbService.flattenSlbRelatedListenerMappings(response.RelatedListeners.RelatedListener),
 			"tags":              aclTagsMappings(d, response.AclId, meta),
+			"resource_group_id": response.ResourceGroupId,
 		}
 
 		ids = append(ids, response.AclId)

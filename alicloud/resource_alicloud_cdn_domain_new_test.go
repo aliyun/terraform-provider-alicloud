@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -115,9 +116,10 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name": name,
-					"cdn_type":    "web",
-					"scope":       "domestic",
+					"domain_name":       name,
+					"cdn_type":          "web",
+					"scope":             "domestic",
+					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 					"sources": []map[string]interface{}{
 						{
 							"content": "www.aliyuntest.com",
@@ -127,7 +129,8 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"scope": "domestic",
+						"scope":             "domestic",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},

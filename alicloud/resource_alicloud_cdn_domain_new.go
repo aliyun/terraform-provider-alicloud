@@ -30,6 +30,11 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validation.StringLenBetween(5, 67),
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"cdn_type": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -141,6 +146,9 @@ func resourceAlicloudCdnDomainCreateNew(d *schema.ResourceData, meta interface{}
 
 	request := cdn.CreateAddCdnDomainRequest()
 	request.RegionId = client.RegionId
+	if v := d.Get("resource_group_id").(string); v != "" {
+		request.ResourceGroupId = v
+	}
 	request.DomainName = d.Get("domain_name").(string)
 	request.CdnType = d.Get("cdn_type").(string)
 	if v, ok := d.GetOk("scope"); ok {
@@ -189,6 +197,9 @@ func resourceAlicloudCdnDomainUpdateNew(d *schema.ResourceData, meta interface{}
 	if !d.IsNewResource() {
 		request := cdn.CreateModifyCdnDomainRequest()
 		request.RegionId = client.RegionId
+		if v := d.Get("resource_group_id").(string); v != "" {
+			request.ResourceGroupId = v
+		}
 		request.DomainName = d.Id()
 
 		if d.HasChange("sources") {
@@ -220,6 +231,8 @@ func resourceAlicloudCdnDomainUpdateNew(d *schema.ResourceData, meta interface{}
 				return WrapError(err)
 			}
 			d.SetPartial("sources")
+			d.SetPartial("resource_group_id")
+
 		}
 	}
 
@@ -270,6 +283,7 @@ func resourceAlicloudCdnDomainReadNew(d *schema.ResourceData, meta interface{}) 
 	d.Set("domain_name", object.DomainName)
 	d.Set("cdn_type", object.CdnType)
 	d.Set("scope", object.Scope)
+	d.Set("resource_group_id", object.ResourceGroupId)
 
 	certInfo, err := cdnService.DescribeDomainCertificateInfo(d.Id())
 	if err != nil {
