@@ -1,25 +1,25 @@
-## 1.67.0 (Unreleased)
+## 1.67.0 (December 27, 2019)
 
-- **New Resource:** `alicloud_polardb_account_privilege` [GH-2005]
-- **New Resource:** `alicloud_polardb_account` [GH-1998]
+- **New Resource:** `alicloud_polardb_account_privilege` ([#2005](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2005))
+- **New Resource:** `alicloud_polardb_account` ([#1998](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1998))
 
 IMPROVEMENTS:
 
-- rollback hbase resource and datasource because of them need to be improved [GH-2033]
-- improve(ci): add hbase ci [GH-2031]
-- improve(mongodb): hidden some security ips [GH-2025]
-- improve(cdn_config): remove the args private_oss_tbl [GH-2024]
-- improve(ons): update sdk and remove PreventCache in ons [GH-2014]
-- add resource group id [GH-2010]
-- improve(kvstore): remove type 'Super' for kvstore [GH-2009]
-- improve(emr): support emr cluster tag [GH-2008]
-- feat(alicloud/yundun_bastionhost): Add support for Cloud Bastionhost [GH-2006]
+- rollback hbase resource and datasource because of them need to be improved ([#2033](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2033))
+- improve(ci): add hbase ci ([#2031](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2031))
+- improve(mongodb): hidden some security ips ([#2025](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2025))
+- improve(cdn_config): remove the args private_oss_tbl ([#2024](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2024))
+- improve(ons): update sdk and remove PreventCache in ons ([#2014](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2014))
+- add resource group id ([#2010](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2010))
+- improve(kvstore): remove type 'Super' for kvstore ([#2009](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2009))
+- improve(emr): support emr cluster tag ([#2008](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2008))
+- feat(alicloud/yundun_bastionhost): Add support for Cloud Bastionhost ([#2006](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2006))
 
 BUG FIXES:
 
-- fix(rds): fix policy sqlserver test bug [GH-2030]
-- fix(rds): fix rds resource alicloud_db_backup_policy`s log_backup bug [GH-2017]
-- fix(db_backup_policy): fix postgresql backup policy bug [GH-2003]
+- fix(rds): fix policy sqlserver test bug ([#2030](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2030))
+- fix(rds): fix rds resource alicloud_db_backup_policy`s log_backup bug ([#2017](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2017))
+- fix(db_backup_policy): fix postgresql backup policy bug ([#2003](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2003))
 
 
 ## 1.66.0 (December 20, 2019)
