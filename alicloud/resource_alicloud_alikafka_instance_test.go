@@ -92,7 +92,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 
 	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand)
+	name := fmt.Sprintf("tf-testacc-%salikafkainstancebasic%v", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -118,7 +118,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
+						"name": fmt.Sprintf("tf-testacc-%salikafkainstancebasic%v", defaultRegionToTest, rand),
 					}),
 				),
 			},
@@ -131,11 +131,11 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": fmt.Sprintf("tf-testacc-alikafkainstancechange%v", rand),
+					"name": fmt.Sprintf("tf-testacc-%salikafkainstancebasic%v", defaultRegionToTest, rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf-testacc-alikafkainstancechange%v", rand)}),
+						"name": fmt.Sprintf("tf-testacc-%salikafkainstancebasic%v", defaultRegionToTest, rand)}),
 				),
 			},
 
@@ -241,7 +241,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":         fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
+						"name":         fmt.Sprintf("tf-testacc-%salikafkainstancebasic%v", defaultRegionToTest, rand),
 						"topic_quota":  "50",
 						"disk_type":    "1",
 						"disk_size":    "500",
@@ -274,7 +274,7 @@ func TestAccAlicloudAlikafkaInstance_multi(t *testing.T) {
 
 	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand)
+	name := fmt.Sprintf("tf-testacc-%salikafkainstancebasic%v", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
