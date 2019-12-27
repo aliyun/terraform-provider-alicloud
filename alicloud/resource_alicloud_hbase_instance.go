@@ -46,7 +46,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"hbase", "hbaseue", "serverlesshbase", "spark", "bds"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"hbase"}, false),
 				Default:      "hbase",
 			},
 			"engine_version": {
@@ -94,8 +94,8 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			"duration": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				Computed:         true,
 				ForceNew:         true,
+				Computed:         true,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 60}),
 				DiffSuppressFunc: payTypePostPaidDiffSuppressFunc,
 			},
@@ -103,7 +103,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Type:             schema.TypeBool,
 				Optional:         true,
 				ForceNew:         true,
-				Default:          "false",
+				Computed:         true,
 				DiffSuppressFunc: payTypePostPaidDiffSuppressFunc,
 			},
 			"vswitch_id": {
@@ -128,12 +128,12 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 	request.ClusterName = Trim(d.Get("name").(string))
 	request.RegionId = string(client.Region)
 	request.ZoneId = Trim(d.Get("zone_id").(string))
-	request.Engine = "hbase"
+	request.Engine = Trim(d.Get("engine").(string))
+	request.DbType = request.Engine
 	request.EngineVersion = Trim(d.Get("engine_version").(string))
-	request.DbType = "hbase"
+	request.DbType = request.Engine
 	request.MasterInstanceType = Trim(d.Get("master_instance_type").(string))
 	request.CoreInstanceType = Trim(d.Get("core_instance_type").(string))
-
 	request.CoreInstanceQuantity = strconv.Itoa(d.Get("core_instance_quantity").(int))
 	request.CoreDiskType = Trim(d.Get("core_disk_type").(string))
 	request.CoreDiskQuantity = "4"
@@ -142,10 +142,10 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 	request.PricingCycle = "month"
 	request.Duration = strconv.Itoa(d.Get("duration").(int))
 	request.AutoRenew = strconv.FormatBool(d.Get("auto_renew").(bool))
-	request.NetType = string("classic")
+	request.NetType = "classic"
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
-		request.NetType = string("vpc")
+		request.NetType = "vpc"
 		request.VSwitchId = vswitchId
 		// check vswitchId in zone
 		vsw, err := vpcService.DescribeVSwitch(vswitchId)
@@ -231,9 +231,12 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 	d.Set("core_instance_quantity", instance.CoreNodeCount)
 	d.Set("core_disk_size", instance.CoreDiskSize)
 	d.Set("core_disk_type", instance.CoreDiskType)
-	d.Set("pay_type", instance.PayType)
-	if instance.PayType == "PrePaid" {
-		period, err := computePeriodByUnit(instance.CreatedTime, instance.ExpireTime, d.Get("duration").(int), "Month")
+	// Postpaid -> PostPaid
+	if instance.PayType == string(Postpaid) {
+		d.Set("pay_type", string(PostPaid))
+	} else if instance.PayType == string(Prepaid) {
+		d.Set("pay_type", string(PrePaid))
+		period, err := computePeriodByUnit(instance.CreatedTimeUTC, instance.ExpireTimeUTC, d.Get("duration").(int), "Month")
 		if err != nil {
 			return WrapError(err)
 		}
@@ -272,7 +275,6 @@ func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{
 
 	request := hbase.CreateDeleteInstanceRequest()
 	request.ClusterId = d.Id()
-
 	err := resource.Retry(10*5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
 			return hbaseClient.DeleteInstance(request)

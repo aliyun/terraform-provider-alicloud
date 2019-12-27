@@ -51,15 +51,11 @@ func dataSourceAlicloudHBaseInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"zone_id": {
+						"region_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"master_disk_size": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"vpc_id": {
+						"zone_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -67,43 +63,11 @@ func dataSourceAlicloudHBaseInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"major_version": {
+						"engine_version": {
 							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"core_node_count": {
-							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"network_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"core_disk_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"master_disk_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"core_instance_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"vswitch_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"core_disk_count": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"core_disk_size": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"pay_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -111,21 +75,48 @@ func dataSourceAlicloudHBaseInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"master_node_count": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"core_instance_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"core_node_count": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"core_disk_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"core_disk_size": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"pay_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"created_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"expire_time": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"status": {
 							Type:     schema.TypeString,
-							Computed: true,
-						},
-
-						"region_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"master_node_count": {
-							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"backup_status": {
@@ -208,14 +199,26 @@ func dataSourceAlicloudHBaseInstancesRead(d *schema.ResourceData, meta interface
 
 	for _, item := range dbi {
 		mapping := map[string]interface{}{
-			"id":           item.InstanceId,
-			"name":         item.InstanceName,
-			"zone_id":      item.ZoneId,
-			"region_id":    item.RegionId,
-			"engine":       item.Engine,
-			"status":       item.Status,
-			"created_time": item.CreatedTime,
-			"pay_type":     item.PayType,
+			"id":                   item.InstanceId,
+			"name":                 item.InstanceName,
+			"region_id":            item.RegionId,
+			"zone_id":              item.ZoneId,
+			"engine":               item.Engine,
+			"engine_version":       item.MajorVersion,
+			"network_type":         item.NetworkType,
+			"master_instance_type": item.MasterInstanceType,
+			"master_node_count":    item.MasterNodeCount,
+			"core_instance_type":   item.CoreInstanceType,
+			"core_node_count":      item.CoreNodeCount,
+			"core_disk_type":       item.CoreDiskType,
+			"core_disk_size":       item.CoreDiskSize,
+			"vpc_id":               item.VpcId,
+			"vswitch_id":           item.VswitchId,
+			"pay_type":             item.PayType,
+			"status":               item.Status,
+			"backup_status":        item.BackupStatus,
+			"created_time":         item.CreatedTimeUTC,
+			"expire_time":          item.ExpireTimeUTC,
 		}
 		ids = append(ids, item.InstanceId)
 		names = append(names, item.InstanceName)
