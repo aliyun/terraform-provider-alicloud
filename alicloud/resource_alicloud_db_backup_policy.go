@@ -116,7 +116,6 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 		}
 		return WrapError(err)
 	}
-
 	d.Set("instance_id", d.Id())
 	d.Set("backup_time", object.PreferredBackupTime)
 	d.Set("backup_period", strings.Split(object.PreferredBackupPeriod, ","))
@@ -126,7 +125,16 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 	d.Set("log_retention_period", object.LogBackupRetentionPeriod)
 	d.Set("local_log_retention_hours", object.LocalLogRetentionHours)
 	d.Set("local_log_retention_space", object.LocalLogRetentionSpace)
-	d.Set("high_space_usage_protection", object.HighSpaceUsageProtection)
+	instance, err := rdsService.DescribeDBInstance(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	// At present, the sql server database does not support setting high_space_usage_protection and it`s has default value
+	if instance.Engine == "SQLServer" {
+		d.Set("high_space_usage_protection", "Enable")
+	} else {
+		d.Set("high_space_usage_protection", object.HighSpaceUsageProtection)
+	}
 
 	return nil
 }
