@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -215,7 +214,6 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 	hbaseService := HBaseService{client}
 
 	instance, err := hbaseService.DescribeHBaseInstance(d.Id())
-	fmt.Println(instance)
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
