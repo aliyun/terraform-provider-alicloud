@@ -62,7 +62,7 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `auto_renew` - (Optional, Available in 1.36.0+) Whether to renewal a DB instance automatically or not. It is valid when instance_charge_type is `PrePaid`. Default to `false`.
 * `auto_renew_period` - (Optional, Available in 1.36.0+) Auto-renewal period of an instance, in the unit of the month. It is valid when instance_charge_type is `PrePaid`. Valid value:[1~12], Default to 1.
 * `instance_type` - (Optional, ForceNew) The engine to use: `Redis` or `Memcache`. Defaults to `Redis`.
-* `vswitch_id` - (Optional, ForceNew) The ID of VSwitch.
+* `vswitch_id` - (Optional, Available in 1.67.0+) The ID of VSwitch.Only support classic switch to VPC.
 * `engine_version`- (Optional, ForceNew) Engine version. Supported values: 2.8, 4.0 and 5.0. Default value: 2.8. Only 2.8 can be supported for Memcache Instance.
 * `security_ips`- (Optional) Set the instance's IP whitelist of the default security group.
 * `private_ip`- (Optional) Set the instance's private IP.

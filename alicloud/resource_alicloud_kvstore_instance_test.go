@@ -660,6 +660,66 @@ func TestAccAlicloudKVStoreRedisInstance_classicmulti(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudKVStoreRedisInstance_classic2Vpc(t *testing.T) {
+	var instance *r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &KvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKVstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckKVStoreInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKVStoreInstance_classicVpc(KVStoreCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore4Dot0)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":        "tf-testAccKVStoreInstance_vpc",
+						"instance_class":       redisInstanceClassForTest,
+						"password":             NOSET,
+						"availability_zone":    CHECKSET,
+						"instance_charge_type": string(PostPaid),
+						"period":               NOSET,
+						"instance_type":        string(KVStoreRedis),
+						"vswitch_id":           "",
+						"engine_version":       string(KVStore4Dot0),
+						"connection_domain":    REGEXMATCH + redisInstanceConnectionDomainRegexp,
+						"private_ip":           "",
+						"backup_id":            NOSET,
+						"security_ips.#":       "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+			{
+				Config: testAccKVStoreInstance_classic2vpc(KVStoreCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore4Dot0)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_id": CHECKSET,
+						"private_ip": CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckKVStoreInstanceDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	kvstoreService := KvstoreService{client}
@@ -926,6 +986,48 @@ func testAccKVStoreInstance_vpc(common, instanceClass, instanceType, engineVersi
 	}
 	`, common, instanceClass, instanceType, engineVersion)
 }
+
+func testAccKVStoreInstance_classicVpc(common, instanceClass, instanceType, engineVersion string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "KVStore"
+	}
+	variable "name" {
+		default = "tf-testAccKVStoreInstance_vpc"
+	}
+	resource "alicloud_kvstore_instance" "default" {
+		instance_class = "%s"
+		instance_name  = "${var.name}"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+		security_ips = ["10.0.0.1"]
+		instance_type = "%s"
+		engine_version = "%s"
+	}
+	`, common, instanceClass, instanceType, engineVersion)
+}
+
+func testAccKVStoreInstance_classic2vpc(common, instanceClass, instanceType, engineVersion string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "KVStore"
+	}
+	variable "name" {
+		default = "tf-testAccKVStoreInstance_vpc"
+	}
+	resource "alicloud_kvstore_instance" "default" {
+		instance_class = "%s"
+		instance_name  = "${var.name}"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+		vswitch_id     = "${alicloud_vswitch.default.id}"
+		security_ips = ["10.0.0.1"]
+		instance_type = "%s"
+		engine_version = "%s"
+	}
+	`, common, instanceClass, instanceType, engineVersion)
+}
+
 func testAccKVStoreInstance_vpcUpdateSecurityIps(common, instanceClass, instanceType, engineVersion string) string {
 	return fmt.Sprintf(`
 	%s

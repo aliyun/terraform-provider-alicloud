@@ -108,8 +108,10 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return old != ""
+				},
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
@@ -368,6 +370,42 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		return resourceAlicloudKVStoreInstanceRead(d, meta)
 	}
 
+	if d.HasChange("vswitch_id") {
+		nv := d.Get("vswitch_id")
+		vpcService := VpcService{client}
+		raw, err := vpcService.DescribeVSwitch(nv.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		request := r_kvstore.CreateSwitchNetworkRequest()
+		request.RegionId = client.RegionId
+		request.InstanceId = d.Id()
+		request.TargetNetworkType = "VPC"
+		request.VpcId = raw.VpcId
+		request.VSwitchId = nv.(string)
+		request.RetainClassic = "false"
+
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+				return rkvClient.SwitchNetwork(request)
+			})
+			if err != nil {
+				if IsExceptedErrors(err, []string{"IncorrectDBInstanceState"}) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("vswitch_id")
+	}
+
 	if d.HasChange("instance_class") {
 		// wait instance status is Normal before modifying
 		if _, err := stateConf.WaitForState(); err != nil {
@@ -554,8 +592,20 @@ func resourceAlicloudKVStoreInstanceDelete(d *schema.ResourceData, meta interfac
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
 
-	raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-		return rkvClient.DeleteInstance(request)
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.DeleteInstance(request)
+		})
+
+		if err != nil && !NotFoundError(err) {
+			if IsExceptedErrors(err, []string{"IncorrectDBInstanceState"}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		return nil
 	})
 
 	if err != nil {
@@ -563,8 +613,6 @@ func resourceAlicloudKVStoreInstanceDelete(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	stateConf := BuildStateConf([]string{"Creating", "Active", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, kvstoreService.RdsKvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
 	_, err = stateConf.WaitForState()
