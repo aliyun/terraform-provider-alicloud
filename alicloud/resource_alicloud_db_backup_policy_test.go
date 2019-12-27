@@ -416,8 +416,7 @@ func TestAccAlicloudDBBackupPolicy_SQLServer(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":                 "${alicloud_db_instance.default.id}",
-					"high_space_usage_protection": "Enable",
+					"instance_id": "${alicloud_db_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
