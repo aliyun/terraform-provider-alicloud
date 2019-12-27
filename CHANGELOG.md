@@ -1,12 +1,11 @@
 ## 1.67.0 (Unreleased)
 
-- **New Resource:** `alicloud_hbase_instance` [GH-2012]
 - **New Resource:** `alicloud_polardb_account_privilege` [GH-2005]
 - **New Resource:** `alicloud_polardb_account` [GH-1998]
-- **Data Source:** `alicloud_hbase_instances` [GH-2012]
 
 IMPROVEMENTS:
 
+- rollback hbase resource and datasource because of them need to be improved [GH-2033]
 - improve(ci): add hbase ci [GH-2031]
 - improve(mongodb): hidden some security ips [GH-2025]
 - improve(cdn_config): remove the args private_oss_tbl [GH-2024]
