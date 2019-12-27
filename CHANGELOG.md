@@ -1,4 +1,28 @@
-## 1.66.1 (Unreleased)
+## 1.67.0 (Unreleased)
+
+- **New Resource:** `alicloud_hbase_instance` [GH-2012]
+- **New Resource:** `alicloud_polardb_account_privilege` [GH-2005]
+- **New Resource:** `alicloud_polardb_account` [GH-1998]
+- **Data Source:** `alicloud_hbase_instances` [GH-2012]
+
+IMPROVEMENTS:
+
+- improve(ci): add hbase ci [GH-2031]
+- improve(mongodb): hidden some security ips [GH-2025]
+- improve(cdn_config): remove the args private_oss_tbl [GH-2024]
+- improve(ons): update sdk and remove PreventCache in ons [GH-2014]
+- add resource group id [GH-2010]
+- improve(kvstore): remove type 'Super' for kvstore [GH-2009]
+- improve(emr): support emr cluster tag [GH-2008]
+- feat(alicloud/yundun_bastionhost): Add support for Cloud Bastionhost [GH-2006]
+
+BUG FIXES:
+
+- fix(rds): fix policy sqlserver test bug [GH-2030]
+- fix(rds): fix rds resource alicloud_db_backup_policy`s log_backup bug [GH-2017]
+- fix(db_backup_policy): fix postgresql backup policy bug [GH-2003]
+
+
 ## 1.66.0 (December 20, 2019)
 
 - **New Resource:** `alicloud_kvstore_account` ([#1993](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1993))
@@ -6,7 +30,11 @@
 - **New Resource:** `alicloud_polardb_database` ([#1996](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1996))
 - **New Resource:** `alicloud_polardb_backup_policy` ([#1991](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1991))
 - **New Resource:** `alicloud_poloardb_cluster` ([#1978](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1978))
+- **New Resource:** `alicloud_alikafka_sasl_acl` （[#2000](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2000)
+- **New Resource:** `alicloud_alikafka_sasl_user` （[#2000](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2000)
 - **Data Source:** `alicloud_poloardb_clusters` ([#1978](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1978))
+- **Data Source:** `alicloud_alikafka_sasl_acls` （[#2000](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2000)）
+- **Data Source:** `alicloud_alikafka_sasl_users`（[#2000](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2000)）
 
 IMPROVEMENTS:
 
