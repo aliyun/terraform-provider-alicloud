@@ -1,13 +1,13 @@
 ---
 subcategory: "ECS"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_copy_image"
-sidebar_current: "docs-alicloud-resource-copy-image"
+page_title: "Alicloud: alicloud_image_copy"
+sidebar_current: "docs-alicloud-resource-image-cpoy"
 description: |-
-  Provides an ECS copy image resource.
+  Provides an ECS image copy resource.
 ---
 
-# alicloud\_copy\_image
+# alicloud\_image\_copy
 
 Copies a custom image from one region to another. You can use copied images to perform operations in the target region, such as creating instances (RunInstances) and replacing system disks (ReplaceSystemDisk).
 
@@ -22,7 +22,7 @@ Copies a custom image from one region to another. You can use copied images to p
 ## Example Usage
 
 ```
-resource "alicloud_copy_image" "default" {
+resource "alicloud_image_copy" "default" {
   source_image_id    = "m-bp1gxyhdswlsn18tu***"
   source_region_id   = "cn-hangzhou"
   name               = "test-image"
@@ -67,5 +67,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 image can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_copy_image.default m-uf66871ape***yg1q***
+$ terraform import alicloud_image_copy.default m-uf66871ape***yg1q***
 ```

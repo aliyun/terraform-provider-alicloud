@@ -16,7 +16,7 @@ import (
 func TestAccAliCloudCopyImageBasic(t *testing.T) {
 	var v ecs.Image
 
-	resourceId := "alicloud_copy_image.default"
+	resourceId := "alicloud_image_copy.default"
 	// multi provideris
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
@@ -30,7 +30,7 @@ func TestAccAliCloudCopyImageBasic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := ra.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAccEcsCopyImageConfigBasic%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCopyImageBasicConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceImageCopyBasicConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -197,7 +197,7 @@ func testAccCheckImageDestroyWithProvider(s *terraform.State, provider *schema.P
 
 var testAccCopyImageCheckMap = map[string]string{}
 
-func resourceCopyImageBasicConfigDependence(name string) string {
+func resourceImageCopyBasicConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
