@@ -9,12 +9,12 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func resourceAliCloudCopyImage() *schema.Resource {
+func resourceAliCloudImageCopy() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudCopyImageCreate,
-		Read:   resourceAliCloudCopyImageRead,
-		Update: resourceAliCloudCopyImageUpdate,
-		Delete: resourceAliCloudCopyImageDelete,
+		Create: resourceAliCloudImageCopyCreate,
+		Read:   resourceAliCloudImageCopyRead,
+		Update: resourceAliCloudImageCopyUpdate,
+		Delete: resourceAliCloudImageCopyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -61,7 +61,7 @@ func resourceAliCloudCopyImage() *schema.Resource {
 		},
 	}
 }
-func resourceAliCloudCopyImageCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudImageCopyCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
@@ -90,7 +90,7 @@ func resourceAliCloudCopyImageCreate(d *schema.ResourceData, meta interface{}) e
 		return ecsClient.CopyImage(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_copy_image", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_image_copy", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
@@ -100,9 +100,9 @@ func resourceAliCloudCopyImageCreate(d *schema.ResourceData, meta interface{}) e
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAliCloudCopyImageRead(d, meta)
+	return resourceAliCloudImageCopyRead(d, meta)
 }
-func resourceAliCloudCopyImageUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudImageCopyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	err := ecsService.updateImage(d)
@@ -111,7 +111,7 @@ func resourceAliCloudCopyImageUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 	return resourceAliCloudImageRead(d, meta)
 }
-func resourceAliCloudCopyImageRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudImageCopyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	ecsService := EcsService{client}
@@ -134,7 +134,7 @@ func resourceAliCloudCopyImageRead(d *schema.ResourceData, meta interface{}) err
 	return WrapError(err)
 }
 
-func resourceAliCloudCopyImageDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudImageCopyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	return ecsService.deleteImage(d)
