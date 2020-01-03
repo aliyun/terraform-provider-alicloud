@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
-	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/r_kvstore"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -29,11 +29,33 @@ func dataSourceAlicloudKVStoreInstanceClasses() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Default:  "redis",
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+			},
+			"performance_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"standard_performance_type", "enhance_performance_type"}, false),
+				Deprecated:   "The parameter 'performance_type' has been deprecated from 1.68.0.",
+			},
+			"storage_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"inmemory", "hybrid"}, false),
+				Deprecated:   "The parameter 'storage_type' has been deprecated from 1.68.0.",
+			},
+			"package_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"standard", "customized"}, false),
+				Deprecated:   "The parameter 'package_type' has been deprecated from 1.68.0.",
 			},
 			"architecture": {
 				Type:         schema.TypeString,
@@ -41,17 +63,17 @@ func dataSourceAlicloudKVStoreInstanceClasses() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"standard", "cluster", "rwsplit"}, false),
 			},
-			"performance_type": {
+			"edition_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"standard_performance_type", "enhance_performance_type"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Community", "Enterprise"}, false),
 			},
-			"storage_type": {
+			"series_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"inmemory", "hybrid"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"enhanced_performance_type", "hybrid_storage"}, false),
 			},
 			"node_type": {
 				Type:         schema.TypeString,
@@ -59,11 +81,11 @@ func dataSourceAlicloudKVStoreInstanceClasses() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"double", "single", "readone", "readthree", "readfive"}, false),
 			},
-			"package_type": {
-				Type:         schema.TypeString,
+			"shard_number": {
+				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"standard", "customized"}, false),
+				ValidateFunc: validation.IntInSlice([]int{1, 2, 4, 8, 16, 32, 64, 128, 256}),
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
@@ -117,6 +139,7 @@ func dataSourceAlicloudKVStoreAvailableResourceRead(d *schema.ResourceData, meta
 	request.ZoneId = d.Get("zone_id").(string)
 	instanceChargeType := d.Get("instance_charge_type").(string)
 	request.InstanceChargeType = instanceChargeType
+	request.Engine = d.Get("engine").(string)
 	var response = &r_kvstore.DescribeAvailableResourceResponse{}
 	err := resource.Retry(time.Minute*5, func() *resource.RetryError {
 		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
@@ -144,10 +167,10 @@ func dataSourceAlicloudKVStoreAvailableResourceRead(d *schema.ResourceData, meta
 	engine = strings.ToLower(engine.(string))
 	engineVersion, engineVersionGot := d.GetOk("engine_version")
 	architecture, architectureGot := d.GetOk("architecture")
-	performanceType, performanceTypeGot := d.GetOk("performance_type")
-	storageType, storageTypeGot := d.GetOk("storage_type")
+	editionType, editionTypeGot := d.GetOk("edition_type")
+	seriesType, seriesTypeGot := d.GetOk("series_type")
+	shardNumber, shardNumberGot := d.GetOk("shard_number")
 	nodeType, nodeTypeGot := d.GetOk("node_type")
-	packageType, packageTypeGot := d.GetOk("package_type")
 
 	for _, AvailableZone := range response.AvailableZones.AvailableZone {
 		zondId := AvailableZone.ZoneId
@@ -157,32 +180,33 @@ func dataSourceAlicloudKVStoreAvailableResourceRead(d *schema.ResourceData, meta
 				continue
 			}
 			ids = append(ids, SupportedEngine.Engine)
-			for _, SupportedEngineVersion := range SupportedEngine.SupportedEngineVersions.SupportedEngineVersion {
-				if engineVersionGot && engineVersion.(string) != SupportedEngineVersion.Version {
+			for _, SupportedEditionType := range SupportedEngine.SupportedEditionTypes.SupportedEditionType {
+				if editionTypeGot && editionType.(string) != SupportedEditionType.EditionType {
 					continue
 				}
-				ids = append(ids, SupportedEngineVersion.Version)
-				for _, SupportedArchitectureType := range SupportedEngineVersion.SupportedArchitectureTypes.SupportedArchitectureType {
-					if architectureGot && architecture.(string) != SupportedArchitectureType.Architecture {
+				ids = append(ids, SupportedEditionType.EditionType)
+				for _, SupportedSeriesType := range SupportedEditionType.SupportedSeriesTypes.SupportedSeriesType {
+					if seriesTypeGot && seriesType.(string) != SupportedSeriesType.SeriesType {
 						continue
 					}
-					for _, SupportedPerformanceType := range SupportedArchitectureType.SupportedPerformanceTypes.SupportedPerformanceType {
-						if performanceTypeGot && performanceType.(string) != SupportedPerformanceType.PerformanceType {
+					for _, SupportedEngineVersion := range SupportedSeriesType.SupportedEngineVersions.SupportedEngineVersion {
+						if engineVersionGot && engineVersion.(string) != SupportedEngineVersion.Version {
 							continue
 						}
-						for _, SupportedStorageType := range SupportedPerformanceType.SupportedStorageTypes.SupportedStorageType {
-							if storageTypeGot && storageType.(string) != SupportedStorageType.StorageType {
+						for _, SupportedArchitectureType := range SupportedEngineVersion.SupportedArchitectureTypes.SupportedArchitectureType {
+							if architectureGot && architecture.(string) != SupportedArchitectureType.Architecture {
 								continue
 							}
-							for _, SupportedNodeType := range SupportedStorageType.SupportedNodeTypes.SupportedNodeType {
-								if nodeTypeGot && nodeType.(string) != SupportedNodeType.NodeType {
+							for _, SupportedShardNumber := range SupportedArchitectureType.SupportedShardNumbers.SupportedShardNumber {
+								number, _ := strconv.Atoi(SupportedShardNumber.ShardNumber)
+								if shardNumberGot && shardNumber.(int) != number {
 									continue
 								}
-								for _, SupportedPackageType := range SupportedNodeType.SupportedPackageTypes.SupportedPackageType {
-									if packageTypeGot && packageType.(string) != SupportedPackageType.PackageType {
+								for _, SupportedNodeType := range SupportedShardNumber.SupportedNodeTypes.SupportedNodeType {
+									if nodeTypeGot && nodeType.(string) != SupportedNodeType.SupportedNodeType {
 										continue
 									}
-									for _, AvailableResource := range SupportedPackageType.AvailableResources.AvailableResource {
+									for _, AvailableResource := range SupportedNodeType.AvailableResources.AvailableResource {
 										instanceClasses = append(instanceClasses, AvailableResource.InstanceClass)
 									}
 								}

@@ -25,13 +25,12 @@ func TestAccAlicloudKVStoreInstanceEngines(t *testing.T) {
 		}),
 	}
 
-	// At present, the datasource does not support memcache
-	//EngineVersionConfMemcache := dataSourceTestAccConfig{
-	//	existConfig: testAccConfig(map[string]interface{}{
-	//		"zone_id": "${data.alicloud_zones.resources.zones.0.id}",
-	//		"engine":  "Memcache",
-	//	}),
-	//}
+	EngineVersionConfMemcache := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"zone_id": "${data.alicloud_zones.resources.zones.0.id}",
+			"engine":  "Memcache",
+		}),
+	}
 
 	ChargeTypeConfPostpaid := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -77,5 +76,5 @@ func TestAccAlicloudKVStoreInstanceEngines(t *testing.T) {
 	}
 	// At present, the datasource does not support memcache
 	//KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis, EngineVersionConfMemcache, ChargeTypeConfPostpaid, allConf)
-	KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis, ChargeTypeConfPostpaid, allConf)
+	KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis, ChargeTypeConfPostpaid, EngineVersionConfMemcache, allConf)
 }

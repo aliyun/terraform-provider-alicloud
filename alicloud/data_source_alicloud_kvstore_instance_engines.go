@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r_kvstore"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -24,6 +24,7 @@ func dataSourceAlicloudKVStoreInstanceEngines() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Default:  "redis",
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
@@ -74,6 +75,7 @@ func dataSourceAlicloudKVStoreInstanceEnginesRead(d *schema.ResourceData, meta i
 	request.ZoneId = d.Get("zone_id").(string)
 	instanceChargeType := d.Get("instance_charge_type").(string)
 	request.InstanceChargeType = instanceChargeType
+	request.Engine = d.Get("engine").(string)
 	var response = &r_kvstore.DescribeAvailableResourceResponse{}
 	err := resource.Retry(time.Minute*5, func() *resource.RetryError {
 		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
@@ -104,21 +106,38 @@ func dataSourceAlicloudKVStoreInstanceEnginesRead(d *schema.ResourceData, meta i
 	for _, AvailableZone := range response.AvailableZones.AvailableZone {
 		zondId := AvailableZone.ZoneId
 		ids = append(ids, zondId)
+		versions := make(map[string]interface{})
 		for _, SupportedEngine := range AvailableZone.SupportedEngines.SupportedEngine {
-			info := make(map[string]interface{})
-			info["zone_id"] = AvailableZone.ZoneId
 			if engineGot && engine != SupportedEngine.Engine {
 				continue
 			}
-			info["engine"] = SupportedEngine.Engine
 			ids = append(ids, SupportedEngine.Engine)
-			for _, SupportedEngineVersion := range SupportedEngine.SupportedEngineVersions.SupportedEngineVersion {
-				if engineVersionGot && engineVersion.(string) != SupportedEngineVersion.Version {
-					continue
-				}
-				info["engine_version"] = SupportedEngineVersion.Version
-				ids = append(ids, SupportedEngineVersion.Version)
+			if strings.ToLower(engine.(string)) == "memcache" {
+				info := make(map[string]interface{})
+				info["zone_id"] = AvailableZone.ZoneId
+				info["engine"] = SupportedEngine.Engine
+				info["engine_version"] = "2.8"
+				ids = append(ids, "2.8")
 				infos = append(infos, info)
+			} else {
+				for _, editionType := range SupportedEngine.SupportedEditionTypes.SupportedEditionType {
+					for _, seriesType := range editionType.SupportedSeriesTypes.SupportedSeriesType {
+						for _, SupportedEngineVersion := range seriesType.SupportedEngineVersions.SupportedEngineVersion {
+							if engineVersionGot && engineVersion.(string) != SupportedEngineVersion.Version {
+								continue
+							}
+							versions[SupportedEngineVersion.Version] = nil
+						}
+					}
+				}
+				for version := range versions {
+					info := make(map[string]interface{})
+					info["zone_id"] = AvailableZone.ZoneId
+					info["engine"] = SupportedEngine.Engine
+					info["engine_version"] = version
+					ids = append(ids, version)
+					infos = append(infos, info)
+				}
 			}
 		}
 	}

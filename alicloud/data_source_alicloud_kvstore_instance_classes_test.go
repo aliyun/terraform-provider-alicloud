@@ -56,48 +56,35 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 	//		"classes.0.price":          CHECKSET,
 	//	},
 	//}
-	// At present, the datasource does not support memcache
-	//EngineVersionConfMemcache := dataSourceTestAccConfig{
-	//	existConfig: testAccConfig(map[string]interface{}{
-	//		"zone_id": "${data.alicloud_zones.resources.zones.0.id}",
-	//		"engine":  "Memcache",
-	//	}),
-	//}
+	EngineVersionConfMemcache := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"zone_id": "${data.alicloud_zones.resources.zones.0.id}",
+			"engine":  "Memcache",
+		}),
+	}
+
 	ChargeTypeConfPostpaid := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
 			"instance_charge_type": "PostPaid",
 		}),
 	}
-	PerformanceTypeStandardPerformanceType := dataSourceTestAccConfig{
+	seriesTypeEnhancedPerformanceType := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":          "${data.alicloud_zones.resources.zones.0.id}",
-			"performance_type": "standard_performance_type",
+			"zone_id":     "${data.alicloud_zones.resources.zones.0.id}",
+			"series_type": "enhanced_performance_type",
 		}),
 	}
-	// At present, there is no stock for enhance_performance_type, if someday stock enugth, just change fakeConfig to existConfig
-	PerformanceTypeEnhancePerformanceType := dataSourceTestAccConfig{
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"zone_id":          "${data.alicloud_zones.resources.zones.0.id}",
-			"performance_type": "enhance_performance_type",
-		}),
-	}
-	StorageTypeInmemory := dataSourceTestAccConfig{
+	editionTypeCommunity := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":      "${data.alicloud_zones.resources.zones.0.id}",
-			"storage_type": "inmemory",
+			"edition_type": "Community",
 		}),
 	}
-	PackageTypeStandard := dataSourceTestAccConfig{
+	shardNumber8 := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":      "${data.alicloud_zones.resources.zones.0.id}",
-			"package_type": "standard",
-		}),
-	}
-	PackageTypeCustomized := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"zone_id":      "${data.alicloud_zones.resources.zones.0.id}",
-			"package_type": "customized",
+			"shard_number": "8",
 		}),
 	}
 	ArchitectureStandard := dataSourceTestAccConfig{
@@ -133,21 +120,21 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 			"engine":               "Redis",
 			"engine_version":       "5.0",
 			"architecture":         "standard",
-			"performance_type":     "standard_performance_type",
-			"storage_type":         "inmemory",
+			"series_type":          "enhanced_performance_type",
+			"edition_type":         "Community",
 			"node_type":            "double",
-			"package_type":         "standard",
+			"shard_number":         "1",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
 			"instance_charge_type": "PostPaid",
-			"engine":               "Fake",
+			"engine":               "fake",
 			"engine_version":       "5.6",
 			"architecture":         "standard",
-			"performance_type":     "standard_performance_type",
-			"storage_type":         "inmemory",
+			"series_type":          "enhanced_performance_type",
+			"edition_type":         "Community",
 			"node_type":            "double",
-			"package_type":         "standard",
+			"shard_number":         "1",
 		}),
 	}
 
@@ -178,10 +165,10 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 	//	ArchitectureRwsplit, NodeTypeDouble, NodeTypeSingle, NodeTypeReadone, NodeTypeReadthree, NodeTypeReadfive,
 	//	ArchitectureStandard, allConf)
 	KVStoreInstanceCheckInfo.dataSourceTestCheck(t, rand, EngineVersionConfRedis,
-		//prePaidSortedByConfRedis, postPaidSortedByConfRedis,
-		ChargeTypeConfPostpaid, PerformanceTypeStandardPerformanceType, PerformanceTypeEnhancePerformanceType,
-		StorageTypeInmemory, PackageTypeStandard, PackageTypeCustomized, ArchitectureStandard, ArchitectureCluster,
-		NodeType, ArchitectureStandard, allConf)
+		//prePaidSortedByConfRedis, postPaidSortedByConfRedis
+		ChargeTypeConfPostpaid, seriesTypeEnhancedPerformanceType, editionTypeCommunity,
+		shardNumber8, ArchitectureStandard, ArchitectureCluster,
+		NodeType, allConf, EngineVersionConfMemcache)
 }
 
 func kvstoreConfigHeader(name string) string {
