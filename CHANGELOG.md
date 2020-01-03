@@ -1,4 +1,15 @@
 ## 1.68.0 (Unreleased)
+
+- **New Resource:** `alicloud_polardb_endpoint_address` [GH-2020]
+- **Data Source:** `alicloud_polardb_endpoints` [GH-2020]
+
+IMPROVEMENTS:
+
+- Modify naming issues in alicloud_image_copy [GH-2040]
+- rollback hbase resource and datasource because of them need to be improved [GH-2034]
+- improve(sasl): Implement update method for sasl user [GH-2027]
+
+
 ## 1.67.0 (December 27, 2019)
 
 - **New Resource:** `alicloud_polardb_account_privilege` ([#2005](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2005))
