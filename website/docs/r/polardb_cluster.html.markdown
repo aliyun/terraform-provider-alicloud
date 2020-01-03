@@ -66,6 +66,7 @@ The following arguments are supported:
 * `maintain_time` - (Optional) Maintainable time period format of the instance: HH:MMZ-HH:MMZ (UTC time)
 * `description` - (Optional) The description of cluster.
 * `parameters` - (Optional) Set of parameters needs to be set after DB cluster was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) .
+* `tags` - (Optional, Available in v1.68.0+) A mapping of tags to assign to the resource.
 
 -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
