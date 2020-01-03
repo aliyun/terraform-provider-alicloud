@@ -1254,3 +1254,28 @@ func (s *EcsService) WaitForLaunchTemplate(id string, status Status, timeout int
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 }
+
+func (s *EcsService) DescribeImageShareByImageId(id string) (imageShare *ecs.DescribeImageSharePermissionResponse, err error) {
+	request := ecs.CreateDescribeImageSharePermissionRequest()
+	request.RegionId = s.client.RegionId
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return imageShare, WrapError(err)
+	}
+	request.ImageId = parts[0]
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeImageSharePermission(request)
+	})
+	if err != nil {
+		if IsExceptedError(err, ImageIdNotFound) {
+			return imageShare, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return imageShare, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	resp, _ := raw.(*ecs.DescribeImageSharePermissionResponse)
+	if len(resp.Accounts.Account) == 0 {
+		return imageShare, WrapErrorf(Error(GetNotFoundMessage("ModifyImageSharePermission", id)), NotFoundMsg, ProviderERROR)
+	}
+	return resp, nil
+}
