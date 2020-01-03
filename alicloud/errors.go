@@ -28,6 +28,7 @@ const (
 	MessageInstanceNotFound = "instance is not found"
 	EcsThrottling           = "Throttling"
 	EcsInternalError        = "InternalError"
+	ImageIdNotFound         = "InvalidImageId.NotFound"
 	// disk
 	InternalError       = "InternalError"
 	DependencyViolation = "DependencyViolation"
