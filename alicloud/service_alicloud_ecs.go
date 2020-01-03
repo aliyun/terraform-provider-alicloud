@@ -1066,6 +1066,44 @@ func (s *EcsService) ImageStateRefreshFunc(id string, failStates []string) resou
 	}
 }
 
+func (s *EcsService) TaskStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeTaskById(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if object.TaskStatus == failState {
+				return object, object.TaskStatus, WrapError(Error(FailedToReachTargetStatus, object.TaskStatus))
+			}
+		}
+		return object, object.TaskStatus, nil
+	}
+}
+
+func (s *EcsService) DescribeTaskById(id string) (task *ecs.DescribeTaskAttributeResponse, err error) {
+	request := ecs.CreateDescribeTaskAttributeRequest()
+	request.TaskId = id
+
+	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeTaskAttribute(request)
+	})
+	if err != nil {
+		return task, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	task, _ = raw.(*ecs.DescribeTaskAttributeResponse)
+
+	if task.TaskId == "" {
+		return task, GetNotFoundErrorFromString(GetNotFoundMessage("task", id))
+	}
+	return task, nil
+}
+
 func (s *EcsService) DescribeSnapshot(id string) (*ecs.Snapshot, error) {
 	snapshot := &ecs.Snapshot{}
 	request := ecs.CreateDescribeSnapshotsRequest()
