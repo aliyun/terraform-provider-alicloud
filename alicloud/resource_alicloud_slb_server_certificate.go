@@ -36,11 +36,23 @@ func resourceAlicloudSlbServerCertificate() *schema.Resource {
 				DiffSuppressFunc: slbServerCertificateDiffSuppressFunc,
 			},
 			"alicloud_certifacte_id": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Deprecated: "Field 'alicloud_certifacte_id' has been deprecated from provider version 1.68.0. Use 'alicloud_certificate_id' replaces it.",
+			},
+			"alicloud_certificate_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
 			"alicloud_certifacte_name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Deprecated: "Field 'alicloud_certifacte_name' has been deprecated from provider version 1.68.0. Use 'alicloud_certificate_name' replaces it.",
+			},
+			"alicloud_certificate_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
