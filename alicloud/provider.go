@@ -246,6 +246,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_instance":                           resourceAliyunInstance(),
 			"alicloud_image":                              resourceAliCloudImage(),
 			"alicloud_copy_image":                         resourceAliCloudImageCopy(),
+			"alicloud_image_export":                       resourceAliCloudImageExport(),
 			"alicloud_image_copy":                         resourceAliCloudImageCopy(),
 			"alicloud_reserved_instance":                  resourceAliCloudReservedInstance(),
 			"alicloud_ram_role_attachment":                resourceAlicloudRamRoleAttachment(),
