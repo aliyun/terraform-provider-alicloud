@@ -103,6 +103,13 @@ The following arguments are supported:
     Increase progressively at a rate of 5 GB. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
     Note: There is extra 5 GB storage for SQL Server Instance and it is not in specified `instance_storage`.
 
+* `db_instance_storage_type` - (Optional, Available in 1.68.0+) The storage type of the instance. Valid values:
+    - local_ssd: specifies to use local SSDs. This value is recommended.
+    - cloud_ssd: specifies to use standard SSDs.
+    - cloud_essd: specifies to use enhanced SSDs (ESSDs).
+    - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
+    - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
+    
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
 * `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`. Currently, the resource only supports PostPaid to PrePaid.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.

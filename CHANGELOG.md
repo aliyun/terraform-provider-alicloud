@@ -1,10 +1,16 @@
 ## 1.68.0 (Unreleased)
 
+- **New Resource: ** `alicloud_export_image` [GH-2036]
+- **New Resource: ** `alicloud_image_share_permission` [GH-2026]
 - **New Resource:** `alicloud_polardb_endpoint_address` [GH-2020]
 - **Data Source:** `alicloud_polardb_endpoints` [GH-2020]
 
 IMPROVEMENTS:
 
+- improve(db_instance): support setting db_instance_storage_type [GH-2048]
+- ess-rules/groups/configrution three markdown files different with codes [GH-2046]
+- improve(polardb): feature polardb support tags #2045
+- improve(slb): update slb_server_certificate [GH-2044]
 - Modify naming issues in alicloud_image_copy [GH-2040]
 - rollback hbase resource and datasource because of them need to be improved [GH-2034]
 - improve(sasl): Implement update method for sasl user [GH-2027]

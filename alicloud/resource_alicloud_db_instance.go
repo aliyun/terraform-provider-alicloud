@@ -171,6 +171,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 					return d.Get("engine").(string) != "MySQL"
 				},
 			},
+			"db_instance_storage_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"local_ssd", "cloud_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3"}, false),
+			},
 		},
 	}
 }
@@ -401,7 +407,10 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		request.DBInstanceStorage = requests.NewInteger(d.Get("instance_storage").(int))
 		update = true
 	}
-
+	if d.HasChange("db_instance_storage_type") {
+		request.DBInstanceStorageType = d.Get("db_instance_storage_type").(string)
+		update = true
+	}
 	if update {
 		// wait instance status is running before modifying
 		if _, err := stateConf.WaitForState(); err != nil {
@@ -420,6 +429,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			d.SetPartial("instance_type")
 			d.SetPartial("instance_storage")
+			d.SetPartial("db_instance_storage_type")
 			return nil
 		})
 
@@ -478,6 +488,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_type", instance.DBInstanceClass)
 	d.Set("port", instance.Port)
 	d.Set("instance_storage", instance.DBInstanceStorage)
+	d.Set("db_instance_storage_type", instance.DBInstanceStorageType)
 	d.Set("zone_id", instance.ZoneId)
 	d.Set("instance_charge_type", instance.PayType)
 	d.Set("period", d.Get("period"))
@@ -582,6 +593,7 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 	request.DBInstanceClass = Trim(d.Get("instance_type").(string))
 	request.DBInstanceNetType = string(Intranet)
 	request.DBInstanceDescription = d.Get("instance_name").(string)
+	request.DBInstanceStorageType = d.Get("db_instance_storage_type").(string)
 
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
 		request.ZoneId = Trim(zone.(string))

@@ -23,8 +23,8 @@ Export a custom image to the OSS bucket in the same region as the custom image.
 
 ```
 resource "alicloud_image_export" "default" {
-  image_id           = "m-bp1gxyhdswlsn18tu***"
-  oss_bucket         = "tf-testaccecsimageexportconfigbasic****"
+  image_id           = "m-bp1gxy***"
+  oss_bucket         = "ecsimageexportconfig"
   oss_prefix         = "ecsExport"
 }
 ```
