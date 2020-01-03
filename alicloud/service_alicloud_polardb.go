@@ -2,6 +2,8 @@ package alicloud
 
 import (
 	"encoding/json"
+	"log"
+	"regexp"
 	"strings"
 	"time"
 
@@ -625,6 +627,126 @@ func (s *PolarDBService) ModifyParameters(d *schema.ResourceData, attribute stri
 	}
 	d.SetPartial(attribute)
 	return nil
+}
+
+func (s *PolarDBService) setClusterTags(d *schema.ResourceData) error {
+	if d.HasChange("tags") {
+		oraw, nraw := d.GetChange("tags")
+		o := oraw.(map[string]interface{})
+		n := nraw.(map[string]interface{})
+		create, remove := s.diffTags(s.tagsFromMap(o), s.tagsFromMap(n))
+
+		if len(remove) > 0 {
+			var tagKey []string
+			for _, v := range remove {
+				tagKey = append(tagKey, v.Key)
+			}
+			request := polardb.CreateUntagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.ResourceType = "cluster"
+			request.TagKey = &tagKey
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithPolarDBClient(func(client *polardb.Client) (interface{}, error) {
+				return client.UntagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+
+		if len(create) > 0 {
+			request := polardb.CreateTagResourcesRequest()
+			request.ResourceId = &[]string{d.Id()}
+			request.Tag = &create
+			request.ResourceType = "cluster"
+			request.RegionId = s.client.RegionId
+			raw, err := s.client.WithPolarDBClient(func(client *polardb.Client) (interface{}, error) {
+				return client.TagResources(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		}
+
+		d.SetPartial("tags")
+	}
+
+	return nil
+}
+
+func (s *PolarDBService) diffTags(oldTags, newTags []polardb.TagResourcesTag) ([]polardb.TagResourcesTag, []polardb.TagResourcesTag) {
+	// First, we're creating everything we have
+	create := make(map[string]interface{})
+	for _, t := range newTags {
+		create[t.Key] = t.Value
+	}
+
+	// Build the list of what to remove
+	var remove []polardb.TagResourcesTag
+	for _, t := range oldTags {
+		old, ok := create[t.Key]
+		if !ok || old != t.Value {
+			// Delete it!
+			remove = append(remove, t)
+		}
+	}
+
+	return s.tagsFromMap(create), remove
+}
+
+func (s *PolarDBService) tagsToMap(tags []polardb.TagResource) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !s.ignoreTag(t) {
+			result[t.TagKey] = t.TagValue
+		}
+	}
+	return result
+}
+
+func (s *PolarDBService) tagsFromMap(m map[string]interface{}) []polardb.TagResourcesTag {
+	result := make([]polardb.TagResourcesTag, 0, len(m))
+	for k, v := range m {
+		result = append(result, polardb.TagResourcesTag{
+			Key:   k,
+			Value: v.(string),
+		})
+	}
+
+	return result
+}
+
+func (s *PolarDBService) ignoreTag(t polardb.TagResource) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
+		ok, _ := regexp.MatchString(v, t.TagValue)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
+}
+
+func (s *PolarDBService) DescribeTags(resourceId string, resourceType TagResourceType) (tags []polardb.TagResource, err error) {
+	request := polardb.CreateListTagResourcesRequest()
+	request.RegionId = s.client.RegionId
+	request.ResourceType = string(resourceType)
+	request.ResourceId = &[]string{resourceId}
+	raw, err := s.client.WithPolarDBClient(func(client *polardb.Client) (interface{}, error) {
+		return client.ListTagResources(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*polardb.ListTagResourcesResponse)
+
+	return response.TagResources.TagResource, nil
 }
 
 // WaitForCluster waits for cluster to given status

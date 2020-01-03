@@ -122,6 +122,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -164,6 +165,10 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			return WrapError(err)
 		}
 		d.SetPartial("parameters")
+	}
+
+	if err := polarDBService.setClusterTags(d); err != nil {
+		return WrapError(err)
 	}
 
 	if (d.Get("pay_type").(string) == string(PrePaid)) &&
@@ -288,6 +293,11 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("maintain_time", clusterAttribute.MaintainTime)
 	d.Set("zone_ids", clusterAttribute.ZoneIds)
 	d.Set("db_node_class", cluster.DBNodeClass)
+	tags, err := polarDBService.DescribeTags(d.Id(), "cluster")
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", polarDBService.tagsToMap(tags))
 
 	if clusterAttribute.PayType == string(Prepaid) {
 		clusterAutoRenew, err := polarDBService.DescribePolarDBAutoRenewAttribute(d.Id())

@@ -34,6 +34,7 @@ func dataSourceAlicloudPolarDBClusters() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -206,12 +207,22 @@ func dataSourceAlicloudPolarDBClustersRead(d *schema.ResourceData, meta interfac
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		var reqTags []polardb.DescribeDBClustersTag
+		for key, value := range v.(map[string]interface{}) {
+			reqTags = append(reqTags, polardb.DescribeDBClustersTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &reqTags
+	}
 	for {
 		raw, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
 			return polardbClient.DescribeDBClusters(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_polarDB_clusters", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_polardb_clusters", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*polardb.DescribeDBClustersResponse)

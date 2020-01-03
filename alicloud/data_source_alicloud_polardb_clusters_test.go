@@ -38,16 +38,40 @@ func TestAccAlicloudPolarDBClustersDataSource(t *testing.T) {
 			"db_type":           `"Oracle"`,
 		}),
 	}
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudPolarClusterDataSourceConfig(rand, map[string]string{
+			"description_regex": `"${alicloud_polardb_cluster.default.description}"`,
+			"tags": `{ 
+						"key1" = "value1" 
+						"key2" = "value2" 
+					}`,
+		}),
+		fakeConfig: testAccCheckAlicloudPolarClusterDataSourceConfig(rand, map[string]string{
+			"description_regex": `"${alicloud_polardb_cluster.default.description}"`,
+			"tags": `{ 
+						"key1" = "value1_fake" 
+						"key2" = "value2_fake" 
+					}`,
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudPolarClusterDataSourceConfig(rand, map[string]string{
 			"description_regex": `"${alicloud_polardb_cluster.default.description}"`,
 			"status":            `"Running"`,
 			"db_type":           `"${alicloud_polardb_cluster.default.db_type}"`,
+			"tags": `{ 
+						"key1" = "value1" 
+						"key2" = "value2" 
+					}`,
 		}),
 		fakeConfig: testAccCheckAlicloudPolarClusterDataSourceConfig(rand, map[string]string{
 			"description_regex": `"${alicloud_polardb_cluster.default.description}"`,
 			"status":            `"run"`,
 			"db_type":           `"Oracle"`,
+			"tags": `{ 
+						"key1" = "value1" 
+						"key2" = "value2" 
+					}`,
 		}),
 	}
 
@@ -92,7 +116,7 @@ func TestAccAlicloudPolarDBClustersDataSource(t *testing.T) {
 		fakeMapFunc:  fakePolarClusterMapFunc,
 	}
 
-	PolarClusterCheckInfo.dataSourceTestCheck(t, rand, nameConf, statusConf, dbtypeConf, allConf)
+	PolarClusterCheckInfo.dataSourceTestCheck(t, rand, nameConf, statusConf, dbtypeConf, tagsConf, allConf)
 }
 
 func testAccCheckAlicloudPolarClusterDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -117,6 +141,10 @@ func testAccCheckAlicloudPolarClusterDataSourceConfig(rand int, attrMap map[stri
 		db_node_class = "polar.mysql.x4.large"
 		vswitch_id = "${alicloud_vswitch.default.id}"
 		description = "${var.name}"
+		tags = {
+			"key1" = "value1"
+			"key2" = "value2"
+		}
 	}
 	data "alicloud_polardb_clusters" "default" {
 	  %s
