@@ -35,7 +35,10 @@ The following arguments are supported:
 * `ids` - (Optional) A list of PolarDB cluster IDs. 
 * `status` - (Optional) status of the cluster.
 * `db_type` - (Optional) Database type. Options are `MySQL`, `Oracle` and `PostgreSQL`. If no value is specified, all types are returned.
-* `tags` - (Optional, Available in v1.68.0+) Query the instance bound to the tag. The format of the incoming value is `json` string, including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty. Format example `{"key1":"value1"}`.
+* `tags` - (Optional, Available in v1.68.0+) A mapping of tags to assign to the resource.
+      - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
+      - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
