@@ -113,7 +113,7 @@ func resourceAlicloudKVStoreAccountCreate(d *schema.ResourceData, meta interface
 			return rkvClient.CreateAccount(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, OperationDeniedDBStatus) {
+			if IsExceptedErrors(err, []string{"IncorrectDBInstanceState"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
