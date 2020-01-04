@@ -8,6 +8,7 @@
 IMPROVEMENTS:
 
 - improve(db_instance): support setting db_instance_storage_type [GH-2048]
+- switch r-kvstore sdk to r_kvstor [GH-2047]
 - ess-rules/groups/configrution three markdown files different with codes [GH-2046]
 - improve(polardb): feature polardb support tags #2045
 - improve(slb): update slb_server_certificate [GH-2044]
@@ -15,6 +16,10 @@ IMPROVEMENTS:
 - rollback hbase resource and datasource because of them need to be improved [GH-2034]
 - improve(sasl): Implement update method for sasl user [GH-2027]
 
+
+BUG FIXES:
+
+- fix(security_group): fix enterprise sg does not support inner access policy from issue #1961 @yongzhang ([#2049](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2049))
 
 ## 1.67.0 (December 27, 2019)
 

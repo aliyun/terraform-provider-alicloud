@@ -145,7 +145,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${alicloud_vswitch.default.id}",
 					"monitoring_period":        "60",
-					"db_instance_storage_type": "cloud_ssd",
+					"db_instance_storage_type": "local_ssd",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -154,7 +154,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 						"instance_type":              CHECKSET,
 						"instance_storage":           CHECKSET,
 						"auto_upgrade_minor_version": "Auto",
-						"db_instance_storage_type":   "cloud_ssd",
+						"db_instance_storage_type":   "local_ssd",
 					}),
 				),
 			},
@@ -186,12 +186,12 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
-					"db_instance_storage_type": "local_ssd",
+					"db_instance_storage_type": "cloud_essd",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_storage":         "10",
-						"db_instance_storage_type": "local_ssd",
+						"db_instance_storage_type": "cloud_essd",
 					}),
 				),
 			},
@@ -276,7 +276,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 					"engine_version":             "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
 					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
-					"db_instance_storage_type":   "cloud_essd",
+					"db_instance_storage_type":   "local_ssd",
 					"instance_name":              "tf-testAccDBInstanceConfig",
 					"monitoring_period":          "60",
 					"instance_charge_type":       "Postpaid",
@@ -289,7 +289,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 						"engine_version":             "5.6",
 						"instance_type":              CHECKSET,
 						"instance_storage":           "15",
-						"db_instance_storage_type":   "cloud_essd",
+						"db_instance_storage_type":   "local_ssd",
 						"instance_name":              "tf-testAccDBInstanceConfig",
 						"monitoring_period":          "60",
 						"zone_id":                    CHECKSET,
@@ -491,7 +491,7 @@ func TestAccAlicloudDBInstanceSQLServer(t *testing.T) {
 					"engine_version":           "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
 					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
-					"db_instance_storage_type": "cloud_essd3",
+					"db_instance_storage_type": "cloud_essd2",
 					"instance_charge_type":     "Postpaid",
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${alicloud_vswitch.default.id}",
@@ -503,7 +503,7 @@ func TestAccAlicloudDBInstanceSQLServer(t *testing.T) {
 						"engine_version":           "2012",
 						"instance_type":            CHECKSET,
 						"instance_storage":         "25",
-						"db_instance_storage_type": "cloud_essd3",
+						"db_instance_storage_type": "cloud_essd2",
 						"instance_name":            "tf-testAccDBInstanceConfig",
 						"monitoring_period":        "60",
 						"zone_id":                  CHECKSET,
