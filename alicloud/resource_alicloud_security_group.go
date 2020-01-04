@@ -56,6 +56,10 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 				Optional:   true,
 				Computed:   true,
 				Deprecated: "Field 'inner_access' has been deprecated from provider version 1.55.3. Use 'inner_access_policy' replaces it.",
+				// The InnerAccessPolicy attribute of enterprise level security group can't be modified.
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("security_group_type").(string) == "enterprise"
+				},
 			},
 			"inner_access_policy": {
 				Type:          schema.TypeString,
@@ -167,7 +171,7 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("tags")
 	}
 
-	if d.HasChange("inner_access_policy") || d.HasChange("inner_access") || d.IsNewResource() {
+	if d.HasChange("inner_access_policy") || d.HasChange("inner_access") {
 		policy := GroupInnerAccept
 		if v, ok := d.GetOk("inner_access_policy"); ok && v.(string) != "" {
 			policy = GroupInnerAccessPolicy(v.(string))
