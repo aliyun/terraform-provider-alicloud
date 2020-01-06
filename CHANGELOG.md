@@ -1,7 +1,7 @@
 ## 1.68.0 (Unreleased)
 
-- **New Resource: ** `alicloud_export_image` [GH-2036]
-- **New Resource: ** `alicloud_image_share_permission` [GH-2026]
+- **New Resource:** `alicloud_export_image` [GH-2036]
+- **New Resource:** `alicloud_image_share_permission` [GH-2026]
 - **New Resource:** `alicloud_polardb_endpoint_address` [GH-2020]
 - **Data Source:** `alicloud_polardb_endpoints` [GH-2020]
 
