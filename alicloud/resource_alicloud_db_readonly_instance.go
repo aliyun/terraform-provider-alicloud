@@ -103,6 +103,7 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -145,6 +146,10 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		if err := rdsService.ModifyParameters(d, "parameters"); err != nil {
 			return WrapError(err)
 		}
+	}
+
+	if err := rdsService.setInstanceTags(d); err != nil {
+		return WrapError(err)
 	}
 
 	if d.IsNewResource() {
@@ -262,6 +267,14 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
 		return err
+	}
+
+	tags, err := rdsService.describeTags(d)
+	if err != nil {
+		return WrapError(err)
+	}
+	if len(tags) > 0 {
+		d.Set("tags", rdsService.tagsToMap(tags))
 	}
 
 	return nil

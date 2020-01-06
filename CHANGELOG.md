@@ -7,6 +7,7 @@
 
 IMPROVEMENTS:
 
+- improve(db_readonly_instance): supports tags [GH-2050]
 - improve(db_instance): support setting db_instance_storage_type [GH-2048]
 - switch r-kvstore sdk to r_kvstor [GH-2047]
 - ess-rules/groups/configrution three markdown files different with codes [GH-2046]
