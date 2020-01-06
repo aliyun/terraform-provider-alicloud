@@ -1,21 +1,21 @@
-## 1.68.0 (Unreleased)
+## 1.68.0 (January 06, 2020)
 
-- **New Resource:** `alicloud_export_image` [GH-2036]
-- **New Resource:** `alicloud_image_share_permission` [GH-2026]
-- **New Resource:** `alicloud_polardb_endpoint_address` [GH-2020]
-- **Data Source:** `alicloud_polardb_endpoints` [GH-2020]
+- **New Resource:** `alicloud_export_image` ([#2036](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2036))
+- **New Resource:** `alicloud_image_share_permission` ([#2026](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2026))
+- **New Resource:** `alicloud_polardb_endpoint_address` ([#2020](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2020))
+- **Data Source:** `alicloud_polardb_endpoints` ([#2020](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2020))
 
 IMPROVEMENTS:
 
-- improve(db_readonly_instance): supports tags [GH-2050]
-- improve(db_instance): support setting db_instance_storage_type [GH-2048]
-- switch r-kvstore sdk to r_kvstor [GH-2047]
-- ess-rules/groups/configrution three markdown files different with codes [GH-2046]
+- improve(db_readonly_instance): supports tags ([#2050](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2050))
+- improve(db_instance): support setting db_instance_storage_type ([#2048](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2048))
+- switch r-kvstore sdk to r_kvstor ([#2047](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2047))
+- ess-rules/groups/configrution three markdown files different with codes ([#2046](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2046))
 - improve(polardb): feature polardb support tags #2045
-- improve(slb): update slb_server_certificate [GH-2044]
-- Modify naming issues in alicloud_image_copy [GH-2040]
-- rollback hbase resource and datasource because of them need to be improved [GH-2034]
-- improve(sasl): Implement update method for sasl user [GH-2027]
+- improve(slb): update slb_server_certificate ([#2044](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2044))
+- Modify naming issues in alicloud_image_copy ([#2040](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2040))
+- rollback hbase resource and datasource because of them need to be improved ([#2034](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2034))
+- improve(sasl): Implement update method for sasl user ([#2027](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2027))
 
 
 BUG FIXES:
