@@ -55,6 +55,7 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 
 			"log_backup": {
 				Type:       schema.TypeBool,
+				Optional:   true,
 				Computed:   true,
 				Deprecated: "Attribute 'log_backup' has been deprecated from version 1.67.0. Use `enable_backup_log`",
 			},
