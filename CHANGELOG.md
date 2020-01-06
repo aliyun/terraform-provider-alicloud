@@ -1,3 +1,4 @@
+## 1.69.0 (Unreleased)
 ## 1.68.0 (January 06, 2020)
 
 - **New Resource:** `alicloud_export_image` ([#2036](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2036))
