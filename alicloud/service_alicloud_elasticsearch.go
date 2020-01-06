@@ -118,6 +118,52 @@ func updateDescription(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
+func updateInstanceChargeType(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
+
+	content := make(map[string]interface{})
+	content["paymentType"] = strings.ToLower(d.Get("instance_charge_type").(string))
+	if d.Get("instance_charge_type").(string) == string(PrePaid) {
+		paymentInfo := make(map[string]interface{})
+		if d.Get("period").(int) >= 12 {
+			paymentInfo["duration"] = d.Get("period").(int) / 12
+			paymentInfo["pricingCycle"] = string(Year)
+		} else {
+			paymentInfo["duration"] = d.Get("period").(int)
+			paymentInfo["pricingCycle"] = string(Month)
+		}
+
+		content["paymentInfo"] = paymentInfo
+	}
+
+	data, err := json.Marshal(content)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	request := elasticsearch.CreateUpdateInstanceChargeTypeRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
+	request.RegionId = client.RegionId
+	request.InstanceId = d.Id()
+	request.SetContent(data)
+	request.SetContentType("application/json")
+
+	// retry
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.UpdateInstanceChargeType(request)
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	return nil
+}
+
 func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
@@ -199,7 +245,7 @@ func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func updateDateNodeAmount(d *schema.ResourceData, meta interface{}) error {
+func updateNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
 
