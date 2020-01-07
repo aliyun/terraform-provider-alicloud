@@ -185,13 +185,11 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
-					"db_instance_storage_type": "cloud_essd",
+					"instance_storage": "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_storage":         "10",
-						"db_instance_storage_type": "cloud_essd",
+						"instance_storage": "10",
 					}),
 				),
 			},
@@ -239,7 +237,8 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id": CHECKSET,
+						"security_group_id":    CHECKSET,
+						"security_group_ids.#": "1",
 					}),
 				),
 			},
@@ -280,7 +279,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 					"instance_name":              "tf-testAccDBInstanceConfig",
 					"monitoring_period":          "60",
 					"instance_charge_type":       "Postpaid",
-					"security_group_id":          REMOVEKEY,
+					"security_group_ids":         REMOVEKEY,
 					"auto_upgrade_minor_version": "Manual",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -297,6 +296,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 						"connection_string":          CHECKSET,
 						"port":                       CHECKSET,
 						"security_group_id":          REMOVEKEY,
+						"security_group_ids.#":       "0",
 						"auto_upgrade_minor_version": "Manual",
 					}),
 				),
@@ -477,11 +477,12 @@ func TestAccAlicloudDBInstanceSQLServer(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_group_id": "${alicloud_security_group.default.id}",
+					"security_group_ids": "${alicloud_security_group.default.*.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id": CHECKSET,
+						"security_group_id":    CHECKSET,
+						"security_group_ids.#": "2",
 					}),
 				),
 			},
@@ -495,6 +496,7 @@ func TestAccAlicloudDBInstanceSQLServer(t *testing.T) {
 					"instance_charge_type":     "Postpaid",
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${alicloud_vswitch.default.id}",
+					"security_group_ids":       REMOVEKEY,
 					"monitoring_period":        "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -511,6 +513,7 @@ func TestAccAlicloudDBInstanceSQLServer(t *testing.T) {
 						"connection_string":        CHECKSET,
 						"port":                     CHECKSET,
 						"security_group_id":        REMOVEKEY,
+						"security_group_ids.#":     "0",
 					}),
 				),
 			},
@@ -541,6 +544,7 @@ data "alicloud_db_instance_classes" "default" {
 }
 
 resource "alicloud_security_group" "default" {
+	count = 2
 	name   = "${var.name}"
 	vpc_id = "${alicloud_vpc.default.id}"
 }
@@ -635,11 +639,12 @@ func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_group_id": "${alicloud_security_group.default.id}",
+					"security_group_ids": "${alicloud_security_group.default.*.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id": CHECKSET,
+						"security_group_id":    CHECKSET,
+						"security_group_ids.#": "2",
 					}),
 				),
 			},
@@ -652,6 +657,7 @@ func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
 					"instance_charge_type": "Postpaid",
 					"instance_name":        "${var.name}",
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_group_ids":   REMOVEKEY,
 					"monitoring_period":    "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -667,6 +673,7 @@ func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
 						"connection_string":    CHECKSET,
 						"port":                 CHECKSET,
 						"security_group_id":    REMOVEKEY,
+						"security_group_ids.#": "0",
 					}),
 				),
 			},
@@ -699,8 +706,9 @@ data "alicloud_db_instance_classes" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = "${var.name}"
-	vpc_id = "${alicloud_vpc.default.id}"
+	count = 2
+	name   = var.name
+	vpc_id = alicloud_vpc.default.id
 }
 `, RdsCommonTestCase, name)
 }
@@ -794,11 +802,12 @@ func TestAccAlicloudDBInstancePPAS(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_group_id": "${alicloud_security_group.default.id}",
+					"security_group_ids": "${alicloud_security_group.default.*.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id": CHECKSET,
+						"security_group_id":    CHECKSET,
+						"security_group_ids.#": "1",
 					}),
 				),
 			},
@@ -811,6 +820,7 @@ func TestAccAlicloudDBInstancePPAS(t *testing.T) {
 					"instance_charge_type": "Postpaid",
 					"instance_name":        "${var.name}",
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_group_ids":   REMOVEKEY,
 					"monitoring_period":    "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -826,6 +836,7 @@ func TestAccAlicloudDBInstancePPAS(t *testing.T) {
 						"connection_string":    CHECKSET,
 						"port":                 CHECKSET,
 						"security_group_id":    REMOVEKEY,
+						"security_group_ids.#": "0",
 					}),
 				),
 			},
