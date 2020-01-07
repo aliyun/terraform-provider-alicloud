@@ -153,6 +153,10 @@ func dataSourceAlicloudInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"role_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"creation_time": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -322,6 +326,7 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 			"internet_max_bandwidth_out": inst.InternetMaxBandwidthOut,
 			// Complex types get their own functions
 			"disk_device_mappings": instanceDisksMappings(d, inst.InstanceId, meta),
+			"role_name":            instanceRamRole(d, inst.InstanceId, meta),
 			"tags":                 tagsToMap(inst.Tags.Tag),
 		}
 		if len(inst.InnerIpAddress.IpAddress) > 0 {
@@ -352,6 +357,26 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 		writeToFile(output.(string), s)
 	}
 	return nil
+}
+
+func instanceRamRole(d *schema.ResourceData, instanceId string, meta interface{}) string {
+	client := meta.(*connectivity.AliyunClient)
+	request := ecs.CreateDescribeInstanceRamRoleRequest()
+	request.RegionId = client.RegionId
+	request.InstanceIds = convertListToJsonString([]interface{}{instanceId})
+	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeInstanceRamRole(request)
+	})
+	if err != nil {
+		log.Printf("[ERROR] DescribeRamRole for instance got error: %#v", err)
+		return ""
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*ecs.DescribeInstanceRamRoleResponse)
+	if len(response.InstanceRamRoleSets.InstanceRamRoleSet) >= 1 {
+		return response.InstanceRamRoleSets.InstanceRamRoleSet[0].RamRoleName
+	}
+	return ""
 }
 
 //Returns a mapping of instance disks

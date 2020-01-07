@@ -71,6 +71,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `private_ip` - Instance private IP address.
   * `public_ip` - Instance public IP address.
   * `eip` - EIP address the VPC instance is using.
+  * `role_name` - The RAM role for this instance
   * `security_groups` - List of security group IDs the instance belongs to.
   * `key_name` - Key pair the instance is using.
   * `creation_time` - Instance creation time.
