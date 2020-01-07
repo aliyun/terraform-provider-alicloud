@@ -745,6 +745,49 @@ func (s *RdsService) DescribeDbInstanceMonitor(id string) (monitoringPeriod int,
 	return monPeriod, nil
 }
 
+func (s *RdsService) DescribeSQLCollectorPolicy(id string) (*rds.DescribeSQLCollectorPolicyResponse, error) {
+	policy := &rds.DescribeSQLCollectorPolicyResponse{}
+	request := rds.CreateDescribeSQLCollectorPolicyRequest()
+	request.DBInstanceId = id
+	request.RegionId = s.client.RegionId
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DescribeSQLCollectorPolicy(request)
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
+			return policy, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return policy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*rds.DescribeSQLCollectorPolicyResponse)
+
+	// Compatible with api problem of inconsistent input and output
+	if response.SQLCollectorStatus == "Disabled" {
+		response.SQLCollectorStatus = "Disable"
+	}
+	return response, nil
+}
+
+func (s *RdsService) DescribeSQLCollectorRetention(id string) (*rds.DescribeSQLCollectorRetentionResponse, error) {
+	policy := &rds.DescribeSQLCollectorRetentionResponse{}
+	request := rds.CreateDescribeSQLCollectorRetentionRequest()
+	request.DBInstanceId = id
+	request.RegionId = s.client.RegionId
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DescribeSQLCollectorRetention(request)
+	})
+	if err != nil {
+		if IsExceptedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
+			return policy, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return policy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	return raw.(*rds.DescribeSQLCollectorRetentionResponse), nil
+}
+
 // WaitForInstance waits for instance to given status
 func (s *RdsService) WaitForDBInstance(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)

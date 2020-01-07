@@ -185,6 +185,16 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"sql_collector_status": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sql_collector_status": "Enable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
 					"db_instance_storage_type": "cloud_essd",
 				}),
@@ -222,6 +232,26 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"monitoring_period": "300",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sql_collector_status": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sql_collector_status": "Enable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sql_collector_config_value": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sql_collector_config_value": "30",
 					}),
 				),
 			},
@@ -277,6 +307,8 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
 					"db_instance_storage_type":   "local_ssd",
+					"sql_collector_status":       "Enable",
+					"sql_collector_config_value": "30",
 					"instance_name":              "tf-testAccDBInstanceConfig",
 					"monitoring_period":          "60",
 					"instance_charge_type":       "Postpaid",
@@ -290,6 +322,8 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 						"instance_type":              CHECKSET,
 						"instance_storage":           "15",
 						"db_instance_storage_type":   "local_ssd",
+						"sql_collector_status":       "Enable",
+						"sql_collector_config_value": "30",
 						"instance_name":              "tf-testAccDBInstanceConfig",
 						"monitoring_period":          "60",
 						"zone_id":                    CHECKSET,

@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "ehn2atOP3waNE8IUzlIfwNGtdlM=",
+			"path": "github.com/aliyun/alibaba-cloud-sdk-go/services/rds",
+			"revision": "89f60c37c9ed26e1e18c6d14063a1342089d56c0",
+			"revisionTime": "2020-01-08T06:58:42Z"
+		}
+	],
+	"rootPath": "github.com/terraform-providers/terraform-provider-alicloud"
+}
