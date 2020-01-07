@@ -170,7 +170,7 @@ func resourceAliCloudImageCreate(d *schema.ResourceData, meta interface{}) error
 			mapping := diskDeviceMapping.(map[string]interface{})
 			deviceMapping := ecs.CreateImageDiskDeviceMapping{
 				SnapshotId: mapping["snapshot_id"].(string),
-				Size:       mapping["size"].(string),
+				Size:       strconv.Itoa(mapping["size"].(int)),
 				DiskType:   mapping["disk_type"].(string),
 				Device:     mapping["device"].(string),
 			}
