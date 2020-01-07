@@ -686,7 +686,7 @@ func (s *RdsService) GetSecurityIps(instanceId string) ([]string, error) {
 	return finalIps, nil
 }
 
-func (s *RdsService) DescribeSecurityGroupConfiguration(id string) (string, error) {
+func (s *RdsService) DescribeSecurityGroupConfiguration(id string) ([]string, error) {
 	request := rds.CreateDescribeSecurityGroupConfigurationRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -695,15 +695,16 @@ func (s *RdsService) DescribeSecurityGroupConfiguration(id string) (string, erro
 	})
 
 	if err != nil {
-		return "", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	response, _ := raw.(*rds.DescribeSecurityGroupConfigurationResponse)
-	if response != nil && len(response.Items.EcsSecurityGroupRelation) > 0 {
-		return response.Items.EcsSecurityGroupRelation[0].SecurityGroupId, nil
+	groupIds := make([]string, 0)
+	for _, v := range response.Items.EcsSecurityGroupRelation {
+		groupIds = append(groupIds, v.SecurityGroupId)
 	}
-	return "", nil
+	return groupIds, nil
 }
 
 func (s *RdsService) ModifySecurityGroupConfiguration(id string, groupid string) error {

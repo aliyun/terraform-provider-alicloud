@@ -125,7 +125,16 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional: true,
 			},
 			"security_group_id": {
-				Type:     schema.TypeString,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"security_group_ids"},
+				Deprecated:    "Attribute `security_group_id` has been deprecated from 1.69.0 and use `security_group_ids` instead.",
+			},
+			"security_group_ids": {
+				Type:     schema.TypeSet,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 				Optional: true,
 			},
 			"security_ip_mode": {
@@ -285,11 +294,16 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("auto_renew_period")
 	}
 
-	if d.HasChange("security_group_id") {
-		err := rdsService.ModifySecurityGroupConfiguration(d.Id(), d.Get("security_group_id").(string))
+	if d.HasChange("security_group_ids") || d.HasChange("security_group_id") {
+		groupIds := d.Get("security_group_id").(string)
+		if d.HasChange("security_group_ids") {
+			groupIds = strings.Join(expandStringList(d.Get("security_group_ids").(*schema.Set).List())[:], COMMA_SEPARATED)
+		}
+		err := rdsService.ModifySecurityGroupConfiguration(d.Id(), groupIds)
 		if err != nil {
 			return WrapError(err)
 		}
+		d.SetPartial("security_group_ids")
 		d.SetPartial("security_group_id")
 	}
 
@@ -527,11 +541,12 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("period", period)
 	}
 
-	object, err := rdsService.DescribeSecurityGroupConfiguration(d.Id())
+	groups, err := rdsService.DescribeSecurityGroupConfiguration(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("security_group_id", object)
+	d.Set("security_group_id", strings.Join(groups, COMMA_SEPARATED))
+	d.Set("security_group_ids", groups)
 
 	return nil
 }
