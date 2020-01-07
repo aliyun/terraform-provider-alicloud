@@ -472,20 +472,36 @@ func (s *RdsService) ReleaseDBPublicConnection(instanceId, connection string) er
 }
 
 func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData, updateForLog bool) error {
-
-	periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
-	backupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
-	backupTime := d.Get("backup_time").(string)
 	enableBackupLog := "1"
 
-	retentionPeriod := ""
-	if v, ok := d.GetOk("retention_period"); ok {
+	backupPeriod := ""
+	if v, ok := d.GetOk("preferred_backup_period"); ok && v.(*schema.Set).Len() > 0 {
+		periodList := expandStringList(v.(*schema.Set).List())
+		backupPeriod = fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
+	} else {
+		periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
+		backupPeriod = fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
+	}
+
+	backupTime := "02:00Z-03:00Z"
+	if v, ok := d.GetOk("preferred_backup_time"); ok && v.(string) != "02:00Z-03:00Z" {
+		backupTime = v.(string)
+	} else if v, ok := d.GetOk("backup_time"); ok && v.(string) != "" {
+		backupTime = v.(string)
+	}
+
+	retentionPeriod := "7"
+	if v, ok := d.GetOk("backup_retention_period"); ok && v.(int) != 7 {
+		retentionPeriod = strconv.Itoa(v.(int))
+	} else if v, ok := d.GetOk("retention_period"); ok && v.(int) != 0 {
 		retentionPeriod = strconv.Itoa(v.(int))
 	}
 
 	logBackupRetentionPeriod := ""
-	if v, ok := d.GetOk("log_retention_period"); ok {
+	if v, ok := d.GetOk("log_backup_retention_period"); ok && v.(int) != 0 {
 		logBackupRetentionPeriod = strconv.Itoa(v.(int))
+	} else {
+		logBackupRetentionPeriod = strconv.Itoa(d.Get("log_retention_period").(int))
 	}
 
 	localLogRetentionHours := ""
@@ -504,10 +520,39 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 		enableBackupLog = "0"
 	}
 
-	if d.HasChange("log_retention_period") {
-		if d.Get("log_retention_period").(int) > d.Get("retention_period").(int) {
+	if d.HasChange("log_backup_retention_period") {
+		if d.Get("log_backup_retention_period").(int) > d.Get("backup_retention_period").(int) {
 			logBackupRetentionPeriod = retentionPeriod
 		}
+	}
+
+	logBackupFrequency := ""
+	if v, ok := d.GetOk("log_backup_frequency"); ok {
+		logBackupFrequency = v.(string)
+	}
+	compressType := ""
+	if v, ok := d.GetOk("compress_type"); ok {
+		compressType = v.(string)
+	}
+
+	archiveBackupRetentionPeriod := "0"
+	if v, ok := d.GetOk("archive_backup_retention_period"); ok {
+		archiveBackupRetentionPeriod = strconv.Itoa(v.(int))
+	}
+
+	archiveBackupKeepCount := "1"
+	if v, ok := d.GetOk("archive_backup_keep_count"); ok {
+		archiveBackupKeepCount = strconv.Itoa(v.(int))
+	}
+
+	archiveBackupKeepPolicy := "0"
+	if v, ok := d.GetOk("archive_backup_keep_policy"); ok {
+		archiveBackupKeepPolicy = v.(string)
+	}
+
+	instance, err := s.DescribeDBInstance(d.Id())
+	if err != nil {
+		return WrapError(err)
 	}
 	if updateForData {
 		request := rds.CreateModifyBackupPolicyRequest()
@@ -516,8 +561,16 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 		request.PreferredBackupPeriod = backupPeriod
 		request.PreferredBackupTime = backupTime
 		request.BackupRetentionPeriod = retentionPeriod
+		request.CompressType = compressType
 		request.BackupPolicyMode = "DataBackupPolicy"
-
+		if instance.Engine == "SQLServer" && logBackupFrequency == "LogInterval" {
+			request.LogBackupFrequency = logBackupFrequency
+		}
+		if instance.Engine == "MySQL" && instance.DBInstanceStorageType == "local_ssd" {
+			request.ArchiveBackupRetentionPeriod = archiveBackupRetentionPeriod
+			request.ArchiveBackupKeepCount = archiveBackupKeepCount
+			request.ArchiveBackupKeepPolicy = archiveBackupKeepPolicy
+		}
 		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.ModifyBackupPolicy(request)
 		})
@@ -533,10 +586,6 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 		}
 	}
 
-	instance, err := s.DescribeDBInstance(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
 	// At present, the sql server database does not support setting logBackupRetentionPeriod
 	if updateForLog && instance.Engine != "SQLServer" {
 		request := rds.CreateModifyBackupPolicyRequest()

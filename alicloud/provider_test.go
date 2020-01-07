@@ -142,6 +142,17 @@ func testAccPreCheckWithMultipleAccount(t *testing.T) {
 	}
 }
 
+func testAccPreCheckOSSForImageImport(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_OSS_BUCKET_FOR_IMAGE")); v == "" {
+		t.Skipf("Skipping tests without OSS_Bucket set.")
+		t.Skipped()
+	}
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_OSS_OBJECT_FOR_IMAGE")); v == "" {
+		t.Skipf("Skipping OSS_Object does not exist.")
+		t.Skipped()
+	}
+}
+
 func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_CMS_CONTACT_GROUP")); v == "" {
 		t.Skipf("Skipping the test case with no cms contact group setting")

@@ -629,12 +629,16 @@ func (s *EcsService) updateImage(d *schema.ResourceData) error {
 	request.RegionId = s.client.RegionId
 	request.ImageId = d.Id()
 
-	if d.HasChange("description") || d.HasChange("name") {
+	if d.HasChange("description") || d.HasChange("name") || d.HasChange("image_name") {
 		if description, ok := d.GetOk("description"); ok {
 			request.Description = description.(string)
 		}
-		if imageName, ok := d.GetOk("name"); ok {
+		if imageName, ok := d.GetOk("image_name"); ok {
 			request.ImageName = imageName.(string)
+		} else {
+			if imageName, ok := d.GetOk("name"); ok {
+				request.ImageName = imageName.(string)
+			}
 		}
 		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ModifyImageAttribute(request)
@@ -643,6 +647,7 @@ func (s *EcsService) updateImage(d *schema.ResourceData) error {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("name")
+		d.SetPartial("image_name")
 		d.SetPartial("description")
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}

@@ -207,7 +207,37 @@ func logRetentionPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceDa
 	if d.Get("log_backup").(bool) {
 		return false
 	}
+	if v, err := strconv.Atoi(new); err != nil && v > d.Get("backup_retention_period").(int) {
+		return false
+	}
 	if v, err := strconv.Atoi(new); err != nil && v > d.Get("retention_period").(int) {
+		return false
+	}
+	return true
+}
+
+func enableBackupLogDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("enable_backup_log").(bool) {
+		return false
+	}
+	if d.Get("log_backup").(bool) {
+		return false
+	}
+
+	return true
+}
+
+func archiveBackupPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("enable_backup_log").(bool) {
+		return false
+	}
+	if d.Get("log_backup").(bool) {
+		return false
+	}
+	if v, err := strconv.Atoi(new); err != nil && v+730 >= d.Get("backup_retention_period").(int) {
+		return false
+	}
+	if v, err := strconv.Atoi(new); err != nil && v+730 >= d.Get("retention_period").(int) {
 		return false
 	}
 

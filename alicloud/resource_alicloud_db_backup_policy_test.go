@@ -65,48 +65,47 @@ func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"log_retention_period", "local_log_retention_hours", "local_log_retention_space"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period": []string{"Wednesday", "Monday"},
+					"preferred_backup_period": []string{"Wednesday", "Monday"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#": "2",
+						"preferred_backup_period.#": "2",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_time": "10:00Z-11:00Z",
+					"preferred_backup_time": "10:00Z-11:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_time": "10:00Z-11:00Z",
+						"preferred_backup_time": "10:00Z-11:00Z",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"retention_period": "10",
+					"backup_retention_period": "800",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"retention_period": "10",
+						"backup_retention_period": "800",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"log_retention_period": "7",
+					"log_backup_retention_period": "7",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"log_retention_period": "7",
+						"log_backup_retention_period": "7",
 					}),
 				),
 			},
@@ -142,6 +141,40 @@ func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"compress_type": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compress_type": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"archive_backup_retention_period": "50",
+					"archive_backup_keep_count":       "3",
+					"archive_backup_keep_policy":      "ByWeek",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"archive_backup_retention_period": "50",
+						"archive_backup_keep_count":       "3",
+						"archive_backup_keep_policy":      "ByWeek",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"archive_backup_keep_policy": "KeepAll",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"archive_backup_keep_policy": "KeepAll",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"enable_backup_log": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -152,24 +185,30 @@ func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":                 "${alicloud_db_instance.default.id}",
-					"backup_period":               []string{"Tuesday", "Monday", "Wednesday"},
-					"backup_time":                 "10:00Z-11:00Z",
-					"retention_period":            "10",
-					"enable_backup_log":           "true",
-					"log_retention_period":        "7",
-					"local_log_retention_hours":   "48",
-					"high_space_usage_protection": "Enable",
+					"instance_id":                     "${alicloud_db_instance.default.id}",
+					"preferred_backup_period":         []string{"Tuesday", "Monday", "Wednesday"},
+					"preferred_backup_time":           "13:00Z-14:00Z",
+					"backup_retention_period":         "900",
+					"enable_backup_log":               "true",
+					"log_backup_retention_period":     "7",
+					"local_log_retention_hours":       "48",
+					"high_space_usage_protection":     "Enable",
+					"archive_backup_retention_period": "150",
+					"archive_backup_keep_count":       "2",
+					"archive_backup_keep_policy":      "ByMonth",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":             "3",
-						"backup_time":                 "10:00Z-11:00Z",
-						"retention_period":            "10",
-						"enable_backup_log":           "true",
-						"log_retention_period":        "7",
-						"local_log_retention_hours":   "48",
-						"high_space_usage_protection": "Enable",
+						"preferred_backup_period.#":       "3",
+						"preferred_backup_time":           "13:00Z-14:00Z",
+						"backup_retention_period":         "900",
+						"enable_backup_log":               "true",
+						"log_backup_retention_period":     "7",
+						"local_log_retention_hours":       "48",
+						"high_space_usage_protection":     "Enable",
+						"archive_backup_retention_period": "150",
+						"archive_backup_keep_count":       "2",
+						"archive_backup_keep_policy":      "ByMonth",
 					}),
 				),
 			}},
@@ -241,7 +280,6 @@ func TestAccAlicloudDBBackupPolicy_pgdb(t *testing.T) {
 					"instance_id":                 "${alicloud_db_instance.default.id}",
 					"enable_backup_log":           "true",
 					"local_log_retention_hours":   "1",
-					"local_log_retention_space":   "5",
 					"high_space_usage_protection": "Enable",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -251,42 +289,47 @@ func TestAccAlicloudDBBackupPolicy_pgdb(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period": []string{"Monday", "Wednesday"},
+					"preferred_backup_period": []string{"Monday", "Wednesday"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#": "2",
+						"preferred_backup_period.#": "2",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_time": "10:00Z-11:00Z",
+					"preferred_backup_time": "10:00Z-11:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_time": "10:00Z-11:00Z",
+						"preferred_backup_time": "10:00Z-11:00Z",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"retention_period": "10",
+					"backup_retention_period": "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"retention_period": "10",
+						"backup_retention_period": "10",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"log_retention_period": "7",
+					"log_backup_retention_period": "7",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"log_retention_period": "7",
+						"log_backup_retention_period": "7",
 					}),
 				),
 			},
@@ -322,6 +365,16 @@ func TestAccAlicloudDBBackupPolicy_pgdb(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"compress_type": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compress_type": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"enable_backup_log": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -332,21 +385,21 @@ func TestAccAlicloudDBBackupPolicy_pgdb(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period":               []string{"Tuesday", "Wednesday", "Monday"},
-					"backup_time":                 "10:00Z-11:00Z",
-					"retention_period":            "20",
+					"preferred_backup_period":     []string{"Tuesday", "Wednesday", "Monday"},
+					"preferred_backup_time":       "10:00Z-11:00Z",
+					"backup_retention_period":     "20",
 					"enable_backup_log":           "true",
-					"log_retention_period":        "15",
+					"log_backup_retention_period": "15",
 					"local_log_retention_hours":   "48",
 					"high_space_usage_protection": "Enable",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":             "3",
-						"backup_time":                 "10:00Z-11:00Z",
-						"retention_period":            "20",
+						"preferred_backup_period.#":   "3",
+						"preferred_backup_time":       "10:00Z-11:00Z",
+						"backup_retention_period":     "20",
 						"enable_backup_log":           "true",
-						"log_retention_period":        "15",
+						"log_backup_retention_period": "15",
 						"local_log_retention_hours":   "48",
 						"high_space_usage_protection": "Enable",
 					}),
@@ -425,46 +478,73 @@ func TestAccAlicloudDBBackupPolicy_SQLServer(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period": []string{"Wednesday", "Monday"},
+					"preferred_backup_period": []string{"Wednesday", "Monday"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#": "2",
+						"preferred_backup_period.#": "2",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_time": "10:00Z-11:00Z",
+					"preferred_backup_time": "10:00Z-11:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_time": "10:00Z-11:00Z",
+						"preferred_backup_time": "10:00Z-11:00Z",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"retention_period": "10",
+					"backup_retention_period": "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"retention_period": "10",
+						"backup_retention_period": "10",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period":    []string{"Wednesday", "Tuesday"},
-					"backup_time":      "10:00Z-11:00Z",
-					"retention_period": "10",
+					"log_backup_frequency": "LogInterval",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":  "2",
-						"backup_time":      "10:00Z-11:00Z",
-						"retention_period": "10",
+						"log_backup_frequency": "LogInterval",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compress_type": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compress_type": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"preferred_backup_period": []string{"Wednesday", "Tuesday"},
+					"preferred_backup_time":   "11:00Z-12:00Z",
+					"backup_retention_period": "13",
+					"log_backup_frequency":    "LogInterval",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"preferred_backup_period.#": "2",
+						"preferred_backup_time":     "11:00Z-12:00Z",
+						"backup_retention_period":   "13",
+						"log_backup_frequency":      "LogInterval",
 					}),
 				),
 			}},
@@ -540,42 +620,47 @@ func TestAccAlicloudDBBackupPolicy_PPAS(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period": []string{"Wednesday", "Monday"},
+					"preferred_backup_period": []string{"Wednesday", "Monday"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#": "2",
+						"preferred_backup_period.#": "2",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_time": "10:00Z-11:00Z",
+					"preferred_backup_time": "10:00Z-11:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_time": "10:00Z-11:00Z",
+						"preferred_backup_time": "10:00Z-11:00Z",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"retention_period": "10",
+					"backup_retention_period": "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"retention_period": "10",
+						"backup_retention_period": "10",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"log_retention_period": "7",
+					"log_backup_retention_period": "7",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"log_retention_period": "7",
+						"log_backup_retention_period": "7",
 					}),
 				),
 			},
@@ -611,6 +696,16 @@ func TestAccAlicloudDBBackupPolicy_PPAS(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"compress_type": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compress_type": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"enable_backup_log": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -621,21 +716,21 @@ func TestAccAlicloudDBBackupPolicy_PPAS(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period":               []string{"Wednesday", "Monday", "Tuesday"},
-					"backup_time":                 "10:00Z-11:00Z",
-					"retention_period":            "20",
+					"preferred_backup_period":     []string{"Wednesday", "Monday", "Tuesday"},
+					"preferred_backup_time":       "10:00Z-11:00Z",
+					"backup_retention_period":     "20",
 					"enable_backup_log":           "true",
-					"log_retention_period":        "15",
+					"log_backup_retention_period": "15",
 					"local_log_retention_hours":   "48",
 					"high_space_usage_protection": "Enable",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":             "3",
-						"backup_time":                 "10:00Z-11:00Z",
-						"retention_period":            "20",
+						"preferred_backup_period.#":   "3",
+						"preferred_backup_time":       "10:00Z-11:00Z",
+						"backup_retention_period":     "20",
 						"enable_backup_log":           "true",
-						"log_retention_period":        "15",
+						"log_backup_retention_period": "15",
 						"local_log_retention_hours":   "48",
 						"high_space_usage_protection": "Enable",
 					}),
