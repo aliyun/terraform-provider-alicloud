@@ -64,6 +64,10 @@ func dataSourceAlicloudApiGatewayApps() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"app_code": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -145,16 +149,30 @@ func dataSourceAlicloudApigatewayAppsRead(d *schema.ResourceData, meta interface
 }
 
 func apigatewayAppsDecriptionAttributes(d *schema.ResourceData, apps []cloudapi.AppAttribute, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
 	var ids []string
 	var s []map[string]interface{}
 	var names []string
 	for _, app := range apps {
+		request := cloudapi.CreateDescribeAppSecurityRequest()
+		request.RegionId = client.RegionId
+		request.AppId = requests.NewInteger64(app.AppId)
+		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+			return cloudApiClient.DescribeAppSecurity(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_api_gateway_apps", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*cloudapi.DescribeAppSecurityResponse)
+
 		mapping := map[string]interface{}{
 			"id":            app.AppId,
 			"name":          app.AppName,
 			"description":   app.Description,
 			"created_time":  app.CreatedTime,
 			"modified_time": app.ModifiedTime,
+			"app_code":      response.AppCode,
 		}
 		ids = append(ids, strconv.FormatInt(app.AppId, 10))
 		s = append(s, mapping)

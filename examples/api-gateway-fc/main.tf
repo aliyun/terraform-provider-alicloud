@@ -30,22 +30,18 @@ resource "alicloud_ram_policy" "policy" {
   name = var.ram_policy_name
 
   document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": [
-				"oss:ListObjects",
-				"oss:ListObjects"
-			  ],
-			  "Effect": "Deny",
-			  "Resource": [
-				"acs:oss:*:*:mybucket",
-				"acs:oss:*:*:mybucket/*"
-			  ]
-			}
-		  ],
-			"Version": "1"
-		}
+        {
+          "Version": "1",
+          "Statement": [
+            {
+              "Action": [
+                "fc:InvokeFunction"
+              ],
+              "Resource": "*",
+              "Effect": "Allow"
+            }
+          ]
+        }
   
 EOF
 

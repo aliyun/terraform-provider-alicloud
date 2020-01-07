@@ -72,6 +72,7 @@ func SkipTestAccAlicloudApigatewayAppsDataSource(t *testing.T) {
 			"apps.#":             "1",
 			"apps.0.name":        fmt.Sprintf("tf_testAccApp_%d", rand),
 			"apps.0.description": "tf_testAcc api gateway description",
+			"apps.0.app_code":    CHECKSET,
 		}
 	}
 
