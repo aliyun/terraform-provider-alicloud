@@ -35,8 +35,15 @@ func resourceAliCloudImageCopy() *schema.Resource {
 				Required: true,
 			},
 			"name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Attribute 'name' has been deprecated from version 1.69.0. Use `image_name` instead.",
+			},
+			"image_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -69,7 +76,7 @@ func resourceAliCloudImageCopyCreate(d *schema.ResourceData, meta interface{}) e
 	request.RegionId = d.Get("source_region_id").(string)
 	request.ImageId = d.Get("source_image_id").(string)
 	request.DestinationRegionId = client.RegionId
-	request.DestinationImageName = d.Get("name").(string)
+	request.DestinationImageName = d.Get("image_name").(string)
 	request.DestinationDescription = d.Get("description").(string)
 	request.Encrypted = requests.NewBoolean(d.Get("encrypted").(bool))
 	request.KMSKeyId = d.Get("kms_key_id").(string)
@@ -125,6 +132,7 @@ func resourceAliCloudImageCopyRead(d *schema.ResourceData, meta interface{}) err
 	}
 
 	d.Set("name", object.ImageName)
+	d.Set("image_name", object.ImageName)
 	d.Set("description", object.Description)
 
 	tags := object.Tags.Tag

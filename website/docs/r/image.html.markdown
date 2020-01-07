@@ -24,7 +24,7 @@ Creates a custom image. You can then use a custom image to create ECS instances 
 ```
 resource "alicloud_image" "default" {
   instance_id        = "i-bp1g6zv0ce8oghu7k***"
-  name               = "test-image"
+  image_name         = "test-image"
   description        = "test-image"
   architecture       = "x86_64"
   platform           = "CentOS"
@@ -40,7 +40,7 @@ resource "alicloud_image" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Optional, ForceNew, Conflict with `snapshot_id ` and `disk_device_mapping `) The instance ID.
-* `name` - (Optional) The image name. It must be 2 to 128 characters in length, and must begin with a letter or Chinese character (beginning with http:// or https:// is not allowed). It can contain digits, colons (:), underscores (_), or hyphens (-). Default value: null.
+* `image_name` - (Optional) The image name. It must be 2 to 128 characters in length, and must begin with a letter or Chinese character (beginning with http:// or https:// is not allowed). It can contain digits, colons (:), underscores (_), or hyphens (-). Default value: null.
 * `description` - (Optional) The description of the image. It must be 2 to 256 characters in length and must not start with http:// or https://. Default value: null.
 * `snapshot_id` - (Optional, ForceNew, Conflict with `instance_id ` and `disk_device_mapping `) Specifies a snapshot that is used to create a custom image.
 * `architecture` - (Optional, ForceNew) Specifies the architecture of the system disk after you specify a data disk snapshot as the data source of the system disk for creating an image. Valid values: `i386` , Default is `x86_64`.

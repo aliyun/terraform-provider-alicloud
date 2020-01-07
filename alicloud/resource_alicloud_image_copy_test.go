@@ -13,7 +13,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAliCloudCopyImageBasic(t *testing.T) {
+func TestAccAliCloudImageCopyBasic(t *testing.T) {
 	var v ecs.Image
 
 	resourceId := "alicloud_image_copy.default"
@@ -45,7 +45,7 @@ func TestAccAliCloudCopyImageBasic(t *testing.T) {
 					"source_image_id":  "${alicloud_image.default.id}",
 					"source_region_id": "cn-hangzhou",
 					"description":      fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
-					"name":             name,
+					"image_name":       name,
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test123",
@@ -54,7 +54,7 @@ func TestAccAliCloudCopyImageBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckImageExistsWithProviders(resourceId, &v, &providers),
 					testAccCheck(map[string]string{
-						"name":         name,
+						"image_name":   name,
 						"description":  fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
 						"tags.%":       "2",
 						"tags.Created": "TF",
@@ -75,12 +75,12 @@ func TestAccAliCloudCopyImageBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": fmt.Sprintf("tf-testAccEcsImageConfigBasic%dchange", rand),
+					"image_name": fmt.Sprintf("tf-testAccEcsImageConfigBasic%dchange", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckImageExistsWithProviders(resourceId, &v, &providers),
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf-testAccEcsImageConfigBasic%dchange", rand),
+						"image_name": fmt.Sprintf("tf-testAccEcsImageConfigBasic%dchange", rand),
 					}),
 				),
 			},
@@ -103,7 +103,7 @@ func TestAccAliCloudCopyImageBasic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
-					"name":        name,
+					"image_name":  name,
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test123",
@@ -113,7 +113,7 @@ func TestAccAliCloudCopyImageBasic(t *testing.T) {
 					testAccCheckImageExistsWithProviders(resourceId, &v, &providers),
 					testAccCheck(map[string]string{
 						"description":  fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
-						"name":         name,
+						"image_name":   name,
 						"tags.%":       "2",
 						"tags.Created": "TF",
 						"tags.For":     "acceptance test123",
@@ -217,7 +217,7 @@ data "alicloud_instance_types" "default" {
 }
 data "alicloud_images" "default" {
   provider = "alicloud.hz"
-  name_regex  = "^ubuntu_18.*_64"
+  name_regex  = "^ubuntu_18.*64"
   owners      = "system"
 }
 resource "alicloud_vpc" "default" {
@@ -248,7 +248,7 @@ resource "alicloud_instance" "default" {
 resource "alicloud_image" "default" {
   provider = "alicloud.hz"
   instance_id = "${alicloud_instance.default.id}"
-  name        = "${var.name}"
+  image_name        = "${var.name}"
 }
 `, name)
 }

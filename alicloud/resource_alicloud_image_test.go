@@ -38,7 +38,7 @@ func TestAccAliCloudImageBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id": "${alicloud_instance.default.id}",
 					"description": fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
-					"name":        name,
+					"image_name":  name,
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test123",
@@ -46,7 +46,7 @@ func TestAccAliCloudImageBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":         name,
+						"image_name":   name,
 						"description":  fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
 						"tags.%":       "2",
 						"tags.Created": "TF",
@@ -66,11 +66,11 @@ func TestAccAliCloudImageBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": fmt.Sprintf("tf-testAccEcsImageConfigBasic%dchange", rand),
+					"image_name": fmt.Sprintf("tf-testAccEcsImageConfigBasic%dchange", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf-testAccEcsImageConfigBasic%dchange", rand),
+						"image_name": fmt.Sprintf("tf-testAccEcsImageConfigBasic%dchange", rand),
 					}),
 				),
 			},
@@ -92,7 +92,7 @@ func TestAccAliCloudImageBasic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
-					"name":        name,
+					"image_name":  name,
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test123",
@@ -101,7 +101,7 @@ func TestAccAliCloudImageBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":  fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
-						"name":         name,
+						"image_name":   name,
 						"tags.%":       "2",
 						"tags.Created": "TF",
 						"tags.For":     "acceptance test123",

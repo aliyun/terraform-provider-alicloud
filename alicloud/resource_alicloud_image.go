@@ -55,8 +55,15 @@ func resourceAliCloudImage() *schema.Resource {
 				Optional: true,
 			},
 			"name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Attribute 'name' has been deprecated from version 1.69.0. Use `image_name` instead.",
+			},
+			"image_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"platform": {
 				Type:     schema.TypeString,
@@ -193,7 +200,7 @@ func resourceAliCloudImageCreate(d *schema.ResourceData, meta interface{}) error
 	request.SnapshotId = d.Get("snapshot_id").(string)
 	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	request.Platform = d.Get("platform").(string)
-	request.ImageName = d.Get("name").(string)
+	request.ImageName = d.Get("image_name").(string)
 	request.Description = d.Get("description").(string)
 	request.Architecture = d.Get("architecture").(string)
 
@@ -248,6 +255,7 @@ func resourceAliCloudImageRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("resource_group_id", object.ResourceGroupId)
 	d.Set("platform", object.Platform)
+	d.Set("image_name", object.ImageName)
 	d.Set("name", object.ImageName)
 	d.Set("description", object.Description)
 	d.Set("architecture", object.Architecture)

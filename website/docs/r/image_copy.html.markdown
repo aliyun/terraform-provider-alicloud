@@ -25,7 +25,7 @@ Copies a custom image from one region to another. You can use copied images to p
 resource "alicloud_image_copy" "default" {
   source_image_id    = "m-bp1gxyhdswlsn18tu***"
   source_region_id   = "cn-hangzhou"
-  name               = "test-image"
+  image_name         = "test-image"
   description        = "test-image"
   tags               = {
          FinanceDept = "FinanceDeptJoshua"
@@ -39,7 +39,7 @@ The following arguments are supported:
 
 * `source_image_id` - (Required, ForceNew) The source image ID.
 * `source_region_id` - (Required, ForceNew) The ID of the region to which the source custom image belongs. You can call [DescribeRegions](https://www.alibabacloud.com/help/doc-detail/25609.htm) to view the latest regions of Alibaba Cloud.
-* `name` - (Optional) The image name. It must be 2 to 128 characters in length, and must begin with a letter or Chinese character (beginning with http:// or https:// is not allowed). It can contain digits, colons (:), underscores (_), or hyphens (-). Default value: null.
+* `image_name` - (Optional) The image name. It must be 2 to 128 characters in length, and must begin with a letter or Chinese character (beginning with http:// or https:// is not allowed). It can contain digits, colons (:), underscores (_), or hyphens (-). Default value: null.
 * `description` - (Optional) The description of the image. It must be 2 to 256 characters in length and must not start with http:// or https://. Default value: null.
 * `encrypted` - (Optional, ForceNew) Indicates whether to encrypt the image.
 * `kms_key_id` - (Optional, ForceNew) Key ID used to encrypt the image.

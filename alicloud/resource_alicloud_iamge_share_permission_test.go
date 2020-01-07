@@ -93,7 +93,7 @@ resource "alicloud_instance" "default" {
 }
 resource "alicloud_image" "default" {
   instance_id = "${alicloud_instance.default.id}"
-  name        = "${var.name}"
+  image_name        = "${var.name}"
 }
 `, name)
 }
