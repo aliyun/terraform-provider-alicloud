@@ -44,3 +44,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `description` - App description.
   * `created_time` - Creation time (Greenwich mean time).
   * `modified_time` - Last modification time (Greenwich mean time).
+  * `app_code` - App code.
