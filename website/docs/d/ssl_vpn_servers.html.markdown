@@ -45,6 +45,7 @@ The following attributes are exported:
   * `compress` - Whether to compress.
   * `cipher` - The encryption algorithm used.
   * `proto` - The protocol used by the SSL-VPN server.
+  * `port` - The port used by the SSL-VPN server.
   * `client_ip_pool` - The IP address pool of the client.
   * `local_subnet` - The local subnet of the VPN connection.
   * `internet_ip` - The public IP.

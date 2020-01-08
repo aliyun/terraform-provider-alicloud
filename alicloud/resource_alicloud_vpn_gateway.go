@@ -32,7 +32,7 @@ func resourceAliyunVpnGateway() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringLenBetween(1, 128),
-				Default:      resource.PrefixedUniqueId("tf-vpn-"),
+				Computed:     true,
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,

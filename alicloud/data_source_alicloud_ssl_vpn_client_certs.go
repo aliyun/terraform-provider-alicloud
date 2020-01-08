@@ -66,7 +66,7 @@ func dataSourceAlicloudSslVpnClientCerts() *schema.Resource {
 							Computed: true,
 						},
 						"create_time": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"end_time": {
@@ -166,7 +166,7 @@ func sslVpnClientCertsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes [
 			"id":                vpn.SslVpnClientCertId,
 			"name":              vpn.Name,
 			"end_time":          vpn.EndTime,
-			"create_time":       vpn.CreateTime,
+			"create_time":       TimestampToStr(vpn.CreateTime),
 			"status":            vpn.Status,
 		}
 		ids = append(ids, vpn.SslVpnClientCertId)

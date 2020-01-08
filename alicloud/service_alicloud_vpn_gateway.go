@@ -383,3 +383,9 @@ func (s *VpnGatewayService) AssembleNetworkSubnetToString(list []interface{}) st
 	}
 	return fmt.Sprintf("%s", strings.Join(items, COMMA_SEPARATED))
 }
+
+func TimestampToStr(timestamp int64) string {
+	tm := time.Unix(timestamp/1000, 0)
+	timeString := tm.Format("2006-01-02T15:04:05Z")
+	return timeString
+}
