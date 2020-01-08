@@ -42,7 +42,7 @@ func testSweepSlbServerCertificate(region string) error {
 	resp, _ := raw.(*slb.DescribeServerCertificatesResponse)
 	for _, serverCertificate := range resp.ServerCertificates.ServerCertificate {
 		name := serverCertificate.ServerCertificateName
-		id := serverCertificate.ServerCertificateName
+		id := serverCertificate.ServerCertificateId
 
 		skip := true
 		for _, prefix := range prefixes {

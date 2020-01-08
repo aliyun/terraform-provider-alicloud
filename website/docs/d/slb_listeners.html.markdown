@@ -30,6 +30,7 @@ The following arguments are supported:
 * `load_balancer_id` - (Required) ID of the SLB with listeners.
 * `protocol` - (Optional) Filter listeners by the specified protocol. Valid values: `http`, `https`, `tcp` and `udp`.
 * `frontend_port` - (Optional) Filter listeners by the specified frontend port.
+* `description_regex` - (Optional, Available in 1.69.0+) A regex string to filter results by SLB listener description.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -74,3 +75,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `request_timeout` - Timeout of http or https listener request (which does not get response from backend) timeout. Valid value range: [1-180] in seconds. Default to 60.
   * `enable_http2` -  Whether to enable https listener support http2 or not. Valid values are `on` and `off`. Default to `on`.
   * `tls_cipher_policy` - Https listener TLS cipher policy. Valid values are `tls_cipher_policy_1_0`, `tls_cipher_policy_1_1`, `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`. Default to `tls_cipher_policy_1_0`.
+  * `description` - The description of slb listener.
