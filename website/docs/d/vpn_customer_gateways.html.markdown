@@ -16,7 +16,7 @@ The VPN customers gateways data source lists a number of VPN customer gateways r
 ```
 data "alicloud_vpn_customer_gateways" "foo" {
   name_regex          = "testAcc*"
-  customer_gateway_id = "fake-id*"
+  ids                 = ["fake-id1", "fake-id2"] 
   output_file         = "/tmp/cgws"
 }
 

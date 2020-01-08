@@ -86,7 +86,7 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 							Computed: true,
 						},
 						"create_time": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"effect_immediately": {
@@ -270,7 +270,7 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 			"name":                conn.Name,
 			"local_subnet":        conn.LocalSubnet,
 			"remote_subnet":       conn.RemoteSubnet,
-			"create_time":         conn.CreateTime,
+			"create_time":         TimestampToStr(conn.CreateTime),
 			"effect_immediately":  conn.EffectImmediately,
 			"status":              conn.Status,
 			"ike_config":          vpnGatewayService.ParseIkeConfig(conn.IkeConfig),

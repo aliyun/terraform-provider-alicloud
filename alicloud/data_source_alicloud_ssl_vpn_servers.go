@@ -74,7 +74,7 @@ func dataSourceAlicloudSslVpnServers() *schema.Resource {
 							Computed: true,
 						},
 						"create_time": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"cipher": {
@@ -194,7 +194,7 @@ func sslVpnServersDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc
 			"local_subnet":    vpn.LocalSubnet,
 			"name":            vpn.Name,
 			"client_ip_pool":  vpn.ClientIpPool,
-			"create_time":     vpn.CreateTime,
+			"create_time":     TimestampToStr(vpn.CreateTime),
 			"cipher":          vpn.Cipher,
 			"proto":           vpn.Proto,
 			"port":            vpn.Port,

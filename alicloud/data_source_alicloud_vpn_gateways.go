@@ -82,11 +82,11 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 							Computed: true,
 						},
 						"create_time": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"end_time": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"specification": {
@@ -242,8 +242,8 @@ func vpnsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc.VpnGatew
 			"id":                   vpn.VpnGatewayId,
 			"vpc_id":               vpn.VpcId,
 			"internet_ip":          vpn.InternetIp,
-			"create_time":          vpn.CreateTime,
-			"end_time":             vpn.EndTime,
+			"create_time":          TimestampToStr(vpn.CreateTime),
+			"end_time":             TimestampToStr(vpn.EndTime),
 			"specification":        vpn.Spec,
 			"name":                 vpn.Name,
 			"description":          vpn.Description,

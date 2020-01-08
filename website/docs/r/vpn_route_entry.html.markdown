@@ -88,5 +88,5 @@ The following attributes are exported:
 VPN route entry can be imported using the id(VpnGatewayId +":"+ NextHop +":"+ RouteDest), e.g.
 
 ```
-$ terraform import alicloud_vpn_gateway.example vpn-abc123456:vco-abc123456:10.0.0.10/24
+$ terraform import alicloud_vpn_route_entry.example vpn-abc123456:vco-abc123456:10.0.0.10/24
 ```
