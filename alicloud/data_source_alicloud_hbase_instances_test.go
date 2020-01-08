@@ -15,7 +15,6 @@ var existMapFunc = func(rand int) map[string]string {
 		"instances.0.name":      CHECKSET,
 		"instances.0.region_id": CHECKSET,
 		"instances.0.zone_id":   CHECKSET,
-		"instances.0.engine":    "hbase",
 		"instances.0.status":    CHECKSET,
 		"ids.#":                 "1",
 		"ids.0":                 CHECKSET,
@@ -86,17 +85,22 @@ data "alicloud_zones" "default" {
   available_resource_creation = "HBase"
 }
 
+data "alicloud_vswitches" "default" {
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
+}
+
 resource "alicloud_hbase_instance" "default" {
   name = var.name
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "2.0"
   master_instance_type = "hbase.n1.medium"
   core_instance_type = "hbase.n1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
   pay_type = "PostPaid"
-  duration = 0
+  duration = 1
   auto_renew = "false"
-  vswitch_id = "vsw-wz9iqvmkdua0svi31ox61"
+  vswitch_id = "${data.alicloud_vswitches.default.vswitches.0.id}"
   cold_storage_size = 0
 }
 

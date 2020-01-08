@@ -129,7 +129,8 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 
    Note: From 1.63.0, the tag key and value are case sensitive. Before that, they are not case sensitive.
 
-* `security_group_id` - (Optional) Input the ECS Security Group ID to join ECS Security Group. Only support mysql 5.5, mysql 5.6
+* `security_group_id` - (Deprecated) It has been deprecated from 1.69.0 and use `security_group_ids` instead.
+* `security_group_ids` - (Optional, List(string), Available in 1.69.0+) The list IDs to join ECS Security Group. At most supports three security groups.
 * `maintain_time` - (Optional, Available in 1.56.0+) Maintainable time period format of the instance: HH:MMZ-HH:MMZ (UTC time)
 * `auto_upgrade_minor_version` - (Optional, Available in 1.62.1+) The upgrade method to use. Valid values:
    - Auto: Instances are automatically upgraded to a higher minor version.
