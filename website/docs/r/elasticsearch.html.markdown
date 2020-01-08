@@ -38,7 +38,7 @@ resource "alicloud_elasticsearch_instance" "instance" {
 The following arguments are supported:
 
 * `description` - (Optional) The description of instance. It a string of 0 to 30 characters.
-* `instance_charge_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
+* `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`. From version 1.69.0, the Elasticsearch cluster allows you to update your instance_charge_ype from `PostPaid` to `PrePaid`, the following attributes are required: `period`. But, updating from `PostPaid` to `PrePaid` is not supported.
 * `period` - (Optional) The duration that you will buy Elasticsearch instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
 * `data_node_amount` - (Required) The Elasticsearch cluster's data node quantity, between 2 and 50.
 * `data_node_spec` - (Required) The data node specifications of the Elasticsearch instance.
