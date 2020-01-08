@@ -68,7 +68,11 @@ func dataSourceAlicloudInstances() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-
+			"ram_role_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"tags": tagsSchema(),
 
 			"output_file": {
@@ -167,6 +171,10 @@ func dataSourceAlicloudInstances() *schema.Resource {
 						},
 						"internet_max_bandwidth_out": {
 							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"ram_role_name": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"spot_strategy": {
@@ -290,16 +298,60 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 	} else {
 		filteredInstancesTemp = allInstances
 	}
+	// Filter by ram role name and fetch the instance role name
+	instanceIds := make([]string, 0)
+	for _, inst := range filteredInstancesTemp {
+		instanceIds = append(instanceIds, inst.InstanceId)
+	}
+	instanceRoleNameMap := make(map[string]string)
+	for index := 0; index < len(instanceIds); index += 100 {
+		// DescribeInstanceRamRole parameter InstanceIds supports at most 100 items once
+		request := ecs.CreateDescribeInstanceRamRoleRequest()
+		request.InstanceIds = convertListToJsonString(convertListStringToListInterface(instanceIds[index:IntMin(index+100, len(instanceIds))]))
+		request.RamRoleName = d.Get("ram_role_name").(string)
+		request.PageSize = requests.NewInteger(PageSizeLarge)
+		request.PageNumber = requests.NewInteger(1)
+		for {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeInstanceRamRole(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			response, _ := raw.(*ecs.DescribeInstanceRamRoleResponse)
+			if len(response.InstanceRamRoleSets.InstanceRamRoleSet) < 1 {
+				break
+			}
+			for _, role := range response.InstanceRamRoleSets.InstanceRamRoleSet {
+				instanceRoleNameMap[role.InstanceId] = role.RamRoleName
+			}
 
-	return instancessDescriptionAttributes(d, filteredInstancesTemp, meta)
+			if len(response.InstanceRamRoleSets.InstanceRamRoleSet) < PageSizeLarge {
+				break
+			}
+
+			if page, err := getNextpageNumber(request.PageNumber); err != nil {
+				return WrapError(err)
+			} else {
+				request.PageNumber = page
+			}
+		}
+	}
+
+	return instancessDescriptionAttributes(d, filteredInstancesTemp, instanceRoleNameMap, meta)
 }
 
 // populate the numerous fields that the instance description returns.
-func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Instance, meta interface{}) error {
+func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Instance, instanceRoleNameMap map[string]string, meta interface{}) error {
 	var ids []string
 	var names []string
 	var s []map[string]interface{}
 	for _, inst := range instances {
+		// if instance can not in instanceRoleNameMap, it should be removed.
+		if _, ok := instanceRoleNameMap[inst.InstanceId]; !ok {
+			continue
+		}
 		mapping := map[string]interface{}{
 			"id":                         inst.InstanceId,
 			"region_id":                  inst.RegionId,
@@ -315,6 +367,7 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 			"resource_group_id":          inst.ResourceGroupId,
 			"eip":                        inst.EipAddress.IpAddress,
 			"key_name":                   inst.KeyPairName,
+			"ram_role_name":              instanceRoleNameMap[inst.InstanceId],
 			"spot_strategy":              inst.SpotStrategy,
 			"creation_time":              inst.CreationTime,
 			"instance_charge_type":       inst.InstanceChargeType,

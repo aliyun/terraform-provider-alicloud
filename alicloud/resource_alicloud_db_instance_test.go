@@ -233,7 +233,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_group_id": "${alicloud_security_group.default.id}",
+					"security_group_ids": "${alicloud_security_group.default.*.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

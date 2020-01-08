@@ -192,7 +192,7 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 	var vpcConfigs []map[string]interface{}
 	if vpcConfig := object.VPCConfig; vpcConfig != nil && *vpcConfig.VPCID != "" {
 		vpcConfigs = append(vpcConfigs, map[string]interface{}{
-			"vswitch_ids":       schema.NewSet(schema.HashString, flattenStringList(vpcConfig.VSwitchIDs)),
+			"vswitch_ids":       schema.NewSet(schema.HashString, convertListStringToListInterface(vpcConfig.VSwitchIDs)),
 			"security_group_id": *vpcConfig.SecurityGroupID,
 			"vpc_id":            *vpcConfig.VPCID,
 		})

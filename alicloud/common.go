@@ -293,7 +293,7 @@ func expandStringList(configured []interface{}) []string {
 
 // Takes list of string to strings. Expand to an array
 // of raw strings and returns a []interface{}
-func flattenStringList(list []string) []interface{} {
+func convertListStringToListInterface(list []string) []interface{} {
 	vs := make([]interface{}, 0, len(list))
 	for _, v := range list {
 		vs = append(vs, v)
@@ -357,6 +357,13 @@ func BoolPointer(b bool) *bool {
 
 func Int32Pointer(i int32) *int32 {
 	return &i
+}
+
+func IntMin(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
 }
 
 const ServerSideEncryptionAes256 = "AES256"

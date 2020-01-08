@@ -82,6 +82,15 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 		}),
 	}
 
+	ramRoleNameConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"ram_role_name": `"${alicloud_instance.default.role_name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
+			"ram_role_name": `"${alicloud_instance.default.role_name}_fake"`,
+		}),
+	}
+
 	resourceGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
 			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
@@ -166,7 +175,7 @@ func TestAccAlicloudInstancesDataSourceBasic(t *testing.T) {
 	}
 
 	instancesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, imageIdConf, statusConf,
-		vpcIdConf, vSwitchConf, availabilityZoneConf, resourceGroupIdConf, tagsConf, allConf)
+		vpcIdConf, vSwitchConf, availabilityZoneConf, ramRoleNameConf, resourceGroupIdConf, tagsConf, allConf)
 }
 
 func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -196,6 +205,7 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 		system_disk_category = "cloud_efficiency"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		resource_group_id = "${var.resource_group_id}"
+		role_name = "${alicloud_ram_role.default.name}"
         tags = {
 			from = "datasource"
 			usage1 = "test"
@@ -206,6 +216,28 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 			usage6 = "test"
 
 		}
+	}
+	
+	resource "alicloud_ram_role" "default" {
+	  name = "${var.name}"
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
+	  description = "this is a test"
+	  force = true
 	}
 
 	data "alicloud_instances" "default" {
