@@ -1524,7 +1524,7 @@ func resourceInstanceTypeConfigDependence(name string) string {
 	  available_resource_creation = "VSwitch"
 	}
 	data "alicloud_images" "default" {
-	  name_regex  = "^ubuntu_18.*_64"
+	  name_regex  = "^ubuntu_18.*64"
 	  most_recent = true
 	  owners      = "system"
 	}

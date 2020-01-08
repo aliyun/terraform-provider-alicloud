@@ -699,7 +699,7 @@ data "alicloud_instance_types" "default" {
   memory_size       = 2
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*_64"
+  name_regex  = "^ubuntu_18.*64"
   most_recent = true
   owners      = "system"
 }
@@ -738,7 +738,7 @@ data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*_64"
+  name_regex  = "^ubuntu_18.*64"
   most_recent = true
   owners      = "system"
 }
@@ -1155,7 +1155,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_images" "default" {
-  name_regex = "^ubuntu_18.*_64"
+  name_regex = "^ubuntu_18.*64"
   most_recent = true
   owners = "system"
 }
