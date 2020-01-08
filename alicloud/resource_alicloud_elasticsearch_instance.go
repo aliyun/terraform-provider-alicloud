@@ -72,7 +72,6 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
-				ForceNew:     true,
 				Default:      PostPaid,
 				Optional:     true,
 			},
@@ -179,11 +178,9 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 	}
 
 	// retry
-	var raw interface{}
-
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{ESTokenPreviousRequestProcessError}
-	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.CreateInstance(request)
 	})
 
@@ -262,6 +259,14 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("description")
 	}
 
+	if !d.IsNewResource() && d.HasChange("instance_charge_type") {
+		if err := updateInstanceChargeType(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("instance_charge_type")
+	}
+
 	if d.HasChange("private_whitelist") {
 		if err := updatePrivateWhitelist(d, meta); err != nil {
 			return WrapError(err)
@@ -297,7 +302,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		if err := updateDateNodeAmount(d, meta); err != nil {
+		if err := updateDataNodeAmount(d, meta); err != nil {
 			return WrapError(err)
 		}
 
@@ -364,12 +369,9 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	request.SetContentType("application/json")
 
 	// retry
-	var raw interface{}
-	var err error
-
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{InstanceActivating}
-	raw, err = elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	errorCodeList := []string{InstanceActivating, ESTokenPreviousRequestProcessError}
+	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.DeleteInstance(request)
 	})
 
@@ -407,10 +409,10 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 		paymentInfo := make(map[string]interface{})
 		if d.Get("period").(int) >= 12 {
 			paymentInfo["duration"] = d.Get("period").(int) / 12
-			paymentInfo["pricingCycle"] = strings.ToLower(string(Year))
+			paymentInfo["pricingCycle"] = string(Year)
 		} else {
 			paymentInfo["duration"] = d.Get("period").(int)
-			paymentInfo["pricingCycle"] = strings.ToLower(string(Month))
+			paymentInfo["pricingCycle"] = string(Month)
 		}
 
 		content["paymentInfo"] = paymentInfo
