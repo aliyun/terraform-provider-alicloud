@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"log"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -338,12 +337,16 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 			}
 		}
 	}
+	instanceDiskMappings, err := getInstanceDisksMappings(instanceRoleNameMap, meta)
+	if err != nil {
+		return WrapError(err)
+	}
 
-	return instancessDescriptionAttributes(d, filteredInstancesTemp, instanceRoleNameMap, meta)
+	return instancessDescriptionAttributes(d, filteredInstancesTemp, instanceRoleNameMap, instanceDiskMappings)
 }
 
 // populate the numerous fields that the instance description returns.
-func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Instance, instanceRoleNameMap map[string]string, meta interface{}) error {
+func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Instance, instanceRoleNameMap map[string]string, instanceDisksMap map[string][]map[string]interface{}) error {
 	var ids []string
 	var names []string
 	var s []map[string]interface{}
@@ -374,7 +377,7 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 			"internet_charge_type":       inst.InternetChargeType,
 			"internet_max_bandwidth_out": inst.InternetMaxBandwidthOut,
 			// Complex types get their own functions
-			"disk_device_mappings": instanceDisksMappings(d, inst.InstanceId, meta),
+			"disk_device_mappings": instanceDisksMap[inst.InstanceId],
 			"tags":                 tagsToMap(inst.Tags.Tag),
 		}
 		if len(inst.InnerIpAddress.IpAddress) > 0 {
@@ -408,38 +411,51 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 }
 
 //Returns a mapping of instance disks
-func instanceDisksMappings(d *schema.ResourceData, instanceId string, meta interface{}) []map[string]interface{} {
+func getInstanceDisksMappings(instanceMap map[string]string, meta interface{}) (map[string][]map[string]interface{}, error) {
 	client := meta.(*connectivity.AliyunClient)
 	request := ecs.CreateDescribeDisksRequest()
-	request.InstanceId = instanceId
+	request.PageSize = requests.NewInteger(PageSizeXLarge)
+	request.PageNumber = requests.NewInteger(1)
+	instanceDisks := make(map[string][]map[string]interface{})
+	var allDisks []ecs.Disk
+	for {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeDisks(request)
+		})
+		if err != nil {
+			return instanceDisks, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*ecs.DescribeDisksResponse)
 
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeDisks(request)
-	})
-
-	if err != nil {
-		log.Printf("[ERROR] DescribeDisks for instance got error: %#v", err)
-		return nil
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ecs.DescribeDisksResponse)
-	if len(response.Disks.Disk) < 1 {
-		return nil
-	}
-
-	var s []map[string]interface{}
-
-	for _, v := range response.Disks.Disk {
-		mapping := map[string]interface{}{
-			"device":   v.Device,
-			"size":     v.Size,
-			"category": v.Category,
-			"type":     v.Type,
+		if response == nil || len(response.Disks.Disk) < 1 {
+			break
 		}
 
-		log.Printf("[DEBUG] alicloud_instances - adding disk device mapping: %v", mapping)
-		s = append(s, mapping)
+		allDisks = append(allDisks, response.Disks.Disk...)
+
+		if len(response.Disks.Disk) < PageSizeXLarge {
+			break
+		}
+
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
+			return instanceDisks, WrapError(err)
+		}
+		request.PageNumber = page
+	}
+	for _, disk := range allDisks {
+		if _, ok := instanceMap[disk.InstanceId]; !ok {
+			continue
+		}
+		mapping := map[string]interface{}{
+			"device":   disk.Device,
+			"size":     disk.Size,
+			"category": disk.Category,
+			"type":     disk.Type,
+		}
+		instanceDisks[disk.InstanceId] = append(instanceDisks[disk.InstanceId], mapping)
 	}
 
-	return s
+	return instanceDisks, nil
 }
