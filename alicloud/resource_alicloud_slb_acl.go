@@ -5,7 +5,10 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -170,14 +173,25 @@ func resourceAlicloudSlbAclDelete(d *schema.ResourceData, meta interface{}) erro
 	request := slb.CreateDeleteAccessControlListRequest()
 	request.RegionId = client.RegionId
 	request.AclId = d.Id()
-	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DeleteAccessControlList(request)
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteAccessControlList(request)
+		})
+		if err != nil {
+			if IsExceptedErrors(err, []string{"AclInUsed"}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		if !IsExceptedError(err, SlbAclNotExists) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return WrapError(slbService.WaitForSlbAcl(d.Id(), Deleted, DefaultTimeoutMedium))
 }

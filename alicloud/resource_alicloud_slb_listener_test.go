@@ -67,6 +67,7 @@ func TestAccAlicloudSlbListener_http_basic(t *testing.T) {
 					"acl_id":          "${alicloud_slb_acl.default.id}",
 					"request_timeout": "80",
 					"idle_timeout":    "30",
+					"description":     name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -98,6 +99,7 @@ func TestAccAlicloudSlbListener_http_basic(t *testing.T) {
 						"gzip":                                "true",
 						"idle_timeout":                        "30",
 						"request_timeout":                     "80",
+						"description":                         name,
 					}),
 				),
 			},
@@ -114,6 +116,16 @@ func TestAccAlicloudSlbListener_http_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"bandwidth": "15",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "update",
 					}),
 				),
 			},
@@ -428,6 +440,7 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 					"enable_http2":          "on",
 					"tls_cipher_policy":     "tls_cipher_policy_1_2",
 					"server_certificate_id": "${alicloud_slb_server_certificate.default.id}",
+					"description":           name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -457,6 +470,7 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 						"enable_http2":              "on",
 						"x_forwarded_for.#":         "1",
 						"tls_cipher_policy":         "tls_cipher_policy_1_2",
+						"description":               name,
 					}),
 				),
 			},
@@ -465,6 +479,16 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "update",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -654,6 +678,7 @@ func TestAccAlicloudSlbListener_tcp_basic(t *testing.T) {
 					"health_check_interval":     "5",
 					"health_check_http_code":    string(HTTP_2XX),
 					"established_timeout":       "600",
+					"description":               name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -677,6 +702,7 @@ func TestAccAlicloudSlbListener_tcp_basic(t *testing.T) {
 						"health_check_interval":     "5",
 						"health_check_http_code":    string(HTTP_2XX),
 						"established_timeout":       "600",
+						"description":               name,
 					}),
 				),
 			},
@@ -685,6 +711,16 @@ func TestAccAlicloudSlbListener_tcp_basic(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "update",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -917,6 +953,7 @@ func TestAccAlicloudSlbListener_udp_basic(t *testing.T) {
 					"acl_status":                "on",
 					"acl_type":                  string(AclTypeBlack),
 					"acl_id":                    "${alicloud_slb_acl.default.id}",
+					"description":               name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(
@@ -936,6 +973,7 @@ func TestAccAlicloudSlbListener_udp_basic(t *testing.T) {
 							"acl_status":                "on",
 							"acl_type":                  string(AclTypeBlack),
 							"acl_id":                    CHECKSET,
+							"description":               name,
 						}),
 				),
 			},
@@ -944,6 +982,16 @@ func TestAccAlicloudSlbListener_udp_basic(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "update",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

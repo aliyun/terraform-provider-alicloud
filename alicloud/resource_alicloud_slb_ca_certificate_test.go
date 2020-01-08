@@ -44,7 +44,7 @@ func testSweepSlbCACertificate(region string) error {
 
 	for _, caCertificate := range resp.CACertificates.CACertificate {
 		name := caCertificate.CACertificateName
-		id := caCertificate.CACertificateName
+		id := caCertificate.CACertificateId
 
 		skip := true
 		for _, prefix := range prefixes {
