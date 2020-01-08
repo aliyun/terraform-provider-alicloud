@@ -38,6 +38,10 @@ func resourceAliyunSnatEntry() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"eip_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"snat_entry_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -49,7 +53,11 @@ func resourceAliyunSnatEntry() *schema.Resource {
 func resourceAliyunSnatEntryCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-
+	if v := d.Get("eip_id").(string); v != ""{
+		if err := vpcService.WaitForEip(v, InUse, 60); err != nil {
+			return WrapError(err)
+		}
+	}
 	request := vpc.CreateCreateSnatEntryRequest()
 	request.RegionId = string(client.Region)
 	request.SnatTableId = d.Get("snat_table_id").(string)
