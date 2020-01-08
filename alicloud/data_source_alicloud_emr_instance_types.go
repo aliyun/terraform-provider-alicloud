@@ -30,6 +30,10 @@ func dataSourceAlicloudEmrInstanceTypes() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"support_local_storage": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -120,10 +124,17 @@ func emrClusterInstanceTypesAttributes(d *schema.ResourceData,
 	var zoneIDs []string
 	var s []map[string]interface{}
 
+	optZoneID := d.Get("zone_id").(string)
+
 	for k, v := range supportedResources {
-		// ignore empty zoneId or empty emr instance type of the specific zoneId
-		if k == "" || len(v) == 0 {
+
+		if k == "" || len(v) == 0 { // ignore empty zoneId or empty emr instance type of the specific zoneId
 			continue
+		} else if optZoneID != "" && k != optZoneID { // get supported resources of a specific zoneId
+			continue
+		} else if optZoneID != "" && k == optZoneID {
+			zoneIDs = append(zoneIDs, k)
+			break
 		}
 
 		zoneIDs = append(zoneIDs, k)

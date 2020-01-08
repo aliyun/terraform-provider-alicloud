@@ -40,6 +40,7 @@ The following arguments are supported:
 * `support_local_storage` - (Optional,Available in 1.61.0+) Whether the current storage disk is local or not.
 * `support_node_type` - (Optional,Available in 1.63.0+) The specific supported node type list. 
 Possible values may be any one or combination of these: ["MASTER", "CORE", "TASK", "GATEWAY"]
+* `zone_id` - (Optional,Available in 1.69.0+) The supported resources of specific zoneId.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
