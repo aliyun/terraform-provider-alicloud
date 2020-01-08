@@ -206,6 +206,18 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 		security_groups = ["${alicloud_security_group.default.id}"]
 		resource_group_id = "${var.resource_group_id}"
 		role_name = "${alicloud_ram_role.default.name}"
+		data_disks {
+				name  = "${var.name}-disk1"
+				size =        "20"
+				category =  "cloud_efficiency"
+				description = "disk1"
+		}
+		data_disks {
+				name  = "${var.name}-disk2"
+				size =        "20"
+				category =  "cloud_efficiency"
+				description = "disk2"
+		}
         tags = {
 			from = "datasource"
 			usage1 = "test"
@@ -273,6 +285,18 @@ func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[
 		system_disk_category = "cloud_efficiency"
 		security_groups = ["${alicloud_security_group.default.id}"]
 		resource_group_id = "${var.resource_group_id}"
+		data_disks {
+				name  = "${var.name}-disk1"
+				size =        "20"
+				category =  "cloud_efficiency"
+				description = "disk1"
+		}
+		data_disks {
+				name  = "${var.name}-disk2"
+				size =        "20"
+				category =  "cloud_efficiency"
+				description = "disk2"
+		}
         tags = {
 			from = "datasource"
 			usage1 = "test"
@@ -317,7 +341,7 @@ var existInstancesMapFunc = func(rand int) map[string]string {
 		"instances.0.instance_charge_type":       string(PostPaid),
 		"instances.0.internet_max_bandwidth_out": "0",
 		"instances.0.spot_strategy":              string(NoSpot),
-		"instances.0.disk_device_mappings.#":     "1",
+		"instances.0.disk_device_mappings.#":     "3",
 	}
 }
 
