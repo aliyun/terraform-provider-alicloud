@@ -241,6 +241,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_market_products":                   dataSourceAlicloudProducts(),
 			"alicloud_polardb_clusters":                  dataSourceAlicloudPolarDBClusters(),
 			"alicloud_polardb_endpoints":                 dataSourceAlicloudPolarDBEndpoints(),
+			"alicloud_polardb_accounts":                  dataSourceAlicloudPolarDBAccounts(),
+			"alicloud_polardb_databases":                 dataSourceAlicloudPolarDBDatabases(),
 			"alicloud_hbase_instances":                   dataSourceAlicloudHBaseInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{

@@ -121,7 +121,7 @@ func resourceAlicloudPolarDBAccountCreate(d *schema.ResourceData, meta interface
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_db_account", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_polardb_account", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", request.DBClusterId, COLON_SEPARATED, request.AccountName))
