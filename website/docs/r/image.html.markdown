@@ -48,10 +48,10 @@ The following arguments are supported:
 * `tags` - (Optional) The tag value of an image. The value of N ranges from 1 to 20.
 * `resource_group_id` - (Optional, ForceNew) The ID of the enterprise resource group to which a custom image belongs
 * `disk_device_mapping` - (Optional, ForceNew, Conflict with `snapshot_id ` and `instance_id `) Description of the system with disks and snapshots under the image.
-  * `device` - (Optional, ForceNew) Specifies the type of a disk in the combined custom image. If you specify this parameter, you can use a data disk snapshot as the data source of a system disk for creating an image. If it is not specified, the disk type is determined by the corresponding snapshot. Valid values: `system`, `data`,
+  * `disk_type` - (Optional, ForceNew) Specifies the type of a disk in the combined custom image. If you specify this parameter, you can use a data disk snapshot as the data source of a system disk for creating an image. If it is not specified, the disk type is determined by the corresponding snapshot. Valid values: `system`, `data`,
   * `size` - (Optional, ForceNew) Specifies the size of a disk in the combined custom image, in GiB. Value range: 5 to 2000.
   * `snapshot_id` - (Optional, ForceNew) Specifies a snapshot that is used to create a combined custom image.
-  * `disk_type` - (Optional, ForceNew)Snapshot ID.
+  * `device` - (Optional, ForceNew)Specifies the name of a disk in the combined custom image. Value range: /dev/xvda to /dev/xvdz.
 * `force` - (Optional) Indicates whether to force delete the custom image, Default is `false`. 
   - true：Force deletes the custom image, regardless of whether the image is currently being used by other instances.
   - false：Verifies that the image is not currently in use by any other instances before deleting the image.
