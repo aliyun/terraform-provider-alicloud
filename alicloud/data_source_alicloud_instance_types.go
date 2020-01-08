@@ -47,6 +47,16 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"gpu_amonut": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"gpu_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"instance_charge_type": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -231,6 +241,8 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 	cpu := d.Get("cpu_core_count").(int)
 	mem := d.Get("memory_size").(float64)
 	family := strings.TrimSpace(d.Get("instance_type_family").(string))
+	gpuAmount := d.Get("gpu_amount").(int)
+	gpuSpec := d.Get("gpu_spec").(string)
 
 	req := ecs.CreateDescribeInstanceTypesRequest()
 	req.InstanceTypeFamily = family
@@ -260,6 +272,12 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 				continue
 			}
 			if eniAmount > types.EniQuantity {
+				continue
+			}
+			if gpuAmount > 0 && types.GPUAmount != gpuAmount {
+				continue
+			}
+			if gpuSpec != "" && types.GPUSpec != gpuSpec {
 				continue
 			}
 			// Kubernetes node does not support instance types which family is "ecs.t5" and spec less that c2g4
