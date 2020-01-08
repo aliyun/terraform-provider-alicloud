@@ -1061,6 +1061,7 @@ data "alicloud_emr_instance_types" "cloud_disk" {
     cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
     instance_charge_type = "PostPaid"
     support_node_type = ["MASTER"]
+    zone_id = data.alicloud_emr_instance_types.local_disk.types.0.zone_id
 }
 
 data "alicloud_emr_disk_types" "data_disk" {
