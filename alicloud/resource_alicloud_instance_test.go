@@ -70,6 +70,7 @@ func testSweepInstances(region string) error {
 	}
 
 	sweeped := false
+	vpcService := VpcService{client}
 	for _, v := range insts {
 		name := v.InstanceName
 		id := v.InstanceId
@@ -79,6 +80,13 @@ func testSweepInstances(region string) error {
 				skip = false
 				break
 			}
+		}
+		// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+		if skip {
+			if need, err := vpcService.needSweepVpc(v.VpcAttributes.VpcId, v.VpcAttributes.VSwitchId); err == nil {
+				skip = !need
+			}
+
 		}
 		if skip {
 			log.Printf("[INFO] Skipping Instance: %s (%s)", name, id)
