@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 )
 
-func TestAccAlicloudSlbListenersDataSourceUpdate_http(t *testing.T) {
+func TestAccAlicloudSlbListenersDataSource_http(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfig(rand, map[string]string{
@@ -16,16 +16,29 @@ func TestAccAlicloudSlbListenersDataSourceUpdate_http(t *testing.T) {
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
+	descriptionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfig(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
-			"frontend_port":    `"80"`,
-			"protocol":         `"http"`,
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbListenersDataSourceConfig(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
-			"frontend_port":    `"81"`,
-			"protocol":         `"http"`,
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}-fake"`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfig(rand, map[string]string{
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"frontend_port":     `"80"`,
+			"protocol":          `"http"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudSlbListenersDataSourceConfig(rand, map[string]string{
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"frontend_port":     `"81"`,
+			"protocol":          `"http"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}"`,
 		}),
 	}
 
@@ -56,6 +69,7 @@ func TestAccAlicloudSlbListenersDataSourceUpdate_http(t *testing.T) {
 			"slb_listeners.0.x_forwarded_for_slb_proto": "off",
 			"slb_listeners.0.idle_timeout":              "30",
 			"slb_listeners.0.request_timeout":           "80",
+			"slb_listeners.0.description":               fmt.Sprintf("tf-testAccCheckAlicloudSlbListenersDataSourceHttp-%d", rand),
 		}
 	}
 
@@ -71,7 +85,7 @@ func TestAccAlicloudSlbListenersDataSourceUpdate_http(t *testing.T) {
 		fakeMapFunc:  fakeSlbRecordsMapFunc,
 	}
 
-	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, allConf)
+	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
 func TestAccAlicloudSlbListenersDataSource_https(t *testing.T) {
@@ -81,17 +95,28 @@ func TestAccAlicloudSlbListenersDataSource_https(t *testing.T) {
 			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
 		}),
 	}
-
-	allConf := dataSourceTestAccConfig{
+	descriptionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigHttps(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
-			"frontend_port":    `"80"`,
-			"protocol":         `"https"`,
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbListenersDataSourceConfigHttps(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
-			"frontend_port":    `"81"`,
-			"protocol":         `"https"`,
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}-fake"`,
+		}),
+	}
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigHttps(rand, map[string]string{
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"frontend_port":     `"80"`,
+			"protocol":          `"https"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudSlbListenersDataSourceConfigHttps(rand, map[string]string{
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"frontend_port":     `"81"`,
+			"protocol":          `"https"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}"`,
 		}),
 	}
 
@@ -122,6 +147,7 @@ func TestAccAlicloudSlbListenersDataSource_https(t *testing.T) {
 			"slb_listeners.0.x_forwarded_for_slb_proto": "off",
 			"slb_listeners.0.idle_timeout":              "30",
 			"slb_listeners.0.request_timeout":           "80",
+			"slb_listeners.0.description":               fmt.Sprintf("tf-testAccCheckAlicloudSlbListenersDataSourceHttps-%d", rand),
 		}
 	}
 
@@ -137,7 +163,7 @@ func TestAccAlicloudSlbListenersDataSource_https(t *testing.T) {
 		fakeMapFunc:  fakeSlbRecordsMapFunc,
 	}
 
-	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, allConf)
+	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
 func TestAccAlicloudSlbListenersDataSource_tcp(t *testing.T) {
@@ -147,17 +173,29 @@ func TestAccAlicloudSlbListenersDataSource_tcp(t *testing.T) {
 			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
 		}),
 	}
+	descriptionConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigTcp(rand, map[string]string{
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudSlbListenersDataSourceConfigTcp(rand, map[string]string{
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}-fake"`,
+		}),
+	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigTcp(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
-			"frontend_port":    `"22"`,
-			"protocol":         `"tcp"`,
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"frontend_port":     `"22"`,
+			"protocol":          `"tcp"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbListenersDataSourceConfigTcp(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
-			"frontend_port":    `"21"`,
-			"protocol":         `"tcp"`,
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"frontend_port":     `"21"`,
+			"protocol":          `"tcp"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}"`,
 		}),
 	}
 
@@ -179,6 +217,7 @@ func TestAccAlicloudSlbListenersDataSource_tcp(t *testing.T) {
 			"slb_listeners.0.unhealthy_threshold":       "8",
 			"slb_listeners.0.health_check_timeout":      "0",
 			"slb_listeners.0.health_check_interval":     "5",
+			"slb_listeners.0.description":               fmt.Sprintf("tf-testAccCheckAlicloudSlbListenersDataSourceTcp-%d", rand),
 		}
 	}
 
@@ -194,7 +233,7 @@ func TestAccAlicloudSlbListenersDataSource_tcp(t *testing.T) {
 		fakeMapFunc:  fakeDnsRecordsMapFunc,
 	}
 
-	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, allConf)
+	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
 func TestAccAlicloudSlbListenersDataSource_udp(t *testing.T) {
@@ -204,17 +243,28 @@ func TestAccAlicloudSlbListenersDataSource_udp(t *testing.T) {
 			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
 		}),
 	}
-
-	allConf := dataSourceTestAccConfig{
+	descriptionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigUdp(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
-			"frontend_port":    `"11"`,
-			"protocol":         `"udp"`,
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudSlbListenersDataSourceConfigUdp(rand, map[string]string{
-			"load_balancer_id": `"${alicloud_slb_listener.default.load_balancer_id}"`,
-			"frontend_port":    `"21"`,
-			"protocol":         `"udp"`,
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}-fake"`,
+		}),
+	}
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigUdp(rand, map[string]string{
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"frontend_port":     `"11"`,
+			"protocol":          `"udp"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudSlbListenersDataSourceConfigUdp(rand, map[string]string{
+			"load_balancer_id":  `"${alicloud_slb_listener.default.load_balancer_id}"`,
+			"frontend_port":     `"21"`,
+			"protocol":          `"udp"`,
+			"description_regex": `"${alicloud_slb_listener.default.description}"`,
 		}),
 	}
 
@@ -234,6 +284,7 @@ func TestAccAlicloudSlbListenersDataSource_udp(t *testing.T) {
 			"slb_listeners.0.unhealthy_threshold":          "8",
 			"slb_listeners.0.health_check_timeout":         "0",
 			"slb_listeners.0.health_check_interval":        "5",
+			"slb_listeners.0.description":                  fmt.Sprintf("tf-testAccCheckAlicloudSlbListenersDataSourceUdp-%d", rand),
 		}
 	}
 
@@ -249,7 +300,7 @@ func TestAccAlicloudSlbListenersDataSource_udp(t *testing.T) {
 		fakeMapFunc:  fakeDnsRecordsMapFunc,
 	}
 
-	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, allConf)
+	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
 func testAccCheckAlicloudSlbListenersDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -308,6 +359,7 @@ resource "alicloud_slb_listener" "default" {
   }
   request_timeout           = 80
   idle_timeout              = 30
+  description = "${var.name}"
 }
 
 data "alicloud_slb_listeners" "default" {
@@ -365,6 +417,7 @@ resource "alicloud_slb_listener" "default" {
   idle_timeout              = 30
   enable_http2              = "on"
   tls_cipher_policy         = "tls_cipher_policy_1_2"
+  description = "${var.name}"
 }
 
 variable "ip_version" {
@@ -439,6 +492,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   health_check_type = "tcp"
   bandwidth = 10
+  description = "${var.name}"
 }
 
 data "alicloud_slb_listeners" "default" {
@@ -491,6 +545,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_timeout = 8
   health_check_interval = 5
   bandwidth = 10
+  description = "${var.name}"
 }
 
 data "alicloud_slb_listeners" "default" {

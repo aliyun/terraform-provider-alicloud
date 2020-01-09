@@ -32,7 +32,10 @@ func resourceAliyunSlbListener() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"frontend_port": {
 				Type:         schema.TypeInt,
 				ValidateFunc: validation.IntBetween(1, 65535),
@@ -492,6 +495,9 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 	commonRequest.ApiName = fmt.Sprintf("SetLoadBalancer%sListenerAttribute", strings.ToUpper(string(protocol)))
 
 	update := false
+	if d.HasChange("description") {
+		update = true
+	}
 	if d.HasChange("scheduler") {
 		commonRequest.QueryParams["Scheduler"] = d.Get("scheduler").(string)
 		update = true
@@ -816,6 +822,10 @@ func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) (*request
 	if aclId, ok := d.GetOk("acl_id"); ok && aclId.(string) != "" {
 		request.QueryParams["AclId"] = aclId.(string)
 	}
+	// description
+	if description, ok := d.GetOk("description"); ok && description.(string) != "" {
+		request.QueryParams["Description"] = description.(string)
+	}
 
 	return request, nil
 
@@ -1057,6 +1067,9 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 
 	if len(xff) > 0 {
 		d.Set("x_forwarded_for", []map[string]interface{}{xff})
+	}
+	if val, ok := listener["Description"]; ok {
+		d.Set("description", val.(string))
 	}
 
 	return
