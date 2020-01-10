@@ -10,6 +10,8 @@ import (
 	"log"
 	"time"
 
+	"strconv"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
@@ -29,6 +31,7 @@ const (
 	CHECKSET   = "#CHECKSET"    // "TestCheckResourceAttrSet"
 	REMOVEKEY  = "#REMOVEKEY"   // remove checkMap key
 	REGEXMATCH = "#REGEXMATCH:" // "TestMatchResourceAttr" ,the map name/key like `"attribute" : REGEXMATCH + "attributeString"`
+	ForceSleep = "force_sleep"
 )
 
 const (
@@ -246,6 +249,13 @@ func (rac *resourceAttrCheck) resourceAttrMapUpdateSet() resourceAttrMapUpdate {
 
 // make a new map and copy from the old field checkMap, then update it according to the changeMap
 func (ra *resourceAttr) updateCheckMapPair(changeMap map[string]string) {
+	if interval, ok := changeMap[ForceSleep]; ok {
+		intervalInt, err := strconv.Atoi(interval)
+		if err == nil {
+			time.Sleep(time.Duration(intervalInt) * time.Second)
+			delete(changeMap, ForceSleep)
+		}
+	}
 	newCheckMap := make(map[string]string, len(ra.checkMap))
 	for k, v := range ra.checkMap {
 		newCheckMap[k] = v
