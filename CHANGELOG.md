@@ -1,4 +1,30 @@
 ## 1.69.0 (Unreleased)
+
+- **New Resource:** `alicloud_image_import` [GH-2051]
+
+IMPROVEMENTS:
+
+- improve(emr): improve sweeper test for emr [GH-2078]
+- improve(elasticsearch): resource elasticsearch_instance support update for instance_charge_type [GH-2073]
+- feat(market): added market product datasource [GH-2070]
+- improve(instance_types): support gpu amount and gpu spec [GH-2069]
+- modify(market): modify the attributes of market products datasource [GH-2068]
+- improve(listener): supports description [GH-2067]
+- improve(testcase): change test image name_regex [GH-2066]
+- improve(instances): improve its efficiency when fetching its disk mappings [GH-2062]
+- improve(image): correct docs [GH-2061]
+- improve(instances): supports ram_role_name [GH-2060]
+- improve(db_instance): support security_group_ids [GH-2056]
+- improve(api): added app_code in attribute apps [GH-2055]
+- improve(rds): feature rds backup policy improve the functions [GH-2042]
+
+BUG FIXES:
+
+- fix(polardb): fix polardb add parameters bug [GH-2083]
+- fix(ecs): fix the bug of ecs instance not supported [GH-2063]
+- fix(image): fix image disk mapping size bug [GH-2052]
+
+
 ## 1.68.0 (January 06, 2020)
 
 - **New Resource:** `alicloud_export_image` ([#2036](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2036))
