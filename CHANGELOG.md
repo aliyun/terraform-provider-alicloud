@@ -6,6 +6,7 @@
 
 IMPROVEMENTS:
 
+- improve(hbase): expose the hbase docs [GH-2087]
 - improve(pvtz): supports proxy_pattern, user_client_ip and lang [GH-2086]
 - improve(test): support force sleep while running testcase [GH-2081]
 - improve(emr): improve sweeper test for emr [GH-2078]
@@ -55,8 +56,11 @@ BUG FIXES:
 
 ## 1.67.0 (December 27, 2019)
 
+- **New Resource:** `alicloud_hbase_instance` ([#2012](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2012))
 - **New Resource:** `alicloud_polardb_account_privilege` ([#2005](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2005))
 - **New Resource:** `alicloud_polardb_account` ([#1998](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1998))
+- **Data Source:** `alicloud_hbase_instances` ([#2012](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2012))
+
 
 IMPROVEMENTS:
 
