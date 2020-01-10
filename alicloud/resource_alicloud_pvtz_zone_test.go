@@ -143,14 +143,18 @@ func TestAccAlicloudPvtzZone_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": name,
+						"name":           name,
+						"proxy_pattern":  "ZONE",
+						"user_client_ip": NOSET,
+						"lang":           NOSET,
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"user_client_ip", "lang"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -174,11 +178,61 @@ func TestAccAlicloudPvtzZone_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"remark": REMOVEKEY,
+					"proxy_pattern": "ZONE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"remark": REMOVEKEY,
+						"proxy_pattern": "ZONE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"lang": "en",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"lang": "en",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_client_ip": "172.10.1.0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_client_ip": "172.10.1.0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"proxy_pattern":  "RECORD",
+					"lang":           "zh",
+					"user_client_ip": "172.10.2.0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"proxy_pattern":  "RECORD",
+						"lang":           "zh",
+						"user_client_ip": "172.10.2.0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"remark":         REMOVEKEY,
+					"proxy_pattern":  "ZONE",
+					"lang":           "jp",
+					"user_client_ip": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"remark":         REMOVEKEY,
+						"proxy_pattern":  "ZONE",
+						"lang":           "jp",
+						"user_client_ip": REMOVEKEY,
 					}),
 				),
 			},

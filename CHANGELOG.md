@@ -1,12 +1,16 @@
 ## 1.69.0 (Unreleased)
 
+- **New Resource:** `alicloud_market_order` [GH-2084]
 - **New Resource:** `alicloud_image_import` [GH-2051]
+- **Data Source:** `alicloud_market_product` [GH-2070]
 
 IMPROVEMENTS:
 
+- improve(pvtz): supports proxy_pattern, user_client_ip and lang [GH-2086]
+- improve(test): support force sleep while running testcase [GH-2081]
 - improve(emr): improve sweeper test for emr [GH-2078]
+- improve(slb): update slb_server_certificate [GH-2077]
 - improve(elasticsearch): resource elasticsearch_instance support update for instance_charge_type [GH-2073]
-- feat(market): added market product datasource [GH-2070]
 - improve(instance_types): support gpu amount and gpu spec [GH-2069]
 - modify(market): modify the attributes of market products datasource [GH-2068]
 - improve(listener): supports description [GH-2067]

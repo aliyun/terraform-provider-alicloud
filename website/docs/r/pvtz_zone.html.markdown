@@ -28,6 +28,14 @@ The following arguments are supported:
 
 * `name` - (Optional, ForceNew) The name of the Private Zone.
 * `remark` - (Optional) The remark of the Private Zone.
+* `proxy_pattern - (Optional, Available in 1.69.0+) The recursive DNS proxy. Valid values:
+    - ZONE: indicates that the recursive DNS proxy is disabled.
+    - RECORD: indicates that the recursive DNS proxy is enabled.
+    
+    Default to "ZONE"
+
+* `user_client_ip - (Optional, Available in 1.69.0+) The IP address of the client.
+* `lang - (Optional, Available in 1.69.0+) The language. Valid values: "zh", "en", "jp".
 
 ## Attributes Reference
 
