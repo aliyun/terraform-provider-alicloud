@@ -161,7 +161,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 	d.Partial(true)
 
 	if d.HasChange("parameters") {
-		if err := polarDBService.ModifyParameters(d, d.Get("parameters").(string)); err != nil {
+		if err := polarDBService.ModifyParameters(d); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("parameters")
@@ -324,7 +324,7 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 		d.Set("renewal_status", clusterAutoRenew.RenewalStatus)
 	}
 
-	if err = polarDBService.RefreshParameters(d, "parameters"); err != nil {
+	if err = polarDBService.RefreshParameters(d); err != nil {
 		return WrapError(err)
 	}
 
