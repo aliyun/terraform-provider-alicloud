@@ -126,7 +126,10 @@ func TestAccAlicloudActionTrailUpdate(t *testing.T) {
 			{
 				Config: testActionTrailBasicConfig(num),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						// Waiting for several seconds avoid some needless error
+						ForceSleep: "100",
+					}),
 				),
 			},
 			{
