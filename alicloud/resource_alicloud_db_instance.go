@@ -58,6 +58,13 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Required: true,
 			},
 
+			"direction": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Up", "Down"}, false),
+				Optional:     true,
+				Default:      "Up",
+			},
+
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{string(Postpaid), string(Prepaid)}, false),
@@ -410,7 +417,8 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	request := rds.CreateModifyDBInstanceSpecRequest()
 	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
-	request.PayType = string(Postpaid)
+	request.PayType = d.Get("instance_charge_type").(string)
+	request.Direction = d.Get("direction").(string)
 
 	if d.HasChange("instance_type") {
 		request.DBInstanceClass = d.Get("instance_type").(string)
