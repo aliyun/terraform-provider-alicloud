@@ -26,6 +26,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix(ram_roles): getRole not found error [GH-2089]
 - fix(polardb): fix polardb add parameters bug [GH-2083]
 - fix(ecs): fix the bug of ecs instance not supported [GH-2063]
 - fix(image): fix image disk mapping size bug [GH-2052]
