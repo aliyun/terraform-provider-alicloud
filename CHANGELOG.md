@@ -6,6 +6,7 @@
 
 IMPROVEMENTS:
 
+- improve(api_gateway_group): add outputs sub_domain and vpc_domain [GH-2088]
 - improve(hbase): expose the hbase docs [GH-2087]
 - improve(pvtz): supports proxy_pattern, user_client_ip and lang [GH-2086]
 - improve(test): support force sleep while running testcase [GH-2081]
