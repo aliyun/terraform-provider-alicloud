@@ -29,6 +29,14 @@ func resourceAliyunApigatewayGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"sub_domain": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"vpc_domain": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -76,6 +84,8 @@ func resourceAliyunApigatewayGroupRead(d *schema.ResourceData, meta interface{})
 
 	d.Set("name", apiGroup.GroupName)
 	d.Set("description", apiGroup.Description)
+	d.Set("sub_domain", apiGroup.SubDomain)
+	d.Set("vpc_domain", apiGroup.VpcDomain)
 
 	return nil
 }
