@@ -556,11 +556,11 @@ func (s *PolarDBService) WaitForPolarDBConnectionPrefix(id, prefix string, timeo
 	return nil
 }
 
-func (s *PolarDBService) RefreshParameters(d *schema.ResourceData, attribute string) error {
+func (s *PolarDBService) RefreshParameters(d *schema.ResourceData) error {
 	var param []map[string]interface{}
-	documented, ok := d.GetOk(attribute)
+	documented, ok := d.GetOk("parameters")
 	if !ok {
-		d.Set(attribute, param)
+		d.Set("parameters", param)
 		return nil
 	}
 	object, err := s.DescribeParameters(d.Id())
@@ -588,18 +588,18 @@ func (s *PolarDBService) RefreshParameters(d *schema.ResourceData, attribute str
 			}
 		}
 	}
-	if err := d.Set(attribute, param); err != nil {
+	if err := d.Set("parameters", param); err != nil {
 		return WrapError(err)
 	}
 	return nil
 }
 
-func (s *PolarDBService) ModifyParameters(d *schema.ResourceData, attribute string) error {
+func (s *PolarDBService) ModifyParameters(d *schema.ResourceData) error {
 	request := polardb.CreateModifyDBClusterParametersRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = d.Id()
 	config := make(map[string]string)
-	documented := d.Get(attribute).(*schema.Set).List()
+	documented := d.Get("parameters").(*schema.Set).List()
 	if len(documented) > 0 {
 		for _, i := range documented {
 			key := i.(map[string]interface{})["name"].(string)
@@ -625,7 +625,7 @@ func (s *PolarDBService) ModifyParameters(d *schema.ResourceData, attribute stri
 			return WrapError(err)
 		}
 	}
-	d.SetPartial(attribute)
+	d.SetPartial("parameters")
 	return nil
 }
 

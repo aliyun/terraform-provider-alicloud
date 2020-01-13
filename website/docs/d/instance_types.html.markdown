@@ -41,6 +41,8 @@ The following arguments are supported:
 * `availability_zone` - (Optional) The zone where instance types are supported.
 * `cpu_core_count` - (Optional) Filter the results to a specific number of cpu cores.
 * `memory_size` - (Optional) Filter the results to a specific memory size in GB.
+* `gpu_amonut` - (Optional, Available in 1.69.0+) The GPU amount of an instance type.
+* `gpu_spec` - (Optional, Available in 1.69.0+) The GPU spec of an instance type.
 * `instance_type_family` - (Optional) Filter the results based on their family name. For example: 'ecs.n4'.
 * `instance_charge_type` - (Optional) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
 * `network_type` - (Optional) Filter the results by network type. Valid values: `Classic` and `Vpc`.

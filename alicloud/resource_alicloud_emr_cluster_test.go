@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"testing"
@@ -40,7 +41,7 @@ func testSweepEmrCluster(region string) error {
 	req.PageNumber = requests.Integer(strconv.Itoa(1))
 	req.PageSize = requests.Integer(strconv.Itoa(PageSizeMedium))
 	req.DefaultStatus = requests.Boolean(strconv.FormatBool(true))
-
+	vpcService := VpcService{client}
 	for {
 		raw, err := client.WithEmrClient(func(emrClient *emr.Client) (interface{}, error) {
 			return emrClient.ListClusters(req)
@@ -55,27 +56,36 @@ func testSweepEmrCluster(region string) error {
 			break
 		}
 		for _, v := range resp.Clusters.ClusterInfo {
-			flag := false
+			skip := true
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(v.ClusterId, prefix) {
-					flag = true
+					skip = false
 				}
 			}
-			if flag {
-				request := emr.CreateReleaseClusterRequest()
-				request.Id = v.ClusterId
-				request.ForceRelease = requests.NewBoolean(true)
-
-				raw, err := client.WithEmrClient(func(emrClient *emr.Client) (interface{}, error) {
-					return emrClient.ReleaseCluster(request)
-				})
-
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, v.ClusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+			if skip {
+				if need, err := vpcService.needSweepVpc(v.VpcId, v.VSwitchId); err == nil {
+					skip = !need
 				}
 
-				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			}
+			if skip {
+				log.Printf("[INFO] Skipping emr: %s (%s)", v.Name, v.ClusterId)
+				continue
+			}
+			request := emr.CreateReleaseClusterRequest()
+			request.Id = v.ClusterId
+			request.ForceRelease = requests.NewBoolean(true)
+
+			raw, err := client.WithEmrClient(func(emrClient *emr.Client) (interface{}, error) {
+				return emrClient.ReleaseCluster(request)
+			})
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, v.ClusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 		if page, err := getNextpageNumber(req.PageNumber); err != nil {

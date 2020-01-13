@@ -1,4 +1,37 @@
 ## 1.69.0 (Unreleased)
+
+- **New Resource:** `alicloud_market_order` [GH-2084]
+- **New Resource:** `alicloud_image_import` [GH-2051]
+- **Data Source:** `alicloud_market_product` [GH-2070]
+
+IMPROVEMENTS:
+
+- improve(api_gateway_group): add outputs sub_domain and vpc_domain [GH-2088]
+- improve(hbase): expose the hbase docs [GH-2087]
+- improve(pvtz): supports proxy_pattern, user_client_ip and lang [GH-2086]
+- improve(test): support force sleep while running testcase [GH-2081]
+- improve(emr): improve sweeper test for emr [GH-2078]
+- improve(slb): update slb_server_certificate [GH-2077]
+- improve(elasticsearch): resource elasticsearch_instance support update for instance_charge_type [GH-2073]
+- improve(instance_types): support gpu amount and gpu spec [GH-2069]
+- modify(market): modify the attributes of market products datasource [GH-2068]
+- improve(listener): supports description [GH-2067]
+- improve(testcase): change test image name_regex [GH-2066]
+- improve(instances): improve its efficiency when fetching its disk mappings [GH-2062]
+- improve(image): correct docs [GH-2061]
+- improve(instances): supports ram_role_name [GH-2060]
+- improve(db_instance): support security_group_ids [GH-2056]
+- improve(api): added app_code in attribute apps [GH-2055]
+- improve(rds): feature rds backup policy improve the functions [GH-2042]
+
+BUG FIXES:
+
+- fix(ram_roles): getRole not found error [GH-2089]
+- fix(polardb): fix polardb add parameters bug [GH-2083]
+- fix(ecs): fix the bug of ecs instance not supported [GH-2063]
+- fix(image): fix image disk mapping size bug [GH-2052]
+
+
 ## 1.68.0 (January 06, 2020)
 
 - **New Resource:** `alicloud_export_image` ([#2036](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2036))
@@ -25,8 +58,11 @@ BUG FIXES:
 
 ## 1.67.0 (December 27, 2019)
 
+- **New Resource:** `alicloud_hbase_instance` ([#2012](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2012))
 - **New Resource:** `alicloud_polardb_account_privilege` ([#2005](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2005))
 - **New Resource:** `alicloud_polardb_account` ([#1998](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1998))
+- **Data Source:** `alicloud_hbase_instances` ([#2012](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2012))
+
 
 IMPROVEMENTS:
 

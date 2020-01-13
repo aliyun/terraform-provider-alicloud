@@ -37,6 +37,11 @@ func resourceAlicloudSlbServerCertificate() *schema.Resource {
 				ForceNew:         true,
 				DiffSuppressFunc: slbServerCertificateDiffSuppressFunc,
 			},
+			"alicloud_certificate_region_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"alicloud_certifacte_id": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -86,6 +91,10 @@ func resourceAlicloudSlbServerCertificateCreate(d *schema.ResourceData, meta int
 
 	if val, ok := d.GetOk("private_key"); ok && val != "" {
 		request.PrivateKey = val.(string)
+	}
+
+	if val, ok := d.GetOk("alicloud_certificate_region_id"); ok && val != "" {
+		request.AliCloudCertificateRegionId = val.(string)
 	}
 
 	if val, ok := d.GetOk("alicloud_certificate_id"); ok && val != "" {

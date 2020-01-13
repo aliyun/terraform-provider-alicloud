@@ -181,6 +181,9 @@ func ramRolesDescriptionAttributes(d *schema.ResourceData, meta interface{}, rol
 			return ramClient.GetRole(request)
 		})
 		if err != nil {
+			if RamEntityNotExist(err) {
+				continue
+			}
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
