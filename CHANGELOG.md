@@ -1,4 +1,13 @@
-## 1.70.0 (Unreleased)
+## 1.69.1 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve(market): supported new field 'search_term' [GH-2090]
+
+BUG FIXES:
+
+- fix(instance_types): resolve a bug results from the filed spelling error [GH-2091]
+
 ## 1.69.0 (January 13, 2020)
 
 - **New Resource:** `alicloud_market_order` ([#2084](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2084))
