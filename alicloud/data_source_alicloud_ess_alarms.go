@@ -16,7 +16,11 @@ func dataSourceAlicloudEssAlarms() *schema.Resource {
 			"scaling_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 			"ids": {
 				Type:     schema.TypeList,
@@ -27,7 +31,6 @@ func dataSourceAlicloudEssAlarms() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"RegionId": {
 				Type:     schema.TypeString,
