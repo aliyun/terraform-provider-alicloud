@@ -47,7 +47,7 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"gpu_amonut": {
+			"gpu_amount": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
