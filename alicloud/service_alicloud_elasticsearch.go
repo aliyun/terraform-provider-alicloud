@@ -120,7 +120,6 @@ func updateDescription(d *schema.ResourceData, meta interface{}) error {
 
 func updateInstanceChargeType(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	elasticsearchService := ElasticsearchService{client}
 
 	content := make(map[string]interface{})
 	content["paymentType"] = strings.ToLower(d.Get("instance_charge_type").(string))
@@ -149,12 +148,49 @@ func updateInstanceChargeType(d *schema.ResourceData, meta interface{}) error {
 	request.SetContent(data)
 	request.SetContentType("application/json")
 
-	// retry
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
-	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstanceChargeType(request)
 	})
+
+	time.Sleep(10 * time.Second)
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	return nil
+}
+
+func renewInstance(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	content := make(map[string]interface{})
+	if d.Get("period").(int) >= 12 {
+		content["duration"] = d.Get("period").(int) / 12
+		content["pricingCycle"] = string(Year)
+	} else {
+		content["duration"] = d.Get("period").(int)
+		content["pricingCycle"] = string(Month)
+	}
+
+	data, err := json.Marshal(content)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	request := elasticsearch.CreateRenewInstanceRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
+	request.RegionId = client.RegionId
+	request.InstanceId = d.Id()
+	request.SetContent(data)
+	request.SetContentType("application/json")
+
+	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.RenewInstance(request)
+	})
+
+	time.Sleep(10 * time.Second)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
