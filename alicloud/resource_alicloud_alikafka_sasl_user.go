@@ -132,7 +132,6 @@ func resourceAlicloudAlikafkaSaslUserRead(d *schema.ResourceData, meta interface
 
 	d.Set("instance_id", parts[0])
 	d.Set("username", object.Username)
-	d.Set("password", object.Password)
 
 	return nil
 }
