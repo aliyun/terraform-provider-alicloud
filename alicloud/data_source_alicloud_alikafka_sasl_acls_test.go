@@ -84,7 +84,7 @@ func dataSourceAlikafkaSaslAclsConfigDependence(name string) string {
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
-          name = "tf-testacc-alikafkainstance"
+          name = "${var.name}"
 		  topic_quota = "50"
 		  disk_type = "1"
 		  disk_size = "500"
