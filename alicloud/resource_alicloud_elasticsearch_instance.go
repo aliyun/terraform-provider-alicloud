@@ -259,14 +259,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("description")
 	}
 
-	if !d.IsNewResource() && d.HasChange("instance_charge_type") {
-		if err := updateInstanceChargeType(d, meta); err != nil {
-			return WrapError(err)
-		}
-
-		d.SetPartial("instance_charge_type")
-	}
-
 	if d.HasChange("private_whitelist") {
 		if err := updatePrivateWhitelist(d, meta); err != nil {
 			return WrapError(err)
@@ -294,6 +286,22 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudElasticsearchRead(d, meta)
+	}
+
+	if d.HasChange("instance_charge_type") {
+		if err := updateInstanceChargeType(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("instance_charge_type")
+	}
+
+	if d.Get("instance_charge_type").(string) == string(PrePaid) && d.HasChange("period") {
+		if err := renewInstance(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("period")
 	}
 
 	if d.HasChange("data_node_amount") {
