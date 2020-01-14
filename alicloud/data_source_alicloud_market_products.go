@@ -21,22 +21,31 @@ func dataSourceAlicloudProducts() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.ValidateRegexp,
 			},
+
 			"sort": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"user_count-desc", "created_on-desc", "price-desc", "score-desc"}, false),
 			},
+
 			"category_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
+
 			"product_type": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"APP", "SERVICE", "MIRROR", "DOWNLOAD", "API_SERVICE"}, false),
+			},
+
+			"search_term": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 
 			"output_file": {
@@ -63,7 +72,55 @@ func dataSourceAlicloudProducts() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"category_id": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"supplier_id": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"supplier_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"short_description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"tags": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"suggested_price": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"target_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"image_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"score": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"operation_system": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"warranty_date": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"delivery_date": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"delivery_way": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -107,6 +164,10 @@ func dataSourceAlicloudProductsRead(d *schema.ResourceData, meta interface{}) er
 		product.Value = v.(string)
 		productsFilter = append(productsFilter, product)
 	}
+	if v, ok := d.GetOk("search_term"); ok && v.(string) != "" {
+		request.SearchTerm = v.(string)
+	}
+
 	request.Filter = &productsFilter
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
@@ -158,9 +219,21 @@ func productsDescriptionAttributes(d *schema.ResourceData, allProduct []market.P
 	var s []map[string]interface{}
 	for _, p := range allProduct {
 		mapping := map[string]interface{}{
-			"code":       p.Code,
-			"name":       p.Name,
-			"target_url": p.TargetUrl,
+			"code":              p.Code,
+			"name":              p.Name,
+			"category_id":       p.CategoryId,
+			"supplier_id":       p.SupplierId,
+			"supplier_name":     p.SupplierName,
+			"short_description": p.ShortDescription,
+			"tags":              p.Tags,
+			"suggested_price":   p.SuggestedPrice,
+			"target_url":        p.TargetUrl,
+			"image_url":         p.ImageUrl,
+			"score":             p.Score,
+			"operation_system":  p.OperationSystem,
+			"warranty_date":     p.WarrantyDate,
+			"delivery_date":     p.DeliveryDate,
+			"delivery_way":      p.DeliveryWay,
 		}
 
 		ids = append(ids, p.Code)
