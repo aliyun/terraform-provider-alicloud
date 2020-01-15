@@ -32,14 +32,6 @@ func dataSourceAlicloudEssAlarms() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"RegionId": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"AlarmTaskId": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"IsEnable": {
 				Type:     schema.TypeBool,
 				Computed: true,
@@ -54,23 +46,96 @@ func dataSourceAlicloudEssAlarms() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"RegionId": {
+						"name": {
 							Type:     schema.TypeString,
+							Optional: true,
 							Computed: true,
 						},
-						"AlarmTaskId": {
+						"description": {
 							Type:     schema.TypeString,
-							Computed: true,
+							Optional: true,
+						},
+						"enable": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  true,
+						},
+						"alarm_actions": {
+							Type:     schema.TypeSet,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Required: true,
+							MaxItems: 5,
+							MinItems: 1,
 						},
 						"scaling_group_id": {
 							Type:     schema.TypeString,
+							Required: true,
+						},
+						"metric_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  System,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(System),
+								string(Custom),
+							}, false),
+						},
+						"metric_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"period": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  FiveMinite,
+							ValidateFunc: validation.IntInSlice([]int{
+								int(OneMinite),
+								int(TwoMinite),
+								int(FiveMinite),
+								int(FifteenMinite),
+							}),
+						},
+						"statistics": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  Average,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(Average),
+								string(Minimum),
+								string(Maximum),
+							}, false),
+						},
+						"threshold": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"comparison_operator": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  Gte,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(Gt),
+								string(Gte),
+								string(Lt),
+								string(Lte),
+							}, false),
+						},
+						"evaluation_count": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Default:      3,
+							ValidateFunc: validation.IntAtLeast(0),
+						},
+						"cloud_monitor_group_id": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"dimensions": {
+							Type:     schema.TypeMap,
+							Optional: true,
 							Computed: true,
 						},
-						"IsEnable": {
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						"Metric_type": {
+						"state": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -90,6 +155,12 @@ func dataSourceAlicloudEssAlarmsRead(d *schema.ResourceData, meta interface{}) e
 
 	if scalingGroupId, ok := d.GetOk("scaling_group_id"); ok && scalingGroupId.(string) != "" {
 		request.ScalingGroupId = scalingGroupId.(string)
+	}
+	if isenable, ok := d.GetOk("IsEnable"); ok && isenable.(requests.Boolean) != "" {
+		request.IsEnable = isenable.(requests.Boolean)
+	}
+	if metric_type, ok := d.GetOk("Metric_type"); ok && metric_type.(string) != "" {
+		request.MetricType = metric_type.(string)
 	}
 	var allAlarms []ess.Alarm
 	for {
@@ -153,12 +224,21 @@ func alarmsDescriptionAttribute(d *schema.ResourceData, alarms []ess.Alarm, meta
 	var s = make([]map[string]interface{}, 0)
 	for _, alarm := range alarms {
 		mapping := map[string]interface{}{
-			"state":            alarm.State,
-			"task_id":          alarm.AlarmTaskId,
-			"name":             alarm.Name,
-			"scaling_group_id": alarm.ScalingGroupId,
-			"metric_name":      alarm.MetricName,
-			"description":      alarm.Description,
+			"state":               alarm.State,
+			"task_id":             alarm.AlarmTaskId,
+			"name":                alarm.Name,
+			"scaling_group_id":    alarm.ScalingGroupId,
+			"metric_name":         alarm.MetricName,
+			"description":         alarm.Description,
+			"enable":              alarm.Enable,
+			"alarm_actions":       alarm.AlarmActions,
+			"metric_type":         alarm.MetricType,
+			"period":              alarm.Period,
+			"statistics":          alarm.Statistics,
+			"threshold":           alarm.Threshold,
+			"comparison_operator": alarm.ComparisonOperator,
+			"evaluation_count":    alarm.EvaluationCount,
+			"dimensions":          alarm.Dimensions,
 		}
 		ids = append(ids, alarm.AlarmTaskId)
 		names = append(names, alarm.Name)
