@@ -1,12 +1,13 @@
 package alicloud
 
 import (
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"regexp"
 )
 
 func dataSourceAlicloudEssAlarms() *schema.Resource {
@@ -32,14 +33,19 @@ func dataSourceAlicloudEssAlarms() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"IsEnable": {
+			"enable": {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
-			"Metric_type": {
+			"metric_type": {
 				Type:         schema.TypeString,
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"system", "custom"}, false),
+			},
+			"states": {
+				Type:         schema.TypeString,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"OK", "ALARM", "INSUFFICIENT_DATA"}, false),
 			},
 			"alarms": {
 				Type:     schema.TypeList,
