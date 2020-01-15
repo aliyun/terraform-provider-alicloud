@@ -1067,6 +1067,229 @@ func TestAccAlicloudSlbListener_udp_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbListener_http_healcheckmethod(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_slb_listener.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlbListener")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccSlbListenerConfigSpot%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbListenerConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.HttpHttpsHealthCheckMehtodSupportedRegions)
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"backend_port":              "80",
+					"frontend_port":             "80",
+					"protocol":                  "http",
+					"bandwidth":                 "10",
+					"sticky_session":            "on",
+					"sticky_session_type":       "insert",
+					"cookie_timeout":            "86400",
+					"cookie":                    "testslblistenercookie",
+					"health_check":              "on",
+					"health_check_domain":       "ali.com",
+					"health_check_method":       "head",
+					"health_check_uri":          "/cons",
+					"health_check_connect_port": "20",
+					"healthy_threshold":         "8",
+					"unhealthy_threshold":       "8",
+					"health_check_timeout":      "8",
+					"health_check_interval":     "5",
+					"health_check_http_code":    "http_2xx,http_3xx",
+					"x_forwarded_for": []map[string]interface{}{
+						{
+							"retrive_slb_ip": "true",
+							"retrive_slb_id": "true",
+						},
+					},
+					"acl_status":      "on",
+					"acl_type":        "white",
+					"acl_id":          "${alicloud_slb_acl.default.id}",
+					"request_timeout": "80",
+					"idle_timeout":    "30",
+					"description":     name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_id":                    CHECKSET,
+						"backend_port":                        "80",
+						"frontend_port":                       "80",
+						"protocol":                            "http",
+						"bandwidth":                           "10",
+						"scheduler":                           string(WRRScheduler),
+						"sticky_session":                      string(OnFlag),
+						"sticky_session_type":                 string(InsertStickySessionType),
+						"cookie_timeout":                      "86400",
+						"health_check":                        "on",
+						"health_check_uri":                    "/cons",
+						"health_check_domain":                 "ali.com",
+						"health_check_method":                 "head",
+						"health_check_connect_port":           "20",
+						"healthy_threshold":                   "8",
+						"unhealthy_threshold":                 "8",
+						"health_check_timeout":                "8",
+						"health_check_interval":               "5",
+						"health_check_http_code":              string(HTTP_2XX) + "," + string(HTTP_3XX),
+						"x_forwarded_for.0.retrive_client_ip": "true",
+						"x_forwarded_for.0.retrive_slb_ip":    "true",
+						"x_forwarded_for.0.retrive_slb_id":    "true",
+						"x_forwarded_for.0.retrive_slb_proto": "false",
+						"acl_status":                          "on",
+						"acl_type":                            string(AclTypeWhite),
+						"acl_id":                              CHECKSET,
+						"gzip":                                "true",
+						"idle_timeout":                        "30",
+						"request_timeout":                     "80",
+						"description":                         name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_method": "get",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_method": "get",
+					}),
+				),
+			},
+		},
+	})
+}
+func TestAccAlicloudSlbListener_https_healcheckmethod(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_slb_listener.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlbListener")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccSlbListenerConfigSpot%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbHTTPSListenerConfigDependence)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.HttpHttpsHealthCheckMehtodSupportedRegions)
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"backend_port":              "80",
+					"frontend_port":             "80",
+					"protocol":                  "https",
+					"bandwidth":                 "10",
+					"sticky_session":            "on",
+					"sticky_session_type":       "insert",
+					"cookie_timeout":            "86400",
+					"cookie":                    "testslblistenercookie",
+					"health_check":              "on",
+					"health_check_uri":          "/cons",
+					"health_check_method":       "head",
+					"health_check_connect_port": "20",
+					"healthy_threshold":         "8",
+					"unhealthy_threshold":       "8",
+					"health_check_timeout":      "8",
+					"health_check_interval":     "5",
+					"health_check_http_code":    "http_2xx,http_3xx",
+					"x_forwarded_for": []map[string]interface{}{
+						{
+							"retrive_slb_ip": "true",
+							"retrive_slb_id": "true",
+						},
+					},
+					"acl_status":            "on",
+					"acl_type":              "white",
+					"acl_id":                "${alicloud_slb_acl.default.id}",
+					"request_timeout":       "80",
+					"idle_timeout":          "30",
+					"enable_http2":          "on",
+					"tls_cipher_policy":     "tls_cipher_policy_1_2",
+					"server_certificate_id": "${alicloud_slb_server_certificate.default.id}",
+					"description":           name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_id":          CHECKSET,
+						"frontend_port":             "80",
+						"backend_port":              "80",
+						"protocol":                  "https",
+						"bandwidth":                 "10",
+						"scheduler":                 string(WRRScheduler),
+						"sticky_session":            string(OnFlag),
+						"sticky_session_type":       string(InsertStickySessionType),
+						"cookie_timeout":            "86400",
+						"health_check":              "on",
+						"health_check_method":       "head",
+						"health_check_connect_port": "20",
+						"healthy_threshold":         "8",
+						"unhealthy_threshold":       "8",
+						"health_check_timeout":      "8",
+						"health_check_interval":     "5",
+						"acl_status":                "on",
+						"acl_type":                  string(AclTypeWhite),
+						"acl_id":                    CHECKSET,
+						"gzip":                      "true",
+						"idle_timeout":              "30",
+						"request_timeout":           "80",
+						"health_check_http_code":    string(HTTP_2XX) + "," + string(HTTP_3XX),
+						"server_certificate_id":     CHECKSET,
+						"enable_http2":              "on",
+						"x_forwarded_for.#":         "1",
+						"tls_cipher_policy":         "tls_cipher_policy_1_2",
+						"description":               name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_method": "get",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_method": "get",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func testAccSlbListenerHttpForward(name string) string {
 	return fmt.Sprintf(`
 	%s
