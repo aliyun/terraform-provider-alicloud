@@ -62,7 +62,7 @@ func resourceAliyunSnatEntryCreate(d *schema.ResourceData, meta interface{}) err
 			return vpcClient.CreateSnatEntry(ar)
 		})
 		if err != nil {
-			if IsExceptedError(err, EIP_NOT_IN_GATEWAY) {
+			if IsExceptedErrors(err, []string{"EIP_NOT_IN_GATEWAY", "OperationUnsupported.EipNatBWPCheck"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
