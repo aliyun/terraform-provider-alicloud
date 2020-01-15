@@ -94,3 +94,4 @@ var AlikafkaSupportedRegions = []Region{Hangzhou, Qingdao, Beijing, Hongkong, Sh
 var SmartagSupportedRegions = []Region{Shanghai, ShanghaiFinance, Hongkong, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5, EUCentral1, APNorthEast1}
 var YundunDbauditSupportedRegions = []Region{Hangzhou, Beijing, Shanghai}
 var YundunBastionhostSupportedRegions = []Region{Hangzhou}
+var HttpHttpsHealthCheckMehtodSupportedRegions = []Region{Hangzhou, Beijing, Shanghai, EUWest1, ChengDu, Qingdao, Hongkong, Shenzhen, APSouthEast5, Zhangjiakou, Huhehaote, MEEast1, APSouth1, EUCentral1, USWest1, APSouthEast3, APSouthEast2, APSouthEast1, APNorthEast1}

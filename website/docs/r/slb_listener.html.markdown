@@ -103,6 +103,7 @@ The following arguments are supported:
 * `health_check_timeout` - (Optional) Maximum timeout of each health check response. It is required when `health_check` is on. Valid value range: [1-300] in seconds. Default to 5. Note: If `health_check_timeout` < `health_check_interval`, its will be replaced by `health_check_interval`.
 * `health_check_interval` - (Optional) Time interval of health checks. It is required when `health_check` is on. Valid value range: [1-50] in seconds. Default to 2.
 * `health_check_http_code` - (Optional) Regular health check HTTP status code. Multiple codes are segmented by “,”. It is required when `health_check` is on. Default to `http_2xx`.  Valid values are: `http_2xx`,  `http_3xx`, `http_4xx` and `http_5xx`.
+* `health_check_method` - (Optional, Available in 1.70.0+) HealthCheckMethod used for health check.`http` and `https` support regions ap-northeast-1, ap-southeast-1, ap-southeast-2, ap-southeast-3, us-east-1, us-west-1, eu-central-1, ap-south-1, me-east-1, cn-huhehaote, cn-zhangjiakou, ap-southeast-5, cn-shenzhen, cn-hongkong, cn-qingdao, cn-chengdu, eu-west-1, cn-hangzhou", cn-beijing, cn-shanghai.This function does not support the TCP protocol .
 * `ssl_certificate_id` - (Deprecated) It has been deprecated from 1.59.0 and using `server_certificate_id` instead. 
 * `server_certificate_id` - (Optional, Available in 1.59.0+) SLB Server certificate ID. It is required when `protocol` is `https`.
 * `gzip` - (Optional) Whether to enable "Gzip Compression". If enabled, files of specific file types will be compressed, otherwise, no files will be compressed. Default to true. Available in v1.13.0+.
@@ -151,6 +152,7 @@ persistence_timeout | tcp & udp | 0-3600 |
 health_check | http & https | on or off | 
 health_check_type | tcp | tcp or http | 
 health_check_domain | http & https & tcp | 
+health_check_method | http & https & tcp | 
 health_check_uri | http & https & tcp |  | 
 health_check_connect_port | http & https & tcp & udp | 1-65535 or -520 | 
 healthy_threshold | http & https & tcp & udp | 1-10 | 
@@ -192,6 +194,7 @@ The following attributes are exported:
 * `health_check` - Whether to enable health check.
 * `health_check_type` - Type of health check.
 * `health_check_domain` - Domain name used for health check.
+* `health_check_method` - HealthCheckMethod used for health check.
 * `health_check_uri` - URI used for health check.
 * `health_check_connect_port` - Port used for health check.
 * `healthy_threshold` - Threshold determining the result of the health check is success.

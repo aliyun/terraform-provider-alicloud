@@ -159,6 +159,13 @@ func resourceAliyunSlbListener() *schema.Resource {
 				Default:          OnFlag,
 				DiffSuppressFunc: httpHttpsDiffSuppressFunc,
 			},
+			//http & https
+			"health_check_method": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"head", "get"}, false),
+				Optional:     true,
+				Computed:     true,
+			},
 			//tcp
 			"health_check_type": {
 				Type: schema.TypeString,
@@ -607,6 +614,11 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		update = true
 	}
 
+	// http https
+	if d.HasChange("health_check_method") {
+		update = true
+	}
+
 	// http https tcp udp and health_check=on
 	if d.HasChange("unhealthy_threshold") {
 		commonRequest.QueryParams["UnhealthyThreshold"] = string(requests.NewInteger(d.Get("unhealthy_threshold").(int)))
@@ -835,6 +847,8 @@ func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) 
 	healthCheck := d.Get("health_check").(string)
 	req.QueryParams["StickySession"] = stickySession
 	req.QueryParams["HealthCheck"] = healthCheck
+	req.QueryParams["RequestTimeout"] = string(requests.NewInteger(d.Get("request_timeout").(int)))
+	req.QueryParams["IdleTimeout"] = string(requests.NewInteger(d.Get("idle_timeout").(int)))
 	if stickySession == string(OnFlag) {
 		sessionType, ok := d.GetOk("sticky_session_type")
 		if !ok || sessionType.(string) == "" {
@@ -869,10 +883,13 @@ func buildHttpListenerArgs(d *schema.ResourceData, req *requests.CommonRequest) 
 		req.QueryParams["HealthCheckTimeout"] = string(requests.NewInteger(d.Get("health_check_timeout").(int)))
 		req.QueryParams["HealthCheckInterval"] = string(requests.NewInteger(d.Get("health_check_interval").(int)))
 		req.QueryParams["HealthCheckHttpCode"] = d.Get("health_check_http_code").(string)
-
-		req.QueryParams["IdleTimeout"] = string(requests.NewInteger(d.Get("idle_timeout").(int)))
-		req.QueryParams["RequestTimeout"] = string(requests.NewInteger(d.Get("request_timeout").(int)))
+		if d.Get("protocol").(string) == "http" || d.Get("protocol").(string) == "https" {
+			if health_check_method, ok := d.GetOk("health_check_method"); ok && health_check_method.(string) != "" {
+				req.QueryParams["HealthCheckMethod"] = health_check_method.(string)
+			}
+		}
 	}
+
 	return req, nil
 }
 
@@ -996,6 +1013,9 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	}
 	if val, ok := listener["HealthCheckDomain"]; ok {
 		d.Set("health_check_domain", val.(string))
+	}
+	if val, ok := listener["HealthCheckMethod"]; ok {
+		d.Set("health_check_method", val.(string))
 	}
 	if val, ok := listener["HealthCheckConnectPort"]; ok {
 		d.Set("health_check_connect_port", val.(float64))
