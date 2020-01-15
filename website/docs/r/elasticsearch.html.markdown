@@ -39,7 +39,7 @@ The following arguments are supported:
 
 * `description` - (Optional) The description of instance. It a string of 0 to 30 characters.
 * `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`. From version 1.69.0, the Elasticsearch cluster allows you to update your instance_charge_ype from `PostPaid` to `PrePaid`, the following attributes are required: `period`. But, updating from `PostPaid` to `PrePaid` is not supported.
-* `period` - (Optional) The duration that you will buy Elasticsearch instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
+* `period` - (Optional) The duration that you will buy Elasticsearch instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1. From version 1.69.2, when to modify this value, the resource can renewal a `PrePaid` instance.
 * `data_node_amount` - (Required) The Elasticsearch cluster's data node quantity, between 2 and 50.
 * `data_node_spec` - (Required) The data node specifications of the Elasticsearch instance.
 * `data_node_disk_size` - (Required) The single data node storage space.
@@ -47,7 +47,7 @@ The following arguments are supported:
   - `cloud_efficiency` An ultra disk, supports a maximum of 5120 GiB (5 TB). If the data to be stored is larger than 2048 GiB, an ultra disk can only support the following data sizes (GiB): [`2560`, `3072`, `3584`, `4096`, `4608`, `5120`].
 * `data_node_disk_type` - (Required) The data node disk type. Supported values: cloud_ssd, cloud_efficiency.
 * `vswitch_id` - (Required, ForceNew) The ID of VSwitch.
-* `password` - (Optional, Sensitive) The password of the instance. The password can be 8 to 32 characters in length and must contain three of the following conditions: uppercase letters, lowercase letters, numbers, and special characters (!@#$%^&*()_+-=).
+* `password` - (Optional, Sensitive) The password of the instance. The password can be 8 to 30 characters in length and must contain three of the following conditions: uppercase letters, lowercase letters, numbers, and special characters (`!@#$%^&*()_+-=`).
 * `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to a instance. If the `password` is filled in, this field will be ignored, but you have to specify one of `password` and `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `version` - (Required, ForceNew) Elasticsearch version. Supported values: `5.5.3_with_X-Pack`, `6.3_with_X-Pack` and `6.7_with_X-Pack`.
@@ -82,6 +82,6 @@ The following attributes are exported:
 Elasticsearch can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_elasticsearch.example es-cn-abcde123456
+$ terraform import alicloud_elasticsearch_instance.example es-cn-abcde123456
 ```
 
