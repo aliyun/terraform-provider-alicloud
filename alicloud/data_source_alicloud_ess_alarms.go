@@ -40,7 +40,7 @@ func dataSourceAlicloudEssAlarms() *schema.Resource {
 			},
 			"metric_type": {
 				Type:         schema.TypeString,
-				Computed:     true,
+				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"system", "custom"}, false),
 			},
 			"states": {
