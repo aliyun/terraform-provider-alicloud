@@ -81,6 +81,7 @@ type CreateClusterRequest struct {
 // CreateClusterResponse is the response struct for api CreateCluster
 type CreateClusterResponse struct {
 	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateCreateClusterRequest creates a request to invoke CreateCluster API
@@ -88,7 +89,7 @@ func CreateCreateClusterRequest() (request *CreateClusterRequest) {
 	request = &CreateClusterRequest{
 		RoaRequest: &requests.RoaRequest{},
 	}
-	request.InitWithApiInfo("CS", "2015-12-15", "CreateCluster", "/clusters", "", "")
+	request.InitWithApiInfo("CS", "2015-12-15", "CreateCluster", "/clusters", "csk", "openAPI")
 	request.Method = requests.POST
 	return
 }

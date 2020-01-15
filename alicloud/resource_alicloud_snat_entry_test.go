@@ -84,7 +84,7 @@ func TestAccAlicloudSnatEntryBasic(t *testing.T) {
 
 }
 
-func TestAccAlicloudSnaEntryMulti(t *testing.T) {
+func TestAccAlicloudSnatEntryMulti(t *testing.T) {
 	var v vpc.SnatTableEntry
 
 	resourceId := "alicloud_snat_entry.default.9"
