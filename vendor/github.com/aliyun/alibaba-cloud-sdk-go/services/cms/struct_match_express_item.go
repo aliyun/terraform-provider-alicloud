@@ -17,7 +17,9 @@ package cms
 
 // MatchExpressItem is a nested struct in cms response
 type MatchExpressItem struct {
-	Name     string `json:"Name" xml:"Name"`
-	Function string `json:"Function" xml:"Function"`
-	Value    string `json:"Value" xml:"Value"`
+	Name                  string `json:"Name" xml:"Name"`
+	Value                 string `json:"Value" xml:"Value"`
+	TagValueMatchFunction string `json:"TagValueMatchFunction" xml:"TagValueMatchFunction"`
+	Function              string `json:"Function" xml:"Function"`
+	TagValue              string `json:"TagValue" xml:"TagValue"`
 }
