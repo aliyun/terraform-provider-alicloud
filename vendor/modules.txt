@@ -10,7 +10,7 @@ cloud.google.com/go/compute/metadata
 github.com/Sirupsen/logrus
 # github.com/agext/levenshtein v1.2.2
 github.com/agext/levenshtein
-# github.com/aliyun/alibaba-cloud-sdk-go v1.60.338
+# github.com/aliyun/alibaba-cloud-sdk-go v1.60.339
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses

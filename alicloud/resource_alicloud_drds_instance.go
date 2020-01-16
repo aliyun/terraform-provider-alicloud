@@ -103,9 +103,9 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*drds.CreateDrdsInstanceResponse)
-	idList := response.Data.DrdsInstanceIdList.DrdsInstanceIdList
+	idList := response.Data.DrdsInstanceIdList
 	if len(idList) != 1 {
-		return WrapError(Error("failed to create DRDS instance"))
+		return WrapError(Error("failed to get DRDS instance id and response DrdsInstanceIdList is %#v", idList))
 	}
 	d.SetId(idList[0])
 
