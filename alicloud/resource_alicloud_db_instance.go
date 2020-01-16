@@ -422,7 +422,11 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		request := rds.CreateModifySQLCollectorPolicyRequest()
 		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
-		request.SQLCollectorStatus = d.Get("sql_collector_status").(string)
+		if d.Get("sql_collector_status").(string) == "Enabled" {
+			request.SQLCollectorStatus = "Enable"
+		} else {
+			request.SQLCollectorStatus = d.Get("sql_collector_status").(string)
+		}
 		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.ModifySQLCollectorPolicy(request)
 		})
@@ -563,7 +567,11 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_name", instance.DBInstanceDescription)
 	d.Set("maintain_time", instance.MaintainTime)
 	d.Set("auto_upgrade_minor_version", instance.AutoUpgradeMinorVersion)
-	d.Set("sql_collector_status", sqlCollectorPolicy.SQLCollectorStatus)
+	if sqlCollectorPolicy.SQLCollectorStatus == "Enable" {
+		d.Set("sql_collector_status", "Enabled")
+	} else {
+		d.Set("sql_collector_status", sqlCollectorPolicy.SQLCollectorStatus)
+	}
 	configValue, err := strconv.Atoi(sqlCollectorRetention.ConfigValue)
 	if err != nil {
 		return WrapError(err)
