@@ -1023,6 +1023,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 
 func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDelete bool) error {
 	if d.IsNewResource() {
+		d.Partial(false)
 		return nil
 	}
 
@@ -1081,6 +1082,7 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 
 func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bool, error) {
 	if d.IsNewResource() {
+		d.Partial(false)
 		return false, nil
 	}
 	client := meta.(*connectivity.AliyunClient)
@@ -1156,6 +1158,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 
 func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, error) {
 	if d.IsNewResource() {
+		d.Partial(false)
 		return false, nil
 	}
 
@@ -1256,6 +1259,7 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 
 func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (bool, error) {
 	if d.IsNewResource() {
+		d.Partial(false)
 		return false, nil
 	}
 
@@ -1321,6 +1325,7 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 
 func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (bool, error) {
 	if d.IsNewResource() {
+		d.Partial(false)
 		return false, nil
 	}
 	client := meta.(*connectivity.AliyunClient)
@@ -1422,6 +1427,7 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 
 func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 	if d.IsNewResource() {
+		d.Partial(false)
 		return nil
 	}
 
