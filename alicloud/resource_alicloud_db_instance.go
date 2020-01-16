@@ -452,7 +452,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	request := rds.CreateModifyDBInstanceSpecRequest()
 	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
-	request.PayType = string(Postpaid)
+	request.PayType = d.Get("instance_charge_type").(string)
 
 	if d.HasChange("instance_type") {
 		request.DBInstanceClass = d.Get("instance_type").(string)
