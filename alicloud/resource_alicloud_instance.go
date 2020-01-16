@@ -351,6 +351,21 @@ func resourceAliyunInstance() *schema.Resource {
 
 			"tags":        tagsSchema(),
 			"volume_tags": tagsSchemaComputed(),
+
+			"auto_release_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					diff := d.Get("instance_charge_type").(string) == "PrePaid"
+					if diff {
+						return diff
+					}
+					if old != "" && new != "" && strings.HasPrefix(new, strings.Trim(old, "Z")) {
+						diff = true
+					}
+					return diff
+				},
+			},
 		},
 	}
 }
@@ -450,6 +465,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("internet_charge_type", instance.InternetChargeType)
 	d.Set("deletion_protection", instance.DeletionProtection)
 	d.Set("credit_specification", instance.CreditSpecification)
+	d.Set("auto_release_time", instance.AutoReleaseTime)
 
 	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
@@ -637,6 +653,20 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
+	if d.HasChange("auto_release_time") {
+		request := ecs.CreateModifyInstanceAutoReleaseTimeRequest()
+		request.InstanceId = d.Id()
+		request.RegionId = client.RegionId
+		request.AutoReleaseTime = d.Get("auto_release_time").(string)
+		_, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifyInstanceAutoReleaseTime(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("auto_release_time")
+	}
+
 	typeUpdate, err := modifyInstanceType(d, meta, run)
 	if err != nil {
 		return WrapError(err)
@@ -728,7 +758,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if err := modifyInstanceChargeType(d, meta, false); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	// Only PrePaid instance can support modifying renewal attribute
@@ -948,8 +978,10 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	}
 
 	if v, ok := d.GetOk("security_enhancement_strategy"); ok {
-		value := v.(string)
-		request.SecurityEnhancementStrategy = value
+		request.SecurityEnhancementStrategy = v.(string)
+	}
+	if v, ok := d.GetOk("auto_release_time"); ok && v.(string) != "" {
+		request.AutoReleaseTime = v.(string)
 	}
 	request.DryRun = requests.NewBoolean(d.Get("dry_run").(bool))
 	request.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))

@@ -200,6 +200,26 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"auto_release_time": time.Now().Add(30 * time.Minute).Format("2006-01-02T15:04:05Z"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_release_time": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_release_time": "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_release_time": "",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"image_id": "${data.alicloud_images.default.images.1.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -478,6 +498,26 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_release_time": time.Now().Add(30 * time.Minute).Format("2006-01-02T15:04:05Z"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_release_time": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_release_time": "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_release_time": "",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
