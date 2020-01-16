@@ -135,8 +135,12 @@ On other OSs such as Linux, the host name can contain a maximum of 30 characters
     - false: Disable deletion protection.
     
     Default to false.
-* `force_delete` - (Optional, Available 1.18.0+) If it is true, the "PrePaid" instance will be change to "PostPaid" and then deleted forcibly.
+* `force_delete` - (Optional, Available in 1.18.0+) If it is true, the "PrePaid" instance will be change to "PostPaid" and then deleted forcibly.
 However, because of changing instance charge type has CPU core count quota limitation, so strongly recommand that "Don't modify instance charge type frequentlly in one month".
+* `auto_release_time` - (Optional, Available in 1.70.0+) The automatic release time of the `PostPaid` instance. 
+The time follows the ISO 8601 standard and is in UTC time. Format: yyyy-MM-ddTHH:mm:ssZ. It must be at least half an hour later than the current time and less than 3 years since the current time. 
+Set it to null can cancel automatic release attribute and the ECS instance will not be released automatically.
+
 * `security_enhancement_strategy` - (Optional, ForceNew) The security enhancement strategy.
     - Active: Enable security enhancement strategy, it only works on system images.
     - Deactive: Disable security enhancement strategy, it works on all images.
