@@ -128,7 +128,7 @@ func TestAccAlicloudKVStoreInstanceClasses(t *testing.T) {
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"zone_id":              "${data.alicloud_zones.resources.zones.0.id}",
 			"instance_charge_type": "PostPaid",
-			"engine":               "fake",
+			"engine":               "Redis",
 			"engine_version":       "5.6",
 			"architecture":         "standard",
 			"series_type":          "enhanced_performance_type",
