@@ -1,29 +1,29 @@
-## 1.70.0 (Unreleased)
+## 1.70.0 (January 17, 2020)
 
-- **Data Source:** `alicloud_polardb_accounts` [GH-2091]
-- **Data Source:** `alicloud_polardb_databases` [GH-2091]
+- **Data Source:** `alicloud_polardb_accounts` ([#2091](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2091))
+- **Data Source:** `alicloud_polardb_databases` ([#2091](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2091))
 
 IMPROVEMENTS:
 
-- improve(slb_listener): add document for health_check_method [GH-2121]
-- modify:cen_instance_grant.html.markdown("alicloud_cen_instance_grant.foo") [GH-2120]
-- improve drds and rds sweeper test [GH-2119]
-- improve(kvstore_instance_classes): add validateFunc for engine [GH-2117]
-- improve(instance): close partial [GH-2115]
-- improve(instance): supports setting auto_release_time#2095 [GH-2105]
-- improve(slb) update slb_listener add health_check_method [GH-2102]
-- improve(elasticsearch): resource support to renew a PrePaid instance [GH-2099]
-- improve(rds): feature rds support sql audit records [GH-2082]
+- improve(slb_listener): add document for health_check_method ([#2121](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2121))
+- modify:cen_instance_grant.html.markdown("alicloud_cen_instance_grant.foo") ([#2120](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2120))
+- improve drds and rds sweeper test ([#2119](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2119))
+- improve(kvstore_instance_classes): add validateFunc for engine ([#2117](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2117))
+- improve(instance): close partial ([#2115](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2115))
+- improve(instance): supports setting auto_release_time#2095 ([#2105](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2105))
+- improve(slb) update slb_listener add health_check_method ([#2102](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2102))
+- improve(elasticsearch): resource support to renew a PrePaid instance ([#2099](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2099))
+- improve(rds): feature rds support sql audit records ([#2082](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2082))
 
 BUG FIXES:
 
-- fix(drds_instance): resolve parsing response error [GH-2118]
-- fix:cen_instance.html.markdown(modify docs of name & description) [GH-2116]
-- fix(rds): fix rds modify sql collector policy bug [GH-2110]
-- fix(rds): fix rds modify db instance spec bug [GH-2108]
-- fix(drds_instance): resolve parsing failed when creating [GH-2106]
-- fix(snat_entry): resolve the error OperationUnsupported.EipNatBWPCheck [GH-2104]
-- fix(pvtz_zone): correct the docs error [GH-2097]
+- fix(drds_instance): resolve parsing response error ([#2118](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2118))
+- fix:cen_instance.html.markdown(modify docs of name & description) ([#2116](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2116))
+- fix(rds): fix rds modify sql collector policy bug ([#2110](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2110))
+- fix(rds): fix rds modify db instance spec bug ([#2108](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2108))
+- fix(drds_instance): resolve parsing failed when creating ([#2106](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2106))
+- fix(snat_entry): resolve the error OperationUnsupported.EipNatBWPCheck ([#2104](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2104))
+- fix(pvtz_zone): correct the docs error ([#2097](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2097))
 
 ## 1.69.1 (January 13, 2020)
 
