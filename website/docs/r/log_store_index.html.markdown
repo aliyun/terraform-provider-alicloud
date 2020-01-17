@@ -39,6 +39,12 @@ resource "alicloud_log_store_index" "example" {
   }
 }
 ```
+
+## Module Support
+
+You can use the existing [sls module](https://registry.terraform.io/modules/terraform-alicloud-modules/sls/alicloud) 
+to create SLS project, store and store index one-click, like ECS instances.
+
 ## Argument Reference
 
 The following arguments are supported:

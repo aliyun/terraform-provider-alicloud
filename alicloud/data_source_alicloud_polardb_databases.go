@@ -1,11 +1,12 @@
 package alicloud
 
 import (
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"regexp"
 )
 
 func dataSourceAlicloudPolarDBDatabases() *schema.Resource {

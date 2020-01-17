@@ -65,6 +65,11 @@ resource "alicloud_slb" "slb" {
 }
 ```
 
+## Module Support
+
+You can use the existing [ecs-instance module](https://registry.terraform.io/modules/alibaba/ecs-instance/alicloud) 
+to create several ECS instances one-click.
+
 ## Argument Reference
 
 The following arguments are supported:
