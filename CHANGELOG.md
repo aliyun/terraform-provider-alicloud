@@ -5,9 +5,13 @@
 
 IMPROVEMENTS:
 
+- improve(slb_listener): add document for health_check_method [GH-2121]
+- modify:cen_instance_grant.html.markdown("alicloud_cen_instance_grant.foo") [GH-2120]
+- improve drds and rds sweeper test [GH-2119]
 - improve(kvstore_instance_classes): add validateFunc for engine [GH-2117]
 - improve(instance): close partial [GH-2115]
 - improve(instance): supports setting auto_release_time#2095 [GH-2105]
+- improve(slb) update slb_listener add health_check_method [GH-2102]
 - improve(elasticsearch): resource support to renew a PrePaid instance [GH-2099]
 - improve(rds): feature rds support sql audit records [GH-2082]
 

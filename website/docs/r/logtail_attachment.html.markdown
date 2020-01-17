@@ -67,6 +67,7 @@ resource "alicloud_logtail_attachment" "test" {
   machine_group_name = "${alicloud_log_machine_group.test.name}"
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
