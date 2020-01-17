@@ -42,6 +42,12 @@ resource "alicloud_logtail_config" "example" {
   input_detail = "${file("config.json")}"
 }
 ```
+
+## Module Support
+
+You can use the existing [sls-logtail module](https://registry.terraform.io/modules/terraform-alicloud-modules/sls-logtail/alicloud) 
+to create logtail config, machine group, install logtail on ECS instances and join instances into machine group one-click.
+
 ## Argument Reference
 
 The following arguments are supported:

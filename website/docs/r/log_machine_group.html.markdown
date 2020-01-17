@@ -29,6 +29,12 @@ resource "alicloud_log_machine_group" "example" {
   identify_list = ["10.0.0.1", "10.0.0.2"]
 }
 ```
+
+## Module Support
+
+You can use the existing [sls-logtail module](https://registry.terraform.io/modules/terraform-alicloud-modules/sls-logtail/alicloud) 
+to create logtail config, machine group, install logtail on ECS instances and join instances into machine group one-click.
+
 ## Argument Reference
 
 The following arguments are supported:
