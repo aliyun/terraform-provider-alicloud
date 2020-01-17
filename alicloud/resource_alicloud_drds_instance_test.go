@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -40,6 +41,7 @@ func testSweepDRDSInstances(region string) error {
 	}
 
 	request := drds.CreateDescribeDrdsInstancesRequest()
+	request.PageSize = requests.NewInteger(PageSizeXLarge)
 	raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.DescribeDrdsInstances(request)
 	})
@@ -49,6 +51,7 @@ func testSweepDRDSInstances(region string) error {
 	response, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 
 	sweeped := false
+	vpcService := VpcService{client}
 	for _, v := range response.Instances.Instance {
 		name := v.Description
 		id := v.DrdsInstanceId
@@ -58,6 +61,13 @@ func testSweepDRDSInstances(region string) error {
 				skip = false
 				break
 			}
+		}
+		// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+		if skip {
+			if need, err := vpcService.needSweepVpc(v.VpcId, ""); err == nil {
+				skip = !need
+			}
+
 		}
 		if skip {
 			log.Printf("[INFO] Skipping DRDS Instance: %s (%s)", name, id)
