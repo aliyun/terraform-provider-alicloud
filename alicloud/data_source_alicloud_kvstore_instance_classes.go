@@ -29,7 +29,11 @@ func dataSourceAlicloudKVStoreInstanceClasses() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Default:  "redis",
+				ValidateFunc: validation.StringInSlice([]string{
+					string(KVStoreMemcache),
+					string(KVStoreRedis),
+				}, false),
+				Default: string(KVStoreRedis),
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
