@@ -406,7 +406,7 @@ func resourceAlicloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
-	d.Partial(true)
+	d.Partial(false)
 	return resourceAlicloudAlikafkaInstanceRead(d, meta)
 }
 

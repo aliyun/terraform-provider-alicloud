@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"errors"
 	"strconv"
 	"time"
 
@@ -50,14 +51,12 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 			"partition_num": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
 				Default:      12,
 				ValidateFunc: validation.IntBetween(0, 48),
 			},
 			"remark": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
 			"tags": tagsSchema(),
@@ -118,9 +117,83 @@ func resourceAlicloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{
 
 	client := meta.(*connectivity.AliyunClient)
 	alikafkaService := AlikafkaService{client}
+	d.Partial(true)
+
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAlicloudAlikafkaTopicRead(d, meta)
+	}
+
+	instanceId := d.Get("instance_id").(string)
+	if d.HasChange("remark") {
+		remark := d.Get("remark").(string)
+		topic := d.Get("topic").(string)
+		modifyRemarkRequest := alikafka.CreateModifyTopicRemarkRequest()
+		modifyRemarkRequest.InstanceId = instanceId
+		modifyRemarkRequest.RegionId = client.RegionId
+		modifyRemarkRequest.Topic = topic
+		modifyRemarkRequest.Remark = remark
+
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+				return alikafkaClient.ModifyTopicRemark(modifyRemarkRequest)
+			})
+			if err != nil {
+				if IsExceptedErrors(err, []string{AlikafkaThrottlingUser}) {
+					time.Sleep(10 * time.Second)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(modifyRemarkRequest.GetActionName(), raw, modifyRemarkRequest.RpcRequest, modifyRemarkRequest)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyRemarkRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("remark")
+	}
+
+	if d.HasChange("partition_num") {
+		o, n := d.GetChange("partition_num")
+		oldPartitionNum := o.(int)
+		newPartitionNum := n.(int)
+
+		if newPartitionNum < oldPartitionNum {
+			return WrapError(errors.New("partition_num only support adjust to a greater value."))
+		} else {
+			topic := d.Get("topic").(string)
+			modifyPartitionReq := alikafka.CreateModifyPartitionNumRequest()
+			modifyPartitionReq.InstanceId = instanceId
+			modifyPartitionReq.RegionId = client.RegionId
+			modifyPartitionReq.Topic = topic
+			modifyPartitionReq.AddPartitionNum = requests.NewInteger(newPartitionNum - oldPartitionNum)
+
+			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+				raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+					return alikafkaClient.ModifyPartitionNum(modifyPartitionReq)
+				})
+				if err != nil {
+					if IsExceptedErrors(err, []string{AlikafkaThrottlingUser}) {
+						time.Sleep(10 * time.Second)
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(modifyPartitionReq.GetActionName(), raw, modifyPartitionReq.RpcRequest, modifyPartitionReq)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyPartitionReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			d.SetPartial("partition_num")
+		}
+	}
+
 	if err := alikafkaService.setInstanceTags(d, TagResourceTopic); err != nil {
 		return WrapError(err)
 	}
+	d.Partial(false)
 	return resourceAlicloudAlikafkaTopicRead(d, meta)
 }
 

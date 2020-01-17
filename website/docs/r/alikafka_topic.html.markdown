@@ -55,7 +55,7 @@ resource "alicloud_alikafka_topic" "default" {
   local_topic = "false"
   compact_topic = "false"
   partition_num = "12"
-  remark = "dafault_ons_topic_remark"
+  remark = "dafault_kafka_topic_remark"
 }
 ```
 
@@ -67,8 +67,8 @@ The following arguments are supported:
 * `topic` - (Required, ForceNew) Name of the topic. Two topics on a single instance cannot have the same name. The length cannot exceed 64 characters.
 * `local_topic` - (Optional, ForceNew) Whether the topic is localTopic or not.
 * `compact_topic` - (Optional, ForceNew) Whether the topic is compactTopic or not. Compact topic must be a localTopic.
-* `partition_num` - (Optional, ForceNew) The number of partitions of the topic. The number should between 1 and 48.
-* `remark` - (Required, ForceNew) This attribute is a concise description of topic. The length cannot exceed 64.
+* `partition_num` - (Optional) The number of partitions of the topic. The number should between 1 and 48.
+* `remark` - (Required) This attribute is a concise description of topic. The length cannot exceed 64.
 * `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
