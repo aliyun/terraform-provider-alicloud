@@ -38,6 +38,11 @@ resource "alicloud_vpc" "vpc" {
 }
 ```
 
+## Module Support
+
+You can use the existing [security-group module](https://registry.terraform.io/modules/alibaba/security-group/alicloud) 
+to create a security group and add several rules one-click.
+
 ## Argument Reference
 
 The following arguments are supported:

@@ -68,6 +68,11 @@ resource "alicloud_mongodb_sharding_instance" "foo" {
 }
 ```
 
+## Module Support
+
+You can use to the existing [mongodb-sharding module](https://registry.terraform.io/modules/terraform-alicloud-modules/mongodb-sharding/alicloud) 
+to create a MongoDB sharding instance resource one-click.
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -92,7 +97,7 @@ If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of 
         - Custom storage space; value range: [10, 1,000]
         - 10-GB increments. Unit: GB.
 * `backup_period` - (Optional, Available in 1.42.0+) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
-* `backup_time` - (Optional, Available in 1.42.0+) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. Default to a random time, like "23:00Z-24:00Z".
+* `backup_time` - (Optional, Available in 1.42.0+) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
 
 ## Attributes Reference
 

@@ -25,6 +25,12 @@ resource "alicloud_eip" "example" {
   internet_charge_type = "PayByBandwidth"
 }
 ```
+
+## Module Support
+
+You can use the existing [eip module](https://registry.terraform.io/modules/terraform-alicloud-modules/eip/alicloud) 
+to create several EIP instances and associate them with other resources one-click, like ECS instances, SLB, Nat Gateway and so on.
+
 ## Argument Reference
 
 The following arguments are supported:
