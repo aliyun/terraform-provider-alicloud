@@ -27,8 +27,8 @@ resource "alicloud_cen_instance" "cen" {
 
 The following arguments are supported:
 
-* `name` - (Optional) The name of the CEN instance. Defaults to null.
-* `description` - (Optional) The description of the CEN instance. Defaults to null.
+* `name` - (Optional) The name of the CEN instance. Defaults to null. The name must be 2 to 128 characters in length and can contain letters, numbers, periods (.), underscores (_), and hyphens (-). The name must start with a letter, but cannot start with http:// or https://.
+* `description` - (Optional) The description of the CEN instance. Defaults to null. The description must be 2 to 256 characters in length. It must start with a letter, and cannot start with http:// or https://.
 
 ### Timeouts
 
