@@ -1,4 +1,26 @@
-## 1.69.2 (Unreleased)
+## 1.70.0 (Unreleased)
+
+- **Data Source:** `alicloud_polardb_accounts` [GH-2091]
+- **Data Source:** `alicloud_polardb_databases` [GH-2091]
+
+IMPROVEMENTS:
+
+- improve(kvstore_instance_classes): add validateFunc for engine [GH-2117]
+- improve(instance): close partial [GH-2115]
+- improve(instance): supports setting auto_release_time#2095 [GH-2105]
+- improve(elasticsearch): resource support to renew a PrePaid instance [GH-2099]
+- improve(rds): feature rds support sql audit records [GH-2082]
+
+BUG FIXES:
+
+- fix(drds_instance): resolve parsing response error [GH-2118]
+- fix:cen_instance.html.markdown(modify docs of name & description) [GH-2116]
+- fix(rds): fix rds modify sql collector policy bug [GH-2110]
+- fix(rds): fix rds modify db instance spec bug [GH-2108]
+- fix(drds_instance): resolve parsing failed when creating [GH-2106]
+- fix(snat_entry): resolve the error OperationUnsupported.EipNatBWPCheck [GH-2104]
+- fix(pvtz_zone): correct the docs error [GH-2097]
+
 ## 1.69.1 (January 13, 2020)
 
 IMPROVEMENTS:
@@ -7,7 +29,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- fix(instance_types): resolve a bug results from the filed spelling error ([#2091](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2091))
+- fix(instance_types): resolve a bug results from the filed spelling error ([#2093](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2093))
 
 ## 1.69.0 (January 13, 2020)
 
