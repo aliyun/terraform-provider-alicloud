@@ -65,6 +65,7 @@ func testSweepDBInstances(region string) error {
 	}
 
 	sweeped := false
+	vpcService := VpcService{client}
 	for _, v := range insts {
 		name := v.DBInstanceDescription
 		id := v.DBInstanceId
@@ -75,6 +76,14 @@ func testSweepDBInstances(region string) error {
 				break
 			}
 		}
+		// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+		if skip {
+			if need, err := vpcService.needSweepVpc(v.VpcId, v.VSwitchId); err == nil {
+				skip = !need
+			}
+
+		}
+
 		if skip {
 			log.Printf("[INFO] Skipping RDS Instance: %s (%s)", name, id)
 			continue
