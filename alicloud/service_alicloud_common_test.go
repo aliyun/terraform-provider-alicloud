@@ -949,6 +949,14 @@ data "alicloud_emr_main_versions" "default" {
 
 data "alicloud_emr_instance_types" "default" {
     destination_resource = "InstanceType"
+    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    support_local_storage = false
+    instance_charge_type = "PostPaid"
+    support_node_type = ["MASTER","CORE"]
+}
+
+data "alicloud_emr_instance_types" "gateway" {
+    destination_resource = "InstanceType"
     cluster_type = "GATEWAY"
     support_local_storage = false
     instance_charge_type = "PostPaid"
@@ -957,18 +965,34 @@ data "alicloud_emr_instance_types" "default" {
 
 data "alicloud_emr_disk_types" "data_disk" {
 	destination_resource = "DataDisk"
-	cluster_type = "GATEWAY"
+	cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
 	instance_charge_type = "PostPaid"
 	instance_type = data.alicloud_emr_instance_types.default.types.0.id
 	zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
 }
 
+data "alicloud_emr_disk_types" "gateway_data_disk" {
+	destination_resource = "DataDisk"
+	cluster_type = "GATEWAY"
+	instance_charge_type = "PostPaid"
+	instance_type = data.alicloud_emr_instance_types.gateway.types.0.id
+	zone_id = data.alicloud_emr_instance_types.gateway.types.0.zone_id
+}
+
 data "alicloud_emr_disk_types" "system_disk" {
 	destination_resource = "SystemDisk"
-	cluster_type = "GATEWAY"
+	cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
 	instance_charge_type = "PostPaid"
 	instance_type = data.alicloud_emr_instance_types.default.types.0.id
 	zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+}
+
+data "alicloud_emr_disk_types" "gateway_system_disk" {
+	destination_resource = "SystemDisk"
+	cluster_type = "GATEWAY"
+	instance_charge_type = "PostPaid"
+	instance_type = data.alicloud_emr_instance_types.gateway.types.0.id
+	zone_id = data.alicloud_emr_instance_types.gateway.types.0.zone_id
 }
 
 resource "alicloud_vpc" "default" {
