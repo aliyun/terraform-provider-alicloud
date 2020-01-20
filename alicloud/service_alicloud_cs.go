@@ -34,6 +34,8 @@ const (
 	PRIORITY_POLICY       = "PRIORITY"
 	COST_OPTIMIZED_POLICY = "COST_OPTIMIZED"
 	BALANCE_POLICY        = "BALANCE"
+
+	UpgradeClusterTimeout = 30 * time.Minute
 )
 
 var (
@@ -478,4 +480,80 @@ func (s *CsService) GetUserData(clusterId string, labels string, taints string) 
 	region := cluster.RegionID
 
 	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(ATTACH_SCRIPT_WITH_VERSION+extra_options_in_line, region, region, version, token))), nil
+}
+
+func (s *CsService) UpgradeCluster(clusterId string, args *cs.UpgradeClusterArgs) error {
+	invoker := NewInvoker()
+	err := invoker.Run(func() error {
+		_, e := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.UpgradeCluster(clusterId, args)
+		})
+		if e != nil {
+			return e
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	state, upgradeError := s.WaitForUpgradeCluster(clusterId, "Upgrade")
+	if state == cs.Task_Status_Success && upgradeError == nil {
+		return nil
+	}
+
+	// if upgrade failed cancel the task
+	err = invoker.Run(func() error {
+		_, e := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.CancelUpgradeCluster(clusterId)
+		})
+		if e != nil {
+			return e
+		}
+		return nil
+	})
+	if err != nil {
+		log.Printf("[WARN] %s ACK Cluster cancel upgrade error: %#v", clusterId, err)
+		return upgradeError
+	}
+
+	if state, err := s.WaitForUpgradeCluster(clusterId, "CancelUpgrade"); err != nil || state != cs.Task_Status_Success {
+		log.Printf("[WARN] %s ACK Cluster cancel upgrade error: %#v", clusterId, err)
+	}
+
+	return upgradeError
+}
+
+func (s *CsService) WaitForUpgradeCluster(clusterId string, action string) (string, error) {
+	err := resource.Retry(UpgradeClusterTimeout, func() *resource.RetryError {
+		resp, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return csClient.QueryUpgradeClusterResult(clusterId)
+		})
+		if err != nil || resp == nil {
+			return resource.RetryableError(err)
+		}
+
+		upgradeResult := resp.(*cs.UpgradeClusterResult)
+		if upgradeResult.UpgradeStep == cs.UpgradeStep_Success {
+			return nil
+		}
+
+		if upgradeResult.UpgradeStep == cs.UpgradeStep_Pause && upgradeResult.UpgradeStatus.Failed == "true" {
+			msg := ""
+			events := upgradeResult.UpgradeStatus.Events
+			if len(events) > 0 {
+				msg = events[len(events)-1].Message
+			}
+			return resource.NonRetryableError(fmt.Errorf("faild to %s cluster, error: %s", action, msg))
+		}
+		return resource.RetryableError(fmt.Errorf("%s cluster state not matched", action))
+	})
+
+	if err == nil {
+		log.Printf("[INFO] %s ACK Cluster %s successed", action, clusterId)
+		return cs.Task_Status_Success, nil
+	}
+
+	return cs.Task_Status_Failed, err
 }

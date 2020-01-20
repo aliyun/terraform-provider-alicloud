@@ -395,9 +395,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 
 			// 'version' is a reserved parameter and it just is used to test. No Recommendation to expose it.
 			"version": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				//DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 
 			"nodes": {
@@ -535,7 +536,7 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 			requestMap["Args"] = args
 			addDebug("CreateKubernetesMultiAZCluster", raw, requestInfo, requestMap)
 		}
-		cluster, _ := raw.(cs.ClusterCreationResponse)
+		cluster, _ := raw.(cs.ClusterCommonResponse)
 		d.SetId(cluster.ClusterID)
 	} else {
 		args, err := buildKubernetesArgs(d, meta)
@@ -559,7 +560,7 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 			requestMap["Args"] = args
 			addDebug("CreateKubernetesCluster", raw, requestInfo, requestMap)
 		}
-		cluster, _ := raw.(cs.ClusterCreationResponse)
+		cluster, _ := raw.(cs.ClusterCommonResponse)
 		d.SetId(cluster.ClusterID)
 
 	}
@@ -667,6 +668,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("name")
 		d.SetPartial("name_prefix")
 	}
+	UpgradeAlicloudKubernetesCluster(d, meta)
 	d.Partial(false)
 
 	return resourceAlicloudCSKubernetesRead(d, meta)
@@ -689,6 +691,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("vpc_id", object.VPCID)
 	d.Set("security_group_id", object.SecurityGroupID)
 	d.Set("availability_zone", object.ZoneId)
+	d.Set("version", object.CurrentVersion)
 
 	var masterNodes []map[string]interface{}
 	var workerNodes []map[string]interface{}

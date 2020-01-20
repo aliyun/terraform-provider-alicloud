@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"time"
 
@@ -252,6 +253,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"version": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"log_config": {
 				Type:     schema.TypeList,
@@ -331,7 +333,7 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 		requestMap["Args"] = args
 		addDebug("CreateKubernetesCluster", response, requestInfo, requestMap)
 	}
-	cluster, _ := response.(cs.ClusterCreationResponse)
+	cluster, _ := response.(cs.ClusterCommonResponse)
 	d.SetId(cluster.ClusterID)
 
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, csService.CsManagedKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
@@ -459,6 +461,7 @@ func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta inte
 		d.SetPartial("name")
 		d.SetPartial("name_prefix")
 	}
+	UpgradeAlicloudKubernetesCluster(d, meta)
 	d.Partial(false)
 
 	return resourceAlicloudCSManagedKubernetesRead(d, meta)
@@ -480,6 +483,7 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 	d.Set("vpc_id", object.VPCID)
 	d.Set("security_group_id", object.SecurityGroupID)
 	d.Set("availability_zone", object.ZoneId)
+	d.Set("version", object.CurrentVersion)
 
 	var workerNodes []map[string]interface{}
 	var response interface{}
@@ -775,4 +779,25 @@ func deduplicateInstanceTypes(instanceTypes []string) []string {
 		ret = append(ret, k)
 	}
 	return ret
+}
+
+func UpgradeAlicloudKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	if d.HasChange("version") {
+		nextVersion := d.Get("version").(string)
+		args := &cs.UpgradeClusterArgs{
+			Version: nextVersion,
+		}
+
+		log.Printf("[DEBUG] Updating ACK Cluster (%s) version: %s", d.Id(), nextVersion)
+		csService := CsService{client}
+		err := csService.UpgradeCluster(d.Id(), args)
+
+		if err != nil {
+			return fmt.Errorf("error updating ACK Cluster (%s) version: %s", d.Id(), nextVersion)
+		}
+
+		d.SetPartial("version")
+	}
+	return nil
 }
