@@ -227,7 +227,7 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return fmt.Errorf("Creating container Cluster got an error: %#v", err)
 	}
-	cluster, _ := raw.(cs.ClusterCreationResponse)
+	cluster, _ := raw.(cs.ClusterCommonResponse)
 	d.SetId(cluster.ClusterID)
 
 	_, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
