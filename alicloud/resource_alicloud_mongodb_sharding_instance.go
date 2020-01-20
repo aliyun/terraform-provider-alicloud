@@ -116,9 +116,8 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 							Required: true,
 						},
 						"node_storage": {
-							Type:         schema.TypeInt,
-							Required:     true,
-							ValidateFunc: validation.IntBetween(10, 1000),
+							Type:     schema.TypeInt,
+							Required: true,
 						},
 						//Computed
 						"node_id": {
