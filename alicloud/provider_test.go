@@ -190,6 +190,35 @@ func testAccPreCheckWithAlikafkaAclEnable(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithNoDefaultVpc(t *testing.T) {
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	request := vpc.CreateDescribeVpcsRequest()
+	request.RegionId = string(client.Region)
+	request.PageSize = requests.NewInteger(PageSizeSmall)
+	request.PageNumber = requests.NewInteger(1)
+	request.IsDefault = requests.NewBoolean(true)
+
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DescribeVpcs(request)
+	})
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	response, _ := raw.(*vpc.DescribeVpcsResponse)
+
+	if len(response.Vpcs.Vpc) < 1 {
+		t.Skipf("Skipping the test case with there is no default vpc")
+		t.Skipped()
+	}
+}
+
 func testAccPreCheckWithNoDefaultVswitch(t *testing.T) {
 	region := os.Getenv("ALICLOUD_REGION")
 	rawClient, err := sharedClientForRegion(region)
