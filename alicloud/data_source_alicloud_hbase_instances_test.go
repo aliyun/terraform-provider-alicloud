@@ -67,7 +67,10 @@ func TestAccAlicloudHBaseInstancesDataSourceNewInstance(t *testing.T) {
 		}),
 	}
 
-	checkInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithNoDefaultVpc(t)
+	}
+	checkInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
 
 // new a instance config
@@ -81,12 +84,24 @@ variable "name" {
   default = "tf-testAccHBaseInstance_datasource_%d"
 }
 
+data "alicloud_vpcs" "default" {
+  is_default = "true"
+}
 data "alicloud_zones" "default" {
   available_resource_creation = "HBase"
 }
 
 data "alicloud_vswitches" "default" {
+  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_vswitch" "this" {
+  count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
+  name = "tf_testAccHBase_vpc"
+  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, %d)}"
 }
 
 resource "alicloud_hbase_instance" "default" {
@@ -100,13 +115,13 @@ resource "alicloud_hbase_instance" "default" {
   pay_type = "PostPaid"
   duration = 1
   auto_renew = "false"
-  vswitch_id = "${data.alicloud_vswitches.default.vswitches.0.id}"
+  vswitch_id = "${length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]}"
   cold_storage_size = 0
 }
 
 data "alicloud_hbase_instances" "default" {
   %s
 }
-`, rand, strings.Join(pairs, "\n  "))
+`, rand, acctest.RandIntRange(10, 100), strings.Join(pairs, "\n  "))
 	return config
 }

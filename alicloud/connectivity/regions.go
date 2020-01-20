@@ -95,3 +95,4 @@ var SmartagSupportedRegions = []Region{Shanghai, ShanghaiFinance, Hongkong, APSo
 var YundunDbauditSupportedRegions = []Region{Hangzhou, Beijing, Shanghai}
 var YundunBastionhostSupportedRegions = []Region{Hangzhou}
 var HttpHttpsHealthCheckMehtodSupportedRegions = []Region{Hangzhou, Beijing, Shanghai, EUWest1, ChengDu, Qingdao, Hongkong, Shenzhen, APSouthEast5, Zhangjiakou, Huhehaote, MEEast1, APSouth1, EUCentral1, USWest1, APSouthEast3, APSouthEast2, APSouthEast1, APNorthEast1}
+var HBaseClassicSupportedRegions = []Region{Hangzhou, Beijing, Shanghai, Shenzhen}
