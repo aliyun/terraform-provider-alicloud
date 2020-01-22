@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"time"
 
@@ -789,12 +788,11 @@ func UpgradeAlicloudKubernetesCluster(d *schema.ResourceData, meta interface{}) 
 			Version: nextVersion,
 		}
 
-		log.Printf("[DEBUG] Updating ACK Cluster (%s) version: %s", d.Id(), nextVersion)
 		csService := CsService{client}
 		err := csService.UpgradeCluster(d.Id(), args)
 
 		if err != nil {
-			return fmt.Errorf("error updating ACK Cluster (%s) version: %s", d.Id(), nextVersion)
+			return WrapError(err)
 		}
 
 		d.SetPartial("version")
