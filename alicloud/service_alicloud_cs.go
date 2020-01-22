@@ -495,7 +495,7 @@ func (s *CsService) UpgradeCluster(clusterId string, args *cs.UpgradeClusterArgs
 	})
 
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	state, upgradeError := s.WaitForUpgradeCluster(clusterId, "Upgrade")
@@ -514,15 +514,14 @@ func (s *CsService) UpgradeCluster(clusterId string, args *cs.UpgradeClusterArgs
 		return nil
 	})
 	if err != nil {
-		log.Printf("[WARN] %s ACK Cluster cancel upgrade error: %#v", clusterId, err)
-		return upgradeError
+		return WrapError(upgradeError)
 	}
 
 	if state, err := s.WaitForUpgradeCluster(clusterId, "CancelUpgrade"); err != nil || state != cs.Task_Status_Success {
 		log.Printf("[WARN] %s ACK Cluster cancel upgrade error: %#v", clusterId, err)
 	}
 
-	return upgradeError
+	return WrapError(upgradeError)
 }
 
 func (s *CsService) WaitForUpgradeCluster(clusterId string, action string) (string, error) {
@@ -555,5 +554,5 @@ func (s *CsService) WaitForUpgradeCluster(clusterId string, action string) (stri
 		return cs.Task_Status_Success, nil
 	}
 
-	return cs.Task_Status_Failed, err
+	return cs.Task_Status_Failed, WrapError(err)
 }

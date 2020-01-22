@@ -249,7 +249,7 @@ Larger this number is, less pods can be allocated on each node. Default value is
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
-* `version` - (Optional) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
+* `version` - (Optional, Available in 1.71.0) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
 ### Timeouts
 
 -> **NOTE:** Available in 1.58.0+.
