@@ -174,7 +174,7 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		requestMap["Args"] = args
 		addDebug("CreateServerlessKubernetesCluster", response, requestInfo, requestMap)
 	}
-	cluster, _ := response.(*cs.ClusterCreationResponse)
+	cluster, _ := response.(*cs.ClusterCommonResponse)
 	d.SetId(cluster.ClusterID)
 
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, csService.CsServerlessKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))

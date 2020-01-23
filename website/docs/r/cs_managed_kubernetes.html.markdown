@@ -142,6 +142,7 @@ You can get the available kubernetes master node instance types by [datasource i
 * `log_config` - (Optional, ForceNew, Available in 1.57.1+) A list of one element containing information about the associated log store. It contains the following attributes:
   * `type` - Type of collecting logs, only `SLS` are supported currently.
   * `project` - Log Service project name, cluster logs will output to this project.
+* `version` - (Optional, Available in 1.71.0) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
 
 ### Timeouts
 
@@ -171,6 +172,7 @@ The following attributes are exported:
 * `worker_data_disk_size` - The data disk category of worker node.
 * `worker_data_disk_category` - The data disk size of worker node.
 * `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
+* `version` - The Kubernetes server version for the cluster.
 
 ### Block Nodes
 

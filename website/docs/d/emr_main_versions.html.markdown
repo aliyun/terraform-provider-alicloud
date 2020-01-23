@@ -18,11 +18,16 @@ main versions available in Alibaba Cloud account when create a emr cluster.
 
 ```
 data "alicloud_emr_main_versions" "default" {
-  emr_version = "EMR-3.22.0"
+  emr_version  = "EMR-3.22.0"
+  cluster_type = ["HADOOP", "ZOOKEEPER"]
 }
 
 output "first_main_version" {
   value = "${data.alicloud_emr_main_versions.default.main_versions.0.emr_version}"
+}
+
+output "this_cluster_types" {
+  value = "${data.alicloud_emr_main_versions.default.main_versions.0.cluster_types}"
 }
 ```
 
@@ -31,6 +36,8 @@ output "first_main_version" {
 The following arguments are supported:
 
 * `emr_version` - (Optional) The version of the emr cluster instance. Possible values: `EMR-4.0.0`, `EMR-3.23.0`, `EMR-3.22.0`.
+* `cluster_type` - (Optional, Available in 1.71.0+) The supported clusterType of this emr version.
+Possible values may be any one or combination of these: ["HADOOP", "DRUID", "KAFKA", "ZOOKEEPER", "FLINK", "CLICKHOUSE"]
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

@@ -367,6 +367,101 @@ resource "alicloud_eip_association" "default" {
 `, name)
 }
 
+func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
+	var v cs.KubernetesCluster
+
+	resourceId := "alicloud_cs_managed_kubernetes.default"
+	ra := resourceAttrInit(resourceId, csManagedKubernetesBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testaccmanagedkubernetes-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSManagedKubernetesConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                        name,
+					"availability_zone":           "${data.alicloud_zones.default.zones.0.id}",
+					"vswitch_ids":                 []string{"${alicloud_vswitch.default.id}"},
+					"worker_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"password":                    "Test12345",
+					"pod_cidr":                    "172.20.0.0/16",
+					"service_cidr":                "172.21.0.0/20",
+					"cluster_network_type":        "flannel",
+					"worker_disk_size":            "50",
+					"worker_disk_category":        "cloud_ssd",
+					"worker_data_disk_size":       "20",
+					"worker_data_disk_category":   "cloud_ssd",
+					"worker_instance_charge_type": "PostPaid",
+					"slb_internet_enabled":        "true",
+					"version":                     "1.12.6-aliyun.1",
+					"log_config": []map[string]interface{}{
+						{
+							"type":    "SLS",
+							"project": "${alicloud_log_project.log.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                      name,
+						"password":                  "Test12345",
+						"pod_cidr":                  "172.20.0.0/16",
+						"service_cidr":              "172.21.0.0/20",
+						"cluster_network_type":      "flannel",
+						"worker_disk_size":          "50",
+						"worker_disk_category":      "cloud_ssd",
+						"worker_data_disk_size":     "20",
+						"worker_data_disk_category": "cloud_ssd",
+						"slb_internet_enabled":      "true",
+						"version":                   "1.12.6-aliyun.1",
+						"log_config.#":              "1",
+						"log_config.0.type":         "SLS",
+						"log_config.0.project":      CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
+					"service_cidr", "password", "install_cloud_monitor", "slb_internet_enabled",
+					"vswitch_ids", "worker_instance_types", "worker_numbers", "worker_disk_category",
+					"worker_disk_size", "worker_instance_charge_type", "worker_number", "force_update",
+					"cluster_network_type", "worker_data_disk_category", "worker_data_disk_size", "log_config"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version": "1.14.8-aliyun.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version": "1.14.8-aliyun.1",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var csManagedKubernetesBasicMap = map[string]string{
 	"availability_zone":           CHECKSET,
 	"new_nat_gateway":             "true",
