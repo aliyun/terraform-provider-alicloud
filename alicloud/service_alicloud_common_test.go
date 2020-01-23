@@ -1067,7 +1067,6 @@ resource "alicloud_emr_cluster" "default" {
     }
 
     high_availability_enable = true
-    option_software_list = ["HBASE","PRESTO",]
     zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
     security_group_id = alicloud_security_group.default.id
     is_open_public_ip = true
