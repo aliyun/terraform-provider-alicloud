@@ -284,7 +284,7 @@ func TestAccAlicloudEmrCluster_gateway(t *testing.T) {
 					"name":                      name,
 					"emr_ver":                   "${data.alicloud_emr_main_versions.default.main_versions.0.emr_version}",
 					"cluster_type":              "GATEWAY",
-          "zone_id":                   "${data.alicloud_emr_instance_types.default.types.0.zone_id}",
+					"zone_id":                   "${data.alicloud_emr_instance_types.default.types.0.zone_id}",
 					"security_group_id":         "${alicloud_security_group.default.id}",
 					"is_open_public_ip":         "true",
 					"charge_type":               "PostPaid",

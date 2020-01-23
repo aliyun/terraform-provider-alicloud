@@ -1,8 +1,9 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/emr"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"

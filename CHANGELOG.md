@@ -1,4 +1,17 @@
 ## 1.70.1 (Unreleased)
+
+IMPROVEMENTS:
+
+- added data source emr main versions parameter filter: cluster_type [GH-2130]
+- Features/upgrade cluster [GH-2129]
+- improve(mongodb_sharding): removing the limitation of node_storage [GH-2128]
+- improve(hbase): add precheck for the test cases [GH-2127]
+- Support update alikafka topic partition num and remark [GH-2096]
+
+BUG FIXES:
+
+- fix the bug of create emr gateway failed and optimized status delay time [GH-2124]
+
 ## 1.70.0 (January 17, 2020)
 
 - **Data Source:** `alicloud_polardb_accounts` ([#2091](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2091))
