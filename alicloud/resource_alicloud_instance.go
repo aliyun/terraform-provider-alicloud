@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -600,14 +599,12 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	d.Partial(true)
 
 	if err := setTags(client, TagResourceInstance, d); err != nil {
-		log.Printf("[DEBUG] Set tags for instance got error: %#v", err)
 		return WrapError(err)
 	} else {
 		d.SetPartial("tags")
 	}
 
 	if err := setVolumeTags(client, TagResourceDisk, d); err != nil {
-		log.Printf("[DEBUG] Set volume tags (%s) go error: %#v", d.Id(), err)
 		return WrapError(err)
 	} else {
 		d.SetPartial("volume_tags")
@@ -673,13 +670,11 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate {
 		run = true
-		log.Printf("[INFO] Need rebooting to make all changes valid.")
 		instance, errDesc := ecsService.DescribeInstance(d.Id())
 		if errDesc != nil {
 			return WrapError(errDesc)
 		}
 		if instance.Status == string(Running) {
-			log.Printf("[DEBUG] Stop instance when changing image or password or vpc attribute")
 			stopRequest := ecs.CreateStopInstanceRequest()
 			stopRequest.RegionId = client.RegionId
 			stopRequest.InstanceId = d.Id()
@@ -711,7 +706,6 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			return WrapError(err)
 		}
 
-		log.Printf("[DEBUG] Start instance after changing image or password or vpc attribute")
 		startRequest := ecs.CreateStartInstanceRequest()
 		startRequest.InstanceId = d.Id()
 
@@ -1228,7 +1222,6 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	}
 
 	if d.HasChange("credit_specification") {
-		log.Printf("[DEBUG] ModifyInstanceAttribute credit_specification")
 		d.SetPartial("credit_specification")
 		request.CreditSpecification = d.Get("credit_specification").(string)
 		update = true
