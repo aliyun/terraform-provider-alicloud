@@ -10,8 +10,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -96,7 +94,6 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 
 	// Set tags
 	if len(remove) > 0 {
-		log.Printf("[DEBUG] Removing tags: %#v from %#v", remove, ids)
 		request := ecs.CreateUntagResourcesRequest()
 		request.ResourceType = string(resourceType)
 		request.ResourceId = &ids
@@ -106,7 +103,6 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 			tagsKey = append(tagsKey, t.Key)
 		}
 		request.TagKey = &tagsKey
-		request.All = requests.NewBoolean(true)
 
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.UntagResources(request)
@@ -118,7 +114,6 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 	}
 
 	if len(create) > 0 {
-		log.Printf("[DEBUG] Creating tags: %s for %#v", create, ids)
 		request := ecs.CreateTagResourcesRequest()
 		request.ResourceType = string(resourceType)
 		request.ResourceId = &ids
@@ -151,7 +146,6 @@ func updateCdnTags(client *connectivity.AliyunClient, ids []string, resourceType
 
 	// Set tags
 	if len(remove) > 0 {
-		log.Printf("[DEBUG] Removing tags: %#v from %#v", remove, ids)
 		request := cdn.CreateUntagResourcesRequest()
 		request.ResourceType = string(resourceType)
 		request.ResourceId = &ids
@@ -172,7 +166,6 @@ func updateCdnTags(client *connectivity.AliyunClient, ids []string, resourceType
 	}
 
 	if len(create) > 0 {
-		log.Printf("[DEBUG] Creating tags: %s for %#v", create, ids)
 		request := cdn.CreateTagResourcesRequest()
 		request.ResourceType = string(resourceType)
 		request.ResourceId = &ids
