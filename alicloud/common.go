@@ -185,15 +185,6 @@ const (
 	PayBy95        = InternetChargeType("PayBy95")
 )
 
-type InstanceSeries string
-
-const (
-	drds4c8g   = InstanceSeries("drds.sn1.4c8g")
-	drds8c16g  = InstanceSeries("drds.sn1.8c16g")
-	drds16c32g = InstanceSeries("drds.sn1.16c32g")
-	drds32c64g = InstanceSeries("drds.sn1.32c64g")
-)
-
 type AccountSite string
 
 const (
@@ -269,9 +260,6 @@ const INT_MAX = 2147483647
 
 // symbol of multiIZ
 const MULTI_IZ_SYMBOL = "MAZ"
-
-// default connect port of db
-const DB_DEFAULT_CONNECT_PORT = "3306"
 
 const COMMA_SEPARATED = ","
 
@@ -708,7 +696,7 @@ func addDebug(action, content interface{}, requestInfo ...interface{}) {
 				request.Method, request.Product, request.Region, request.ActionName, requestContent)
 		}
 
-		fmt.Printf(DefaultDebugMsg, action, content, trace)
+		//fmt.Printf(DefaultDebugMsg, action, content, trace)
 		log.Printf(DefaultDebugMsg, action, content, trace)
 	}
 }
@@ -760,14 +748,6 @@ func BuildStateConf(pending, target []string, timeout, delay time.Duration, f re
 		MinTimeout: 3 * time.Second,
 	}
 }
-
-type EventRwType string
-
-const (
-	EventRead  = EventRwType("Read")
-	EventWrite = EventRwType("Write")
-	EventAll   = EventRwType("All")
-)
 
 func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration) func() {
 	retryCount := 1
