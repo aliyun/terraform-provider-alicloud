@@ -137,7 +137,7 @@ func testAccCheckKeyPairDestroy(s *terraform.State) error {
 
 		if err != nil {
 			// Verify the error is what we want
-			if NotFoundError(err) || IsExpectedErrors(err, []string{KeyPairNotFound}) {
+			if NotFoundError(err) {
 				continue
 			}
 			return err

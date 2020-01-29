@@ -97,7 +97,7 @@ func resourceAlicloudCenBandwidthPackageCreate(d *schema.ResourceData, meta inte
 			return cbnClient.CreateCenBandwidthPackage(&req)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{OperationBlocking}) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -224,7 +224,7 @@ func resourceAlicloudCenBandwidthPackageDelete(d *schema.ResourceData, meta inte
 			return cbnClient.DeleteCenBandwidthPackage(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Forbidden.Release", "InvalidOperation.CenBandwidthLimitsNotZero", ParameterBwpInstanceId}) {
+			if IsExpectedErrors(err, []string{"Forbidden.Release", "InvalidOperation.CenBandwidthLimitsNotZero", "ParameterBwpInstanceId"}) {
 				return resource.NonRetryableError(err)
 			}
 			return resource.RetryableError(err)
@@ -233,7 +233,7 @@ func resourceAlicloudCenBandwidthPackageDelete(d *schema.ResourceData, meta inte
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ParameterBwpInstanceId}) {
+		if IsExpectedErrors(err, []string{"ParameterBwpInstanceId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

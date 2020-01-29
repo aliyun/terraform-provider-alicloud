@@ -242,7 +242,7 @@ func resourceAliyunOtsTableDelete(d *schema.ResourceData, meta interface{}) erro
 		return nil
 	})
 	if err != nil {
-		if strings.HasPrefix(err.Error(), OTSObjectNotExist) {
+		if strings.HasPrefix(err.Error(), "OTSObjectNotExist") {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteTable", AliyunTablestoreGoSdk)

@@ -28,7 +28,7 @@ func (s *PolarDBService) DescribePolarDBCluster(id string) (instance *polardb.DB
 		return polarDBClient.DescribeDBClusters(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -51,7 +51,7 @@ func (s *PolarDBService) DescribePolarDBClusterAttribute(id string) (instance *p
 		return polarDBClient.DescribeDBClusterAttribute(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -75,7 +75,7 @@ func (s *PolarDBService) DescribePolarDBAutoRenewAttribute(id string) (instance 
 		return polarDBClient.DescribeAutoRenewAttribute(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -99,7 +99,7 @@ func (s *PolarDBService) DescribeParameters(id string) (ds *polardb.DescribeDBCl
 		return polarDBClient.DescribeDBClusterParameters(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -282,7 +282,7 @@ func (s *PolarDBService) DescribePolarDBAccountPrivilege(id string) (account *po
 		response, _ = raw.(*polardb.DescribeAccountsResponse)
 		return nil
 	}); err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -363,7 +363,7 @@ func (s *PolarDBService) DescribePolarDBInstanceNetInfo(id string) ([]polardb.DB
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -396,7 +396,7 @@ func (s *PolarDBService) DescribePolarDBDatabase(id string) (ds *polardb.Databas
 			return polarDBClient.DescribeDatabases(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+			if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -407,7 +407,7 @@ func (s *PolarDBService) DescribePolarDBDatabase(id string) (ds *polardb.Databas
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -499,7 +499,7 @@ func (s *PolarDBService) DescribePolarDBAccount(id string) (ds *polardb.DBAccoun
 		response, _ = raw.(*polardb.DescribeAccountsResponse)
 		return nil
 	}); err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -846,7 +846,7 @@ func (s *PolarDBService) DescribeBackupPolicy(id string) (policy *polardb.Descri
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return policy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

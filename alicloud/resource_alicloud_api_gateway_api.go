@@ -594,7 +594,7 @@ func resourceAliyunApigatewayApiDelete(d *schema.ResourceData, meta interface{})
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{ApiNotFound}) {
+		if IsExpectedErrors(err, []string{"NotFoundApi"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

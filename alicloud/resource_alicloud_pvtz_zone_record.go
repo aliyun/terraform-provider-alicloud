@@ -50,7 +50,7 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 				Default:      1,
 				ValidateFunc: validation.IntBetween(1, 50),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("type").(string) != string(RecordMX)
+					return d.Get("type").(string) != "MX"
 				},
 			},
 			"ttl": {
@@ -104,7 +104,7 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 			return pvtzClient.AddZoneRecord(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, PvtzSystemBusy}) {
+			if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, "System.Busy"}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -131,7 +131,7 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 						return pvtzClient.DescribeZoneRecords(req)
 					})
 					if err != nil {
-						if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, PvtzSystemBusy}) {
+						if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, "System.Busy"}) {
 							time.Sleep(5 * time.Second)
 							return resource.RetryableError(err)
 						}
@@ -211,7 +211,7 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 				return pvtzClient.UpdateZoneRecord(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, PvtzSystemBusy}) {
+				if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, "System.Busy"}) {
 					time.Sleep(5 * time.Second)
 					return resource.RetryableError(err)
 				}
@@ -278,7 +278,7 @@ func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, PvtzSystemBusy}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "System.Busy"}) {
 				time.Sleep(time.Duration(2) * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -290,7 +290,7 @@ func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
+		if IsExpectedErrors(err, []string{"Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -120,7 +120,7 @@ func resourceAlicloudDBConnectionRead(d *schema.ResourceData, meta interface{}) 
 	object, err := rdsService.DescribeDBConnection(d.Id())
 
 	if err != nil {
-		if rdsService.NotFoundDBInstance(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -224,7 +224,7 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 	})
 
 	if err != nil {
-		if rdsService.NotFoundDBInstance(err) || IsExpectedErrors(err, []string{InvalidCurrentConnectionStringNotFound, AtLeastOneNetTypeExists}) {
+		if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidCurrentConnectionString.NotFound", "AtLeastOneNetTypeExists"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

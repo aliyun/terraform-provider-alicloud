@@ -133,7 +133,7 @@ func resourceAlicloudGpdbInstanceCreate(d *schema.ResourceData, meta interface{}
 			return client.CreateDBInstance(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InvalidGpdbConcurrentOperate}) {
+			if IsExpectedErrors(err, []string{"SYSTEM.CONCURRENT_OPERATE"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -215,7 +215,7 @@ func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{InvalidGpdbInstanceStatus}) {
+			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -224,7 +224,7 @@ func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidGpdbInstanceIdNotFound, InvalidGpdbNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

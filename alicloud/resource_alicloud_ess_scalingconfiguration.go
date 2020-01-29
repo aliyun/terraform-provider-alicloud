@@ -253,7 +253,7 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 			return essClient.CreateScalingConfiguration(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{Throttling, IncorrectScalingGroupStatus}) {
+			if IsExpectedErrors(err, []string{Throttling, "IncorrectScalingGroupStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -641,7 +641,7 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 			})
 
 			if err != nil {
-				if IsExpectedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
+				if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
 					return nil
 				}
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -661,7 +661,7 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidScalingGroupIdNotFound, InvalidEssScalingConfigurationIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound", "InvalidScalingConfigurationId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

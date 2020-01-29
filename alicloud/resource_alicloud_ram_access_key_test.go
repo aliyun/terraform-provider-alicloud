@@ -120,7 +120,7 @@ func testAccCheckRamAccessKeyDestroy(s *terraform.State) error {
 				}
 			}
 		}
-		if err != nil && !RamEntityNotExist(err) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return WrapError(err)
 		}
 	}

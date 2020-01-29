@@ -26,7 +26,7 @@ func (s *NasService) DescribeNasFileSystem(id string) (fs nas.DescribeFileSystem
 			if IsExpectedErrors(err, []string{ServiceUnavailable, Throttling}) {
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{InvalidFileSystemIDNotFound, ForbiddenNasNotFound}) {
+			if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound", "Forbidden.NasNotFound"}) {
 				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
@@ -88,7 +88,7 @@ func (s *NasService) DescribeNasAccessGroup(id string) (ag nas.DescribeAccessGro
 			if IsExpectedErrors(err, []string{ServiceUnavailable, Throttling}) {
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{InvalidAccessGroupNotFound, ForbiddenNasNotFound}) {
+			if IsExpectedErrors(err, []string{"InvalidAccessGroup.NotFound", "Forbidden.NasNotFound"}) {
 				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
@@ -123,7 +123,7 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.DescribeAccessRule
 			if IsExpectedErrors(err, []string{ServiceUnavailable, Throttling}) {
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{InvalidAccessGroupNotFound, ForbiddenNasNotFound}) {
+			if IsExpectedErrors(err, []string{"InvalidAccessGroup.NotFound", "Forbidden.NasNotFound"}) {
 				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))

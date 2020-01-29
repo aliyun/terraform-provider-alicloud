@@ -68,7 +68,7 @@ func resourceAliyunSlbDomainExtensionCreate(d *schema.ResourceData, meta interfa
 			return slbClient.CreateDomainExtension(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{DomainExtensionProcessing}) {
+			if IsExpectedErrors(err, []string{"DomainExtensionProcessing"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -118,7 +118,7 @@ func resourceAliyunSlbDomainExtensionUpdate(d *schema.ResourceData, meta interfa
 				return slbClient.SetDomainExtensionAttribute(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{BackendServerConfiguring, DomainExtensionProcessing}) {
+				if IsExpectedErrors(err, []string{"BackendServer.configuring", "DomainExtensionProcessing"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -160,7 +160,7 @@ func resourceAliyunSlbDomainExtensionDelete(d *schema.ResourceData, meta interfa
 			return slbClient.DeleteDomainExtension(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{DomainExtensionProcessing, InternalError}) {
+			if IsExpectedErrors(err, []string{"DomainExtensionProcessing", "InternalError"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -169,7 +169,7 @@ func resourceAliyunSlbDomainExtensionDelete(d *schema.ResourceData, meta interfa
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDomainExtensionIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidParameter.DomainExtensionId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DataDefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

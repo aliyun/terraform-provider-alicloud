@@ -208,7 +208,7 @@ func (s *EcsService) LeaveSecurityGroups(instanceId string, securityGroupIds []s
 		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.LeaveSecurityGroup(request)
 		})
-		if err != nil && IsExpectedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
+		if err != nil && IsExpectedErrors(err, []string{"InvalidSecurityGroupId.NotFound"}) {
 			return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -225,7 +225,7 @@ func (s *EcsService) DescribeSecurityGroup(id string) (group ecs.DescribeSecurit
 		return ecsClient.DescribeSecurityGroupAttribute(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidSecurityGroupId.NotFound"}) {
 			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return
@@ -259,6 +259,9 @@ func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, 
 		return ecsClient.DescribeSecurityGroupAttribute(request)
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidSecurityGroupId.NotFound"}) {
+			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -285,7 +288,7 @@ func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, 
 		}
 	}
 
-	return rule, GetNotFoundErrorFromString(fmt.Sprintf("Security group rule not found by group id %s.", groupId))
+	return rule, WrapErrorf(Error(GetNotFoundMessage("Security Group Rule", id)), NotFoundMsg, ProviderERROR)
 
 }
 
@@ -468,7 +471,10 @@ func (s *EcsService) DescribeKeyPair(id string) (keyPair ecs.KeyPair, err error)
 func (s *EcsService) DescribeKeyPairAttachment(id string) (keyPair ecs.KeyPair, err error) {
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return keyPair, WrapError(err)
+		if IsExpectedErrors(err, []string{"InvalidKeyPair.NotFound"}) {
+			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return
 	}
 	keyPairName := parts[0]
 	keyPair, err = s.DescribeKeyPair(keyPairName)
@@ -993,7 +999,7 @@ func (s *EcsService) AttachKeyPair(keyName string, instanceIds []interface{}) er
 			return ecsClient.AttachKeyPair(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{KeyPairServiceUnavailable}) {
+			if IsExpectedErrors(err, []string{"ServiceUnavailable"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -1286,7 +1292,7 @@ func (s *EcsService) DescribeImageShareByImageId(id string) (imageShare *ecs.Des
 		return ecsClient.DescribeImageSharePermission(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ImageIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidImageId.NotFound"}) {
 			return imageShare, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return imageShare, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

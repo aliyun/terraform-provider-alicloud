@@ -159,7 +159,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
-					"version":              string(ESVersion553WithXPack),
+					"version":              "5.5.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
 					"data_node_amount":     DataNodeAmount,
@@ -170,7 +170,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": name,
-						"version":     string(ESVersion553WithXPack),
+						"version":     "5.5.3_with_X-Pack",
 					}),
 				),
 			},
@@ -299,7 +299,7 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
-					"version":              string(ESVersion553WithXPack),
+					"version":              "5.5.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
 					"data_node_amount":     DataNodeAmountForMultiZone,
@@ -312,7 +312,7 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":      name,
-						"version":          string(ESVersion553WithXPack),
+						"version":          "5.5.3_with_X-Pack",
 						"data_node_amount": DataNodeAmountForMultiZone,
 						"master_node_spec": MasterNodeSpec,
 						"zone_count":       DefaultZoneAmount,
@@ -354,7 +354,7 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
-					"version":              string(ESVersion632WithXPack),
+					"version":              "6.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
 					"data_node_amount":     DataNodeAmount,
@@ -371,7 +371,7 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"version": string(ESVersion670WithXPack),
+					"version": "6.7_with_X-Pack",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -414,7 +414,7 @@ func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
-					"version":              string(ESVersion553WithXPack),
+					"version":              "5.5.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
 					"data_node_amount":     DataNodeAmount,
@@ -438,7 +438,7 @@ var elasticsearchMap = map[string]string{
 	"data_node_disk_size":  DataNodeDisk,
 	"data_node_disk_type":  DataNodeDiskType,
 	"instance_charge_type": string(PostPaid),
-	"status":               string(ElasticsearchStatusActive),
+	"status":               "active",
 	"kibana_whitelist.#":   "0",
 	"private_whitelist.#":  "0",
 	"public_whitelist.#":   "0",

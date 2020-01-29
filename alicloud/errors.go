@@ -19,325 +19,35 @@ import (
 
 const (
 	// common
-	NotFound           = "NotFound"
-	WaitForTimeout     = "WaitForTimeout"
-	ResourceNotFound   = "ResourceNotfound"
-	ServiceUnavailable = "ServiceUnavailable"
-	// ecs
+	NotFound                = "NotFound"
+	ResourceNotfound        = "ResourceNotfound"
+	ServiceUnavailable      = "ServiceUnavailable"
 	InstanceNotFound        = "Instance.Notfound"
 	MessageInstanceNotFound = "instance is not found"
-	ImageIdNotFound         = "InvalidImageId.NotFound"
-	// disk
-	InternalError       = "InternalError"
-	DependencyViolation = "DependencyViolation"
-	// eip
-	EipIncorrectStatus         = "IncorrectEipStatus"
-	InstanceIncorrectStatus    = "IncorrectInstanceStatus"
-	HaVipIncorrectStatus       = "IncorrectHaVipStatus"
-	COMMODITYINVALID_COMPONENT = "COMMODITY.INVALID_COMPONENT"
-	AllocationIdNotFound       = "InvalidAllocationId.NotFound"
-	HasBeenUsedBySnatTable     = "InvalidIpStatus.HasBeenUsedBySnatTable"
-	HasBeenUsedByForwardEntry  = "InvalidIpStatus.HasBeenUsedByForwardEntry"
-	// slb
-	LoadBalancerNotFound                  = "InvalidLoadBalancerId.NotFound"
-	ListenerNotFound                      = "The specified resource does not exist"
-	SlbOrderFailed                        = "OrderFailed"
-	VServerGroupNotFoundMessage           = "The specified VServerGroupId does not exist"
-	MasterSlaveServerGroupNotFoundMessage = "The specified MasterSlaveGroupId does not exist"
-	RspoolVipExist                        = "RspoolVipExist"
-	InvalidParameter                      = "InvalidParameter"
-	InvalidRuleIdNotFound                 = "InvalidRuleId.NotFound"
-	BackendServerConfiguring              = "BackendServer.configuring"
-	InvalidDomainExtensionIdNotFound      = "InvalidParameter.DomainExtensionId"
-	DomainExtensionProcessing             = "DomainExtensionProcessing"
-	// slb acl
-	SlbAclNotExists = "AclNotExist"
-
-	// security_group
-	InvalidSecurityGroupIdNotFound = "InvalidSecurityGroupId.NotFound"
-	SgDependencyViolation          = "DependencyViolation"
-
-	//Nat gateway
-	InvalidNatGatewayIdNotFound = "InvalidNatGatewayId.NotFound"
-	// vpc
-	InvalidVpcIDNotFound = "InvalidVpcID.NotFound"
-	ForbiddenVpcNotFound = "Forbidden.VpcNotFound"
-	Throttling           = "Throttling"
-	IncorrectVpcStatus   = "IncorrectVpcStatus"
-	IncorrectStatus      = "IncorrectStatus"
-
-	// NAS
-	InvalidFileSystemIDNotFound = "InvalidFileSystem.NotFound"
-	InvalidAccessGroupNotFound  = "InvalidAccessGroup.NotFound"
-	ForbiddenNasNotFound        = "Forbidden.NasNotFound"
-
-	//apigatway
-	ApiGroupNotFound      = "NotFoundApiGroup"
-	RepeatedCommit        = "RepeatedCommit"
-	ApiNotFound           = "NotFoundApi"
-	NotFoundApp           = "NotFoundApp"
-	NotFoundAuthorization = "NotFoundAuthorization"
-	NotFoundStage         = "NotFoundStage"
-
-	// vswitch
-	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
-	InvalidVswitchIDNotFound = "InvalidVswitchID.NotFound"
-	TokenProcessing          = "OperationFailed.IdempotentTokenProcessing"
-	//route entry
-	IncorrectRouteEntryStatus            = "IncorrectRouteEntryStatus"
-	InvalidStatusRouteEntry              = "InvalidStatus.RouteEntry"
-	TaskConflict                         = "TaskConflict"
-	RouterEntryForbbiden                 = "Forbbiden"
-	RouterEntryConflictDuplicated        = "RouterEntryConflict.Duplicated"
-	InvalidCidrBlockOverlapped           = "InvalidCidrBlock.Overlapped"
-	IncorrectOppositeInterfaceInfoNotSet = "IncorrectOppositeInterfaceInfo.NotSet"
-	InvalidSnatTableIdNotFound           = "InvalidSnatTableId.NotFound"
-	InvalidSnatEntryIdNotFound           = "InvalidSnatEntryId.NotFound"
-	IncorretSnatEntryStatus              = "IncorretSnatEntryStatus"
-	InvalidRouteEntryNotFound            = "InvalidRouteEntry.NotFound"
-	// Forward
-	InvalidIpNotInNatgw           = "InvalidIp.NotInNatgw"
-	InvalidForwardTableIdNotFound = "InvalidForwardTableId.NotFound"
-	InvalidForwardEntryIdNotFound = "InvalidForwardEntryId.NotFound"
-
-	// ess
-	InvalidScalingGroupIdNotFound               = "InvalidScalingGroupId.NotFound"
-	InvalidScheduledTaskIdNotFound              = "InvalidScheduledTaskId.NotFound"
-	IncorrectScalingConfigurationLifecycleState = "IncorrectScalingConfigurationLifecycleState"
-	IncorrectScalingGroupStatus                 = "IncorrectScalingGroupStatus"
-	IncorrectCapacityMaxSize                    = "IncorrectCapacity.MaxSize"
-	IncorrectCapacityMinSize                    = "IncorrectCapacity.MinSize"
-	ScalingActivityInProgress                   = "ScalingActivityInProgress"
-	InvalidScalingRuleIdNotFound                = "InvalidScalingRuleId.NotFound"
-	InvalidLifecycleHookIdNotFound              = "InvalidLifecycleHookId.NotExist"
-	InvalidNotificationNotFound                 = "NotificationConfigurationNotExist"
-	InvalidEssAlarmTaskNotFound                 = "404"
-	InvalidEssScalingConfigurationIdNotFound    = "InvalidScalingConfigurationId.NotFound"
-	//drds
-	InvalidDRDSInstanceIdNotFound = "InvalidDrdsInstanceId.NotFound"
-
-	//mongodb
-	InvalidMongoDBInstanceIdNotFound = "InvalidDBInstanceId.NotFound"
-	InvalidMongoDBNameNotFound       = "InvalidDBName.NotFound"
-
-	//hbase
-	InvalidHBaseInstanceIdNotFound = "Instance.NotFound"
-	InvalidHBaseNameNotFound       = "InvalidDBName.NotFound"
-
-	// gpdb
-	InvalidGpdbNameNotFound       = "InvalidDBName.NotFound"
-	InvalidGpdbInstanceIdNotFound = "InvalidDBInstanceId.NotFound"
-	InvalidGpdbInstanceStatus     = "OperationDenied.DBInstanceStatus"
-	InvalidGpdbConcurrentOperate  = "SYSTEM.CONCURRENT_OPERATE"
-
-	// rds
-	InvalidDBInstanceIdNotFound            = "InvalidDBInstanceId.NotFound"
-	InvalidDBNameNotFound                  = "InvalidDBName.NotFound"
-	InvalidDBInstanceNameNotFound          = "InvalidDBInstanceName.NotFound"
-	InvalidCurrentConnectionStringNotFound = "InvalidCurrentConnectionString.NotFound"
-	InvalidRwSplitNetTypeNotFound          = "InvalidRwSplitNetType.NotFound"
-	InvalidAccountNameNotFound             = "InvalidAccountName.NotFound"
-	AtLeastOneNetTypeExists                = "AtLeastOneNetTypeExists"
-	DBOperationDeniedOutofUsage            = "OperationDenied.OutofUsage"
-
-	// polarDB
-	InvalidDBClusterIdNotFound      = "InvalidDBClusterId.NotFound"
-	InvalidDBClusterNameNotFound    = "InvalidDBClusterName.NotFound"
-	InvalidDBClusterStatus          = "OperationDenied.DBClusterStatus"
-	EndpointStatusNotSupport        = "EndpointStatus.NotSupport"
-	InvalidPolarDBClusterStatus     = "OperationDenied.PolarDBClusterStatus"
-	InvalidReadPolarDBClusterStatus = "OperationDenied.ReadPolarDBClusterStatus"
-
-	// oss
-	OssBucketNotFound                 = "NoSuchBucket"
-	OssBodyNotFound                   = "404 Not Found"
-	NoSuchCORSConfiguration           = "NoSuchCORSConfiguration"
-	NoSuchWebsiteConfiguration        = "NoSuchWebsiteConfiguration"
-	InsufficientBucketPolicyException = "InsufficientBucketPolicyException"
+	Throttling              = "Throttling"
+	ThrottlingUser          = "Throttling.User"
 
 	// RAM Instance Not Found
 	RamInstanceNotFound   = "Forbidden.InstanceNotFound"
 	AliyunGoClientFailure = "AliyunGoClientFailure"
 
-	// dns
-	RecordForbiddenDNSChange    = "RecordForbidden.DNSChange"
-	FobiddenNotEmptyGroup       = "Fobidden.NotEmptyGroup"
-	DomainRecordNotBelongToUser = "DomainRecordNotBelongToUser"
-	InvalidDomainNotFound       = "InvalidDomain.NotFound"
-	InvalidDomainNameNoExist    = "InvalidDomainName.NoExist"
-
-	// ram user
-	DeleteConflictUserGroup        = "DeleteConflict.User.Group"
-	DeleteConflictUserAccessKey    = "DeleteConflict.User.AccessKey"
-	DeleteConflictUserLoginProfile = "DeleteConflict.User.LoginProfile"
-	DeleteConflictUserMFADevice    = "DeleteConflict.User.MFADevice"
-	DeleteConflictUserPolicy       = "DeleteConflict.User.Policy"
-
-	// ram group
-	DeleteConflictGroupUser   = "DeleteConflict.Group.User"
-	DeleteConflictGroupPolicy = "DeleteConflict.Group.Policy"
-
-	// ram role
-	DeleteConflictRolePolicy = "DeleteConflict.Role.Policy"
-	EntityNotExistRole       = "EntityNotExist.Role"
-
-	// ram policy
-	DeleteConflictPolicyUser    = "DeleteConflict.Policy.User"
-	DeleteConflictPolicyGroup   = "DeleteConflict.Policy.Group"
-	DeleteConflictPolicyVersion = "DeleteConflict.Policy.Version"
-
-	//unknown Error
-	UnknownError = "UnknownError"
-
-	// Keypair error
-	KeyPairNotFound           = "InvalidKeyPair.NotFound"
-	KeyPairServiceUnavailable = "ServiceUnavailable"
-
-	// Container
-	ErrorClusterNotFound = "ErrorClusterNotFound"
-
-	// cr
-	ErrorNamespaceNotExist = "NAMESPACE_NOT_EXIST"
-	ErrorRepoNotExist      = "REPO_NOT_EXIST"
-
-	// cdn
-	ServiceBusy = "ServiceBusy"
-
-	// RAM
-	InvalidRamRoleNotFound       = "InvalidRamRole.NotFound"
-	RoleAttachmentUnExpectedJson = "unexpected end of JSON input"
-	InvalidInstanceIdNotFound    = "InvalidInstanceId.NotFound"
-
-	RouterInterfaceIncorrectStatus                        = "IncorrectStatus"
-	DependencyViolationRouterInterfaceReferedByRouteEntry = "DependencyViolation.RouterInterfaceReferedByRouteEntry"
-
-	// CS
-	ErrorClusterNameAlreadyExist = "ErrorClusterNameAlreadyExist"
-	ApplicationNotFound          = "Not Found"
-	ApplicationErrorIgnore       = "Unable to reach primary cluster manager"
-	ApplicationConfirmConflict   = "Conflicts with unconfirmed updates for operation"
-
-	// privatezone
-	ZoneNotExists    = "Zone.NotExists"
-	ZoneVpcNotExists = "ZoneVpc.NotExists.VpcId"
-	ThrottlingUser   = "Throttling.User"
-	PvtzSystemBusy   = "System.Busy"
-
-	// log
-	ProjectNotExist     = "ProjectNotExist"
-	IndexConfigNotExist = "IndexConfigNotExist"
-	LogStoreNotExist    = "LogStoreNotExist"
-	InternalServerError = "InternalServerError"
-	LogClientTimeout    = "Client.Timeout exceeded while awaiting headers"
-	LogConfigNotExist   = "ConfigNotExist"
-	// OTS
-	OTSObjectNotExist        = "OTSObjectNotExist"
-	SuffixNoSuchHost         = "no such host"
-	OTSQuotaFrequentMsg      = "Too frequent table operations."
-	OTSInternalServerError   = "OTSInternalServerError"
-	OTSServerBusy            = "OTSServerBusy"
-	OTSPartitionUnavailable  = "OTSPartitionUnavailable"
-	OTSTimeout               = "OTSTimeout"
-	OTSServerUnavailable     = "OTSServerUnavailable"
-	OTSRowOperationConflict  = "OTSRowOperationConflict"
-	OTSTableNotReady         = "OTSTableNotReady"
-	OTSNotEnoughCapacityUnit = "OTSNotEnoughCapacityUnit"
-
-	// FC
-	ServiceNotFound  = "ServiceNotFound"
-	FunctionNotFound = "FunctionNotFound"
-	TriggerNotFound  = "TriggerNotFound"
-	AccessDenied     = "AccessDenied"
-
-	// Vpn
-	VpnNotFound              = "InvalidVpnGatewayInstanceId.NotFound"
-	VpnForbidden             = "Forbidden"
-	CgwNotFound              = "InvalidCustomerGatewayInstanceId.NotFound"
-	VpnConnNotFound          = "InvalidVpnConnectionInstanceId.NotFound"
-	SslVpnServerNotFound     = "InvalidSslVpnServerId.NotFound"
-	SslVpnClientCertNotFound = "InvalidSslVpnClientCertId.NotFound"
-	VpnConfiguring           = "VpnGateway.Configuring"
-	// CEN
-	OperationBlocking              = "Operation.Blocking"
-	ParameterCenInstanceIdNotExist = "ParameterCenInstanceId"
-	InvalidCenInstanceStatus       = "InvalidOperation.CenInstanceStatus"
-	ParameterInstanceIdNotExist    = "ParameterInstanceId"
-	ParameterBwpInstanceId         = "ParameterBwpInstanceId"
-	InvalidBwpInstanceStatus       = "InvalidOperation.BwpInstanceStatus"
-	InvalidBwpBusinessStatus       = "InvalidOperation.BwpBusinessStatus"
-
-	// snapshot
-	SnapshotNotFound = "InvalidSnapshotId.NotFound"
-
-	// kv-store
-	InvalidKVStoreInstanceIdNotFound = "InvalidInstanceId.NotFound"
-	// MNS
-	QueueNotExist        = "QueueNotExist"
-	TopicNotExist        = "TopicNotExist"
-	SubscriptionNotExist = "SubscriptionNotExist"
-
-	// ONS
-	OnsInstanceNotExist    = "INSTANCE_NOT_FOUND"
-	OnsInstanceNotEmpty    = "INSTANCE_NOT_EMPTY"
-	AuthResourceOwnerError = "AUTH_RESOURCE_OWNER_ERROR"
-
-	// ALIKAFKA
-	AlikafkaFlowControl          = "ONS_SYSTEM_FLOW_CONTROL"
-	AlikafkaTopicNotFound        = "BIZ_TOPIC_NOT_FOUND"
-	AlikafkaSubscriptionNotFound = "BIZ_SUBSCRIPTION_NOT_FOUND"
-
-	//HaVip
-	InvalidHaVipIdNotFound = "InvalidHaVipId.NotFound"
-	InvalidVipStatus       = "InvalidVip.Status"
-	IncorrectHaVipStatus   = "IncorrectHaVipStatus"
-
-	//Cas
-	CertNotExist = "CertNotExist"
-
-	InvalidPrivateIpAddressDuplicated = "InvalidPrivateIpAddress.Duplicated"
-
-	// Elasticsearch
-	InstanceActivating                 = "InstanceActivating"
-	ESInstanceNotFound                 = "InstanceNotFound"
-	ESMustChangeOneResource            = "MustChangeOneResource"
-	ESCssCheckUpdowngradeError         = "CssCheckUpdowngradeError"
-	ESConcurrencyConflictError         = "ConcurrencyUpdateInstanceConflict"
-	ESNotSupportCurrentActionError     = "InstanceStatusNotSupportCurrentAction"
-	ESTokenPreviousRequestProcessError = "TokenPreviousRequestProcessError"
-
-	// Ddoscoo
-	DdoscooInstanceNotFound = "InstanceNotFound"
-	InvalidDdoscooInstance  = "ddos_coop3301"
-	InvalidDdosbgpInstance  = "InvalidInstance"
-
-	// Ddosbgp
-	DdosbgpInstanceNotFound = "InstanceNotFound"
-
-	//nacl
-	NetworkAclNotFound = "InvalidNetworkAcl.NotFound"
-
-	//Actiontrail
-	InvalidTrailNotFound  = "TrailNotFoundException"
-	TrailNeedRamAuthorize = "NeedRamAuthorize"
-
-	//emr
-	ClusterNotFound = "ClusterId.NotFound"
+	LogClientTimeout = "Client.Timeout exceeded while awaiting headers"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}
 var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotFound"}
-var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", InternalError, "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
+var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", "InternalError", "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
-var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBClusterStatus", InternalError, DBOperationDeniedOutofUsage}
+var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBClusterStatus", "InternalError", "OperationDenied.OutofUsage"}
 var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatus", "OperationDenied.MasterDBInstanceState", "ReadDBInstance.Mismatch"}
-var NasNotFound = []string{"InvalidMountTarget.NotFound", InvalidFileSystemIDNotFound, ForbiddenNasNotFound, "InvalidLBid.NotFound", "VolumeUnavailable"}
+var NasNotFound = []string{"InvalidMountTarget.NotFound", "InvalidFileSystem.NotFound", "Forbidden.NasNotFound", "InvalidLBid.NotFound", "VolumeUnavailable"}
 var SnapshotInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
 var SnapshotPolicyInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
 var DiskNotSupportOnlineChangeErrors = []string{"InvalidDiskCategory.NotSupported", "InvalidRegion.NotSupport", "IncorrectInstanceStatus", "IncorrectDiskStatus", "InvalidOperation.InstanceTypeNotSupport"}
 
 // details at: https://help.aliyun.com/document_detail/27300.html
-var OtsTableIsTemporarilyUnavailable = []string{SuffixNoSuchHost, OTSServerBusy, OTSPartitionUnavailable, OTSInternalServerError,
-	OTSTimeout, OTSServerUnavailable, OTSRowOperationConflict, OTSTableNotReady, OTSNotEnoughCapacityUnit, OTSQuotaFrequentMsg}
+var OtsTableIsTemporarilyUnavailable = []string{"no such host", "OTSServerBusy", "OTSPartitionUnavailable", "OTSInternalServerError",
+	"OTSTimeout", "OTSServerUnavailable", "OTSRowOperationConflict", "OTSTableNotReady", "OTSNotEnoughCapacityUnit", "Too frequent table operations."}
 
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {
@@ -368,7 +78,7 @@ func NotFoundError(err error) bool {
 		return false
 	}
 	if e, ok := err.(*ComplexError); ok {
-		if e.Err != nil && strings.HasPrefix(e.Err.Error(), ResourceNotFound) {
+		if e.Err != nil && strings.HasPrefix(e.Err.Error(), ResourceNotfound) {
 			return true
 		}
 		return NotFoundError(e.Cause)
@@ -475,25 +185,9 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 	return false
 }
 
-func RamEntityNotExist(err error) bool {
-	if err == nil {
-		return false
-	}
-	if e, ok := err.(*ComplexError); ok {
-		err = e.Cause
-	}
-	if err == nil {
-		return false
-	}
-	if e, ok := err.(*errors.ServerError); ok && strings.Contains(e.ErrorCode(), "EntityNotExist") {
-		return true
-	}
-	return false
-}
-
 func GetTimeErrorFromString(str string) error {
 	return &ProviderError{
-		errorCode: WaitForTimeout,
+		errorCode: "WaitForTimeout",
 		message:   str,
 	}
 }
@@ -591,7 +285,7 @@ func WrapComplexError(cause, err error, filepath string, fileline int) error {
 
 // A default message of ComplexError's Err. It is format to Resource <resource-id> <operation> Failed!!! <error source>
 const DefaultErrorMsg = "Resource %s %s Failed!!! %s"
-const NotFoundMsg = ResourceNotFound + "!!! %s"
+const NotFoundMsg = ResourceNotfound + "!!! %s"
 const DefaultTimeoutMsg = "Resource %s %s Timeout!!! %s"
 const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"
 const WaitTimeoutMsg = "Resource %s %s Timeout In %d Seconds. Got: %s Expected: %s !!! %s"

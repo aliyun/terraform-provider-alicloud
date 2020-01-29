@@ -118,7 +118,7 @@ func resourceAliyunApigatewayAppAttachmentDelete(d *schema.ResourceData, meta in
 		return cloudApiClient.RemoveAppsAuthorities(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{NotFoundAuthorization}) {
+		if IsExpectedErrors(err, []string{"NotFoundAuthorization"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

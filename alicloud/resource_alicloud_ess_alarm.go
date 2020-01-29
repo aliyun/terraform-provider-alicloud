@@ -51,30 +51,22 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 				ForceNew: true,
 			},
 			"metric_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  System,
-				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(System),
-					string(Custom),
-				}, false),
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "system",
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"system", "custom"}, false),
 			},
 			"metric_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 			"period": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  FiveMinite,
-				ForceNew: true,
-				ValidateFunc: validation.IntInSlice([]int{
-					int(OneMinite),
-					int(TwoMinite),
-					int(FiveMinite),
-					int(FifteenMinite),
-				}),
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      300,
+				ForceNew:     true,
+				ValidateFunc: validation.IntInSlice([]int{60, 120, 300, 900}),
 			},
 			"statistics": {
 				Type:     schema.TypeString,
@@ -91,15 +83,10 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 				Required: true,
 			},
 			"comparison_operator": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  Gte,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(Gt),
-					string(Gte),
-					string(Lt),
-					string(Lte),
-				}, false),
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      ">=",
+				ValidateFunc: validation.StringInSlice([]string{">", ">=", "<", "<="}, false),
 			},
 			"evaluation_count": {
 				Type:         schema.TypeInt,
@@ -328,7 +315,7 @@ func resourceAliyunEssAlarmDelete(d *schema.ResourceData, meta interface{}) erro
 		return essClient.DeleteAlarm(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidEssAlarmTaskNotFound}) {
+		if IsExpectedErrors(err, []string{"404"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

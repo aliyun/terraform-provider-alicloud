@@ -90,7 +90,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 					return essClient.AttachInstances(request)
 				})
 				if err != nil {
-					if IsExpectedErrors(err, []string{IncorrectCapacityMaxSize}) {
+					if IsExpectedErrors(err, []string{"IncorrectCapacity.MaxSize"}) {
 						instances, err := essService.DescribeEssAttachment(d.Id(), make([]string, 0))
 						if !NotFoundError(err) {
 							return resource.NonRetryableError(err)
@@ -128,7 +128,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 								"Please enlarge scaling group max size or remove already attached instances: %#v.", object.MaxSize, attached)))
 						}
 					}
-					if IsExpectedErrors(err, []string{ScalingActivityInProgress}) {
+					if IsExpectedErrors(err, []string{"ScalingActivityInProgress"}) {
 						time.Sleep(5)
 						return resource.RetryableError(WrapError(err))
 					}
@@ -235,7 +235,7 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 			return essClient.RemoveInstances(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{IncorrectCapacityMinSize}) {
+			if IsExpectedErrors(err, []string{"IncorrectCapacity.MinSize"}) {
 				instances, err := essService.DescribeEssAttachment(d.Id(), removed)
 				if len(instances) > 0 {
 					if object.MinSize == 0 {
@@ -245,11 +245,11 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 						"Please shorten scaling group min size and try again.", len(removed), object.MinSize)))
 				}
 			}
-			if IsExpectedErrors(err, []string{ScalingActivityInProgress, IncorrectScalingGroupStatus}) {
+			if IsExpectedErrors(err, []string{"ScalingActivityInProgress", "IncorrectScalingGroupStatus"}) {
 				time.Sleep(5)
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
-			if IsExpectedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
+			if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
 				return nil
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))

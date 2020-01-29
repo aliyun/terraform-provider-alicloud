@@ -145,7 +145,7 @@ func (c *CrService) DescribeCrNamespace(id string) (*cr.GetNamespaceResponse, er
 		return crClient.GetNamespace(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ErrorNamespaceNotExist}) {
+		if IsExpectedErrors(err, []string{"NAMESPACE_NOT_EXIST"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -200,7 +200,7 @@ func (c *CrService) DescribeCrRepo(id string) (*cr.GetRepoResponse, error) {
 	})
 	response, _ = raw.(*cr.GetRepoResponse)
 	if err != nil {
-		if IsExpectedErrors(err, []string{ErrorRepoNotExist}) {
+		if IsExpectedErrors(err, []string{"REPO_NOT_EXIST"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -30,7 +30,7 @@ func (s *ElasticsearchService) DescribeElasticsearchInstance(id string) (*elasti
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{ESInstanceNotFound}) {
+			if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 
@@ -220,7 +220,7 @@ func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
 
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
 	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateWhiteIps(request)
 	})
@@ -258,7 +258,7 @@ func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
 
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
 	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdatePublicWhiteIps(request)
 	})
@@ -297,12 +297,12 @@ func updateDataNodeAmount(d *schema.ResourceData, meta interface{}) error {
 
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
 	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
 	})
 
-	if err != nil && !IsExpectedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
+	if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
@@ -342,12 +342,12 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
 	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
 	})
 
-	if err != nil && !IsExpectedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
+	if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
@@ -371,9 +371,9 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 	if d.Get("master_node_spec") != nil {
 		master := make(map[string]interface{})
 		master["spec"] = d.Get("master_node_spec").(string)
-		master["amount"] = MasterNodeAmount
-		master["diskType"] = MasterNodeDiskType
-		master["disk"] = MasterNodeDisk
+		master["amount"] = "3"
+		master["diskType"] = "cloud_ssd"
+		master["disk"] = "20"
 		content["masterConfiguration"] = master
 		content["advancedDedicateMaster"] = true
 	} else {
@@ -393,12 +393,12 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
 	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
 	})
 
-	if err != nil && !IsExpectedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
+	if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
@@ -431,7 +431,7 @@ func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
 
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
 	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateKibanaWhiteIps(request)
 	})
@@ -492,7 +492,7 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{ESConcurrencyConflictError, ESNotSupportCurrentActionError}
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
 	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateAdminPassword(request)
 	})

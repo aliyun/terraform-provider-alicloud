@@ -36,7 +36,7 @@ func resourceAlicloudDnsRecord() *schema.Resource {
 			"type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{ARecord, NSRecord, MXRecord, TXTRecord, CNAMERecord, SRVRecord, AAAARecord, CAARecord, RedirectURLRecord, ForwordURLRecord}, false),
+				ValidateFunc: validation.StringInSlice([]string{"A", "NS", "MX", "TXT", "CNAME", "SRV", "AAAA", "CAA", "REDIRECT_URL", "FORWORD_URL"}, false),
 			},
 			"value": {
 				Type:             schema.TypeString,
@@ -99,7 +99,7 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 			return dnsClient.AddDomainRecord(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InternalError}) {
+			if IsExpectedErrors(err, []string{"InternalError"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -123,7 +123,7 @@ func resourceAlicloudDnsRecordUpdate(d *schema.ResourceData, meta interface{}) e
 	request.RecordId = d.Id()
 	request.RR = d.Get("host_record").(string)
 	request.Type = d.Get("type").(string)
-	if request.Type == MXRecord {
+	if request.Type == "MX" {
 		request.Priority = requests.NewInteger(d.Get("priority").(int))
 	}
 	request.TTL = requests.NewInteger(d.Get("ttl").(int))
@@ -178,10 +178,10 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 			return dnsClient.DeleteDomainRecord(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{DomainRecordNotBelongToUser}) {
+			if IsExpectedErrors(err, []string{"DomainRecordNotBelongToUser"}) {
 				return nil
 			}
-			if IsExpectedErrors(err, []string{RecordForbiddenDNSChange, InternalError}) {
+			if IsExpectedErrors(err, []string{"RecordForbidden.DNSChange", "InternalError"}) {
 				return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))

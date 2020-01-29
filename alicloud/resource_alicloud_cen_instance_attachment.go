@@ -73,7 +73,7 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 			return cbnClient.AttachCenChildInstance(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InvalidCenInstanceStatus, "InvalidOperation.ChildInstanceStatus"}) {
+			if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus", "InvalidOperation.ChildInstanceStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -140,7 +140,7 @@ func resourceAlicloudCenInstanceAttachmentDelete(d *schema.ResourceData, meta in
 			return cbnClient.DetachCenChildInstance(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InvalidCenInstanceStatus}) {
+			if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus"}) {
 				return resource.RetryableError(err)
 			}
 
@@ -151,7 +151,7 @@ func resourceAlicloudCenInstanceAttachmentDelete(d *schema.ResourceData, meta in
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{ParameterInstanceIdNotExist}) {
+		if IsExpectedErrors(err, []string{"ParameterInstanceId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

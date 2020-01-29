@@ -192,7 +192,7 @@ func resourceAlicloudDdoscooInstanceDelete(d *schema.ResourceData, meta interfac
 		return ddoscooClient.ReleaseInstance(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{DdoscooInstanceNotFound}) {
+		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
 			return nil
 		}
 

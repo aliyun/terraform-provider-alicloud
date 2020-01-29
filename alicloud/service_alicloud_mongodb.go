@@ -20,13 +20,6 @@ type MongoDBService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *MongoDBService) NotFoundMongoDBInstance(err error) bool {
-	if NotFoundError(err) || IsExpectedErrors(err, []string{InvalidMongoDBInstanceIdNotFound, InvalidMongoDBNameNotFound}) {
-		return true
-	}
-	return false
-}
-
 func (s *MongoDBService) DescribeMongoDBInstance(id string) (instance dds.DBInstance, err error) {
 	request := dds.CreateDescribeDBInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
@@ -55,7 +48,7 @@ func (s *MongoDBService) WaitForMongoDBInstance(instanceId string, status Status
 	for {
 		instance, err := s.DescribeMongoDBInstance(instanceId)
 		if err != nil {
-			if s.NotFoundMongoDBInstance(err) {
+			if NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}

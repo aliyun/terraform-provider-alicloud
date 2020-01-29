@@ -48,7 +48,7 @@ func resourceAliyunHaVipAttachmentCreate(d *schema.ResourceData, meta interface{
 			return vpcClient.AssociateHaVip(ar)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{TaskConflict, IncorrectHaVipStatus, InvalidVipStatus}) {
+			if IsExpectedErrors(err, []string{"TaskConflict", "IncorrectHaVipStatus", "InvalidVip.Status"}) {
 				return resource.RetryableError(fmt.Errorf("AssociateHaVip got an error: %#v", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("AssociateHaVip got an error: %#v", err))
@@ -108,7 +108,7 @@ func resourceAliyunHaVipAttachmentDelete(d *schema.ResourceData, meta interface{
 		})
 		//Waiting for unassociate the havip
 		if err != nil {
-			if IsExpectedErrors(err, []string{TaskConflict}) {
+			if IsExpectedErrors(err, []string{"TaskConflict"}) {
 				return resource.RetryableError(fmt.Errorf("Unassociate HaVip timeout and got an error:%#v.", err))
 			}
 		}

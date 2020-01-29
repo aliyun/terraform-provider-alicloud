@@ -470,7 +470,7 @@ func resourceAlicloudMongoDBInstanceDelete(d *schema.ResourceData, meta interfac
 		})
 
 		if err != nil {
-			if ddsService.NotFoundMongoDBInstance(err) {
+			if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 				return resource.NonRetryableError(err)
 			}
 			return resource.RetryableError(err)

@@ -21,7 +21,7 @@ func (s *FcService) DescribeFcService(id string) (*fc.GetServiceOutput, error) {
 		return fcClient.GetService(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ServiceNotFound}) {
+		if IsExpectedErrors(err, []string{"ServiceNotFound"}) {
 			err = WrapErrorf(err, NotFoundMsg, FcGoSdk)
 		} else {
 			err = WrapErrorf(err, DefaultErrorMsg, id, "GetService", FcGoSdk)
@@ -76,7 +76,7 @@ func (s *FcService) DescribeFcFunction(id string) (*fc.GetFunctionOutput, error)
 		return fcClient.GetFunction(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ServiceNotFound, FunctionNotFound}) {
+		if IsExpectedErrors(err, []string{"ServiceNotFound", "FunctionNotFound"}) {
 			err = WrapErrorf(err, NotFoundMsg, FcGoSdk)
 		} else {
 			err = WrapErrorf(err, DefaultErrorMsg, id, "GetFunction", FcGoSdk)
@@ -133,7 +133,7 @@ func (s *FcService) DescribeFcTrigger(id string) (*fc.GetTriggerOutput, error) {
 		return fcClient.GetTrigger(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ServiceNotFound, FunctionNotFound, TriggerNotFound}) {
+		if IsExpectedErrors(err, []string{"ServiceNotFound", "FunctionNotFound", "TriggerNotFound"}) {
 			err = WrapErrorf(err, NotFoundMsg, FcGoSdk)
 		} else {
 			err = WrapErrorf(err, DefaultErrorMsg, id, "FcTrigger", FcGoSdk)

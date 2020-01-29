@@ -190,7 +190,7 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 			return ramClient.ListPoliciesForRole(ListPoliciesForRoleRequest)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{EntityNotExistRole}) {
+			if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
 				return nil
 			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), ListPoliciesForRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -208,7 +208,7 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.DetachPolicyFromRole(request)
 				})
-				if err != nil && !RamEntityNotExist(err) {
+				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -224,7 +224,7 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 			return ramClient.DeleteRole(deleteRoleRequest)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{DeleteConflictRolePolicy}) {
+			if IsExpectedErrors(err, []string{"DeleteConflict.Role.Policy"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -233,7 +233,7 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 		return nil
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -94,7 +94,7 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 	}
 	object, err := rsdService.DescribeDBAccountPrivilege(d.Id())
 	if err != nil {
-		if rsdService.NotFoundDBInstance(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -168,7 +168,7 @@ func resourceAlicloudDBAccountPrivilegeDelete(d *schema.ResourceData, meta inter
 	}
 	object, err := rdsService.DescribeDBAccountPrivilege(d.Id())
 	if err != nil {
-		if rdsService.NotFoundDBInstance(err) {
+		if NotFoundError(err) {
 			return nil
 		}
 		return WrapError(err)

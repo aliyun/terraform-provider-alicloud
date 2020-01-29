@@ -459,7 +459,7 @@ func resourceAlicloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta 
 		})
 
 		if err != nil {
-			if ddsService.NotFoundMongoDBInstance(err) {
+			if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 				return resource.NonRetryableError(err)
 			}
 			return resource.RetryableError(err)
@@ -469,6 +469,9 @@ func resourceAlicloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta 
 	})
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	return WrapError(ddsService.WaitForMongoDBInstance(d.Id(), Deleted, DefaultTimeout))

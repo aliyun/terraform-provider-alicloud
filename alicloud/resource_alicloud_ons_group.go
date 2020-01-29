@@ -174,7 +174,7 @@ func resourceAlicloudOnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{AuthResourceOwnerError}) {
+		if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

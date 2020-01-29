@@ -28,7 +28,7 @@ func (s *KvstoreService) DescribeKVstoreInstance(id string) (*r_kvstore.DBInstan
 		return rkvClient.DescribeInstanceAttribute(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidKVStoreInstanceIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
 			return instance, WrapErrorf(Error(GetNotFoundMessage("KVstoreInstance", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -51,7 +51,7 @@ func (s *KvstoreService) DescribeKVstoreBackupPolicy(id string) (*r_kvstore.Desc
 		return rkvClient.DescribeBackupPolicy(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidKVStoreInstanceIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
 			return response, WrapErrorf(Error(GetNotFoundMessage("KVstoreBackupPolicy", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -131,7 +131,7 @@ func (s *KvstoreService) DescribeParameters(id string) (*r_kvstore.DescribeParam
 		return rkvClient.DescribeParameters(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return response, WrapErrorf(Error(GetNotFoundMessage("Parameters", id)), NotFoundMsg, ProviderERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -329,7 +329,7 @@ func (s *KvstoreService) DescribeKVstoreAccount(id string) (*r_kvstore.Account, 
 		response, _ = raw.(*r_kvstore.DescribeAccountsResponse)
 		return nil
 	}); err != nil {
-		if IsExpectedErrors(err, []string{InvalidKVStoreInstanceIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
 			return ds, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return ds, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -133,7 +133,7 @@ func testAccCheckRamRolePolicyAttachmentDestroy(s *terraform.State) error {
 			return ramClient.ListPoliciesForRole(request)
 		})
 
-		if err != nil && !RamEntityNotExist(err) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return WrapError(err)
 		}
 		response, _ := raw.(*ram.ListPoliciesForRoleResponse)

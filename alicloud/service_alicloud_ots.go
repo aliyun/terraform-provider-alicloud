@@ -44,7 +44,7 @@ func (s *OtsService) ListOtsTable(instanceName string) (table *tablestore.ListTa
 			return tableStoreClient.ListTable()
 		})
 		if err != nil {
-			if strings.HasSuffix(err.Error(), SuffixNoSuchHost) {
+			if strings.HasSuffix(err.Error(), "no such host") {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -53,7 +53,7 @@ func (s *OtsService) ListOtsTable(instanceName string) (table *tablestore.ListTa
 		return nil
 	})
 	if err != nil {
-		if strings.HasPrefix(err.Error(), OTSObjectNotExist) {
+		if strings.HasPrefix(err.Error(), "OTSObjectNotExist") {
 			return table, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
 		}
 		return nil, WrapErrorf(err, DataDefaultErrorMsg, instanceName, "ListTable", AliyunTablestoreGoSdk)
@@ -95,7 +95,7 @@ func (s *OtsService) DescribeOtsTable(id string) (*tablestore.DescribeTableRespo
 		return nil
 	})
 	if err != nil {
-		if strings.HasPrefix(err.Error(), OTSObjectNotExist) {
+		if strings.HasPrefix(err.Error(), "OTSObjectNotExist") {
 			return table, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
 		}
 		return table, WrapErrorf(err, DefaultErrorMsg, id, "DescribeTable", AliyunTablestoreGoSdk)

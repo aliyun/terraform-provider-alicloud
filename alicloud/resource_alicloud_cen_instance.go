@@ -58,7 +58,7 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 			return cbnClient.CreateCen(&req)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{OperationBlocking, UnknownError}) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "UnknownError"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -138,7 +138,7 @@ func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{ParameterCenInstanceIdNotExist}) {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

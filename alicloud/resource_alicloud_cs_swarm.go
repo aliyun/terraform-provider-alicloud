@@ -294,7 +294,7 @@ func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) err
 		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 			return nil, csClient.ModifyClusterName(d.Id(), clusterName)
 		})
-		if err != nil && !IsExpectedErrors(err, []string{ErrorClusterNameAlreadyExist}) {
+		if err != nil && !IsExpectedErrors(err, []string{"ErrorClusterNameAlreadyExist"}) {
 			return fmt.Errorf("Modify Cluster Name got an error: %#v", err)
 		}
 		d.SetPartial("name")
@@ -316,7 +316,7 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 	})
 
 	if err != nil {
-		if NotFoundError(err) && IsExpectedErrors(err, []string{ErrorClusterNotFound}) {
+		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 			d.SetId("")
 			return nil
 		}
@@ -390,7 +390,7 @@ func resourceAlicloudCSSwarmDelete(d *schema.ResourceData, meta interface{}) err
 			return nil, csClient.DeleteCluster(d.Id())
 		})
 		if err != nil {
-			if NotFoundError(err) || IsExpectedErrors(err, []string{ErrorClusterNotFound}) {
+			if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 				return nil
 			}
 			return resource.RetryableError(fmt.Errorf("Deleting container cluster got an error: %#v", err))
@@ -400,7 +400,7 @@ func resourceAlicloudCSSwarmDelete(d *schema.ResourceData, meta interface{}) err
 			return csClient.DescribeCluster(d.Id())
 		})
 		if err != nil {
-			if NotFoundError(err) || IsExpectedErrors(err, []string{ErrorClusterNotFound}) {
+			if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describe container cluster got an error: %#v", err))

@@ -167,7 +167,7 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 			return vpcClient.CreateNatGateway(&args)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"VswitchStatusError", TaskConflict}) {
+			if IsExpectedErrors(err, []string{"VswitchStatusError", "TaskConflict"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -321,7 +321,7 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 			if IsExpectedErrors(err, []string{"DependencyViolation.BandwidthPackages"}) {
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{InvalidNatGatewayIdNotFound}) {
+			if IsExpectedErrors(err, []string{"InvalidNatGatewayId.NotFound"}) {
 				return nil
 			}
 			return resource.NonRetryableError(err)

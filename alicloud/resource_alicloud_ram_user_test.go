@@ -80,7 +80,7 @@ func testSweepRamUsers(region string) error {
 			listPoliciesForUserRequest.UserName = name
 			return ramClient.ListPoliciesForUser(listPoliciesForUserRequest)
 		})
-		if err != nil && !RamEntityNotExist(err) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			log.Printf("[ERROR] ListPoliciesForUser: %s (%s)", name, id)
 		}
 		listPoliciesForUserResponse, _ := raw.(*ram.ListPoliciesForUserResponse)
@@ -94,7 +94,7 @@ func testSweepRamUsers(region string) error {
 				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.DetachPolicyFromUser(detachPolicyFromUserRequest)
 				})
-				if err != nil && !RamEntityNotExist(err) {
+				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 					log.Printf("[ERROR] DetachPolicyFromUser: %s (%s)", name, id)
 				}
 			}
@@ -105,7 +105,7 @@ func testSweepRamUsers(region string) error {
 			listAccessKeysRequest.UserName = name
 			return ramClient.ListAccessKeys(listAccessKeysRequest)
 		})
-		if err != nil && !RamEntityNotExist(err) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			log.Printf("[ERROR] ListAccessKeys: %s (%s)", name, id)
 		}
 		listAccessKeysResponse, _ := raw.(*ram.ListAccessKeysResponse)
@@ -119,7 +119,7 @@ func testSweepRamUsers(region string) error {
 				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.DeleteAccessKey(deleteAccessKeyRequest)
 				})
-				if err != nil && !RamEntityNotExist(err) {
+				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 					log.Printf("[ERROR] ListAccessKeysResponse: %s (%s)", name, id)
 				}
 			}
@@ -142,7 +142,7 @@ func testSweepRamUsers(region string) error {
 				_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.RemoveUserFromGroup(removeUserFromGroupRequest)
 				})
-				if err != nil && !RamEntityNotExist(err) {
+				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 					log.Printf("[ERROR] RemoveUserFromGroup: %s (%s)", name, id)
 				}
 			}
@@ -295,7 +295,7 @@ func testAccCheckRamUserDestroy(s *terraform.State) error {
 			return ramClient.GetUser(request)
 		})
 
-		if err != nil && !RamEntityNotExist(err) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return WrapError(err)
 		}
 	}

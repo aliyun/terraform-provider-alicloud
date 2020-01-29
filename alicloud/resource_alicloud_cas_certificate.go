@@ -104,7 +104,7 @@ func resourceAlicloudCasDelete(d *schema.ResourceData, meta interface{}) error {
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{CertNotExist}) {
+			if IsExpectedErrors(err, []string{"CertNotExist"}) {
 				return nil
 			}
 			return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))

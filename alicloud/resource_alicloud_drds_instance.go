@@ -169,7 +169,7 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 		return drdsClient.RemoveDrdsInstance(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDRDSInstanceIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDrdsInstanceId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

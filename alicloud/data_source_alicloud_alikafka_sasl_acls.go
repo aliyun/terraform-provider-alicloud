@@ -94,7 +94,7 @@ func dataSourceAlicloudAlikafkaSaslAclsRead(d *schema.ResourceData, meta interfa
 		return alikafkaClient.DescribeAcls(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{AlikafkaSubscriptionNotFound, AlikafkaTopicNotFound}) {
+		if IsExpectedErrors(err, []string{"BIZ_SUBSCRIPTION_NOT_FOUND", "BIZ_TOPIC_NOT_FOUND"}) {
 			var emptyValue []alikafka.KafkaAclVO
 			return alikafkaSaslAclsDecriptionAttributes(d, emptyValue, meta)
 		}

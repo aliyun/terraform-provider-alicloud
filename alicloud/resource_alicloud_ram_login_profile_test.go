@@ -204,7 +204,7 @@ func testAccCheckRamLoginProfileDestroy(s *terraform.State) error {
 			return ramClient.GetLoginProfile(request)
 		})
 
-		if err != nil && !RamEntityNotExist(err) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return WrapError(err)
 		}
 	}

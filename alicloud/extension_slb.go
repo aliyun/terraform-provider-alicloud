@@ -22,15 +22,6 @@ const (
 	OffFlag = FlagType("off")
 )
 
-type TlsCipherPolicy string
-
-const (
-	TlsCipherPolicy_1_0        = TlsCipherPolicy("tls_cipher_policy_1_0")
-	TlsCipherPolicy_1_1        = TlsCipherPolicy("tls_cipher_policy_1_1")
-	TlsCipherPolicy_1_2        = TlsCipherPolicy("tls_cipher_policy_1_2")
-	TlsCipherPolicy_1_2_STRICT = TlsCipherPolicy("tls_cipher_policy_1_2_strict")
-)
-
 type RsType string
 
 const (
@@ -43,13 +34,6 @@ type AclType string
 const (
 	AclTypeBlack = AclType("black")
 	AclTypeWhite = AclType("white")
-)
-
-type IPVersion string
-
-const (
-	IPVersion4 = IPVersion("ipv4")
-	IPVersion6 = IPVersion("ipv6")
 )
 
 type StickySessionType string
@@ -258,24 +242,4 @@ func getIdPortSetFromServers(items []interface{}) *schema.Set {
 		}
 	}
 	return schema.NewSet(schema.HashString, rmIdPort)
-}
-
-func getLoadBalancerSpecOrder(spec string) int {
-	order := 0
-	switch spec {
-	case S1Small:
-		order = 0
-	case S2Small:
-		order = 1
-	case S2Medium:
-		order = 2
-	case S3Small:
-		order = 3
-	case S3Medium:
-		order = 4
-	case S3Large:
-		order = 5
-	}
-
-	return order
 }

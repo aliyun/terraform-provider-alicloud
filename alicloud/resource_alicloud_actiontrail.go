@@ -93,7 +93,7 @@ func resourceAlicloudActiontrailCreate(d *schema.ResourceData, meta interface{})
 			return actiontrailClient.CreateTrail(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InsufficientBucketPolicyException}) {
+			if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -177,7 +177,7 @@ func resourceAlicloudActiontrailUpdate(d *schema.ResourceData, meta interface{})
 			return actiontrailClient.UpdateTrail(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InsufficientBucketPolicyException, TrailNeedRamAuthorize}) {
+			if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException", "NeedRamAuthorize"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -205,7 +205,7 @@ func resourceAlicloudActiontrailDelete(d *schema.ResourceData, meta interface{})
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound, InvalidTrailNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidVpcID.NotFound", "Forbidden.VpcNotFound", "TrailNotFoundException"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

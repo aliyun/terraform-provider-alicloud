@@ -224,7 +224,7 @@ func testAccCheckCdnDomainDestroy(s *terraform.State) error {
 			return cdnClient.DescribeCdnDomainDetail(request)
 		})
 
-		if err != nil && !IsExpectedErrors(err, []string{InvalidDomainNotFound}) {
+		if err != nil && !IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
 			return fmt.Errorf("Error Domain still exist.")
 		}
 	}

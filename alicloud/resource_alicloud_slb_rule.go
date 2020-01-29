@@ -214,7 +214,7 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 			return slbClient.CreateRules(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{BackendServerConfiguring}) {
+			if IsExpectedErrors(err, []string{"BackendServer.configuring"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -381,7 +381,7 @@ func resourceAliyunSlbRuleDelete(d *schema.ResourceData, meta interface{}) error
 		return slbClient.DeleteRules(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidRuleIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidRuleId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

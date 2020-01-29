@@ -78,7 +78,7 @@ func testSweepCRNamespace(region string) error {
 				return crClient.DeleteNamespace(req)
 			})
 			if err != nil {
-				if NotFoundError(err) || IsExpectedErrors(err, []string{ErrorNamespaceNotExist}) {
+				if IsExpectedErrors(err, []string{"NAMESPACE_NOT_EXIST"}) {
 					return nil
 				}
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, n, req.GetActionName(), AlibabaCloudSdkGoERROR))

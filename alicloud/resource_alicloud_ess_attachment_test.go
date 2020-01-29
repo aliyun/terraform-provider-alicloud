@@ -123,7 +123,7 @@ func testAccCheckEssAttachmentDestroy(s *terraform.State) error {
 
 		instances, err := essService.DescribeEssAttachment(rs.Primary.ID, make([]string, 0))
 
-		if err != nil && !IsExpectedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
+		if err != nil && !IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
 			return WrapError(err)
 		}
 

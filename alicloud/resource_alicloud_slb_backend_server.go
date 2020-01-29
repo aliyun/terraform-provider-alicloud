@@ -300,7 +300,7 @@ func resourceAliyunSlbBackendServersDelete(d *schema.ResourceData, meta interfac
 					return slbClient.RemoveBackendServers(request)
 				})
 				if err != nil {
-					if IsExpectedErrors(err, []string{RspoolVipExist, "ObtainIpFail"}) {
+					if IsExpectedErrors(err, []string{"RspoolVipExist", "ObtainIpFail"}) {
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)

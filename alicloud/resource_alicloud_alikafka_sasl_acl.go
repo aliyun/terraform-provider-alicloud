@@ -91,7 +91,7 @@ func resourceAlicloudAlikafkaSaslAclCreate(d *schema.ResourceData, meta interfac
 			return alikafkaClient.CreateAcl(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, AlikafkaFlowControl}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				time.Sleep(2 * time.Second)
 				return resource.RetryableError(err)
 			}

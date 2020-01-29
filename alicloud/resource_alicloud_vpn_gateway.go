@@ -278,12 +278,12 @@ func resourceAliyunVpnGatewayDelete(d *schema.ResourceData, meta interface{}) er
 			return vpcClient.DeleteVpnGateway(&args)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{VpnConfiguring}) {
+			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
 			/*Vpn known issue: while the vpn is configuring, it will return unknown error*/
-			if IsExpectedErrors(err, []string{UnknownError}) {
+			if IsExpectedErrors(err, []string{"UnknownError"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -293,7 +293,7 @@ func resourceAliyunVpnGatewayDelete(d *schema.ResourceData, meta interface{}) er
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{VpnNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidVpnGatewayInstanceId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

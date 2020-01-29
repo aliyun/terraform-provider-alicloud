@@ -151,7 +151,7 @@ func resourceAlicloudRouterInterfaceConnectionCreate(d *schema.ResourceData, met
 				return vpcClient.ConnectRouterInterface(connectRequest)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{IncorrectOppositeInterfaceInfoNotSet}) {
+				if IsExpectedErrors(err, []string{"IncorrectOppositeInterfaceInfo.NotSet"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

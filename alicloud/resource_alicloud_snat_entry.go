@@ -163,7 +163,7 @@ func resourceAliyunSnatEntryDelete(d *schema.ResourceData, meta interface{}) err
 			return vpcClient.DeleteSnatEntry(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{IncorretSnatEntryStatus}) {
+			if IsExpectedErrors(err, []string{"IncorretSnatEntryStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -172,7 +172,7 @@ func resourceAliyunSnatEntryDelete(d *schema.ResourceData, meta interface{}) err
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidSnatTableIdNotFound, InvalidSnatEntryIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidSnatTableId.NotFound", "InvalidSnatEntryId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

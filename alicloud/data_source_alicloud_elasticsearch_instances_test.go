@@ -67,7 +67,7 @@ var existElasticsearchMapFunc = func(rand int) map[string]string {
 		"instances.0.description":          fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand),
 		"instances.0.data_node_amount":     "2",
 		"instances.0.data_node_spec":       "elasticsearch.sn2ne.large",
-		"instances.0.status":               string(ElasticsearchStatusActive),
+		"instances.0.status":               "active",
 		"instances.0.version":              CHECKSET,
 		"instances.0.created_at":           CHECKSET,
 		"instances.0.updated_at":           CHECKSET,

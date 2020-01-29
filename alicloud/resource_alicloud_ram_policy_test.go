@@ -350,7 +350,7 @@ func testAccCheckRamPolicyDestroy(s *terraform.State) error {
 			return ramClient.GetPolicy(request)
 		})
 
-		if err != nil && !RamEntityNotExist(err) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return WrapError(err)
 		}
 	}

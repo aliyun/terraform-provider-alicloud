@@ -48,7 +48,7 @@ func resourceAlicloudEssLifecycleHook() *schema.Resource {
 			"default_result": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      Continue,
+				Default:      "CONTINUE",
 				ValidateFunc: validation.StringInSlice([]string{"CONTINUE", "ABANDON"}, false),
 			},
 			"notification_arn": {
@@ -163,7 +163,7 @@ func resourceAliyunEssLifeCycleHookDelete(d *schema.ResourceData, meta interface
 		return essClient.DeleteLifecycleHook(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidLifecycleHookIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidLifecycleHookId.NotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

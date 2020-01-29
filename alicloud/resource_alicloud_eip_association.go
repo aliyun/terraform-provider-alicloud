@@ -73,7 +73,7 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 			return vpcClient.AssociateEipAddress(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{TaskConflict}) {
+			if IsExpectedErrors(err, []string{"TaskConflict"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -147,8 +147,8 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 			return vpcClient.UnassociateEipAddress(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InstanceIncorrectStatus, HaVipIncorrectStatus, TaskConflict,
-				HasBeenUsedBySnatTable, HasBeenUsedByForwardEntry}) {
+			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "IncorrectHaVipStatus", "TaskConflict",
+				"InvalidIpStatus.HasBeenUsedBySnatTable", "InvalidIpStatus.HasBeenUsedByForwardEntry"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

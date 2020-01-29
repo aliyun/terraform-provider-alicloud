@@ -188,7 +188,7 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 			return vpcClient.CreateVpnConnection(&args)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{VpnConfiguring}) {
+			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -309,7 +309,7 @@ func resourceAliyunVpnConnectionDelete(d *schema.ResourceData, meta interface{})
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{VpnConfiguring}) {
+			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -320,7 +320,7 @@ func resourceAliyunVpnConnectionDelete(d *schema.ResourceData, meta interface{})
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{VpnConnNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidVpnConnectionInstanceId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

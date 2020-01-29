@@ -179,7 +179,7 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{ESTokenPreviousRequestProcessError}
+	errorCodeList := []string{"TokenPreviousRequestProcessError"}
 	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.CreateInstance(request)
 	})
@@ -378,13 +378,13 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{InstanceActivating, ESTokenPreviousRequestProcessError}
+	errorCodeList := []string{"InstanceActivating", "TokenPreviousRequestProcessError"}
 	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.DeleteInstance(request)
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{ESInstanceNotFound}) {
+		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -458,9 +458,9 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 	if d.Get("master_node_spec") != nil && d.Get("master_node_spec") != "" {
 		masterNode := make(map[string]interface{})
 		masterNode["spec"] = d.Get("master_node_spec")
-		masterNode["amount"] = MasterNodeAmount
-		masterNode["disk"] = MasterNodeDisk
-		masterNode["diskType"] = MasterNodeDiskType
+		masterNode["amount"] = "3"
+		masterNode["disk"] = "20"
+		masterNode["diskType"] = "cloud_ssd"
 		content["advancedDedicateMaster"] = true
 		content["masterConfiguration"] = masterNode
 	}

@@ -93,7 +93,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 			// Route Entry does not support concurrence when creating or deleting it;
 			// Route Entry does not support creating or deleting within 5 seconds frequently
 			// It must ensure all the route entries, vpc, vswitches' status must be available before creating or deleting route entry.
-			if IsExpectedErrors(err, []string{TaskConflict, IncorrectRouteEntryStatus, Throttling, IncorrectVpcStatus}) {
+			if IsExpectedErrors(err, []string{"TaskConflict", "IncorrectRouteEntryStatus", Throttling, "IncorrectVpcStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -102,7 +102,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{RouterEntryConflictDuplicated}) {
+		if IsExpectedErrors(err, []string{"RouterEntryConflict.Duplicated"}) {
 			en, err := vpcService.DescribeRouteEntry(rtId + ":" + table.VRouterId + ":" + cidr + ":" + nt + ":" + ni)
 			if err != nil {
 				return WrapError(err)
@@ -167,7 +167,7 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 			return vpcClient.DeleteRouteEntry(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{IncorrectVpcStatus, TaskConflict, IncorrectRouteEntryStatus, RouterEntryForbbiden, UnknownError}) {
+			if IsExpectedErrors(err, []string{"IncorrectVpcStatus", "TaskConflict", "IncorrectRouteEntryStatus", "Forbbiden", "UnknownError"}) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
 				time.Sleep(time.Duration(retryTimes) * time.Second)
 				retryTimes += 7
@@ -179,7 +179,7 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidRouteEntryNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidRouteEntry.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

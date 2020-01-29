@@ -81,7 +81,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 			"multi_az_policy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      Priority,
+				Default:      "PRIORITY",
 				ValidateFunc: validation.StringInSlice([]string{"PRIORITY", "BALANCE", "COST_OPTIMIZED"}, false),
 				ForceNew:     true,
 			},
@@ -309,7 +309,7 @@ func resourceAliyunEssScalingGroupDelete(d *schema.ResourceData, meta interface{
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
