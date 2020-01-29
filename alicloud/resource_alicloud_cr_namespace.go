@@ -133,7 +133,7 @@ func resourceAlicloudCRNamespaceDelete(d *schema.ResourceData, meta interface{})
 		return crClient.DeleteNamespace(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, ErrorNamespaceNotExist) {
+		if IsExpectedErrors(err, []string{ErrorNamespaceNotExist}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

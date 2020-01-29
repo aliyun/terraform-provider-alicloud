@@ -190,7 +190,7 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 			return ramClient.ListPoliciesForRole(ListPoliciesForRoleRequest)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{EntityNotExistRole}) {
+			if IsExpectedErrors(err, []string{EntityNotExistRole}) {
 				return nil
 			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), ListPoliciesForRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -224,7 +224,7 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 			return ramClient.DeleteRole(deleteRoleRequest)
 		})
 		if err != nil {
-			if IsExceptedError(err, DeleteConflictRolePolicy) {
+			if IsExpectedErrors(err, []string{DeleteConflictRolePolicy}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

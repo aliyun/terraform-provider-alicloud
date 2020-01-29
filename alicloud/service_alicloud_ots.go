@@ -86,7 +86,7 @@ func (s *OtsService) DescribeOtsTable(id string) (*tablestore.DescribeTableRespo
 			return tableStoreClient.DescribeTable(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, OtsTableIsTemporarilyUnavailable) {
+			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

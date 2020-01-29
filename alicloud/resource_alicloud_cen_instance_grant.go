@@ -65,7 +65,7 @@ func resourceAlicloudCenInstanceGrantCreate(d *schema.ResourceData, meta interfa
 			return vpcClient.GrantInstanceToCen(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{OperationBlocking, UnknownError}) {
+			if IsExpectedErrors(err, []string{OperationBlocking, UnknownError}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -138,9 +138,9 @@ func resourceAlicloudCenInstanceGrantDelete(d *schema.ResourceData, meta interfa
 		})
 
 		if err != nil {
-			if IsExceptedError(err, InvalidInstanceIdNotFound) {
+			if IsExpectedErrors(err, []string{InvalidInstanceIdNotFound}) {
 				return nil
-			} else if IsExceptedErrors(err, []string{IncorrectStatus, TaskConflict}) {
+			} else if IsExpectedErrors(err, []string{IncorrectStatus, TaskConflict}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

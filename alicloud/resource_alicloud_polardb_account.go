@@ -110,7 +110,7 @@ func resourceAlicloudPolarDBAccountCreate(d *schema.ResourceData, meta interface
 			return polarDBClient.CreateAccount(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, OperationDeniedDBStatus) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -245,7 +245,7 @@ func resourceAlicloudPolarDBAccountDelete(d *schema.ResourceData, meta interface
 		return polarDBClient.DeleteAccount(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, InvalidAccountNameNotFound) {
+		if IsExpectedErrors(err, []string{InvalidAccountNameNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

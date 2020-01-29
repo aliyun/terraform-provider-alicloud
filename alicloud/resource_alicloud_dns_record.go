@@ -99,7 +99,7 @@ func resourceAlicloudDnsRecordCreate(d *schema.ResourceData, meta interface{}) e
 			return dnsClient.AddDomainRecord(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, DnsInternalError) {
+			if IsExpectedErrors(err, []string{InternalError}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -178,10 +178,10 @@ func resourceAlicloudDnsRecordDelete(d *schema.ResourceData, meta interface{}) e
 			return dnsClient.DeleteDomainRecord(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{DomainRecordNotBelongToUser}) {
+			if IsExpectedErrors(err, []string{DomainRecordNotBelongToUser}) {
 				return nil
 			}
-			if IsExceptedErrors(err, []string{RecordForbiddenDNSChange, DnsInternalError}) {
+			if IsExpectedErrors(err, []string{RecordForbiddenDNSChange, InternalError}) {
 				return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))

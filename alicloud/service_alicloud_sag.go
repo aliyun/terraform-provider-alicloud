@@ -23,7 +23,7 @@ func (s *SagService) DescribeCloudConnectNetwork(id string) (c smartag.CloudConn
 			return ccnClient.DescribeCloudConnectNetworks(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -33,7 +33,7 @@ func (s *SagService) DescribeCloudConnectNetwork(id string) (c smartag.CloudConn
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "CcnNotExist") {
+		if IsExpectedErrors(err, []string{"CcnNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -63,7 +63,7 @@ func (s *SagService) DescribeCloudConnectNetworkGrant(id string) (c smartag.Gran
 			return ccnClient.DescribeGrantRules(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -73,7 +73,7 @@ func (s *SagService) DescribeCloudConnectNetworkGrant(id string) (c smartag.Gran
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "CcnNotExist") {
+		if IsExpectedErrors(err, []string{"CcnNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -105,7 +105,7 @@ func (s *SagService) DescribeCloudConnectNetworkAttachment(id string) (c smartag
 			return ccnClient.DescribeSmartAccessGateways(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -115,7 +115,7 @@ func (s *SagService) DescribeCloudConnectNetworkAttachment(id string) (c smartag
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "SmartAccessGatewayNotExist") {
+		if IsExpectedErrors(err, []string{"SmartAccessGatewayNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -140,7 +140,7 @@ func (s *SagService) DescribeSagAcl(id string) (c smartag.Acl, err error) {
 			return sagClient.DescribeACLs(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -150,7 +150,7 @@ func (s *SagService) DescribeSagAcl(id string) (c smartag.Acl, err error) {
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "SagAclNotExist") {
+		if IsExpectedErrors(err, []string{"SagAclNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -180,7 +180,7 @@ func (s *SagService) DescribeSagAclRule(id string) (c smartag.Acr, err error) {
 			return sagClient.DescribeACLAttribute(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -190,7 +190,7 @@ func (s *SagService) DescribeSagAclRule(id string) (c smartag.Acr, err error) {
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "SagAclRuleNotExist") {
+		if IsExpectedErrors(err, []string{"SagAclRuleNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -216,7 +216,7 @@ func (s *SagService) DescribeSagNetworkopt(id string) (c smartag.NetworkOptimiza
 			return sagClient.DescribeNetworkOptimizations(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -226,7 +226,7 @@ func (s *SagService) DescribeSagNetworkopt(id string) (c smartag.NetworkOptimiza
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "SagNetworkoptNotExist") {
+		if IsExpectedErrors(err, []string{"SagNetworkoptNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -256,7 +256,7 @@ func (s *SagService) DescribeSagNetworkoptSetting(id string) (c smartag.Setting,
 			return sagClient.DescribeNetworkOptimizationSettings(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -266,7 +266,7 @@ func (s *SagService) DescribeSagNetworkoptSetting(id string) (c smartag.Setting,
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "SagNetworkoptSettingNotExist") {
+		if IsExpectedErrors(err, []string{"SagNetworkoptSettingNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -297,7 +297,7 @@ func (s *SagService) DescribeSagClientUser(id string) (c smartag.User, err error
 			return sagClient.DescribeSmartAccessGatewayClientUsers(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -307,7 +307,7 @@ func (s *SagService) DescribeSagClientUser(id string) (c smartag.User, err error
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "SagClientUserNotExist") {
+		if IsExpectedErrors(err, []string{"SagClientUserNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -338,7 +338,7 @@ func (s *SagService) DescribeSagSnatEntry(id string) (c smartag.SnatEntry, err e
 			return sagClient.DescribeSnatEntries(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -348,7 +348,7 @@ func (s *SagService) DescribeSagSnatEntry(id string) (c smartag.SnatEntry, err e
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "SnatEntryiesNotExist") {
+		if IsExpectedErrors(err, []string{"SnatEntryiesNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -379,7 +379,7 @@ func (s *SagService) DescribeSagDnatEntry(id string) (c smartag.DnatEntry, err e
 			return sagClient.DescribeDnatEntries(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -389,7 +389,7 @@ func (s *SagService) DescribeSagDnatEntry(id string) (c smartag.DnatEntry, err e
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "DnatEntryiesNotExist") {
+		if IsExpectedErrors(err, []string{"DnatEntryiesNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -415,7 +415,7 @@ func (s *SagService) DescribeSagQos(id string) (c smartag.Qos, err error) {
 			return sagClient.DescribeQoses(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -425,7 +425,7 @@ func (s *SagService) DescribeSagQos(id string) (c smartag.Qos, err error) {
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "SagQosNotExist") {
+		if IsExpectedErrors(err, []string{"SagQosNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -456,7 +456,7 @@ func (s *SagService) DescribeSagQosPolicy(id string) (c smartag.QosPolicy, err e
 			return sagClient.DescribeQosPolicies(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -466,7 +466,7 @@ func (s *SagService) DescribeSagQosPolicy(id string) (c smartag.QosPolicy, err e
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "SagQosPolicyNotExist") {
+		if IsExpectedErrors(err, []string{"SagQosPolicyNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -497,7 +497,7 @@ func (s *SagService) DescribeSagQosCar(id string) (c smartag.QosCar, err error) 
 			return sagClient.DescribeQosCars(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -507,7 +507,7 @@ func (s *SagService) DescribeSagQosCar(id string) (c smartag.QosCar, err error) 
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, "SagQosCarNotExist") {
+		if IsExpectedErrors(err, []string{"SagQosCarNotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

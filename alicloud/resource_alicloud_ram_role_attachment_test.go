@@ -126,10 +126,10 @@ func testAccCheckRamRoleAttachmentDestroy(s *terraform.State) error {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.DescribeInstanceRamRole(request)
 			})
-			if IsExceptedError(err, RoleAttachmentUnExpectedJson) {
+			if IsExpectedErrors(err, []string{RoleAttachmentUnExpectedJson}) {
 				continue
 			}
-			if IsExceptedError(err, InvalidInstanceIdNotFound) {
+			if IsExpectedErrors(err, []string{InvalidInstanceIdNotFound}) {
 				break
 			}
 			if err == nil {

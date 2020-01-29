@@ -167,7 +167,7 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 			return vpcClient.CreateNatGateway(&args)
 		})
 		if err != nil {
-			if IsExceptedError(err, VswitchStatusError) || IsExceptedError(err, TaskConflict) {
+			if IsExpectedErrors(err, []string{"VswitchStatusError", TaskConflict}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -318,10 +318,10 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 			return vpcClient.DeleteNatGateway(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, DependencyViolationBandwidthPackages) {
+			if IsExpectedErrors(err, []string{"DependencyViolation.BandwidthPackages"}) {
 				return resource.RetryableError(err)
 			}
-			if IsExceptedError(err, InvalidNatGatewayIdNotFound) {
+			if IsExpectedErrors(err, []string{InvalidNatGatewayIdNotFound}) {
 				return nil
 			}
 			return resource.NonRetryableError(err)
@@ -359,9 +359,9 @@ func deleteBandwidthPackages(d *schema.ResourceData, meta interface{}) error {
 					return vpcClient.DeleteBandwidthPackage(request)
 				})
 				if e != nil {
-					if IsExceptedError(e, NatGatewayInvalidRegionId) {
+					if IsExpectedErrors(e, []string{"Invalid.RegionId"}) {
 						return resource.NonRetryableError(e)
-					} else if IsExceptedError(e, InstanceNotExists) {
+					} else if IsExpectedErrors(e, []string{"INSTANCE_NOT_EXISTS"}) {
 						return nil
 					}
 					err = e

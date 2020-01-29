@@ -395,7 +395,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 			return ecsClient.RunInstances(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidPrivateIpAddressDuplicated}) {
+			if IsExpectedErrors(err, []string{InvalidPrivateIpAddressDuplicated}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -678,7 +678,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 				return ecsClient.StartInstance(startRequest)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, []string{"IncorrectInstanceStatus"}) {
+				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) {
 					time.Sleep(time.Second)
 					return resource.RetryableError(err)
 				}
@@ -772,7 +772,7 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 			return ecsClient.DeleteInstance(deleteRequest)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{"IncorrectInstanceStatus", "DependencyViolation.RouteEntry", "IncorrectInstanceStatus.Initializing"}) {
+			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "DependencyViolation.RouteEntry", "IncorrectInstanceStatus.Initializing"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -781,7 +781,7 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, EcsNotFound) {
+		if IsExpectedErrors(err, EcsNotFound) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteRequest.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -1008,7 +1008,7 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 				return ecsClient.ModifyInstanceChargeType(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, []string{Throttling}) {
+				if IsExpectedErrors(err, []string{Throttling}) {
 					time.Sleep(10 * time.Second)
 					return resource.RetryableError(err)
 				}
@@ -1198,7 +1198,7 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 				return ecsClient.ModifyInstanceAttribute(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, []string{"InvalidChargeType.ValueNotSupported"}) {
+				if IsExpectedErrors(err, []string{"InvalidChargeType.ValueNotSupported"}) {
 					time.Sleep(time.Minute)
 					return resource.RetryableError(err)
 				}
@@ -1259,7 +1259,7 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 				return ecsClient.ModifyInstanceVpcAttribute(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, []string{"OperationConflict"}) {
+				if IsExpectedErrors(err, []string{"OperationConflict"}) {
 					time.Sleep(1 * time.Second)
 					return resource.RetryableError(err)
 				}
@@ -1315,7 +1315,7 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 					return ecsClient.ModifyPrepayInstanceSpec(request)
 				})
 				if err != nil {
-					if IsExceptedError(err, EcsThrottling) {
+					if IsExpectedErrors(err, []string{Throttling}) {
 						time.Sleep(5 * time.Second)
 						return resource.RetryableError(err)
 					}
@@ -1340,7 +1340,7 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 					return ecsClient.ModifyInstanceSpec(&args)
 				})
 				if err != nil {
-					if IsExceptedError(err, EcsThrottling) {
+					if IsExpectedErrors(err, []string{Throttling}) {
 						time.Sleep(10 * time.Second)
 						return resource.RetryableError(err)
 					}
@@ -1424,11 +1424,11 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 				return ecsClient.ModifyInstanceNetworkSpec(request)
 			})
 			if err != nil {
-				if IsExceptedError(err, EcsThrottling) {
+				if IsExpectedErrors(err, []string{Throttling}) {
 					time.Sleep(10 * time.Second)
 					return resource.RetryableError(err)
 				}
-				if IsExceptedError(err, EcsInternalError) {
+				if IsExpectedErrors(err, []string{InternalError}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

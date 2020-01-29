@@ -141,7 +141,7 @@ func resourceAlicloudKeyPairRead(d *schema.ResourceData, meta interface{}) error
 
 	keyPair, err := ecsService.DescribeKeyPair(d.Id())
 	if err != nil {
-		if NotFoundError(err) || IsExceptedError(err, KeyPairNotFound) {
+		if NotFoundError(err) || IsExpectedErrors(err, []string{KeyPairNotFound}) {
 			d.SetId("")
 			return nil
 		}
@@ -170,7 +170,7 @@ func resourceAlicloudKeyPairDelete(d *schema.ResourceData, meta interface{}) err
 			return ecsClient.DeleteKeyPairs(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, KeyPairNotFound) {
+			if IsExpectedErrors(err, []string{KeyPairNotFound}) {
 				return nil
 			}
 			return resource.RetryableError(err)

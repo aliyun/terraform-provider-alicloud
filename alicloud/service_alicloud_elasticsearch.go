@@ -30,7 +30,7 @@ func (s *ElasticsearchService) DescribeElasticsearchInstance(id string) (*elasti
 		})
 
 		if err != nil {
-			if IsExceptedErrors(err, []string{ESInstanceNotFound}) {
+			if IsExpectedErrors(err, []string{ESInstanceNotFound}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 
@@ -78,7 +78,7 @@ func (s *ElasticsearchService) ElasticsearchRetryFunc(wait func(), errorCodeList
 		raw, err = s.client.WithElasticsearchClient(do)
 
 		if err != nil {
-			if IsExceptedErrors(err, errorCodeList) {
+			if IsExpectedErrors(err, errorCodeList) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -302,7 +302,7 @@ func updateDataNodeAmount(d *schema.ResourceData, meta interface{}) error {
 		return elasticsearchClient.UpdateInstance(request)
 	})
 
-	if err != nil && !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
+	if err != nil && !IsExpectedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
@@ -347,7 +347,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 		return elasticsearchClient.UpdateInstance(request)
 	})
 
-	if err != nil && !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
+	if err != nil && !IsExpectedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
@@ -398,7 +398,7 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 		return elasticsearchClient.UpdateInstance(request)
 	})
 
-	if err != nil && !IsExceptedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
+	if err != nil && !IsExpectedErrors(err, []string{ESMustChangeOneResource, ESCssCheckUpdowngradeError}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)

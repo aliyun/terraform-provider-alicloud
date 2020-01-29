@@ -126,7 +126,7 @@ func resourceAliyunHaVipDelete(d *schema.ResourceData, meta interface{}) error {
 			return vpcClient.DeleteHaVip(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, InvalidHaVipIdNotFound) {
+			if IsExpectedErrors(err, []string{InvalidHaVipIdNotFound}) {
 				return nil
 			}
 			return resource.NonRetryableError(err)

@@ -131,7 +131,7 @@ func resourceAlicloudCloudConnectNetworkDelete(d *schema.ResourceData, meta inte
 	})
 
 	if err != nil {
-		if IsExceptedError(err, "ParameterCcnInstanceId") {
+		if IsExpectedErrors(err, []string{"ParameterCcnInstanceId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

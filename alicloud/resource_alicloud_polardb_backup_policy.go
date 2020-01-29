@@ -95,7 +95,7 @@ func resourceAlicloudPolarDBBackupPolicyUpdate(d *schema.ResourceData, meta inte
 		}
 		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			if err := polardbService.ModifyDBBackupPolicy(d.Id(), preferredBackupTime, preferredBackupPeriod); err != nil {
-				if IsExceptedErrors(err, OperationDeniedDBStatus) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

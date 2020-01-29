@@ -150,11 +150,11 @@ func resourceAlicloudLogStoreIndexCreate(d *schema.ResourceData, meta interface{
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := store.GetIndex()
 		if err != nil {
-			if IsExceptedError(err, LogClientTimeout) {
+			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "GetIndex", AliyunLogGoSdkERROR))
 			}
-			if !IsExceptedErrors(err, []string{IndexConfigNotExist}) {
+			if !IsExpectedErrors(err, []string{IndexConfigNotExist}) {
 				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "GetIndex", AliyunLogGoSdkERROR))
 			}
 		}
@@ -179,7 +179,7 @@ func resourceAlicloudLogStoreIndexCreate(d *schema.ResourceData, meta interface{
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 
 		if e := store.CreateIndex(index); e != nil {
-			if IsExceptedErrors(e, []string{InternalServerError, LogClientTimeout}) {
+			if IsExpectedErrors(e, []string{InternalServerError, LogClientTimeout}) {
 				return resource.RetryableError(e)
 			}
 			return resource.NonRetryableError(e)
@@ -289,7 +289,7 @@ func resourceAlicloudLogStoreIndexUpdate(d *schema.ResourceData, meta interface{
 				return nil, slsClient.UpdateIndex(parts[0], parts[1], *index)
 			})
 			if err != nil {
-				if IsExceptedError(err, LogClientTimeout) {
+				if IsExpectedErrors(err, []string{LogClientTimeout}) {
 					time.Sleep(5 * time.Second)
 					return resource.RetryableError(err)
 				}
@@ -333,7 +333,7 @@ func resourceAlicloudLogStoreIndexDelete(d *schema.ResourceData, meta interface{
 			return nil, slsClient.DeleteIndex(parts[0], parts[1])
 		})
 		if err != nil {
-			if IsExceptedError(err, LogClientTimeout) {
+			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}

@@ -48,7 +48,7 @@ func resourceAlicloudCloudConnectNetworkAttachmentCreate(d *schema.ResourceData,
 			return sagClient.BindSmartAccessGateway(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{OperationBlocking, UnknownError}) {
+			if IsExpectedErrors(err, []string{OperationBlocking, UnknownError}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -107,7 +107,7 @@ func resourceAlicloudCloudConnectNetworkAttachmentDelete(d *schema.ResourceData,
 		})
 
 		if err != nil {
-			if IsExceptedErrors(err, []string{IncorrectStatus, TaskConflict}) {
+			if IsExpectedErrors(err, []string{IncorrectStatus, TaskConflict}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -117,7 +117,7 @@ func resourceAlicloudCloudConnectNetworkAttachmentDelete(d *schema.ResourceData,
 	})
 
 	if err != nil {
-		if IsExceptedError(err, InvalidInstanceIdNotFound) {
+		if IsExpectedErrors(err, []string{InvalidInstanceIdNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -119,7 +119,7 @@ func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) er
 			return nil, slsClient.CreateLogStoreV2(d.Get("project").(string), logstore)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{InternalServerError, LogClientTimeout}) {
+			if IsExpectedErrors(err, []string{InternalServerError, LogClientTimeout}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -164,7 +164,7 @@ func resourceAlicloudLogStoreRead(d *schema.ResourceData, meta interface{}) erro
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		shards, err = object.ListShards()
 		if err != nil {
-			if IsExceptedError(err, InternalServerError) {
+			if IsExpectedErrors(err, []string{InternalServerError}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -275,7 +275,7 @@ func resourceAlicloudLogStoreDelete(d *schema.ResourceData, meta interface{}) er
 	}
 	err = project.DeleteLogStore(parts[1])
 	if err != nil {
-		if IsExceptedErrors(err, []string{LogStoreNotExist}) {
+		if IsExpectedErrors(err, []string{LogStoreNotExist}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteLogStore", AliyunLogGoSdkERROR)

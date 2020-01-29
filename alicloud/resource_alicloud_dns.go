@@ -122,7 +122,7 @@ func resourceAlicloudDnsDelete(d *schema.ResourceData, meta interface{}) error {
 			return dnsClient.DeleteDomain(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, RecordForbiddenDNSChange) {
+			if IsExpectedErrors(err, []string{RecordForbiddenDNSChange}) {
 				return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))

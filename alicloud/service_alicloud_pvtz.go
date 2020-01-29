@@ -27,7 +27,7 @@ func (s *PvtzService) DescribePvtzZone(id string) (zone pvtz.DescribeZoneInfoRes
 			return pvtzClient.DescribeZoneInfo(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{ServiceUnavailable, PvtzThrottlingUser, PvtzSystemBusy}) {
+			if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, PvtzSystemBusy}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -38,7 +38,7 @@ func (s *PvtzService) DescribePvtzZone(id string) (zone pvtz.DescribeZoneInfoRes
 		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
+		if IsExpectedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
 			return zone, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return zone, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -114,7 +114,7 @@ func (s *PvtzService) DescribePvtzZoneRecord(id string) (record pvtz.Record, err
 				return pvtzClient.DescribeZoneRecords(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, []string{ServiceUnavailable, PvtzThrottlingUser, PvtzSystemBusy}) {
+				if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, PvtzSystemBusy}) {
 					time.Sleep(5 * time.Second)
 					return resource.RetryableError(err)
 				}
@@ -125,7 +125,7 @@ func (s *PvtzService) DescribePvtzZoneRecord(id string) (record pvtz.Record, err
 			return nil
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
+			if IsExpectedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
 				return record, WrapErrorf(Error(GetNotFoundMessage("ZoneRecord", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 			return record, WrapErrorf(err, DefaultErrorMsg, recordIdStr, request.GetActionName(), AlibabaCloudSdkGoERROR)

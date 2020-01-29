@@ -62,7 +62,7 @@ func resourceAliyunDiskAttachmentCreate(d *schema.ResourceData, meta interface{}
 		})
 
 		if err != nil {
-			if IsExceptedErrors(err, DiskInvalidOperation) {
+			if IsExpectedErrors(err, DiskInvalidOperation) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -139,7 +139,7 @@ func resourceAliyunDiskAttachmentDelete(d *schema.ResourceData, meta interface{}
 			return ecsClient.DetachDisk(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, DiskInvalidOperation) {
+			if IsExpectedErrors(err, DiskInvalidOperation) {
 				time.Sleep(3 * time.Second)
 				return resource.RetryableError(err)
 			}

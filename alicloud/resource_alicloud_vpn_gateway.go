@@ -195,18 +195,8 @@ func resourceAliyunVpnGatewayRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("internet_ip", object.InternetIp)
 	d.Set("status", object.Status)
 	d.Set("vswitch_id", object.VSwitchId)
-	if strings.ToLower(VpnEnable) == strings.ToLower(object.IpsecVpn) {
-		d.Set("enable_ipsec", true)
-	} else {
-		d.Set("enable_ipsec", false)
-	}
-
-	if strings.ToLower(VpnEnable) == strings.ToLower(object.SslVpn) {
-		d.Set("enable_ssl", true)
-	} else {
-		d.Set("enable_ssl", false)
-	}
-
+	d.Set("enable_ipsec", "enable" == strings.ToLower(object.IpsecVpn))
+	d.Set("enable_ssl", "enable" == strings.ToLower(object.SslVpn))
 	d.Set("ssl_connections", object.SslMaxConnections)
 	d.Set("business_status", object.BusinessStatus)
 
@@ -288,12 +278,12 @@ func resourceAliyunVpnGatewayDelete(d *schema.ResourceData, meta interface{}) er
 			return vpcClient.DeleteVpnGateway(&args)
 		})
 		if err != nil {
-			if IsExceptedError(err, VpnConfiguring) {
+			if IsExpectedErrors(err, []string{VpnConfiguring}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
 			/*Vpn known issue: while the vpn is configuring, it will return unknown error*/
-			if IsExceptedError(err, UnknownError) {
+			if IsExpectedErrors(err, []string{UnknownError}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -303,7 +293,7 @@ func resourceAliyunVpnGatewayDelete(d *schema.ResourceData, meta interface{}) er
 	})
 
 	if err != nil {
-		if IsExceptedError(err, VpnNotFound) {
+		if IsExpectedErrors(err, []string{VpnNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

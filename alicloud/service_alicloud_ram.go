@@ -524,7 +524,7 @@ func (s *RamService) DescribeRamRoleAttachment(id string) (*ecs.DescribeInstance
 			return ecsClient.DescribeInstanceRamRole(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{RoleAttachmentUnExpectedJson}) {
+			if IsExpectedErrors(err, []string{RoleAttachmentUnExpectedJson}) {
 				return resource.RetryableError(WrapError(err))
 			}
 			return resource.NonRetryableError(err)
@@ -532,7 +532,7 @@ func (s *RamService) DescribeRamRoleAttachment(id string) (*ecs.DescribeInstance
 		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidRamRoleNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidRamRoleNotFound}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

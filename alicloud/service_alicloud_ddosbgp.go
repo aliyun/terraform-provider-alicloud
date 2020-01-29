@@ -25,7 +25,7 @@ func (s *DdosbgpService) DescribeDdosbgpInstance(id string) (v ddosbgp.Instance,
 	})
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{DdosbgpInstanceNotFound}) {
+		if IsExpectedErrors(err, []string{DdosbgpInstanceNotFound}) {
 			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 
@@ -52,7 +52,7 @@ func (s *DdosbgpService) DescribeDdosbgpInstanceSpec(id string, region string) (
 	})
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{DdosbgpInstanceNotFound, InvalidDdosbgpInstance}) {
+		if IsExpectedErrors(err, []string{DdosbgpInstanceNotFound, InvalidDdosbgpInstance}) {
 			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 

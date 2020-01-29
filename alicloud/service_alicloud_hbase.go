@@ -19,7 +19,7 @@ type HBaseService struct {
 }
 
 func (s *HBaseService) NotFoundHBaseInstance(err error) bool {
-	if NotFoundError(err) || IsExceptedErrors(err, []string{InvalidHBaseInstanceIdNotFound, InvalidHBaseNameNotFound}) {
+	if NotFoundError(err) || IsExpectedErrors(err, []string{InvalidHBaseInstanceIdNotFound, InvalidHBaseNameNotFound}) {
 		return true
 	}
 	return false
@@ -34,7 +34,7 @@ func (s *HBaseService) DescribeHBaseInstance(id string) (instance hbase.Describe
 	})
 	response, _ := raw.(*hbase.DescribeInstanceResponse)
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidHBaseInstanceIdNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidHBaseInstanceIdNotFound}) {
 			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -59,7 +59,7 @@ func (s *HBaseService) DescribeIpWhitelist(id string) (instance hbase.DescribeIp
 	})
 	response, _ := raw.(*hbase.DescribeIpWhitelistResponse)
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidHBaseInstanceIdNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidHBaseInstanceIdNotFound}) {
 			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

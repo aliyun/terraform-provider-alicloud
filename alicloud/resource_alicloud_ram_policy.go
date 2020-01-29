@@ -277,7 +277,7 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			return ramClient.DeletePolicy(deletePolicyRequest)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{DeleteConflictPolicyUser, DeleteConflictPolicyGroup, DeleteConflictRolePolicy, DeleteConflictPolicyVersion}) {
+			if IsExpectedErrors(err, []string{DeleteConflictPolicyUser, DeleteConflictPolicyGroup, DeleteConflictRolePolicy, DeleteConflictPolicyVersion}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

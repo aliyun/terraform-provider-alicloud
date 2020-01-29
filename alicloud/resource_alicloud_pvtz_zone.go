@@ -90,7 +90,7 @@ func resourceAlicloudPvtzZoneCreate(d *schema.ResourceData, meta interface{}) er
 			return pvtzClient.AddZone(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{ServiceUnavailable, PvtzThrottlingUser, PvtzSystemBusy}) {
+			if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, PvtzSystemBusy}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -147,7 +147,7 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 				return pvtzClient.UpdateZoneRemark(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, []string{ServiceUnavailable, PvtzThrottlingUser, PvtzSystemBusy}) {
+				if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, PvtzSystemBusy}) {
 					time.Sleep(5 * time.Second)
 					return resource.RetryableError(err)
 				}
@@ -179,7 +179,7 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 				return pvtzClient.SetProxyPattern(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, []string{ServiceUnavailable, PvtzThrottlingUser, PvtzSystemBusy}) {
+				if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, PvtzSystemBusy}) {
 					time.Sleep(5 * time.Second)
 					return resource.RetryableError(err)
 				}
@@ -212,7 +212,7 @@ func resourceAlicloudPvtzZoneDelete(d *schema.ResourceData, meta interface{}) er
 		})
 
 		if err != nil {
-			if IsExceptedErrors(err, []string{PvtzThrottlingUser, PvtzSystemBusy, ZoneVpcExists}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, PvtzSystemBusy, "Zone.VpcExists"}) {
 				time.Sleep(time.Duration(2) * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -225,7 +225,7 @@ func resourceAlicloudPvtzZoneDelete(d *schema.ResourceData, meta interface{}) er
 	})
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
+		if IsExpectedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

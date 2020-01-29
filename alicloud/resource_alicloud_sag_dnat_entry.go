@@ -128,7 +128,7 @@ func resourceAlicloudSagDnatDelete(d *schema.ResourceData, meta interface{}) err
 	})
 
 	if err != nil {
-		if IsExceptedError(err, "ParameterSagClientId") {
+		if IsExpectedErrors(err, []string{"ParameterSagClientId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

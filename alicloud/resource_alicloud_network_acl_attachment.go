@@ -213,7 +213,7 @@ func resourceAliyunNetworkAclAttachmentDelete(d *schema.ResourceData, meta inter
 		})
 		//Waiting for unassociate the network acl
 		if err != nil {
-			if IsExceptedError(err, TaskConflict) {
+			if IsExpectedErrors(err, []string{TaskConflict}) {
 				return resource.RetryableError(err)
 			}
 		}

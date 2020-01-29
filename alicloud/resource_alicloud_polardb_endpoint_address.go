@@ -84,7 +84,7 @@ func resourceAlicloudPolarDBEndpointAddressCreate(d *schema.ResourceData, meta i
 			return polarDBClient.CreateDBEndpointAddress(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, OperationDeniedDBStatus) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(err)
 			}
 
@@ -117,7 +117,7 @@ func resourceAlicloudPolarDBEndpointAddressRead(d *schema.ResourceData, meta int
 	object, err := polarDBService.DescribePolarDBConnection(d.Id())
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
 			d.SetId("")
 			return nil
 		}
@@ -165,7 +165,7 @@ func resourceAlicloudPolarDBEndpointAddressUpdate(d *schema.ResourceData, meta i
 				return polarDBClient.ModifyDBEndpointAddress(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, OperationDeniedDBStatus) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -208,7 +208,7 @@ func resourceAlicloudPolarDBEndpointAddressDelete(d *schema.ResourceData, meta i
 			return polarDBClient.DeleteDBEndpointAddress(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidDBClusterStatus, EndpointStatusNotSupport}) {
+			if IsExpectedErrors(err, []string{InvalidDBClusterStatus, EndpointStatusNotSupport}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -218,7 +218,7 @@ func resourceAlicloudPolarDBEndpointAddressDelete(d *schema.ResourceData, meta i
 	})
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound, InvalidCurrentConnectionStringNotFound, AtLeastOneNetTypeExists}) {
+		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound, InvalidCurrentConnectionStringNotFound, AtLeastOneNetTypeExists}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

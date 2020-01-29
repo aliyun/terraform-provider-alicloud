@@ -156,7 +156,7 @@ func doRequestCenBandwidthPackages(filters []cbn.DescribeCenBandwidthPackagesFil
 			return cbnClient.DescribeCenBandwidthPackages(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, CenThrottlingUser) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				if time.Now().After(deadline) {
 					return nil, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_bandwidth_packages", request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}

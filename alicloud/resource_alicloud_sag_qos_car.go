@@ -210,7 +210,7 @@ func resourceAlicloudSagQosCarDelete(d *schema.ResourceData, meta interface{}) e
 	})
 
 	if err != nil {
-		if IsExceptedError(err, "ParameterSagQosCarId") {
+		if IsExpectedErrors(err, []string{"ParameterSagQosCarId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

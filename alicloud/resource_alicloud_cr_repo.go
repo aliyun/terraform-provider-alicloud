@@ -190,7 +190,7 @@ func resourceAlicloudCRRepoDelete(d *schema.ResourceData, meta interface{}) erro
 		return crClient.DeleteRepo(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, ErrorRepoNotExist) {
+		if IsExpectedErrors(err, []string{ErrorRepoNotExist}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -293,7 +293,7 @@ func testAccCheckSwarmClusterDestroy(s *terraform.State) error {
 		})
 
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
+			if NotFoundError(err) || IsExpectedErrors(err, []string{ErrorClusterNotFound}) {
 				continue
 			}
 			return err

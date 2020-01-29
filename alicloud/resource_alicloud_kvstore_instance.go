@@ -385,7 +385,7 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				return rkvClient.ModifyInstanceSpec(request)
 			})
 			if err != nil {
-				if IsExceptedError(err, "MissingRedisUsedmemoryUnsupportPerfItem") {
+				if IsExpectedErrors(err, []string{"MissingRedisUsedmemoryUnsupportPerfItem"}) {
 					time.Sleep(time.Duration(5) * time.Second)
 					return resource.RetryableError(err)
 				}
@@ -559,7 +559,7 @@ func resourceAlicloudKVStoreInstanceDelete(d *schema.ResourceData, meta interfac
 	})
 
 	if err != nil {
-		if !IsExceptedError(err, InvalidKVStoreInstanceIdNotFound) {
+		if !IsExpectedErrors(err, []string{InvalidKVStoreInstanceIdNotFound}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}

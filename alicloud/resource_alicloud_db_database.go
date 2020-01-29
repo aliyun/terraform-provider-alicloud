@@ -66,7 +66,7 @@ func resourceAlicloudDBDatabaseCreate(d *schema.ResourceData, meta interface{}) 
 			return rdsClient.CreateDatabase(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, OperationDeniedDBStatus) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -147,7 +147,7 @@ func resourceAlicloudDBDatabaseDelete(d *schema.ResourceData, meta interface{}) 
 		return rdsClient.DeleteDatabase(request)
 	})
 	if err != nil {
-		if rdsService.NotFoundDBInstance(err) || IsExceptedError(err, InvalidDBNameNotFound) {
+		if rdsService.NotFoundDBInstance(err) || IsExpectedErrors(err, []string{InvalidDBNameNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

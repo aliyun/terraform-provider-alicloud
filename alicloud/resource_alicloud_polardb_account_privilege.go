@@ -69,7 +69,7 @@ func resourceAlicloudPolarDBAccountPrivilegeCreate(d *schema.ResourceData, meta 
 		for _, db := range dbList {
 			if err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 				if err := polarDBService.GrantPolarDBAccountPrivilege(d.Id(), db.(string)); err != nil {
-					if IsExceptedErrors(err, OperationDeniedDBStatus) {
+					if IsExpectedErrors(err, OperationDeniedDBStatus) {
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)

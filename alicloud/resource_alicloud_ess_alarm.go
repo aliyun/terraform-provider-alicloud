@@ -139,7 +139,7 @@ func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) erro
 			return essClient.CreateAlarm(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, EssThrottling) {
+			if IsExpectedErrors(err, []string{Throttling}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -328,7 +328,7 @@ func resourceAliyunEssAlarmDelete(d *schema.ResourceData, meta interface{}) erro
 		return essClient.DeleteAlarm(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, InvalidEssAlarmTaskNotFound) {
+		if IsExpectedErrors(err, []string{InvalidEssAlarmTaskNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

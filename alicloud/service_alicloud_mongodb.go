@@ -21,7 +21,7 @@ type MongoDBService struct {
 }
 
 func (s *MongoDBService) NotFoundMongoDBInstance(err error) bool {
-	if NotFoundError(err) || IsExceptedErrors(err, []string{InvalidMongoDBInstanceIdNotFound, InvalidMongoDBNameNotFound}) {
+	if NotFoundError(err) || IsExpectedErrors(err, []string{InvalidMongoDBInstanceIdNotFound, InvalidMongoDBNameNotFound}) {
 		return true
 	}
 	return false
@@ -36,7 +36,7 @@ func (s *MongoDBService) DescribeMongoDBInstance(id string) (instance dds.DBInst
 	})
 	response, _ := raw.(*dds.DescribeDBInstanceAttributeResponse)
 	if err != nil {
-		if IsExceptedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

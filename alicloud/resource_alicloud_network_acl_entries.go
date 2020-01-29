@@ -214,7 +214,7 @@ func resourceAliyunNetworkAclEntriesUpdate(d *schema.ResourceData, meta interfac
 		})
 		//Waiting for deleting the network acl entries
 		if err != nil {
-			if IsExceptedError(err, TaskConflict) {
+			if IsExpectedErrors(err, []string{TaskConflict}) {
 				return resource.RetryableError(err)
 			}
 		}
@@ -255,7 +255,7 @@ func resourceAliyunNetworkAclEntriesDelete(d *schema.ResourceData, meta interfac
 		})
 		//Waiting for deleting the network acl entries
 		if err != nil {
-			if IsExceptedError(err, TaskConflict) {
+			if IsExpectedErrors(err, []string{TaskConflict}) {
 				return resource.RetryableError(err)
 			}
 		}

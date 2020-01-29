@@ -233,7 +233,7 @@ func resourceAliyunSecurityGroupDelete(d *schema.ResourceData, meta interface{})
 		})
 
 		if err != nil {
-			if IsExceptedError(err, SgDependencyViolation) {
+			if IsExpectedErrors(err, []string{"DependencyViolation"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

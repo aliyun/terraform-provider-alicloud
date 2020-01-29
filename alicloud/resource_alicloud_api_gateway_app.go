@@ -54,7 +54,7 @@ func resourceAliyunApigatewayAppCreate(d *schema.ResourceData, meta interface{})
 			return cloudApiClient.CreateApp(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, RepeatedCommit) {
+			if IsExpectedErrors(err, []string{RepeatedCommit}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -138,7 +138,7 @@ func resourceAliyunApigatewayAppDelete(d *schema.ResourceData, meta interface{})
 		return cloudApiClient.DeleteApp(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, NotFoundApp) {
+		if IsExpectedErrors(err, []string{NotFoundApp}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

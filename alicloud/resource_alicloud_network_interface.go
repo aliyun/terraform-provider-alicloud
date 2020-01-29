@@ -225,7 +225,7 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 					return ecsClient.UnassignPrivateIpAddresses(unAssignPrivateIpAddressesRequest)
 				})
 				if err != nil {
-					if IsExceptedErrors(err, NetworkInterfaceInvalidOperations) {
+					if IsExpectedErrors(err, NetworkInterfaceInvalidOperations) {
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)
@@ -250,7 +250,7 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 					return ecsClient.AssignPrivateIpAddresses(assignPrivateIpAddressesRequest)
 				})
 				if err != nil {
-					if IsExceptedErrors(err, NetworkInterfaceInvalidOperations) {
+					if IsExpectedErrors(err, NetworkInterfaceInvalidOperations) {
 						return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 					}
 					return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
@@ -286,7 +286,7 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 					})
 
 					if err != nil {
-						if IsExceptedErrors(err, NetworkInterfaceInvalidOperations) {
+						if IsExpectedErrors(err, NetworkInterfaceInvalidOperations) {
 							return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), assignPrivateIpAddressesRequest.GetActionName(), AlibabaCloudSdkGoERROR))
 						}
 						return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), assignPrivateIpAddressesRequest.GetActionName(), AlibabaCloudSdkGoERROR))
@@ -311,7 +311,7 @@ func resourceAliyunNetworkInterfaceUpdate(d *schema.ResourceData, meta interface
 						return ecsClient.UnassignPrivateIpAddresses(unAssignPrivateIpAddressesRequest)
 					})
 					if err != nil {
-						if IsExceptedErrors(err, NetworkInterfaceInvalidOperations) {
+						if IsExpectedErrors(err, NetworkInterfaceInvalidOperations) {
 							return resource.RetryableError(err)
 						}
 						return resource.RetryableError(err)
@@ -357,7 +357,7 @@ func resourceAliyunNetworkInterfaceDelete(d *schema.ResourceData, meta interface
 			return ecsClient.DeleteNetworkInterface(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, NetworkInterfaceInvalidOperations) {
+			if IsExpectedErrors(err, NetworkInterfaceInvalidOperations) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

@@ -214,7 +214,7 @@ func resourceAlicloudSlbServerCertificateDelete(d *schema.ResourceData, meta int
 			return slbClient.DeleteServerCertificate(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{"CertificateAndPrivateKeyIsRefered"}) {
+			if IsExpectedErrors(err, []string{"CertificateAndPrivateKeyIsRefered"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -225,7 +225,7 @@ func resourceAlicloudSlbServerCertificateDelete(d *schema.ResourceData, meta int
 	})
 
 	if err != nil {
-		if IsExceptedError(err, SlbServerCertificateIdNotFound) {
+		if IsExpectedErrors(err, []string{"ServerCertificateId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

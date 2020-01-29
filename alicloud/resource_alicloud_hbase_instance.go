@@ -291,7 +291,7 @@ func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{
 	})
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

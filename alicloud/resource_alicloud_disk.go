@@ -269,7 +269,7 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ResizeDisk(request)
 		})
-		if IsExceptedErrors(err, DiskNotSupportOnlineChangeErrors) {
+		if IsExpectedErrors(err, DiskNotSupportOnlineChangeErrors) {
 			request.Type = string(DiskResizeTypeOffline)
 			raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.ResizeDisk(request)
@@ -299,7 +299,7 @@ func resourceAliyunDiskDelete(d *schema.ResourceData, meta interface{}) error {
 			return ecsClient.DeleteDisk(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, DiskInvalidOperation) {
+			if IsExpectedErrors(err, DiskInvalidOperation) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

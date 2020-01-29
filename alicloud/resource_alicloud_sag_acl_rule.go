@@ -202,7 +202,7 @@ func resourceAlicloudSagAclRuleDelete(d *schema.ResourceData, meta interface{}) 
 	})
 
 	if err != nil {
-		if IsExceptedError(err, "ParameterSagACLRuleId") {
+		if IsExpectedErrors(err, []string{"ParameterSagACLRuleId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

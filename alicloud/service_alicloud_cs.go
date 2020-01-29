@@ -110,7 +110,7 @@ func (s *CsService) DescribeContainerApplication(clusterName, appName string) (a
 	})
 	app, _ = raw.(cs.GetProjectResponse)
 	if err != nil {
-		if IsExceptedError(err, ApplicationNotFound) {
+		if IsExpectedErrors(err, []string{ApplicationNotFound}) {
 			return app, GetNotFoundErrorFromString(GetNotFoundMessage("Container Application", appName))
 		}
 		return app, fmt.Errorf("Getting Application failed by name %s: %#v.", appName, err)
@@ -157,7 +157,7 @@ func (s *CsService) DescribeCsKubernetes(id string) (cluster cs.KubernetesCluste
 		response = raw
 		return err
 	}); err != nil {
-		if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
+		if NotFoundError(err) || IsExpectedErrors(err, []string{ErrorClusterNotFound}) {
 			return cluster, WrapErrorf(err, NotFoundMsg, DenverdinoAliyungo)
 		}
 		return cluster, WrapErrorf(err, DefaultErrorMsg, id, "DescribeKubernetesCluster", DenverdinoAliyungo)
@@ -212,7 +212,7 @@ func (s *CsService) DescribeCsManagedKubernetes(id string) (cluster cs.Kubernete
 		response = raw
 		return err
 	}); err != nil {
-		if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
+		if NotFoundError(err) || IsExpectedErrors(err, []string{ErrorClusterNotFound}) {
 			return cluster, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return cluster, WrapErrorf(err, DefaultErrorMsg, id, "DescribeKubernetesCluster", DenverdinoAliyungo)
@@ -329,7 +329,7 @@ func (s *CsService) DescribeCsServerlessKubernetes(id string) (*cs.ServerlessClu
 		response = raw
 		return err
 	}); err != nil {
-		if IsExceptedError(err, ErrorClusterNotFound) {
+		if IsExpectedErrors(err, []string{ErrorClusterNotFound}) {
 			return cluster, WrapErrorf(err, NotFoundMsg, DenverdinoAliyungo)
 		}
 		return cluster, WrapErrorf(err, DefaultErrorMsg, id, "DescribeServerlessKubernetesCluster", DenverdinoAliyungo)

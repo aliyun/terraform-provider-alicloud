@@ -200,7 +200,7 @@ func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{
 
 	object, err := bucket.GetObjectDetailedMeta(d.Get("key").(string), options...)
 	if err != nil {
-		if IsExceptedError(err, OssBodyNotFound) {
+		if IsExpectedErrors(err, []string{OssBodyNotFound}) {
 			d.SetId("")
 			return WrapError(Error("To get the Object: %#v but it is not exist in the specified bucket %s.", d.Get("key").(string), d.Get("bucket").(string)))
 		}
@@ -239,7 +239,7 @@ func resourceAlicloudOssBucketObjectDelete(d *schema.ResourceData, meta interfac
 
 	err = bucket.DeleteObject(d.Id())
 	if err != nil {
-		if IsExceptedErrors(err, []string{"No Content", "Not Found"}) {
+		if IsExpectedErrors(err, []string{"No Content", "Not Found"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteObject", AliyunOssGoSdk)

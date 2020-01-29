@@ -426,7 +426,7 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 			return slbClient.StartLoadBalancerListener(startLoadBalancerListenerRequest)
 		})
 		if err != nil {
-			if IsExceptedError(err, "ServiceIsConfiguring") {
+			if IsExpectedErrors(err, []string{"ServiceIsConfiguring"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -472,7 +472,7 @@ func resourceAliyunSlbListenerRead(d *schema.ResourceData, meta interface{}) err
 				d.SetId("")
 				return nil
 			}
-			if IsExceptedErrors(err, SlbIsBusy) {
+			if IsExpectedErrors(err, SlbIsBusy) {
 				return resource.RetryableError(WrapError(err))
 			}
 			return resource.NonRetryableError(WrapError(err))
@@ -783,7 +783,7 @@ func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) e
 		})
 
 		if err != nil {
-			if IsExceptedErrors(err, SlbIsBusy) {
+			if IsExpectedErrors(err, SlbIsBusy) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

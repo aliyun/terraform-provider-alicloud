@@ -67,7 +67,7 @@ func testSweepAlikafkaSaslAcl(region string) error {
 				return alikafkaClient.DescribeSaslUsers(userListReq)
 			})
 			if err != nil {
-				if IsExceptedError(err, AlikafkaThrottlingUser) {
+				if IsExpectedErrors(err, []string{ThrottlingUser}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -114,7 +114,7 @@ func testSweepAlikafkaSaslAcl(region string) error {
 				return alikafkaClient.GetTopicList(topicListReq)
 			})
 			if err != nil {
-				if IsExceptedError(err, AlikafkaThrottlingUser) {
+				if IsExpectedErrors(err, []string{ThrottlingUser}) {
 					wait()
 					return resource.RetryableError(err)
 				}

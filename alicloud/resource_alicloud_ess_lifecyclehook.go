@@ -75,7 +75,7 @@ func resourceAliyunEssLifeCycleHookCreate(d *schema.ResourceData, meta interface
 			return essClient.CreateLifecycleHook(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, EssThrottling) {
+			if IsExpectedErrors(err, []string{Throttling}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -163,7 +163,7 @@ func resourceAliyunEssLifeCycleHookDelete(d *schema.ResourceData, meta interface
 		return essClient.DeleteLifecycleHook(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidLifecycleHookIdNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidLifecycleHookIdNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

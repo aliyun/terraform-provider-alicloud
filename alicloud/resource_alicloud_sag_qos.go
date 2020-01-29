@@ -90,7 +90,7 @@ func resourceAlicloudSagQosDelete(d *schema.ResourceData, meta interface{}) erro
 	})
 
 	if err != nil {
-		if IsExceptedError(err, "ParameterSagQosId") {
+		if IsExpectedErrors(err, []string{"ParameterSagQosId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

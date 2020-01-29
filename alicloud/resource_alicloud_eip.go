@@ -117,7 +117,7 @@ func resourceAliyunEipCreate(d *schema.ResourceData, meta interface{}) error {
 		return vpcClient.AllocateEipAddress(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, COMMODITYINVALID_COMPONENT) && request.InternetChargeType == string(PayByBandwidth) {
+		if IsExpectedErrors(err, []string{COMMODITYINVALID_COMPONENT}) && request.InternetChargeType == string(PayByBandwidth) {
 			return WrapErrorf(err, "Your account is international and it can only create '%s' elastic IP. Please change it and try again. %s", PayByTraffic, AlibabaCloudSdkGoERROR)
 		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eip", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -219,9 +219,9 @@ func resourceAliyunEipDelete(d *schema.ResourceData, meta interface{}) error {
 			return vpcClient.ReleaseEipAddress(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, EipIncorrectStatus) {
+			if IsExpectedErrors(err, []string{EipIncorrectStatus}) {
 				return resource.RetryableError(err)
-			} else if IsExceptedError(err, AllocationIdNotFound) {
+			} else if IsExpectedErrors(err, []string{AllocationIdNotFound}) {
 				return nil
 			}
 			return resource.NonRetryableError(err)

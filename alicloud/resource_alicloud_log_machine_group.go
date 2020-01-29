@@ -70,7 +70,7 @@ func resourceAlicloudLogMachineGroupCreate(d *schema.ResourceData, meta interfac
 			return nil, slsClient.CreateMachineGroup(d.Get("project").(string), params)
 		})
 		if err != nil {
-			if IsExceptedError(err, LogClientTimeout) {
+			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -140,7 +140,7 @@ func resourceAlicloudLogMachineGroupUpdate(d *schema.ResourceData, meta interfac
 				return nil, slsClient.UpdateMachineGroup(parts[0], params)
 			})
 			if err != nil {
-				if IsExceptedError(err, LogClientTimeout) {
+				if IsExpectedErrors(err, []string{LogClientTimeout}) {
 					time.Sleep(5 * time.Second)
 					return resource.RetryableError(err)
 				}
@@ -175,7 +175,7 @@ func resourceAlicloudLogMachineGroupDelete(d *schema.ResourceData, meta interfac
 			return nil, slsClient.DeleteMachineGroup(parts[0], parts[1])
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{LogClientTimeout}) {
+			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}

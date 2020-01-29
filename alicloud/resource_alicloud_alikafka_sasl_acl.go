@@ -91,7 +91,7 @@ func resourceAlicloudAlikafkaSaslAclCreate(d *schema.ResourceData, meta interfac
 			return alikafkaClient.CreateAcl(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AlikafkaThrottlingUser, AlikafkaFlowControl}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, AlikafkaFlowControl}) {
 				time.Sleep(2 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -171,7 +171,7 @@ func resourceAlicloudAlikafkaSaslAclDelete(d *schema.ResourceData, meta interfac
 			return alikafkaClient.DeleteAcl(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AlikafkaThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
