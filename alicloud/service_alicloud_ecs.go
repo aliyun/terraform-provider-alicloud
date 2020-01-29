@@ -142,7 +142,7 @@ func (s *EcsService) DescribeInstanceAttribute(id string) (instance ecs.Describe
 	return *response, nil
 }
 
-func (s *EcsService) QueryInstanceSystemDisk(id, rg string) (disk ecs.Disk, err error) {
+func (s *EcsService) DescribeInstanceSystemDisk(id, rg string) (disk ecs.Disk, err error) {
 	request := ecs.CreateDescribeDisksRequest()
 	request.InstanceId = id
 	request.DiskType = string(DiskTypeSystem)
@@ -1005,30 +1005,6 @@ func (s *EcsService) AttachKeyPair(keyName string, instanceIds []interface{}) er
 		return WrapErrorf(err, DefaultErrorMsg, keyName, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	return nil
-}
-
-func (s *EcsService) QueryInstanceAllDisks(id, rg string) ([]string, error) {
-	request := ecs.CreateDescribeDisksRequest()
-	request.RegionId = s.client.RegionId
-	request.InstanceId = id
-	request.ResourceGroupId = rg
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeDisks(request)
-	})
-	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ecs.DescribeDisksResponse)
-	if len(response.Disks.Disk) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("QueryInstanceAllDisks", id)), NotFoundMsg, ProviderERROR)
-	}
-
-	var ids []string
-	for _, disk := range response.Disks.Disk {
-		ids = append(ids, disk.DiskId)
-	}
-	return ids, nil
 }
 
 func (s *EcsService) SnapshotStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {

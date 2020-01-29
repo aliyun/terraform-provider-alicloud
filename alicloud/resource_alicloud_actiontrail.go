@@ -29,7 +29,7 @@ func resourceAlicloudActiontrail() *schema.Resource {
 			"event_rw": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      EventWrite,
+				Default:      "Write",
 				ValidateFunc: validation.StringInSlice([]string{"Read", "Write", "All"}, false),
 			},
 			"oss_bucket_name": {

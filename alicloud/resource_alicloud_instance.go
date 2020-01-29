@@ -161,7 +161,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				MinItems: 1,
-				MaxItems: 15,
+				MaxItems: 16,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -423,7 +423,6 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	ecsService := EcsService{client}
 
 	instance, err := ecsService.DescribeInstance(d.Id())
-
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -432,10 +431,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		return WrapError(err)
 	}
 
-	rg := instance.ResourceGroupId
-
-	disk, err := ecsService.QueryInstanceSystemDisk(d.Id(), rg)
-
+	disk, err := ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -445,7 +441,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	d.Set("instance_name", instance.InstanceName)
-	d.Set("resource_group_id", rg)
+	d.Set("resource_group_id", instance.ResourceGroupId)
 	d.Set("description", instance.Description)
 	d.Set("status", instance.Status)
 	d.Set("availability_zone", instance.ZoneId)
@@ -465,6 +461,8 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("deletion_protection", instance.DeletionProtection)
 	d.Set("credit_specification", instance.CreditSpecification)
 	d.Set("auto_release_time", instance.AutoReleaseTime)
+	d.Set("tags", tagsToMap(instance.Tags.Tag))
+	d.Set("volume_tags", tagsToMap(disk.Tags.Tag))
 
 	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
@@ -554,40 +552,6 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		d.Set("period", period)
 		d.Set("period_unit", periodUnit)
 	}
-	tags, err := ecsService.DescribeTags(d.Id(), TagResourceInstance)
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
-	}
-	if len(tags) > 0 {
-		d.Set("tags", tagsToMap(tags))
-	}
-
-	ids, err := ecsService.QueryInstanceAllDisks(d.Id(), rg)
-	if err != nil {
-		return WrapError(err)
-	}
-
-	request := ecs.CreateListTagResourcesRequest()
-	request.RegionId = client.RegionId
-	raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		request.ResourceType = string(TagResourceDisk)
-		request.ResourceId = &ids
-		return ecsClient.ListTagResources(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	volumeTagsResp := raw.(*ecs.ListTagResourcesResponse)
-	var volumeTags []ecs.Tag
-	for _, tag := range volumeTagsResp.TagResources.TagResource {
-		volumeTags = append(volumeTags, ecs.Tag{
-			TagKey:   tag.TagKey,
-			TagValue: tag.TagValue,
-		})
-	}
-
-	d.Set("volume_tags", tagsToMap(volumeTags))
 
 	return nil
 }
@@ -1113,7 +1077,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 			}
 			var disk ecs.Disk
 			err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-				disk, err = ecsService.QueryInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
+				disk, err = ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
 				if err != nil {
 					if NotFoundError(err) {
 						return resource.RetryableError(err)

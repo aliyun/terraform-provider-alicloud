@@ -345,12 +345,14 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"volume_tags": map[string]string{
 						"tag1": "test",
+						"Tag2": "Test",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"volume_tags.%":    "1",
+						"volume_tags.%":    "2",
 						"volume_tags.tag1": "test",
+						"volume_tags.Tag2": "Test",
 					}),
 				),
 			},
@@ -358,14 +360,14 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"foo": "foo",
-						"bar": "bar",
+						"Bar": "Bar",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":   "2",
 						"tags.foo": "foo",
-						"tags.bar": "bar",
+						"tags.Bar": "Bar",
 					}),
 				),
 			},
@@ -401,13 +403,14 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 					testAccCheck(map[string]string{
 
 						"tags.%":   "0",
-						"tags.bar": REMOVEKEY,
+						"tags.Bar": REMOVEKEY,
 						"tags.foo": REMOVEKEY,
 
 						"instance_name": fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d", rand),
 
 						"volume_tags.%":    "0",
 						"volume_tags.tag1": REMOVEKEY,
+						"volume_tags.Tag2": REMOVEKEY,
 
 						"image_id":          CHECKSET,
 						"instance_type":     CHECKSET,
@@ -655,12 +658,14 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"volume_tags": map[string]string{
 						"tag1": "test",
+						"Tag2": "Test",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"volume_tags.%":    "1",
+						"volume_tags.%":    "2",
 						"volume_tags.tag1": "test",
+						"volume_tags.Tag2": "Test",
 					}),
 				),
 			},
@@ -668,14 +673,14 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"foo": "foo",
-						"bar": "bar",
+						"Bar": "Bar",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":   "2",
 						"tags.foo": "foo",
-						"tags.bar": "bar",
+						"tags.Bar": "Bar",
 					}),
 				),
 			},
@@ -712,13 +717,14 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 					testAccCheck(map[string]string{
 
 						"tags.%":   "0",
-						"tags.bar": REMOVEKEY,
+						"tags.Bar": REMOVEKEY,
 						"tags.foo": REMOVEKEY,
 
 						"instance_name": name,
 
 						"volume_tags.%":    "0",
 						"volume_tags.tag1": REMOVEKEY,
+						"volume_tags.Tag2": REMOVEKEY,
 
 						"image_id":          CHECKSET,
 						"instance_type":     CHECKSET,
