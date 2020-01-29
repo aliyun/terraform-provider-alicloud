@@ -397,7 +397,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		requestInfo = ossClient
 		return ossClient.GetBucketCORS(request["bucketName"])
 	})
-	if err != nil && !IsExceptedErrors(err, []string{NoSuchCORSConfiguration}) {
+	if err != nil && !IsExpectedErrors(err, []string{NoSuchCORSConfiguration}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketCORS", AliyunOssGoSdk)
 	}
 	addDebug("GetBucketCORS", raw, requestInfo, request)
@@ -421,7 +421,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return ossClient.GetBucketWebsite(d.Id())
 	})
-	if err != nil && !IsExceptedErrors(err, []string{NoSuchWebsiteConfiguration}) {
+	if err != nil && !IsExpectedErrors(err, []string{NoSuchWebsiteConfiguration}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketWebsite", AliyunOssGoSdk)
 	}
 	addDebug("GetBucketWebsite", raw, requestInfo, request)
@@ -1133,7 +1133,7 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 			return nil, ossClient.DeleteBucket(d.Id())
 		})
 		if err != nil {
-			if IsExceptedError(err, "BucketNotEmpty") {
+			if IsExpectedErrors(err, []string{"BucketNotEmpty"}) {
 				if d.Get("force_destroy").(bool) {
 					raw, er := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 						bucket, _ := ossClient.Bucket(d.Get("bucket").(string))

@@ -74,7 +74,7 @@ func resourceAliyunVpnRouteEntryCreate(d *schema.ResourceData, meta interface{})
 			return vpcClient.CreateVpnRouteEntry(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, VpnConfiguring) {
+			if IsExpectedErrors(err, []string{VpnConfiguring}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -192,7 +192,7 @@ func resourceAliyunVpnRouteEntryDelete(d *schema.ResourceData, meta interface{})
 			return vpcClient.DeleteVpnRouteEntry(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, VpnConfiguring) {
+			if IsExpectedErrors(err, []string{VpnConfiguring}) {
 				wait()
 				return resource.RetryableError(err)
 			}

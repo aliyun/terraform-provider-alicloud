@@ -56,7 +56,7 @@ func resourceAlicloudAlikafkaConsumerGroupCreate(d *schema.ResourceData, meta in
 			return alikafkaClient.CreateConsumerGroup(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AlikafkaThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -133,7 +133,7 @@ func resourceAlicloudAlikafkaConsumerGroupDelete(d *schema.ResourceData, meta in
 			return alikafkaClient.DeleteConsumerGroup(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AlikafkaThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}

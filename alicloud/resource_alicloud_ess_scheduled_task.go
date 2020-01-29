@@ -169,7 +169,7 @@ func resourceAliyunEssScheduledTaskDelete(d *schema.ResourceData, meta interface
 		return essClient.DeleteScheduledTask(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, InvalidScheduledTaskIdNotFound) {
+		if IsExpectedErrors(err, []string{InvalidScheduledTaskIdNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

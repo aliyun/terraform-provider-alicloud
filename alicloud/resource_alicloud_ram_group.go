@@ -179,7 +179,7 @@ func resourceAlicloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 			return ramClient.DeleteGroup(deleteGroupRequest)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{DeleteConflictGroupUser, DeleteConflictGroupPolicy}) {
+			if IsExpectedErrors(err, []string{DeleteConflictGroupUser, DeleteConflictGroupPolicy}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

@@ -190,7 +190,7 @@ func (s *EcsService) JoinSecurityGroups(instanceId string, securityGroupIds []st
 		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.JoinSecurityGroup(request)
 		})
-		if err != nil && IsExceptedErrors(err, []string{InvalidInstanceIdAlreadyExists}) {
+		if err != nil && IsExpectedErrors(err, []string{"InvalidInstanceId.AlreadyExists"}) {
 			return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -208,7 +208,7 @@ func (s *EcsService) LeaveSecurityGroups(instanceId string, securityGroupIds []s
 		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.LeaveSecurityGroup(request)
 		})
-		if err != nil && IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
+		if err != nil && IsExpectedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
 			return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -225,7 +225,7 @@ func (s *EcsService) DescribeSecurityGroup(id string) (group ecs.DescribeSecurit
 		return ecsClient.DescribeSecurityGroupAttribute(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
 			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return
@@ -993,7 +993,7 @@ func (s *EcsService) AttachKeyPair(keyName string, instanceIds []interface{}) er
 			return ecsClient.AttachKeyPair(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, KeyPairServiceUnavailable) {
+			if IsExpectedErrors(err, []string{KeyPairServiceUnavailable}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -1231,7 +1231,7 @@ func (s *EcsService) DescribeLaunchTemplateVersion(id string, version int) (set 
 		return ecsClient.DescribeLaunchTemplateVersions(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, "InvalidLaunchTemplate.NotFound") {
+		if IsExpectedErrors(err, []string{"InvalidLaunchTemplate.NotFound"}) {
 			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			return
 		}
@@ -1286,7 +1286,7 @@ func (s *EcsService) DescribeImageShareByImageId(id string) (imageShare *ecs.Des
 		return ecsClient.DescribeImageSharePermission(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, ImageIdNotFound) {
+		if IsExpectedErrors(err, []string{ImageIdNotFound}) {
 			return imageShare, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return imageShare, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -142,7 +142,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 					return slbClient.AddBackendServers(request)
 				})
 				if err != nil {
-					if IsExceptedErrors(err, SlbIsBusy) {
+					if IsExpectedErrors(err, SlbIsBusy) {
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)
@@ -163,7 +163,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 					return slbClient.RemoveBackendServers(request)
 				})
 				if err != nil {
-					if IsExceptedErrors(err, SlbIsBusy) {
+					if IsExpectedErrors(err, SlbIsBusy) {
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)
@@ -191,7 +191,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 				return slbClient.SetBackendServers(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, SlbIsBusy) {
+				if IsExpectedErrors(err, SlbIsBusy) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -237,7 +237,7 @@ func resourceAliyunSlbAttachmentDelete(d *schema.ResourceData, meta interface{})
 				return slbClient.RemoveBackendServers(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, SlbIsBusy) {
+				if IsExpectedErrors(err, SlbIsBusy) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

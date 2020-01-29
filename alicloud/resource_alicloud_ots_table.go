@@ -122,7 +122,7 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			return tableStoreClient.CreateTable(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, OtsTableIsTemporarilyUnavailable) {
+			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -202,7 +202,7 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 				return tableStoreClient.UpdateTable(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, OtsTableIsTemporarilyUnavailable) {
+				if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -233,7 +233,7 @@ func resourceAliyunOtsTableDelete(d *schema.ResourceData, meta interface{}) erro
 			return tableStoreClient.DeleteTable(req)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, OtsTableIsTemporarilyUnavailable) {
+			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

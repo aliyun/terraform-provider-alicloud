@@ -82,7 +82,7 @@ func resourceAlicloudDBConnectionCreate(d *schema.ResourceData, meta interface{}
 			return rdsClient.AllocateInstancePublicConnection(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, OperationDeniedDBStatus) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(err)
 			}
 
@@ -169,7 +169,7 @@ func resourceAlicloudDBConnectionUpdate(d *schema.ResourceData, meta interface{}
 				return rdsClient.ModifyDBInstanceConnectionString(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, OperationDeniedDBStatus) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -214,7 +214,7 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 		})
 
 		if err != nil {
-			if IsExceptedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
+			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -224,7 +224,7 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 	})
 
 	if err != nil {
-		if rdsService.NotFoundDBInstance(err) || IsExceptedErrors(err, []string{InvalidCurrentConnectionStringNotFound, AtLeastOneNetTypeExists}) {
+		if rdsService.NotFoundDBInstance(err) || IsExpectedErrors(err, []string{InvalidCurrentConnectionStringNotFound, AtLeastOneNetTypeExists}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -20,7 +20,7 @@ func (s *DnsService) DescribeDns(id string) (*alidns.DescribeDomainInfoResponse,
 		return dnsClient.DescribeDomainInfo(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, InvalidDomainNameNoExist) {
+		if IsExpectedErrors(err, []string{InvalidDomainNameNoExist}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -76,7 +76,7 @@ func (dns *DnsService) DescribeDnsRecord(id string) (*alidns.DescribeDomainRecor
 		return dnsClient.DescribeDomainRecordInfo(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{DomainRecordNotBelongToUser, "InvalidRR.NoExist"}) {
+		if IsExpectedErrors(err, []string{DomainRecordNotBelongToUser, "InvalidRR.NoExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

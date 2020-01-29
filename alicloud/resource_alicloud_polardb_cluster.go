@@ -357,7 +357,7 @@ func resourceAlicloudPolarDBClusterDelete(d *schema.ResourceData, meta interface
 		})
 
 		if err != nil && !NotFoundError(err) {
-			if IsExceptedErrors(err, []string{InvalidDBClusterStatus, InvalidPolarDBClusterStatus, InvalidReadPolarDBClusterStatus}) {
+			if IsExpectedErrors(err, []string{InvalidDBClusterStatus, InvalidPolarDBClusterStatus, InvalidReadPolarDBClusterStatus}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

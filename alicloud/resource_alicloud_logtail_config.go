@@ -223,7 +223,7 @@ func resourceAlicloudLogtailConfigDelete(d *schema.ResourceData, meta interface{
 			return nil, slsClient.DeleteConfig(parts[0], parts[2])
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{LogClientTimeout}) {
+			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -238,7 +238,7 @@ func resourceAlicloudLogtailConfigDelete(d *schema.ResourceData, meta interface{
 		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{ProjectNotExist, LogStoreNotExist, LogConfigNotExist}) {
+		if IsExpectedErrors(err, []string{ProjectNotExist, LogStoreNotExist, LogConfigNotExist}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteConfig", AliyunLogGoSdkERROR)

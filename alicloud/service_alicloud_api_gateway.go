@@ -28,7 +28,7 @@ func (s *CloudApiService) DescribeApiGatewayGroup(id string) (*cloudapi.Describe
 		return cloudApiClient.DescribeApiGroup(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, ApiGroupNotFound) {
+		if IsExpectedErrors(err, []string{ApiGroupNotFound}) {
 			return apiGroup, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return apiGroup, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -73,7 +73,7 @@ func (s *CloudApiService) DescribeApiGatewayApp(id string) (*cloudapi.DescribeAp
 		return cloudApiClient.DescribeApp(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, NotFoundApp) {
+		if IsExpectedErrors(err, []string{NotFoundApp}) {
 			return app, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return app, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -120,7 +120,7 @@ func (s *CloudApiService) DescribeApiGatewayApi(id string) (*cloudapi.DescribeAp
 		return cloudApiClient.DescribeApi(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{ApiGroupNotFound, ApiNotFound}) {
+		if IsExpectedErrors(err, []string{ApiGroupNotFound, ApiNotFound}) {
 			return api, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return api, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -175,7 +175,7 @@ func (s *CloudApiService) DescribeApiGatewayAppAttachment(id string) (*cloudapi.
 			return cloudApiClient.DescribeAuthorizedApps(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{ApiGroupNotFound, ApiNotFound}) {
+			if IsExpectedErrors(err, []string{ApiGroupNotFound, ApiNotFound}) {
 				return app, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 			return app, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -301,7 +301,7 @@ func (s *CloudApiService) DescribeDeployedApi(id string, stageName string) (*clo
 		return cloudApiClient.DescribeDeployedApi(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{ApiGroupNotFound, ApiNotFound, NotFoundStage}) {
+		if IsExpectedErrors(err, []string{ApiGroupNotFound, ApiNotFound, NotFoundStage}) {
 			return api, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return api, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -349,7 +349,7 @@ func (s *CloudApiService) AbolishApi(id string, stageName string) (err error) {
 	})
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{ApiGroupNotFound, ApiNotFound, NotFoundStage}) {
+		if IsExpectedErrors(err, []string{ApiGroupNotFound, ApiNotFound, NotFoundStage}) {
 			return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

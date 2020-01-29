@@ -100,7 +100,7 @@ func resourceAlicloudSlbAclRead(d *schema.ResourceData, meta interface{}) error 
 
 	object, err := slbService.DescribeSlbAcl(d.Id())
 	if err != nil {
-		if IsExceptedError(err, SlbAclNotExists) {
+		if IsExpectedErrors(err, []string{SlbAclNotExists}) {
 			d.SetId("")
 			return nil
 		}
@@ -178,7 +178,7 @@ func resourceAlicloudSlbAclDelete(d *schema.ResourceData, meta interface{}) erro
 			return slbClient.DeleteAccessControlList(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{"AclInUsed"}) {
+			if IsExpectedErrors(err, []string{"AclInUsed"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -189,7 +189,7 @@ func resourceAlicloudSlbAclDelete(d *schema.ResourceData, meta interface{}) erro
 	})
 
 	if err != nil {
-		if !IsExceptedError(err, SlbAclNotExists) {
+		if !IsExpectedErrors(err, []string{SlbAclNotExists}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}

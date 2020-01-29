@@ -127,7 +127,7 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 			return essClient.CreateScalingGroup(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, EssThrottling) {
+			if IsExpectedErrors(err, []string{Throttling}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -309,7 +309,7 @@ func resourceAliyunEssScalingGroupDelete(d *schema.ResourceData, meta interface{
 	})
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

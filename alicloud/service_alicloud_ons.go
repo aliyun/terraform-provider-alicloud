@@ -27,7 +27,7 @@ func (s *OnsService) DescribeOnsInstance(id string) (*ons.OnsInstanceBaseInfoRes
 	})
 
 	if err != nil {
-		if IsExceptedError(err, InvalidDomainNameNoExist) {
+		if IsExpectedErrors(err, []string{InvalidDomainNameNoExist}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -57,7 +57,7 @@ func (s *OnsService) DescribeOnsTopic(id string) (*ons.PublishInfoDo, error) {
 	})
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{AuthResourceOwnerError, OnsInstanceNotExist}) {
+		if IsExpectedErrors(err, []string{AuthResourceOwnerError, OnsInstanceNotExist}) {
 			return onsTopic, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return onsTopic, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -91,7 +91,7 @@ func (s *OnsService) DescribeOnsGroup(id string) (*ons.SubscribeInfoDo, error) {
 		return onsClient.OnsGroupList(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{AuthResourceOwnerError, OnsInstanceNotExist}) {
+		if IsExpectedErrors(err, []string{AuthResourceOwnerError, OnsInstanceNotExist}) {
 			return onsGroup, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return onsGroup, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

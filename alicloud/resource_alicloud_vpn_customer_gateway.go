@@ -66,7 +66,7 @@ func resourceAliyunVpnCustomerGatewayCreate(d *schema.ResourceData, meta interfa
 			return vpcClient.CreateCustomerGateway(&args)
 		})
 		if err != nil {
-			if IsExceptedError(err, Throttling) {
+			if IsExpectedErrors(err, []string{Throttling}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -151,7 +151,7 @@ func resourceAliyunVpnCustomerGatewayDelete(d *schema.ResourceData, meta interfa
 		})
 
 		if err != nil {
-			if IsExceptedError(err, VpnConfiguring) {
+			if IsExpectedErrors(err, []string{VpnConfiguring}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -163,7 +163,7 @@ func resourceAliyunVpnCustomerGatewayDelete(d *schema.ResourceData, meta interfa
 	})
 
 	if err != nil {
-		if IsExceptedError(err, CgwNotFound) {
+		if IsExpectedErrors(err, []string{CgwNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

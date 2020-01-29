@@ -186,7 +186,7 @@ func resourceAliyunEssScalingRuleDelete(d *schema.ResourceData, meta interface{}
 		return essClient.DeleteScalingRule(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidScalingRuleIdNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidScalingRuleIdNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

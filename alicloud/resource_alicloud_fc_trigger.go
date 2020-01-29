@@ -158,7 +158,7 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 			return fcClient.CreateTrigger(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AccessDenied}) {
+			if IsExpectedErrors(err, []string{AccessDenied}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -278,7 +278,7 @@ func resourceAlicloudFCTriggerDelete(d *schema.ResourceData, meta interface{}) e
 		return fcClient.DeleteTrigger(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound, TriggerNotFound}) {
+		if IsExpectedErrors(err, []string{ServiceNotFound, FunctionNotFound, TriggerNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteTrigger", FcGoSdk)

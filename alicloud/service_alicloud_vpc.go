@@ -67,7 +67,7 @@ func (s *VpcService) DescribeNatGateway(id string) (nat vpc.NatGateway, err erro
 			return vpcClient.DescribeNatGateways(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, InvalidNatGatewayIdNotFound) {
+			if IsExpectedErrors(err, []string{InvalidNatGatewayIdNotFound}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -94,7 +94,7 @@ func (s *VpcService) DescribeVpc(id string) (v vpc.DescribeVpcAttributeResponse,
 			return vpcClient.DescribeVpcAttribute(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound}) {
+			if IsExpectedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -121,7 +121,7 @@ func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributes
 			return vpcClient.DescribeVSwitchAttributes(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, InvalidVswitchIDNotFound) {
+			if IsExpectedErrors(err, []string{InvalidVswitchIDNotFound}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -162,7 +162,7 @@ func (s *VpcService) DescribeSnatEntry(id string) (snat vpc.SnatTableEntry, err 
 		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
 		//so judge the snatEntries length priority
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidSnatTableIdNotFound, InvalidSnatEntryIdNotFound}) {
+			if IsExpectedErrors(err, []string{InvalidSnatTableIdNotFound, InvalidSnatEntryIdNotFound}) {
 				return snat, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 			return snat, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -210,7 +210,7 @@ func (s *VpcService) DescribeForwardEntry(id string) (entry vpc.ForwardTableEntr
 		//this special deal cause the DescribeSnatEntry can't find the records would be throw "cant find the snatTable error"
 		//so judge the snatEntries length priority
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidForwardEntryIdNotFound, InvalidForwardTableIdNotFound}) {
+			if IsExpectedErrors(err, []string{InvalidForwardEntryIdNotFound, InvalidForwardTableIdNotFound}) {
 				return WrapErrorf(Error(GetNotFoundMessage("ForwardEntry", id)), NotFoundMsg, ProviderERROR)
 			}
 			return WrapErrorf(err, DefaultErrorMsg, "ForwardEntry", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -925,7 +925,7 @@ func (s *VpcService) DescribeNetworkAcl(id string) (networkAcl vpc.NetworkAcl, e
 		return vpcClient.DescribeNetworkAcls(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, NetworkAclNotFound) {
+		if IsExpectedErrors(err, []string{NetworkAclNotFound}) {
 			return networkAcl, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return networkAcl, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -1050,7 +1050,7 @@ func (s *VpcService) DescribeTags(resourceId string, resourceTags map[string]int
 			return vpcClient.ListTagResources(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, Throttling) {
+			if IsExpectedErrors(err, []string{Throttling}) {
 				wait()
 				return resource.RetryableError(err)
 			}

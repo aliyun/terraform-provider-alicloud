@@ -39,7 +39,7 @@ func (s *CenService) DescribeCenInstance(id string) (c cbn.Cen, err error) {
 			return cbnClient.DescribeCens(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, CenThrottlingUser}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, ThrottlingUser}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -49,7 +49,7 @@ func (s *CenService) DescribeCenInstance(id string) (c cbn.Cen, err error) {
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
+		if IsExpectedErrors(err, []string{ParameterCenInstanceIdNotExist}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -100,7 +100,7 @@ func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstanc
 		})
 
 		if err != nil {
-			if IsExceptedError(err, ParameterInstanceIdNotExist) {
+			if IsExpectedErrors(err, []string{ParameterInstanceIdNotExist}) {
 				return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance Attachment", instanceId)), NotFoundMsg, ProviderERROR)
 			}
 			return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), ProviderERROR)
@@ -162,7 +162,7 @@ func (s *CenService) DescribeCenBandwidthPackage(id string) (c cbn.CenBandwidthP
 			return cbnClient.DescribeCenBandwidthPackages(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, CenThrottlingUser}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, ThrottlingUser}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -172,7 +172,7 @@ func (s *CenService) DescribeCenBandwidthPackage(id string) (c cbn.CenBandwidthP
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, ParameterCenInstanceIdNotExist) {
+		if IsExpectedErrors(err, []string{ParameterCenInstanceIdNotExist}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -261,7 +261,7 @@ func (s *CenService) SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppos
 		return cbnClient.SetCenInterRegionBandwidthLimit(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, InvalidCenInstanceStatus) {
+		if IsExpectedErrors(err, []string{InvalidCenInstanceStatus}) {
 			return WrapError(err)
 		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_bandwidth_limit", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -383,7 +383,7 @@ func (s *CenService) DescribeCenRouteEntry(id string) (c cbn.PublishedRouteEntry
 			return cbnClient.DescribePublishedRouteEntries(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, CenThrottlingUser}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, ThrottlingUser}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -393,7 +393,7 @@ func (s *CenService) DescribeCenRouteEntry(id string) (c cbn.PublishedRouteEntry
 		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{ParameterIllegal, ParameterIllegalCenInstanceId, InstanceNotExist}) {
+		if IsExpectedErrors(err, []string{"ParameterIllegal", "ParameterIllegal.CenInstanceId", "Instance.NotExist"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

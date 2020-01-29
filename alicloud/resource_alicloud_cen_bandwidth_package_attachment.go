@@ -49,7 +49,7 @@ func resourceAlicloudCenBandwidthPackageAttachmentCreate(d *schema.ResourceData,
 			return cbnClient.AssociateCenBandwidthPackage(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidBwpInstanceStatus, InvalidBwpBusinessStatus, InvalidCenInstanceStatus}) {
+			if IsExpectedErrors(err, []string{InvalidBwpInstanceStatus, InvalidBwpBusinessStatus, InvalidCenInstanceStatus}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -103,7 +103,7 @@ func resourceAlicloudCenBandwidthPackageAttachmentDelete(d *schema.ResourceData,
 			return cbnClient.UnassociateCenBandwidthPackage(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidBwpInstanceStatus, InvalidBwpBusinessStatus, InvalidCenInstanceStatus}) {
+			if IsExpectedErrors(err, []string{InvalidBwpInstanceStatus, InvalidBwpBusinessStatus, InvalidCenInstanceStatus}) {
 				return resource.RetryableError(err)
 			}
 

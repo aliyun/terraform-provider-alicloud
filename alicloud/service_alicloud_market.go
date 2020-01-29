@@ -17,7 +17,7 @@ func (s *MarketService) DescribeMarketOrder(id string) (order *market.DescribeOr
 	})
 	response, _ := raw.(*market.DescribeOrderResponse)
 	if err != nil {
-		if IsExceptedErrors(err, []string{"null"}) {
+		if IsExpectedErrors(err, []string{"null"}) {
 			return order, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return order, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

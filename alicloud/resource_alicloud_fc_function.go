@@ -160,7 +160,7 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 			return fcClient.CreateFunction(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AccessDenied}) {
+			if IsExpectedErrors(err, []string{AccessDenied}) {
 				return resource.RetryableError(WrapError(err))
 			}
 			return resource.NonRetryableError(WrapError(err))
@@ -290,7 +290,7 @@ func resourceAlicloudFCFunctionDelete(d *schema.ResourceData, meta interface{}) 
 		return fcClient.DeleteFunction(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{ServiceNotFound, FunctionNotFound}) {
+		if IsExpectedErrors(err, []string{ServiceNotFound, FunctionNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteFunction", FcGoSdk)

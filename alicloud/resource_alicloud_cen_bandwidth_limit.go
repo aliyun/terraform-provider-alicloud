@@ -116,7 +116,7 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			err := cenService.SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId, bandwidthLimit)
 			if err != nil {
-				if IsExceptedError(err, InvalidCenInstanceStatus) {
+				if IsExpectedErrors(err, []string{InvalidCenInstanceStatus}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -132,7 +132,7 @@ func resourceAlicloudCenBandwidthLimitUpdate(d *schema.ResourceData, meta interf
 			stateConf := BuildStateConf([]string{"Modifying"}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, cenService.CenBandwidthLimitStateRefreshFunc(d.Id(), []string{}))
 
 			if _, err = stateConf.WaitForState(); err != nil {
-				if IsExceptedError(err, CenThrottlingUser) {
+				if IsExpectedErrors(err, []string{ThrottlingUser}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -162,7 +162,7 @@ func resourceAlicloudCenBandwidthLimitDelete(d *schema.ResourceData, meta interf
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		err := cenService.SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppositeRegionId, 0)
 		if err != nil {
-			if IsExceptedError(err, InvalidCenInstanceStatus) {
+			if IsExpectedErrors(err, []string{InvalidCenInstanceStatus}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -177,7 +177,7 @@ func resourceAlicloudCenBandwidthLimitDelete(d *schema.ResourceData, meta interf
 		stateConf := BuildStateConf([]string{"Active", "Modifying"}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Second, cenService.CenBandwidthLimitStateRefreshFunc(d.Id(), []string{}))
 
 		_, err = stateConf.WaitForState()
-		if IsExceptedError(err, CenThrottlingUser) {
+		if IsExpectedErrors(err, []string{ThrottlingUser}) {
 			return resource.RetryableError(err)
 		}
 		return resource.NonRetryableError(err)

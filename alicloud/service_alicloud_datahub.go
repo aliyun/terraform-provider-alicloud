@@ -216,7 +216,7 @@ const (
 )
 
 func isDatahubNotExistError(err error) bool {
-	return IsExceptedErrors(err, []string{datahub.NoSuchProject, datahub.NoSuchTopic, datahub.NoSuchShard, datahub.NoSuchSubscription, DoesNotExist})
+	return IsExpectedErrors(err, []string{datahub.NoSuchProject, datahub.NoSuchTopic, datahub.NoSuchShard, datahub.NoSuchSubscription, DoesNotExist})
 }
 
 func isTerraformTestingDatahubObject(name string) bool {

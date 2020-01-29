@@ -10,7 +10,7 @@ const (
 	RecordPTR   = RecordType("PTR")
 )
 
-var PvtzThrottlingUserCatcher = Catcher{PvtzThrottlingUser, 30, 2}
+var PvtzThrottlingUserCatcher = Catcher{ThrottlingUser, 30, 2}
 var PvtzSystemBusyCatcher = Catcher{PvtzSystemBusy, 30, 5}
 
 func PvtzInvoker() Invoker {

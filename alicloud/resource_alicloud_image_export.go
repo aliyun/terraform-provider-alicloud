@@ -101,7 +101,7 @@ func resourceAliCloudImageExportDelete(d *schema.ResourceData, meta interface{})
 	objectName := fmt.Sprintf(d.Get("oss_prefix").(string) + "_" + d.Id() + "_system.raw.tar.gz")
 	err = bucket.DeleteObject(objectName)
 	if err != nil {
-		if IsExceptedErrors(err, []string{"No Content", "Not Found"}) {
+		if IsExpectedErrors(err, []string{"No Content", "Not Found"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Get("oss_prefix").(string), "DeleteObject", AliyunOssGoSdk)

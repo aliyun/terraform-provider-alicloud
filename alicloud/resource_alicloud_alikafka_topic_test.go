@@ -67,7 +67,7 @@ func testSweepAlikafkaTopic(region string) error {
 				return alikafkaClient.GetTopicList(request)
 			})
 			if err != nil {
-				if IsExceptedError(err, AlikafkaThrottlingUser) {
+				if IsExpectedErrors(err, []string{ThrottlingUser}) {
 					wait()
 					return resource.RetryableError(err)
 				}

@@ -48,7 +48,7 @@ func testSweepCenBandwidthPackage(region string) error {
 				return cbnClient.DescribeCenBandwidthPackages(request)
 			})
 			if err != nil {
-				if IsExceptedError(err, CenThrottlingUser) {
+				if IsExpectedErrors(err, []string{ThrottlingUser}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

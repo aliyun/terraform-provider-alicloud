@@ -656,7 +656,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			})
 			response = raw
 			return err
-		}); err != nil && !IsExceptedError(err, ErrorClusterNameAlreadyExist) {
+		}); err != nil && !IsExpectedErrors(err, []string{ErrorClusterNameAlreadyExist}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterName", DenverdinoAliyungo)
 		}
 		if debugOn() {
@@ -921,7 +921,7 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 		return nil
 	})
 	if err != nil {
-		if NotFoundError(err) || IsExceptedError(err, ErrorClusterNotFound) {
+		if NotFoundError(err) || IsExpectedErrors(err, []string{ErrorClusterNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteCluster", DenverdinoAliyungo)

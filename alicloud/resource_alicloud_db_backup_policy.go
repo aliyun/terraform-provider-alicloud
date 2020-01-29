@@ -247,7 +247,7 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 		}
 		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			if err := rdsService.ModifyDBBackupPolicy(d, updateForData, updateForLog); err != nil {
-				if IsExceptedErrors(err, OperationDeniedDBStatus) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

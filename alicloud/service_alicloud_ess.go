@@ -110,7 +110,7 @@ func (s *EssService) DescribeEssNotification(id string) (notification ess.Notifi
 		return essClient.DescribeNotificationConfigurations(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidNotificationNotFound, InvalidScalingGroupIdNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidNotificationNotFound, InvalidScalingGroupIdNotFound}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("EssNotification", id)), NotFoundMsg, ProviderERROR)
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -281,7 +281,7 @@ func (s *EssService) DescribeEssScalingRule(id string) (rule ess.ScalingRule, er
 		return essClient.DescribeScalingRules(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidScalingRuleIdNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidScalingRuleIdNotFound}) {
 			return rule, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return rule, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -384,7 +384,7 @@ func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (i
 		return essClient.DescribeScalingInstances(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
 			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		} else {
 			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -473,10 +473,10 @@ func (srv *EssService) EssRemoveInstances(id string, instanceIds []string) error
 			return essClient.RemoveInstances(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, InvalidScalingGroupIdNotFound) {
+			if IsExpectedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
 				return nil
 			}
-			if IsExceptedError(err, IncorrectCapacityMinSize) {
+			if IsExpectedErrors(err, []string{IncorrectCapacityMinSize}) {
 				instances, err := srv.DescribeEssAttachment(id, instanceIds)
 				if len(instances) > 0 {
 					if group.MinSize == 0 {
@@ -485,7 +485,7 @@ func (srv *EssService) EssRemoveInstances(id string, instanceIds []string) error
 					return resource.NonRetryableError(WrapError(err))
 				}
 			}
-			if IsExceptedError(err, ScalingActivityInProgress) || IsExceptedError(err, IncorrectScalingGroupStatus) {
+			if IsExpectedErrors(err, []string{ScalingActivityInProgress, IncorrectScalingGroupStatus}) {
 				time.Sleep(5)
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}

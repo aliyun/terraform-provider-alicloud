@@ -67,7 +67,7 @@ func resourceAlicloudOnsGroupCreate(d *schema.ResourceData, meta interface{}) er
 			return onsClient.OnsGroupCreate(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{OnsThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -163,7 +163,7 @@ func resourceAlicloudOnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 			return onsClient.OnsGroupDelete(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{OnsThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -174,7 +174,7 @@ func resourceAlicloudOnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 	})
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{AuthResourceOwnerError}) {
+		if IsExpectedErrors(err, []string{AuthResourceOwnerError}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -87,10 +87,7 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 			return vpcClient.CreateVpc(&args)
 		})
 		if err != nil {
-			if IsExceptedError(err, VpcQuotaExceeded) {
-				return resource.NonRetryableError(WrapErrorf(err, "The number of VPC has quota has reached the quota limit in your account, and please use existing VPCs or remove some of them."))
-			}
-			if IsExceptedErrors(err, []string{TaskConflict, UnknownError, Throttling}) {
+			if IsExpectedErrors(err, []string{TaskConflict, UnknownError, Throttling}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -151,7 +148,7 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 				return vpcClient.DescribeRouteTables(request)
 			})
-			if err != nil && IsExceptedErrors(err, []string{Throttling}) {
+			if err != nil && IsExpectedErrors(err, []string{Throttling}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -235,7 +232,7 @@ func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 			return vpcClient.DeleteVpc(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound}) {
+			if IsExpectedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound}) {
 				return nil
 			}
 			return resource.RetryableError(err)

@@ -503,7 +503,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 			mapping["worker_instance_types"] = []string{ct.Parameters.WorkerInstanceTypeA, ct.Parameters.WorkerInstanceTypeB, ct.Parameters.WorkerInstanceTypeC}
 		} else {
 			if numOfNode, err := strconv.Atoi(ct.Parameters.NumOfNodes); err != nil {
-				return BuildWrapError("strconv.Atoi", d.Id(), ProviderERROR, err, "")
+				return WrapError(err)
 			} else {
 				mapping["worker_numbers"] = []int{numOfNode}
 			}

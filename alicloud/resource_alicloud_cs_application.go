@@ -312,7 +312,7 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 				return err
 			})
 			if err != nil {
-				if IsExceptedError(err, ApplicationConfirmConflict) {
+				if IsExpectedErrors(err, []string{ApplicationConfirmConflict}) {
 					err := invoker.Run(func() error {
 						cluster, certs, err := csService.GetContainerClusterAndCertsByName(clusterName)
 						if err == nil {
@@ -381,10 +381,10 @@ func resourceAlicloudCSApplicationDelete(d *schema.ResourceData, meta interface{
 			return err
 		})
 		if err != nil {
-			if IsExceptedError(err, ApplicationNotFound) {
+			if IsExpectedErrors(err, []string{ApplicationNotFound}) {
 				return nil
 			}
-			if !IsExceptedError(err, ApplicationErrorIgnore) && !IsExceptedError(err, AliyunGoClientFailure) {
+			if !IsExpectedErrors(err, []string{ApplicationErrorIgnore, AliyunGoClientFailure}) {
 				return resource.NonRetryableError(fmt.Errorf("Deleting container application %s got an error: %#v.", appName, err))
 			}
 		}
@@ -404,7 +404,7 @@ func resourceAlicloudCSApplicationDelete(d *schema.ResourceData, meta interface{
 			project, _ = raw.(cs.GetProjectResponse)
 			return nil
 		}); err != nil {
-			if IsExceptedError(err, ApplicationNotFound) || IsExceptedError(err, ApplicationErrorIgnore) {
+			if IsExpectedErrors(err, []string{ApplicationNotFound, ApplicationErrorIgnore}) {
 				return nil
 			}
 			return resource.NonRetryableError(fmt.Errorf("Getting container application %s got an error: %#v.", appName, err))

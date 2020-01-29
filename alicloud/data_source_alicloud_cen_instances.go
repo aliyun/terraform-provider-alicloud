@@ -125,7 +125,7 @@ func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, m
 			return cbnClient.DescribeCens(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, CenThrottlingUser) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				if time.Now().After(deadline) {
 					return nil, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}

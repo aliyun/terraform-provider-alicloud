@@ -52,7 +52,7 @@ func (s *SlbService) DescribeSlb(id string) (*slb.DescribeLoadBalancerAttributeR
 		return slbClient.DescribeLoadBalancerAttribute(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
+		if IsExpectedErrors(err, []string{LoadBalancerNotFound}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("Slb", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		} else {
 			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -76,7 +76,7 @@ func (s *SlbService) DescribeSlbRule(id string) (*slb.DescribeRuleAttributeRespo
 		return slbClient.DescribeRuleAttribute(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidRuleIdNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidRuleIdNotFound}) {
 			return response, WrapErrorf(Error(GetNotFoundMessage("SlbRule", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -98,7 +98,7 @@ func (s *SlbService) DescribeSlbServerGroup(id string) (*slb.DescribeVServerGrou
 		return slbClient.DescribeVServerGroupAttribute(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{VServerGroupNotFoundMessage, InvalidParameter}) {
+		if IsExpectedErrors(err, []string{VServerGroupNotFoundMessage, InvalidParameter}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -120,7 +120,7 @@ func (s *SlbService) DescribeSlbMasterSlaveServerGroup(id string) (*slb.Describe
 		return slbClient.DescribeMasterSlaveServerGroupAttribute(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{MasterSlaveServerGroupNotFoundMessage, InvalidParameter}) {
+		if IsExpectedErrors(err, []string{MasterSlaveServerGroupNotFoundMessage, InvalidParameter}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultDebugMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -142,7 +142,7 @@ func (s *SlbService) DescribeSlbBackendServer(id string) (*slb.DescribeLoadBalan
 		return slbClient.DescribeLoadBalancerAttribute(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
+		if IsExpectedErrors(err, []string{LoadBalancerNotFound}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("SlbBackendServers", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		} else {
 			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -179,9 +179,9 @@ func (s *SlbService) DescribeSlbListener(id string) (listener map[string]interfa
 		})
 
 		if err != nil {
-			if IsExceptedError(err, ListenerNotFound) {
+			if IsExpectedErrors(err, []string{ListenerNotFound}) {
 				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
-			} else if IsExceptedErrors(err, SlbIsBusy) {
+			} else if IsExpectedErrors(err, SlbIsBusy) {
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
@@ -212,7 +212,7 @@ func (s *SlbService) DescribeSlbAcl(id string) (*slb.DescribeAccessControlListAt
 	})
 	if err != nil {
 		if err != nil {
-			if IsExceptedError(err, SlbAclNotExists) {
+			if IsExpectedErrors(err, []string{SlbAclNotExists}) {
 				return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
 			return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -275,7 +275,7 @@ func (s *SlbService) WaitForSlbListener(id string, status Status, timeout int) e
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
 		object, err := s.DescribeSlbListener(id)
-		if err != nil && !IsExceptedErrors(err, []string{LoadBalancerNotFound}) {
+		if err != nil && !IsExpectedErrors(err, []string{LoadBalancerNotFound}) {
 			if NotFoundError(err) {
 				if status == Deleted {
 					return nil
@@ -412,7 +412,7 @@ func (s *SlbService) slbRemoveAccessControlListEntryPerTime(list []interface{}, 
 		return slbClient.RemoveAccessControlListEntry(request)
 	})
 	if err != nil {
-		if !IsExceptedError(err, SlbAclEntryEmpty) {
+		if !IsExpectedErrors(err, []string{"AclEntryEmpty"}) {
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
@@ -813,7 +813,7 @@ func (s *SlbService) DescribeDomainExtensionAttribute(domainExtensionId string) 
 			return slbClient.DescribeDomainExtensionAttribute(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling}) {
+			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -823,7 +823,7 @@ func (s *SlbService) DescribeDomainExtensionAttribute(domainExtensionId string) 
 		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidDomainExtensionIdNotFound, InvalidParameter}) {
+		if IsExpectedErrors(err, []string{InvalidDomainExtensionIdNotFound, InvalidParameter}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, domainExtensionId, request.GetActionName(), AlibabaCloudSdkGoERROR)

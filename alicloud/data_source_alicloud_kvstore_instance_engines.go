@@ -86,7 +86,7 @@ func dataSourceAlicloudKVStoreInstanceEnginesRead(d *schema.ResourceData, meta i
 			return rkvClient.DescribeAvailableResource(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, Throttling) {
+			if IsExpectedErrors(err, []string{Throttling}) {
 				time.Sleep(time.Duration(5) * time.Second)
 				return resource.RetryableError(err)
 			}

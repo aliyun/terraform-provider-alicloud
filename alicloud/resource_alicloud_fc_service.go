@@ -144,7 +144,7 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 			return fcClient.CreateService(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{AccessDenied, "does not exist"}) {
+			if IsExpectedErrors(err, []string{AccessDenied, "does not exist"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -273,7 +273,7 @@ func resourceAlicloudFCServiceDelete(d *schema.ResourceData, meta interface{}) e
 		return fcClient.DeleteService(request)
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{ServiceNotFound}) {
+		if IsExpectedErrors(err, []string{ServiceNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteService", FcGoSdk)

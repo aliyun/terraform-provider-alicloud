@@ -62,7 +62,7 @@ func resourceAliyunSnatEntryCreate(d *schema.ResourceData, meta interface{}) err
 			return vpcClient.CreateSnatEntry(ar)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{"EIP_NOT_IN_GATEWAY", "OperationUnsupported.EipNatBWPCheck"}) {
+			if IsExpectedErrors(err, []string{"EIP_NOT_IN_GATEWAY", "OperationUnsupported.EipNatBWPCheck"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -163,7 +163,7 @@ func resourceAliyunSnatEntryDelete(d *schema.ResourceData, meta interface{}) err
 			return vpcClient.DeleteSnatEntry(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{IncorretSnatEntryStatus}) {
+			if IsExpectedErrors(err, []string{IncorretSnatEntryStatus}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -172,7 +172,7 @@ func resourceAliyunSnatEntryDelete(d *schema.ResourceData, meta interface{}) err
 		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidSnatTableIdNotFound, InvalidSnatEntryIdNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidSnatTableIdNotFound, InvalidSnatEntryIdNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -80,7 +80,7 @@ func resourceAlicloudGpdbConnectionCreate(d *schema.ResourceData, meta interface
 			return gpdbClient.AllocateInstancePublicConnection(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, OperationDeniedDBStatus) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -155,7 +155,7 @@ func resourceAlicloudGpdbConnectionUpdate(d *schema.ResourceData, meta interface
 				return gpdbClient.ModifyDBInstanceConnectionString(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, OperationDeniedDBStatus) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -200,7 +200,7 @@ func resourceAlicloudGpdbConnectionDelete(d *schema.ResourceData, meta interface
 			return gpdbClient.ReleaseInstancePublicConnection(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
+			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -209,7 +209,7 @@ func resourceAlicloudGpdbConnectionDelete(d *schema.ResourceData, meta interface
 		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidGpdbNameNotFound, InvalidGpdbInstanceIdNotFound, InvalidCurrentConnectionStringNotFound, AtLeastOneNetTypeExists}) {
+		if IsExpectedErrors(err, []string{InvalidGpdbNameNotFound, InvalidGpdbInstanceIdNotFound, InvalidCurrentConnectionStringNotFound, AtLeastOneNetTypeExists}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

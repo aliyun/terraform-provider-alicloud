@@ -25,7 +25,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance,
 	})
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{DdoscooInstanceNotFound}) {
+		if IsExpectedErrors(err, []string{DdoscooInstanceNotFound}) {
 			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 
@@ -51,7 +51,7 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (v ddoscoo.Insta
 	})
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{DdoscooInstanceNotFound, InvalidDdoscooInstance}) {
+		if IsExpectedErrors(err, []string{DdoscooInstanceNotFound, InvalidDdoscooInstance}) {
 			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 

@@ -334,7 +334,7 @@ func resourceAlicloudCdnDomainDeleteNew(d *schema.ResourceData, meta interface{}
 			return cdnClient.DeleteCdnDomain(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, ServiceBusy) {
+			if IsExpectedErrors(err, []string{ServiceBusy}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -344,7 +344,7 @@ func resourceAlicloudCdnDomainDeleteNew(d *schema.ResourceData, meta interface{}
 	})
 
 	if err != nil {
-		if IsExceptedError(err, InvalidDomainNotFound) {
+		if IsExpectedErrors(err, []string{InvalidDomainNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -366,7 +366,7 @@ func certificateConfigUpdateNew(client *connectivity.AliyunClient, d *schema.Res
 				return cdnClient.SetDomainServerCertificate(request)
 			})
 			if err != nil {
-				if IsExceptedError(err, ServiceBusy) {
+				if IsExpectedErrors(err, []string{ServiceBusy}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -406,7 +406,7 @@ func certificateConfigUpdateNew(client *connectivity.AliyunClient, d *schema.Res
 			return cdnClient.SetDomainServerCertificate(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, ServiceBusy) {
+			if IsExpectedErrors(err, []string{ServiceBusy}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

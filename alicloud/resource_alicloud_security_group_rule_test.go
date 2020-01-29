@@ -333,7 +333,7 @@ func testAccCheckSecurityGroupRuleDestroy(s *terraform.State) error {
 		_, err := ecsService.DescribeSecurityGroupRule(rs.Primary.ID)
 
 		// Verify the error is what we want
-		if err != nil && !IsExceptedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
+		if err != nil && !IsExpectedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
 			return WrapError(err)
 		}
 	}

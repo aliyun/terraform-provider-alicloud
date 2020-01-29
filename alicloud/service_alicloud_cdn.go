@@ -23,7 +23,7 @@ func (c *CdnService) DescribeCdnDomainNew(id string) (*cdn.GetDomainDetailModel,
 	})
 
 	if err != nil {
-		if IsExceptedError(err, InvalidDomainNotFound) {
+		if IsExpectedErrors(err, []string{InvalidDomainNotFound}) {
 			return model, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return model, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -50,7 +50,7 @@ func (c *CdnService) DescribeCdnDomainConfig(id string) (*cdn.DomainConfig, erro
 		return cdnClient.DescribeCdnDomainConfigs(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, InvalidDomainNotFound) {
+		if IsExpectedErrors(err, []string{InvalidDomainNotFound}) {
 			return conf, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return conf, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

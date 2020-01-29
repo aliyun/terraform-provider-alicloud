@@ -140,7 +140,7 @@ func resourceAliyunSnapshotPolicyDelete(d *schema.ResourceData, meta interface{}
 			return ecsClient.DeleteAutoSnapshotPolicy(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, SnapshotPolicyInvalidOperations) {
+			if IsExpectedErrors(err, SnapshotPolicyInvalidOperations) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

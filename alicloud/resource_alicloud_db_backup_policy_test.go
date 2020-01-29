@@ -22,7 +22,7 @@ func testAccCheckDBBackupPolicyDestroy(s *terraform.State) error {
 			return rdsClient.DescribeBackupPolicy(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, InvalidDBInstanceIdNotFound) || IsExceptedError(err, InvalidDBInstanceNameNotFound) {
+			if IsExpectedErrors(err, []string{InvalidDBInstanceIdNotFound, InvalidDBInstanceNameNotFound}) {
 				continue
 			}
 			return WrapError(err)

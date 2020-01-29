@@ -147,7 +147,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (*alika
 			return alikafkaClient.GetTopicList(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, AlikafkaThrottlingUser) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -193,7 +193,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaSaslUser(id string) (*al
 			return alikafkaClient.DescribeSaslUsers(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, AlikafkaThrottlingUser) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -247,7 +247,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*ali
 			return alikafkaClient.DescribeAcls(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, AlikafkaThrottlingUser) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -258,7 +258,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*ali
 	})
 
 	if err != nil {
-		if IsExceptedErrors(err, []string{AlikafkaSubscriptionNotFound, AlikafkaTopicNotFound}) {
+		if IsExpectedErrors(err, []string{AlikafkaSubscriptionNotFound, AlikafkaTopicNotFound}) {
 			return alikafkaSaslAcl, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return alikafkaSaslAcl, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -503,7 +503,7 @@ func (s *AlikafkaService) DescribeTags(resourceId string, resourceTags map[strin
 			return alikafkaClient.ListTagResources(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, Throttling) {
+			if IsExpectedErrors(err, []string{Throttling}) {
 				wait()
 				return resource.RetryableError(err)
 			}

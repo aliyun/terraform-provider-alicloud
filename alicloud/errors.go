@@ -26,8 +26,6 @@ const (
 	// ecs
 	InstanceNotFound        = "Instance.Notfound"
 	MessageInstanceNotFound = "instance is not found"
-	EcsThrottling           = "Throttling"
-	EcsInternalError        = "InternalError"
 	ImageIdNotFound         = "InvalidImageId.NotFound"
 	// disk
 	InternalError       = "InternalError"
@@ -42,44 +40,26 @@ const (
 	HasBeenUsedByForwardEntry  = "InvalidIpStatus.HasBeenUsedByForwardEntry"
 	// slb
 	LoadBalancerNotFound                  = "InvalidLoadBalancerId.NotFound"
-	UnsupportedProtocalPort               = "UnsupportedOperationonfixedprotocalport"
 	ListenerNotFound                      = "The specified resource does not exist"
-	ListenerAlreadyExists                 = "ListenerAlreadyExists"
 	SlbOrderFailed                        = "OrderFailed"
 	VServerGroupNotFoundMessage           = "The specified VServerGroupId does not exist"
 	MasterSlaveServerGroupNotFoundMessage = "The specified MasterSlaveGroupId does not exist"
 	RspoolVipExist                        = "RspoolVipExist"
 	InvalidParameter                      = "InvalidParameter"
 	InvalidRuleIdNotFound                 = "InvalidRuleId.NotFound"
-	RuleDomainExist                       = "DomainExist"
 	BackendServerConfiguring              = "BackendServer.configuring"
 	InvalidDomainExtensionIdNotFound      = "InvalidParameter.DomainExtensionId"
 	DomainExtensionProcessing             = "DomainExtensionProcessing"
 	// slb acl
-	SlbAclNumberOverLimit               = "AclNumberOverLimit"
-	SlbAclInvalidActionRegionNotSupport = "InvalidAction.RegionNotSupport"
-	SlbAclNotExists                     = "AclNotExist"
-	SlbAclEntryEmpty                    = "AclEntryEmpty"
-	SlbAclNameExist                     = "AclNameExist"
-	SlbTokenIsProcessing                = "OperationFailed.TokenIsProcessing"
-
-	SlbCACertificateIdNotFound = "CACertificateId.NotFound"
-	// slb server certificate
-	SlbServerCertificateIdNotFound = "ServerCertificateId.NotFound"
+	SlbAclNotExists = "AclNotExist"
 
 	// security_group
-	InvalidInstanceIdAlreadyExists = "InvalidInstanceId.AlreadyExists"
 	InvalidSecurityGroupIdNotFound = "InvalidSecurityGroupId.NotFound"
 	SgDependencyViolation          = "DependencyViolation"
 
 	//Nat gateway
-	NatGatewayInvalidRegionId            = "Invalid.RegionId"
-	DependencyViolationBandwidthPackages = "DependencyViolation.BandwidthPackages"
-	VswitchStatusError                   = "VswitchStatusError"
-	InvalidNatGatewayIdNotFound          = "InvalidNatGatewayId.NotFound"
-	InstanceNotExists                    = "INSTANCE_NOT_EXISTS"
+	InvalidNatGatewayIdNotFound = "InvalidNatGatewayId.NotFound"
 	// vpc
-	VpcQuotaExceeded     = "QuotaExceeded.Vpc"
 	InvalidVpcIDNotFound = "InvalidVpcID.NotFound"
 	ForbiddenVpcNotFound = "Forbidden.VpcNotFound"
 	Throttling           = "Throttling"
@@ -90,9 +70,6 @@ const (
 	InvalidFileSystemIDNotFound = "InvalidFileSystem.NotFound"
 	InvalidAccessGroupNotFound  = "InvalidAccessGroup.NotFound"
 	ForbiddenNasNotFound        = "Forbidden.NasNotFound"
-	InvalidMountTargetNotFound  = "InvalidMountTarget.NotFound"
-	InvalidLBidNotFound         = "InvalidLBid.NotFound"
-	VolumeUnavailable           = "VolumeUnavailable"
 
 	//apigatway
 	ApiGroupNotFound      = "NotFoundApiGroup"
@@ -101,7 +78,6 @@ const (
 	NotFoundApp           = "NotFoundApp"
 	NotFoundAuthorization = "NotFoundAuthorization"
 	NotFoundStage         = "NotFoundStage"
-	NotFoundVpc           = "NotFoundVpc"
 
 	// vswitch
 	VswitcInvalidRegionId    = "InvalidRegionId.NotFound"
@@ -132,7 +108,6 @@ const (
 	IncorrectCapacityMaxSize                    = "IncorrectCapacity.MaxSize"
 	IncorrectCapacityMinSize                    = "IncorrectCapacity.MinSize"
 	ScalingActivityInProgress                   = "ScalingActivityInProgress"
-	EssThrottling                               = "Throttling"
 	InvalidScalingRuleIdNotFound                = "InvalidScalingRuleId.NotFound"
 	InvalidLifecycleHookIdNotFound              = "InvalidLifecycleHookId.NotExist"
 	InvalidNotificationNotFound                 = "NotificationConfigurationNotExist"
@@ -161,14 +136,8 @@ const (
 	InvalidDBInstanceNameNotFound          = "InvalidDBInstanceName.NotFound"
 	InvalidCurrentConnectionStringNotFound = "InvalidCurrentConnectionString.NotFound"
 	InvalidRwSplitNetTypeNotFound          = "InvalidRwSplitNetType.NotFound"
-	NetTypeExists                          = "NetTypeExists"
-	InvalidAccountNameDuplicate            = "InvalidAccountName.Duplicate"
 	InvalidAccountNameNotFound             = "InvalidAccountName.NotFound"
-	InvalidConnectionStringDuplicate       = "InvalidConnectionString.Duplicate"
 	AtLeastOneNetTypeExists                = "AtLeastOneNetTypeExists"
-	ConnectionOperationDenied              = "OperationDenied"
-	ConnectionConflictMessage              = "The requested resource is sold out in the specified zone; try other types of resources or other regions and zones"
-	DBInternalError                        = "InternalError"
 	DBOperationDeniedOutofUsage            = "OperationDenied.OutofUsage"
 
 	// polarDB
@@ -196,7 +165,6 @@ const (
 	DomainRecordNotBelongToUser = "DomainRecordNotBelongToUser"
 	InvalidDomainNotFound       = "InvalidDomain.NotFound"
 	InvalidDomainNameNoExist    = "InvalidDomainName.NoExist"
-	DnsInternalError            = "InternalError"
 
 	// ram user
 	DeleteConflictUserGroup        = "DeleteConflict.User.Group"
@@ -204,9 +172,6 @@ const (
 	DeleteConflictUserLoginProfile = "DeleteConflict.User.LoginProfile"
 	DeleteConflictUserMFADevice    = "DeleteConflict.User.MFADevice"
 	DeleteConflictUserPolicy       = "DeleteConflict.User.Policy"
-
-	// ram mfa
-	DeleteConflictVirtualMFADeviceUser = "DeleteConflict.VirtualMFADevice.User"
 
 	// ram group
 	DeleteConflictGroupUser   = "DeleteConflict.Group.User"
@@ -238,8 +203,6 @@ const (
 	// cdn
 	ServiceBusy = "ServiceBusy"
 
-	// KMS
-	ForbiddenKeyNotFound = "Forbidden.KeyNotFound"
 	// RAM
 	InvalidRamRoleNotFound       = "InvalidRamRole.NotFound"
 	RoleAttachmentUnExpectedJson = "unexpected end of JSON input"
@@ -255,30 +218,21 @@ const (
 	ApplicationConfirmConflict   = "Conflicts with unconfirmed updates for operation"
 
 	// privatezone
-	ZoneNotExists         = "Zone.NotExists"
-	ZoneVpcNotExists      = "ZoneVpc.NotExists.VpcId"
-	ZoneVpcExists         = "Zone.VpcExists"
-	RecordInvalidConflict = "Record.Invalid.Conflict"
-	PvtzInternalError     = "InternalError"
-	PvtzThrottlingUser    = "Throttling.User"
-	PvtzSystemBusy        = "System.Busy"
+	ZoneNotExists    = "Zone.NotExists"
+	ZoneVpcNotExists = "ZoneVpc.NotExists.VpcId"
+	ThrottlingUser   = "Throttling.User"
+	PvtzSystemBusy   = "System.Busy"
 
 	// log
-	ProjectNotExist      = "ProjectNotExist"
-	IndexConfigNotExist  = "IndexConfigNotExist"
-	IndexAlreadyExist    = "IndexAlreadyExist"
-	LogStoreNotExist     = "LogStoreNotExist"
-	InternalServerError  = "InternalServerError"
-	GroupNotExist        = "GroupNotExist"
-	MachineGroupNotExist = "MachineGroupNotExist"
-	LogClientTimeout     = "Client.Timeout exceeded while awaiting headers"
-	LogRequestTimeout    = "RequestTimeout"
-	LogConfigNotExist    = "ConfigNotExist"
+	ProjectNotExist     = "ProjectNotExist"
+	IndexConfigNotExist = "IndexConfigNotExist"
+	LogStoreNotExist    = "LogStoreNotExist"
+	InternalServerError = "InternalServerError"
+	LogClientTimeout    = "Client.Timeout exceeded while awaiting headers"
+	LogConfigNotExist   = "ConfigNotExist"
 	// OTS
 	OTSObjectNotExist        = "OTSObjectNotExist"
 	SuffixNoSuchHost         = "no such host"
-	OTSStorageServerBusy     = "OTSStorageServerBusy"
-	OTSQuotaExhausted        = "OTSQuotaExhausted"
 	OTSQuotaFrequentMsg      = "Too frequent table operations."
 	OTSInternalServerError   = "OTSInternalServerError"
 	OTSServerBusy            = "OTSServerBusy"
@@ -298,36 +252,19 @@ const (
 	// Vpn
 	VpnNotFound              = "InvalidVpnGatewayInstanceId.NotFound"
 	VpnForbidden             = "Forbidden"
-	VpnForbiddenRelease      = "ForbiddenRelease"
-	VpnForbiddenSubUser      = "Forbbiden.SubUser"
 	CgwNotFound              = "InvalidCustomerGatewayInstanceId.NotFound"
-	ResQuotaFull             = "Resource.QuotaFull"
 	VpnConnNotFound          = "InvalidVpnConnectionInstanceId.NotFound"
-	InvalidIpAddress         = "InvalidIpAddress.AlreadyExist"
 	SslVpnServerNotFound     = "InvalidSslVpnServerId.NotFound"
 	SslVpnClientCertNotFound = "InvalidSslVpnClientCertId.NotFound"
 	VpnConfiguring           = "VpnGateway.Configuring"
-	VpnInvalidSpec           = "InvalidSpec.NotFound"
-	VpnEnable                = "enable"
 	// CEN
-	OperationBlocking                = "Operation.Blocking"
-	ParameterCenInstanceIdNotExist   = "ParameterCenInstanceId"
-	CenQuotaExceeded                 = "QuotaExceeded.CenCountExceeded"
-	InvalidCenInstanceStatus         = "InvalidOperation.CenInstanceStatus"
-	InvalidChildInstanceStatus       = "InvalidOperation.ChildInstanceStatus"
-	ParameterInstanceIdNotExist      = "ParameterInstanceId"
-	ForbiddenRelease                 = "Forbidden.Release"
-	InvalidCenBandwidthLimitsNotZero = "InvalidOperation.CenBandwidthLimitsNotZero"
-	ParameterBwpInstanceId           = "ParameterBwpInstanceId"
-	InvalidBwpInstanceStatus         = "InvalidOperation.BwpInstanceStatus"
-	InvalidBwpBusinessStatus         = "InvalidOperation.BwpBusinessStatus"
-	ParameterIllegal                 = "ParameterIllegal"
-	ParameterIllegalCenInstanceId    = "ParameterIllegal.CenInstanceId"
-	InstanceNotExist                 = "Instance.NotExist"
-	NotFoundRoute                    = "InvalidOperation.NotFoundRoute"
-	InvalidStateForOperationMsg      = "not in a valid state for the operation"
-	InstanceNotExistMsg              = "The instance is not exist"
-	CenThrottlingUser                = "Throttling.User"
+	OperationBlocking              = "Operation.Blocking"
+	ParameterCenInstanceIdNotExist = "ParameterCenInstanceId"
+	InvalidCenInstanceStatus       = "InvalidOperation.CenInstanceStatus"
+	ParameterInstanceIdNotExist    = "ParameterInstanceId"
+	ParameterBwpInstanceId         = "ParameterBwpInstanceId"
+	InvalidBwpInstanceStatus       = "InvalidOperation.BwpInstanceStatus"
+	InvalidBwpBusinessStatus       = "InvalidOperation.BwpBusinessStatus"
 
 	// snapshot
 	SnapshotNotFound = "InvalidSnapshotId.NotFound"
@@ -343,10 +280,8 @@ const (
 	OnsInstanceNotExist    = "INSTANCE_NOT_FOUND"
 	OnsInstanceNotEmpty    = "INSTANCE_NOT_EMPTY"
 	AuthResourceOwnerError = "AUTH_RESOURCE_OWNER_ERROR"
-	OnsThrottlingUser      = "Throttling.User"
 
 	// ALIKAFKA
-	AlikafkaThrottlingUser       = "Throttling.User"
 	AlikafkaFlowControl          = "ONS_SYSTEM_FLOW_CONTROL"
 	AlikafkaTopicNotFound        = "BIZ_TOPIC_NOT_FOUND"
 	AlikafkaSubscriptionNotFound = "BIZ_SUBSCRIPTION_NOT_FOUND"
@@ -393,9 +328,9 @@ var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "Ba
 var EcsNotFound = []string{"InvalidInstanceId.NotFound", "Forbidden.InstanceNotFound"}
 var DiskInvalidOperation = []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", InternalError, "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}
 var NetworkInterfaceInvalidOperations = []string{"InvalidOperation.InvalidEniState", "InvalidOperation.InvalidEcsState", "OperationConflict", "ServiceUnavailable", "InternalError"}
-var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBClusterStatus", DBInternalError, DBOperationDeniedOutofUsage}
+var OperationDeniedDBStatus = []string{"OperationDenied.DBStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBClusterStatus", InternalError, DBOperationDeniedOutofUsage}
 var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatus", "OperationDenied.MasterDBInstanceState", "ReadDBInstance.Mismatch"}
-var NasNotFound = []string{InvalidMountTargetNotFound, InvalidFileSystemIDNotFound, ForbiddenNasNotFound, InvalidLBidNotFound, VolumeUnavailable}
+var NasNotFound = []string{"InvalidMountTarget.NotFound", InvalidFileSystemIDNotFound, ForbiddenNasNotFound, "InvalidLBid.NotFound", "VolumeUnavailable"}
 var SnapshotInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
 var SnapshotPolicyInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
 var DiskNotSupportOnlineChangeErrors = []string{"InvalidDiskCategory.NotSupported", "InvalidRegion.NotSupport", "IncorrectInstanceStatus", "IncorrectDiskStatus", "InvalidOperation.InstanceTypeNotSupport"}
@@ -429,9 +364,6 @@ func GetNotFoundErrorFromString(str string) error {
 	}
 }
 func NotFoundError(err error) bool {
-	if e, ok := err.(*WrapErrorOld); ok {
-		err = e.originError
-	}
 	if err == nil {
 		return false
 	}
@@ -445,108 +377,97 @@ func NotFoundError(err error) bool {
 		return false
 	}
 
-	if e, ok := err.(*common.Error); ok &&
-		(e.Code == InstanceNotFound || e.Code == RamInstanceNotFound || e.Code == NotFound ||
-			strings.Contains(strings.ToLower(e.Message), MessageInstanceNotFound)) {
-		return true
+	if e, ok := err.(*errors.ServerError); ok {
+		return e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound || strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)
 	}
 
-	if e, ok := err.(*errors.ServerError); ok &&
-		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound ||
-			strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)) {
-		return true
-
+	if e, ok := err.(*ProviderError); ok {
+		return e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound || strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)
 	}
 
-	if e, ok := err.(*ProviderError); ok &&
-		(e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound ||
-			strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)) {
-		return true
+	if e, ok := err.(*common.Error); ok {
+		return e.Code == InstanceNotFound || e.Code == RamInstanceNotFound || e.Code == NotFound || strings.Contains(strings.ToLower(e.Message), MessageInstanceNotFound)
 	}
 
 	return false
 }
 
-func IsExceptedError(err error, expectCode string) bool {
-	if e, ok := err.(*WrapErrorOld); ok {
-		err = e.originError
-	}
+func IsExpectedErrors(err error, expectCodes []string) bool {
 	if err == nil {
 		return false
 	}
 
 	if e, ok := err.(*ComplexError); ok {
-		return IsExceptedError(e.Cause, expectCode)
+		return IsExpectedErrors(e.Cause, expectCodes)
 	}
 	if err == nil {
 		return false
 	}
 
-	if e, ok := err.(*common.Error); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
-		return true
-	}
-
-	if e, ok := err.(*errors.ServerError); ok && (e.ErrorCode() == expectCode || strings.Contains(e.Message(), expectCode)) {
-		return true
-	}
-
-	if e, ok := err.(*ProviderError); ok && (e.ErrorCode() == expectCode || strings.Contains(e.Message(), expectCode)) {
-		return true
-	}
-
-	if e, ok := err.(*sls.Error); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
-		return true
-	}
-
-	if e, ok := err.(oss.ServiceError); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
-		return true
-	}
-
-	if e, ok := err.(datahub.DatahubError); ok && (e.Code == expectCode || strings.Contains(e.Message, expectCode)) {
-		return true
-	}
-	return false
-}
-
-func IsExceptedErrors(err error, expectCodes []string) bool {
-	if e, ok := err.(*WrapErrorOld); ok {
-		err = e.originError
-	}
-	if err == nil {
+	if e, ok := err.(*errors.ServerError); ok {
+		for _, code := range expectCodes {
+			if e.ErrorCode() == code || strings.Contains(e.Message(), code) {
+				return true
+			}
+		}
 		return false
 	}
 
-	if e, ok := err.(*ComplexError); ok {
-		return IsExceptedErrors(e.Cause, expectCodes)
+	if e, ok := err.(*ProviderError); ok {
+		for _, code := range expectCodes {
+			if e.ErrorCode() == code || strings.Contains(e.Message(), code) {
+				return true
+			}
+		}
+		return false
 	}
-	if err == nil {
+
+	if e, ok := err.(*common.Error); ok {
+		for _, code := range expectCodes {
+			if e.Code == code || strings.Contains(e.Message, code) {
+				return true
+			}
+		}
+		return false
+	}
+
+	if e, ok := err.(*sls.Error); ok {
+		for _, code := range expectCodes {
+			if e.Code == code || strings.Contains(e.Message, code) || strings.Contains(e.String(), code) {
+				return true
+			}
+		}
+		return false
+	}
+
+	if e, ok := err.(oss.ServiceError); ok {
+		for _, code := range expectCodes {
+			if e.Code == code || strings.Contains(e.Message, code) {
+				return true
+			}
+		}
+		return false
+	}
+
+	if e, ok := err.(*fc.ServiceError); ok {
+		for _, code := range expectCodes {
+			if e.ErrorCode == code || strings.Contains(e.ErrorMessage, code) {
+				return true
+			}
+		}
+		return false
+	}
+
+	if e, ok := err.(datahub.DatahubError); ok {
+		for _, code := range expectCodes {
+			if e.Code == code || strings.Contains(e.Message, code) {
+				return true
+			}
+		}
 		return false
 	}
 
 	for _, code := range expectCodes {
-		if e, ok := err.(*common.Error); ok && (e.Code == code || strings.Contains(e.Message, code)) {
-			return true
-		}
-
-		if e, ok := err.(*errors.ServerError); ok && (e.ErrorCode() == code || strings.Contains(e.Message(), code)) {
-			return true
-		}
-
-		if e, ok := err.(*ProviderError); ok && (e.ErrorCode() == code || strings.Contains(e.Message(), code)) {
-			return true
-		}
-		if e, ok := err.(*sls.Error); ok && (e.Code == code || strings.Contains(e.Message, code) || strings.Contains(e.String(), code)) {
-			return true
-		}
-		if e, ok := err.(oss.ServiceError); ok && (e.Code == code || strings.Contains(e.Message, code)) {
-			return true
-		}
-		if e, ok := err.(*fc.ServiceError); ok && (e.ErrorCode == code || strings.Contains(e.ErrorMessage, code)) {
-			return true
-		}
-		if e, ok := err.(datahub.DatahubError); ok && (e.Code == code || strings.Contains(e.Message, code)) {
-			return true
-		}
 		if strings.Contains(err.Error(), code) {
 			return true
 		}
@@ -555,9 +476,6 @@ func IsExceptedErrors(err error, expectCodes []string) bool {
 }
 
 func RamEntityNotExist(err error) bool {
-	if e, ok := err.(*WrapErrorOld); ok {
-		err = e.originError
-	}
 	if err == nil {
 		return false
 	}
@@ -601,57 +519,6 @@ const (
 	AliMnsERROR            = ErrorSource("[SDK ali_mns ERROR]")
 	ProviderERROR          = ErrorSource("[Provider ERROR]")
 )
-
-// An Error to wrap the different erros
-type WrapErrorOld struct {
-	originError error
-	errorSource ErrorSource
-	errorPath   string
-	message     string
-	suggestion  string
-}
-
-// BuildWrapError returns a new error that format the origin error and add some message
-// action: the operation of the origin error is from, like a API or method
-// id: the resource ID of the origin error is from
-// source: the origin error is caused by, it should be one of the ErrorSource
-// err: the origin error
-// suggestion: the advice of how to resolve the origin error
-func BuildWrapError(action, id string, source ErrorSource, err error, suggestion string) error {
-	if err == nil {
-		return nil
-	}
-	if strings.TrimSpace(id) == "" {
-		id = "New Resource"
-	} else {
-		id = fmt.Sprintf("Resource %s", id)
-	}
-	wrapError := &WrapErrorOld{
-		originError: err,
-		errorSource: source,
-		message:     fmt.Sprintf("%s %s Failed!!!", id, action),
-	}
-	_, filepath, line, ok := runtime.Caller(1)
-	if !ok {
-		log.Printf("[ERROR] runtime.Caller error in BuildWrapError.")
-	} else {
-		// filepath's format is: <gopath>/src/github.com/terraform-providers/terraform-provider-alicloud/alicloud/<resource>.go
-		parts := strings.Split(filepath, "/")
-		if len(parts) > 3 {
-			filepath = strings.Join(parts[len(parts)-3:], "/")
-		}
-		wrapError.errorPath = fmt.Sprintf("%s:%d", filepath, line)
-	}
-	suggestion = strings.TrimSpace(suggestion)
-	if suggestion != "" {
-		wrapError.suggestion = fmt.Sprintf("[Provider Suggestion]: %s.", suggestion)
-	}
-	return wrapError
-}
-
-func (e *WrapErrorOld) Error() string {
-	return fmt.Sprintf("[ERROR] %s: %s %s:\n%s\n%s", e.errorPath, e.message, e.errorSource, e.originError.Error(), e.suggestion)
-}
 
 // ComplexError is a format error which including origin error, extra error message, error occurred file and line
 // Cause: a error is a origin error that comes from SDK, some exceptions and so on

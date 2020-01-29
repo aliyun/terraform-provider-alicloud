@@ -101,7 +101,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionCreate(d *schema.ResourceData
 			return rdsClient.AllocateReadWriteSplittingConnection(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, DBReadInstanceNotReadyStatus) {
+			if IsExpectedErrors(err, DBReadInstanceNotReadyStatus) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -216,7 +216,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionUpdate(d *schema.ResourceData
 				return rdsClient.ModifyReadWriteSplittingConnection(request)
 			})
 			if err != nil {
-				if IsExceptedErrors(err, OperationDeniedDBStatus) || IsExceptedErrors(err, DBReadInstanceNotReadyStatus) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, DBReadInstanceNotReadyStatus) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -249,10 +249,10 @@ func resourceAlicloudDBReadWriteSplittingConnectionDelete(d *schema.ResourceData
 			return rdsClient.ReleaseReadWriteSplittingConnection(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, OperationDeniedDBStatus) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(err)
 			}
-			if rdsService.NotFoundDBInstance(err) || IsExceptedError(err, InvalidRwSplitNetTypeNotFound) {
+			if rdsService.NotFoundDBInstance(err) || IsExpectedErrors(err, []string{InvalidRwSplitNetTypeNotFound}) {
 				return nil
 			}
 			return resource.NonRetryableError(err)

@@ -83,7 +83,7 @@ func resourceAliyunForwardEntryCreate(d *schema.ResourceData, meta interface{}) 
 			return vpcClient.CreateForwardEntry(ar)
 		})
 		if err != nil {
-			if IsExceptedError(err, InvalidIpNotInNatgw) {
+			if IsExpectedErrors(err, []string{InvalidIpNotInNatgw}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -201,7 +201,7 @@ func resourceAliyunForwardEntryDelete(d *schema.ResourceData, meta interface{}) 
 			return vpcClient.DeleteForwardEntry(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{UnknownError}) {
+			if IsExpectedErrors(err, []string{UnknownError}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -210,7 +210,7 @@ func resourceAliyunForwardEntryDelete(d *schema.ResourceData, meta interface{}) 
 		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{InvalidForwardEntryIdNotFound, InvalidForwardTableIdNotFound}) {
+		if IsExpectedErrors(err, []string{InvalidForwardEntryIdNotFound, InvalidForwardTableIdNotFound}) {
 			return nil
 		}
 		WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

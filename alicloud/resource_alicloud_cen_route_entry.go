@@ -63,7 +63,7 @@ func resourceAlicloudCenRouteEntryCreate(d *schema.ResourceData, meta interface{
 			return cbnClient.PublishRouteEntries(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{OperationBlocking, InvalidStateForOperationMsg}) {
+			if IsExpectedErrors(err, []string{OperationBlocking, "not in a valid state for the operation"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -145,7 +145,7 @@ func resourceAlicloudCenRouteEntryDelete(d *schema.ResourceData, meta interface{
 			return cbnClient.WithdrawPublishedRouteEntries(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{InvalidCenInstanceStatus, InternalError}) {
+			if IsExpectedErrors(err, []string{InvalidCenInstanceStatus, InternalError}) {
 				return resource.RetryableError(err)
 			}
 
@@ -155,7 +155,7 @@ func resourceAlicloudCenRouteEntryDelete(d *schema.ResourceData, meta interface{
 		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{NotFoundRoute, InstanceNotExistMsg}) {
+		if IsExpectedErrors(err, []string{"InvalidOperation.NotFoundRoute", "The instance is not exist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DataDefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

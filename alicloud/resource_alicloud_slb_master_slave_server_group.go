@@ -178,7 +178,7 @@ func resourceAliyunSlbMasterSlaveServerGroupDelete(d *schema.ResourceData, meta 
 			return slbClient.DeleteMasterSlaveServerGroup(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{RspoolVipExist}) {
+			if IsExpectedErrors(err, []string{RspoolVipExist}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -187,7 +187,7 @@ func resourceAliyunSlbMasterSlaveServerGroupDelete(d *schema.ResourceData, meta 
 		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{MasterSlaveServerGroupNotFoundMessage, InvalidParameter}) {
+		if IsExpectedErrors(err, []string{MasterSlaveServerGroupNotFoundMessage, InvalidParameter}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

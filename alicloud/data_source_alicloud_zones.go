@@ -210,7 +210,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 				return rdsClient.DescribeAvailableResource(request)
 			})
 			if err != nil {
-				if IsExceptedError(err, Throttling) {
+				if IsExpectedErrors(err, []string{Throttling}) {
 					time.Sleep(time.Duration(5) * time.Second)
 					return resource.RetryableError(err)
 				}
@@ -360,7 +360,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		})
 
 		if err != nil {
-			return BuildWrapError("[Error] DescribeZones", "", AlibabaCloudSdkGoERROR, err, "")
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.GetActionName(), request)
 		zones, _ := raw.(*elasticsearch.GetRegionConfigurationResponse)

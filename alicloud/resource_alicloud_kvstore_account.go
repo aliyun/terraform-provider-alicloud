@@ -113,7 +113,7 @@ func resourceAlicloudKVStoreAccountCreate(d *schema.ResourceData, meta interface
 			return rkvClient.CreateAccount(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, OperationDeniedDBStatus) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -265,7 +265,7 @@ func resourceAlicloudKVStoreAccountDelete(d *schema.ResourceData, meta interface
 		return rkvClient.DeleteAccount(request)
 	})
 	if err != nil {
-		if IsExceptedError(err, InvalidAccountNameNotFound) {
+		if IsExpectedErrors(err, []string{InvalidAccountNameNotFound}) {
 			return nil
 		} else {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

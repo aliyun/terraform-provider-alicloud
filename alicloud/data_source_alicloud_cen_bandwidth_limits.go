@@ -101,7 +101,7 @@ func getCenBandwidthLimits(instanceId string, meta interface{}) ([]cbn.CenInterR
 			return cbnClient.DescribeCenInterRegionBandwidthLimits(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, CenThrottlingUser) {
+			if IsExpectedErrors(err, []string{"Throttling.User"}) {
 				if time.Now().After(deadline) {
 					return nil, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_bandwidth_limits", request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}

@@ -70,7 +70,7 @@ func resourceAlicloudOnsInstanceCreate(d *schema.ResourceData, meta interface{})
 			return onsClient.OnsInstanceCreate(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{OnsThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -167,10 +167,10 @@ func resourceAlicloudOnsInstanceDelete(d *schema.ResourceData, meta interface{})
 			return onsClient.OnsInstanceDelete(request)
 		})
 		if err != nil {
-			if IsExceptedError(err, OnsInstanceNotEmpty) {
+			if IsExpectedErrors(err, []string{OnsInstanceNotEmpty}) {
 				return resource.RetryableError(err)
 			}
-			if IsExceptedErrors(err, []string{OnsThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -180,7 +180,7 @@ func resourceAlicloudOnsInstanceDelete(d *schema.ResourceData, meta interface{})
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, OnsInstanceNotExist) {
+		if IsExpectedErrors(err, []string{OnsInstanceNotExist}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

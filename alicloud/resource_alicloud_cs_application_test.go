@@ -127,10 +127,7 @@ func testAccCheckContainerApplicationDestroy(s *terraform.State) error {
 		app, err := csService.DescribeContainerApplication(parts[0], parts[1])
 
 		if err != nil {
-			if NotFoundError(err) ||
-				IsExceptedError(err, ApplicationNotFound) ||
-				IsExceptedError(err, ApplicationErrorIgnore) ||
-				IsExceptedError(err, AliyunGoClientFailure) {
+			if NotFoundError(err) || IsExpectedErrors(err, []string{ApplicationNotFound, ApplicationErrorIgnore, AliyunGoClientFailure}) {
 				continue
 			}
 			return err

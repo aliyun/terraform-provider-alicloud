@@ -209,7 +209,7 @@ func resourceAliCloudImageCreate(d *schema.ResourceData, meta interface{}) error
 			return ecsClient.CreateImage(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{"IncorrectInstanceStatus"}) {
+			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) {
 				time.Sleep(time.Second)
 				return resource.RetryableError(err)
 			}

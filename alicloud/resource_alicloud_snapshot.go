@@ -132,7 +132,7 @@ func resourceAliyunSnapshotDelete(d *schema.ResourceData, meta interface{}) erro
 			return ecsClient.DeleteSnapshot(request)
 		})
 		if err != nil {
-			if IsExceptedErrors(err, SnapshotInvalidOperations) {
+			if IsExpectedErrors(err, SnapshotInvalidOperations) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -141,7 +141,7 @@ func resourceAliyunSnapshotDelete(d *schema.ResourceData, meta interface{}) erro
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, SnapshotNotFound) {
+		if IsExpectedErrors(err, []string{"InvalidSnapshotId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

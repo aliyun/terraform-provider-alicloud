@@ -79,7 +79,7 @@ func resourceAliyunSslVpnClientCertCreate(d *schema.ResourceData, meta interface
 			return vpcClient.CreateSslVpnClientCert(&args)
 		})
 		if err != nil {
-			if IsExceptedError(err, VpnConfiguring) {
+			if IsExpectedErrors(err, []string{VpnConfiguring}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -160,7 +160,7 @@ func resourceAliyunSslVpnClientCertDelete(d *schema.ResourceData, meta interface
 		})
 
 		if err != nil {
-			if IsExceptedError(err, VpnConfiguring) {
+			if IsExpectedErrors(err, []string{VpnConfiguring}) {
 				return resource.RetryableError(err)
 			} else {
 				return resource.NonRetryableError(err)
@@ -170,7 +170,7 @@ func resourceAliyunSslVpnClientCertDelete(d *schema.ResourceData, meta interface
 		return nil
 	})
 	if err != nil {
-		if IsExceptedError(err, SslVpnClientCertNotFound) {
+		if IsExpectedErrors(err, []string{SslVpnClientCertNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

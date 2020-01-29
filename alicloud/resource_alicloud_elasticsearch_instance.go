@@ -384,7 +384,7 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	})
 
 	if err != nil {
-		if IsExceptedError(err, ESInstanceNotFound) {
+		if IsExpectedErrors(err, []string{ESInstanceNotFound}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

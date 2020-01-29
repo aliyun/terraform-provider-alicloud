@@ -47,7 +47,7 @@ func resourceAlicloudLogProjectCreate(d *schema.ResourceData, meta interface{}) 
 			return slsClient.CreateProject(request["name"], request["description"])
 		})
 		if err != nil {
-			if IsExceptedError(err, LogClientTimeout) {
+			if IsExpectedErrors(err, []string{LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -116,7 +116,7 @@ func resourceAlicloudLogProjectDelete(d *schema.ResourceData, meta interface{}) 
 			return nil, slsClient.DeleteProject(request["name"])
 		})
 		if err != nil {
-			if IsExceptedErrors(err, []string{LogClientTimeout, LogRequestTimeout}) {
+			if IsExpectedErrors(err, []string{LogClientTimeout, "RequestTimeout"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -125,7 +125,7 @@ func resourceAlicloudLogProjectDelete(d *schema.ResourceData, meta interface{}) 
 		return nil
 	})
 	if err != nil {
-		if IsExceptedErrors(err, []string{ProjectNotExist}) {
+		if IsExpectedErrors(err, []string{ProjectNotExist}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteProject", AliyunLogGoSdkERROR)

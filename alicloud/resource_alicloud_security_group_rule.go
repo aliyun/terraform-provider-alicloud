@@ -180,7 +180,7 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 
 	object, err := ecsService.DescribeSecurityGroupRule(d.Id())
 	if err != nil {
-		if NotFoundError(err) || IsExceptedError(err, InvalidSecurityGroupIdNotFound) {
+		if NotFoundError(err) || IsExpectedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
 			d.SetId("")
 			return nil
 		}
@@ -306,7 +306,7 @@ func resourceAliyunSecurityGroupRuleDelete(d *schema.ResourceData, meta interfac
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		err := deleteSecurityGroupRule(d, meta)
 		if err != nil {
-			if NotFoundError(err) || IsExceptedError(err, InvalidSecurityGroupIdNotFound) {
+			if NotFoundError(err) || IsExpectedErrors(err, []string{InvalidSecurityGroupIdNotFound}) {
 				return nil
 			}
 			return resource.RetryableError(err)
