@@ -151,7 +151,7 @@ func resourceAlicloudPolarDBDatabaseDelete(d *schema.ResourceData, meta interfac
 		return polarDBClient.DeleteDatabase(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

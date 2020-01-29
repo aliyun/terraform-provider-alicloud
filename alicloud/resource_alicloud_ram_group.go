@@ -132,7 +132,7 @@ func resourceAlicloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.RemoveUserFromGroup(request)
 				})
-				if err != nil && !RamEntityNotExist(err) {
+				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -162,7 +162,7 @@ func resourceAlicloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.DetachPolicyFromGroup(request)
 				})
-				if err != nil && !RamEntityNotExist(err) {
+				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -179,7 +179,7 @@ func resourceAlicloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 			return ramClient.DeleteGroup(deleteGroupRequest)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{DeleteConflictGroupUser, DeleteConflictGroupPolicy}) {
+			if IsExpectedErrors(err, []string{"DeleteConflict.Group.User", "DeleteConflict.Group.Policy"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -188,7 +188,7 @@ func resourceAlicloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 		return nil
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteGroupRequest.GetActionName(), AlibabaCloudSdkGoERROR)

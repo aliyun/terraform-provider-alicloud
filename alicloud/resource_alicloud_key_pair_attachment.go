@@ -106,7 +106,7 @@ func resourceAlicloudKeyPairAttachmentRead(d *schema.ResourceData, meta interfac
 	object, err := ecsService.DescribeKeyPairAttachment(d.Id())
 
 	if err != nil {
-		if NotFoundError(err) || IsExpectedErrors(err, []string{KeyPairNotFound}) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}

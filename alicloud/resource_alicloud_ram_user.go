@@ -195,7 +195,7 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.DeleteAccessKey(request)
 				})
-				if err != nil && !RamEntityNotExist(err) {
+				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -224,7 +224,7 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.DetachPolicyFromUser(request)
 				})
-				if err != nil && !RamEntityNotExist(err) {
+				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -252,7 +252,7 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 					return ramClient.RemoveUserFromGroup(request)
 				})
-				if err != nil && !RamEntityNotExist(err) {
+				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -266,7 +266,7 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.DeleteLoginProfile(deleteLoginProfileRequest)
 		})
-		if err != nil && !RamEntityNotExist(err) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteLoginProfileRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(deleteLoginProfileRequest.GetActionName(), raw)
@@ -276,7 +276,7 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.UnbindMFADevice(unbindMFADeviceRequest)
 		})
-		if err != nil && !RamEntityNotExist(err) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), unbindMFADeviceRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(unbindMFADeviceRequest.GetActionName(), raw, deleteLoginProfileRequest.RpcRequest, deleteLoginProfileRequest)
@@ -288,7 +288,7 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		return ramClient.DeleteUser(deleteUserRequest)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{DeleteConflictUserAccessKey, DeleteConflictUserGroup, DeleteConflictUserPolicy, DeleteConflictUserLoginProfile, DeleteConflictUserMFADevice}) {
+		if IsExpectedErrors(err, []string{"DeleteConflict.User.AccessKey", "DeleteConflict.User.Group", "DeleteConflict.User.Policy", "DeleteConflict.User.LoginProfile", "DeleteConflict.User.MFADevice"}) {
 			return WrapError(Error("The user can not has any access keys or login profile or attached group or attached policies or attached mfa device while deleting the user.- you can set force with true to force delete the user."))
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

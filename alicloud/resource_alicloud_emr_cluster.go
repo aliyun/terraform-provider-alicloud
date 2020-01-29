@@ -58,10 +58,9 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 							Optional: true,
 						},
 						"host_group_type": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ValidateFunc: validation.StringInSlice([]string{HOST_GROUP_TYPE_MASTER,
-								HOST_GROUP_TYPE_CORE, HOST_GROUP_TYPE_TASK, HOST_GROUP_TYPE_GATEWAY}, false),
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"MASTER", "CORE", "TASK", "GATEWAY"}, false),
 						},
 						"period": {
 							Type:         schema.TypeInt,
@@ -189,7 +188,7 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{DEPOSIT_TYPE_FULLY_MANAGED, DEPOSIT_TYPE_HALF_MANAGED}, false),
+				ValidateFunc: validation.StringInSlice([]string{"FULLY_MANAGED", "HALF_MANAGED"}, false),
 				Default:      "HALF_MANAGED",
 			},
 			"related_cluster_id": {

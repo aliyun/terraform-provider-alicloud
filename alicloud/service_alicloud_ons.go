@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
@@ -10,10 +9,6 @@ import (
 
 type OnsService struct {
 	client *connectivity.AliyunClient
-}
-
-func (s *OnsService) InstanceNotExistFunc(err error) bool {
-	return strings.Contains(err.Error(), OnsInstanceNotExist)
 }
 
 func (s *OnsService) DescribeOnsInstance(id string) (*ons.OnsInstanceBaseInfoResponse, error) {
@@ -27,7 +22,7 @@ func (s *OnsService) DescribeOnsInstance(id string) (*ons.OnsInstanceBaseInfoRes
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDomainNameNoExist}) {
+		if IsExpectedErrors(err, []string{"InvalidDomainName.NoExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -57,7 +52,7 @@ func (s *OnsService) DescribeOnsTopic(id string) (*ons.PublishInfoDo, error) {
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{AuthResourceOwnerError, OnsInstanceNotExist}) {
+		if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR", "INSTANCE_NOT_FOUND"}) {
 			return onsTopic, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return onsTopic, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -91,7 +86,7 @@ func (s *OnsService) DescribeOnsGroup(id string) (*ons.SubscribeInfoDo, error) {
 		return onsClient.OnsGroupList(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{AuthResourceOwnerError, OnsInstanceNotExist}) {
+		if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR", "INSTANCE_NOT_FOUND"}) {
 			return onsGroup, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return onsGroup, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

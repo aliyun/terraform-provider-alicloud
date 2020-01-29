@@ -64,8 +64,8 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 			return vpcClient.CreateVSwitch(&args)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{TaskConflict, UnknownError, InvalidStatusRouteEntry,
-				InvalidCidrBlockOverlapped, Throttling, TokenProcessing}) {
+			if IsExpectedErrors(err, []string{"TaskConflict", "UnknownError", "InvalidStatus.RouteEntry",
+				"InvalidCidrBlock.Overlapped", Throttling, "OperationFailed.IdempotentTokenProcessing"}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -157,10 +157,10 @@ func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error 
 			return vpcClient.DeleteVSwitch(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{VswitcInvalidRegionId}) {
+			if IsExpectedErrors(err, []string{"InvalidRegionId.NotFound"}) {
 				return resource.NonRetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{InvalidVswitchIDNotFound}) {
+			if IsExpectedErrors(err, []string{"InvalidVswitchID.NotFound"}) {
 				return nil
 			}
 

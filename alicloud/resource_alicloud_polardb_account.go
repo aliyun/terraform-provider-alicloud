@@ -245,7 +245,7 @@ func resourceAlicloudPolarDBAccountDelete(d *schema.ResourceData, meta interface
 		return polarDBClient.DeleteAccount(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidAccountNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidAccountName.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

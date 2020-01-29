@@ -201,7 +201,7 @@ func (s *RamService) DescribeRamUser(id string) (*ram.User, error) {
 		return ramClient.ListUsers(listUsersRequest)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return user, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return user, WrapErrorf(err, DefaultErrorMsg, id, listUsersRequest.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -224,7 +224,7 @@ func (s *RamService) DescribeRamUser(id string) (*ram.User, error) {
 		return ramClient.GetUser(getUserRequest)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return user, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return user, WrapErrorf(err, DefaultErrorMsg, id, getUserRequest.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -265,7 +265,7 @@ func (s *RamService) DescribeRamGroupMembership(id string) (*ram.ListUsersForGro
 		return ramClient.ListUsersForGroup(request)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -310,7 +310,7 @@ func (s *RamService) DescribeRamLoginProfile(id string) (*ram.GetLoginProfileRes
 		return ramClient.GetLoginProfile(request)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -326,7 +326,7 @@ func (s *RamService) WaitForRamLoginProfile(id string, status Status, timeout in
 	for {
 		object, err := s.DescribeRamLoginProfile(id)
 		if err != nil {
-			if RamEntityNotExist(err) {
+			if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 				if status == Deleted {
 					return nil
 				}
@@ -356,7 +356,7 @@ func (s *RamService) DescribeRamGroupPolicyAttachment(id string) (*ram.Policy, e
 		return ramClient.ListPoliciesForGroup(request)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -407,7 +407,7 @@ func (s *RamService) DescribeRamAccountAlias(id string) (*ram.GetAccountAliasRes
 		return ramClient.GetAccountAlias(request)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -428,7 +428,7 @@ func (s *RamService) DescribeRamAccessKey(id, userName string) (*ram.AccessKey, 
 	})
 
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return key, WrapErrorf(Error(GetNotFoundMessage("RamAccessKey", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return key, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -476,7 +476,7 @@ func (s *RamService) DescribeRamPolicy(id string) (*ram.GetPolicyResponse, error
 		return ramClient.GetPolicy(request)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -524,7 +524,7 @@ func (s *RamService) DescribeRamRoleAttachment(id string) (*ecs.DescribeInstance
 			return ecsClient.DescribeInstanceRamRole(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{RoleAttachmentUnExpectedJson}) {
+			if IsExpectedErrors(err, []string{"unexpected end of JSON input"}) {
 				return resource.RetryableError(WrapError(err))
 			}
 			return resource.NonRetryableError(err)
@@ -532,7 +532,7 @@ func (s *RamService) DescribeRamRoleAttachment(id string) (*ecs.DescribeInstance
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidRamRoleNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidRamRole.NotFound"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -589,7 +589,7 @@ func (s *RamService) DescribeRamRole(id string) (*ram.GetRoleResponse, error) {
 		return ramClient.GetRole(request)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -634,7 +634,7 @@ func (s *RamService) DescribeRamUserPolicyAttachment(id string) (*ram.Policy, er
 		return ramClient.ListPoliciesForUser(request)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -691,7 +691,7 @@ func (s *RamService) DescribeRamRolePolicyAttachment(id string) (*ram.Policy, er
 		return ramClient.ListPoliciesForRole(request)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -745,7 +745,7 @@ func (s *RamService) DescribeRamGroup(id string) (*ram.GetGroupResponse, error) 
 		return ramClient.GetGroup(request)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

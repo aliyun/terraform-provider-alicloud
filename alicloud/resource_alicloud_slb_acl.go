@@ -38,7 +38,7 @@ func resourceAlicloudSlbAcl() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      IPVersion4,
+				Default:      "ipv4",
 				ValidateFunc: validation.StringInSlice([]string{"ipv4", "ipv6"}, false),
 			},
 			"entry_list": {
@@ -100,7 +100,7 @@ func resourceAlicloudSlbAclRead(d *schema.ResourceData, meta interface{}) error 
 
 	object, err := slbService.DescribeSlbAcl(d.Id())
 	if err != nil {
-		if IsExpectedErrors(err, []string{SlbAclNotExists}) {
+		if IsExpectedErrors(err, []string{"AclNotExist"}) {
 			d.SetId("")
 			return nil
 		}
@@ -189,7 +189,7 @@ func resourceAlicloudSlbAclDelete(d *schema.ResourceData, meta interface{}) erro
 	})
 
 	if err != nil {
-		if !IsExpectedErrors(err, []string{SlbAclNotExists}) {
+		if !IsExpectedErrors(err, []string{"AclNotExist"}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}

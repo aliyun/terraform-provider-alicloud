@@ -134,7 +134,7 @@ func testAccCheckRamAccountAliasDestroy(s *terraform.State) error {
 			return ramClient.GetAccountAlias(request)
 		})
 
-		if err != nil && !RamEntityNotExist(err) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return WrapError(err)
 		}
 	}

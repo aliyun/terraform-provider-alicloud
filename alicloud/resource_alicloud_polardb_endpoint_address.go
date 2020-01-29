@@ -117,7 +117,7 @@ func resourceAlicloudPolarDBEndpointAddressRead(d *schema.ResourceData, meta int
 	object, err := polarDBService.DescribePolarDBConnection(d.Id())
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			d.SetId("")
 			return nil
 		}
@@ -208,7 +208,7 @@ func resourceAlicloudPolarDBEndpointAddressDelete(d *schema.ResourceData, meta i
 			return polarDBClient.DeleteDBEndpointAddress(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InvalidDBClusterStatus, EndpointStatusNotSupport}) {
+			if IsExpectedErrors(err, []string{"OperationDenied.DBClusterStatus", "EndpointStatus.NotSupport"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -218,7 +218,7 @@ func resourceAlicloudPolarDBEndpointAddressDelete(d *schema.ResourceData, meta i
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDBClusterIdNotFound, InvalidDBClusterNameNotFound, InvalidCurrentConnectionStringNotFound, AtLeastOneNetTypeExists}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound", "InvalidCurrentConnectionString.NotFound", "AtLeastOneNetTypeExists"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

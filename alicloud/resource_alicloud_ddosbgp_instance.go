@@ -165,7 +165,7 @@ func resourceAlicloudDdosbgpInstanceDelete(d *schema.ResourceData, meta interfac
 		return ddosbgpClient.ReleaseInstance(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{DdosbgpInstanceNotFound}) {
+		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
 			return nil
 		}
 

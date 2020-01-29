@@ -151,7 +151,7 @@ func resourceAlicloudRamAccessKeyDelete(d *schema.ResourceData, meta interface{}
 		return ramClient.DeleteAccessKey(request)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, request.UserName, request.GetActionName(), AlibabaCloudSdkGoERROR)

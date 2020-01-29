@@ -37,7 +37,7 @@ func dataSourceAlicloudDnsRecords() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				// must be one of [A, NS, MX, TXT, CNAME, SRV, AAAA, CAA, REDIRECT_URL, FORWORD_URL]
-				ValidateFunc: validation.StringInSlice([]string{ARecord, NSRecord, MXRecord, TXTRecord, CNAMERecord, SRVRecord, AAAARecord, CAARecord, RedirectURLRecord, ForwordURLRecord}, false),
+				ValidateFunc: validation.StringInSlice([]string{"A", "NS", "MX", "TXT", "CNAME", "SRV", "AAAA", "CAA", "REDIRECT_URL", "FORWORD_URL"}, false),
 			},
 			"line": {
 				Type:     schema.TypeString,

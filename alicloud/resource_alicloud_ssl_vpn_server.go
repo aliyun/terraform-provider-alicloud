@@ -110,7 +110,7 @@ func resourceAliyunSslVpnServerCreate(d *schema.ResourceData, meta interface{}) 
 			return vpcClient.CreateSslVpnServer(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{VpnConfiguring}) {
+			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -197,7 +197,7 @@ func resourceAliyunSslVpnServerUpdate(d *schema.ResourceData, meta interface{}) 
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{VpnConfiguring}) {
+			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -227,7 +227,7 @@ func resourceAliyunSslVpnServerDelete(d *schema.ResourceData, meta interface{}) 
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{VpnConfiguring}) {
+			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -238,7 +238,7 @@ func resourceAliyunSslVpnServerDelete(d *schema.ResourceData, meta interface{}) 
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{SslVpnServerNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidSslVpnServerId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -113,7 +113,7 @@ func resourceAlicloudNasFileSystemDelete(d *schema.ResourceData, meta interface{
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidFileSystemIDNotFound, ForbiddenNasNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidFileSystem.NotFound", "Forbidden.NasNotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -97,7 +97,7 @@ func resourceAliyunCommonBandwidthPackageAttachmentDelete(d *schema.ResourceData
 		})
 		//Waiting for unassociate the common bandwidth package
 		if err != nil {
-			if IsExpectedErrors(err, []string{TaskConflict}) {
+			if IsExpectedErrors(err, []string{"TaskConflict"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

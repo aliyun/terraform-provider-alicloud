@@ -131,7 +131,7 @@ func resourceAlicloudRamLoginProfileDelete(d *schema.ResourceData, meta interfac
 		return ramClient.DeleteLoginProfile(request)
 	})
 	if err != nil {
-		if RamEntityNotExist(err) {
+		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -238,7 +238,7 @@ func resourceAlicloudLogtailConfigDelete(d *schema.ResourceData, meta interface{
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ProjectNotExist, LogStoreNotExist, LogConfigNotExist}) {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "LogStoreNotExist", "ConfigNotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteConfig", AliyunLogGoSdkERROR)

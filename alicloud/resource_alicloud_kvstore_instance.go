@@ -559,7 +559,7 @@ func resourceAlicloudKVStoreInstanceDelete(d *schema.ResourceData, meta interfac
 	})
 
 	if err != nil {
-		if !IsExpectedErrors(err, []string{InvalidKVStoreInstanceIdNotFound}) {
+		if !IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}

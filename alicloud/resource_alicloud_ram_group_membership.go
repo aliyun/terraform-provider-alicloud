@@ -146,7 +146,7 @@ func removeUsersFromGroup(client *connectivity.AliyunClient, users []string, gro
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.RemoveUserFromGroup(request)
 		})
-		if err != nil && !RamEntityNotExist(err) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return WrapErrorf(err, DefaultErrorMsg, u, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)

@@ -36,7 +36,7 @@ func (s *LogService) DescribeLogProject(id string) (*sls.LogProject, error) {
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ProjectNotExist}) {
+		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
 			return project, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		}
 		return project, WrapErrorf(err, DefaultErrorMsg, id, "GetProject", AliyunLogGoSdkERROR)
@@ -83,7 +83,7 @@ func (s *LogService) DescribeLogStore(id string) (*sls.LogStore, error) {
 			return slsClient.GetLogStore(projectName, name)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InternalServerError, LogClientTimeout}) {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -98,7 +98,7 @@ func (s *LogService) DescribeLogStore(id string) (*sls.LogStore, error) {
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ProjectNotExist, LogStoreNotExist}) {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "LogStoreNotExist"}) {
 			return store, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		}
 		return store, WrapErrorf(err, DefaultErrorMsg, id, "GetLogStore", AliyunLogGoSdkERROR)
@@ -150,7 +150,7 @@ func (s *LogService) DescribeLogStoreIndex(id string) (*sls.Index, error) {
 			return slsClient.GetIndex(projectName, name)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InternalServerError, LogClientTimeout}) {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -166,7 +166,7 @@ func (s *LogService) DescribeLogStoreIndex(id string) (*sls.Index, error) {
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{ProjectNotExist, LogStoreNotExist, IndexConfigNotExist}) {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "LogStoreNotExist", "IndexConfigNotExist"}) {
 			return index, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		}
 		return index, WrapErrorf(err, DefaultErrorMsg, id, "GetIndex", AliyunLogGoSdkERROR)
@@ -192,7 +192,7 @@ func (s *LogService) DescribeLogMachineGroup(id string) (*sls.MachineGroup, erro
 			return slsClient.GetMachineGroup(projectName, groupName)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InternalServerError, LogClientTimeout}) {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -208,7 +208,7 @@ func (s *LogService) DescribeLogMachineGroup(id string) (*sls.MachineGroup, erro
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{ProjectNotExist, "GroupNotExist", "MachineGroupNotExist"}) {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "GroupNotExist", "MachineGroupNotExist"}) {
 			return group, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		}
 		return group, WrapErrorf(err, DefaultErrorMsg, id, "GetMachineGroup", AliyunLogGoSdkERROR)
@@ -261,7 +261,7 @@ func (s *LogService) DescribeLogtailConfig(id string) (*sls.LogConfig, error) {
 			return slsClient.GetConfig(projectName, configName)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InternalServerError}) {
+			if IsExpectedErrors(err, []string{"InternalServerError"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -276,7 +276,7 @@ func (s *LogService) DescribeLogtailConfig(id string) (*sls.LogConfig, error) {
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ProjectNotExist, LogStoreNotExist, LogConfigNotExist}) {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "LogStoreNotExist", "ConfigNotExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, "GetConfig", AliyunLogGoSdkERROR)
@@ -329,7 +329,7 @@ func (s *LogService) DescribeLogtailAttachment(id string) (groupName string, err
 			return slsClient.GetAppliedMachineGroups(projectName, configName)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InternalServerError}) {
+			if IsExpectedErrors(err, []string{"InternalServerError"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -344,7 +344,7 @@ func (s *LogService) DescribeLogtailAttachment(id string) (groupName string, err
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ProjectNotExist, LogConfigNotExist, "MachineGroupNotExist"}) {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "ConfigNotExist", "MachineGroupNotExist"}) {
 			return groupName, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
 		}
 		return groupName, WrapErrorf(err, DefaultErrorMsg, id, "GetAppliedMachineGroups", AliyunLogGoSdkERROR)

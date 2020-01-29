@@ -131,7 +131,7 @@ func resourceAlicloudEssNotificationDelete(d *schema.ResourceData, meta interfac
 		return essClient.DeleteNotificationConfiguration(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidNotificationNotFound, InvalidScalingGroupIdNotFound}) {
+		if IsExpectedErrors(err, []string{"NotificationConfigurationNotExist", "InvalidScalingGroupId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

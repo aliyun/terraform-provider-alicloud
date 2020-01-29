@@ -137,7 +137,7 @@ func resourceAlicloudDBAccountRead(d *schema.ResourceData, meta interface{}) err
 	rdsService := RdsService{client}
 	object, err := rdsService.DescribeDBAccount(d.Id())
 	if err != nil {
-		if rdsService.NotFoundDBInstance(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -239,7 +239,7 @@ func resourceAlicloudDBAccountDelete(d *schema.ResourceData, meta interface{}) e
 	raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 		return rdsClient.DeleteAccount(request)
 	})
-	if err != nil && !IsExpectedErrors(err, []string{InvalidAccountNameNotFound}) {
+	if err != nil && !IsExpectedErrors(err, []string{"InvalidAccountName.NotFound"}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)

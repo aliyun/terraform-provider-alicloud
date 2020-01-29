@@ -54,7 +54,7 @@ func resourceAliyunApigatewayGroupCreate(d *schema.ResourceData, meta interface{
 			return cloudApiClient.CreateApiGroup(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{RepeatedCommit}) {
+			if IsExpectedErrors(err, []string{"RepeatedCommit"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

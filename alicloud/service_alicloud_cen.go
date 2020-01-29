@@ -49,7 +49,7 @@ func (s *CenService) DescribeCenInstance(id string) (c cbn.Cen, err error) {
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ParameterCenInstanceIdNotExist}) {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -100,7 +100,7 @@ func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstanc
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{ParameterInstanceIdNotExist}) {
+			if IsExpectedErrors(err, []string{"ParameterInstanceId"}) {
 				return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance Attachment", instanceId)), NotFoundMsg, ProviderERROR)
 			}
 			return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), ProviderERROR)
@@ -172,7 +172,7 @@ func (s *CenService) DescribeCenBandwidthPackage(id string) (c cbn.CenBandwidthP
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ParameterCenInstanceIdNotExist}) {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
 			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -261,7 +261,7 @@ func (s *CenService) SetCenInterRegionBandwidthLimit(cenId, localRegionId, oppos
 		return cbnClient.SetCenInterRegionBandwidthLimit(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidCenInstanceStatus}) {
+		if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus"}) {
 			return WrapError(err)
 		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_bandwidth_limit", request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -20,7 +20,7 @@ func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 	request := ess.CreateDescribeAlarmsRequest()
 	request.RegionId = s.client.RegionId
 	request.AlarmTaskId = id
-	request.MetricType = string(System)
+	request.MetricType = "system"
 	Alarms, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeAlarms(request)
 	})
@@ -38,7 +38,7 @@ func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 	AlarmsRequest := ess.CreateDescribeAlarmsRequest()
 	AlarmsRequest.RegionId = s.client.RegionId
 	AlarmsRequest.AlarmTaskId = id
-	AlarmsRequest.MetricType = string(Custom)
+	AlarmsRequest.MetricType = "custom"
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeAlarms(AlarmsRequest)
 	})
@@ -110,7 +110,7 @@ func (s *EssService) DescribeEssNotification(id string) (notification ess.Notifi
 		return essClient.DescribeNotificationConfigurations(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidNotificationNotFound, InvalidScalingGroupIdNotFound}) {
+		if IsExpectedErrors(err, []string{"NotificationConfigurationNotExist", "InvalidScalingGroupId.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("EssNotification", id)), NotFoundMsg, ProviderERROR)
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -281,7 +281,7 @@ func (s *EssService) DescribeEssScalingRule(id string) (rule ess.ScalingRule, er
 		return essClient.DescribeScalingRules(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidScalingRuleIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidScalingRuleId.NotFound"}) {
 			return rule, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return rule, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -384,7 +384,7 @@ func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (i
 		return essClient.DescribeScalingInstances(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
 			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		} else {
 			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -473,10 +473,10 @@ func (srv *EssService) EssRemoveInstances(id string, instanceIds []string) error
 			return essClient.RemoveInstances(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InvalidScalingGroupIdNotFound}) {
+			if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
 				return nil
 			}
-			if IsExpectedErrors(err, []string{IncorrectCapacityMinSize}) {
+			if IsExpectedErrors(err, []string{"IncorrectCapacity.MinSize"}) {
 				instances, err := srv.DescribeEssAttachment(id, instanceIds)
 				if len(instances) > 0 {
 					if group.MinSize == 0 {
@@ -485,7 +485,7 @@ func (srv *EssService) EssRemoveInstances(id string, instanceIds []string) error
 					return resource.NonRetryableError(WrapError(err))
 				}
 			}
-			if IsExpectedErrors(err, []string{ScalingActivityInProgress, IncorrectScalingGroupStatus}) {
+			if IsExpectedErrors(err, []string{"ScalingActivityInProgress", "IncorrectScalingGroupStatus"}) {
 				time.Sleep(5)
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}

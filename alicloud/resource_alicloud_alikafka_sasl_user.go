@@ -91,7 +91,7 @@ func resourceAlicloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interfa
 			return alikafkaClient.CreateSaslUser(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, AlikafkaFlowControl}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				time.Sleep(2 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -178,7 +178,7 @@ func resourceAlicloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interfa
 				return alikafkaClient.CreateSaslUser(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{ThrottlingUser, AlikafkaFlowControl}) {
+				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 					time.Sleep(2 * time.Second)
 					return resource.RetryableError(err)
 				}

@@ -256,7 +256,7 @@ func resourceAlicloudRouterInterfaceDelete(d *schema.ResourceData, meta interfac
 			return vpcClient.DeleteRouterInterface(&args)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{RouterInterfaceIncorrectStatus, DependencyViolationRouterInterfaceReferedByRouteEntry}) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus", "DependencyViolation.RouterInterfaceReferedByRouteEntry"}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -266,7 +266,7 @@ func resourceAlicloudRouterInterfaceDelete(d *schema.ResourceData, meta interfac
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidInstanceIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
 			return nil
 		}
 		WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

@@ -71,7 +71,7 @@ func resourceAlicloudLogStoreIndex() *schema.Resource {
 						"type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							Default:      LongType,
+							Default:      "long",
 							ValidateFunc: validation.StringInSlice([]string{"text", "long", "double", "json"}, false),
 						},
 						"alias": {
@@ -154,7 +154,7 @@ func resourceAlicloudLogStoreIndexCreate(d *schema.ResourceData, meta interface{
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "GetIndex", AliyunLogGoSdkERROR))
 			}
-			if !IsExpectedErrors(err, []string{IndexConfigNotExist}) {
+			if !IsExpectedErrors(err, []string{"IndexConfigNotExist"}) {
 				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "GetIndex", AliyunLogGoSdkERROR))
 			}
 		}
@@ -179,7 +179,7 @@ func resourceAlicloudLogStoreIndexCreate(d *schema.ResourceData, meta interface{
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 
 		if e := store.CreateIndex(index); e != nil {
-			if IsExpectedErrors(e, []string{InternalServerError, LogClientTimeout}) {
+			if IsExpectedErrors(e, []string{"InternalServerError", LogClientTimeout}) {
 				return resource.RetryableError(e)
 			}
 			return resource.NonRetryableError(e)

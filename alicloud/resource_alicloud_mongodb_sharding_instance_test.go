@@ -125,7 +125,7 @@ func testAccCheckMongoDBShardingInstanceDestroy(s *terraform.State) error {
 		}
 		_, err := ddsService.DescribeMongoDBInstance(rs.Primary.ID)
 		if err != nil {
-			if ddsService.NotFoundMongoDBInstance(err) {
+			if NotFoundError(err) {
 				continue
 			}
 			return WrapError(err)

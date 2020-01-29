@@ -348,7 +348,7 @@ func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}
 			return slbClient.DeleteVServerGroup(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{RspoolVipExist}) {
+			if IsExpectedErrors(err, []string{"RspoolVipExist"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -357,7 +357,7 @@ func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{VServerGroupNotFoundMessage, InvalidParameter}) {
+		if IsExpectedErrors(err, []string{"The specified VServerGroupId does not exist", "InvalidParameter"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

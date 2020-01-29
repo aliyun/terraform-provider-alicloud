@@ -147,7 +147,7 @@ func resourceAlicloudDBDatabaseDelete(d *schema.ResourceData, meta interface{}) 
 		return rdsClient.DeleteDatabase(request)
 	})
 	if err != nil {
-		if rdsService.NotFoundDBInstance(err) || IsExpectedErrors(err, []string{InvalidDBNameNotFound}) {
+		if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidDBName.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

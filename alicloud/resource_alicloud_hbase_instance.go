@@ -281,8 +281,8 @@ func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{
 		})
 
 		if err != nil {
-			if hbaseService.NotFoundHBaseInstance(err) {
-				return nil
+			if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+				return resource.NonRetryableError(err)
 			}
 			return resource.RetryableError(err)
 		}

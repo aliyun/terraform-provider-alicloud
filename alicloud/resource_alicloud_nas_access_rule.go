@@ -149,7 +149,7 @@ func resourceAlicloudNasAccessRuleDelete(d *schema.ResourceData, meta interface{
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{ForbiddenNasNotFound}) {
+		if IsExpectedErrors(err, []string{"Forbidden.NasNotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

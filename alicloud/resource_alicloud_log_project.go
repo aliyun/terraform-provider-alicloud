@@ -125,7 +125,7 @@ func resourceAlicloudLogProjectDelete(d *schema.ResourceData, meta interface{}) 
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{ProjectNotExist}) {
+		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteProject", AliyunLogGoSdkERROR)

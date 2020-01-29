@@ -209,7 +209,7 @@ func resourceAlicloudGpdbConnectionDelete(d *schema.ResourceData, meta interface
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidGpdbNameNotFound, InvalidGpdbInstanceIdNotFound, InvalidCurrentConnectionStringNotFound, AtLeastOneNetTypeExists}) {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound", "InvalidCurrentConnectionString.NotFound", "AtLeastOneNetTypeExists"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

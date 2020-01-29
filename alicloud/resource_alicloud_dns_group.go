@@ -91,7 +91,7 @@ func resourceAlicloudDnsGroupDelete(d *schema.ResourceData, meta interface{}) er
 			return dnsClient.DeleteDomainGroup(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{FobiddenNotEmptyGroup}) {
+			if IsExpectedErrors(err, []string{"Fobidden.NotEmptyGroup"}) {
 				return resource.RetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))

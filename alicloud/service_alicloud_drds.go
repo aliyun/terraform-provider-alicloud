@@ -21,7 +21,7 @@ func (s *DrdsService) DescribeDrdsInstance(id string) (*drds.DescribeDrdsInstanc
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{InvalidDRDSInstanceIdNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidDrdsInstanceId.NotFound"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

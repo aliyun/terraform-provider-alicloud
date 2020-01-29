@@ -513,7 +513,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 
 	instance, err := rdsService.DescribeDBInstance(d.Id())
 	if err != nil {
-		if rdsService.NotFoundDBInstance(err) {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -623,7 +623,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 
 	instance, err := rdsService.DescribeDBInstance(d.Id())
 	if err != nil {
-		if rdsService.NotFoundDBInstance(err) {
+		if NotFoundError(err) {
 			return nil
 		}
 		return WrapError(err)
@@ -641,7 +641,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 			return rdsClient.DeleteDBInstance(request)
 		})
 
-		if err != nil && !rdsService.NotFoundDBInstance(err) {
+		if err != nil && !NotFoundError(err) {
 			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}) {
 				return resource.RetryableError(err)
 			}

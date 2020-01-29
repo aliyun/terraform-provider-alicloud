@@ -28,12 +28,9 @@ func dataSourceAlicloudMongoDBInstances() *schema.Resource {
 				Computed: true,
 			},
 			"instance_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(MongoDBSharding),
-					string(MongoDBReplicate),
-				}, false),
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"sharding", "replicate"}, false),
 			},
 			"instance_class": {
 				Type:     schema.TypeString,

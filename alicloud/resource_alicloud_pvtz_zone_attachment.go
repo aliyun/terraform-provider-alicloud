@@ -129,7 +129,7 @@ func resourceAlicloudPvtzZoneAttachmentUpdate(d *schema.ResourceData, meta inter
 			return pvtzClient.BindZoneVpc(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, PvtzSystemBusy, ZoneNotExists}) {
+			if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, "System.Busy", "Zone.NotExists"}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -203,7 +203,7 @@ func resourceAlicloudPvtzZoneAttachmentDelete(d *schema.ResourceData, meta inter
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, PvtzSystemBusy}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "System.Busy"}) {
 				time.Sleep(time.Duration(2) * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -214,7 +214,7 @@ func resourceAlicloudPvtzZoneAttachmentDelete(d *schema.ResourceData, meta inter
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{ZoneNotExists, ZoneVpcNotExists}) {
+		if IsExpectedErrors(err, []string{"Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

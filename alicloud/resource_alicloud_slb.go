@@ -238,7 +238,7 @@ func resourceAliyunSlbCreate(d *schema.ResourceData, meta interface{}) error {
 		raw = resp
 		return err
 	}); err != nil {
-		if IsExpectedErrors(err, []string{SlbOrderFailed}) {
+		if IsExpectedErrors(err, []string{"OrderFailed"}) {
 			return WrapError(err)
 		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb", request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -446,7 +446,7 @@ func resourceAliyunSlbDelete(d *schema.ResourceData, meta interface{}) error {
 		return slbClient.DeleteLoadBalancer(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{LoadBalancerNotFound}) {
+		if IsExpectedErrors(err, []string{"InvalidLoadBalancerId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

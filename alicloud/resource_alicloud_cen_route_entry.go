@@ -63,7 +63,7 @@ func resourceAlicloudCenRouteEntryCreate(d *schema.ResourceData, meta interface{
 			return cbnClient.PublishRouteEntries(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{OperationBlocking, "not in a valid state for the operation"}) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "not in a valid state for the operation"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -145,7 +145,7 @@ func resourceAlicloudCenRouteEntryDelete(d *schema.ResourceData, meta interface{
 			return cbnClient.WithdrawPublishedRouteEntries(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InvalidCenInstanceStatus, InternalError}) {
+			if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus", "InternalError"}) {
 				return resource.RetryableError(err)
 			}
 

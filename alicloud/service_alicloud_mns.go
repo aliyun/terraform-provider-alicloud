@@ -13,14 +13,14 @@ type MnsService struct {
 }
 
 func (s *MnsService) SubscriptionNotExistFunc(err error) bool {
-	return strings.Contains(err.Error(), SubscriptionNotExist)
+	return strings.Contains(err.Error(), "SubscriptionNotExist")
 }
 func (s *MnsService) TopicNotExistFunc(err error) bool {
-	return strings.Contains(err.Error(), TopicNotExist)
+	return strings.Contains(err.Error(), "TopicNotExist")
 }
 
 func (s *MnsService) QueueNotExistFunc(err error) bool {
-	return strings.Contains(err.Error(), QueueNotExist)
+	return strings.Contains(err.Error(), "QueueNotExist")
 }
 
 func (s *MnsService) DescribeMnsQueue(id string) (response ali_mns.QueueAttribute, err error) {

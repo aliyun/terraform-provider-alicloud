@@ -87,7 +87,7 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 			return vpcClient.CreateVpc(&args)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{TaskConflict, UnknownError, Throttling}) {
+			if IsExpectedErrors(err, []string{"TaskConflict", "UnknownError", Throttling}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
@@ -232,7 +232,7 @@ func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 			return vpcClient.DeleteVpc(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InvalidVpcIDNotFound, ForbiddenVpcNotFound}) {
+			if IsExpectedErrors(err, []string{"InvalidVpcID.NotFound", "Forbidden.VpcNotFound"}) {
 				return nil
 			}
 			return resource.RetryableError(err)

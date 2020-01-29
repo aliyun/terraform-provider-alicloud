@@ -395,7 +395,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 			return ecsClient.RunInstances(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{InvalidPrivateIpAddressDuplicated}) {
+			if IsExpectedErrors(err, []string{"InvalidPrivateIpAddress.Duplicated"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -1428,7 +1428,7 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 					time.Sleep(10 * time.Second)
 					return resource.RetryableError(err)
 				}
-				if IsExpectedErrors(err, []string{InternalError}) {
+				if IsExpectedErrors(err, []string{"InternalError"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

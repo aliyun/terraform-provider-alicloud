@@ -252,7 +252,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionDelete(d *schema.ResourceData
 			if IsExpectedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(err)
 			}
-			if rdsService.NotFoundDBInstance(err) || IsExpectedErrors(err, []string{InvalidRwSplitNetTypeNotFound}) {
+			if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidRwSplitNetType.NotFound"}) {
 				return nil
 			}
 			return resource.NonRetryableError(err)

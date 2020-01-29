@@ -167,7 +167,7 @@ func resourceAlicloudOnsInstanceDelete(d *schema.ResourceData, meta interface{})
 			return onsClient.OnsInstanceDelete(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{OnsInstanceNotEmpty}) {
+			if IsExpectedErrors(err, []string{"INSTANCE_NOT_EMPTY"}) {
 				return resource.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
@@ -180,7 +180,7 @@ func resourceAlicloudOnsInstanceDelete(d *schema.ResourceData, meta interface{})
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{OnsInstanceNotExist}) {
+		if IsExpectedErrors(err, []string{"INSTANCE_NOT_FOUND"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
