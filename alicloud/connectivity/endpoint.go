@@ -79,6 +79,22 @@ type Product struct {
 	DomainName  string `xml:"DomainName"`
 }
 
+var localEndpointPath = "./endpoints.xml"
+var localEndpointPathEnv = "TF_ENDPOINT_PATH"
+var loadLocalEndpoint = false
+
+func hasLocalEndpoint() bool {
+	data, err := ioutil.ReadFile(localEndpointPath)
+	if err != nil || len(data) <= 0 {
+		d, e := ioutil.ReadFile(os.Getenv(localEndpointPathEnv))
+		if e != nil {
+			return false
+		}
+		data = d
+	}
+	return len(data) > 0
+}
+
 func loadEndpoint(region string, serviceCode ServiceCode) string {
 	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", string(serviceCode))))
 	if endpoint != "" {
@@ -86,9 +102,9 @@ func loadEndpoint(region string, serviceCode ServiceCode) string {
 	}
 
 	// Load current path endpoint file endpoints.xml, if failed, it will load from environment variables TF_ENDPOINT_PATH
-	data, err := ioutil.ReadFile("./endpoints.xml")
+	data, err := ioutil.ReadFile(localEndpointPath)
 	if err != nil || len(data) <= 0 {
-		d, e := ioutil.ReadFile(os.Getenv("TF_ENDPOINT_PATH"))
+		d, e := ioutil.ReadFile(os.Getenv(localEndpointPathEnv))
 		if e != nil {
 			return ""
 		}
