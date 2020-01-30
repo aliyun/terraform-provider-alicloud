@@ -99,6 +99,10 @@ func NotFoundError(err error) bool {
 		return e.Code == InstanceNotFound || e.Code == RamInstanceNotFound || e.Code == NotFound || strings.Contains(strings.ToLower(e.Message), MessageInstanceNotFound)
 	}
 
+	if e, ok := err.(oss.ServiceError); ok {
+		return e.StatusCode == 404 || strings.HasPrefix(e.Code, "NoSuch") || strings.HasPrefix(e.Message, "No Row found")
+	}
+
 	return false
 }
 

@@ -165,7 +165,7 @@ func resourceAlicloudPolarDBEndpointAddressUpdate(d *schema.ResourceData, meta i
 				return polarDBClient.ModifyDBEndpointAddress(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, OperationDeniedDBStatus) {
+				if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

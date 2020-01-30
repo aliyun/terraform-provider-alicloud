@@ -6,7 +6,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -114,36 +113,4 @@ func resourceRamRolePolicyAttachmentConfigDependence(name string) string {
 	  force = true
 	}
 `, name)
-}
-
-func testAccCheckRamRolePolicyAttachmentDestroy(s *terraform.State) error {
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ram_role_policy_attachment" {
-			continue
-		}
-
-		// Try to find the attachment
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateListPoliciesForRoleRequest()
-		request.RoleName = rs.Primary.Attributes["role_name"]
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListPoliciesForRole(request)
-		})
-
-		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
-			return WrapError(err)
-		}
-		response, _ := raw.(*ram.ListPoliciesForRoleResponse)
-		if len(response.Policies.Policy) > 0 {
-			for _, v := range response.Policies.Policy {
-				if v.PolicyName == rs.Primary.Attributes["policy_name"] && v.PolicyType == rs.Primary.Attributes["policy_type"] {
-					return WrapError(Error("Error attachment still exist."))
-				}
-			}
-		}
-	}
-	return nil
 }
