@@ -971,17 +971,28 @@ func (s *SlbService) DescribeTags(resourceId string, resourceTags map[string]int
 		}
 		request.Tag = &reqTags
 	}
-	raw, err := s.client.WithSlbClient(func(Client *slb.Client) (interface{}, error) {
-		return Client.ListTagResources(request)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithSlbClient(func(Client *slb.Client) (interface{}, error) {
+			return Client.ListTagResources(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{Throttling}) {
+				time.Sleep(2 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*slb.ListTagResourcesResponse)
+		tags = response.TagResources.TagResource
+		return nil
 	})
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*slb.ListTagResourcesResponse)
 
-	return response.TagResources.TagResource, nil
+	return
 }
 
 func (s *SlbService) TagsMappings(d *schema.ResourceData, aclId string, meta interface{}) map[string]string {
