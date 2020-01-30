@@ -102,6 +102,9 @@ func loadEndpoint(region string, serviceCode ServiceCode) string {
 	}
 
 	// Load current path endpoint file endpoints.xml, if failed, it will load from environment variables TF_ENDPOINT_PATH
+	if !loadLocalEndpoint {
+		return ""
+	}
 	data, err := ioutil.ReadFile(localEndpointPath)
 	if err != nil || len(data) <= 0 {
 		d, e := ioutil.ReadFile(os.Getenv(localEndpointPathEnv))

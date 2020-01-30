@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 )
 
-func TestAccAlicloudPolarClusterAccountsDataSource(t *testing.T) {
+func TestAccAlicloudPolarDBClusterAccountsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 
 	idConf := dataSourceTestAccConfig{

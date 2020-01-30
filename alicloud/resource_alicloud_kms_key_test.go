@@ -99,6 +99,7 @@ func TestAccAlicloudKmsKey_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.KmsSkippedRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,

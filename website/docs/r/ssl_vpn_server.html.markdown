@@ -45,7 +45,7 @@ The following arguments are supported:
 * `name` - (Optional) The name of the SSL-VPN server.
 * `vpn_gateway_id` - (Required, ForceNew) The ID of the VPN gateway.
 * `client_ip_pool` - (Required) The CIDR block from which access addresses are allocated to the virtual network interface card of the client.
-* `local_subnet` - (Required) The CIDR block to be accessed by the client through the SSL-VPN connection.
+* `local_subnet` - (Required) The CIDR block to be accessed by the client through the SSL-VPN connection. It supports to set multi CIDRs by comma join ways, like `10.0.1.0/24,10.0.2.0/24,10.0.3.0/24`.
 * `protocol` - (Optional) The protocol used by the SSL-VPN server. Valid value: UDP(default) |TCP
 * `cipher` - (Optional) The encryption algorithm used by the SSL-VPN server. Valid value: AES-128-CBC (default)| AES-192-CBC | AES-256-CBC | none
 * `port` - (Optional) The port used by the SSL-VPN server. The default value is 1194.The following ports cannot be used: [22, 2222, 22222, 9000, 9001, 9002, 7505, 80, 443, 53, 68, 123, 4510, 4560, 500, 4500].
