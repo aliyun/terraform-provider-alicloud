@@ -171,7 +171,7 @@ func testAccCheckRamGroupMembershipDestroy(s *terraform.State) error {
 			return ramClient.ListUsersForGroup(request)
 		})
 
-		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.Group"}) {
 			return WrapError(err)
 		}
 		response, _ := raw.(*ram.ListUsersForGroupResponse)

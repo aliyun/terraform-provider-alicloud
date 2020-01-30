@@ -365,7 +365,7 @@ func testAccCheckRamRoleDestroy(s *terraform.State) error {
 			return ramClient.GetRole(request)
 		})
 
-		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
 			return WrapError(err)
 		}
 	}
