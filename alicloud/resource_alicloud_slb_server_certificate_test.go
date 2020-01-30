@@ -183,6 +183,7 @@ func TestAccAlicloudSlbServerCertificate_aliCloud_server_certificate(t *testing.
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.CasClassicSupportedRegions)
 			testAccPreCheck(t)
 		},
 
