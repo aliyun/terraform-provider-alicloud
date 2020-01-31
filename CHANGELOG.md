@@ -1,4 +1,22 @@
 ## 1.70.2 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve(slb): improve set slb tags [GH-2147]
+- improve(ram_login_profile): resolve EntityNotExist.User [GH-2146]
+- improve client endpoint [GH-2144]
+- improve(client): add a method when load endpoint from local file  [GH-2141]
+- improve(error): remove useless error codes [GH-2140]
+- improve(provider): change IsExceptedError to IsExpectedErrors [GH-2139]
+- improve(instance): remove the useless method [GH-2138]
+
+BUG FIXES:
+
+- fix(ram): resolve ram resources not found error [GH-2143]
+- fix(slb): resolve listTags throttling [GH-2142]
+- fix(instance): resolve the untag bug [GH-2137]
+- fix vpn bug [GH-2065]
+
 ## 1.70.1 (January 23, 2020)
 
 IMPROVEMENTS:
