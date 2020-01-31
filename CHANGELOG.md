@@ -1,21 +1,21 @@
-## 1.70.2 (Unreleased)
+## 1.70.2 (January 31, 2020)
 
 IMPROVEMENTS:
 
-- improve(slb): improve set slb tags [GH-2147]
-- improve(ram_login_profile): resolve EntityNotExist.User [GH-2146]
-- improve client endpoint [GH-2144]
-- improve(client): add a method when load endpoint from local file  [GH-2141]
-- improve(error): remove useless error codes [GH-2140]
-- improve(provider): change IsExceptedError to IsExpectedErrors [GH-2139]
-- improve(instance): remove the useless method [GH-2138]
+- improve(slb): improve set slb tags ([#2147](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2147))
+- improve(ram_login_profile): resolve EntityNotExist.User ([#2146](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2146))
+- improve client endpoint ([#2144](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2144))
+- improve(client): add a method when load endpoint from local file  ([#2141](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2141))
+- improve(error): remove useless error codes ([#2140](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2140))
+- improve(provider): change IsExceptedError to IsExpectedErrors ([#2139](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2139))
+- improve(instance): remove the useless method ([#2138](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2138))
 
 BUG FIXES:
 
-- fix(ram): resolve ram resources not found error [GH-2143]
-- fix(slb): resolve listTags throttling [GH-2142]
-- fix(instance): resolve the untag bug [GH-2137]
-- fix vpn bug [GH-2065]
+- fix(ram): resolve ram resources not found error ([#2143](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2143))
+- fix(slb): resolve listTags throttling ([#2142](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2142))
+- fix(instance): resolve the untag bug ([#2137](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2137))
+- fix vpn bug ([#2065](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2065))
 
 ## 1.70.1 (January 23, 2020)
 
