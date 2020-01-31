@@ -251,7 +251,7 @@ func slbsDescriptionAttributes(d *schema.ResourceData, loadBalancers []slb.LoadB
 	var names []string
 	var s []map[string]interface{}
 	for _, loadBalancer := range loadBalancers {
-		tags, _ := slbService.describeTags(loadBalancer.LoadBalancerId)
+		tags, _ := slbService.DescribeTags(loadBalancer.LoadBalancerId, nil, TagResourceInstance)
 		mapping := map[string]interface{}{
 			"id":                       loadBalancer.LoadBalancerId,
 			"region_id":                loadBalancer.RegionId,
@@ -265,7 +265,7 @@ func slbsDescriptionAttributes(d *schema.ResourceData, loadBalancers []slb.LoadB
 			"address":                  loadBalancer.Address,
 			"internet":                 loadBalancer.AddressType == strings.ToLower(string(Internet)),
 			"creation_time":            loadBalancer.CreateTime,
-			"tags":                     slbService.slbTagsToMap(tags),
+			"tags":                     slbService.tagsToMap(tags),
 		}
 
 		ids = append(ids, loadBalancer.LoadBalancerId)

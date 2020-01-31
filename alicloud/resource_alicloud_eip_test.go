@@ -98,32 +98,6 @@ func testSweepEips(region string) error {
 	return nil
 }
 
-func testAccCheckEIPExists(n string, eip *vpc.EipAddress) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return WrapError(fmt.Errorf("Not found: %s", n))
-		}
-
-		if rs.Primary.ID == "" {
-			return WrapError(fmt.Errorf("No EIP ID is set"))
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		vpcService := VpcService{client}
-		d, err := vpcService.DescribeEip(rs.Primary.ID)
-
-		log.Printf("[WARN] eip id %#v", rs.Primary.ID)
-
-		if err != nil {
-			return WrapError(err)
-		}
-
-		*eip = d
-		return nil
-	}
-}
-
 func testAccCheckEIPDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	vpcService := VpcService{client}

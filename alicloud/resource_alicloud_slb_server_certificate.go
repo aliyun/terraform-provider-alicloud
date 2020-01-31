@@ -179,7 +179,7 @@ func resourceAlicloudSlbServerCertificateRead(d *schema.ResourceData, meta inter
 func resourceAlicloudSlbServerCertificateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
-	if err := slbService.setTags(d, TagResourceCertificate); err != nil {
+	if err := slbService.setInstanceTags(d, TagResourceCertificate); err != nil {
 		return WrapError(err)
 	}
 	if d.IsNewResource() {

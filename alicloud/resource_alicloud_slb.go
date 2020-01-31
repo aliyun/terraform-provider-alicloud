@@ -296,9 +296,9 @@ func resourceAliyunSlbRead(d *schema.ResourceData, meta interface{}) error {
 		d.Set("instance_charge_type", PostPaid)
 	}
 	d.Set("delete_protection", object.DeleteProtection)
-	tags, _ := slbService.describeTags(d.Id())
+	tags, _ := slbService.DescribeTags(d.Id(), nil, TagResourceInstance)
 	if len(tags) > 0 {
-		if err := d.Set("tags", slbService.slbTagsToMap(tags)); err != nil {
+		if err := d.Set("tags", slbService.tagsToMap(tags)); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -312,7 +312,7 @@ func resourceAliyunSlbUpdate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true)
 
 	// set instance tags
-	if err := slbService.setSlbInstanceTags(d); err != nil {
+	if err := slbService.setInstanceTags(d, TagResourceInstance); err != nil {
 		return WrapError(err)
 	}
 

@@ -122,7 +122,7 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	d.Partial(true)
 
-	if err := slbService.setTags(d, TagResourceAcl); err != nil {
+	if err := slbService.setInstanceTags(d, TagResourceAcl); err != nil {
 		return WrapError(err)
 	}
 
