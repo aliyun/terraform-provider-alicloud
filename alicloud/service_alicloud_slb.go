@@ -3,7 +3,6 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"regexp"
 	"strconv"
@@ -607,43 +606,6 @@ func (s *SlbService) WaitForSlbServerCertificate(id string, status Status, timeo
 	return nil
 }
 
-func (s *SlbService) readFileContent(file_name string) (string, error) {
-	b, err := ioutil.ReadFile(file_name)
-	if err != nil {
-		return "", err
-	}
-	return string(b), err
-}
-
-// setTags is a helper to set the tags for a resource. It expects the
-// tags field to be named "tags"
-func (s *SlbService) setSlbInstanceTags(d *schema.ResourceData) error {
-
-	if d.HasChange("tags") {
-		oraw, nraw := d.GetChange("tags")
-		o := oraw.(map[string]interface{})
-		n := nraw.(map[string]interface{})
-		create, remove := diffTags(tagsFromMap(o), tagsFromMap(n))
-
-		// Set tags
-		if len(remove) > 0 {
-			if err := s.slbRemoveTags(remove, d.Id()); err != nil {
-				return err
-			}
-		}
-
-		if len(create) > 0 {
-			if err := s.slbAddTags(create, d.Id()); err != nil {
-				return err
-			}
-		}
-
-		d.SetPartial("tags")
-	}
-
-	return nil
-}
-
 func toSlbTagsString(tags []Tag) string {
 	slbTags := make([]SlbTag, 0, len(tags))
 
@@ -658,148 +620,6 @@ func toSlbTagsString(tags []Tag) string {
 	b, _ := json.Marshal(slbTags)
 
 	return string(b)
-}
-
-func (s *SlbService) slbAddTagsPerTime(tags []Tag, id string) error {
-	request := slb.CreateAddTagsRequest()
-	request.RegionId = s.client.RegionId
-	request.LoadBalancerId = id
-	request.Tags = toSlbTagsString(tags)
-
-	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.AddTags(request)
-	})
-
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
-}
-
-func (s *SlbService) slbRemoveTagsPerTime(tags []Tag, id string) error {
-	request := slb.CreateRemoveTagsRequest()
-	request.LoadBalancerId = id
-	request.Tags = toSlbTagsString(tags)
-
-	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.RemoveTags(request)
-	})
-
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
-}
-
-func (s *SlbService) slbAddTags(tags []Tag, id string) error {
-	num := len(tags)
-
-	if num <= 0 {
-		return nil
-	}
-
-	t := (num + tags_max_num_per_time - 1) / tags_max_num_per_time
-	for i := 0; i < t; i++ {
-		start := i * tags_max_num_per_time
-		end := (i + 1) * tags_max_num_per_time
-
-		if end > num {
-			end = num
-		}
-		slice := tags[start:end]
-		if err := s.slbAddTagsPerTime(slice, id); err != nil {
-			return WrapError(err)
-		}
-	}
-
-	return nil
-}
-
-func (s *SlbService) slbRemoveTags(tags []Tag, id string) error {
-	num := len(tags)
-
-	if num <= 0 {
-		return nil
-	}
-
-	t := (num + tags_max_num_per_time - 1) / tags_max_num_per_time
-	for i := 0; i < t; i++ {
-		start := i * tags_max_num_per_time
-		end := (i + 1) * tags_max_num_per_time
-
-		if end > num {
-			end = num
-		}
-		slice := tags[start:end]
-		if err := s.slbRemoveTagsPerTime(slice, id); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (s *SlbService) toTags(tagSet []slb.TagSet) (tags []Tag) {
-	result := make([]Tag, 0, len(tagSet))
-	for _, t := range tagSet {
-		tag := Tag{
-			Key:   t.TagKey,
-			Value: t.TagValue,
-		}
-		result = append(result, tag)
-	}
-
-	return result
-}
-
-func (s *SlbService) describeTagsPerTime(id string, pageNumber, pageSize int) (tags []Tag, err error) {
-	request := slb.CreateDescribeTagsRequest()
-	request.RegionId = s.client.RegionId
-	request.LoadBalancerId = id
-	request.PageNumber = requests.NewInteger(pageNumber)
-	request.PageSize = requests.NewInteger(pageSize)
-
-	raw, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DescribeTags(request)
-	})
-
-	if err != nil {
-		tmp := make([]Tag, 0)
-		return tmp, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	resp, _ := raw.(*slb.DescribeTagsResponse)
-
-	return s.toTags(resp.TagSets.TagSet), nil
-}
-
-func (s *SlbService) describeTags(id string) (tags []Tag, err error) {
-	result := make([]Tag, 0, 50)
-
-	for i := 1; ; i++ {
-		tagList, err := s.describeTagsPerTime(id, i, tags_max_page_size)
-		if err != nil {
-			return result, err
-		}
-
-		if len(tagList) == 0 {
-			break
-		}
-		result = append(result, tagList...)
-	}
-
-	return result, nil
-}
-
-func (s *SlbService) slbTagsToMap(tags []Tag) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		result[t.Key] = t.Value
-	}
-
-	return result
 }
 
 func (s *SlbService) DescribeDomainExtensionAttribute(domainExtensionId string) (*slb.DescribeDomainExtensionAttributeResponse, error) {
@@ -856,7 +676,7 @@ func (s *SlbService) WaitForSlbDomainExtension(id string, status Status, timeout
 	return nil
 }
 
-func (s *SlbService) setTags(d *schema.ResourceData, resourceType TagResourceType) error {
+func (s *SlbService) setInstanceTags(d *schema.ResourceData, resourceType TagResourceType) error {
 	oraw, nraw := d.GetChange("tags")
 	o := oraw.(map[string]interface{})
 	n := nraw.(map[string]interface{})
@@ -993,12 +813,4 @@ func (s *SlbService) DescribeTags(resourceId string, resourceTags map[string]int
 	}
 
 	return
-}
-
-func (s *SlbService) TagsMappings(d *schema.ResourceData, aclId string, meta interface{}) map[string]string {
-	tags, err := s.DescribeTags(aclId, nil, TagResourceAcl)
-	if err != nil {
-		return nil
-	}
-	return slbTagsToMap(tags)
 }

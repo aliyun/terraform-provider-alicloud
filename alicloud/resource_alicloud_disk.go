@@ -183,14 +183,7 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("delete_with_instance", object.DeleteWithInstance)
 	d.Set("enable_auto_snapshot", object.EnableAutoSnapshot)
 	d.Set("resource_group_id", object.ResourceGroupId)
-
-	tags, err := ecsService.DescribeTags(d.Id(), TagResourceDisk)
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
-	}
-	if len(tags) > 0 {
-		d.Set("tags", tagsToMap(tags))
-	}
+	d.Set("tags", tagsToMap(object.Tags.Tag))
 
 	return nil
 }

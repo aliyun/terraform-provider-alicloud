@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"log"
-	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -283,6 +283,16 @@ func tagsToMap(tags []ecs.Tag) map[string]string {
 	return result
 }
 
+func vpcTagsToMap(tags []vpc.Tag) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !vpcTagIgnored(t) {
+			result[t.Key] = t.Value
+		}
+	}
+	return result
+}
+
 func cdnTagsToMap(tags []cdn.TagItem) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
@@ -347,20 +357,6 @@ func tagsMapEqual(expectMap map[string]interface{}, compareMap map[string]string
 	return true
 }
 
-func tagsToString(tags []ecs.Tag) string {
-	result := make([]string, 0, len(tags))
-
-	for _, tag := range tags {
-		ecsTags := ecs.Tag{
-			TagKey:   tag.TagKey,
-			TagValue: tag.TagValue,
-		}
-		result = append(result, ecsTags.TagKey+":"+ecsTags.TagValue)
-	}
-
-	return strings.Join(result, ",")
-}
-
 // tagIgnored compares a tag against a list of strings and checks if it should be ignored or not
 func ecsTagIgnored(t ecs.Tag) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
@@ -369,6 +365,19 @@ func ecsTagIgnored(t ecs.Tag) bool {
 		ok, _ := regexp.MatchString(v, t.TagKey)
 		if ok {
 			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
+}
+
+func vpcTagIgnored(t vpc.Tag) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
+		ok, _ := regexp.MatchString(v, t.Key)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.Key, t.Value)
 			return true
 		}
 	}

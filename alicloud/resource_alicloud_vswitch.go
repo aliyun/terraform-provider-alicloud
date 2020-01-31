@@ -53,11 +53,21 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 
-	var vswitchID string
-	request, err := buildAliyunSwitchArgs(d, meta)
-	if err != nil {
-		return WrapError(err)
+	request := vpc.CreateCreateVSwitchRequest()
+	request.RegionId = client.RegionId
+	request.VpcId = Trim(d.Get("vpc_id").(string))
+	request.ZoneId = d.Get("availability_zone").(string)
+	request.CidrBlock = Trim(d.Get("cidr_block").(string))
+
+	if v, ok := d.GetOk("name"); ok && v != "" {
+		request.VSwitchName = v.(string)
 	}
+
+	if v, ok := d.GetOk("description"); ok && v != "" {
+		request.Description = v.(string)
+	}
+	request.ClientToken = buildClientToken(request.GetActionName())
+
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		args := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
@@ -73,13 +83,12 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.CreateVSwitchResponse)
-		vswitchID = response.VSwitchId
+		d.SetId(response.VSwitchId)
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vswitch", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	d.SetId(vswitchID)
-	if err := vpcService.WaitForVSwitch(vswitchID, Available, DefaultTimeoutMedium); err != nil {
+	if err := vpcService.WaitForVSwitch(d.Id(), Available, DefaultTimeoutMedium); err != nil {
 		return WrapError(err)
 	}
 	return resourceAliyunSwitchUpdate(d, meta)
@@ -173,34 +182,4 @@ func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	return WrapError(vpcService.WaitForVSwitch(d.Id(), Deleted, DefaultTimeout))
-}
-
-func buildAliyunSwitchArgs(d *schema.ResourceData, meta interface{}) (*vpc.CreateVSwitchRequest, error) {
-	client := meta.(*connectivity.AliyunClient)
-	ecsService := EcsService{client}
-	zoneID := Trim(d.Get("availability_zone").(string))
-	zone, err := ecsService.DescribeZone(zoneID)
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	err = ecsService.ResourceAvailable(zone, ResourceTypeVSwitch)
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	request := vpc.CreateCreateVSwitchRequest()
-	request.RegionId = client.RegionId
-	request.VpcId = Trim(d.Get("vpc_id").(string))
-	request.ZoneId = zoneID
-	request.CidrBlock = Trim(d.Get("cidr_block").(string))
-
-	if v, ok := d.GetOk("name"); ok && v != "" {
-		request.VSwitchName = v.(string)
-	}
-
-	if v, ok := d.GetOk("description"); ok && v != "" {
-		request.Description = v.(string)
-	}
-	request.ClientToken = buildClientToken(request.GetActionName())
-
-	return request, nil
 }
