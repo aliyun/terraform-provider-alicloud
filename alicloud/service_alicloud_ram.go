@@ -310,7 +310,7 @@ func (s *RamService) DescribeRamLoginProfile(id string) (*ram.GetLoginProfileRes
 		return ramClient.GetLoginProfile(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist.User"}) {
+		if IsExpectedErrors(err, []string{"EntityNotExist.User", "EntityNotExist.User.LoginProfile"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
