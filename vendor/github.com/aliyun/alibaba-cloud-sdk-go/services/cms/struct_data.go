@@ -22,6 +22,5 @@ type Data struct {
 	SiteMonitorOperatorQuotaQuota int               `json:"SiteMonitorOperatorQuotaQuota" xml:"SiteMonitorOperatorQuotaQuota"`
 	SiteMonitorTaskQuota          int               `json:"SiteMonitorTaskQuota" xml:"SiteMonitorTaskQuota"`
 	SiteMonitorQuotaTaskUsed      int               `json:"SiteMonitorQuotaTaskUsed" xml:"SiteMonitorQuotaTaskUsed"`
-	Count                         int               `json:"count" xml:"count"`
 	AttachAlertResult             AttachAlertResult `json:"AttachAlertResult" xml:"AttachAlertResult"`
 }

@@ -244,6 +244,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_accounts":                  dataSourceAlicloudPolarDBAccounts(),
 			"alicloud_polardb_databases":                 dataSourceAlicloudPolarDBDatabases(),
 			"alicloud_hbase_instances":                   dataSourceAlicloudHBaseInstances(),
+			"alicloud_adb_clusters":                      dataSourceAlicloudAdbClusters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -436,6 +437,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_endpoint_address":            resourceAlicloudPolarDBEndpointAddress(),
 			"alicloud_hbase_instance":                      resourceAlicloudHBaseInstance(),
 			"alicloud_market_order":                        resourceAlicloudMarketOrder(),
+			"alicloud_adb_cluster":                         resourceAlicloudAdbCluster(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -569,6 +571,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EmrEndpoint = strings.TrimSpace(endpoints["emr"].(string))
 		config.CasEndpoint = strings.TrimSpace(endpoints["cas"].(string))
 		config.MarketEndpoint = strings.TrimSpace(endpoints["market"].(string))
+		config.AdbEndpoint = strings.TrimSpace(endpoints["adb"].(string))
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
@@ -719,6 +722,8 @@ func init() {
 		"market_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Market Place endpoints.",
 
 		"hbase_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom HBase endpoints.",
+
+		"adb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom AnalyticDB endpoints.",
 	}
 }
 
@@ -1003,6 +1008,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["market_endpoint"],
 				},
+				"adb": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["adb_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -1050,6 +1061,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["ddosbgp"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["emr"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["market"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["adb"].(string)))
 	return hashcode.String(buf.String())
 }
 

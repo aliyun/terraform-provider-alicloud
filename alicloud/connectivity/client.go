@@ -5,6 +5,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
@@ -121,6 +122,7 @@ type AliyunClient struct {
 	bastionhostconn              *yundun_bastionhost.Client
 	marketconn                   *market.Client
 	hbaseconn                    *hbase.Client
+	adbconn                      *adb.Client
 }
 
 type ApiVersion string
@@ -1625,4 +1627,33 @@ func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{},
 	}
 
 	return do(client.hbaseconn)
+}
+
+func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, error)) (interface{}, error) {
+	goSdkMutex.Lock()
+	defer goSdkMutex.Unlock()
+
+	// Initialize the adb client if necessary
+	if client.adbconn == nil {
+		endpoint := client.config.AdbEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, ADBCode)
+			if endpoint == "" {
+				endpoint = fmt.Sprintf("%s.adb.aliyuncs.com", client.config.RegionId)
+			}
+		}
+
+		adbconn, err := adb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the adb client: %#v", err)
+
+		}
+
+		adbconn.AppendUserAgent(Terraform, terraformVersion)
+		adbconn.AppendUserAgent(Provider, providerVersion)
+		adbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.adbconn = adbconn
+	}
+
+	return do(client.adbconn)
 }

@@ -76,7 +76,6 @@ func (client *Client) DescribeDomainsWithCallback(request *DescribeDomainsReques
 // DescribeDomainsRequest is the request struct for api DescribeDomains
 type DescribeDomainsRequest struct {
 	*requests.RpcRequest
-	StartDate       string           `position:"Query" name:"StartDate"`
 	PageNumber      requests.Integer `position:"Query" name:"PageNumber"`
 	ResourceGroupId string           `position:"Query" name:"ResourceGroupId"`
 	PageSize        requests.Integer `position:"Query" name:"PageSize"`
@@ -86,7 +85,6 @@ type DescribeDomainsRequest struct {
 	Starmark        requests.Boolean `position:"Query" name:"Starmark"`
 	GroupId         string           `position:"Query" name:"GroupId"`
 	OrderBy         string           `position:"Query" name:"OrderBy"`
-	EndDate         string           `position:"Query" name:"EndDate"`
 	UserClientIp    string           `position:"Query" name:"UserClientIp"`
 	SearchMode      string           `position:"Query" name:"SearchMode"`
 }

@@ -54,6 +54,7 @@ const (
 	YUNDUNDBAUDITCode = ServiceCode("YUNDUNDBAUDIT")
 	MARKETCode        = ServiceCode("MARKET")
 	HBASECode         = ServiceCode("HBASE")
+	ADBCode           = ServiceCode("ADB")
 )
 
 type Endpoints struct {
