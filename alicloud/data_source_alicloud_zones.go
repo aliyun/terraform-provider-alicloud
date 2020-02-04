@@ -16,6 +16,7 @@ import (
 
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
@@ -58,6 +59,7 @@ func dataSourceAlicloudZones() *schema.Resource {
 					string(ResourceTypeMongoDB),
 					string(ResourceTypeGpdb),
 					string(ResourceTypeHBase),
+					string(ResourceTypeAdb),
 				}, false),
 			},
 			"available_slb_address_type": {
@@ -194,6 +196,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 	mongoDBZones := make(map[string]string)
 	gpdbZones := make(map[string]string)
 	hbaseZones := make(map[string]string)
+	adbZones := make(map[string]string)
 	instanceChargeType := d.Get("instance_charge_type").(string)
 
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRds)) {
@@ -325,6 +328,28 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 				}
 				hbaseZones[zonid.Id] = r.RegionId
 			}
+		}
+	}
+	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeAdb)) {
+		request := adb.CreateDescribeRegionsRequest()
+		request.RegionId = client.RegionId
+		raw, err := client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+			return adbClient.DescribeRegions(request)
+		})
+		if err != nil {
+			return WrapError(fmt.Errorf("[ERROR] DescribeRegions got an error: %#v", err))
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		regions, _ := raw.(*adb.DescribeRegionsResponse)
+		if len(regions.Regions.Region) <= 0 {
+			return WrapError(fmt.Errorf("[ERROR] There is no available region for adb."))
+		}
+		for _, r := range regions.Regions.Region {
+			if multi && strings.Contains(r.Zones.Zone[0].ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+				zoneIds = append(zoneIds, r.Zones.Zone[0].ZoneId)
+				continue
+			}
+			adbZones[r.Zones.Zone[0].ZoneId] = r.RegionId
 		}
 	}
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeGpdb)) {
@@ -499,6 +524,11 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			}
 			if len(slaveZones) > 0 {
 				if _, ok := slaveZones[zone.ZoneId]; !ok {
+					continue
+				}
+			}
+			if len(adbZones) > 0 {
+				if _, ok := adbZones[zone.ZoneId]; !ok {
 					continue
 				}
 			}

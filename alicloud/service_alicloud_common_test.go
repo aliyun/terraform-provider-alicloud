@@ -808,6 +808,21 @@ resource "alicloud_vswitch" "default" {
   name              = "${var.name}"
 }
 `
+const AdbCommonTestCase = `
+data "alicloud_zones" "default" {
+  available_resource_creation = "${var.creation}"
+}
+resource "alicloud_vpc" "default" {
+  name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%length(data.alicloud_zones.default.zones)], "id")}"
+  name              = "${var.name}"
+}
+`
 const KVStoreCommonTestCase = `
 data "alicloud_zones" "default" {
   available_resource_creation = "${var.creation}"

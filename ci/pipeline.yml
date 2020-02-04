@@ -94,6 +94,7 @@ groups:
       - Market
       - PolarDB
       - HBase
+      - Adb
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -158,6 +159,7 @@ groups:
       - Gpdb
       - PolarDB
       - HBase
+      - Adb
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -1207,6 +1209,19 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "HBase"
+
+  - name: Adb
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 17
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Adb"
 
   - name: SweeperAfter
     plan:

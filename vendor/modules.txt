@@ -15,6 +15,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses
 github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail
+github.com/aliyun/alibaba-cloud-sdk-go/services/adb
 github.com/aliyun/alibaba-cloud-sdk-go/services/alidns
 github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka
 github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi
