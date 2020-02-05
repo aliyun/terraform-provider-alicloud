@@ -201,11 +201,14 @@ func TestAccAlicloudKVStoreAccountUpdateV5(t *testing.T) {
 
 func resourceKVstoreAccountConfigDependenceV4(name string) string {
 	return fmt.Sprintf(`
+	data "alicloud_zones" "default" {
+		available_resource_creation = "KVStore"
+	}
 	variable "name" {
 		default = "%v"
 	}
 	resource "alicloud_kvstore_instance" "instance" {
-		availability_zone = "ap-southeast-1b"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		instance_class = "redis.master.small.default"
 		instance_name  = "${var.name}"
 		instance_charge_type = "PostPaid"
@@ -216,11 +219,14 @@ func resourceKVstoreAccountConfigDependenceV4(name string) string {
 
 func resourceKVstoreAccountConfigDependenceV5(name string) string {
 	return fmt.Sprintf(`
+	data "alicloud_zones" "default" {
+		available_resource_creation = "KVStore"
+	}
 	variable "name" {
 		default = "%v"
 	}
 	resource "alicloud_kvstore_instance" "instance" {
-		availability_zone = "ap-southeast-1b"
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
 		instance_class = "redis.master.small.default"
 		instance_name  = "${var.name}"
 		instance_charge_type = "PostPaid"
