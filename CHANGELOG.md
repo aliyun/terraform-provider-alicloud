@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- improve(db_instances): add more parameters [GH-2158]
 - improve(kvstore_account): correct test case [GH-2154]
 
 BUG FIXES:

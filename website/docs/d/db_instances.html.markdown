@@ -73,3 +73,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `readonly_instance_ids` - A list of IDs of read-only instances attached to the primary instance.
   * `vpc_id` - ID of the VPC the instance belongs to.
   * `vswitch_id` - ID of the VSwitch the instance belongs to.
+  * `port` - (Available in 1.70.3+) RDS database connection port.
+  * `connection_string` - (Available in 1.70.3+) RDS database connection string.
+  * `instance_storage` - (Available in 1.70.3+) User-defined DB instance storage space.
+  * `db_instance_storage_type` - (Available in 1.70.3+) The storage type of the instance.
