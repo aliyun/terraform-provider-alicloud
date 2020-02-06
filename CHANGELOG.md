@@ -1,4 +1,13 @@
-## 1.71.0 (Unreleased)
+## 1.70.3 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve(kvstore_account): correct test case [GH-2154]
+
+BUG FIXES:
+
+- Update go SDK to fix redis bug [GH-2149]
+
 ## 1.70.2 (January 31, 2020)
 
 IMPROVEMENTS:
