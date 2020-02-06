@@ -1,13 +1,13 @@
-## 1.70.3 (Unreleased)
+## 1.70.3 (February 06, 2020)
 
 IMPROVEMENTS:
 
-- improve(db_instances): add more parameters [GH-2158]
-- improve(kvstore_account): correct test case [GH-2154]
+- improve(db_instances): add more parameters ([#2158](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2158))
+- improve(kvstore_account): correct test case ([#2154](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2154))
 
 BUG FIXES:
 
-- Update go SDK to fix redis bug [GH-2149]
+- Update go SDK to fix redis bug ([#2149](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2149))
 
 ## 1.70.2 (January 31, 2020)
 
