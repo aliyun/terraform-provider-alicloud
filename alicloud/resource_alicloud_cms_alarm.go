@@ -98,6 +98,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 			"effective_interval": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"silence_time": {
 				Type:         schema.TypeInt,
