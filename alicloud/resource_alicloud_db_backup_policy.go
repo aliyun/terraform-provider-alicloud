@@ -206,6 +206,10 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 	d.Set("local_log_retention_space", object.LocalLogRetentionSpace)
 	instance, err := rdsService.DescribeDBInstance(d.Id())
 	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
 		return WrapError(err)
 	}
 	// At present, the sql server database does not support setting high_space_usage_protection and it`s has default value

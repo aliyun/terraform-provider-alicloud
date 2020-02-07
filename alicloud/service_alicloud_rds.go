@@ -988,8 +988,22 @@ func (s *RdsService) WaitForAccount(id string, status Status, timeout int) error
 				return WrapError(err)
 			}
 		}
-		if object != nil && object.AccountStatus == string(status) {
-			break
+		if object != nil {
+			if object.AccountStatus == string(status) {
+				break
+			} else if object.AccountStatus == "Lock" {
+				request := rds.CreateDeleteAccountRequest()
+				request.RegionId = s.client.RegionId
+				request.DBInstanceId = object.DBInstanceId
+				request.AccountName = object.AccountName
+
+				_, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+					return rdsClient.DeleteAccount(request)
+				})
+				if err != nil && !IsExpectedErrors(err, []string{"InvalidAccountName.NotFound"}) {
+					return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+			}
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AccountStatus, status, ProviderERROR)
@@ -1005,7 +1019,7 @@ func (s *RdsService) WaitForAccountPrivilege(id, dbName string, status Status, t
 	}
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		object, err := s.DescribeDBAccountPrivilege(id)
+		object, err := s.DescribeDBDatabase(parts[0] + ":" + dbName)
 		if err != nil {
 			if NotFoundError(err) {
 				if status == Deleted {
@@ -1015,11 +1029,11 @@ func (s *RdsService) WaitForAccountPrivilege(id, dbName string, status Status, t
 				return WrapError(err)
 			}
 		}
-
 		ready := false
 		if object != nil {
-			for _, dp := range object.DatabasePrivileges.DatabasePrivilege {
-				if dp.DBName == dbName && dp.AccountPrivilege == parts[2] {
+			for _, account := range object.Accounts.AccountPrivilegeInfo {
+				// At present, postgresql response has a bug, DBOwner will be changed to ALL
+				if account.Account == parts[1] && (account.AccountPrivilege == parts[2] || (parts[2] == "DBOwner" && account.AccountPrivilege == "ALL")) {
 					ready = true
 					break
 				}
@@ -1032,25 +1046,31 @@ func (s *RdsService) WaitForAccountPrivilege(id, dbName string, status Status, t
 			break
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, "", dbName, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, "", id, ProviderERROR)
 		}
-
 	}
 	return nil
 }
 
 func (s *RdsService) WaitForAccountPrivilegeRevoked(id, dbName string, timeout int) error {
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		object, err := s.DescribeDBAccountPrivilege(id)
+		object, err := s.DescribeDBDatabase(parts[0] + ":" + dbName)
 		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
 			return WrapError(err)
 		}
 
 		exist := false
 		if object != nil {
-			for _, dp := range object.DatabasePrivileges.DatabasePrivilege {
-				if dp.DBName == dbName {
+			for _, account := range object.Accounts.AccountPrivilegeInfo {
+				if account.Account == parts[1] && (account.AccountPrivilege == parts[2] || (parts[2] == "DBOwner" && account.AccountPrivilege == "ALL")) {
 					exist = true
 					break
 				}

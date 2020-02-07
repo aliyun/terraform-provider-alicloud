@@ -1,4 +1,9 @@
 ## 1.71.0 (Unreleased)
+
+BUG FIXES:
+
+- fix(db_account_privilege): resolve privilege timeout bug on PosrgreSql [GH-2159]
+
 ## 1.70.3 (February 06, 2020)
 
 IMPROVEMENTS:
