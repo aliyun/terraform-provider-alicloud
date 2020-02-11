@@ -835,17 +835,20 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	sgs, ok := d.GetOk("security_groups")
 
 	if ok {
+		var SecurityGroupIds []string
 		sgList := expandStringList(sgs.(*schema.Set).List())
-		sg0 := sgList[0]
-		// check security group instance exist
-		object, err := ecsService.DescribeSecurityGroup(sg0)
-		if err != nil {
-			return nil, WrapError(err)
+		for _, sg := range sgList {
+			// check security group instance exist
+			object, err := ecsService.DescribeSecurityGroup(sg)
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			SecurityGroupIds = append(SecurityGroupIds, object.SecurityGroupId)
+			if object.VpcId != "" && d.Get("vswitch_id").(string) == "" {
+				return nil, WrapError(Error("The specified security_group_id %s is in a VPC %s, and `vswitch_id` is required when creating a new instance resource in a VPC.", sg, object.VpcId))
+			}
 		}
-		request.SecurityGroupId = object.SecurityGroupId
-		if object.VpcId != "" && d.Get("vswitch_id").(string) == "" {
-			return nil, WrapError(Error("The specified security_group_id %s is in a VPC %s, and `vswitch_id` is required when creating a new instance resource in a VPC.", sg0, object.VpcId))
-		}
+		request.SecurityGroupIds = &SecurityGroupIds
 	}
 
 	if v := d.Get("instance_name").(string); v != "" {
