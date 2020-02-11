@@ -519,13 +519,6 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		return nil, err
 	}
 
-	if config.RamRoleArn != "" {
-		config.AccessKey, config.SecretKey, config.SecurityToken, err = getAssumeRoleAK(config.AccessKey, config.SecretKey, config.SecurityToken, region, config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	endpointsSet := d.Get("endpoints").(*schema.Set)
 
 	for _, endpointsSetI := range endpointsSet.List() {
@@ -569,6 +562,13 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EmrEndpoint = strings.TrimSpace(endpoints["emr"].(string))
 		config.CasEndpoint = strings.TrimSpace(endpoints["cas"].(string))
 		config.MarketEndpoint = strings.TrimSpace(endpoints["market"].(string))
+	}
+
+	if config.RamRoleArn != "" {
+		config.AccessKey, config.SecretKey, config.SecurityToken, err = getAssumeRoleAK(config.AccessKey, config.SecretKey, config.SecurityToken, region, config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration, config.StsEndpoint)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
@@ -1123,13 +1123,14 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 	return providerConfig[ProfileKey], nil
 }
 
-func getAssumeRoleAK(accessKey, secretKey, stsToken, region, roleArn, sessionName, policy string, sessionExpiration int) (string, string, string, error) {
+func getAssumeRoleAK(accessKey, secretKey, stsToken, region, roleArn, sessionName, policy string, sessionExpiration int, stsEndpoint string) (string, string, string, error) {
 	request := sts.CreateAssumeRoleRequest()
 	request.RoleArn = roleArn
 	request.RoleSessionName = sessionName
 	request.DurationSeconds = requests.NewInteger(sessionExpiration)
 	request.Policy = policy
 	request.Scheme = "https"
+	request.Domain = stsEndpoint
 
 	var client *sts.Client
 	var err error
