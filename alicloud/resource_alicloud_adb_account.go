@@ -42,6 +42,21 @@ func resourceAlicloudAdbAccount() *schema.Resource {
 				Sensitive: true,
 			},
 
+			"kms_encrypted_password": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: kmsDiffSuppressFunc,
+			},
+
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
+			},
+
 			"account_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -67,7 +82,22 @@ func resourceAlicloudAdbAccountCreate(d *schema.ResourceData, meta interface{}) 
 	request.AccountName = d.Get("account_name").(string)
 
 	password := d.Get("account_password").(string)
-	request.AccountPassword = password
+	kmsPassword := d.Get("kms_encrypted_password").(string)
+
+	if password == "" && kmsPassword == "" {
+		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+	}
+
+	if password != "" {
+		request.AccountPassword = password
+	} else {
+		kmsService := KmsService{client}
+		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		request.AccountPassword = decryptResp.Plaintext
+	}
 
 	if password == "" {
 		return WrapError(Error("'password' should be set."))
@@ -174,7 +204,6 @@ func resourceAlicloudAdbAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 
 		if password != "" {
-			d.SetPartial("account_password")
 			request.AccountPassword = password
 		}
 

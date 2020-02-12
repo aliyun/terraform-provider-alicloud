@@ -11,7 +11,7 @@ description: |-
 
 Provides a ADB cluster backup policy resource and used to configure cluster backup policy.
 
--> **NOTE:** Available in v1.66.0+. Each DB cluster has a backup policy and it will be set default values when destroying the resource.
+-> **NOTE:** Available in v1.71.0+. Each DB cluster has a backup policy and it will be set default values when destroying the resource.
 
 ## Example Usage
 
