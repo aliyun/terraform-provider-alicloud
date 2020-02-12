@@ -142,6 +142,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_nat_gateway" "default" {
+	depends_on = [alicloud_vpc.default]
 	vpc_id = "${alicloud_vswitch.default.vpc_id}"
 	specification = "Small"
 	name = "${var.name}"
@@ -152,13 +153,22 @@ resource "alicloud_eip" "default" {
 }
 
 resource "alicloud_eip_association" "default" {
+	depends_on = [alicloud_eip.default, alicloud_nat_gateway.default]
 	allocation_id = "${alicloud_eip.default.id}"
 	instance_id = "${alicloud_nat_gateway.default.id}"
 }
 
 resource "alicloud_snat_entry" "default"{
+	depends_on = [alicloud_eip_association.default, alicloud_nat_gateway.default]
 	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
 	source_vswitch_id = "${alicloud_vswitch.default.id}"
+	snat_ip = "${alicloud_eip.default.ip_address}"
+}
+
+resource "alicloud_snat_entry" "ecs"{
+	depends_on = [alicloud_eip_association.default, alicloud_nat_gateway.default]
+	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
+	source_cidr = "172.16.10.0/32"
 	snat_ip = "${alicloud_eip.default.ip_address}"
 }
 `, rand)
@@ -187,6 +197,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_nat_gateway" "default" {
+	depends_on = [alicloud_vpc.default]
 	vpc_id = "${alicloud_vswitch.default.vpc_id}"
 	specification = "Small"
 	name = "${var.name}"
@@ -198,15 +209,25 @@ resource "alicloud_eip" "default" {
 }
 
 resource "alicloud_eip_association" "default" {
+	depends_on = [alicloud_eip.default, alicloud_nat_gateway.default]
 	allocation_id = "${alicloud_eip.default.id}"
 	instance_id = "${alicloud_nat_gateway.default.id}"
 }
 
 resource "alicloud_snat_entry" "default"{
+	depends_on = [alicloud_eip_association.default, alicloud_nat_gateway.default]
 	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
 	source_vswitch_id = "${alicloud_vswitch.default.id}"
 	snat_ip = "${alicloud_eip.default.ip_address}"
 }
+
+resource "alicloud_snat_entry" "ecs"{
+	depends_on = [alicloud_eip_association.default, alicloud_nat_gateway.default]
+	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
+	source_cidr = "172.16.10.0/32"
+	snat_ip = "${alicloud_eip.default.ip_address}"
+}
+
 `, rand)
 }
 
@@ -235,6 +256,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_nat_gateway" "default" {
+	depends_on = [alicloud_vpc.default]
 	vpc_id = "${alicloud_vpc.default.id}"
 	specification = "Small"
 	name = "${var.name}"
@@ -245,14 +267,23 @@ resource "alicloud_eip" "default" {
 }
 
 resource "alicloud_eip_association" "default" {
+	depends_on = [alicloud_eip.default, alicloud_nat_gateway.default]
 	allocation_id = "${alicloud_eip.default.id}"
 	instance_id = "${alicloud_nat_gateway.default.id}"
 }
 
 resource "alicloud_snat_entry" "default"{
+	depends_on = [alicloud_eip_association.default, alicloud_nat_gateway.default]
 	count = "10"
 	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
 	source_vswitch_id = "${element(alicloud_vswitch.default.*.id, count.index)}"
+	snat_ip = "${alicloud_eip.default.ip_address}"
+}
+
+resource "alicloud_snat_entry" "ecs"{
+	depends_on = [alicloud_eip_association.default, alicloud_nat_gateway.default]
+	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
+	source_cidr = "172.16.10.0/32"
 	snat_ip = "${alicloud_eip.default.ip_address}"
 }
 `, rand)
