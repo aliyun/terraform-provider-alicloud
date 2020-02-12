@@ -47,6 +47,13 @@ resource "alicloud_snat_entry" "default" {
   snat_ip           = alicloud_eip.default[0].ip_address
 }
 
+
+resource "alicloud_snat_entry" "ecs" {
+  snat_ip       = alicloud_eip.default[0].ip_address
+  snat_table_id = alicloud_nat_gateway.default.snat_table_ids
+  source_cidr   = format("%s/32", alicloud_instance.default.private_ip)
+}
+
 resource "alicloud_forward_entry" "default" {
   forward_table_id = alicloud_nat_gateway.default.forward_table_ids
   external_ip      = alicloud_eip.default[1].ip_address

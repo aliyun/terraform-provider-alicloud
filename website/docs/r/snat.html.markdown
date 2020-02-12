@@ -78,7 +78,8 @@ resource "alicloud_snat_entry" "default" {
 The following arguments are supported:
 
 * `snat_table_id` - (Required, ForceNew) The value can get from `alicloud_nat_gateway` Attributes "snat_table_ids".
-* `source_vswitch_id` - (Required, ForceNew) The vswitch ID.
+* `source_vswitch_id` - (Optional, ForceNew) The vswitch ID.
+* `source_cidr` - (Optional, ForceNew, Available in 1.72.0+) The private network segment of Ecs. This parameter and the `source_vswitch_id` parameter are mutually exclusive and cannot appear at the same time.
 * `snat_ip` - (Required) The SNAT ip address, the ip must along bandwidth package public ip which `alicloud_nat_gateway` argument `bandwidth_packages`.
 
 ## Attributes Reference

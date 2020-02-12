@@ -30,13 +30,20 @@ func resourceAliyunSnatEntry() *schema.Resource {
 				ForceNew: true,
 			},
 			"source_vswitch_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: strings.Fields("source_cidr"),
 			},
 			"snat_ip": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"source_cidr": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: strings.Fields("source_vswitch_id"),
 			},
 			"snat_entry_id": {
 				Type:     schema.TypeString,
@@ -55,6 +62,9 @@ func resourceAliyunSnatEntryCreate(d *schema.ResourceData, meta interface{}) err
 	request.SnatTableId = d.Get("snat_table_id").(string)
 	request.SourceVSwitchId = d.Get("source_vswitch_id").(string)
 	request.SnatIp = d.Get("snat_ip").(string)
+	if v, ok := d.GetOk("source_cidr"); ok {
+		request.SourceCIDR = v.(string)
+	}
 
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		ar := request
