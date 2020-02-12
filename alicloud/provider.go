@@ -438,6 +438,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbase_instance":                      resourceAlicloudHBaseInstance(),
 			"alicloud_market_order":                        resourceAlicloudMarketOrder(),
 			"alicloud_adb_cluster":                         resourceAlicloudAdbCluster(),
+			"alicloud_adb_backup_policy":                   resourceAlicloudAdbBackupPolicy(),
+			"alicloud_adb_account":                         resourceAlicloudAdbAccount(),
 		},
 
 		ConfigureFunc: providerConfigure,
