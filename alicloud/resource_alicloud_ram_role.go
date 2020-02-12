@@ -233,7 +233,7 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -271,40 +271,4 @@ func buildAlicloudRamRoleCreateArgs(d *schema.ResourceData, meta interface{}) (*
 	}
 
 	return request, nil
-}
-
-func buildAlicloudRamRoleUpdateArgs(d *schema.ResourceData, meta interface{}) (*ram.UpdateRoleRequest, bool, error) {
-	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
-	request := ram.CreateUpdateRoleRequest()
-	request.RegionId = client.RegionId
-	request.RoleName = d.Id()
-
-	attributeUpdate := false
-
-	if d.HasChange("document") {
-		attributeUpdate = true
-		request.NewAssumeRolePolicyDocument = d.Get("document").(string)
-
-	} else if d.HasChange("ram_users") || d.HasChange("services") || d.HasChange("version") {
-		attributeUpdate = true
-
-		if d.HasChange("ram_users") {
-			d.SetPartial("ram_users")
-		}
-		if d.HasChange("services") {
-			d.SetPartial("services")
-		}
-		if d.HasChange("version") {
-			d.SetPartial("version")
-		}
-
-		document, err := ramService.AssembleRolePolicyDocument(d.Get("ram_users").(*schema.Set).List(), d.Get("services").(*schema.Set).List(), d.Get("version").(string))
-		if err != nil {
-			return &ram.UpdateRoleRequest{}, attributeUpdate, WrapError(err)
-		}
-		request.NewAssumeRolePolicyDocument = document
-	}
-
-	return request, attributeUpdate, nil
 }

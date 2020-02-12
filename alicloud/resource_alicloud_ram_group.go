@@ -188,7 +188,7 @@ func resourceAlicloudRamGroupDelete(d *schema.ResourceData, meta interface{}) er
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Group"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteGroupRequest.GetActionName(), AlibabaCloudSdkGoERROR)
