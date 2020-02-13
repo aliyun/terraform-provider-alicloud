@@ -464,7 +464,7 @@ func (s *AdbService) ModifyDBSecurityIps(clusterId, ips string) error {
 	return nil
 }
 
-func (s *AdbService) DescribeBackupPolicy(id string) (policy *adb.DescribeBackupPolicyResponse, err error) {
+func (s *AdbService) DescribeAdbBackupPolicy(id string) (policy *adb.DescribeBackupPolicyResponse, err error) {
 
 	request := adb.CreateDescribeBackupPolicyRequest()
 	request.DBClusterId = id
@@ -484,7 +484,7 @@ func (s *AdbService) DescribeBackupPolicy(id string) (policy *adb.DescribeBackup
 	return raw.(*adb.DescribeBackupPolicyResponse), nil
 }
 
-func (s *AdbService) ModifyBackupPolicy(clusterId, backupTime, backupPeriod string) error {
+func (s *AdbService) ModifyAdbBackupPolicy(clusterId, backupTime, backupPeriod string) error {
 
 	request := adb.CreateModifyBackupPolicyRequest()
 	request.RegionId = s.client.RegionId

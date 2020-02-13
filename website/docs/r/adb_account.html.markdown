@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_adb\_account
 
-Provides a ADB account resource and used to manage databases.
+Provides a [ADB](https://www.alibabacloud.com/help/product/92664.htm) account resource and used to manage databases.
 
 -> **NOTE:** Available in v1.71.0+. 
 
