@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 	"strings"
 	"time"
 
@@ -94,7 +95,7 @@ func resourceAlicloudAdbBackupPolicyUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			if err := adbService.ModifyDBBackupPolicy(d.Id(), preferredBackupTime, preferredBackupPeriod); err != nil {
+			if err := adbService.ModifyBackupPolicy(d.Id(), preferredBackupTime, preferredBackupPeriod); err != nil {
 				if IsExpectedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(err)
 				}
@@ -110,6 +111,21 @@ func resourceAlicloudAdbBackupPolicyUpdate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudAdbBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
-	//  Terraform can not destroy it..
+	// In case of a delete we are resetting to default values which is Tuesday,Friday each 1am-2am
+	client := meta.(*connectivity.AliyunClient)
+	request := adb.CreateModifyBackupPolicyRequest()
+	request.RegionId = client.RegionId
+	request.DBClusterId = d.Id()
+
+	request.PreferredBackupTime = "01:00Z-02:00Z"
+	request.PreferredBackupPeriod = "Tuesday,Friday"
+
+	raw, err := client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+		return adbClient.ModifyBackupPolicy(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }

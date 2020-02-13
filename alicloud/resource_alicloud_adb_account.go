@@ -38,7 +38,7 @@ func resourceAlicloudAdbAccount() *schema.Resource {
 
 			"account_password": {
 				Type:      schema.TypeString,
-				Required:  true,
+				Optional:  true,
 				Sensitive: true,
 			},
 
@@ -99,10 +99,6 @@ func resourceAlicloudAdbAccountCreate(d *schema.ResourceData, meta interface{}) 
 		request.AccountPassword = decryptResp.Plaintext
 	}
 
-	if password == "" {
-		return WrapError(Error("'password' should be set."))
-	}
-
 	// Description will not be set when account type is normal and it is a API bug
 	if v, ok := d.GetOk("account_description"); ok && v.(string) != "" {
 		request.AccountDescription = v.(string)
@@ -124,7 +120,7 @@ func resourceAlicloudAdbAccountCreate(d *schema.ResourceData, meta interface{}) 
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_db_account", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_adb_account", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", request.DBClusterId, COLON_SEPARATED, request.AccountName))
@@ -189,7 +185,7 @@ func resourceAlicloudAdbAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("account_description")
 	}
 
-	if d.HasChange("account_password") {
+	if d.HasChange("account_password") || d.HasChange("kms_encrypted_password") {
 		if err := adbService.WaitForAdbAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
@@ -199,12 +195,20 @@ func resourceAlicloudAdbAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		request.AccountName = accountName
 
 		password := d.Get("account_password").(string)
-		if password == "" {
-			return WrapError(Error("'password' should be set."))
+		kmsPassword := d.Get("kms_encrypted_password").(string)
+		if password == "" && kmsPassword == "" {
+			return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
 		}
 
 		if password != "" {
 			request.AccountPassword = password
+		} else {
+			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
+			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			request.AccountPassword = decryptResp.Plaintext
 		}
 
 		raw, err := client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {

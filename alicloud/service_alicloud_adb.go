@@ -484,7 +484,7 @@ func (s *AdbService) DescribeBackupPolicy(id string) (policy *adb.DescribeBackup
 	return raw.(*adb.DescribeBackupPolicyResponse), nil
 }
 
-func (s *AdbService) ModifyDBBackupPolicy(clusterId, backupTime, backupPeriod string) error {
+func (s *AdbService) ModifyBackupPolicy(clusterId, backupTime, backupPeriod string) error {
 
 	request := adb.CreateModifyBackupPolicyRequest()
 	request.RegionId = s.client.RegionId
