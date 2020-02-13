@@ -63,7 +63,7 @@ func resourceAlicloudAdbBackupPolicyCreate(d *schema.ResourceData, meta interfac
 func resourceAlicloudAdbBackupPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
-	object, err := adbService.DescribeBackupPolicy(d.Id())
+	object, err := adbService.DescribeAdbBackupPolicy(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -95,7 +95,7 @@ func resourceAlicloudAdbBackupPolicyUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			if err := adbService.ModifyBackupPolicy(d.Id(), preferredBackupTime, preferredBackupPeriod); err != nil {
+			if err := adbService.ModifyAdbBackupPolicy(d.Id(), preferredBackupTime, preferredBackupPeriod); err != nil {
 				if IsExpectedErrors(err, OperationDeniedDBStatus) {
 					return resource.RetryableError(err)
 				}

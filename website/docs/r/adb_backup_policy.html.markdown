@@ -9,9 +9,10 @@ description: |-
 
 # alicloud\_adb\_backup\_policy
 
-Provides a ADB cluster backup policy resource and used to configure cluster backup policy.
+Provides a [ADB](https://www.alibabacloud.com/help/product/92664.htm) cluster backup policy resource and used to configure cluster backup policy.
 
--> **NOTE:** Available in v1.71.0+. Each DB cluster has a backup policy and it will be set default values when destroying the resource.
+-> **NOTE:** Available in v1.71.0+. 
+-> Each DB cluster has a backup policy and it will be set default values when destroying the resource.
 
 ## Example Usage
 

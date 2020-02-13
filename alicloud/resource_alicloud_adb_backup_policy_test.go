@@ -16,7 +16,7 @@ func TestAccAlicloudAdbBackupPolicy(t *testing.T) {
 	serverFunc := func() interface{} {
 		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeBackupPolicy")
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeAdbBackupPolicy")
 	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
