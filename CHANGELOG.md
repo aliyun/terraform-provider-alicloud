@@ -1,3 +1,4 @@
+## 1.72.0 (Unreleased)
 ## 1.71.0 (February 14, 2020)
 
 - **New Resource:** `alicloud_adb_account` ([#2169](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2169))
