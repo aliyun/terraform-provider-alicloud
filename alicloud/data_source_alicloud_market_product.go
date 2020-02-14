@@ -64,6 +64,22 @@ func dataSourceAlicloudProduct() *schema.Resource {
 											},
 										},
 									},
+									"images": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"image_id": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"image_name": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+											},
+										},
+									},
 								},
 							},
 						},
@@ -98,6 +114,7 @@ func productDescriptionAttributes(d *schema.ResourceData, product *market.Descri
 			"sku_code": sku.Code,
 			"sku_name": sku.Name,
 		}
+		var imageIdMap []map[string]interface{}
 		var pvMapSli []map[string]interface{}
 		for _, module := range sku.Modules.Module {
 			if module.Code == "package_version" {
@@ -112,9 +129,22 @@ func productDescriptionAttributes(d *schema.ResourceData, product *market.Descri
 						}
 					}
 				}
+			} else if module.Code == "img_id" {
+				for _, property := range module.Properties.Property {
+					if property.Key == "img_id" {
+						for _, value := range property.PropertyValues.PropertyValue {
+							imageIdMapping := map[string]interface{}{
+								"image_id":   value.Value,
+								"image_name": value.DisplayName,
+							}
+							imageIdMap = append(imageIdMap, imageIdMapping)
+						}
+					}
+				}
 			}
 		}
 		skuMapping["package_versions"] = pvMapSli
+		skuMapping["images"] = imageIdMap
 		skus = append(skus, skuMapping)
 	}
 	mapping := map[string]interface{}{
