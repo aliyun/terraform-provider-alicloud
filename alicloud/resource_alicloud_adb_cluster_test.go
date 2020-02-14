@@ -13,17 +13,18 @@ import (
 )
 
 func TestAccAlicloudAdbCluster(t *testing.T) {
-	var v *adb.DescribeDBClusterAttributeResponse
+	var v *adb.DBCluster
 	var ips []map[string]interface{}
 	rand := acctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%sadbrecordbasic%v.abc", defaultRegionToTest, rand)
 	resourceId := "alicloud_adb_cluster.default"
 	var basicMap = map[string]string{
-		"description":   CHECKSET,
-		"db_node_class": CHECKSET,
-		"vswitch_id":    CHECKSET,
-		"db_type":       CHECKSET,
-		"db_version":    CHECKSET,
+		"description":         CHECKSET,
+		"vswitch_id":          CHECKSET,
+		"db_cluster_category": CHECKSET,
+		"db_node_class":       CHECKSET,
+		"db_node_count":       CHECKSET,
+		"db_node_storage":     CHECKSET,
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
@@ -38,6 +39,7 @@ func TestAccAlicloudAdbCluster(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 
 		// module name
@@ -48,12 +50,13 @@ func TestAccAlicloudAdbCluster(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_type":       "MySQL",
-					"db_version":    "8.0",
-					"pay_type":      "PostPaid",
-					"db_node_class": "C8",
-					"vswitch_id":    "${alicloud_vswitch.default.id}",
-					"description":   "${var.name}",
+					"description":         "${var.name}",
+					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+					"db_cluster_category": "Cluster",
+					"db_node_class":       "C8",
+					"db_node_count":       "2",
+					"db_node_storage":     "200",
+					"pay_type":            "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -70,7 +73,7 @@ func TestAccAlicloudAdbCluster(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "tf-testaccadbrecordbasic",
+						"description": "tf-testaccadbclusterbasic",
 					}),
 				),
 			},
@@ -139,16 +142,17 @@ func TestAccAlicloudAdbCluster(t *testing.T) {
 }
 
 func TestAccAlicloudAdbClusterMulti(t *testing.T) {
-	var v *adb.DescribeDBClusterAttributeResponse
+	var v *adb.DBCluster
 	rand := acctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%sadbrecordbasic%v.abc", defaultRegionToTest, rand)
-	resourceId := "alicloud_adb_cluster.default.2"
+	resourceId := "alicloud_adb_cluster.default"
 	var basicMap = map[string]string{
-		"description":   CHECKSET,
-		"db_node_class": CHECKSET,
-		"vswitch_id":    CHECKSET,
-		"db_type":       CHECKSET,
-		"db_version":    CHECKSET,
+		"description":         CHECKSET,
+		"vswitch_id":          CHECKSET,
+		"db_cluster_category": CHECKSET,
+		"db_node_class":       CHECKSET,
+		"db_node_count":       CHECKSET,
+		"db_node_storage":     CHECKSET,
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
@@ -173,13 +177,14 @@ func TestAccAlicloudAdbClusterMulti(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"count":         "3",
-					"db_type":       "MySQL",
-					"db_version":    "8.0",
-					"pay_type":      "PostPaid",
-					"db_node_class": "C8",
-					"vswitch_id":    "${alicloud_vswitch.default.id}",
-					"description":   "${var.name}",
+					"count":               "2",
+					"description":         "${var.name}",
+					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+					"db_cluster_category": "Cluster",
+					"db_node_class":       "C8",
+					"db_node_count":       "2",
+					"db_node_storage":     "200",
+					"pay_type":            "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -211,6 +216,5 @@ func resourceAdbClusterConfigDependence(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-
-`, AdbCommonTestCase, name)
+	`, AdbCommonTestCase, name)
 }

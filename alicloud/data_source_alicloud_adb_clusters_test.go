@@ -18,16 +18,6 @@ func TestAccAlicloudAdbClustersDataSource(t *testing.T) {
 			"description_regex": `"^test1234"`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudAdbClusterDataSourceConfig(rand, map[string]string{
-			"description_regex": `"${alicloud_adb_cluster.default.description}"`,
-			"status":            `"Running"`,
-		}),
-		fakeConfig: testAccCheckAlicloudAdbClusterDataSourceConfig(rand, map[string]string{
-			"description_regex": `"${alicloud_adb_cluster.default.description}"`,
-			"status":            `"run"`,
-		}),
-	}
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAdbClusterDataSourceConfig(rand, map[string]string{
 			"description_regex": `"${alicloud_adb_cluster.default.description}"`,
@@ -47,7 +37,6 @@ func TestAccAlicloudAdbClustersDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAdbClusterDataSourceConfig(rand, map[string]string{
 			"description_regex": `"${alicloud_adb_cluster.default.description}"`,
-			"status":            `"Running"`,
 			"tags": `{ 
 						"key1" = "value1" 
 						"key2" = "value2" 
@@ -55,7 +44,6 @@ func TestAccAlicloudAdbClustersDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccCheckAlicloudAdbClusterDataSourceConfig(rand, map[string]string{
 			"description_regex": `"${alicloud_adb_cluster.default.description}"`,
-			"status":            `"run"`,
 			"tags": `{ 
 						"key1" = "value1" 
 						"key2" = "value2" 
@@ -71,14 +59,10 @@ func TestAccAlicloudAdbClustersDataSource(t *testing.T) {
 			"clusters.0.id":              CHECKSET,
 			"clusters.0.description":     CHECKSET,
 			"clusters.0.charge_type":     "PostPaid",
-			"clusters.0.network_type":    "VPC",
 			"clusters.0.region_id":       CHECKSET,
-			"clusters.0.zone_id":         CHECKSET,
 			"clusters.0.expired":         "false",
-			"clusters.0.status":          "Running",
 			"clusters.0.lock_mode":       "Unlock",
 			"clusters.0.create_time":     CHECKSET,
-			"clusters.0.vpc_id":          CHECKSET,
 			"clusters.0.db_node_count":   "2",
 			"clusters.0.db_node_class":   "C8",
 			"clusters.0.db_node_storage": "200",
@@ -99,7 +83,7 @@ func TestAccAlicloudAdbClustersDataSource(t *testing.T) {
 		fakeMapFunc:  fakeAdbClusterMapFunc,
 	}
 
-	AdbClusterCheckInfo.dataSourceTestCheck(t, rand, nameConf, statusConf, tagsConf, allConf)
+	AdbClusterCheckInfo.dataSourceTestCheck(t, rand, nameConf, tagsConf, allConf)
 }
 
 func testAccCheckAlicloudAdbClusterDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -114,18 +98,17 @@ func testAccCheckAlicloudAdbClusterDataSourceConfig(rand int, attrMap map[string
 	}
 
 	variable "name" {
-		default = "tf-testAccAdbClusterConfig_%d"
+		default = "tf-testAccADBConfig_%d"
 	}
 
 	resource "alicloud_adb_cluster" "default" {
 		db_cluster_version      = "3.0"
         db_cluster_category     = "Cluster"
-        db_cluster_network_type = "VPC"
         db_node_class           = "C8"
         db_node_count           = 2
         db_node_storage         = 200
 		pay_type                = "PostPaid"
-		vswitch_id              = "${alicloud_vswitch.default.id}"
+		vswitch_id              = "${data.alicloud_vswitches.default.ids.0}"
 		description             = "${var.name}"
 		tags = {
 			"key1" = "value1"

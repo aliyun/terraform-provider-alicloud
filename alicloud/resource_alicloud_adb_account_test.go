@@ -14,7 +14,7 @@ import (
 func TestAccAlicloudAdbAccount_update_forSuper(t *testing.T) {
 	var v *adb.DBAccount
 	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testAccdbaccount-%d", rand)
+	name := fmt.Sprintf("tf-testAccadbaccount-%d", rand)
 	var basicMap = map[string]string{
 		"db_cluster_id":    CHECKSET,
 		"account_name":     "tftestsuper",
@@ -33,6 +33,7 @@ func TestAccAlicloudAdbAccount_update_forSuper(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 
 		// module name
@@ -109,12 +110,11 @@ func resourceAdbAccountConfigDependence(name string) string {
 	resource "alicloud_adb_cluster" "cluster" {
         db_cluster_version      = "3.0"
         db_cluster_category     = "Cluster"
-        db_cluster_network_type = "VPC"
         db_node_class           = "C8"
         db_node_count           = 2
         db_node_storage         = 200
 		pay_type                = "PostPaid"
-		vswitch_id              = "${alicloud_vswitch.default.id}"
+		vswitch_id              = "${data.alicloud_vswitches.default.ids.0}"
 		description             = "${var.name}"
 	}`, AdbCommonTestCase, name)
 }
