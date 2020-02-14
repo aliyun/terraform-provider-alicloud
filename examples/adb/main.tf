@@ -16,7 +16,6 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_adb_cluster" "default" {
   db_cluster_version      = var.db_cluster_version
   db_cluster_category     = var.db_cluster_category
-  db_cluster_network_type = "VPC"
   db_node_class           = var.db_node_class
   db_node_count           = var.db_node_count
   db_node_storage         = var.db_node_storage
