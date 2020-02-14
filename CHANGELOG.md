@@ -1,19 +1,19 @@
-## 1.71.0 (Unreleased)
+## 1.71.0 (February 14, 2020)
 
-- **New Resource:** `alicloud_adb_account` [GH-2169]
-- **New Resource:** `alicloud_adb_backup_policy` [GH-2169]
-- **Data Source:** `alicloud_adb_clusters` [GH-2153]
+- **New Resource:** `alicloud_adb_account` ([#2169](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2169))
+- **New Resource:** `alicloud_adb_backup_policy` ([#2169](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2169))
+- **Data Source:** `alicloud_adb_clusters` ([#2153](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2153))
 
 IMPROVEMENTS:
 
-- add market product image id [GH-2171]
-- fixed regional sts endpoint [GH-2167]
-- improve(cms): add computed for effective_interval [GH-2163]
+- add market product image id ([#2171](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2171))
+- fixed regional sts endpoint ([#2167](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2167))
+- improve(cms): add computed for effective_interval ([#2163](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2163))
 
 BUG FIXES:
 
-- fix(ram_login_profile): resolve not found when deleting and deprecate alicloud_slb_attachment [GH-2164]
-- fix(db_account_privilege): resolve privilege timeout bug on PosrgreSql [GH-2159]
+- fix(ram_login_profile): resolve not found when deleting and deprecate alicloud_slb_attachment ([#2164](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2164))
+- fix(db_account_privilege): resolve privilege timeout bug on PosrgreSql ([#2159](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2159))
 
 ## 1.70.3 (February 06, 2020)
 
