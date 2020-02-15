@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 	"strings"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 

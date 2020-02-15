@@ -53,5 +53,8 @@ The following attributes are exported in addition to the arguments listed above:
     * `package_versions` - The list of package version details of this product sku, Each element contains the following attributes:
       * `package_name` - The package name of this product sku package.
       * `package_version` - The package version of this product sku package. Currently, the API products can return package_version, but others can not for ensure.
+    * `images` - The list of custom ECS images, Each element contains the following attributes:
+      * `image_id` - The Ecs image id.
+      * `image_name` - The Ecs image name.
 
  
