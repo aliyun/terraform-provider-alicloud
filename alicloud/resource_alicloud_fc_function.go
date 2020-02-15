@@ -219,27 +219,32 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 
 	request := &fc.UpdateFunctionInput{}
 
+	update := false
 	if d.HasChange("filename") || d.HasChange("oss_bucket") || d.HasChange("oss_key") {
-		d.SetPartial("filename")
-		d.SetPartial("oss_bucket")
-		d.SetPartial("oss_key")
+		update = true
 	}
 	if d.HasChange("description") {
+		update = true
 		request.Description = StringPointer(d.Get("description").(string))
 	}
 	if d.HasChange("handler") {
+		update = true
 		request.Handler = StringPointer(d.Get("handler").(string))
 	}
 	if d.HasChange("memory_size") {
+		update = true
 		request.MemorySize = Int32Pointer(int32(d.Get("memory_size").(int)))
 	}
 	if d.HasChange("timeout") {
+		update = true
 		request.Timeout = Int32Pointer(int32(d.Get("timeout").(int)))
 	}
 	if d.HasChange("runtime") {
+		update = true
 		request.Runtime = StringPointer(d.Get("runtime").(string))
 	}
 	if d.HasChange("environment_variables") {
+		update = true
 		byteVar, err := json.Marshal(d.Get("environment_variables").(map[string]interface{}))
 		if err != nil {
 			return WrapError(err)
@@ -250,7 +255,7 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if request != nil {
+	if update {
 		split := strings.Split(d.Id(), COLON_SEPARATED)
 		request.ServiceName = StringPointer(split[0])
 		request.FunctionName = StringPointer(split[1])
@@ -311,7 +316,7 @@ func getFunctionCode(d *schema.ResourceData) (*fc.Code, error) {
 		bucket, bucketOk := d.GetOk("oss_bucket")
 		key, keyOk := d.GetOk("oss_key")
 		if !bucketOk || !keyOk {
-			return code, WrapError(Error("'oss_bucket' and 'oss_key' must all be set while using OSS code source."))
+			return code, nil
 		}
 		code.WithOSSBucketName(bucket.(string)).WithOSSObjectName(key.(string))
 	}
