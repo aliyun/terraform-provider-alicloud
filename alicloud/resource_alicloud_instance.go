@@ -575,27 +575,29 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if d.HasChange("security_groups") {
-		o, n := d.GetChange("security_groups")
-		os := o.(*schema.Set)
-		ns := n.(*schema.Set)
+		if !d.IsNewResource() || d.Get("vswitch_id").(string) == "" {
+			o, n := d.GetChange("security_groups")
+			os := o.(*schema.Set)
+			ns := n.(*schema.Set)
 
-		rl := expandStringList(os.Difference(ns).List())
-		al := expandStringList(ns.Difference(os).List())
+			rl := expandStringList(os.Difference(ns).List())
+			al := expandStringList(ns.Difference(os).List())
 
-		if len(al) > 0 {
-			err := ecsService.JoinSecurityGroups(d.Id(), al)
-			if err != nil {
-				return WrapError(err)
+			if len(al) > 0 {
+				err := ecsService.JoinSecurityGroups(d.Id(), al)
+				if err != nil {
+					return WrapError(err)
+				}
 			}
-		}
-		if len(rl) > 0 {
-			err := ecsService.LeaveSecurityGroups(d.Id(), rl)
-			if err != nil {
-				return WrapError(err)
+			if len(rl) > 0 {
+				err := ecsService.LeaveSecurityGroups(d.Id(), rl)
+				if err != nil {
+					return WrapError(err)
+				}
 			}
-		}
 
-		d.SetPartial("security_groups")
+			d.SetPartial("security_groups")
+		}
 	}
 
 	run := false
@@ -821,34 +823,20 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 			return nil, WrapError(err)
 		}
 
-		if err := ecsService.DiskAvailable(zone, systemDiskCategory); err != nil {
-			return nil, WrapError(err)
-		}
-
 		request.ZoneId = zoneID
-
 	}
 
 	request.SystemDiskCategory = string(systemDiskCategory)
 	request.SystemDiskSize = strconv.Itoa(d.Get("system_disk_size").(int))
 
-	sgs, ok := d.GetOk("security_groups")
-
-	if ok {
-		var SecurityGroupIds []string
-		sgList := expandStringList(sgs.(*schema.Set).List())
-		for _, sg := range sgList {
-			// check security group instance exist
-			object, err := ecsService.DescribeSecurityGroup(sg)
-			if err != nil {
-				return nil, WrapError(err)
-			}
-			SecurityGroupIds = append(SecurityGroupIds, object.SecurityGroupId)
-			if object.VpcId != "" && d.Get("vswitch_id").(string) == "" {
-				return nil, WrapError(Error("The specified security_group_id %s is in a VPC %s, and `vswitch_id` is required when creating a new instance resource in a VPC.", sg, object.VpcId))
-			}
+	if v, ok := d.GetOk("security_groups"); ok {
+		// At present, the classic network instance does not support multi sg in runInstances
+		sgs := expandStringList(v.(*schema.Set).List())
+		if d.Get("vswitch_id").(string) == "" && len(sgs) > 0 {
+			request.SecurityGroupId = sgs[0]
+		} else {
+			request.SecurityGroupIds = &sgs
 		}
-		request.SecurityGroupIds = &SecurityGroupIds
 	}
 
 	if v := d.Get("instance_name").(string); v != "" {
