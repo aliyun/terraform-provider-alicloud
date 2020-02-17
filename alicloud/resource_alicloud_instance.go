@@ -349,7 +349,7 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"tags":        tagsSchema(),
-			"volume_tags": tagsSchemaComputed(),
+			"volume_tags": tagsSchema(),
 
 			"auto_release_time": {
 				Type:     schema.TypeString,
@@ -390,7 +390,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 	if d.Get("is_outdated").(bool) == true {
 		request.IoOptimized = "none"
 	}
-	err = resource.Retry(DefaultTimeout*time.Second, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.RunInstances(request)
 		})
@@ -431,15 +431,19 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		return WrapError(err)
 	}
 
-	disk, err := ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
-	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
+	if !d.IsNewResource() || d.HasChange("volume_tags") {
+		disk, err := ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
+		if err != nil {
+			if NotFoundError(err) {
+				d.SetId("")
+				return nil
+			}
+			return WrapError(err)
 		}
-		return WrapError(err)
+		d.Set("system_disk_category", disk.Category)
+		d.Set("system_disk_size", disk.Size)
+		d.Set("volume_tags", tagsToMap(disk.Tags.Tag))
 	}
-
 	d.Set("instance_name", instance.InstanceName)
 	d.Set("resource_group_id", instance.ResourceGroupId)
 	d.Set("description", instance.Description)
@@ -448,8 +452,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("host_name", instance.HostName)
 	d.Set("image_id", instance.ImageId)
 	d.Set("instance_type", instance.InstanceType)
-	d.Set("system_disk_category", disk.Category)
-	d.Set("system_disk_size", disk.Size)
+
 	d.Set("password", d.Get("password").(string))
 	d.Set("internet_max_bandwidth_out", instance.InternetMaxBandwidthOut)
 	d.Set("internet_max_bandwidth_in", instance.InternetMaxBandwidthIn)
@@ -462,7 +465,6 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("credit_specification", instance.CreditSpecification)
 	d.Set("auto_release_time", instance.AutoReleaseTime)
 	d.Set("tags", tagsToMap(instance.Tags.Tag))
-	d.Set("volume_tags", tagsToMap(disk.Tags.Tag))
 
 	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
@@ -486,21 +488,23 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		return WrapError(err)
 	}
 
-	dataRequest := ecs.CreateDescribeUserDataRequest()
-	dataRequest.RegionId = client.RegionId
-	dataRequest.InstanceId = d.Id()
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeUserData(dataRequest)
-	})
+	if !d.IsNewResource() || d.HasChange("user_data") {
+		dataRequest := ecs.CreateDescribeUserDataRequest()
+		dataRequest.RegionId = client.RegionId
+		dataRequest.InstanceId = d.Id()
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeUserData(dataRequest)
+		})
 
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), dataRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), dataRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(dataRequest.GetActionName(), raw, dataRequest.RpcRequest, dataRequest)
+		response, _ := raw.(*ecs.DescribeUserDataResponse)
+		d.Set("user_data", userDataHashSum(response.UserData))
 	}
-	addDebug(dataRequest.GetActionName(), raw, dataRequest.RpcRequest, dataRequest)
-	response, _ := raw.(*ecs.DescribeUserDataResponse)
-	d.Set("user_data", userDataHashSum(response.UserData))
 
-	if len(instance.VpcAttributes.VSwitchId) > 0 {
+	if len(instance.VpcAttributes.VSwitchId) > 0 && (!d.IsNewResource() || d.HasChange("role_name")) {
 		request := ecs.CreateDescribeInstanceRamRoleRequest()
 		request.RegionId = client.RegionId
 		request.InstanceIds = convertListToJsonString([]interface{}{d.Id()})
@@ -562,10 +566,12 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	d.Partial(true)
 
-	if err := setTags(client, TagResourceInstance, d); err != nil {
-		return WrapError(err)
-	} else {
-		d.SetPartial("tags")
+	if !d.IsNewResource() {
+		if err := setTags(client, TagResourceInstance, d); err != nil {
+			return WrapError(err)
+		} else {
+			d.SetPartial("tags")
+		}
 	}
 
 	if err := setVolumeTags(client, TagResourceDisk, d); err != nil {
@@ -799,7 +805,6 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 
 func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.RunInstancesRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
-	ecsService := EcsService{client}
 
 	request := ecs.CreateRunInstancesRequest()
 	request.RegionId = client.RegionId
@@ -811,19 +816,8 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 
 	systemDiskCategory := DiskCategory(d.Get("system_disk_category").(string))
 
-	zoneID := d.Get("availability_zone").(string)
-	// check instanceType and systemDiskCategory, when zoneID is not empty
-	if zoneID != "" {
-		zone, err := ecsService.DescribeZone(zoneID)
-		if err != nil {
-			return nil, WrapError(err)
-		}
-
-		if err := ecsService.ResourceAvailable(zone, ResourceTypeInstance); err != nil {
-			return nil, WrapError(err)
-		}
-
-		request.ZoneId = zoneID
+	if v, ok := d.GetOk("availability_zone"); ok && v.(string) != "" {
+		request.ZoneId = v.(string)
 	}
 
 	request.SystemDiskCategory = string(systemDiskCategory)
@@ -934,6 +928,17 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	}
 	request.DryRun = requests.NewBoolean(d.Get("dry_run").(bool))
 	request.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))
+
+	if v, ok := d.GetOk("tags"); ok && len(v.(map[string]interface{})) > 0 {
+		tags := make([]ecs.RunInstancesTag, len(v.(map[string]interface{})))
+		for key, value := range v.(map[string]interface{}) {
+			tags = append(tags, ecs.RunInstancesTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &tags
+	}
 	request.ClientToken = buildClientToken(request.GetActionName())
 
 	if v, ok := d.GetOk("data_disks"); ok {

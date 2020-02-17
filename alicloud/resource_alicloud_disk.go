@@ -141,6 +141,16 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("encrypted"); ok {
 		request.Encrypted = requests.NewBoolean(v.(bool))
 	}
+	if v, ok := d.GetOk("tags"); ok && len(v.(map[string]interface{})) > 0 {
+		tags := make([]ecs.CreateDiskTag, len(v.(map[string]interface{})))
+		for key, value := range v.(map[string]interface{}) {
+			tags = append(tags, ecs.CreateDiskTag{
+				Key:   key,
+				Value: value.(string),
+			})
+		}
+		request.Tag = &tags
+	}
 	request.ClientToken = buildClientToken(request.GetActionName())
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.CreateDisk(request)
@@ -192,12 +202,6 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
-
-	err := setTags(client, TagResourceDisk, d)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.SetPartial("tags")
 
 	update := false
 	request := ecs.CreateModifyDiskAttributeRequest()
@@ -251,6 +255,12 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 		d.Partial(false)
 		return resourceAliyunDiskRead(d, meta)
 	}
+
+	err := setTags(client, TagResourceDisk, d)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.SetPartial("tags")
 
 	if d.HasChange("size") {
 		size := d.Get("size").(int)

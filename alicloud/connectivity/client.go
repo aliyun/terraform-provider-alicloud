@@ -1193,7 +1193,8 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 		WithMaxRetryTime(DefaultClientRetryCountSmall).
 		WithTimeout(time.Duration(30) * time.Second).
 		WithEnableAsync(true).
-		WithGoRoutinePoolSize(10).
+		WithGoRoutinePoolSize(100).
+		WithMaxTaskQueueSize(10000).
 		WithDebug(false).
 		WithHttpTransport(client.getTransport()).
 		WithScheme("HTTPS")
