@@ -6,6 +6,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
+	"strconv"
+	"strings"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -47,7 +50,21 @@ func dataSourceAlicloudProducts() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-
+			"supplier_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"supplier_name_keyword": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"suggested_price": {
+				Type:     schema.TypeFloat,
+				Optional: true,
+				ForceNew: true,
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -168,6 +185,10 @@ func dataSourceAlicloudProductsRead(d *schema.ResourceData, meta interface{}) er
 		request.SearchTerm = v.(string)
 	}
 
+	supplierId := d.Get("supplier_id").(string)
+	supplierNameKeyword := d.Get("supplier_name_keyword").(string)
+	suggestedPrice, suggestedPriceOk := d.GetOkExists("suggested_price")
+
 	request.Filter = &productsFilter
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
@@ -197,6 +218,18 @@ func dataSourceAlicloudProductsRead(d *schema.ResourceData, meta interface{}) er
 					continue
 				}
 			}
+			if supplierId != "" && supplierId != strconv.FormatInt(item.SupplierId, 10) {
+				continue
+			}
+
+			if supplierNameKeyword != "" && !strings.Contains(item.SupplierName, supplierNameKeyword) {
+				continue
+			}
+
+			if suggestedPriceOk && !strings.HasPrefix(item.SuggestedPrice, strconv.FormatFloat(suggestedPrice.(float64), 'f', -1, 64)) {
+				continue
+			}
+
 			allProduct = append(allProduct, item)
 		}
 
