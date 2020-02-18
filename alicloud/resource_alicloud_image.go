@@ -169,22 +169,27 @@ func resourceAliCloudImageCreate(d *schema.ResourceData, meta interface{}) error
 	}
 	request := ecs.CreateCreateImageRequest()
 	request.RegionId = client.RegionId
-	request.InstanceId = d.Get("instance_id").(string)
-	diskDeviceMappings := d.Get("disk_device_mapping").([]interface{})
-	if diskDeviceMappings != nil && len(diskDeviceMappings) > 0 {
-		mappings := make([]ecs.CreateImageDiskDeviceMapping, 0, len(diskDeviceMappings))
-		for _, diskDeviceMapping := range diskDeviceMappings {
-			mapping := diskDeviceMapping.(map[string]interface{})
-			deviceMapping := ecs.CreateImageDiskDeviceMapping{
-				SnapshotId: mapping["snapshot_id"].(string),
-				Size:       strconv.Itoa(mapping["size"].(int)),
-				DiskType:   mapping["disk_type"].(string),
-				Device:     mapping["device"].(string),
-			}
-			mappings = append(mappings, deviceMapping)
-		}
-		request.DiskDeviceMapping = &mappings
+	if instanceId, ok := d.GetOk("instance_id"); ok {
+		request.InstanceId = instanceId.(string)
 	}
+	if value, ok := d.GetOk("disk_device_mapping"); ok {
+		diskDeviceMappings := value.([]interface{})
+		if diskDeviceMappings != nil && len(diskDeviceMappings) > 0 {
+			mappings := make([]ecs.CreateImageDiskDeviceMapping, 0, len(diskDeviceMappings))
+			for _, diskDeviceMapping := range diskDeviceMappings {
+				mapping := diskDeviceMapping.(map[string]interface{})
+				deviceMapping := ecs.CreateImageDiskDeviceMapping{
+					SnapshotId: mapping["snapshot_id"].(string),
+					Size:       strconv.Itoa(mapping["size"].(int)),
+					DiskType:   mapping["disk_type"].(string),
+					Device:     mapping["device"].(string),
+				}
+				mappings = append(mappings, deviceMapping)
+			}
+			request.DiskDeviceMapping = &mappings
+		}
+	}
+
 	tags := d.Get("tags").(map[string]interface{})
 	if tags != nil && len(tags) > 0 {
 		imageTags := make([]ecs.CreateImageTag, 0, len(tags))
@@ -197,7 +202,9 @@ func resourceAliCloudImageCreate(d *schema.ResourceData, meta interface{}) error
 		}
 		request.Tag = &imageTags
 	}
-	request.SnapshotId = d.Get("snapshot_id").(string)
+	if snapshotId, ok := d.GetOk("snapshot_id"); ok {
+		request.SnapshotId = snapshotId.(string)
+	}
 	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	request.Platform = d.Get("platform").(string)
 	request.ImageName = d.Get("image_name").(string)
