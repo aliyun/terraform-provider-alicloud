@@ -16,6 +16,11 @@ func dataSourceAlicloudProduct() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"available_region": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			// Computed values.
 			"product": {
 				Type:     schema.TypeList,
@@ -77,6 +82,10 @@ func dataSourceAlicloudProduct() *schema.Resource {
 													Type:     schema.TypeString,
 													Computed: true,
 												},
+												"region_id": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
 											},
 										},
 									},
@@ -130,12 +139,18 @@ func productDescriptionAttributes(d *schema.ResourceData, product *market.Descri
 					}
 				}
 			} else if module.Code == "img_id" {
+				availableRegion := d.Get("available_region").(string)
 				for _, property := range module.Properties.Property {
 					if property.Key == "img_id" {
 						for _, value := range property.PropertyValues.PropertyValue {
+							regionId := getRegionByImageIdPrefix(value.Value)
+							if availableRegion != "" && availableRegion != regionId {
+								continue
+							}
 							imageIdMapping := map[string]interface{}{
 								"image_id":   value.Value,
 								"image_name": value.DisplayName,
+								"region_id":  regionId,
 							}
 							imageIdMap = append(imageIdMap, imageIdMapping)
 						}

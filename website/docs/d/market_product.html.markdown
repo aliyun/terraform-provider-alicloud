@@ -38,6 +38,7 @@ output "first_product_package_version" {
 The following arguments are supported:
 
 * `product_code` - (Required) The product code of the market product.
+* `available_region` - (Available in 1.72.0+) A available region id used to filter market place Ecs images.
 
 ## Attributes Reference
 
@@ -55,6 +56,7 @@ The following attributes are exported in addition to the arguments listed above:
       * `package_version` - The package version of this product sku package. Currently, the API products can return package_version, but others can not for ensure.
     * `images` - The list of custom ECS images, Each element contains the following attributes:
       * `image_id` - The Ecs image id.
-      * `image_name` - The Ecs image name.
+      * `image_name` - The Ecs image display name.
+      * `region_id` - The Ecs image region.
 
  
