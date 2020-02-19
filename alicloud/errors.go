@@ -189,6 +189,27 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 	return false
 }
 
+func IsThrottling(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(*errors.ServerError); ok {
+		if e.ErrorCode() == Throttling {
+			return true
+		}
+		return false
+	}
+
+	if e, ok := err.(*common.Error); ok {
+		if e.Code == Throttling {
+			return true
+		}
+		return false
+	}
+	return false
+}
+
 func GetTimeErrorFromString(str string) error {
 	return &ProviderError{
 		errorCode: "WaitForTimeout",

@@ -179,8 +179,8 @@ func (c *Config) Client() (*AliyunClient, error) {
 }
 
 func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
+	//goSdkMutex.Lock()
+	//defer goSdkMutex.Unlock()
 
 	// Initialize the ECS client if necessary
 	if client.ecsconn == nil {
