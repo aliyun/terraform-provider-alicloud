@@ -300,6 +300,9 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 	// Filter by ram role name and fetch the instance role name
 	instanceIds := make([]string, 0)
 	for _, inst := range filteredInstancesTemp {
+		if inst.InstanceNetworkType == "classic" {
+			continue
+		}
 		instanceIds = append(instanceIds, inst.InstanceId)
 	}
 	instanceRoleNameMap := make(map[string]string)
