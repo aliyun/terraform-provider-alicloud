@@ -104,30 +104,6 @@ func testSweepVpcs(region string) error {
 	return nil
 }
 
-func testAccCheckVpcExists(n string, vpc *vpc.DescribeVpcAttributeResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No VPC ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		vpcService := VpcService{client}
-		instance, err := vpcService.DescribeVpc(rs.Primary.ID)
-
-		if err != nil {
-			return WrapError(err)
-		}
-
-		*vpc = instance
-		return nil
-	}
-}
-
 func testAccCheckVpcDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -153,7 +129,7 @@ func testAccCheckVpcDestroy(s *terraform.State) error {
 }
 
 func TestAccAlicloudVpcBasic(t *testing.T) {
-	var v vpc.DescribeVpcAttributeResponse
+	var v vpc.Vpc
 	rand := acctest.RandInt()
 	resourceId := "alicloud_vpc.default"
 	ra := resourceAttrInit(resourceId, testAccCheckVpcCheckMap)
@@ -230,7 +206,7 @@ func TestAccAlicloudVpcBasic(t *testing.T) {
 }
 
 func TestAccAlicloudVpcMulti(t *testing.T) {
-	var v vpc.DescribeVpcAttributeResponse
+	var v vpc.Vpc
 	rand := acctest.RandInt()
 	resourceId := "alicloud_vpc.default.9"
 	ra := resourceAttrInit(resourceId, testAccCheckVpcCheckMap)

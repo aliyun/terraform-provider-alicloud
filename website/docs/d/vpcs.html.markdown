@@ -57,4 +57,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `description` - Description of the VPC
   * `is_default` - Whether the VPC is the default VPC in the region.
   * `creation_time` - Time of creation.
+  * `tags` - A map of tags assigned to the VPC.
   

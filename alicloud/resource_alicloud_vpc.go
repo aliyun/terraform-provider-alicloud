@@ -129,11 +129,7 @@ func resourceAliyunVpcRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("description", object.Description)
 	d.Set("router_id", object.VRouterId)
 	d.Set("resource_group_id", object.ResourceGroupId)
-	tags, err := vpcService.DescribeTags(d.Id(), nil, TagResourceVpc)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("tags", vpcService.tagsToMap(tags))
+	d.Set("tags", vpcTagsToMap(object.Tags.Tag))
 	// Retrieve all route tables and filter to get system
 	request := vpc.CreateDescribeRouteTablesRequest()
 	request.RegionId = client.RegionId
