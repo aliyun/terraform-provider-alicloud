@@ -349,7 +349,7 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"tags":        tagsSchema(),
-			"volume_tags": tagsSchema(),
+			"volume_tags": tagsSchemaComputed(),
 
 			"auto_release_time": {
 				Type:     schema.TypeString,
@@ -433,19 +433,18 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		return WrapError(err)
 	}
 
-	if !d.IsNewResource() || d.HasChange("volume_tags") {
-		disk, err := ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
-		if err != nil {
-			if NotFoundError(err) {
-				d.SetId("")
-				return nil
-			}
-			return WrapError(err)
+	disk, err := ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
 		}
-		d.Set("system_disk_category", disk.Category)
-		d.Set("system_disk_size", disk.Size)
-		d.Set("volume_tags", tagsToMap(disk.Tags.Tag))
+		return WrapError(err)
 	}
+	d.Set("system_disk_category", disk.Category)
+	d.Set("system_disk_size", disk.Size)
+	d.Set("volume_tags", tagsToMap(disk.Tags.Tag))
+
 	d.Set("instance_name", instance.InstanceName)
 	d.Set("resource_group_id", instance.ResourceGroupId)
 	d.Set("description", instance.Description)

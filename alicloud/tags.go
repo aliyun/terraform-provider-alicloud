@@ -7,15 +7,17 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
-
 	"regexp"
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -63,24 +65,49 @@ func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceTy
 	if d.HasChange("volume_tags") {
 		request := ecs.CreateDescribeDisksRequest()
 		request.InstanceId = d.Id()
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeDisks(request)
+		var response *ecs.DescribeDisksResponse
+		wait := incrementalWait(1*time.Second, 1*time.Second)
+		err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeDisks(request)
+			})
+			if err != nil {
+				if IsThrottling(err) {
+					wait()
+					return resource.RetryableError(err)
+
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			response, _ = raw.(*ecs.DescribeDisksResponse)
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		disks := raw.(*ecs.DescribeDisksResponse)
-		if len(disks.Disks.Disk) == 0 {
+		if len(response.Disks.Disk) == 0 {
 			return WrapError(Error("no specified system disk"))
 		}
 
 		var ids []string
-		for i := range disks.Disks.Disk {
-			ids = append(ids, disks.Disks.Disk[i].DiskId)
+		systemDiskTag := make(map[string]interface{})
+		for _, disk := range response.Disks.Disk {
+			ids = append(ids, disk.DiskId)
+			if disk.Type == "system" {
+				for _, t := range disk.Tags.Tag {
+					if !ecsTagIgnored(t) {
+						systemDiskTag[t.TagKey] = t.TagValue
+					}
+				}
+			}
 		}
 
 		oraw, nraw := d.GetChange("volume_tags")
+		if d.IsNewResource() {
+			oraw = systemDiskTag
+		}
 		return updateTags(client, ids, resourceType, oraw, nraw)
 	}
 
@@ -104,13 +131,26 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 		}
 		request.TagKey = &tagsKey
 
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.UntagResources(request)
+		wait := incrementalWait(1*time.Second, 1*time.Second)
+		err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.UntagResources(request)
+			})
+			if err != nil {
+				if IsThrottling(err) {
+					wait()
+					return resource.RetryableError(err)
+
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, ids, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if len(create) > 0 {
@@ -127,13 +167,26 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 		}
 		request.Tag = &tags
 
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.TagResources(request)
+		wait := incrementalWait(1*time.Second, 1*time.Second)
+		err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.TagResources(request)
+			})
+			if err != nil {
+				if IsThrottling(err) {
+					wait()
+					return resource.RetryableError(err)
+
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, ids, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return nil
