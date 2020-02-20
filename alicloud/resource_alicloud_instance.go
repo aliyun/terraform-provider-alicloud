@@ -784,7 +784,7 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "DependencyViolation.RouteEntry", "IncorrectInstanceStatus.Initializing"}) {
 				return resource.RetryableError(err)
 			}
-			if IsThrottling(err) {
+			if IsExpectedErrors(err, []string{Throttling, "LastTokenProcessing"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1418,15 +1418,16 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	//An instance that was successfully modified once cannot be modified again within 5 minutes.
+	wait := incrementalWait(2*time.Second, 2*time.Second)
 	client := meta.(*connectivity.AliyunClient)
 	if update {
-		if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+		if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.ModifyInstanceNetworkSpec(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{Throttling}) {
-					time.Sleep(10 * time.Second)
+				if IsExpectedErrors(err, []string{Throttling, "LastOrderProcessing", "LastRequestProcessing"}) {
+					wait()
 					return resource.RetryableError(err)
 				}
 				if IsExpectedErrors(err, []string{"InternalError"}) {

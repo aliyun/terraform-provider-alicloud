@@ -200,7 +200,7 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"auto_release_time": time.Now().Add(30 * time.Minute).Format("2006-01-02T15:04:05Z"),
+					"auto_release_time": time.Now().Add(10 * time.Hour).Format("2006-01-02T15:04:05Z"),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -504,7 +504,7 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"auto_release_time": time.Now().Add(30 * time.Minute).Format("2006-01-02T15:04:05Z"),
+					"auto_release_time": time.Now().Add(10 * time.Hour).Format("2006-01-02T15:04:05Z"),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
