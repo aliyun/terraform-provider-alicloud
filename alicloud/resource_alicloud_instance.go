@@ -1426,7 +1426,7 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 				return ecsClient.ModifyInstanceNetworkSpec(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{Throttling, "LastOrderProcessing", "LastRequestProcessing"}) {
+				if IsExpectedErrors(err, []string{Throttling, "LastOrderProcessing", "LastRequestProcessing", "LastTokenProcessing"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
