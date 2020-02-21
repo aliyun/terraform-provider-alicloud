@@ -87,3 +87,26 @@ func (s *CmsService) ExtractWebhookFromJson(webhookJson string) (string, error) 
 	}
 	return dat["url"].(string), nil
 }
+
+func (s *CmsService) DescribeSiteMonitor(id, keyword string) (siteMonitor cms.SiteMonitor, err error) {
+	listRequest := cms.CreateDescribeSiteMonitorListRequest()
+	listRequest.Keyword = keyword
+	listRequest.TaskId = id
+	raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+		return cmsClient.DescribeSiteMonitorList(listRequest)
+	})
+	if err != nil {
+		return siteMonitor, err
+	}
+	list := raw.(*cms.DescribeSiteMonitorListResponse)
+	if len(list.SiteMonitors.SiteMonitor) < 1 {
+		return siteMonitor, GetNotFoundErrorFromString(GetNotFoundMessage("Site Monitor", id))
+
+	}
+	for _, v := range list.SiteMonitors.SiteMonitor {
+		if v.TaskName == keyword || v.TaskId == id {
+			return v, nil
+		}
+	}
+	return siteMonitor, GetNotFoundErrorFromString(GetNotFoundMessage("Site Monitor", id))
+}
