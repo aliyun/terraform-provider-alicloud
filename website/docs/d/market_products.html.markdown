@@ -41,9 +41,9 @@ The following arguments are supported:
 * `category_id` - (Optional, ForceNew) The Category ID of products. For more information, see [DescribeProducts](https://help.aliyun.com/document_detail/89834.htm). 
 * `product_type` - (Optional, ForceNew) The type of products, Valid values: `APP`, `SERVICE`, `MIRROR`, `DOWNLOAD` and `API_SERVICE`.
 * `search_term` - (Optional, ForceNew, Available 1.69.0+) Search term in this query.
-* `supplier_id` - (Optional, ForceNew, Available 1.72.0+) The supplier id of the product.
-* `supplier_name_keyword` - (Optional, ForceNew, Available 1.72.0+) The supplier name keyword of the product.
-* `suggested_price` - (Optional, ForceNew, Available 1.72.0+) The suggested price of the product.
+* `supplier_id` - (Optional, ForceNew, Available 1.71.1+) The supplier id of the product.
+* `supplier_name_keyword` - (Optional, ForceNew, Available 1.71.1+) The supplier name keyword of the product.
+* `suggested_price` - (Optional, ForceNew, Available 1.71.1+) The suggested price of the product.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
