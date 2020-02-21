@@ -1,4 +1,26 @@
-## 1.72.0 (Unreleased)
+## 1.71.1 (Unreleased)
+
+IMPROVEMENTS:
+
+- update SnatEntry test case [GH-2187]
+- improve(vpcs): support outputting tags [GH-2184]
+- improve(instance): remove sdk mutex and improve instance creating speed [GH-2181]
+- (improve market_products): supports more filter parameter [GH-2177]
+- add heyuan region and datasource market supports available_region [GH-2176]
+- improve(ecs_instance): add tags into runInstances request [GH-2175]
+- improve(ecs_instance): improve security groups [GH-2174]
+- improve(fc_function): remove useless code [GH-2173]
+- add support for create snat entry with source_dir [GH-2170]
+
+BUG FIXES:
+
+- fix(instance): resolve LastTokenProcessing error when modifying nework spec [GH-2186]
+- fix(instance): resolve modifying network spec LastOrderProcessing error [GH-2185]
+- fix(instance): resolve volume_tags diff bug when new resource [GH-2182]
+- fix(image): fix the bug of created image by disk [GH-2180]
+- Fix creating instance with multiple security groups [GH-2168]
+
+
 ## 1.71.0 (February 14, 2020)
 
 - **New Resource:** `alicloud_adb_account` ([#2169](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2169))
