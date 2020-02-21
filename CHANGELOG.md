@@ -1,24 +1,24 @@
-## 1.71.1 (Unreleased)
+## 1.71.1 (February 21, 2020)
 
 IMPROVEMENTS:
 
-- update SnatEntry test case [GH-2187]
-- improve(vpcs): support outputting tags [GH-2184]
-- improve(instance): remove sdk mutex and improve instance creating speed [GH-2181]
-- (improve market_products): supports more filter parameter [GH-2177]
-- add heyuan region and datasource market supports available_region [GH-2176]
-- improve(ecs_instance): add tags into runInstances request [GH-2175]
-- improve(ecs_instance): improve security groups [GH-2174]
-- improve(fc_function): remove useless code [GH-2173]
-- add support for create snat entry with source_dir [GH-2170]
+- update SnatEntry test case ([#2187](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2187))
+- improve(vpcs): support outputting tags ([#2184](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2184))
+- improve(instance): remove sdk mutex and improve instance creating speed ([#2181](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2181))
+- (improve market_products): supports more filter parameter ([#2177](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2177))
+- add heyuan region and datasource market supports available_region ([#2176](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2176))
+- improve(ecs_instance): add tags into runInstances request ([#2175](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2175))
+- improve(ecs_instance): improve security groups ([#2174](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2174))
+- improve(fc_function): remove useless code ([#2173](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2173))
+- add support for create snat entry with source_dir ([#2170](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2170))
 
 BUG FIXES:
 
-- fix(instance): resolve LastTokenProcessing error when modifying nework spec [GH-2186]
-- fix(instance): resolve modifying network spec LastOrderProcessing error [GH-2185]
-- fix(instance): resolve volume_tags diff bug when new resource [GH-2182]
-- fix(image): fix the bug of created image by disk [GH-2180]
-- Fix creating instance with multiple security groups [GH-2168]
+- fix(instance): resolve LastTokenProcessing error when modifying nework spec ([#2186](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2186))
+- fix(instance): resolve modifying network spec LastOrderProcessing error ([#2185](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2185))
+- fix(instance): resolve volume_tags diff bug when new resource ([#2182](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2182))
+- fix(image): fix the bug of created image by disk ([#2180](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2180))
+- Fix creating instance with multiple security groups ([#2168](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2168))
 
 
 ## 1.71.0 (February 14, 2020)
