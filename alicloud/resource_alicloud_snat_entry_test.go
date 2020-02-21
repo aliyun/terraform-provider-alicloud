@@ -168,7 +168,7 @@ resource "alicloud_snat_entry" "default"{
 resource "alicloud_snat_entry" "ecs"{
 	depends_on = [alicloud_eip_association.default, alicloud_nat_gateway.default]
 	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
-	source_cidr = "172.16.10.0/32"
+	source_cidr = "172.16.0.10/32"
 	snat_ip = "${alicloud_eip.default.ip_address}"
 }
 `, rand)
@@ -224,7 +224,7 @@ resource "alicloud_snat_entry" "default"{
 resource "alicloud_snat_entry" "ecs"{
 	depends_on = [alicloud_eip_association.default, alicloud_nat_gateway.default]
 	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
-	source_cidr = "172.16.10.0/32"
+	source_cidr = "172.16.0.10/32"
 	snat_ip = "${alicloud_eip.default.ip_address}"
 }
 
@@ -283,7 +283,7 @@ resource "alicloud_snat_entry" "default"{
 resource "alicloud_snat_entry" "ecs"{
 	depends_on = [alicloud_eip_association.default, alicloud_nat_gateway.default]
 	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
-	source_cidr = "172.16.10.0/32"
+	source_cidr = "10.1.2.10/32"
 	snat_ip = "${alicloud_eip.default.ip_address}"
 }
 `, rand)
