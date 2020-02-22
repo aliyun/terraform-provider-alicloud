@@ -179,9 +179,6 @@ func (c *Config) Client() (*AliyunClient, error) {
 }
 
 func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, error)) (interface{}, error) {
-	//goSdkMutex.Lock()
-	//defer goSdkMutex.Unlock()
-
 	// Initialize the ECS client if necessary
 	if client.ecsconn == nil {
 		endpoint := client.config.EcsEndpoint
@@ -236,9 +233,6 @@ func (client *AliyunClient) WithOfficalCSClient(do func(*officalCS.Client) (inte
 }
 
 func (client *AliyunClient) WithRdsClient(do func(*rds.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the RDS client if necessary
 	if client.rdsconn == nil {
 		endpoint := client.config.RdsEndpoint
@@ -263,9 +257,6 @@ func (client *AliyunClient) WithRdsClient(do func(*rds.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the PolarDB client if necessary
 	if client.polarDBconn == nil {
 		endpoint := client.config.PolarDBEndpoint
@@ -292,9 +283,6 @@ func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interfac
 }
 
 func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the SLB client if necessary
 	if client.slbconn == nil {
 		endpoint := client.config.SlbEndpoint
@@ -319,9 +307,6 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the VPC client if necessary
 	if client.vpcconn == nil {
 		endpoint := client.config.VpcEndpoint
@@ -346,9 +331,6 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithNasClient(do func(*nas.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the Nas client if necessary
 	if client.nasconn == nil {
 		endpoint := client.config.NasEndpoint
@@ -372,9 +354,6 @@ func (client *AliyunClient) WithNasClient(do func(*nas.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the CEN client if necessary
 	if client.cenconn == nil {
 		endpoint := client.config.CenEndpoint
@@ -399,9 +378,6 @@ func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the ESS client if necessary
 	if client.essconn == nil {
 		endpoint := client.config.EssEndpoint
@@ -487,9 +463,6 @@ func (client *AliyunClient) WithOssBucketByName(bucketName string, do func(*oss.
 }
 
 func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the DNS client if necessary
 	if client.dnsconn == nil {
 		endpoint := client.config.DnsEndpoint
@@ -514,9 +487,6 @@ func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, 
 }
 
 func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the RAM client if necessary
 	if client.ramconn == nil {
 		endpoint := client.config.RamEndpoint
@@ -568,9 +538,6 @@ func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error
 }
 
 func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the CR client if necessary
 	if client.crconn == nil {
 		endpoint := client.config.CrEndpoint
@@ -619,9 +586,6 @@ func (client *AliyunClient) WithCdnClient(do func(*cdn.CdnClient) (interface{}, 
 }
 
 func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the CDN client if necessary
 	if client.cdnconn_new == nil {
 		endpoint := client.config.CdnEndpoint
@@ -646,9 +610,6 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 }
 
 func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the KMS client if necessary
 	if client.kmsconn == nil {
 
@@ -672,9 +633,6 @@ func (client *AliyunClient) WithKmsClient(do func(*kms.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the OTS client if necessary
 	if client.otsconn == nil {
 		endpoint := client.config.OtsEndpoint
@@ -699,9 +657,6 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the CMS client if necessary
 	if client.cmsconn == nil {
 		endpoint := client.config.CmsEndpoint
@@ -726,9 +681,6 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithPvtzClient(do func(*pvtz.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the PVTZ client if necessary
 	if client.pvtzconn == nil {
 		endpoint := client.config.PvtzEndpoint
@@ -756,9 +708,6 @@ func (client *AliyunClient) WithPvtzClient(do func(*pvtz.Client) (interface{}, e
 }
 
 func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the STS client if necessary
 	if client.stsconn == nil {
 		endpoint := client.config.StsEndpoint
@@ -811,9 +760,6 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the DRDS client if necessary
 	if client.drdsconn == nil {
 		endpoint := client.config.DrdsEndpoint
@@ -840,9 +786,6 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 }
 
 func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the DDS client if necessary
 	if client.ddsconn == nil {
 		endpoint := client.config.DdsEndpoint
@@ -867,9 +810,6 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the GPDB client if necessary
 	if client.gpdbconn == nil {
 		endpoint := client.config.GpdbEnpoint
@@ -894,9 +834,6 @@ func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, e
 }
 
 func (client *AliyunClient) WithRkvClient(do func(*r_kvstore.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the RKV client if necessary
 	if client.rkvconn == nil {
 		endpoint := client.config.KVStoreEndpoint
@@ -958,9 +895,6 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 }
 
 func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the Cloud API client if necessary
 	if client.cloudapiconn == nil {
 		endpoint := client.config.ApigatewayEndpoint
@@ -1048,9 +982,6 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 }
 
 func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the Elasticsearch client if necessary
 	if client.elasticsearchconn == nil {
 		endpoint := client.config.ElasticsearchEndpoint
@@ -1301,8 +1232,6 @@ func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse,
 }
 
 func (client *AliyunClient) WithActionTrailClient(do func(*actiontrail.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
 	if client.actiontrailconn == nil {
 		endpoint := client.config.ActionTrailEndpoint
 		if endpoint == "" {
@@ -1326,9 +1255,6 @@ func (client *AliyunClient) WithActionTrailClient(do func(*actiontrail.Client) (
 }
 
 func (client *AliyunClient) WithCasClient(do func(*cas.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the CAS client if necessary
 	if client.casconn == nil {
 		endpoint := client.config.CasEndpoint
@@ -1353,9 +1279,6 @@ func (client *AliyunClient) WithCasClient(do func(*cas.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the ddoscoo client if necessary
 	if client.ddoscooconn == nil {
 		endpoint := client.config.DdoscooEndpoint
@@ -1381,9 +1304,6 @@ func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interfac
 }
 
 func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the ddosbgp client if necessary
 	if client.ddosbgpconn == nil {
 		endpoint := client.config.DdosbgpEndpoint
@@ -1409,9 +1329,6 @@ func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interfac
 }
 
 func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the bssopenapi client if necessary
 	if client.bssopenapiconn == nil {
 		endpoint := client.config.BssOpenApiEndpoint
@@ -1436,9 +1353,6 @@ func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (in
 }
 
 func (client *AliyunClient) WithOnsClient(do func(*ons.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the ons client if necessary
 	if client.onsconn == nil {
 		endpoint := client.config.OnsEndpoint
@@ -1462,9 +1376,6 @@ func (client *AliyunClient) WithOnsClient(do func(*ons.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the alikafka client if necessary
 	if client.alikafkaconn == nil {
 		endpoint := client.config.AlikafkaEndpoint
@@ -1488,9 +1399,6 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 }
 
 func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	if client.emrconn == nil {
 		endpoint := client.config.EmrEndpoint
 		if endpoint == "" {
@@ -1513,9 +1421,6 @@ func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the SAG client if necessary
 	if client.sagconn == nil {
 		endpoint := client.config.SagEndpoint
@@ -1540,9 +1445,6 @@ func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{},
 }
 
 func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the ddoscoo client if necessary
 	if client.dbauditconn == nil {
 		dbauditconn, err := yundun_dbaudit.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
@@ -1559,9 +1461,6 @@ func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (i
 }
 
 func (client *AliyunClient) WithBastionhostClient(do func(*yundun_bastionhost.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	if client.bastionhostconn == nil {
 		bastionhostconn, err := yundun_bastionhost.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
@@ -1577,9 +1476,6 @@ func (client *AliyunClient) WithBastionhostClient(do func(*yundun_bastionhost.Cl
 }
 
 func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the Market API client if necessary
 	if client.marketconn == nil {
 		endpoint := client.config.MarketEndpoint
@@ -1604,9 +1500,6 @@ func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{
 }
 
 func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the HBase client if necessary
 	if client.hbaseconn == nil {
 		endpoint := client.config.HBaseEndpoint
@@ -1631,9 +1524,6 @@ func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{},
 }
 
 func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
 	// Initialize the adb client if necessary
 	if client.adbconn == nil {
 		endpoint := client.config.AdbEndpoint
