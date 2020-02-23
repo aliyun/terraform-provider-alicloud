@@ -486,7 +486,7 @@ type Catcher struct {
 
 var ClientErrorCatcher = Catcher{AliyunGoClientFailure, 10, 5}
 var ServiceBusyCatcher = Catcher{"ServiceUnavailable", 10, 5}
-var ThrottlingCatcher = Catcher{Throttling, 10, 10}
+var ThrottlingCatcher = Catcher{Throttling, 20, 2}
 
 func NewInvoker() Invoker {
 	i := Invoker{}
