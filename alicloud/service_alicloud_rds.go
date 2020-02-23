@@ -1170,13 +1170,26 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 			request.ResourceType = "INSTANCE"
 			request.TagKey = &remove
 			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
-				return client.UntagResources(request)
+
+			wait := incrementalWait(1*time.Second, 2*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+					return client.UntagResources(request)
+				})
+				if err != nil {
+					if IsThrottling(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
 			})
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 		if len(add) > 0 {
@@ -1185,13 +1198,26 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 			request.Tag = &add
 			request.ResourceType = "INSTANCE"
 			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
-				return client.TagResources(request)
+
+			wait := incrementalWait(1*time.Second, 2*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+					return client.TagResources(request)
+				})
+				if err != nil {
+					if IsThrottling(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
 			})
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 		d.SetPartial("tags")
