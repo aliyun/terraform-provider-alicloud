@@ -45,6 +45,10 @@ func resourceAliyunSnatEntry() *schema.Resource {
 				ForceNew:      true,
 				ConflictsWith: strings.Fields("source_vswitch_id"),
 			},
+			"snat_entry_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"snat_entry_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -66,6 +70,9 @@ func resourceAliyunSnatEntryCreate(d *schema.ResourceData, meta interface{}) err
 		request.SourceCIDR = v.(string)
 	}
 
+	if v, ok := d.GetOk("snat_entry_name"); ok {
+		request.SnatEntryName = v.(string)
+	}
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		ar := request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
@@ -118,6 +125,7 @@ func resourceAliyunSnatEntryRead(d *schema.ResourceData, meta interface{}) error
 	}
 	d.Set("snat_ip", object.SnatIp)
 	d.Set("snat_entry_id", object.SnatEntryId)
+	d.Set("snat_entry_name", object.SnatEntryName)
 
 	return nil
 }
@@ -127,21 +135,30 @@ func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) err
 	if strings.HasPrefix(d.Id(), "snat-") {
 		d.SetId(fmt.Sprintf("%s%s%s", d.Get("snat_table_id").(string), COLON_SEPARATED, d.Id()))
 	}
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
+
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	request := vpc.CreateModifySnatEntryRequest()
+	request.RegionId = string(client.Region)
+	request.SnatTableId = parts[0]
+	request.SnatEntryId = parts[1]
+	update := false
 	if d.HasChange("snat_ip") {
-		client := meta.(*connectivity.AliyunClient)
-		vpcService := VpcService{client}
-
-		parts, err := ParseResourceId(d.Id(), 2)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		request := vpc.CreateModifySnatEntryRequest()
-		request.RegionId = string(client.Region)
-		request.SnatTableId = parts[0]
-		request.SnatEntryId = parts[1]
+		update = true
 		request.SnatIp = d.Get("snat_ip").(string)
+	}
 
+	if d.HasChange("snat_entry_name") {
+		update = true
+		request.SnatEntryName = d.Get("snat_entry_name").(string)
+	}
+
+	if update {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.ModifySnatEntry(request)
 		})
@@ -153,7 +170,6 @@ func resourceAliyunSnatEntryUpdate(d *schema.ResourceData, meta interface{}) err
 			return WrapError(err)
 		}
 	}
-
 	return resourceAliyunSnatEntryRead(d, meta)
 }
 
