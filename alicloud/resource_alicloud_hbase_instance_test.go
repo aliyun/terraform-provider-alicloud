@@ -4,12 +4,108 @@ import (
 	"testing"
 
 	"fmt"
+	"log"
+	"strings"
+	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_hbase_instance", &resource.Sweeper{
+		Name: "alicloud_hbase_instance",
+		F:    testSweepHBaseInstances,
+	})
+}
+
+func testSweepHBaseInstances(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	var insts []hbase.Instance
+	req := hbase.CreateDescribeInstancesRequest()
+	req.RegionId = client.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
+			return hbaseClient.DescribeInstances(req)
+		})
+		if err != nil {
+			return fmt.Errorf("Error retrieving HBase Instances: %s", err)
+		}
+		resp, _ := raw.(*hbase.DescribeInstancesResponse)
+		if resp == nil || len(resp.Instances.Instance) < 1 {
+			break
+		}
+		insts = append(insts, resp.Instances.Instance...)
+
+		if len(resp.Instances.Instance) < PageSizeLarge {
+			break
+		}
+
+		page, err := getNextpageNumber(req.PageNumber)
+		if err != nil {
+			return err
+		}
+		req.PageNumber = page
+	}
+
+	sweeped := false
+	vpcService := VpcService{client}
+	for _, v := range insts {
+		name := v.InstanceName
+		id := v.InstanceId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+		if skip {
+			if need, err := vpcService.needSweepVpc(v.VpcId, ""); err == nil {
+				skip = !need
+			}
+
+		}
+
+		if skip {
+			log.Printf("[INFO] Skipping Hbase Instance: %s (%s)", name, id)
+			continue
+		}
+
+		log.Printf("[INFO] Deleting HBase Instance: %s (%s)", name, id)
+		req := hbase.CreateDeleteInstanceRequest()
+		req.ClusterId = id
+		_, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
+			return hbaseClient.DeleteInstance(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Hbase Instance (%s (%s)): %s", name, id, err)
+		} else {
+			sweeped = true
+		}
+	}
+	if sweeped {
+		// Waiting 30 seconds to eusure these DB instances have been deleted.
+		time.Sleep(30 * time.Second)
+	}
+	return nil
+}
 
 const resourceHBaseConfigClassic = `
 data "alicloud_zones" "default" {

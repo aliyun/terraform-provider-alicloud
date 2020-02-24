@@ -111,7 +111,11 @@ func resourceAliyunSnatEntryRead(d *schema.ResourceData, meta interface{}) error
 	}
 
 	d.Set("snat_table_id", object.SnatTableId)
-	d.Set("source_vswitch_id", object.SourceVSwitchId)
+	if _, ok := d.GetOk("source_cidr"); ok {
+		d.Set("source_cidr", object.SourceCIDR)
+	} else {
+		d.Set("source_vswitch_id", object.SourceVSwitchId)
+	}
 	d.Set("snat_ip", object.SnatIp)
 	d.Set("snat_entry_id", object.SnatEntryId)
 
