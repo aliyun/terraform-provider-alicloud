@@ -23,4 +23,5 @@ type Address struct {
 	Port             string `json:"Port" xml:"Port"`
 	VPCId            string `json:"VPCId" xml:"VPCId"`
 	VSwitchId        string `json:"VSwitchId" xml:"VSwitchId"`
+	VpcInstanceId    string `json:"VpcInstanceId" xml:"VpcInstanceId"`
 }
