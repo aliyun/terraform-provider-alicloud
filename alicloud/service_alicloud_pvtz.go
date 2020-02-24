@@ -136,7 +136,7 @@ func (s *PvtzService) DescribePvtzZoneRecord(id string) (record pvtz.Record, err
 		}
 
 		for _, rec := range response.Records.Record {
-			if strconv.Itoa(rec.RecordId) == parts[0] {
+			if strconv.FormatInt(rec.RecordId, 10) == parts[0] {
 				record = rec
 				return record, nil
 			}
@@ -222,11 +222,11 @@ func (s *PvtzService) WaitForPvtzZoneRecord(id string, status Status, timeout in
 				return WrapError(err)
 			}
 		}
-		if strconv.Itoa(object.RecordId) == parts[0] {
+		if strconv.FormatInt(object.RecordId, 10) == parts[0] {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, strconv.Itoa(object.RecordId), id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, strconv.FormatInt(object.RecordId, 10), id, ProviderERROR)
 		}
 
 	}

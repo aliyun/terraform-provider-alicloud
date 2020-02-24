@@ -7,6 +7,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
+	"strconv"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -200,7 +202,7 @@ func (s *CenService) WaitForCenBandwidthPackage(id string, status Status, bandwi
 				return WrapError(err)
 			}
 		}
-		if object.Status == string(status) && object.Bandwidth == bandwidth {
+		if object.Status == string(status) && strconv.FormatInt(object.Bandwidth, 10) == strconv.Itoa(bandwidth) {
 			return nil
 		}
 		if time.Now().After(deadline) {
