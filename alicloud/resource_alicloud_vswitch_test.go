@@ -41,6 +41,8 @@ func init() {
 			"alicloud_gpdb_instance",
 			"alicloud_yundun_bastionhost_instance",
 			"alicloud_emr_cluster",
+			"polardb_cluster",
+			"alicloud_hbase_instance",
 		},
 	})
 }
