@@ -65,9 +65,6 @@ func resourceAlicloudMNSSubscription() *schema.Resource {
 				Optional: true,
 				Default:  string(ali_mns.SIMPLIFIED),
 				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(ali_mns.SIMPLIFIED), string(ali_mns.XML),
-				}, false),
 			},
 		},
 	}
