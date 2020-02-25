@@ -36,6 +36,8 @@ func testSweepCenInstances(region string) error {
 	prefixes := []string{
 		fmt.Sprintf("tf-testAcc%s", region),
 		fmt.Sprintf("tf_testAcc%s", region),
+		fmt.Sprintf("tf-testAccCen%s", region),
+		fmt.Sprintf("tf_testAccCen%s", region),
 	}
 
 	var insts []cbn.Cen
@@ -106,7 +108,7 @@ func testSweepCenInstances(region string) error {
 				log.Printf("[ERROR] Failed to Detach CEN Attached Instance (%s (%s %s)): %s", name, id, instanceId, err)
 			}
 			cenService := CenService{client}
-			err = cenService.WaitForCenInstanceAttachment(id, Deleted, DefaultCenTimeoutLong)
+			err = cenService.WaitForCenInstanceAttachment(id+COLON_SEPARATED+instanceId, Deleted, DefaultCenTimeoutLong)
 			if err != nil {
 				log.Printf("[ERROR] Failed to WaitFor CEN Attached Instance Detached (%s (%s %s)): %s", name, id, instanceId, err)
 			}

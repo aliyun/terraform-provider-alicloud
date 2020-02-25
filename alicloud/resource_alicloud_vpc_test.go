@@ -27,6 +27,7 @@ func init() {
 			"alicloud_ots_instance",
 			"alicloud_router_interface",
 			"alicloud_route_table",
+			"alicloud_cen_instance",
 		},
 	})
 }
