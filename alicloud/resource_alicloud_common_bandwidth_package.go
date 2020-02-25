@@ -75,15 +75,15 @@ func resourceAliyunCommonBandwidthPackageCreate(d *schema.ResourceData, meta int
 	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	request.InternetChargeType = d.Get("internet_charge_type").(string)
 	request.Ratio = requests.NewInteger(d.Get("ratio").(int))
-	request.ClientToken = buildClientToken(request.GetActionName())
 
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+		request.ClientToken = buildClientToken(request.GetActionName())
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.CreateCommonBandwidthPackage(request)
 		})
 		if err != nil {
-			if IsThrottling(err) {
+			if IsExpectedErrors(err, []string{"BandwidthPackageOperation.conflict", Throttling}) {
 				wait()
 				return resource.RetryableError(err)
 
