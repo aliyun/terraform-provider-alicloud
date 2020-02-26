@@ -149,9 +149,10 @@ func TestAccAlicloudPolarDBCluster(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -170,6 +171,17 @@ func TestAccAlicloudPolarDBCluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"maintain_time": "16:00Z-17:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_class": "polar.mysql.x4.xlarge",
+					"modify_type":   "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_node_class": "polar.mysql.x4.xlarge",
 					}),
 				),
 			},
@@ -212,12 +224,15 @@ func TestAccAlicloudPolarDBCluster(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":   "tf-testaccdnsrecordbasic1",
 					"maintain_time": "02:00Z-03:00Z",
+					"db_node_class": "polar.mysql.x8.xlarge",
+					"modify_type":   "Upgrade",
 					"security_ips":  []string{"10.168.1.13", "100.69.7.113"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":   "tf-testaccdnsrecordbasic1",
 						"maintain_time": "02:00Z-03:00Z",
+						"db_node_class": "polar.mysql.x8.xlarge",
 					}),
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.13,100.69.7.113"),
 				),

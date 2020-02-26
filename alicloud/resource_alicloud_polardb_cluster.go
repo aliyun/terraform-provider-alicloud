@@ -27,7 +27,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
-			Update: schema.DefaultTimeout(20 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 
@@ -44,8 +44,13 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"db_node_class": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
+			},
+			"modify_type": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Upgrade", "Downgrade"}, false),
+				Optional:     true,
+				Default:      "Upgrade",
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -91,7 +96,6 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Optional: true,
 			},
 			"maintain_time": {
@@ -218,6 +222,28 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudPolarDBClusterRead(d, meta)
+	}
+
+	if d.HasChange("db_node_class") {
+		request := polardb.CreateModifyDBNodeClassRequest()
+		request.RegionId = client.RegionId
+		request.DBClusterId = d.Id()
+		request.ModifyType = d.Get("modify_type").(string)
+		request.DBNodeTargetClass = d.Get("db_node_class").(string)
+
+		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.ModifyDBNodeClass(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		// wait cluster status change from Creating to running
+		stateConf := BuildStateConf([]string{"ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("db_node_class")
 	}
 
 	if d.HasChange("description") {
