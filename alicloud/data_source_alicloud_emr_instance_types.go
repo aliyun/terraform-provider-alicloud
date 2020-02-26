@@ -30,6 +30,10 @@ func dataSourceAlicloudEmrInstanceTypes() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"instance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -89,11 +93,15 @@ func dataSourceAlicloudEmrInstanceTypesRead(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 
 	request := emr.CreateListEmrAvailableResourceRequest()
+	request.RegionId = string(client.Region)
 	if dstRes, ok := d.GetOk("destination_resource"); ok {
 		request.DestinationResource = strings.TrimSpace(dstRes.(string))
 	}
 	if typ, ok := d.GetOk("cluster_type"); ok {
 		request.ClusterType = strings.TrimSpace(typ.(string))
+	}
+	if instanceType, ok := d.GetOk("instance_type"); ok {
+		request.InstanceType = strings.TrimSpace(instanceType.(string))
 	}
 	if chargeType, ok := d.GetOk("instance_charge_type"); ok {
 		request.InstanceChargeType = strings.TrimSpace(chargeType.(string))
