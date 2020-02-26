@@ -22,6 +22,7 @@ data "alicloud_emr_instance_types" "default" {
   instance_charge_type  = "PostPaid"
   support_local_storage = false
   cluster_type          = "HADOOP"
+  instance_type         = "ecs.g5.2xlarge"
   support_node_type     = ["MASTER", "CORE"]
 }
 
@@ -37,8 +38,9 @@ The following arguments are supported:
 * `destination_resource` - (Required) The destination resource of emr cluster instance
 * `instance_charge_type` - (Required) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
 * `cluster_type` - (Required) The cluster type of the emr cluster instance. Possible values: `HADOOP`, `KAFKA`, `ZOOKEEPER`, `DRUID`.
-* `support_local_storage` - (Optional,Available in 1.61.0+) Whether the current storage disk is local or not.
-* `support_node_type` - (Optional,Available in 1.63.0+) The specific supported node type list. 
+* `instance_type` - (Optional, Available in 1.71.2+) Filter the specific ecs instance type to create emr cluster.
+* `support_local_storage` - (Optional, Available in 1.61.0+) Whether the current storage disk is local or not.
+* `support_node_type` - (Optional, Available in 1.63.0+) The specific supported node type list.
 Possible values may be any one or combination of these: ["MASTER", "CORE", "TASK", "GATEWAY"]
 * `zone_id` - (Optional,Available in 1.69.0+) The supported resources of specific zoneId.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
