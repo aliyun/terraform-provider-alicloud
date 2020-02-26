@@ -127,7 +127,7 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 			return essClient.CreateScalingGroup(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{Throttling}) {
+			if IsExpectedErrors(err, []string{Throttling, IncorrectLoadBalancerHealthCheck}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
