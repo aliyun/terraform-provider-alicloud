@@ -214,7 +214,7 @@ func resourceAliyunSlbRuleCreate(d *schema.ResourceData, meta interface{}) error
 			return slbClient.CreateRules(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"BackendServer.configuring"}) {
+			if IsExpectedErrors(err, []string{"BackendServer.configuring", "OperationFailed.ListenerStatusNotSupport"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -377,17 +377,26 @@ func resourceAliyunSlbRuleDelete(d *schema.ResourceData, meta interface{}) error
 	request.RegionId = client.RegionId
 	request.RuleIds = fmt.Sprintf("['%s']", d.Id())
 
-	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DeleteRules(request)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DeleteRules(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"OperationFailed.ListenerStatusNotSupport"}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidRuleId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
 	return WrapError(slbService.WaitForSlbRule(d.Id(), Deleted, DefaultTimeoutMedium))
 
 }
