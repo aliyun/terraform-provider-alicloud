@@ -261,10 +261,9 @@ func resourceAliyunSlbListener() *schema.Resource {
 				DiffSuppressFunc: httpHttpsDiffSuppressFunc,
 			},
 			"x_forwarded_for": {
-				Type:             schema.TypeList,
-				Optional:         true,
-				Computed:         true,
-				DiffSuppressFunc: httpHttpsDiffSuppressFunc,
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						// At present, retrive client ip can not be modified, and it default to true.
@@ -581,7 +580,7 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	d.SetPartial("x_forwarded_for")
-	if len(d.Get("x_forwarded_for").([]interface{})) > 0 {
+	if len(d.Get("x_forwarded_for").([]interface{})) > 0 && (d.Get("protocol").(string) == "http" || d.Get("protocol").(string) == "https") {
 		xff := d.Get("x_forwarded_for").([]interface{})[0].(map[string]interface{})
 		if xff["retrive_slb_ip"].(bool) {
 			httpArgs.QueryParams["XForwardedFor_SLBIP"] = string(OnFlag)
