@@ -582,6 +582,14 @@ The host_group mapping supports the following:
 * `auto_renew` - (Optional) Auto renew for prepaid, true of false. Default is false.
 * `instance_list` - (Optional) Instance list for cluster scale down. This value follows the json format, e.g. ["instance_id1","instance_id2"]. escape character for " is \".
 
+#### Block bootstrap_action
+
+The bootstrap_action mapping supports the following:
+
+* `name` - (Optional, Available in 1.71.2+) bootstrap action name.
+* `path` - (Optional, Available in 1.71.2+) bootstrap action path, e.g. "oss://bucket/path".
+* `arg` - (Optional, Available in 1.71.2+) bootstrap action args, e.g. "--a=b".
+
 #### Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
