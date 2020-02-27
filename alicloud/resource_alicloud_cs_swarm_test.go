@@ -85,19 +85,19 @@ func testSweepCSSwarms(region string) error {
 	slbS := SlbService{client}
 	for _, id := range slbIds {
 		if err := slbS.sweepSlb(id); err != nil {
-			fmt.Printf("[ERROR] Failed to deleting slb %s: %s", id, WrapError(err))
+			log.Printf("[ERROR] Failed to deleting slb %s: %s", id, WrapError(err))
 		}
 	}
 	ecsS := EcsService{client}
 	for _, id := range groupIds {
 		if err := ecsS.sweepSecurityGroup(id); err != nil {
-			fmt.Printf("[ERROR] Failed to deleting SG %s: %s", id, WrapError(err))
+			log.Printf("[ERROR] Failed to deleting SG %s: %s", id, WrapError(err))
 		}
 	}
 	vpcS := VpcService{client}
 	for _, id := range vswIds {
 		if err := vpcS.sweepVSwitch(id); err != nil {
-			fmt.Printf("[ERROR] Failed to deleting VSW %s: %s", id, WrapError(err))
+			log.Printf("[ERROR] Failed to deleting VSW %s: %s", id, WrapError(err))
 		}
 	}
 	for _, id := range vpcIds {
@@ -106,17 +106,17 @@ func testSweepCSSwarms(region string) error {
 		if raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DescribeNatGateways(request)
 		}); err != nil {
-			fmt.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+			log.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 		} else {
 			response, _ := raw.(vpc.DescribeNatGatewaysResponse)
 			for _, nat := range response.NatGateways.NatGateway {
 				if err := vpcS.sweepNatGateway(nat.NatGatewayId); err != nil {
-					fmt.Printf("[ERROR] Failed to delete nat gateway %s: %s", nat.Name, err)
+					log.Printf("[ERROR] Failed to delete nat gateway %s: %s", nat.Name, err)
 				}
 			}
 		}
 		if err := vpcS.sweepVpc(id); err != nil {
-			fmt.Printf("[ERROR] Failed to deleting VPC %s: %s", id, WrapError(err))
+			log.Printf("[ERROR] Failed to deleting VPC %s: %s", id, WrapError(err))
 		}
 	}
 	return nil

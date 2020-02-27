@@ -19,14 +19,13 @@ import (
 
 const (
 	// common
-	NotFound                         = "NotFound"
-	ResourceNotfound                 = "ResourceNotfound"
-	ServiceUnavailable               = "ServiceUnavailable"
-	InstanceNotFound                 = "Instance.Notfound"
-	MessageInstanceNotFound          = "instance is not found"
-	Throttling                       = "Throttling"
-	IncorrectLoadBalancerHealthCheck = "IncorrectLoadBalancerHealthCheck"
-	ThrottlingUser                   = "Throttling.User"
+	NotFound                = "NotFound"
+	ResourceNotfound        = "ResourceNotfound"
+	ServiceUnavailable      = "ServiceUnavailable"
+	InstanceNotFound        = "Instance.Notfound"
+	MessageInstanceNotFound = "instance is not found"
+	Throttling              = "Throttling"
+	ThrottlingUser          = "Throttling.User"
 
 	// RAM Instance Not Found
 	RamInstanceNotFound   = "Forbidden.InstanceNotFound"

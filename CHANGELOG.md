@@ -1,4 +1,24 @@
-## 1.72.0 (Unreleased)
+## 1.71.2 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve alikafka sweeper test [GH-2206]
+- added filter parameter instance type about data source emr_instance_t…  [GH-2205]
+- improve(polardb): fix update polardb cluster db_node_class will delete instance [GH-2203]
+- improve(cen): add more sweeper test for cen and update go sdk [GH-2201]
+- improve(mns_topic_subscription): supports json [GH-2200]
+- update go sdk to 1.61.1 [GH-2197]
+- improve(snat): add snat_entry_name for this resource [GH-2196]
+- add sweeper for polardb and hbase [GH-2195]
+- improve(nat_gateways): add output vpc_id [GH-2194]
+- add retry for throttling when setting tags [GH-2193]
+- improve(client): remove useless goSdkMutex [GH-2192]
+
+BUG FIXES:
+
+- fix(ess): fix the bug of creating ess scaling group [GH-2204]
+fix(common_bandwidth): resolve BandwidthPackageOperation.conflict [GH-2199]
+
 ## 1.71.1 (February 21, 2020)
 
 IMPROVEMENTS:

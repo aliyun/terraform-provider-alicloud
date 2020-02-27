@@ -99,7 +99,7 @@ func testSweepVpcs(region string) error {
 		service := VpcService{client}
 		err := service.sweepVpc(id)
 		if err != nil {
-			fmt.Printf("[ERROR] Failed to delete VPC (%s (%s)): %s", name, id, err)
+			log.Printf("[ERROR] Failed to delete VPC (%s (%s)): %s", name, id, err)
 		}
 	}
 	return nil
