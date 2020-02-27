@@ -101,7 +101,7 @@ func testSweepInstances(region string) error {
 				return ecsClient.ModifyInstanceAttribute(request)
 			})
 			if err != nil {
-				fmt.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+				log.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 				continue
 			}
 		}
@@ -114,7 +114,7 @@ func testSweepInstances(region string) error {
 				return ecsClient.ModifyInstanceChargeType(request)
 			})
 			if err != nil {
-				fmt.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+				log.Printf("[ERROR] %#v", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 				continue
 			}
 			time.Sleep(3 * time.Second)

@@ -8,6 +8,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -53,7 +55,7 @@ func testSweepAlikafkaInstance(region string) error {
 		for _, prefix := range prefixes {
 
 			// ServiceStatus equals 5 means the instance is in running status.
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) && v.ServiceStatus == 5 {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 				skip = false
 				break
 			}
@@ -66,9 +68,19 @@ func testSweepAlikafkaInstance(region string) error {
 
 		request := alikafka.CreateReleaseInstanceRequest()
 		request.InstanceId = v.InstanceId
-
-		_, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-			return alikafkaClient.ReleaseInstance(request)
+		wait := incrementalWait(2*time.Second, 2*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			_, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+				return alikafkaClient.ReleaseInstance(request)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"Throttling.User"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
 
 		if err != nil {
