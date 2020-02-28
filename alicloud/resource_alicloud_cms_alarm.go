@@ -19,7 +19,7 @@ import (
 
 func resourceAlicloudCmsAlarm() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCmsAlarmUpdate,
+		Create: resourceAlicloudCmsAlarmCreate,
 		Read:   resourceAlicloudCmsAlarmRead,
 		Update: resourceAlicloudCmsAlarmUpdate,
 		Delete: resourceAlicloudCmsAlarmDelete,
@@ -132,6 +132,11 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 	}
 }
 
+func resourceAlicloudCmsAlarmCreate(d *schema.ResourceData, meta interface{}) error {
+	d.SetId(resource.UniqueId())
+	return resourceAlicloudCmsAlarmUpdate(d, meta)
+}
+
 func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
@@ -150,7 +155,7 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("project", alarm.Namespace)
 	d.Set("metric", alarm.MetricName)
 	if period, err := strconv.Atoi(alarm.Period); err != nil {
-		return fmt.Errorf("Atoi Period got an error: %#v.", err)
+		return WrapError(err)
 	} else {
 		d.Set("period", period)
 	}
@@ -162,7 +167,7 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("operator", oper)
 	d.Set("threshold", alarm.Escalations.Critical.Threshold)
 	if count, err := strconv.Atoi(alarm.Escalations.Critical.Times); err != nil {
-		return fmt.Errorf("Atoi Escalations.Critical.Times got an error: %#v.", err)
+		return WrapError(err)
 	} else {
 		d.Set("triggered_count", count)
 	}
@@ -193,7 +198,6 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
-	d.SetId(resource.UniqueId())
 	d.Partial(true)
 
 	request := cms.CreatePutResourceMetricRuleRequest()
