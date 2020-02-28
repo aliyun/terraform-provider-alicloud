@@ -16,6 +16,8 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- fix(cms_alarm): resolve the creating rule dunplicated [GH-2211]
+- fix(ess): fix create ess scaling group error [GH-2208]
 - fix(ess): fix the bug of creating ess scaling group [GH-2204]
 fix(common_bandwidth): resolve BandwidthPackageOperation.conflict [GH-2199]
 
