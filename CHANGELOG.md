@@ -1,25 +1,25 @@
-## 1.71.2 (Unreleased)
+## 1.71.2 (February 28, 2020)
 
 IMPROVEMENTS:
 
-- improve alikafka sweeper test [GH-2206]
-- added filter parameter instance type about data source emr_instance_t…  [GH-2205]
-- improve(polardb): fix update polardb cluster db_node_class will delete instance [GH-2203]
-- improve(cen): add more sweeper test for cen and update go sdk [GH-2201]
-- improve(mns_topic_subscription): supports json [GH-2200]
-- update go sdk to 1.61.1 [GH-2197]
-- improve(snat): add snat_entry_name for this resource [GH-2196]
-- add sweeper for polardb and hbase [GH-2195]
-- improve(nat_gateways): add output vpc_id [GH-2194]
-- add retry for throttling when setting tags [GH-2193]
-- improve(client): remove useless goSdkMutex [GH-2192]
+- improve alikafka sweeper test ([#2206](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2206))
+- added filter parameter instance type about data source emr_instance_t…  ([#2205](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2205))
+- improve(polardb): fix update polardb cluster db_node_class will delete instance ([#2203](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2203))
+- improve(cen): add more sweeper test for cen and update go sdk ([#2201](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2201))
+- improve(mns_topic_subscription): supports json ([#2200](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2200))
+- update go sdk to 1.61.1 ([#2197](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2197))
+- improve(snat): add snat_entry_name for this resource ([#2196](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2196))
+- add sweeper for polardb and hbase ([#2195](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2195))
+- improve(nat_gateways): add output vpc_id ([#2194](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2194))
+- add retry for throttling when setting tags ([#2193](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2193))
+- improve(client): remove useless goSdkMutex ([#2192](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2192))
 
 BUG FIXES:
 
-- fix(cms_alarm): resolve the creating rule dunplicated [GH-2211]
-- fix(ess): fix create ess scaling group error [GH-2208]
-- fix(ess): fix the bug of creating ess scaling group [GH-2204]
-fix(common_bandwidth): resolve BandwidthPackageOperation.conflict [GH-2199]
+- fix(cms_alarm): resolve the creating rule dunplicated ([#2211](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2211))
+- fix(ess): fix create ess scaling group error ([#2208](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2208))
+- fix(ess): fix the bug of creating ess scaling group ([#2204](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2204))
+fix(common_bandwidth): resolve BandwidthPackageOperation.conflict ([#2199](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2199))
 
 ## 1.71.1 (February 21, 2020)
 
