@@ -112,6 +112,13 @@ func Provider() terraform.ResourceProvider {
 				Description:  descriptions["configuration_source"],
 				ValidateFunc: validation.StringLenBetween(0, 64),
 			},
+			"protocol": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "HTTPS",
+				Description:  descriptions["protocol"],
+				ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS"}, false),
+			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 
@@ -477,8 +484,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		RegionId:             strings.TrimSpace(region),
 		SkipRegionValidation: d.Get("skip_region_validation").(bool),
 		ConfigurationSource:  d.Get("configuration_source").(string),
+		Protocol:             d.Get("protocol").(string),
 	}
-
 	token := getProviderConfig(d.Get("security_token").(string), "sts_token")
 	config.SecurityToken = strings.TrimSpace(token)
 

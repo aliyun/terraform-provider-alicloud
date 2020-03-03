@@ -1128,7 +1128,7 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 		WithMaxTaskQueueSize(10000).
 		WithDebug(false).
 		WithHttpTransport(client.getTransport()).
-		WithScheme("HTTPS")
+		WithScheme(client.config.Protocol)
 }
 
 func (client *AliyunClient) getUserAgent() string {
