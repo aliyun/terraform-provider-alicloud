@@ -27,6 +27,7 @@ type Config struct {
 	SecurityToken   string
 	OtsInstanceName string
 	AccountId       string
+	Protocol        string
 
 	RamRoleArn               string
 	RamRoleSessionName       string
