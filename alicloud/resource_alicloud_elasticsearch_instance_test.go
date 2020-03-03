@@ -398,7 +398,7 @@ func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
+	rand := acctest.RandInt()
 	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)[:30]
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence_multi)
 
