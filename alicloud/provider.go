@@ -234,6 +234,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ess_scaling_groups":                dataSourceAlicloudEssScalingGroups(),
 			"alicloud_ess_scaling_rules":                 dataSourceAlicloudEssScalingRules(),
 			"alicloud_ess_scaling_configurations":        dataSourceAlicloudEssScalingConfigurations(),
+			"alicloud_ess_lifecycle_hooks":               dataSourceAlicloudEssLifecycleHooks(),
 			"alicloud_ots_instances":                     dataSourceAlicloudOtsInstances(),
 			"alicloud_ots_instance_attachments":          dataSourceAlicloudOtsInstanceAttachments(),
 			"alicloud_ots_tables":                        dataSourceAlicloudOtsTables(),
