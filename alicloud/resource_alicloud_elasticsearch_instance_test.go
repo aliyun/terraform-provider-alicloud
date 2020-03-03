@@ -45,6 +45,7 @@ func testSweepElasticsearch(region string) error {
 
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
+		"",
 		fmt.Sprintf("tf-testAcc%s", region),
 		fmt.Sprintf("tf_testAcc%s", region),
 	}
@@ -397,7 +398,7 @@ func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)[:30]
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence_multi)
 
@@ -421,7 +422,7 @@ func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
 					"data_node_disk_size":  DataNodeDisk,
 					"data_node_disk_type":  DataNodeDiskType,
 					"instance_charge_type": string(PostPaid),
-					"count":                "10",
+					"count":                "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
