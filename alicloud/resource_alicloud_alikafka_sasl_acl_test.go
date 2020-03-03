@@ -48,7 +48,7 @@ func testSweepAlikafkaSaslAcl(region string) error {
 	for _, v := range instanceListResp.InstanceList.InstanceVO {
 
 		if v.ServiceStatus == 10 {
-			log.Printf("[INFO] Skipping alikafka instance id: %s ", v.InstanceId)
+			log.Printf("[INFO] Skipping released alikafka instance id: %s ", v.InstanceId)
 			continue
 		}
 
@@ -87,7 +87,7 @@ func testSweepAlikafkaSaslAcl(region string) error {
 			usersToDelete = append(usersToDelete, name)
 		}
 		if len(usersToDelete) == 0 {
-			log.Printf("[INFO] Skipping alikafka instance id: %s ", v.InstanceId)
+			log.Printf("[INFO] Skipping by no users in alikafka instance id: %s ", v.InstanceId)
 			continue
 		}
 
@@ -124,7 +124,7 @@ func testSweepAlikafkaSaslAcl(region string) error {
 
 		// If there is no resource, skip
 		if len(topics) == 0 && len(consumers) == 0 {
-			log.Printf("[INFO] Skipping alikafka instance id: %s ", v.InstanceId)
+			log.Printf("[INFO] Skipping by no topics and consumers in alikafka instance id: %s ", v.InstanceId)
 			continue
 		}
 
