@@ -36,19 +36,47 @@ func TestAccAlicloudEssAlarmsDataSource(t *testing.T) {
 			"ids": `["${alicloud_ess_alarm.default.id}_fake"]`,
 		}),
 	}
+	scalingGroupIdAndNameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
+			"scaling_group_id": `"${alicloud_ess_alarm.default.scaling_group_id}"`,
+			"name_regex": `"${alicloud_ess_alarm.default.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
+			"scaling_group_id": `"${alicloud_ess_alarm.default.scaling_group_id}"`,
+			"name_regex": `"${alicloud_ess_alarm.default.name}_fake"`,
+		}),
+	}
+	scalingGroupIdAndIdsConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
+			"scaling_group_id": `"${alicloud_ess_alarm.default.scaling_group_id}"`,
+			"ids": `["${alicloud_ess_alarm.default.id}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
+			"scaling_group_id": `"${alicloud_ess_alarm.default.scaling_group_id}"`,
+			"ids": `["${alicloud_ess_alarm.default.id}_fake"]`,
+		}),
+	}
+	idsAndNameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_ess_alarm.default.id}"]`,
+			"name_regex": `"${alicloud_ess_alarm.default.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
+			"ids": `["${alicloud_ess_alarm.default.id}"]`,
+			"name_regex": `"${alicloud_ess_alarm.default.name}_fake"`,
+		}),
+	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
 			"scaling_group_id": `"${alicloud_ess_alarm.default.scaling_group_id}"`,
 			"ids":              `["${alicloud_ess_alarm.default.id}"]`,
 			"name_regex":       `"${alicloud_ess_alarm.default.name}"`,
-			"metric_type":      `"${alicloud_ess_alarm.default.metric_type}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
 			"scaling_group_id": `"${alicloud_ess_alarm.default.scaling_group_id}_fake"`,
 			"ids":              `["${alicloud_ess_alarm.default.id}_fake"]`,
 			"name_regex":       `"${alicloud_ess_alarm.default.name}_fake"`,
-			"metric_type":      `"${alicloud_ess_alarm.default.metric_type}"`,
 		}),
 	}
 
@@ -84,7 +112,7 @@ func TestAccAlicloudEssAlarmsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeEssAlarmsMapFunc,
 	}
 
-	essAlarmsCheckInfo.dataSourceTestCheck(t, -1, scalingGroupIdConf, nameRegexConf, idsConf, allConf)
+	essAlarmsCheckInfo.dataSourceTestCheck(t, -1, scalingGroupIdConf, nameRegexConf, idsConf, scalingGroupIdAndIdsConf, scalingGroupIdAndNameRegexConf, idsAndNameRegexConf, allConf)
 }
 
 func testAccCheckAlicloudEssAlarmsDataSourceConfig(rand int, attrMap map[string]string) string {
