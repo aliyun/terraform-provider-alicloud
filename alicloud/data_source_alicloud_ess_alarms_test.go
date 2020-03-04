@@ -39,30 +39,30 @@ func TestAccAlicloudEssAlarmsDataSource(t *testing.T) {
 	scalingGroupIdAndNameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
 			"scaling_group_id": `"${alicloud_ess_alarm.default.scaling_group_id}"`,
-			"name_regex": `"${alicloud_ess_alarm.default.name}"`,
+			"name_regex":       `"${alicloud_ess_alarm.default.name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
 			"scaling_group_id": `"${alicloud_ess_alarm.default.scaling_group_id}"`,
-			"name_regex": `"${alicloud_ess_alarm.default.name}_fake"`,
+			"name_regex":       `"${alicloud_ess_alarm.default.name}_fake"`,
 		}),
 	}
 	scalingGroupIdAndIdsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
 			"scaling_group_id": `"${alicloud_ess_alarm.default.scaling_group_id}"`,
-			"ids": `["${alicloud_ess_alarm.default.id}"]`,
+			"ids":              `["${alicloud_ess_alarm.default.id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
 			"scaling_group_id": `"${alicloud_ess_alarm.default.scaling_group_id}"`,
-			"ids": `["${alicloud_ess_alarm.default.id}_fake"]`,
+			"ids":              `["${alicloud_ess_alarm.default.id}_fake"]`,
 		}),
 	}
 	idsAndNameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_ess_alarm.default.id}"]`,
+			"ids":        `["${alicloud_ess_alarm.default.id}"]`,
 			"name_regex": `"${alicloud_ess_alarm.default.name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssAlarmsDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_ess_alarm.default.id}"]`,
+			"ids":        `["${alicloud_ess_alarm.default.id}"]`,
 			"name_regex": `"${alicloud_ess_alarm.default.name}_fake"`,
 		}),
 	}
