@@ -31,7 +31,6 @@ func dataSourceAlicloudEssLifecycleHooks() *schema.Resource {
 			},
 			"names": {
 				Type:     schema.TypeList,
-				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
