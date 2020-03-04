@@ -32,7 +32,6 @@ func dataSourceAlicloudEssAlarms() *schema.Resource {
 			},
 			"names": {
 				Type:     schema.TypeList,
-				Optional: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
@@ -228,7 +227,6 @@ func alarmsDescriptionAttribute(d *schema.ResourceData, alarms []ess.Alarm, meta
 	if err := d.Set("alarms", s); err != nil {
 		return WrapError(err)
 	}
-
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
