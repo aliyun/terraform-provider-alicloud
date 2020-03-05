@@ -58,6 +58,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `comparison_operator` -  The arithmetic operation to use when comparing the specified Statistic and Threshold. The specified Statistic value is used as the first operand. 
   * `evaluation_count` -  The number of times that needs to satisfies comparison condition before transition into ALARM state. 
   * `cloud_monitor_group_id` -  Defines the application group id defined by CMS which is assigned when you upload custom metric to CMS, only available for custom metirc.
-  * `dimensions` -  The dimension map for the alarm's associated metric (documented below). For all metrics, you can not set the dimension key as "scaling_group" or "userId", which is set by default, the second dimension for metric, such as "device" for "PackagesNetIn", need to be set by users.
+  * `dimensions` -  The dimension map for the alarm's associated metric. 
   * `state` -  The state of alarm task. 
   
