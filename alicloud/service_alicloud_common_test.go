@@ -956,6 +956,17 @@ resource "alicloud_ram_role" "default" {
     description = "this is a role test."
     force = true
 }
+
+resource "alicloud_oss_bucket" "default" {
+	bucket = "bootstrap-action"
+	acl    = "public-read-write"
+}
+
+resource "alicloud_oss_bucket_object" "default" {
+	bucket  = "${alicloud_oss_bucket.default.bucket}"
+	key     = "terraform.env"
+	content = "#!/bin/bash\necho 'export TF_BOOTSTRAP_ACTION=env' >> /etc/profile\nsource /etc/profile"
+}
 `
 
 const EmrGatewayTestCase = `

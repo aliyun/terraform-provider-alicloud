@@ -139,6 +139,13 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
+					"bootstrap_action": []map[string]interface{}{
+						{
+							"name": "tf_test",
+							"path": fmt.Sprintf("oss://%s/%s", "${alicloud_oss_bucket.default.bucket}",
+								"${alicloud_oss_bucket_object.default.key}"),
+						},
+					},
 
 					"host_group": []map[string]interface{}{
 						{
