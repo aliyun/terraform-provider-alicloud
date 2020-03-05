@@ -47,6 +47,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `name` - Name of the lifecycle hook.
   * `default_result` - Defines the action the Auto Scaling group should take when the lifecycle hook timeout elapses. 
   * `heartbeat_timeout` - Defines the amount of time, in seconds, that can elapse before the lifecycle hook times out. When the lifecycle hook times out, Auto Scaling performs the action defined in the default_result parameter.
-  * `lifecycle_transition` - Type of Scaling activity attached to lifecycle hook. Supported value: SCALE_OUT, SCALE_IN.
+  * `lifecycle_transition` - Type of Scaling activity attached to lifecycle hook.
   * `notification_arn` - The Arn of notification target.
   * `notification_metadata` - Additional information that you want to include when Auto Scaling sends a message to the notification target.
