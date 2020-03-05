@@ -40,7 +40,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of lifecycle hook ids.
-* `ids` - A list of lifecycle hook names.
+* `names` - A list of lifecycle hook names.
 * `hooks` - A list of lifecycle hooks. Each element contains the following attributes:
   * `id` - ID of the lifecycle hook.
   * `scaling_group_id` - ID of the scaling group.
