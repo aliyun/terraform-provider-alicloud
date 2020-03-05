@@ -10,7 +10,9 @@ description: |-
 # alicloud_ess_scheduled_tasks
 
 This data source provides available scheduled task resources. 
+
 -> **NOTE:** Available in 1.72.0+
+
 ## Example Usage
 
 ```
@@ -32,7 +34,6 @@ The following arguments are supported:
 * `scheduled_action` - (Optional) The operation to be performed when a scheduled task is triggered.
 * `name_regex` - (Optional) A regex string to filter resulting scheduled tasks by name.
 * `ids` - (Optional) A list of scheduled task IDs.
-* `names` - (Optional) A list of scheduled task names.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -40,6 +41,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of scheduled task ids.
+* `names` - A list of scheduled task names.
 * `tasks` - A list of scheduled tasks. Each element contains the following attributes:
   * `id` - ID of the scheduled task id.
   * `name` - Name of the scheduled task name.
