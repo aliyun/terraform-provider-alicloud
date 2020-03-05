@@ -49,6 +49,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `description` - Description of the scheduled task.
   * `launch_expiration_time` - The time period during which a failed scheduled task is retried.
   * `launch_time` - The time at which the scheduled task is triggered.
-  * `recurrence_type` - Specifies the recurrence type of the scheduled task. If set, both recurrence_value and recurrence_end_time must be set.
-  * `recurrence_value` - Specifies how often a scheduled task recurs. The valid value depends on recurrence_type.
+  * `recurrence_type` - Specifies the recurrence type of the scheduled task. 
+  * `recurrence_value` - Specifies how often a scheduled task recurs. 
   * `recurrence_end_time` - Specifies the end time after which the scheduled task is no longer repeated.
