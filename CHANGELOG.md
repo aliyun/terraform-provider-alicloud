@@ -1,4 +1,24 @@
 ## 1.72.0 (Unreleased)
+
+- **New Resource:** `alicloud_cms_site_monitor` [GH-2191]
+- **Data Source:** `alicloud_ess_alarms` [GH-2215]
+- **Data Source:** `alicloud_ess_notifications` [GH-2161]
+- **Data Source:** `alicloud_ess_scheduled_tasks` [GH-2160]
+
+IMPROVEMENTS:
+
+- improve(mns_topic_subscription): remove the validate [GH-2225]
+- Support the parameter of 'protocol' [GH-2214]
+- improve sweeper test [GH-2212]
+- supported bootstrap action when create a new emr cluster instance [GH-2210]
+
+BUG FIXES:
+
+- fix sweep test bug [GH-2223]
+- fix the bug of RAM user cannot be destroyed [GH-2219]
+- fix(elasticsearch_instance): resolve the ci bug [GH-2216]
+- fix(slb): fix slb listener fields and rules creation bug [GH-2209]
+
 ## 1.71.2 (February 28, 2020)
 
 IMPROVEMENTS:
