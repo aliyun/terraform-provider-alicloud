@@ -387,7 +387,7 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
-	resourceId := "alicloud_elasticsearch_instance.default.9"
+	resourceId := "alicloud_elasticsearch_instance.default.1"
 	ra := resourceAttrInit(resourceId, elasticsearchMap)
 
 	serviceFunc := func() interface{} {
