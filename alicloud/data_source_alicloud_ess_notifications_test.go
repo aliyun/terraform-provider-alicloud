@@ -10,22 +10,14 @@ import (
 
 func TestAccAlicloudEssNotificationsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
-	scalingGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEssNotificationsDataSourceConfig(rand, map[string]string{
-			"scaling_group_id": `"${alicloud_ess_notification.default.scaling_group_id}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudEssNotificationsDataSourceConfig(rand, map[string]string{
-			"scaling_group_id": `"${alicloud_ess_notification.default.scaling_group_id}_fake"`,
-		}),
-	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEssNotificationsDataSourceConfig(rand, map[string]string{
 			"scaling_group_id": `"${alicloud_ess_notification.default.scaling_group_id}"`,
-			"ids":              `["${alicloud_ess_notification.default.id}"]`,
+			"ids":              `["${alicloud_ess_notification.default.notification_arn}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudEssNotificationsDataSourceConfig(rand, map[string]string{
 			"scaling_group_id": `"${alicloud_ess_notification.default.scaling_group_id}"`,
-			"ids":              `["${alicloud_ess_notification.default.id}_fake"]`,
+			"ids":              `["${alicloud_ess_notification.default.notification_arn}_fake"]`,
 		}),
 	}
 
@@ -51,7 +43,7 @@ func TestAccAlicloudEssNotificationsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeEssnotificationsMapFunc,
 	}
 
-	essNotificationsCheckInfo.dataSourceTestCheck(t, rand, scalingGroupIdConf, allConf)
+	essNotificationsCheckInfo.dataSourceTestCheck(t, rand, allConf)
 }
 
 func testAccCheckAlicloudEssNotificationsDataSourceConfig(rand int, attrMap map[string]string) string {
