@@ -1,23 +1,23 @@
-## 1.72.0 (Unreleased)
+## 1.72.0 (March 06, 2020)
 
-- **New Resource:** `alicloud_cms_site_monitor` [GH-2191]
-- **Data Source:** `alicloud_ess_alarms` [GH-2215]
-- **Data Source:** `alicloud_ess_notifications` [GH-2161]
-- **Data Source:** `alicloud_ess_scheduled_tasks` [GH-2160]
+- **New Resource:** `alicloud_cms_site_monitor` ([#2191](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2191))
+- **Data Source:** `alicloud_ess_alarms` ([#2215](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2215))
+- **Data Source:** `alicloud_ess_notifications` ([#2161](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2161))
+- **Data Source:** `alicloud_ess_scheduled_tasks` ([#2160](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2160))
 
 IMPROVEMENTS:
 
-- improve(mns_topic_subscription): remove the validate [GH-2225]
-- Support the parameter of 'protocol' [GH-2214]
-- improve sweeper test [GH-2212]
-- supported bootstrap action when create a new emr cluster instance [GH-2210]
+- improve(mns_topic_subscription): remove the validate ([#2225](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2225))
+- Support the parameter of 'protocol' ([#2214](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2214))
+- improve sweeper test ([#2212](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2212))
+- supported bootstrap action when create a new emr cluster instance ([#2210](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2210))
 
 BUG FIXES:
 
-- fix sweep test bug [GH-2223]
-- fix the bug of RAM user cannot be destroyed [GH-2219]
-- fix(elasticsearch_instance): resolve the ci bug [GH-2216]
-- fix(slb): fix slb listener fields and rules creation bug [GH-2209]
+- fix sweep test bug ([#2223](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2223))
+- fix the bug of RAM user cannot be destroyed ([#2219](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2219))
+- fix(elasticsearch_instance): resolve the ci bug ([#2216](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2216))
+- fix(slb): fix slb listener fields and rules creation bug ([#2209](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2209))
 
 ## 1.71.2 (February 28, 2020)
 
