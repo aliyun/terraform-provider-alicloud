@@ -144,7 +144,10 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)[:30]
+	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	if len(name) > 30 {
+		name = name[:30]
+	}
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -193,11 +196,11 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)[:30],
+					"description": name[:len(name)-1],
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)[:30],
+						"description": name[:len(name)-1],
 					}),
 				),
 			},
@@ -284,7 +287,10 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)[:30]
+	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	if len(name) > 30 {
+		name = name[:30]
+	}
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -339,7 +345,10 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)[:30]
+	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	if len(name) > 30 {
+		name = name[:30]
+	}
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -399,7 +408,10 @@ func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)[:30]
+	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	if len(name) > 30 {
+		name = name[:30]
+	}
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence_multi)
 
 	resource.Test(t, resource.TestCase{
