@@ -51,10 +51,10 @@ resource "alicloud_eip_association" "default" {
 }
 
 resource "alicloud_snat_entry" "default" {
-  count         = var.new_nat_gateway == "false" ? 0 : length(var.vswitch_ids) > 0 ? length(var.vswitch_ids) : length(var.vswitch_cidrs)
-  snat_table_id = alicloud_nat_gateway.default[0].snat_table_ids
+  count             = var.new_nat_gateway == "false" ? 0 : length(var.vswitch_ids) > 0 ? length(var.vswitch_ids) : length(var.vswitch_cidrs)
+  snat_table_id     = alicloud_nat_gateway.default[0].snat_table_ids
   source_vswitch_id = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids))[count.index % length(split(",", join(",", var.vswitch_ids)))] : length(var.vswitch_cidrs) < 1 ? "" : split(",", join(",", alicloud_vswitch.vswitches.*.id))[count.index % length(split(",", join(",", alicloud_vswitch.vswitches.*.id)))]
-  snat_ip = alicloud_eip.default[0].ip_address
+  snat_ip           = alicloud_eip.default[0].ip_address
 }
 
 resource "alicloud_cs_kubernetes" "k8s" {
@@ -68,7 +68,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
     var.k8s_name_prefix,
     format(var.number_format, count.index + 1),
   )
-  vswitch_ids = [length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids))[count.index % length(split(",", join(",", var.vswitch_ids)))] : length(var.vswitch_cidrs) < 1 ? "" : split(",", join(",", alicloud_vswitch.vswitches.*.id))[count.index % length(split(",", join(",", alicloud_vswitch.vswitches.*.id)))]]
+  vswitch_ids           = [length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids))[count.index % length(split(",", join(",", var.vswitch_ids)))] : length(var.vswitch_cidrs) < 1 ? "" : split(",", join(",", alicloud_vswitch.vswitches.*.id))[count.index % length(split(",", join(",", alicloud_vswitch.vswitches.*.id)))]]
   new_nat_gateway       = false
   master_instance_types = [var.master_instance_type == "" ? data.alicloud_instance_types.default.instance_types[0].id : var.master_instance_type]
   worker_instance_types = [var.worker_instance_type == "" ? data.alicloud_instance_types.default.instance_types[0].id : var.worker_instance_type]

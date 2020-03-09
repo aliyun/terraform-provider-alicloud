@@ -21,21 +21,21 @@ variable "vpc_id" {
 
 variable "vpc_cidr" {
   description = "The cidr block used to launch a new vpc."
-  default = "10.0.0.0/8"
+  default     = "10.0.0.0/8"
 }
 
 variable "vswitch_id" {
   description = "The vswitch id of existing vswitch."
-  default = ""
+  default     = ""
 }
 
 variable "vswitch_name" {
   description = "The vswitch name used to launch a new vswitch when vswitch_id is not set."
-  default = "tf-serverless-vswitch"
+  default     = "tf-serverless-vswitch"
 }
 variable "vswitch_cidr" {
   description = "The cidr block used to launch a new vswitch when vswitch_id is not set."
-  default = "10.0.1.0/24"
+  default     = "10.0.1.0/24"
 }
 
 
