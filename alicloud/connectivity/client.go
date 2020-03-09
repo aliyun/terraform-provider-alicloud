@@ -123,6 +123,7 @@ type AliyunClient struct {
 	marketconn                   *market.Client
 	hbaseconn                    *hbase.Client
 	adbconn                      *adb.Client
+	cbnConn                      *cbn.Client
 }
 
 type ApiVersion string
@@ -1547,4 +1548,33 @@ func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, err
 	}
 
 	return do(client.adbconn)
+}
+
+func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, error)) (interface{}, error) {
+	if client.cbnConn == nil {
+		endpoint := client.config.CbnEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CbnCode)
+			// compatible with cen
+			if endpoint == "" {
+				endpoint = loadEndpoint(client.config.RegionId, CENCode)
+			}
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CbnCode), endpoint)
+		}
+
+		cbnConn, err := cbn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Cbnclient: %#v", err)
+		}
+		cbnConn.AppendUserAgent(Terraform, terraformVersion)
+		cbnConn.AppendUserAgent(Provider, providerVersion)
+		cbnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.cbnConn = cbnConn
+	}
+	return do(client.cbnConn)
 }

@@ -79,6 +79,7 @@ type Config struct {
 
 	SkipRegionValidation bool
 	ConfigurationSource  string
+	CbnEndpoint          string
 }
 
 func (c *Config) loadAndValidate() error {
