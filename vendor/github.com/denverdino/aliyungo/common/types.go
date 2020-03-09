@@ -14,15 +14,56 @@ const (
 	PostPaid = InstanceChargeType("PostPaid")
 )
 
-var RegionalDomainServices = []string{
-	"ecs",
-	"vpc",
-	"slb",
-	"pvtz",
+var SpecialDeployedProducts = map[string]map[Region]interface{}{
+	"vpc": {
+		Hangzhou:     Hangzhou,
+		Shenzhen:     Shenzhen,
+		APSouthEast1: APSouthEast1,
+		USWest1:      USWest1,
+		USEast1:      USEast1,
+		Chengdu:      Chengdu,
+		Zhangjiakou:  Zhangjiakou,
+		Huhehaote:    Huhehaote,
+		APSouthEast3: APSouthEast3,
+		EUCentral1:   EUCentral1,
+		EUWest1:      EUWest1,
+		APSouth1:     APSouth1,
+		APNorthEast1: APNorthEast1,
+		APSouthEast5: APSouthEast5,
+		APSouthEast2: APSouthEast2,
+		MEEast1:      MEEast1,
+		CNNorth2Gov1: CNNorth2Gov1,
+	},
 }
 
+var RegionalDomainServices = []string{
+	"pvtz",
+	"ecs",
+	"slb",
+}
+
+// Unit-Domain of central product
 var UnitRegions = map[Region]interface{}{
-	Hangzhou: Hangzhou,
+	Hangzhou:     Hangzhou,
+	Beijing:      Beijing,
+	Shanghai:     Shanghai,
+	Shenzhen:     Shenzhen,
+	Hongkong:     Hongkong,
+	APSouthEast1: APSouthEast1,
+	USWest1:      USWest1,
+	USEast1:      USEast1,
+	Chengdu:      Chengdu,
+	Zhangjiakou:  Zhangjiakou,
+	Huhehaote:    Huhehaote,
+	APSouthEast3: APSouthEast3,
+	EUCentral1:   EUCentral1,
+	EUWest1:      EUWest1,
+	APSouth1:     APSouth1,
+	APNorthEast1: APNorthEast1,
+	APSouthEast5: APSouthEast5,
+	APSouthEast2: APSouthEast2,
+	MEEast1:      MEEast1,
+	CNNorth2Gov1: CNNorth2Gov1,
 }
 
 type DescribeEndpointArgs struct {
