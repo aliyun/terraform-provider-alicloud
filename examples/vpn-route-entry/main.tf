@@ -1,4 +1,4 @@
-data "alicloud_zones" "default"{
+data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {

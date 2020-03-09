@@ -3,8 +3,8 @@ provider "alicloud" {
 }
 
 data "alicloud_instance_types" "c2g4" {
-  cpu_core_count       = 4
-  memory_size          = 8
+  cpu_core_count = 4
+  memory_size    = 8
 }
 
 data "alicloud_images" "centos" {

@@ -16,5 +16,5 @@ resource "alicloud_hbase_instance" "default" {
   duration               = var.duration
   auto_renew             = var.auto_renew
   vswitch_id             = var.vswitch_id
-  cold_storage_size        = var.cold_storage_size
+  cold_storage_size      = var.cold_storage_size
 }

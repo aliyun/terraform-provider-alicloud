@@ -14,10 +14,10 @@ resource "alicloud_vswitch" "default" {
   name              = "${var.name}"
 }
 resource "alicloud_polardb_cluster" "default" {
-  db_type              = "MySQL"
-  db_version           = "8.0"
-  db_node_class        = "polar.mysql.x4.large"
-  pay_type             = "PostPaid"
-  description          = "${var.name}"
-  vswitch_id           = "${alicloud_vswitch.default.id}"
+  db_type       = "MySQL"
+  db_version    = "8.0"
+  db_node_class = "polar.mysql.x4.large"
+  pay_type      = "PostPaid"
+  description   = "${var.name}"
+  vswitch_id    = "${alicloud_vswitch.default.id}"
 }

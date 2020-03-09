@@ -20,7 +20,7 @@ resource "alicloud_dns_group" "group" {
 }
 
 resource "alicloud_dns" "dns" {
-  name = var.domain_name
+  name     = var.domain_name
   group_id = alicloud_dns_group.group.*.id[length(alicloud_dns_group.group)]
 }
 
