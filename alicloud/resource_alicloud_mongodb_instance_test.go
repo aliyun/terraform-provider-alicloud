@@ -211,6 +211,14 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				),
 			},
 			{
+				Config: testMongoDBInstance_classic_security_group_id,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
 				Config: testMongoDBInstance_classic_backup,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -629,6 +637,22 @@ resource "alicloud_mongodb_instance" "default" {
   name                = "tf-testAccMongoDBInstance_test"
   account_password    = "YourPassword_123"
   security_ip_list    = ["10.168.1.12"]
+}`
+
+const testMongoDBInstance_classic_security_group_id = `
+data "alicloud_zones" "default" {
+  available_resource_creation = "MongoDB"
+}
+data "alicloud_security_groups" "default" {
+}
+resource "alicloud_mongodb_instance" "default" {
+  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  engine_version      = "3.4"
+  db_instance_storage = 30
+  db_instance_class   = "dds.mongo.standard"
+  name                = "tf-testAccMongoDBInstance_test"
+  account_password    = "YourPassword_123"
+  security_group_id    = "${data.alicloud_security_groups.default.groups.0.id}"
 }`
 
 const testMongoDBInstance_classic_backup = `
