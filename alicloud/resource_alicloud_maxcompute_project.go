@@ -2,8 +2,9 @@ package alicloud
 
 import (
 	"encoding/json"
-	"strings"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute"
@@ -73,23 +74,10 @@ func resourceAliyunMaxComputeProjectCreate(d *schema.ResourceData, meta interfac
 
 func resourceAliyunMaxComputeProjectRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := maxcompute.CreateGetProjectRequest()
-
-	request.RegionName = client.RegionId
-	request.ProjectName = d.Id()
-
-	raw, err := client.WithMaxComputeClient(func(MaxComputeClient *maxcompute.Client) (interface{}, error) {
-		return MaxComputeClient.GetProject(request)
-	})
+	maxcomputeService := MaxComputeService{client}
+	response, err := maxcomputeService.DescribeMaxComputeProject(d.Id())
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_maxcompute_project", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response := raw.(*maxcompute.GetProjectResponse)
-
-	if response.Code != "200" {
-		return WrapError(Error("%v", response))
+		return WrapError(err)
 	}
 
 	var dat map[string]interface{}
@@ -97,7 +85,6 @@ func resourceAliyunMaxComputeProjectRead(d *schema.ResourceData, meta interface{
 	if err := json.Unmarshal([]byte(response.Data), &dat); err != nil {
 		return WrapError(Error("%v", response))
 	}
-
 	d.Set("order_type", dat["orderType"].(string))
 	d.Set("name", dat["projectName"].(string))
 
@@ -106,28 +93,42 @@ func resourceAliyunMaxComputeProjectRead(d *schema.ResourceData, meta interface{
 
 func resourceAliyunMaxComputeProjectDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	maxcomputeService := MaxComputeService{client}
 
 	request := maxcompute.CreateDeleteProjectRequest()
 
 	request.RegionIdName = client.RegionId
 	request.ProjectName = d.Get("name").(string)
 
-	raw, err := client.WithMaxComputeClient(func(MaxComputeClient *maxcompute.Client) (interface{}, error) {
-		return MaxComputeClient.DeleteProject(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_maxcompute_project", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response := raw.(*maxcompute.DeleteProjectResponse)
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithMaxComputeClient(func(MaxComputeClient *maxcompute.Client) (interface{}, error) {
+			return MaxComputeClient.DeleteProject(request)
+		})
+		if err != nil {
+			return resource.NonRetryableError(err)
+		}
 
-	if response.Code != "200" {
-		if strings.Contains(response.Data, "Project not found") {
+		response := raw.(*maxcompute.DeleteProjectResponse)
+		if response.Code == "500" {
+			return resource.RetryableError(nil)
+		}
+
+		if response.Code != "200" {
+			return resource.NonRetryableError(err)
+		}
+
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		if isProjectNotExistError(response.Data) {
 			return nil
 		}
 
-		return WrapError(Error("%v", response))
-	}
+		return nil
+	})
 
-	return nil
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, request.ProjectName, "DeleteProject", AliyunMaxComputeSdkGo)
+	}
+	return WrapError(maxcomputeService.WaitForMaxComputeProject(request.ProjectName, Deleted, DefaultTimeout))
+
 }
