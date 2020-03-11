@@ -9,7 +9,8 @@ description: |-
 # alicloud\_maxcompute\_project
 
 The project is the basic unit of operation in maxcompute. It is similar to the concept of Database or Schema in traditional databases, and sets the boundary for maxcompute multi-user isolation and access control. [Refer to details](https://www.alibabacloud.com/help/doc-detail/27818.html).
-->**NOTE:** Available in 1.72.0+. 
+
+->**NOTE:** Available in 1.73.0+.
 
 ## Example Usage
 
@@ -27,9 +28,8 @@ resource "alicloud_maxcompute_project" "example" {
 The following arguments are supported:
 
 * `name` - (Required, ForceNew) The name of the maxcompute project. 
-* `specification_type` - (Required)  The type of resource Specification
-* `order_type` - (Required) The type of payment.
-->**NOTE:** Currently specification_type only supported `OdpsStandard`, order_type only supported `PayAsYouGo`
+* `specification_type` - (Required)  The type of resource Specification, only `OdpsStandard` supported currently.
+* `order_type` - (Required) The type of payment, only `PayAsYouGo` supported currently.
 
 ## Attributes Reference
 

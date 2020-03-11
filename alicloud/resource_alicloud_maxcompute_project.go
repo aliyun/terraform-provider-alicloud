@@ -30,15 +30,17 @@ func resourceAlicloudMaxComputeProject() *schema.Resource {
 			},
 
 			"specification_type": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"OdpsStandard"}, false),
 			},
 
 			"order_type": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo"}, false),
 			},
 		},
 	}
