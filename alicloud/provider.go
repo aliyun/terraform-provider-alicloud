@@ -755,6 +755,7 @@ func init() {
 		"adb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom AnalyticDB endpoints.",
 
 		"cbn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cbn endpoints.",
+		"maxcompute_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MaxCompute endpoints.",
 	}
 }
 
@@ -1052,6 +1053,12 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["adb_endpoint"],
 				},
+				"maxcompute": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["maxcompute_endpoint"],
+				},
 			},
 		},
 		Set: endpointsToHash,
@@ -1101,6 +1108,8 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["market"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["adb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cbn"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["maxcompute"].(string)))
+
 	return hashcode.String(buf.String())
 }
 

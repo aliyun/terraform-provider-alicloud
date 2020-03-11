@@ -1608,6 +1608,8 @@ func (client *AliyunClient) WithMaxComputeClient(do func(*maxcompute.Client) (in
 		}
 
 		maxcomputeconn.AppendUserAgent(Terraform, terraformVersion)
+		maxcomputeconn.AppendUserAgent(Provider, providerVersion)
+		maxcomputeconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		client.maxcomputeconn = maxcomputeconn
 	}
 
