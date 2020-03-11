@@ -261,6 +261,55 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
+	var v dds.DBInstance
+	resourceId := "alicloud_mongodb_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckMongoDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testMongoDBInstance_classic_base4,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":       "4.0",
+						"db_instance_storage":  "10",
+						"db_instance_class":    "dds.mongo.mid",
+						"name":                 "",
+						"storage_engine":       "WiredTiger",
+						"instance_charge_type": "PostPaid",
+						"replication_factor":   "3",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testMongoDBInstance_classic_tde,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status": "enabled",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
@@ -573,6 +622,17 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_class   = "dds.mongo.mid"
 }`
 
+const testMongoDBInstance_classic_base4 = `
+data "alicloud_zones" "default" {
+  available_resource_creation = "MongoDB"
+}
+resource "alicloud_mongodb_instance" "default" {
+  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  engine_version      = "4.0"
+  db_instance_storage = 10
+  db_instance_class   = "dds.mongo.mid"
+}`
+
 const testMongoDBInstance_classic_tags = `
 data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
@@ -623,6 +683,18 @@ resource "alicloud_mongodb_instance" "default" {
   db_instance_class   = "dds.mongo.standard"
   name                = "tf-testAccMongoDBInstance_test"
   account_password    = "YourPassword_123"
+}`
+
+const testMongoDBInstance_classic_tde = `
+data "alicloud_zones" "default" {
+  available_resource_creation = "MongoDB"
+}
+resource "alicloud_mongodb_instance" "default" {
+  zone_id             = "${data.alicloud_zones.default.zones.0.id}"
+  engine_version      = "4.0"
+  db_instance_storage = 10
+  db_instance_class   = "dds.mongo.mid"
+  tde_status    = "enabled"
 }`
 
 const testMongoDBInstance_classic_security_ip_list = `
