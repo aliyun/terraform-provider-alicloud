@@ -16,6 +16,8 @@ type CmsService struct {
 	client *connectivity.AliyunClient
 }
 
+type IspCities []map[string]string
+
 func (s *CmsService) BuildCmsCommonRequest(region string) *requests.CommonRequest {
 	request := requests.NewCommonRequest()
 	return request
@@ -109,4 +111,27 @@ func (s *CmsService) DescribeSiteMonitor(id, keyword string) (siteMonitor cms.Si
 		}
 	}
 	return siteMonitor, GetNotFoundErrorFromString(GetNotFoundMessage("Site Monitor", id))
+}
+
+func (s *CmsService) GetIspCities(id string) (ispCities IspCities, err error) {
+	request := cms.CreateDescribeSiteMonitorAttributeRequest()
+	request.TaskId = id
+
+	raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+		return cmsClient.DescribeSiteMonitorAttribute(request)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	response := raw.(*cms.DescribeSiteMonitorAttributeResponse)
+	ispCity := response.SiteMonitors.IspCities.IspCity
+
+	var list []map[string]string
+	for _, element := range ispCity {
+		list = append(list, map[string]string{"city": element.City, "isp": element.Isp})
+	}
+
+	return list, nil
 }

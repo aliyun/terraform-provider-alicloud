@@ -24,6 +24,10 @@ resource "alicloud_cms_sitemonitor" "basic" {
 	  task_name = "tf-testAccCmsSiteMonitor_basic"
 	  task_type = "HTTP"
 	  interval = 5
+	  isp_cities {
+		city = "546"
+		isp = "465"
+	  }
 	}   
 }
 ```
