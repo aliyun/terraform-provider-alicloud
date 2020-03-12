@@ -13,13 +13,13 @@ type KmsService struct {
 	client *connectivity.AliyunClient
 }
 
-func (k *KmsService) DescribeKmsKey(id string) (*kms.DescribeKeyResponse, error) {
+func (s *KmsService) DescribeKmsKey(id string) (*kms.DescribeKeyResponse, error) {
 	key := &kms.DescribeKeyResponse{}
 	request := kms.CreateDescribeKeyRequest()
-	request.RegionId = k.client.RegionId
+	request.RegionId = s.client.RegionId
 	request.KeyId = id
 
-	raw, err := k.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+	raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
 		return kmsClient.DescribeKey(request)
 	})
 	if err != nil {
@@ -37,10 +37,10 @@ func (k *KmsService) DescribeKmsKey(id string) (*kms.DescribeKeyResponse, error)
 	return key, nil
 }
 
-func (k *KmsService) WaitForKmsKey(id string, status Status, timeout int) error {
+func (s *KmsService) WaitForKmsKey(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		object, err := k.DescribeKmsKey(id)
+		object, err := s.DescribeKmsKey(id)
 		if err != nil {
 			if NotFoundError(err) {
 				if status == Deleted {
@@ -59,16 +59,16 @@ func (k *KmsService) WaitForKmsKey(id string, status Status, timeout int) error 
 	}
 }
 
-func (k *KmsService) Decrypt(ciphertextBlob string, encryptionContext map[string]interface{}) (*kms.DecryptResponse, error) {
+func (s *KmsService) Decrypt(ciphertextBlob string, encryptionContext map[string]interface{}) (*kms.DecryptResponse, error) {
 	context, err := json.Marshal(encryptionContext)
 	if err != nil {
 		return nil, WrapError(err)
 	}
 	request := kms.CreateDecryptRequest()
-	request.RegionId = k.client.RegionId
+	request.RegionId = s.client.RegionId
 	request.CiphertextBlob = ciphertextBlob
 	request.EncryptionContext = string(context[:])
-	raw, err := k.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+	raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
 		return kmsClient.Decrypt(request)
 	})
 	if err != nil {

@@ -27,6 +27,7 @@ type Config struct {
 	SecurityToken   string
 	OtsInstanceName string
 	AccountId       string
+	Protocol        string
 
 	RamRoleArn               string
 	RamRoleSessionName       string
@@ -78,6 +79,7 @@ type Config struct {
 
 	SkipRegionValidation bool
 	ConfigurationSource  string
+	CbnEndpoint          string
 }
 
 func (c *Config) loadAndValidate() error {

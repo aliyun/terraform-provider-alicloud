@@ -8,8 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
-	"time"
-
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -20,6 +19,13 @@ func init() {
 	resource.AddTestSweepers("alicloud_alikafka_instance", &resource.Sweeper{
 		Name: "alicloud_alikafka_instance",
 		F:    testSweepAlikafkaInstance,
+		// When implemented, these should be removed firstly
+		Dependencies: []string{
+			"alicloud_alikafka_consumer_group",
+			"alicloud_alikafka_sasl_acl",
+			"alicloud_alikafka_topic",
+			"alicloud_alikafka_sasl_user",
+		},
 	})
 }
 
@@ -47,7 +53,7 @@ func testSweepAlikafkaInstance(region string) error {
 	}
 
 	instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
-
+	service := VpcService{client}
 	for _, v := range instanceListResp.InstanceList.InstanceVO {
 
 		name := v.Name
@@ -60,27 +66,36 @@ func testSweepAlikafkaInstance(region string) error {
 				break
 			}
 		}
+		// If a ES description is not set successfully, it should be fetched by vswitch name and deleted.
+		if skip {
+			if need, err := service.needSweepVpc(v.VpcId, v.VSwitchId); err == nil {
+				skip = !need
+			}
+		}
 		if skip {
 			log.Printf("[INFO] Skipping alikafka instance: %s ", name)
 			continue
 		}
-		log.Printf("[INFO] delete alikafka instance: %s ", name)
+		if v.ServiceStatus != 10 {
+			log.Printf("[INFO] release alikafka instance: %s ", name)
 
-		request := alikafka.CreateReleaseInstanceRequest()
-		request.InstanceId = v.InstanceId
-		wait := incrementalWait(2*time.Second, 2*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			request := alikafka.CreateReleaseInstanceRequest()
+			request.InstanceId = v.InstanceId
+			request.ForceDeleteInstance = requests.NewBoolean(true)
 			_, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 				return alikafkaClient.ReleaseInstance(request)
 			})
+
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Throttling.User"}) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
+				log.Printf("[ERROR] Failed to release alikafka instance (%s): %s", name, err)
 			}
-			return nil
+		}
+
+		log.Printf("[INFO] Delete alikafka instance: %s ", name)
+		request2 := alikafka.CreateDeleteInstanceRequest()
+		request2.InstanceId = v.InstanceId
+		_, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			return alikafkaClient.DeleteInstance(request2)
 		})
 
 		if err != nil {

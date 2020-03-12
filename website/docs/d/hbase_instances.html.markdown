@@ -30,6 +30,7 @@ The following arguments are supported:
 * `name_regex` - (Optional) A regex string to apply to the instance name.
 * `ids` - (Optional) The ids list of HBase instances
 * `availability_zone` - (Optional) Instance availability zone.
+* `tags` - (Optional, Available in 1.73.0) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) The name of file that can save the collection of instances after running `terraform plan`.
 
 ## Attributes Reference
@@ -45,9 +46,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `engine` - the engine of the instance.
   * `engine_version` - the engine_version of the instance.
   * `network_type` - Classic network or VPC.
-  * `master_instance_type` - hbase.n1.medium, hbase.n1.large, hbase.n1.2xlarge and so on.
+  * `master_instance_type` - hbase.sn1.large, hbase.sn1.large, hbase.n1.2xlarge and so on.
   * `master_node_count` - the node count of master
-  * `core_instance_type` - hbase.n1.medium, hbase.n1.large, hbase.n1.2xlarge and so on.
+  * `core_instance_type` - hbase.sn1.large, hbase.sn1.large, hbase.n1.2xlarge and so on.
   * `core_node_count` - same with "core_instance_quantity"
   * `core_disk_type` - cloud_ssd or cloud_efficiency
   * `core_disk_size` - core node disk size, unit:GB.
@@ -58,3 +59,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `backup_status` - the Backup Status of the instance.
   * `create_time` - the create time of the instance.
   * `expire_time` - the expire time of the instance.
+  * `deletion_protection` - the switch of delete protection.
+  * `tags` - A mapping of tags to assign to the resource.

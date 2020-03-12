@@ -1,9 +1,10 @@
 package alicloud
 
 const (
-	Average = "Average"
-	Minimum = "Minimum"
-	Maximum = "Maximum"
+	Average          = "Average"
+	Minimum          = "Minimum"
+	Maximum          = "Maximum"
+	ErrorCodeMaximum = "ErrorCodeMaximum"
 )
 
 const (
@@ -13,4 +14,15 @@ const (
 	LessThanOrEqual = "<="
 	Equal           = "=="
 	NotEqual        = "!="
+)
+
+const (
+	SiteMonitorHTTP = "HTTP"
+	SiteMonitorPing = "Ping"
+	SiteMonitorTCP  = "TCP"
+	SiteMonitorUDP  = "UDP"
+	SiteMonitorDNS  = "DNS"
+	SiteMonitorSMTP = "SMTP"
+	SiteMonitorPOP3 = "POP3"
+	SiteMonitorFTP  = "FTP"
 )

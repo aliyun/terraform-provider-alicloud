@@ -79,8 +79,10 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to a instance. If the `account_password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
+* `security_group_id` - (Optional, Available in 1.73.0+) The Security Group ID of ECS.
 * `backup_period` - (Optional, Available in 1.42.0+) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
 * `backup_time` - (Optional, Available in 1.42.0+) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
+* `tde_status` - (Optional, ForceNew, Available in 1.73.0+) The TDE(Transparent Data Encryption) status.
 * `maintain_start_time` - (Optional, Available in v1.56.0+) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available in v1.56.0+) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.

@@ -79,7 +79,7 @@ func testSweepCSSwarms(region string) error {
 	}
 	if sweeped {
 		// Waiting 2 minutes to eusure these swarms have been deleted.
-		time.Sleep(2 * time.Minute)
+		time.Sleep(1 * time.Minute)
 	}
 	// Currently, the CS will retain some resources after the cluster is deleted.
 	slbS := SlbService{client}

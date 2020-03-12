@@ -44,12 +44,11 @@ func testSweepAlikafkaSaslAcl(region string) error {
 	}
 
 	instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
 
 	for _, v := range instanceListResp.InstanceList.InstanceVO {
 
 		if v.ServiceStatus == 10 {
-			log.Printf("[INFO] Skipping alikafka instance id: %s ", v.InstanceId)
+			log.Printf("[INFO] Skipping released alikafka instance id: %s ", v.InstanceId)
 			continue
 		}
 
@@ -61,21 +60,10 @@ func testSweepAlikafkaSaslAcl(region string) error {
 		userListReq.InstanceId = v.InstanceId
 		userListReq.RegionId = defaultRegionToTest
 
-		var saslUserRaw interface{}
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			saslUserRaw, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-				return alikafkaClient.DescribeSaslUsers(userListReq)
-			})
-			if err != nil {
-				if IsExpectedErrors(err, []string{ThrottlingUser}) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(userListReq.GetActionName(), userListReq, userListReq.RpcRequest, userListReq)
-			return nil
+		saslUserRaw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			return alikafkaClient.DescribeSaslUsers(userListReq)
 		})
+
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve alikafka sasl users on instance (%s): %s", v.InstanceId, err)
 			continue
@@ -99,7 +87,7 @@ func testSweepAlikafkaSaslAcl(region string) error {
 			usersToDelete = append(usersToDelete, name)
 		}
 		if len(usersToDelete) == 0 {
-			log.Printf("[INFO] Skipping alikafka instance id: %s ", v.InstanceId)
+			log.Printf("[INFO] Skipping by no users in alikafka instance id: %s ", v.InstanceId)
 			continue
 		}
 
@@ -108,21 +96,10 @@ func testSweepAlikafkaSaslAcl(region string) error {
 		topicListReq.InstanceId = v.InstanceId
 		topicListReq.RegionId = defaultRegionToTest
 
-		var topicRaw interface{}
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			topicRaw, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-				return alikafkaClient.GetTopicList(topicListReq)
-			})
-			if err != nil {
-				if IsExpectedErrors(err, []string{ThrottlingUser}) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(topicListReq.GetActionName(), topicRaw, topicListReq.RpcRequest, topicListReq)
-			return nil
+		topicRaw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			return alikafkaClient.GetTopicList(topicListReq)
 		})
+
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve alikafka topics on instance (%s): %s", v.InstanceId, err)
 			continue
@@ -147,7 +124,7 @@ func testSweepAlikafkaSaslAcl(region string) error {
 
 		// If there is no resource, skip
 		if len(topics) == 0 && len(consumers) == 0 {
-			log.Printf("[INFO] Skipping alikafka instance id: %s ", v.InstanceId)
+			log.Printf("[INFO] Skipping by no topics and consumers in alikafka instance id: %s ", v.InstanceId)
 			continue
 		}
 
