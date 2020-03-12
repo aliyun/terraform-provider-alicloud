@@ -58,6 +58,7 @@ func TestAccAlicloudCmsSiteMonitor_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "task_name", "tf-testAccCmsSiteMonitor_update"),
 					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "interval", "5"),
 					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "address", "http://www.alibabacloud.com"),
+					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "isp_cities.#", "1"),
 				),
 			},
 
@@ -67,6 +68,7 @@ func TestAccAlicloudCmsSiteMonitor_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "task_name", "tf-testAccCmsSiteMonitor_updateafter"),
 					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "interval", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "address", "http://www.alibaba.com"),
+					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "isp_cities.#", "2"),
 				),
 			},
 		},
@@ -109,6 +111,10 @@ func testAccCmsSiteMonitor_basic() string {
 	  task_name = "tf-testAccCmsSiteMonitor_basic"
 	  task_type = "HTTP"
 	  interval = 5
+	  isp_cities {
+		  city = "546"
+		  isp = "465"
+	  }
 	}
 	`)
 }
@@ -122,6 +128,10 @@ resource "alicloud_cms_site_monitor" "update" {
 	task_name = "tf-testAccCmsSiteMonitor_update"
 	task_type = "HTTP"
 	interval = 5
+	isp_cities {
+		city = "546"
+		isp = "465"
+	}
 }
 `)
 }
@@ -136,6 +146,14 @@ func testAccCmsSiteMonitor_updateAfter() string {
 		task_name = "tf-testAccCmsSiteMonitor_updateafter"
 		task_type = "HTTP"
 		interval = 1
+		isp_cities {
+			city = "546"
+			isp = "465"
+		}
+		isp_cities {
+			city = "572"
+			isp = "465"
+		}
 	}
 	`)
 }

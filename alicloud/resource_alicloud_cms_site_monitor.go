@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -55,6 +57,22 @@ func resourceAlicloudCmsSiteMonitor() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"isp_cities": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"city": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"isp": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
 			"task_state": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -86,6 +104,19 @@ func resourceAlicloudCmsSiteMonitorCreate(d *schema.ResourceData, meta interface
 	alertId := getAlertId(alertIds)
 	if alertId != "" {
 		request.AlertIds = alertId
+	}
+
+	if isp_cities, ok := d.GetOk("isp_cities"); ok {
+		var a []map[string]interface{}
+		for _, element := range isp_cities.(*schema.Set).List() {
+			isp_city := element.(map[string]interface{})
+			a = append(a, isp_city)
+		}
+		b, err := json.Marshal(a)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.IspCities = bytes.NewBuffer(b).String()
 	}
 
 	_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
@@ -127,6 +158,17 @@ func resourceAlicloudCmsSiteMonitorRead(d *schema.ResourceData, meta interface{}
 	d.Set("create_time", siteMonitor.CreateTime)
 	d.Set("update_time", siteMonitor.UpdateTime)
 
+	ispCities, err := cmsService.GetIspCities(d.Id())
+	var list []map[string]interface{}
+
+	for _, e := range ispCities {
+		list = append(list, map[string]interface{}{"city": e["city"], "isp": e["isp"]})
+	}
+
+	if err = d.Set("isp_cities", list); err != nil {
+		return WrapError(err)
+	}
+
 	return nil
 }
 
@@ -143,6 +185,19 @@ func resourceAlicloudCmsSiteMonitorUpdate(d *schema.ResourceData, meta interface
 	alertId := getAlertId(alertIds)
 	if alertId != "" {
 		request.AlertIds = alertId
+	}
+
+	if isp_cities, ok := d.GetOk("isp_cities"); ok {
+		var a []map[string]interface{}
+		for _, element := range isp_cities.(*schema.Set).List() {
+			isp_city := element.(map[string]interface{})
+			a = append(a, isp_city)
+		}
+		b, err := json.Marshal(a)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.IspCities = bytes.NewBuffer(b).String()
 	}
 
 	_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
