@@ -37,3 +37,9 @@ The following attributes are exported:
 
 * `id` - The ID of the maxcompute project. It is the same as its name.
 
+## Import
+
+MaxCompute project can be imported using the *name* or ID, e.g.
+
+```
+$ terraform import alicloud_maxcompute_project.example tf_maxcompute_project
