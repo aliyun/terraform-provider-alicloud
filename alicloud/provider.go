@@ -127,6 +127,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_images":                 dataSourceAlicloudImages(),
 			"alicloud_regions":                dataSourceAlicloudRegions(),
 			"alicloud_zones":                  dataSourceAlicloudZones(),
+			"alicloud_db_zones":               dataSourceAlicloudDBZones(),
 			"alicloud_instance_type_families": dataSourceAlicloudInstanceTypeFamilies(),
 			"alicloud_instance_types":         dataSourceAlicloudInstanceTypes(),
 			"alicloud_instances":              dataSourceAlicloudInstances(),
