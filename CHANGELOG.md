@@ -1,27 +1,27 @@
-## 1.73.0 (Unreleased)
+## 1.73.0 (March 13, 2020)
 
-- **New Resource:** `alicloud_cen_flowlog` [GH-2229]
-- **Data Source:** `alicloud_gpdb_zones` [GH-2241]
-- **Data Source:** `alicloud_hbase_zones` [GH-2240]
-- **Data Source:** `alicloud_mongodb_zones` [GH-2238]
-- **Data Source:** `alicloud_kvstore_zones` [GH-2236]
-- **Data Source:** `alicloud_db_zones` [GH-2235]
+- **New Resource:** `alicloud_cen_flowlog` ([#2229](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2229))
+- **Data Source:** `alicloud_gpdb_zones` ([#2241](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2241))
+- **Data Source:** `alicloud_hbase_zones` ([#2240](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2240))
+- **Data Source:** `alicloud_mongodb_zones` ([#2238](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2238))
+- **Data Source:** `alicloud_kvstore_zones` ([#2236](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2236))
+- **Data Source:** `alicloud_db_zones` ([#2235](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2235))
 
 IMPROVEMENTS:
 
-- improve(ecs): supported auto snapshop policy [GH-2245]
-- add flowlog docs in the alicloud.erb [GH-2237]
-- fix(elasticsearch): update the sdk [GH-2234]
-- add new version aliyungo [GH-2232]
+- improve(ecs): supported auto snapshop policy ([#2245](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2245))
+- add flowlog docs in the alicloud.erb ([#2237](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2237))
+- fix(elasticsearch): update the sdk ([#2234](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2234))
+- add new version aliyungo ([#2232](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2232))
 - terraform format examples [2231]
-- Hbase tags [GH-2228]
+- Hbase tags ([#2228](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2228))
 - mongodb support TDE [GH2207]
 
 BUG FIXES:
 
-- fix(cms_alarm): resolve the effective_interval format bug [GH-2242]
-- fix SQLServer testcase [GH-2233]
-- fix(es): fix ci bug [GH-2230]
+- fix(cms_alarm): resolve the effective_interval format bug ([#2242](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2242))
+- fix SQLServer testcase ([#2233](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2233))
+- fix(es): fix ci bug ([#2230](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2230))
 
 ## 1.72.0 (March 06, 2020)
 
