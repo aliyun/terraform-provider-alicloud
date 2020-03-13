@@ -109,10 +109,10 @@ func dataSourceAlicloudKVStoreZoneRead(d *schema.ResourceData, meta interface{})
 	}
 	d.SetId(dataResourceIdHash(zoneIds))
 	if err := d.Set("zones", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 	if err := d.Set("ids", zoneIds); err != nil {
-		return err
+		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
