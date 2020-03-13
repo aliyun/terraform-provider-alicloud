@@ -157,6 +157,11 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional: true,
 				Default:  40,
 			},
+			"system_disk_auto_snapshot_policy_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"data_disks": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -189,6 +194,11 @@ func resourceAliyunInstance() *schema.Resource {
 							ForceNew: true,
 						},
 						"snapshot_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"auto_snapshot_policy_id": {
 							Type:     schema.TypeString,
 							Optional: true,
 							ForceNew: true,
@@ -443,6 +453,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	}
 	d.Set("system_disk_category", disk.Category)
 	d.Set("system_disk_size", disk.Size)
+	d.Set("system_disk_auto_snapshot_policy_id", disk.AutoSnapshotPolicyId)
 	d.Set("volume_tags", tagsToMap(disk.Tags.Tag))
 
 	d.Set("instance_name", instance.InstanceName)
@@ -828,6 +839,10 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	request.SystemDiskCategory = string(systemDiskCategory)
 	request.SystemDiskSize = strconv.Itoa(d.Get("system_disk_size").(int))
 
+	if v, ok := d.GetOk("system_disk_auto_snapshot_policy_id"); ok && v.(string) != "" {
+		request.SystemDiskAutoSnapshotPolicyId = v.(string)
+	}
+
 	if v, ok := d.GetOk("security_groups"); ok {
 		// At present, the classic network instance does not support multi sg in runInstances
 		sgs := expandStringList(v.(*schema.Set).List())
@@ -966,6 +981,9 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 			}
 			if description, ok := disk["description"]; ok {
 				dataDiskRequest.Description = description.(string)
+			}
+			if autoSnapshotPolicyId, ok := disk["auto_snapshot_policy_id"]; ok {
+				dataDiskRequest.AutoSnapshotPolicyId = autoSnapshotPolicyId.(string)
 			}
 			dataDiskRequest.Size = fmt.Sprintf("%d", disk["size"].(int))
 			dataDiskRequest.Category = disk["category"].(string)
