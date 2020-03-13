@@ -1,4 +1,28 @@
 ## 1.73.0 (Unreleased)
+
+- **New Resource:** `alicloud_cen_flowlog` [GH-2229]
+- **Data Source:** `alicloud_gpdb_zones` [GH-2241]
+- **Data Source:** `alicloud_hbase_zones` [GH-2240]
+- **Data Source:** `alicloud_mongodb_zones` [GH-2238]
+- **Data Source:** `alicloud_kvstore_zones` [GH-2236]
+- **Data Source:** `alicloud_db_zones` [GH-2235]
+
+IMPROVEMENTS:
+
+- improve(ecs): supported auto snapshop policy [GH-2245]
+- add flowlog docs in the alicloud.erb [GH-2237]
+- fix(elasticsearch): update the sdk [GH-2234]
+- add new version aliyungo [GH-2232]
+- terraform format examples [2231]
+- Hbase tags [GH-2228]
+- mongodb support TDE [GH2207]
+
+BUG FIXES:
+
+- fix(cms_alarm): resolve the effective_interval format bug [GH-2242]
+- fix SQLServer testcase [GH-2233]
+- fix(es): fix ci bug [GH-2230]
+
 ## 1.72.0 (March 06, 2020)
 
 - **New Resource:** `alicloud_cms_site_monitor` ([#2191](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2191))
