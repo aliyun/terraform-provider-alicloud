@@ -603,11 +603,11 @@ func zoneIdsDescriptionAttributes(d *schema.ResourceData, zones []string) error 
 
 	d.SetId(dataResourceIdHash(zones))
 	if err := d.Set("zones", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if err := d.Set("ids", zoneIds); err != nil {
-		return err
+		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
