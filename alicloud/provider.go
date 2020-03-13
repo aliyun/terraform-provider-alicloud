@@ -219,6 +219,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_api_gateway_groups":                dataSourceAlicloudApiGatewayGroups(),
 			"alicloud_api_gateway_apps":                  dataSourceAlicloudApiGatewayApps(),
 			"alicloud_elasticsearch_instances":           dataSourceAlicloudElasticsearch(),
+			"alicloud_elasticsearch_zones":               dataSourceAlicloudElaticsearchZones(),
 			"alicloud_drds_instances":                    dataSourceAlicloudDRDSInstances(),
 			"alicloud_nas_access_groups":                 dataSourceAlicloudAccessGroups(),
 			"alicloud_nas_access_rules":                  dataSourceAlicloudAccessRules(),
