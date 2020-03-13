@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -820,25 +819,4 @@ func computePeriodByUnit(createTime, endTime interface{}, currentPeriod int, per
 		period = currentPeriod
 	}
 	return period, WrapError(err)
-}
-
-func checkWaitForReady(object interface{}, conditions map[string]interface{}) (bool, map[string]interface{}, error) {
-	if conditions == nil {
-		return false, nil, nil
-	}
-	objectType := reflect.TypeOf(object)
-	objectValue := reflect.ValueOf(object)
-	values := make(map[string]interface{})
-	for key, value := range conditions {
-		if _, ok := objectType.FieldByName(key); ok {
-			current := objectValue.FieldByName(key)
-			values[key] = current
-			if fmt.Sprintf("%v", current) != fmt.Sprintf("%v", value) {
-				return false, values, nil
-			}
-		} else {
-			return false, values, WrapError(fmt.Errorf("There is missing attribute %s in the object.", key))
-		}
-	}
-	return true, values, nil
 }

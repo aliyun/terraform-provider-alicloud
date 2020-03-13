@@ -15,15 +15,15 @@ data "alicloud_images" "image" {
 }
 
 variable "name" {
-  default = "tf-testAccCcnConfigName"
+default = "tf-testAccCcnConfigName"
 }
 variable "description" {
-  default = "tf-testAccCcnConfigDescription"
+default = "tf-testAccCcnConfigDescription"
 }
 
 resource "alicloud_cloud_connect_network" "default" {
-  name        = var.name
-  description = var.description
-  cidr_block  = "192.168.0.0/24"
-  is_default  = true
+name        = var.name
+description = var.description
+cidr_block = "192.168.0.0/24"
+is_default = true
 }

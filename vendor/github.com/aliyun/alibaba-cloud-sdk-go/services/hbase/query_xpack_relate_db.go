@@ -76,9 +76,8 @@ func (client *Client) QueryXpackRelateDBWithCallback(request *QueryXpackRelateDB
 // QueryXpackRelateDBRequest is the request struct for api QueryXpackRelateDB
 type QueryXpackRelateDBRequest struct {
 	*requests.RpcRequest
-	HasSingleNode requests.Boolean `position:"Query" name:"HasSingleNode"`
-	ClusterId     string           `position:"Query" name:"ClusterId"`
-	RelateDbType  string           `position:"Query" name:"RelateDbType"`
+	ClusterId    string `position:"Query" name:"ClusterId"`
+	RelateDbType string `position:"Query" name:"RelateDbType"`
 }
 
 // QueryXpackRelateDBResponse is the response struct for api QueryXpackRelateDB
@@ -93,7 +92,7 @@ func CreateQueryXpackRelateDBRequest() (request *QueryXpackRelateDBRequest) {
 	request = &QueryXpackRelateDBRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("HBase", "2019-01-01", "QueryXpackRelateDB", "", "")
+	request.InitWithApiInfo("HBase", "2019-01-01", "QueryXpackRelateDB", "hbase", "openAPI")
 	return
 }
 

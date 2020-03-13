@@ -98,7 +98,7 @@ func CreateModifyVpcAttributeRequest() (request *ModifyVpcAttributeRequest) {
 	request = &ModifyVpcAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Vpc", "2016-04-28", "ModifyVpcAttribute", "Vpc", "openAPI")
+	request.InitWithApiInfo("Vpc", "2016-04-28", "ModifyVpcAttribute", "vpc", "openAPI")
 	return
 }
 

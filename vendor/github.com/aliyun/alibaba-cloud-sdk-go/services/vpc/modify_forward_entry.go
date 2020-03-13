@@ -77,7 +77,6 @@ func (client *Client) ModifyForwardEntryWithCallback(request *ModifyForwardEntry
 type ModifyForwardEntryRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	ClientToken          string           `position:"Query" name:"ClientToken"`
 	ForwardTableId       string           `position:"Query" name:"ForwardTableId"`
 	InternalIp           string           `position:"Query" name:"InternalIp"`
 	ForwardEntryId       string           `position:"Query" name:"ForwardEntryId"`
@@ -102,7 +101,7 @@ func CreateModifyForwardEntryRequest() (request *ModifyForwardEntryRequest) {
 	request = &ModifyForwardEntryRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Vpc", "2016-04-28", "ModifyForwardEntry", "Vpc", "openAPI")
+	request.InitWithApiInfo("Vpc", "2016-04-28", "ModifyForwardEntry", "vpc", "openAPI")
 	return
 }
 

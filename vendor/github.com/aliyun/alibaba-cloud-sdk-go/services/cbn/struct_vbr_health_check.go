@@ -24,6 +24,4 @@ type VbrHealthCheck struct {
 	HealthCheckSourceIp string `json:"HealthCheckSourceIp" xml:"HealthCheckSourceIp"`
 	HealthCheckTargetIp string `json:"HealthCheckTargetIp" xml:"HealthCheckTargetIp"`
 	Delay               int64  `json:"Delay" xml:"Delay"`
-	HealthCheckInterval int    `json:"HealthCheckInterval" xml:"HealthCheckInterval"`
-	HealthyThreshold    int    `json:"HealthyThreshold" xml:"HealthyThreshold"`
 }

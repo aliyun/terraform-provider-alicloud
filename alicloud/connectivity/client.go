@@ -123,7 +123,6 @@ type AliyunClient struct {
 	marketconn                   *market.Client
 	hbaseconn                    *hbase.Client
 	adbconn                      *adb.Client
-	cbnConn                      *cbn.Client
 }
 
 type ApiVersion string
@@ -150,7 +149,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.72.0"
+var providerVersion = "1.71.1"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient
@@ -1129,7 +1128,7 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 		WithMaxTaskQueueSize(10000).
 		WithDebug(false).
 		WithHttpTransport(client.getTransport()).
-		WithScheme(client.config.Protocol)
+		WithScheme("HTTPS")
 }
 
 func (client *AliyunClient) getUserAgent() string {
@@ -1548,33 +1547,4 @@ func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, err
 	}
 
 	return do(client.adbconn)
-}
-
-func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, error)) (interface{}, error) {
-	if client.cbnConn == nil {
-		endpoint := client.config.CbnEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, CbnCode)
-			// compatible with cen
-			if endpoint == "" {
-				endpoint = loadEndpoint(client.config.RegionId, CENCode)
-			}
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(CbnCode), endpoint)
-		}
-
-		cbnConn, err := cbn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Cbnclient: %#v", err)
-		}
-		cbnConn.AppendUserAgent(Terraform, terraformVersion)
-		cbnConn.AppendUserAgent(Provider, providerVersion)
-		cbnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.cbnConn = cbnConn
-	}
-	return do(client.cbnConn)
 }

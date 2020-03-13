@@ -4,20 +4,16 @@ variable "availability_zone" {
   default     = ""
 }
 
-variable "engine" {
-  default = "hbase"
-}
-
 variable "engine_version" {
   default = "2.0"
 }
 
 variable "master_instance_type" {
-  default = "hbase.sn1.large"
+  default = "hbase.n1.medium"
 }
 
 variable "core_instance_type" {
-  default = "hbase.sn1.large"
+  default = "hbase.n1.large"
 }
 
 # 2~20
@@ -38,13 +34,13 @@ variable "pay_type" {
   default = "PostPaid"
 }
 
-# valid when pay_type = "PrePaid"
+# valid when pay_type = "Prepaid"
 variable "duration" {
   default = 1
 }
-# valid when pay_type = "PrePaid"
+# valid when pay_type = "Prepaid"
 variable "auto_renew" {
-  default = false
+  default = "false"
 }
 
 # VSwitch variables, if vswitch_id is empty, then the net_type = classic
@@ -56,15 +52,4 @@ variable "vswitch_id" {
 # 0 mean is_cold_storage = false.
 variable "cold_storage_size" {
   default = 0
-}
-
-variable "maintain_start_time" {
-  default = "02:00Z"
-}
-
-variable "maintain_end_time" {
-  default = "04:00Z"
-}
-variable "deletion_protection" {
-  default = true
 }

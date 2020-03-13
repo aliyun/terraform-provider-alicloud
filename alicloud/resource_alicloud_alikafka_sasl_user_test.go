@@ -51,7 +51,7 @@ func testSweepAlikafkaSaslUser(region string) error {
 	for _, v := range instanceListResp.InstanceList.InstanceVO {
 
 		if v.ServiceStatus == 10 {
-			log.Printf("[INFO] Skipping released alikafka instance id: %s ", v.InstanceId)
+			log.Printf("[INFO] Skipping alikafka instance id: %s ", v.InstanceId)
 			continue
 		}
 

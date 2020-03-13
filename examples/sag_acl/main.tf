@@ -15,10 +15,10 @@ data "alicloud_images" "image" {
 }
 
 variable "name" {
-  default = "tf-testAccSagAclConfigName"
+default = "tf-testAccSagAclConfigName"
 }
 
 
 resource "alicloud_sag_acl" "default" {
-  name = var.name
+name        = var.name
 }

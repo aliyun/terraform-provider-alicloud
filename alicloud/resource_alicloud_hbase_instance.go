@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
@@ -48,7 +46,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"hbase", "hbaseue", "bds"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"hbase"}, false),
 				Default:      "hbase",
 			},
 			"engine_version": {
@@ -68,8 +66,9 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			},
 			"core_instance_quantity": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntBetween(1, 20),
+				ValidateFunc: validation.IntBetween(2, 20),
 				Optional:     true,
+				ForceNew:     true,
 				Default:      2,
 			},
 			"core_disk_type": {
@@ -81,7 +80,8 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			"core_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(100, 8000),
+				ForceNew:     true,
+				ValidateFunc: validation.IntBetween(100, 2000),
 				Default:      100,
 			},
 			"pay_type": {
@@ -117,31 +117,8 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
-			"maintain_start_time": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"maintain_end_time": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"deletion_protection": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  true,
-			},
-			"tags": tagsSchema(),
 		},
 	}
-}
-
-func checkParams(request *hbase.CreateInstanceRequest) error {
-	if request.DbType == "bds" && request.NetType == "classic" {
-		return WrapError(Error("bds is not support classic"))
-	}
-	return nil
 }
 
 func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.CreateInstanceRequest, error) {
@@ -154,6 +131,7 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 	request.Engine = Trim(d.Get("engine").(string))
 	request.DbType = request.Engine
 	request.EngineVersion = Trim(d.Get("engine_version").(string))
+	request.DbType = request.Engine
 	request.MasterInstanceType = Trim(d.Get("master_instance_type").(string))
 	request.CoreInstanceType = Trim(d.Get("core_instance_type").(string))
 	request.CoreInstanceQuantity = strconv.Itoa(d.Get("core_instance_quantity").(int))
@@ -197,7 +175,7 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 	}
 
 	request.SecurityIPList = LOCAL_HOST_IP
-	return request, checkParams(request)
+	return request, nil
 }
 
 func resourceAlicloudHBaseInstanceCreate(d *schema.ResourceData, meta interface{}) error {
@@ -228,7 +206,7 @@ func resourceAlicloudHBaseInstanceCreate(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	return resourceAlicloudHBaseInstanceUpdate(d, meta)
+	return resourceAlicloudHBaseInstanceRead(d, meta)
 }
 
 func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{}) error {
@@ -269,51 +247,11 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 	d.Set("cold_storage_size", d.Get("cold_storage_size"))
 	d.Set("vpc_id", instance.VpcId)
 	d.Set("vswitch_id", instance.VswitchId)
-	d.Set("maintain_start_time", instance.MaintainStartTime)
-	d.Set("maintain_end_time", instance.MaintainEndTime)
-	d.Set("deletion_protection", instance.IsDeletionProtection)
-	d.Set("tags", hbaseService.tagsToMap(instance.Tags.Tag))
 	return nil
 }
 
 func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	hBaseService := HBaseService{client}
-	d.Partial(true)
-
-	if d.HasChange("maintain_start_time") || d.HasChange("maintain_end_time") {
-		request := hbase.CreateModifyInstanceMaintainTimeRequest()
-		request.ClusterId = d.Id()
-		request.MaintainStartTime = d.Get("maintain_start_time").(string)
-		request.MaintainEndTime = d.Get("maintain_end_time").(string)
-
-		raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
-			return client.ModifyInstanceMaintainTime(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("maintain_start_time")
-		d.SetPartial("maintain_end_time")
-	}
-
-	if d.HasChange("deletion_protection") {
-		if err := hBaseService.ModifyClusterDeletionProtection(d.Id(), d.Get("deletion_protection").(bool)); err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("deletion_protection")
-	}
-
-	if err := hBaseService.setInstanceTags(d); err != nil {
-		return WrapError(err)
-	}
-
-	if d.IsNewResource() {
-		d.Partial(false)
-		return resourceAlicloudHBaseInstanceRead(d, meta)
-	}
-
 	if d.HasChange("name") {
 		request := hbase.CreateModifyInstanceNameRequest()
 		request.ClusterId = d.Id()
@@ -326,54 +264,8 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("name")
 	}
 
-	if d.HasChange("core_instance_quantity") {
-		request := hbase.CreateResizeNodeCountRequest()
-		request.ClusterId = d.Id()
-		request.NodeCount = requests.NewInteger(d.Get("core_instance_quantity").(int))
-
-		raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
-			return client.ResizeNodeCount(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		// Cumbersome operation，async call, wait for state change
-		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{Hb_NODE_RESIZING}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
-			5*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_NODE_RESIZING_FAILED}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("core_instance_quantity")
-	}
-
-	if d.HasChange("core_disk_size") {
-		request := hbase.CreateResizeDiskSizeRequest()
-		request.ClusterId = d.Id()
-		request.NodeDiskSize = requests.NewInteger(d.Get("core_disk_size").(int) * 4)
-
-		raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
-			return client.ResizeDiskSize(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		// Cumbersome operation，async call, wait for state change
-		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{Hb_DISK_RESIZING}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
-			5*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_DISK_RESIZE_FAILED}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("core_disk_size")
-	}
-
-	d.Partial(false)
 	return resourceAlicloudHBaseInstanceRead(d, meta)
 }
 
@@ -383,7 +275,6 @@ func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{
 
 	request := hbase.CreateDeleteInstanceRequest()
 	request.ClusterId = d.Id()
-	request.ImmediateDeleteFlag = requests.NewBoolean(true)
 	err := resource.Retry(10*5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
 			return hbaseClient.DeleteInstance(request)
@@ -391,9 +282,6 @@ func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-				return resource.NonRetryableError(err)
-			}
-			if IsExpectedErrors(err, []string{"Forbidden"}) {
 				return resource.NonRetryableError(err)
 			}
 			return resource.RetryableError(err)

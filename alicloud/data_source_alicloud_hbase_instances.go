@@ -33,7 +33,6 @@ func dataSourceAlicloudHBaseInstances() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"tags": tagsSchema(),
 			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -124,11 +123,6 @@ func dataSourceAlicloudHBaseInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"deletion_protection": {
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						"tags": tagsSchema(),
 					},
 				},
 			},
@@ -138,7 +132,6 @@ func dataSourceAlicloudHBaseInstances() *schema.Resource {
 
 func dataSourceAlicloudHBaseInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	hbaseService := HBaseService{client}
 
 	request := hbase.CreateDescribeInstancesRequest()
 	request.RegionId = client.RegionId
@@ -160,18 +153,6 @@ func dataSourceAlicloudHBaseInstancesRead(d *schema.ResourceData, meta interface
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-
-	if v, ok := d.GetOk("tags"); ok {
-		var reqTags []hbase.DescribeInstancesTag
-		for key, value := range v.(map[string]interface{}) {
-			reqTags = append(reqTags, hbase.DescribeInstancesTag{
-				Key:   key,
-				Value: value.(string),
-			})
-		}
-		request.Tag = &reqTags
-	}
-
 	for {
 		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
 			return hbaseClient.DescribeInstances(request)
@@ -238,8 +219,6 @@ func dataSourceAlicloudHBaseInstancesRead(d *schema.ResourceData, meta interface
 			"backup_status":        item.BackupStatus,
 			"created_time":         item.CreatedTimeUTC,
 			"expire_time":          item.ExpireTimeUTC,
-			"deletion_protection":  item.IsDeletionProtection,
-			"tags":                 hbaseService.tagsToMap(item.Tags.Tag),
 		}
 		ids = append(ids, item.InstanceId)
 		names = append(names, item.InstanceName)

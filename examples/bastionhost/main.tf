@@ -9,15 +9,15 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "${var.description}"
+  name = "${var.description}"
   cidr_block = "${var.vpc_cidr_block}"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "${var.vswitch_cidr_block}"
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "${var.vswitch_cidr_block}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.description}"
+  name = "${var.description}"
 }
 
 resource "alicloud_security_group" "default" {
@@ -26,9 +26,9 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_yundun_bastionhost_instance" "instance" {
-  description        = "${var.description}"
-  license_code       = "${var.license_code}"
-  period             = "${var.period}"
-  vswitch_id         = "${alicloud_vswitch.default.id}"
+  description       = "${var.description}"
+  license_code      = "${var.license_code}"
+  period            = "${var.period}"
+  vswitch_id        = "${alicloud_vswitch.default.id}"
   security_group_ids = ["${alicloud_security_group.default.id}"]
 }
