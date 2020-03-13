@@ -55,6 +55,7 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	request.AllocationId = Trim(d.Get("allocation_id").(string))
 	request.InstanceId = Trim(d.Get("instance_id").(string))
 	request.InstanceType = EcsInstance
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	if strings.HasPrefix(request.InstanceId, "lb-") {
 		request.InstanceType = SlbInstance
@@ -132,6 +133,7 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 	request.AllocationId = allocationId
 	request.InstanceId = instanceId
 	request.InstanceType = EcsInstance
+	request.ClientToken = buildClientToken(request.GetActionName())
 
 	if strings.HasPrefix(instanceId, "lb-") {
 		request.InstanceType = SlbInstance
