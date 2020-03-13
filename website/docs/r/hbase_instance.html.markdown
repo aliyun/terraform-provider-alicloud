@@ -16,7 +16,7 @@ You can see detail product introduction [here](https://help.aliyun.com/product/4
 -> **NOTE:**  Available in 1.67.0+
 
 -> **NOTE:**  The following regions don't support create Classic network HBase instance.
-[`cn-hangzhou`,`cn-shanghai`,`cn-qingdao`,`cn-beijing`,`cn-shenzhen`,`ap-southeast-1a`,.....]
+[`cn-hangzhou`,`cn-shanghai`,`cn-qingdao`,`cn-beijing`,`cn-shenzhen`,.....]
 the official website mark  more regions. or you can call [DescribeRegions](https://help.aliyun.com/document_detail/144489.html)
 
 -> **NOTE:**  Create HBase instance or change instance type and storage would cost 15 minutes. Please make full preparation
@@ -30,8 +30,8 @@ resource "alicloud_hbase_instance" "default" {
   name = "tf_testAccHBase_classic"
   zone_id = "cn-shenzhen-b"
   engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
+  master_instance_type = "hbase.n1.medium"
+  core_instance_type = "hbase.n1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
   core_disk_size = 100
@@ -48,8 +48,8 @@ The following arguments are supported:
 
 * `name` - (Required) HBase instance name. Length must be 2-128 characters long. Only Chinese characters, English letters, numbers, period (.), underline (_), or dash (-) are permitted. 
 * `zone_id` - (Optional, ForceNew) The Zone to launch the HBase instance. if vswitch_id is not empty, this zone_id can be "" or consistent.
-* `hbase` - (Optional, ForceNew) "hbase/hbaseue/bds", The following types are supported after v1.73.0: `hbaseue` and `bds ` 
-* `engine_version` - (Required, ForceNew) hbase major version. hbase:1.1/2.0, hbaseue:2.0, bds:1.0, unsupport other engine temporarily. Value options can refer to the latest docs [CreateInstance](https://help.aliyun.com/document_detail/144607.html).
+* `hbase` - (Optional, ForceNew) "hbase".
+* `engine_version` - (Required, ForceNew) hbase major version. hbase:1.1, 2.0; unsupport other engine temporarily. Value options can refer to the latest docs [CreateInstance](https://help.aliyun.com/document_detail/144607.html).
 * `master_instance_type`、`core_instance_type` - (Required, ForceNew) Instance specification. see [Instance specifications](https://help.aliyun.com/document_detail/53532.html). or you can call describeInstanceType api.
 * `core_instance_quantity`- (Optional. ForceNew) default=2. if core_instance_quantity > 1,this is cluster's instance.  if core_instance_quantity = 1,this is a single instance. 
 * `core_disk_type`-  (Required, ForceNew) Valid values are `cloud_ssd`, `cloud_efficiency`, `local_hdd_pro`, `local_ssd_pro`. local_disk size is fixed.
@@ -61,10 +61,6 @@ The following arguments are supported:
 * `auto_renew` - (Optional, ForceNew) `true`, `false`, System default to `false`, valid when pay_type = PrePaid.
 * `vswitch_id` - (Optional, ForceNew) if vswitch_id is not empty, that mean net_type = vpc and has a same region. if vswitch_id is empty, net_type_classic
 * `cold_storage_size` - (Optional, ForceNew) 0 or 0+. 0 means is_cold_storage = false. 0+ means is_cold_storage = true
-* `maintain_start_time` - (Optional, Available in 1.73.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
-* `maintain_end_time` - (Optional, Available in 1.73.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
-* `deletion_protection` - (Optional, Available in 1.73.0) the switch of delete protection. true: delete protect, false: no delete protect. you must set false when you want to delete cluster.
-* `tags` - (Optional, Available in 1.73.0) A mapping of tags to assign to the resource.
 
 -> **NOTE:** now only instance name can be change. the others(instance_type, disk_size, core_instance_quantity and so on) will be supported in the furture.
 

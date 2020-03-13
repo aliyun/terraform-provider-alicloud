@@ -12,7 +12,6 @@ import (
 type ServiceCode string
 
 const (
-	CbnCode           = ServiceCode("CBN")
 	ECSCode           = ServiceCode("ECS")
 	ESSCode           = ServiceCode("ESS")
 	RAMCode           = ServiceCode("RAM")

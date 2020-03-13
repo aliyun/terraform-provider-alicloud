@@ -188,8 +188,6 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 * `configuration_source` - (Optional, Available in 1.56.0+) Use a string to mark a configuration file source, like `terraform-alicloud-modules/terraform-alicloud-ecs-instance` or `terraform-provider-alicloud/examples/vpc`.
 The length should not more than 64.
 
-* `protocol` - (Optional, Available in 1.72.0+) The Protocol of used by API request. Valid values: `HTTP` and `HTTPS`. Default to `HTTPS`.
-
 The nested `assume_role` block supports the following:
 
 * `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching. It supports environment variable `ALICLOUD_ASSUME_ROLE_ARN`.

@@ -87,7 +87,7 @@ func testAlicloudNetworkInterface(region string) error {
 			}
 		}
 		if skip {
-			log.Printf("[INFO] Skipping NetworkInterface %s (id: %s; instanceId: %s).", name, eni.NetworkInterfaceId, eni.InstanceId)
+			log.Printf("[INFO] Skipping NetworkInterface %s", name)
 			continue
 		}
 		sweeped = true

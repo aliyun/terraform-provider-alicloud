@@ -22,7 +22,6 @@ func init() {
 		F:    testSweepCenInstances,
 		Dependencies: []string{
 			"alicloud_cen_bandwidth_package",
-			"alicloud_cen_flowlog",
 		},
 	})
 }

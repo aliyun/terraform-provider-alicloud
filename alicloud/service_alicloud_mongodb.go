@@ -155,26 +155,6 @@ func (s *MongoDBService) ModifyMongoDBSecurityIps(instanceId, ips string) error 
 	return nil
 }
 
-func (s *MongoDBService) DescribeMongoDBSecurityGroupId(id string) (*dds.DescribeSecurityGroupConfigurationResponse, error) {
-	response := &dds.DescribeSecurityGroupConfigurationResponse{}
-	request := dds.CreateDescribeSecurityGroupConfigurationRequest()
-	request.RegionId = s.client.RegionId
-	request.DBInstanceId = id
-	if err := s.WaitForMongoDBInstance(id, Running, DefaultTimeoutMedium); err != nil {
-		return response, WrapError(err)
-	}
-	raw, err := s.client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-		return ddsClient.DescribeSecurityGroupConfiguration(request)
-	})
-	if err != nil {
-		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ = raw.(*dds.DescribeSecurityGroupConfigurationResponse)
-
-	return response, nil
-}
-
 func (server *MongoDBService) ModifyMongodbShardingInstanceNode(
 	instanceID string, nodeType MongoDBShardingNodeType, stateList, diffList []interface{}) error {
 	client := server.client
@@ -301,27 +281,6 @@ func (s *MongoDBService) DescribeMongoDBBackupPolicy(id string) (*dds.DescribeBa
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*dds.DescribeBackupPolicyResponse)
-	return response, nil
-}
-
-func (s *MongoDBService) DescribeMongoDBTDEInfo(id string) (*dds.DescribeDBInstanceTDEInfoResponse, error) {
-
-	response := &dds.DescribeDBInstanceTDEInfoResponse{}
-	request := dds.CreateDescribeDBInstanceTDEInfoRequest()
-	request.RegionId = s.client.RegionId
-	request.DBInstanceId = id
-	statErr := s.WaitForMongoDBInstance(id, Running, DefaultLongTimeout)
-	if statErr != nil {
-		return response, WrapError(statErr)
-	}
-	raw, err := s.client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-		return ddsClient.DescribeDBInstanceTDEInfo(request)
-	})
-	if err != nil {
-		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ = raw.(*dds.DescribeDBInstanceTDEInfoResponse)
 	return response, nil
 }
 

@@ -46,8 +46,8 @@ resource "alicloud_kvstore_backup_policy" "redisbackup" {
 }
 
 resource "alicloud_kvstore_account" "account" {
-  instance_id      = alicloud_kvstore_instance.myredis.id
-  account_name     = "tftestnormal"
-  account_password = "Test12345"
+  instance_id = alicloud_kvstore_instance.myredis.id
+  account_name        = "tftestnormal"
+  account_password    = "Test12345"
 }
 

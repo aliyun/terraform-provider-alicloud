@@ -143,14 +143,6 @@ func (client *Client) setEndpointByLocation(region Region, serviceCode, accessKe
 
 //only for HangZhou Regional Domain, ecs.cn-hangzhou.aliyuncs.com
 func (client *Client) setEndpoint4RegionalDomain(region Region, serviceCode, accessKeyId, accessKeySecret, securityToken string) {
-	// Unit deployed products, return Regional-Domain directly
-	if regionConfig, ok := SpecialDeployedProducts[serviceCode]; ok {
-		if _, ok := regionConfig[region]; ok {
-			client.endpoint = fmt.Sprintf("https://%s.%s.aliyuncs.com", serviceCode, region)
-			return
-		}
-	}
-
 	for _, service := range RegionalDomainServices {
 		if _, ok := UnitRegions[region]; ok && service == serviceCode {
 			client.endpoint = fmt.Sprintf("https://%s.%s.aliyuncs.com", serviceCode, region)
@@ -307,14 +299,6 @@ func (client *Client) SetUserAgent(userAgent string) {
 //set SecurityToken
 func (client *Client) SetSecurityToken(securityToken string) {
 	client.securityToken = securityToken
-}
-
-// SetTransport sets transport to the http client
-func (client *Client) SetTransport(transport http.RoundTripper) {
-	if client.httpClient == nil {
-		client.httpClient = &http.Client{}
-	}
-	client.httpClient.Transport = transport
 }
 
 func (client *Client) initEndpoint() error {

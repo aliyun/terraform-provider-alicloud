@@ -276,7 +276,7 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.UnbindMFADevice(unbindMFADeviceRequest)
 		})
-		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist", "EntityNotExist.User.MFADevice"}) {
+		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), unbindMFADeviceRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(unbindMFADeviceRequest.GetActionName(), raw, deleteLoginProfileRequest.RpcRequest, deleteLoginProfileRequest)

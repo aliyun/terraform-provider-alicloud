@@ -89,7 +89,6 @@ type DescribeEipAddressesRequest struct {
 	AssociatedInstanceType string                     `position:"Query" name:"AssociatedInstanceType"`
 	PageSize               requests.Integer           `position:"Query" name:"PageSize"`
 	Tag                    *[]DescribeEipAddressesTag `position:"Query" name:"Tag"  type:"Repeated"`
-	SegmentInstanceId      string                     `position:"Query" name:"SegmentInstanceId"`
 	ResourceOwnerAccount   string                     `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount           string                     `position:"Query" name:"OwnerAccount"`
 	Filter1Value           string                     `position:"Query" name:"Filter.1.Value"`
@@ -121,7 +120,7 @@ func CreateDescribeEipAddressesRequest() (request *DescribeEipAddressesRequest) 
 	request = &DescribeEipAddressesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Vpc", "2016-04-28", "DescribeEipAddresses", "Vpc", "openAPI")
+	request.InitWithApiInfo("Vpc", "2016-04-28", "DescribeEipAddresses", "vpc", "openAPI")
 	return
 }
 
