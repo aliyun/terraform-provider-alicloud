@@ -168,6 +168,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_slb_server_certificates":           dataSourceAlicloudSlbServerCertificates(),
 			"alicloud_slb_ca_certificates":               dataSourceAlicloudSlbCACertificates(),
 			"alicloud_slb_domain_extensions":             dataSourceAlicloudSlbDomainExtensions(),
+			"alicloud_slb_zones":                         dataSourceAlicloudSlbZones(),
 			"alicloud_oss_bucket_objects":                dataSourceAlicloudOssBucketObjects(),
 			"alicloud_oss_buckets":                       dataSourceAlicloudOssBuckets(),
 			"alicloud_ons_instances":                     dataSourceAlicloudOnsInstances(),
