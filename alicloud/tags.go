@@ -13,6 +13,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
@@ -331,6 +332,15 @@ func tagsToMap(tags []ecs.Tag) map[string]string {
 		if !ecsTagIgnored(t) {
 			result[t.TagKey] = t.TagValue
 		}
+	}
+
+	return result
+}
+
+func elasticsearchTagsToMap(tags []elasticsearch.Tag) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		result[t.TagKey] = t.TagValue
 	}
 
 	return result
