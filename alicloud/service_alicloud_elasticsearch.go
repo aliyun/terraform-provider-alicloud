@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -101,8 +100,6 @@ func (s *ElasticsearchService) DescribeElasticsearchTags(id string) (tags map[st
 
 	request := elasticsearch.CreateListTagResourcesRequest()
 	request.RegionId = s.client.RegionId
-	request.Size = requests.NewInteger(PageSizeLarge)
-	request.Page = requests.NewInteger(1)
 	request.ResourceIds = string(resourceIds)
 	request.ResourceType = strings.ToUpper(string(TagResourceInstance))
 

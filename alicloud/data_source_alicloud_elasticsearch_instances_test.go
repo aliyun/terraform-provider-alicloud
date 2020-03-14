@@ -33,16 +33,39 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 		}),
 	}
 
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]interface{}{
+				"Created": "TF",
+				"For":     "acceptance test",
+			},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]interface{}{
+				"Created": "TF-fake",
+				"For":     "acceptance test",
+			},
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_elasticsearch_instance.default.description}",
 			"ids":               []string{"${alicloud_elasticsearch_instance.default.id}"},
 			"version":           "5.5.3_with_X-Pack",
+			"tags": map[string]interface{}{
+				"Created": "TF",
+				"For":     "acceptance test",
+			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_elasticsearch_instance.default.description}-F",
 			"ids":               []string{"${alicloud_elasticsearch_instance.default.id}"},
 			"version":           "6.7.0_with_X-Pack",
+			"tags": map[string]interface{}{
+				"Created": "TF-fake",
+				"For":     "acceptance test",
+			},
 		}),
 	}
 
@@ -52,7 +75,7 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 		fakeMapFunc:  fakeElasticsearchMapFunc,
 	}
 
-	elasticsearchCheckInfo.dataSourceTestCheck(t, rand, descriptionRegexConf, idsConf, allConf)
+	elasticsearchCheckInfo.dataSourceTestCheck(t, rand, descriptionRegexConf, idsConf, tagsConf, allConf)
 }
 
 var existElasticsearchMapFunc = func(rand int) map[string]string {
@@ -69,6 +92,7 @@ var existElasticsearchMapFunc = func(rand int) map[string]string {
 		"instances.0.data_node_spec":       "elasticsearch.sn2ne.large",
 		"instances.0.status":               "active",
 		"instances.0.version":              CHECKSET,
+		"instances.0.tags.%":               CHECKSET,
 		"instances.0.created_at":           CHECKSET,
 		"instances.0.updated_at":           CHECKSET,
 		"instances.0.vswitch_id":           CHECKSET,
@@ -116,6 +140,10 @@ resource "alicloud_elasticsearch_instance" "default" {
   data_node_disk_type  = "cloud_ssd"
   instance_charge_type = "PostPaid"
   version              = "5.5.3_with_X-Pack"
+  tags                 = {
+	  "Created": "TF",
+	  "For":     "acceptance test",
+  }
 }
 `, name)
 }
