@@ -258,6 +258,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_endpoints":                 dataSourceAlicloudPolarDBEndpoints(),
 			"alicloud_polardb_accounts":                  dataSourceAlicloudPolarDBAccounts(),
 			"alicloud_polardb_databases":                 dataSourceAlicloudPolarDBDatabases(),
+			"alicloud_polardb_zones":                     dataSourceAlicloudPolarDBZones(),
 			"alicloud_hbase_instances":                   dataSourceAlicloudHBaseInstances(),
 			"alicloud_hbase_zones":                       dataSourceAlicloudHBaseZones(),
 			"alicloud_adb_clusters":                      dataSourceAlicloudAdbClusters(),
