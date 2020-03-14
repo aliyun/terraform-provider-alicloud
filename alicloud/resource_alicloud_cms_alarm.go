@@ -82,23 +82,23 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"start_time": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Default:      0,
-				ValidateFunc: validation.IntBetween(0, 24),
-				Deprecated:   "Field 'start_time' has been deprecated from provider version 1.50.0. New field 'effective_interval' instead.",
+				Type:     schema.TypeInt,
+				Optional: true,
+				//Default:      0,
+				//ValidateFunc: validation.IntBetween(0, 24),
+				Deprecated: "Field 'start_time' has been deprecated from provider version 1.50.0. New field 'effective_interval' instead.",
 			},
 			"end_time": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Default:      24,
-				ValidateFunc: validation.IntBetween(0, 24),
-				Deprecated:   "Field 'end_time' has been deprecated from provider version 1.50.0. New field 'effective_interval' instead.",
+				Type:     schema.TypeInt,
+				Optional: true,
+				//Default:      24,
+				//ValidateFunc: validation.IntBetween(0, 24),
+				Deprecated: "Field 'end_time' has been deprecated from provider version 1.50.0. New field 'effective_interval' instead.",
 			},
 			"effective_interval": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
+				Default:  "00:00-23:59",
 			},
 			"silence_time": {
 				Type:         schema.TypeInt,
@@ -216,8 +216,12 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 	if v, ok := d.GetOk("effective_interval"); ok && v.(string) != "" {
 		request.EffectiveInterval = v.(string)
 	} else {
-		// The EffectiveInterval valid value between 00:00 and 23:59
-		request.EffectiveInterval = fmt.Sprintf("%d:00-%d:59", d.Get("start_time").(int), d.Get("end_time").(int)-1)
+		start, startOk := d.GetOk("start_time")
+		end, endOk := d.GetOk("end_time")
+		if startOk && endOk && end.(int) > 0 {
+			// The EffectiveInterval valid value between 00:00 and 23:59
+			request.EffectiveInterval = fmt.Sprintf("%d:00-%d:59", start.(int), end.(int)-1)
+		}
 	}
 	request.SilenceTime = requests.NewInteger(d.Get("silence_time").(int))
 
