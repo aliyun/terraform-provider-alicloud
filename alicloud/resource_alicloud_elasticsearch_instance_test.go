@@ -153,6 +153,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -162,7 +163,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
 					"version":              "5.5.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
@@ -323,6 +324,7 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -332,7 +334,7 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
 					"version":              "5.5.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
@@ -381,6 +383,7 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -390,7 +393,7 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          name,
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
 					"version":              "6.3_with_X-Pack",
 					"password":             "Yourpassword1234",
 					"data_node_spec":       DataNodeSpec,
@@ -444,6 +447,7 @@ func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,

@@ -74,8 +74,10 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 		existMapFunc: existElasticsearchMapFunc,
 		fakeMapFunc:  fakeElasticsearchMapFunc,
 	}
-
-	elasticsearchCheckInfo.dataSourceTestCheck(t, rand, descriptionRegexConf, idsConf, tagsConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithNoDefaultVpc(t)
+	}
+	elasticsearchCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, descriptionRegexConf, idsConf, tagsConf, allConf)
 }
 
 var existElasticsearchMapFunc = func(rand int) map[string]string {
@@ -118,22 +120,15 @@ variable "name" {
   default = "%s"
 }
 
-resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${lookup(data.alicloud_zones.default.zones[length(data.alicloud_zones.default.zones)-1], "id")}"
-  name              = "${var.name}"
+data "alicloud_vswitches" "default" {
+  zone_id = data.alicloud_zones.default.ids[0]
+  name_regex = "default-tf--testAcc-00"
 }
 
 resource "alicloud_elasticsearch_instance" "default" {
   description          = "${var.name}"
   password             = "Yourpassword1234"
-  vswitch_id           = "${alicloud_vswitch.default.id}"
+  vswitch_id           = "${data.alicloud_vswitches.default.ids.0}"
   data_node_amount     = "2"
   data_node_spec       = "elasticsearch.sn2ne.large"
   data_node_disk_size  = "20"
