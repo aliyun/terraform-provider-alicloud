@@ -1,20 +1,20 @@
-## 1.74.0 (Unreleased)
+## 1.74.0 (March 16, 2020)
 
-- **Data Source:** `alicloud_fc_zones` [GH-2256]
-- **Data Source:** `alicloud_polardb_zones` [GH-2250]
+- **Data Source:** `alicloud_fc_zones` ([#2256](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2256))
+- **Data Source:** `alicloud_polardb_zones` ([#2250](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2250))
 
 IMPROVEMENTS:
 
-- improve(hbase): modify the vsw specified [GH-2259]
-- improve(elasticsearch): data_source support tags [GH-2257]
-- rename polardb test name [GH-2255]
-- corrct cen_flowlog docs [GH-2254]
-- Adjust the return error mode [GH-2252]
-- improve(elasticsearch): resource support tags [GH-2251]
+- improve(hbase): modify the vsw specified ([#2259](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2259))
+- improve(elasticsearch): data_source support tags ([#2257](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2257))
+- rename polardb test name ([#2255](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2255))
+- corrct cen_flowlog docs ([#2254](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2254))
+- Adjust the return error mode ([#2252](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2252))
+- improve(elasticsearch): resource support tags ([#2251](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2251))
 
 BUG FIXES:
 
-- fix(cms_alarm): resolve the effective_interval default value [GH-2253]
+- fix(cms_alarm): resolve the effective_interval default value ([#2253](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2253))
 
 ## 1.73.0 (March 13, 2020)
 
