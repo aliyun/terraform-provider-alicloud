@@ -6,6 +6,7 @@
 IMPROVEMENTS:
 
 - improve(hbase): modify the vsw specified [GH-2259]
+- improve(elasticsearch): data_source support tags [GH-2257]
 - rename polardb test name [GH-2255]
 - corrct cen_flowlog docs [GH-2254]
 - Adjust the return error mode [GH-2252]
