@@ -11,7 +11,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -193,26 +192,14 @@ resource "alicloud_hbase_instance" "default" {
   }
 }`
 
-var resourceHBaseConfigVpc = fmt.Sprintf(`
-data "alicloud_vpcs" "default" {
-  is_default = "true"
-}
-
+const resourceHBaseConfigVpc = `
 data "alicloud_zones" "default" {
   available_resource_creation = "HBase"
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  name_regex = "default-tf--testAcc-00"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_vswitch" "this" {
-  count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
-  name = "tf_testAccHBase_vpc"
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, %d)}"
 }
 
 resource "alicloud_hbase_instance" "default" {
@@ -224,31 +211,20 @@ resource "alicloud_hbase_instance" "default" {
   core_disk_type = "cloud_efficiency"
   core_disk_size = 100
   pay_type = "PostPaid"
-  vswitch_id = "${length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]}"
+  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
   deletion_protection = false
 }
-`, acctest.RandIntRange(10, 100))
+`
 
-var resourceHBaseConfigVpcName = fmt.Sprintf(`
-data "alicloud_vpcs" "default" {
-  is_default = "true"
-}
+const resourceHBaseConfigVpcName = `
 data "alicloud_zones" "default" {
   available_resource_creation = "HBase"
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  name_regex = "default-tf--testAcc-00"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_vswitch" "this" {
-  count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
-  name = "tf_testAccHBase_vpc"
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, %d)}"
 }
 
 resource "alicloud_hbase_instance" "default" {
@@ -260,31 +236,20 @@ resource "alicloud_hbase_instance" "default" {
   core_disk_type = "cloud_efficiency"
   core_disk_size = 100
   pay_type = "PostPaid"
-  vswitch_id = "${length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]}"
+  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
   deletion_protection = false
 }
-`, acctest.RandIntRange(10, 100))
+`
 
-var resourceHBaseConfigVpcMaintainTime = fmt.Sprintf(`
-data "alicloud_vpcs" "default" {
-  is_default = "true"
-}
+const resourceHBaseConfigVpcMaintainTime = `
 data "alicloud_zones" "default" {
   available_resource_creation = "HBase"
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  name_regex = "default-tf--testAcc-00"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_vswitch" "this" {
-  count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
-  name = "tf_testAccHBase_vpc"
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, %d)}"
 }
 
 resource "alicloud_hbase_instance" "default" {
@@ -296,33 +261,22 @@ resource "alicloud_hbase_instance" "default" {
   core_disk_type = "cloud_efficiency"
   core_disk_size = 100
   pay_type = "PostPaid"
-  vswitch_id = "${length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]}"
+  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
   maintain_start_time = "04:00Z"
   maintain_end_time = "06:00Z"
   deletion_protection = false
 }
-`, acctest.RandIntRange(10, 100))
+`
 
-var resourceHBaseConfigVpcTags = fmt.Sprintf(`
-data "alicloud_vpcs" "default" {
-  is_default = "true"
-}
+const resourceHBaseConfigVpcTags = `
 data "alicloud_zones" "default" {
   available_resource_creation = "HBase"
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  name_regex = "default-tf--testAcc-00"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_vswitch" "this" {
-  count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
-  name = "tf_testAccHBase_vpc"
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, %d)}"
 }
 
 resource "alicloud_hbase_instance" "default" {
@@ -334,7 +288,7 @@ resource "alicloud_hbase_instance" "default" {
   core_disk_type = "cloud_efficiency"
   core_disk_size = 100
   pay_type = "PostPaid"
-  vswitch_id = "${length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]}"
+  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
   maintain_start_time = "04:00Z"
   maintain_end_time = "06:00Z"
@@ -344,27 +298,16 @@ resource "alicloud_hbase_instance" "default" {
     For     = "acceptance test"
   }
 }
-`, acctest.RandIntRange(10, 100))
+`
 
-var resourceHBaseConfigMultiInstance = fmt.Sprintf(`
-data "alicloud_vpcs" "default" {
-  is_default = "true"
-}
+const resourceHBaseConfigMultiInstance = `
 data "alicloud_zones" "default" {
   available_resource_creation = "HBase"
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  name_regex = "default-tf--testAcc-00"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_vswitch" "this" {
-  count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
-  name = "tf_testAccHBase_vpc"
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, %d)}"
 }
 
 resource "alicloud_hbase_instance" "default" {
@@ -378,32 +321,20 @@ resource "alicloud_hbase_instance" "default" {
   core_disk_type = "cloud_efficiency"
   core_disk_size = 100
   pay_type = "PostPaid"
-  vswitch_id = "${length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]}"
+  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
   deletion_protection = false
 }
-`, acctest.RandIntRange(10, 100))
+`
 
-var resourceHBaseConfigMultiInstanceChangeName = fmt.Sprintf(`
-data "alicloud_vpcs" "default" {
-  is_default = "true"
-}
-
+const resourceHBaseConfigMultiInstanceChangeName = `
 data "alicloud_zones" "default" {
   available_resource_creation = "HBase"
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  name_regex = "default-tf--testAcc-00"
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_vswitch" "this" {
-  count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
-  name = "tf_testAccHBase_vpc"
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, %d)}"
 }
 
 resource "alicloud_hbase_instance" "default" {
@@ -417,11 +348,11 @@ resource "alicloud_hbase_instance" "default" {
   core_disk_type = "cloud_efficiency"
   core_disk_size = 100
   pay_type = "PostPaid"
-  vswitch_id = "${length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]}"
+  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
   deletion_protection = false
 }
-`, acctest.RandIntRange(10, 100))
+`
 
 func TestAccAlicloudHBaseInstanceClassic(t *testing.T) {
 	var instance hbase.DescribeInstanceResponse
