@@ -1,4 +1,20 @@
 ## 1.74.0 (Unreleased)
+
+- **Data Source:** `alicloud_fc_zones` [GH-2256]
+- **Data Source:** `alicloud_polardb_zones` [GH-2250]
+
+IMPROVEMENTS:
+
+- improve(hbase): modify the vsw specified [GH-2259]
+- rename polardb test name [GH-2255]
+- corrct cen_flowlog docs [GH-2254]
+- Adjust the return error mode [GH-2252]
+- improve(elasticsearch): resource support tags [GH-2251]
+
+BUG FIXES:
+
+- fix(cms_alarm): resolve the effective_interval default value [GH-2253]
+
 ## 1.73.0 (March 13, 2020)
 
 - **New Resource:** `alicloud_cen_flowlog` ([#2229](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2229))
