@@ -32,6 +32,7 @@ func TestAccAlicloudPolarDBEndpointAddressConfigUpdate(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name
@@ -85,7 +86,7 @@ func resourcePolarDBEndpointAddressConfigDependence(name string) string {
 		db_version = "8.0"
 		pay_type = "PostPaid"
 		db_node_class = "polar.mysql.x4.large"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
 		description = "${var.name}"
 	}
 

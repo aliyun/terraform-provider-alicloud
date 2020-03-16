@@ -47,8 +47,11 @@ func TestAccAlicloudPolarDBClusterEndPointsDataSource(t *testing.T) {
 		existMapFunc: existPolarClusterMapFunc,
 		fakeMapFunc:  fakePolarClusterMapFunc,
 	}
+	preCheck := func() {
+		testAccPreCheckWithNoDefaultVpc(t)
+	}
 
-	PolarClusterCheckInfo.dataSourceTestCheck(t, rand, dbClusterIdConf, allConf)
+	PolarClusterCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, dbClusterIdConf, allConf)
 }
 
 func testAccCheckAlicloudPolarClusterEndPointsDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -71,7 +74,7 @@ func testAccCheckAlicloudPolarClusterEndPointsDataSourceConfig(rand int, attrMap
 	  db_version        = "8.0"
       pay_type          = "PostPaid"
 	  db_node_class     = "polar.mysql.x4.large"
-	  vswitch_id        = "${alicloud_vswitch.default.id}"
+	  vswitch_id        = "${data.alicloud_vswitches.default.ids.0}"
 	  description       = "${var.name}"
 	}
 	
