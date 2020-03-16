@@ -25,6 +25,7 @@ func TestAccAlicloudPolarDBDatabase_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name
@@ -94,7 +95,7 @@ func resourcePolarDBDatabaseConfigDependence(name string) string {
 		db_version = "${var.engineversion}"
 		pay_type = "${var.instancechargetype}"
 		db_node_class = "${var.instanceclass}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
 		description = "${var.name}"
 	}`, PolarDBCommonTestCase, name)
 }

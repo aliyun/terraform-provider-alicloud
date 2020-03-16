@@ -797,15 +797,9 @@ const PolarDBCommonTestCase = `
 data "alicloud_zones" "default" {
   available_resource_creation = "${var.creation}"
 }
-resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%length(data.alicloud_zones.default.zones)], "id")}"
-  name              = "${var.name}"
+data "alicloud_vswitches" "default" {
+  zone_id = data.alicloud_zones.default.ids[0]
+  name_regex = "default-tf--testAcc-00"
 }
 `
 const AdbCommonTestCase = `
