@@ -182,6 +182,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_file_crc64_checksum":               dataSourceAlicloudFileCRC64Checksum(),
 			"alicloud_fc_services":                       dataSourceAlicloudFcServices(),
 			"alicloud_fc_triggers":                       dataSourceAlicloudFcTriggers(),
+			"alicloud_fc_zones":                          dataSourceAlicloudFcZones(),
 			"alicloud_db_instances":                      dataSourceAlicloudDBInstances(),
 			"alicloud_db_instance_engines":               dataSourceAlicloudDBInstanceEngines(),
 			"alicloud_db_instance_classes":               dataSourceAlicloudDBInstanceClasses(),
