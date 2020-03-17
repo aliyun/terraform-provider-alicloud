@@ -3,6 +3,7 @@ package alicloud
 import (
 	"log"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -174,7 +175,7 @@ func (s *KvstoreService) setInstanceTags(d *schema.ResourceData) error {
 			}
 			request := r_kvstore.CreateUntagResourcesRequest()
 			request.ResourceId = &[]string{d.Id()}
-			request.ResourceType = string(TagResourceInstance)
+			request.ResourceType = strings.ToUpper(string(TagResourceInstance))
 			request.TagKey = &tagKey
 			request.RegionId = s.client.RegionId
 			raw, err := s.client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
@@ -190,7 +191,7 @@ func (s *KvstoreService) setInstanceTags(d *schema.ResourceData) error {
 			request := r_kvstore.CreateTagResourcesRequest()
 			request.ResourceId = &[]string{d.Id()}
 			request.Tag = &create
-			request.ResourceType = string(TagResourceInstance)
+			request.ResourceType = strings.ToUpper(string(TagResourceInstance))
 			request.RegionId = s.client.RegionId
 			raw, err := s.client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
 				return client.TagResources(request)
@@ -265,7 +266,7 @@ func (s *KvstoreService) diffTags(oldTags, newTags []r_kvstore.TagResourcesTag) 
 func (s *KvstoreService) DescribeTags(resourceId string, resourceType TagResourceType) (tags []r_kvstore.TagResource, err error) {
 	request := r_kvstore.CreateListTagResourcesRequest()
 	request.RegionId = s.client.RegionId
-	request.ResourceType = string(resourceType)
+	request.ResourceType = strings.ToUpper(string(resourceType))
 	request.ResourceId = &[]string{resourceId}
 	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.ListTagResources(request)
