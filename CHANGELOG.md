@@ -1,15 +1,15 @@
-## 1.74.1 (Unreleased)
+## 1.74.1 (March 17, 2020)
 
 IMPROVEMENTS:
 
-- improve(alikafka_instance): suspend kafka prepaid test [GH-2264]
-- improve(gpdb): modify the vsw specified [GH-2260]
-- improve(elasticsearch): modify the vsw specified [GH-2239]
+- improve(alikafka_instance): suspend kafka prepaid test ([#2264](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2264))
+- improve(gpdb): modify the vsw specified ([#2260](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2260))
+- improve(elasticsearch): modify the vsw specified ([#2239](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2239))
 
 BUG FIXES:
 
-- tagResource bug fix [GH-2266]
-- fix(kvstore_instance): resolve auto_renew incorrect value [GH-2265]
+- tagResource bug fix ([#2266](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2266))
+- fix(kvstore_instance): resolve auto_renew incorrect value ([#2265](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2265))
 
 ## 1.74.0 (March 16, 2020)
 
