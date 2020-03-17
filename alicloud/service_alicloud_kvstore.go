@@ -3,6 +3,7 @@ package alicloud
 import (
 	"log"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -339,4 +340,77 @@ func (s *KvstoreService) DescribeKVstoreAccount(id string) (*r_kvstore.Account, 
 		return ds, WrapErrorf(Error(GetNotFoundMessage("KVstoreAccount", id)), NotFoundMsg, ProviderERROR)
 	}
 	return &response.Accounts.Account[0], nil
+}
+
+func (s *KvstoreService) WaitForKVstorePublicConnection(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeKVstorePublicConnection(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object != nil && object.ConnectionString != "" {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, "Public", id, ProviderERROR)
+		}
+	}
+}
+
+func (s *KvstoreService) DescribeKVstorePublicConnection(id string) (*r_kvstore.InstanceNetInfo, error) {
+	info := &r_kvstore.InstanceNetInfo{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return info, WrapError(err)
+	}
+	object, err := s.DescribeDBInstanceNetInfo(parts[0])
+
+	if err != nil {
+		if IsExceptedError(err, InvalidCurrentConnectionStringNotFound) {
+			return info, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return info, WrapError(err)
+	}
+
+	if object != nil {
+		for _, o := range object {
+			if strings.HasPrefix(o.ConnectionString, parts[1]) {
+				return &o, nil
+			}
+		}
+	}
+
+	return info, WrapErrorf(Error(GetNotFoundMessage("DBConnection", id)), NotFoundMsg, ProviderERROR)
+}
+
+func (s *KvstoreService) DescribeDBInstanceNetInfo(id string) ([]r_kvstore.InstanceNetInfo, error) {
+	request := r_kvstore.CreateDescribeDBInstanceNetInfoRequest()
+	request.RegionId = s.client.RegionId
+	request.InstanceId = id
+	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+		return rkvClient.DescribeDBInstanceNetInfo(request)
+	})
+
+	if err != nil {
+		if IsExceptedError(err, InvalidKVStoreInstanceIdNotFound) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	response, _ := raw.(*r_kvstore.DescribeDBInstanceNetInfoResponse)
+	if len(response.NetInfoItems.InstanceNetInfo) < 1 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("InstanceNetInfo", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	return response.NetInfoItems.InstanceNetInfo, nil
 }
