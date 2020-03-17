@@ -1,4 +1,16 @@
-## 1.75.0 (Unreleased)
+## 1.74.1 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve(alikafka_instance): suspend kafka prepaid test [GH-2264]
+- improve(gpdb): modify the vsw specified [GH-2260]
+- improve(elasticsearch): modify the vsw specified [GH-2239]
+
+BUG FIXES:
+
+- tagResource bug fix [GH-2266]
+- fix(kvstore_instance): resolve auto_renew incorrect value [GH-2265]
+
 ## 1.74.0 (March 16, 2020)
 
 - **Data Source:** `alicloud_fc_zones` ([#2256](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2256))
