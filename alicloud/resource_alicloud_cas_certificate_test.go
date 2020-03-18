@@ -72,23 +72,23 @@ func testSweepCasCertificate(region string) error {
 		id := v.Id
 		skip := true
 		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), "cert-"+strings.ToLower(prefix)) {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 				skip = false
-				break
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Certificate: %s (%d)", name, id)
-			continue
-		}
-		log.Printf("[INFO] Deleting Certificate: %s (%d)", name, id)
-		req := cas.CreateDeleteUserCertificateRequest()
-		req.CertId = requests.NewInteger(id)
-		_, err := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
-			return casClient.DeleteUserCertificate(req)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete Certificate (%s (%d)): %s", name, id, err)
+
+			if skip {
+				log.Printf("[INFO] Skipping Certificate: %s (%d)", name, id)
+				continue
+			}
+			log.Printf("[INFO] Deleting Certificate: %s (%d)", name, id)
+			req := cas.CreateDeleteUserCertificateRequest()
+			req.CertId = requests.NewInteger(id)
+			_, err := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
+				return casClient.DeleteUserCertificate(req)
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Certificate (%s (%d)): %s", name, id, err)
+			}
 		}
 	}
 

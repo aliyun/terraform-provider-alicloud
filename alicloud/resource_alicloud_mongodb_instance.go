@@ -93,6 +93,11 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+			"security_group_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+			},
 			"account_password": {
 				Type:      schema.TypeString,
 				Optional:  true,
@@ -131,6 +136,15 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 			"replica_set_name": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"tde_status": {
+				Type: schema.TypeString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return old != "" || d.Get("engine_version").(string) < "4.0"
+				},
+				ValidateFunc: validation.StringInSlice([]string{"enabled"}, false),
+				Optional:     true,
+				ForceNew:     true,
 			},
 			"maintain_start_time": {
 				Type:     schema.TypeString,
@@ -275,6 +289,14 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("security_ip_list", ips)
 
+	groupIp, err := ddsService.DescribeMongoDBSecurityGroupId(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if len(groupIp.Items.RdsEcsSecurityGroupRel) > 0 {
+		d.Set("security_group_id", groupIp.Items.RdsEcsSecurityGroupRel[0].SecurityGroupId)
+	}
+
 	d.Set("name", instance.DBInstanceDescription)
 	d.Set("engine_version", instance.EngineVersion)
 	d.Set("db_instance_class", instance.DBInstanceClass)
@@ -297,6 +319,12 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	if replication_factor, err := strconv.Atoi(instance.ReplicationFactor); err == nil {
 		d.Set("replication_factor", replication_factor)
 	}
+	tdeInfo, err := ddsService.DescribeMongoDBTDEInfo(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tde_Status", tdeInfo.TDEStatus)
+
 	d.Set("tags", ddsService.tagsToMap(instance.Tags.Tag))
 	return nil
 }
@@ -336,6 +364,21 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("backup_period")
 	}
 
+	if d.HasChange("tde_status") {
+		request := dds.CreateModifyDBInstanceTDERequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		request.TDEStatus = d.Get("tde_status").(string)
+		raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
+			return client.ModifyDBInstanceTDE(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("tde_status")
+	}
+
 	if d.HasChange("maintain_start_time") || d.HasChange("maintain_end_time") {
 		request := dds.CreateModifyDBInstanceMaintainTimeRequest()
 		request.RegionId = client.RegionId
@@ -352,6 +395,22 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("maintain_start_time")
 		d.SetPartial("maintain_end_time")
+	}
+
+	if d.HasChange("security_group_id") {
+		request := dds.CreateModifySecurityGroupConfigurationRequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		request.SecurityGroupId = d.Get("security_group_id").(string)
+
+		raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
+			return client.ModifySecurityGroupConfiguration(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("security_group_id")
 	}
 
 	if err := ddsService.setInstanceTags(d); err != nil {

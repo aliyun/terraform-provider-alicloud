@@ -8,11 +8,11 @@ import (
 )
 
 func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000, 9999)
+	rand := acctest.RandInt()
 	resourceId := "data.alicloud_elasticsearch_instances.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
-		fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand),
+		fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)[:30],
 		dataSourceElasticsearchConfigDependence)
 
 	descriptionRegexConf := dataSourceTestAccConfig{
@@ -85,11 +85,11 @@ var existElasticsearchMapFunc = func(rand int) map[string]string {
 		"ids.#":                            "1",
 		"ids.0":                            CHECKSET,
 		"descriptions.#":                   "1",
-		"descriptions.0":                   fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand),
+		"descriptions.0":                   fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)[:30],
 		"instances.#":                      "1",
 		"instances.0.id":                   CHECKSET,
 		"instances.0.instance_charge_type": string(PostPaid),
-		"instances.0.description":          fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand),
+		"instances.0.description":          fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)[:30],
 		"instances.0.data_node_amount":     "2",
 		"instances.0.data_node_spec":       "elasticsearch.sn2ne.large",
 		"instances.0.status":               "active",
