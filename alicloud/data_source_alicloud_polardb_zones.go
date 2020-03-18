@@ -69,13 +69,15 @@ func dataSourceAlicloudZonesPolarDBRead(d *schema.ResourceData, meta interface{}
 		return WrapError(fmt.Errorf("[ERROR] There is no available region for PolarDB."))
 	}
 	for _, r := range regions.Regions.Region {
-		if multi && strings.Contains(r.Zones.Zone[0].ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
-			zoneIds = append(zoneIds, r.Zones.Zone[0].ZoneId)
-			continue
-		}
-		if !multi && !strings.Contains(r.Zones.Zone[0].ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
-			zoneIds = append(zoneIds, r.Zones.Zone[0].ZoneId)
-			continue
+		for _, zone := range r.Zones.Zone {
+			if multi && strings.Contains(zone.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+				zoneIds = append(zoneIds, zone.ZoneId)
+				continue
+			}
+			if !multi && !strings.Contains(zone.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+				zoneIds = append(zoneIds, zone.ZoneId)
+				continue
+			}
 		}
 	}
 
