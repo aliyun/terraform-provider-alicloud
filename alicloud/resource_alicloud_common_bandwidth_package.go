@@ -2,8 +2,10 @@ package alicloud
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -73,17 +75,31 @@ func resourceAliyunCommonBandwidthPackageCreate(d *schema.ResourceData, meta int
 	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	request.InternetChargeType = d.Get("internet_charge_type").(string)
 	request.Ratio = requests.NewInteger(d.Get("ratio").(int))
-	request.ClientToken = buildClientToken(request.GetActionName())
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.CreateCommonBandwidthPackage(request)
+
+	wait := incrementalWait(1*time.Second, 1*time.Second)
+	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+		request.ClientToken = buildClientToken(request.GetActionName())
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.CreateCommonBandwidthPackage(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"BandwidthPackageOperation.conflict", Throttling}) {
+				wait()
+				return resource.RetryableError(err)
+
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*vpc.CreateCommonBandwidthPackageResponse)
+		d.SetId(response.BandwidthPackageId)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_common_bandwidth_package", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*vpc.CreateCommonBandwidthPackageResponse)
-	d.SetId(response.BandwidthPackageId)
-	if err = vpcService.WaitForCommonBandwidthPackage(response.BandwidthPackageId, Available, DefaultTimeout); err != nil {
+
+	if err = vpcService.WaitForCommonBandwidthPackage(d.Id(), Available, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
 

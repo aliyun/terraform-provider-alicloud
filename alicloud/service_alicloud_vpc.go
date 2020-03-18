@@ -83,15 +83,15 @@ func (s *VpcService) DescribeNatGateway(id string) (nat vpc.NatGateway, err erro
 	return
 }
 
-func (s *VpcService) DescribeVpc(id string) (v vpc.DescribeVpcAttributeResponse, err error) {
-	request := vpc.CreateDescribeVpcAttributeRequest()
+func (s *VpcService) DescribeVpc(id string) (v vpc.Vpc, err error) {
+	request := vpc.CreateDescribeVpcsRequest()
 	request.RegionId = s.client.RegionId
 	request.VpcId = id
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
 		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVpcAttribute(request)
+			return vpcClient.DescribeVpcs(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidVpcID.NotFound", "Forbidden.VpcNotFound"}) {
@@ -100,11 +100,11 @@ func (s *VpcService) DescribeVpc(id string) (v vpc.DescribeVpcAttributeResponse,
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*vpc.DescribeVpcAttributeResponse)
-		if response.VpcId != id {
+		response, _ := raw.(*vpc.DescribeVpcsResponse)
+		if len(response.Vpcs.Vpc) < 1 || response.Vpcs.Vpc[0].VpcId != id {
 			return WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundMsg, ProviderERROR)
 		}
-		v = *response
+		v = response.Vpcs.Vpc[0]
 		return nil
 	})
 	return
@@ -1085,13 +1085,26 @@ func (s *VpcService) setInstanceTags(d *schema.ResourceData, resourceType TagRes
 			request.ResourceType = string(resourceType)
 			request.TagKey = &tagKey
 			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithVpcClient(func(client *vpc.Client) (interface{}, error) {
-				return client.UnTagResources(request)
+
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				raw, err := s.client.WithVpcClient(func(client *vpc.Client) (interface{}, error) {
+					return client.UnTagResources(request)
+				})
+				if err != nil {
+					if IsThrottling(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
 			})
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 		if len(create) > 0 {
@@ -1100,13 +1113,26 @@ func (s *VpcService) setInstanceTags(d *schema.ResourceData, resourceType TagRes
 			request.Tag = &create
 			request.ResourceType = string(resourceType)
 			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithVpcClient(func(client *vpc.Client) (interface{}, error) {
-				return client.TagResources(request)
+
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				raw, err := s.client.WithVpcClient(func(client *vpc.Client) (interface{}, error) {
+					return client.TagResources(request)
+				})
+				if err != nil {
+					if IsThrottling(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
 			})
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 		d.SetPartial("tags")

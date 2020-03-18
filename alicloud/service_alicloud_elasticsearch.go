@@ -91,6 +91,57 @@ func (s *ElasticsearchService) ElasticsearchRetryFunc(wait func(), errorCodeList
 	return raw, WrapError(err)
 }
 
+func (s *ElasticsearchService) DescribeElasticsearchTags(id string) (tags map[string]string, err error) {
+	resourceIds, err := json.Marshal([]string{id})
+	if err != nil {
+		tmp := make(map[string]string)
+		return tmp, WrapError(err)
+	}
+
+	request := elasticsearch.CreateListTagResourcesRequest()
+	request.RegionId = s.client.RegionId
+	request.ResourceIds = string(resourceIds)
+	request.ResourceType = strings.ToUpper(string(TagResourceInstance))
+
+	raw, err := s.client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.ListTagResources(request)
+	})
+	if err != nil {
+		tmp := make(map[string]string)
+		return tmp, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	response, _ := raw.(*elasticsearch.ListTagResourcesResponse)
+
+	return s.tagsToMap(response.TagResources.TagResource), nil
+}
+
+func (s *ElasticsearchService) tagsToMap(tagSet []elasticsearch.TagResourceItem) (tags map[string]string) {
+	result := make(map[string]string)
+	for _, t := range tagSet {
+		result[t.TagKey] = t.TagValue
+	}
+
+	return result
+}
+
+func (s *ElasticsearchService) diffElasticsearchTags(oldTags, newTags map[string]interface{}) (remove []string, add []map[string]string) {
+	for k, _ := range oldTags {
+		remove = append(remove, k)
+	}
+	for k, v := range newTags {
+		tag := map[string]string{
+			"key":   k,
+			"value": v.(string),
+		}
+
+		add = append(add, tag)
+	}
+	return
+}
+
 func updateDescription(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
@@ -115,6 +166,69 @@ func updateDescription(d *schema.ResourceData, meta interface{}) error {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+	return nil
+}
+
+func updateInstanceTags(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
+
+	oraw, nraw := d.GetChange("tags")
+	o := oraw.(map[string]interface{})
+	n := nraw.(map[string]interface{})
+	remove, add := elasticsearchService.diffElasticsearchTags(o, n)
+
+	if len(remove) > 0 {
+		tagKeys, err := json.Marshal(remove)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		resourceIds, err := json.Marshal([]string{d.Id()})
+		if err != nil {
+			return WrapError(err)
+		}
+		request := elasticsearch.CreateUntagResourcesRequest()
+		request.RegionId = client.RegionId
+		request.TagKeys = string(tagKeys)
+		request.ResourceType = strings.ToUpper(string(TagResourceInstance))
+		request.ResourceIds = string(resourceIds)
+		request.SetContentType("application/json")
+
+		raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+			return elasticsearchClient.UntagResources(request)
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+	}
+
+	if len(add) > 0 {
+		content := make(map[string]interface{})
+		content["ResourceIds"] = []string{d.Id()}
+		content["ResourceType"] = strings.ToUpper(string(TagResourceInstance))
+		content["Tags"] = add
+		data, err := json.Marshal(content)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		request := elasticsearch.CreateTagResourcesRequest()
+		request.RegionId = client.RegionId
+		request.SetContent(data)
+		request.SetContentType("application/json")
+		raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+			return elasticsearchClient.TagResources(request)
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+	}
+
 	return nil
 }
 

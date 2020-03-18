@@ -2,16 +2,113 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
-	"github.com/hashicorp/terraform/helper/acctest"
-
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cen_bandwidth_limit", &resource.Sweeper{
+		Name: "alicloud_cen_bandwidth_limit",
+		F:    testSweepCenBandwidthLimit,
+	})
+}
+
+func testSweepCenBandwidthLimit(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	cenService := CenService{client}
+
+	prefixes := []string{
+		fmt.Sprintf("tf-testAcc%s", region),
+		fmt.Sprintf("tf_testAcc%s", region),
+		fmt.Sprintf("tf-testAccCen%s", region),
+		fmt.Sprintf("tf_testAccCen%s", region),
+	}
+
+	var insts []cbn.CenInterRegionBandwidthLimit
+	request := cbn.CreateDescribeCenInterRegionBandwidthLimitsRequest()
+	request.RegionId = client.RegionId
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithCenClient(func(cenClient *cbn.Client) (interface{}, error) {
+			return cenClient.DescribeCenInterRegionBandwidthLimits(request)
+		})
+		if err != nil {
+			return fmt.Errorf("Error retrieving CEN InterRegionBandwidthLimits: %s", err)
+		}
+		response, _ := raw.(*cbn.DescribeCenInterRegionBandwidthLimitsResponse)
+		if len(response.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit) < 1 {
+			break
+		}
+		insts = append(insts, response.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit...)
+
+		if len(response.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit) < PageSizeLarge {
+			break
+		}
+
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
+			return err
+		}
+		request.PageNumber = page
+	}
+
+	sweeped := false
+	for _, v := range insts {
+		cen, err := cenService.DescribeCenInstance(v.CenId)
+		if err != nil {
+			log.Printf("[ERROR] Failed to describe cen instance, error: %#v", err)
+			continue
+		}
+		name := cen.Name
+		id := cen.CenId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping CEN Instance: %s (%s)", name, id)
+			continue
+		}
+
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			err := cenService.SetCenInterRegionBandwidthLimit(id, v.LocalRegionId, v.OppositeRegionId, 0)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus"}) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to SetCenInterRegionBandwidthLimit (%s (%s)): %s", name, id, err)
+		}
+		sweeped = true
+	}
+	if sweeped {
+		// Waiting 5 seconds to eusure these instances have been deleted.
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
 	var v cbn.CenInterRegionBandwidthLimit

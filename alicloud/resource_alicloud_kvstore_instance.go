@@ -516,11 +516,8 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*r_kvstore.DescribeInstanceAutoRenewalAttributeResponse)
 		if len(response.Items.Item) > 0 {
-			renew := response.Items.Item[0]
-			auto_renew := bool(renew.AutoRenew == "True")
-
-			d.Set("auto_renew", auto_renew)
-			d.Set("auto_renew_period", renew.Duration)
+			d.Set("auto_renew", response.Items.Item[0].AutoRenew == "true")
+			d.Set("auto_renew_period", response.Items.Item[0].Duration)
 		}
 		period, err := computePeriodByUnit(object.CreateTime, object.EndTime, d.Get("period").(int), "Month")
 		if err != nil {

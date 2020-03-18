@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -35,6 +36,7 @@ func dataSourceAlicloudElasticsearch() *schema.Resource {
 					"6.7.0_with_X-Pack",
 				}, false),
 			},
+			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -98,6 +100,10 @@ func dataSourceAlicloudElasticsearch() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -113,6 +119,23 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 	request.EsVersion = d.Get("version").(string)
 	request.Size = requests.NewInteger(PageSizeLarge)
 	request.Page = requests.NewInteger(1)
+
+	if v, ok := d.GetOk("tags"); ok {
+		var reqTags []map[string]string
+
+		for k, v := range v.(map[string]interface{}) {
+			reqTags = append(reqTags, map[string]string{
+				"tagKey":   k,
+				"tagValue": v.(string),
+			})
+		}
+
+		reqTagsStr, err := json.Marshal(reqTags)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.Tags = string(reqTagsStr)
+	}
 
 	var instances []elasticsearch.Instance
 
@@ -197,6 +220,7 @@ func extractInstance(d *schema.ResourceData, instances []elasticsearch.Instance)
 			"created_at":           item.CreatedAt,
 			"updated_at":           item.UpdatedAt,
 			"vswitch_id":           item.NetworkConfig.VswitchId,
+			"tags":                 elasticsearchTagsToMap(item.Tags),
 		}
 
 		ids = append(ids, item.InstanceId)

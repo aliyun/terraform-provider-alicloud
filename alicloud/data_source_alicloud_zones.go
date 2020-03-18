@@ -252,11 +252,13 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			return WrapError(fmt.Errorf("[ERROR] There is no available region for PolarDB."))
 		}
 		for _, r := range regions.Regions.Region {
-			if multi && strings.Contains(r.Zones.Zone[0].ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
-				zoneIds = append(zoneIds, r.Zones.Zone[0].ZoneId)
-				continue
+			for _, zone := range r.Zones.Zone {
+				if multi && strings.Contains(zone.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+					zoneIds = append(zoneIds, zone.ZoneId)
+					continue
+				}
+				polarDBZones[zone.ZoneId] = r.RegionId
 			}
-			polarDBZones[r.Zones.Zone[0].ZoneId] = r.RegionId
 		}
 	}
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeRkv)) {
@@ -497,6 +499,11 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 					continue
 				}
 			}
+			if len(polarDBZones) > 0 {
+				if _, ok := polarDBZones[zone.ZoneId]; !ok {
+					continue
+				}
+			}
 			if len(rkvZones) > 0 {
 				if _, ok := rkvZones[zone.ZoneId]; !ok {
 					continue
@@ -603,11 +610,11 @@ func zoneIdsDescriptionAttributes(d *schema.ResourceData, zones []string) error 
 
 	d.SetId(dataResourceIdHash(zones))
 	if err := d.Set("zones", s); err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	if err := d.Set("ids", zoneIds); err != nil {
-		return err
+		return WrapError(err)
 	}
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

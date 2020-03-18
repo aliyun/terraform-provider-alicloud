@@ -38,7 +38,7 @@ output "first_product_package_version" {
 The following arguments are supported:
 
 * `product_code` - (Required) The product code of the market product.
-* `available_region` - (Available in 1.72.0+) A available region id used to filter market place Ecs images.
+* `available_region` - (Available in 1.71.1+) A available region id used to filter market place Ecs images.
 
 ## Attributes Reference
 

@@ -3,8 +3,11 @@ package alicloud
 import (
 	"regexp"
 
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -113,6 +116,10 @@ func dataSourceAlicloudVpcs() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -219,16 +226,28 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 		request.VRouterId = v.VRouterId
 		request.RegionId = string(client.Region)
 
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVRouters(request)
+		var response *vpc.DescribeVRoutersResponse
+		wait := incrementalWait(1*time.Second, 1*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.DescribeVRouters(request)
+			})
+			if err != nil {
+				if IsThrottling(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			response, _ = raw.(*vpc.DescribeVRoutersResponse)
+			return nil
 		})
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpcs", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-		response, _ := raw.(*vpc.DescribeVRoutersResponse)
 		if len(response.VRouters.VRouter) > 0 {
 			route_tables = append(route_tables, response.VRouters.VRouter[0].RouteTableIds.RouteTableId[0])
 		} else {
@@ -265,6 +284,7 @@ func vpcsDecriptionAttributes(d *schema.ResourceData, vpcSetTypes []vpc.Vpc, rou
 			"description":    vpc.Description,
 			"is_default":     vpc.IsDefault,
 			"creation_time":  vpc.CreationTime,
+			"tags":           vpcTagsToMap(vpc.Tags.Tag),
 		}
 		ids = append(ids, vpc.VpcId)
 		names = append(names, vpc.VpcName)

@@ -1,4 +1,127 @@
-## 1.72.0 (Unreleased)
+## 1.75.0 (Unreleased)
+## 1.74.1 (March 17, 2020)
+
+IMPROVEMENTS:
+
+- improve(alikafka_instance): suspend kafka prepaid test ([#2264](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2264))
+- improve(gpdb): modify the vsw specified ([#2260](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2260))
+- improve(elasticsearch): modify the vsw specified ([#2239](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2239))
+
+BUG FIXES:
+
+- tagResource bug fix ([#2266](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2266))
+- fix(kvstore_instance): resolve auto_renew incorrect value ([#2265](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2265))
+
+## 1.74.0 (March 16, 2020)
+
+- **Data Source:** `alicloud_fc_zones` ([#2256](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2256))
+- **Data Source:** `alicloud_polardb_zones` ([#2250](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2250))
+
+IMPROVEMENTS:
+
+- improve(hbase): modify the vsw specified ([#2259](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2259))
+- improve(elasticsearch): data_source support tags ([#2257](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2257))
+- rename polardb test name ([#2255](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2255))
+- corrct cen_flowlog docs ([#2254](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2254))
+- Adjust the return error mode ([#2252](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2252))
+- improve(elasticsearch): resource support tags ([#2251](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2251))
+
+BUG FIXES:
+
+- fix(cms_alarm): resolve the effective_interval default value ([#2253](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2253))
+
+## 1.73.0 (March 13, 2020)
+
+- **New Resource:** `alicloud_cen_flowlog` ([#2229](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2229))
+- **Data Source:** `alicloud_gpdb_zones` ([#2241](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2241))
+- **Data Source:** `alicloud_hbase_zones` ([#2240](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2240))
+- **Data Source:** `alicloud_mongodb_zones` ([#2238](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2238))
+- **Data Source:** `alicloud_kvstore_zones` ([#2236](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2236))
+- **Data Source:** `alicloud_db_zones` ([#2235](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2235))
+
+IMPROVEMENTS:
+
+- improve(ecs): supported auto snapshop policy ([#2245](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2245))
+- add flowlog docs in the alicloud.erb ([#2237](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2237))
+- fix(elasticsearch): update the sdk ([#2234](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2234))
+- add new version aliyungo ([#2232](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2232))
+- terraform format examples [2231]
+- Hbase tags ([#2228](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2228))
+- mongodb support TDE [GH2207]
+
+BUG FIXES:
+
+- fix(cms_alarm): resolve the effective_interval format bug ([#2242](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2242))
+- fix SQLServer testcase ([#2233](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2233))
+- fix(es): fix ci bug ([#2230](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2230))
+
+## 1.72.0 (March 06, 2020)
+
+- **New Resource:** `alicloud_cms_site_monitor` ([#2191](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2191))
+- **Data Source:** `alicloud_ess_alarms` ([#2215](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2215))
+- **Data Source:** `alicloud_ess_notifications` ([#2161](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2161))
+- **Data Source:** `alicloud_ess_scheduled_tasks` ([#2160](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2160))
+
+IMPROVEMENTS:
+
+- improve(mns_topic_subscription): remove the validate ([#2225](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2225))
+- Support the parameter of 'protocol' ([#2214](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2214))
+- improve sweeper test ([#2212](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2212))
+- supported bootstrap action when create a new emr cluster instance ([#2210](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2210))
+
+BUG FIXES:
+
+- fix sweep test bug ([#2223](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2223))
+- fix the bug of RAM user cannot be destroyed ([#2219](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2219))
+- fix(elasticsearch_instance): resolve the ci bug ([#2216](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2216))
+- fix(slb): fix slb listener fields and rules creation bug ([#2209](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2209))
+
+## 1.71.2 (February 28, 2020)
+
+IMPROVEMENTS:
+
+- improve alikafka sweeper test ([#2206](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2206))
+- added filter parameter instance type about data source emr_instance_t…  ([#2205](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2205))
+- improve(polardb): fix update polardb cluster db_node_class will delete instance ([#2203](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2203))
+- improve(cen): add more sweeper test for cen and update go sdk ([#2201](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2201))
+- improve(mns_topic_subscription): supports json ([#2200](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2200))
+- update go sdk to 1.61.1 ([#2197](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2197))
+- improve(snat): add snat_entry_name for this resource ([#2196](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2196))
+- add sweeper for polardb and hbase ([#2195](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2195))
+- improve(nat_gateways): add output vpc_id ([#2194](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2194))
+- add retry for throttling when setting tags ([#2193](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2193))
+- improve(client): remove useless goSdkMutex ([#2192](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2192))
+
+BUG FIXES:
+
+- fix(cms_alarm): resolve the creating rule dunplicated ([#2211](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2211))
+- fix(ess): fix create ess scaling group error ([#2208](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2208))
+- fix(ess): fix the bug of creating ess scaling group ([#2204](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2204))
+fix(common_bandwidth): resolve BandwidthPackageOperation.conflict ([#2199](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2199))
+
+## 1.71.1 (February 21, 2020)
+
+IMPROVEMENTS:
+
+- update SnatEntry test case ([#2187](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2187))
+- improve(vpcs): support outputting tags ([#2184](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2184))
+- improve(instance): remove sdk mutex and improve instance creating speed ([#2181](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2181))
+- (improve market_products): supports more filter parameter ([#2177](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2177))
+- add heyuan region and datasource market supports available_region ([#2176](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2176))
+- improve(ecs_instance): add tags into runInstances request ([#2175](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2175))
+- improve(ecs_instance): improve security groups ([#2174](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2174))
+- improve(fc_function): remove useless code ([#2173](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2173))
+- add support for create snat entry with source_dir ([#2170](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2170))
+
+BUG FIXES:
+
+- fix(instance): resolve LastTokenProcessing error when modifying nework spec ([#2186](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2186))
+- fix(instance): resolve modifying network spec LastOrderProcessing error ([#2185](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2185))
+- fix(instance): resolve volume_tags diff bug when new resource ([#2182](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2182))
+- fix(image): fix the bug of created image by disk ([#2180](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2180))
+- Fix creating instance with multiple security groups ([#2168](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2168))
+
+
 ## 1.71.0 (February 14, 2020)
 
 - **New Resource:** `alicloud_adb_account` ([#2169](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2169))

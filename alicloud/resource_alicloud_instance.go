@@ -157,6 +157,11 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional: true,
 				Default:  40,
 			},
+			"system_disk_auto_snapshot_policy_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"data_disks": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -189,6 +194,11 @@ func resourceAliyunInstance() *schema.Resource {
 							ForceNew: true,
 						},
 						"snapshot_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"auto_snapshot_policy_id": {
 							Type:     schema.TypeString,
 							Optional: true,
 							ForceNew: true,
@@ -349,7 +359,7 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"tags":        tagsSchema(),
-			"volume_tags": tagsSchema(),
+			"volume_tags": tagsSchemaComputed(),
 
 			"auto_release_time": {
 				Type:     schema.TypeString,
@@ -390,12 +400,14 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 	if d.Get("is_outdated").(bool) == true {
 		request.IoOptimized = "none"
 	}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	wait := incrementalWait(1*time.Second, 1*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.RunInstances(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidPrivateIpAddress.Duplicated"}) {
+			if IsThrottling(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -431,19 +443,19 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		return WrapError(err)
 	}
 
-	if !d.IsNewResource() || d.HasChange("volume_tags") {
-		disk, err := ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
-		if err != nil {
-			if NotFoundError(err) {
-				d.SetId("")
-				return nil
-			}
-			return WrapError(err)
+	disk, err := ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
 		}
-		d.Set("system_disk_category", disk.Category)
-		d.Set("system_disk_size", disk.Size)
-		d.Set("volume_tags", tagsToMap(disk.Tags.Tag))
+		return WrapError(err)
 	}
+	d.Set("system_disk_category", disk.Category)
+	d.Set("system_disk_size", disk.Size)
+	d.Set("system_disk_auto_snapshot_policy_id", disk.AutoSnapshotPolicyId)
+	d.Set("volume_tags", tagsToMap(disk.Tags.Tag))
+
 	d.Set("instance_name", instance.InstanceName)
 	d.Set("resource_group_id", instance.ResourceGroupId)
 	d.Set("description", instance.Description)
@@ -452,7 +464,6 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("host_name", instance.HostName)
 	d.Set("image_id", instance.ImageId)
 	d.Set("instance_type", instance.InstanceType)
-
 	d.Set("password", d.Get("password").(string))
 	d.Set("internet_max_bandwidth_out", instance.InternetMaxBandwidthOut)
 	d.Set("internet_max_bandwidth_in", instance.InternetMaxBandwidthIn)
@@ -775,12 +786,17 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 	deleteRequest.InstanceId = d.Id()
 	deleteRequest.Force = requests.NewBoolean(true)
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	wait := incrementalWait(1*time.Second, 1*time.Second)
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DeleteInstance(deleteRequest)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "DependencyViolation.RouteEntry", "IncorrectInstanceStatus.Initializing"}) {
+				return resource.RetryableError(err)
+			}
+			if IsExpectedErrors(err, []string{Throttling, "LastTokenProcessing"}) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -795,7 +811,7 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{"Pending", "Running", "Stopped", "Stopping"}, []string{}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{"Pending", "Running", "Stopped", "Stopping"}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
 
 	if _, err = stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -822,6 +838,10 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 
 	request.SystemDiskCategory = string(systemDiskCategory)
 	request.SystemDiskSize = strconv.Itoa(d.Get("system_disk_size").(int))
+
+	if v, ok := d.GetOk("system_disk_auto_snapshot_policy_id"); ok && v.(string) != "" {
+		request.SystemDiskAutoSnapshotPolicyId = v.(string)
+	}
 
 	if v, ok := d.GetOk("security_groups"); ok {
 		// At present, the classic network instance does not support multi sg in runInstances
@@ -961,6 +981,9 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 			}
 			if description, ok := disk["description"]; ok {
 				dataDiskRequest.Description = description.(string)
+			}
+			if autoSnapshotPolicyId, ok := disk["auto_snapshot_policy_id"]; ok {
+				dataDiskRequest.AutoSnapshotPolicyId = autoSnapshotPolicyId.(string)
 			}
 			dataDiskRequest.Size = fmt.Sprintf("%d", disk["size"].(int))
 			dataDiskRequest.Category = disk["category"].(string)
@@ -1413,15 +1436,16 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	//An instance that was successfully modified once cannot be modified again within 5 minutes.
+	wait := incrementalWait(2*time.Second, 2*time.Second)
 	client := meta.(*connectivity.AliyunClient)
 	if update {
-		if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+		if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.ModifyInstanceNetworkSpec(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{Throttling}) {
-					time.Sleep(10 * time.Second)
+				if IsExpectedErrors(err, []string{Throttling, "LastOrderProcessing", "LastRequestProcessing", "LastTokenProcessing"}) {
+					wait()
 					return resource.RetryableError(err)
 				}
 				if IsExpectedErrors(err, []string{"InternalError"}) {

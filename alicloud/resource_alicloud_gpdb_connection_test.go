@@ -34,6 +34,7 @@ func TestAccAlicloudGpdbConnectionUpdate(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -77,18 +78,12 @@ func testGpdbConnectionConfigDependence(name string) string {
         variable "name" {
             default              = "tf-testAccGpdbInstance"
         }
-        resource "alicloud_vpc" "default" {
-            name                 = "${var.name}"
-            cidr_block           = "172.16.0.0/16"
-        }
-        resource "alicloud_vswitch" "default" {
-            availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
-            vpc_id               = "${alicloud_vpc.default.id}"
-            cidr_block           = "172.16.0.0/24"
-            name                 = "${var.name}"
-        }
+        data "alicloud_vswitches" "default" {
+		  zone_id    = data.alicloud_zones.default.ids[0]
+		  name_regex = "default-tf--testAcc-00"
+		}
         resource "alicloud_gpdb_instance" "default" {
-            vswitch_id           = "${alicloud_vswitch.default.id}"
+            vswitch_id           = "${data.alicloud_vswitches.default.ids.0}"
             engine               = "gpdb"
             engine_version       = "4.3"
             instance_class       = "gpdb.group.segsdx2"

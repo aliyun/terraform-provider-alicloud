@@ -85,7 +85,7 @@ type DeleteZoneRecordRequest struct {
 type DeleteZoneRecordResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
-	RecordId  int    `json:"RecordId" xml:"RecordId"`
+	RecordId  int64  `json:"RecordId" xml:"RecordId"`
 }
 
 // CreateDeleteZoneRecordRequest creates a request to invoke DeleteZoneRecord API

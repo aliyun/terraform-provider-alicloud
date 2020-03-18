@@ -117,8 +117,8 @@ resource "alicloud_disk" "disks" {
 
 // Attach ECS disks to instances for Module
 resource "alicloud_disk_attachment" "disk_attach" {
-  count   = var.number_of_instances > 0 && var.number_of_disks > 0 ? var.number_of_disks : 0
-  disk_id = alicloud_disk.disks.*.id[count.index]
+  count       = var.number_of_instances > 0 && var.number_of_disks > 0 ? var.number_of_disks : 0
+  disk_id     = alicloud_disk.disks.*.id[count.index]
   instance_id = alicloud_instance.instances.*.id[count.index % var.number_of_instances]
 }
 

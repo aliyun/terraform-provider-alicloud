@@ -20,8 +20,10 @@ type VbrHealthCheck struct {
 	CenId               string `json:"CenId" xml:"CenId"`
 	VbrInstanceId       string `json:"VbrInstanceId" xml:"VbrInstanceId"`
 	LinkStatus          string `json:"LinkStatus" xml:"LinkStatus"`
-	PacketLoss          int    `json:"PacketLoss" xml:"PacketLoss"`
+	PacketLoss          int64  `json:"PacketLoss" xml:"PacketLoss"`
 	HealthCheckSourceIp string `json:"HealthCheckSourceIp" xml:"HealthCheckSourceIp"`
 	HealthCheckTargetIp string `json:"HealthCheckTargetIp" xml:"HealthCheckTargetIp"`
-	Delay               int    `json:"Delay" xml:"Delay"`
+	Delay               int64  `json:"Delay" xml:"Delay"`
+	HealthCheckInterval int    `json:"HealthCheckInterval" xml:"HealthCheckInterval"`
+	HealthyThreshold    int    `json:"HealthyThreshold" xml:"HealthyThreshold"`
 }

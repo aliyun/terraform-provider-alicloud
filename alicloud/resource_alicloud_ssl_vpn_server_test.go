@@ -48,7 +48,6 @@ func testSweepSslVpnServers(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] %s", WrapError(err))
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeSslVpnServersResponse)
 		if len(response.SslVpnServers.SslVpnServer) < 1 {
 			break
@@ -85,13 +84,12 @@ func testSweepSslVpnServers(region string) error {
 		log.Printf("[INFO] Deleting Ssl Vpn Server: %s (%s)", name, id)
 		request := vpc.CreateDeleteSslVpnServerRequest()
 		request.SslVpnServerId = id
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DeleteSslVpnServer(request)
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Ssl Vpn Server (%s (%s)): %s", name, id, WrapError(err))
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 	if sweeped {
 		time.Sleep(10 * time.Second)

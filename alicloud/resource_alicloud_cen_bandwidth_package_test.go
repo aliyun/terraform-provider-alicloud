@@ -20,6 +20,9 @@ func init() {
 	resource.AddTestSweepers("alicloud_cen_bandwidth_package", &resource.Sweeper{
 		Name: "alicloud_cen_bandwidth_package",
 		F:    testSweepCenBandwidthPackage,
+		Dependencies: []string{
+			"alicloud_cen_bandwidth_limit",
+		},
 	})
 }
 
@@ -101,7 +104,7 @@ func testSweepCenBandwidthPackage(region string) error {
 				return cbnClient.UnassociateCenBandwidthPackage(request)
 			})
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete CEN bandwidth package attachment (%s (%s)): %s", name, id, err)
+				log.Printf("[ERROR] Failed to Unassociate CEN bandwidth package (%s (%s)): %s", name, id, err)
 			}
 		}
 		log.Printf("[INFO] Deleting CEN bandwidth package: %s (%s)", name, id)

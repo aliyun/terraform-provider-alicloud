@@ -122,12 +122,12 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 
 		for _, key := range response.Records.Record {
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[strconv.Itoa(key.RecordId)]; !ok {
+				if _, ok := idsMap[strconv.FormatInt(key.RecordId, 10)]; !ok {
 					continue
 				}
 			}
 			pvtzZoneRecords = append(pvtzZoneRecords, key)
-			ids = append(ids, strconv.Itoa(key.RecordId))
+			ids = append(ids, strconv.FormatInt(key.RecordId, 10))
 		}
 
 		if page, err := getNextpageNumber(request.PageNumber); err != nil {

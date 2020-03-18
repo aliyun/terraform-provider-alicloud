@@ -2,14 +2,104 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_polardb_cluster", &resource.Sweeper{
+		Name: "alicloud_polardb_cluster",
+		F:    testSweepPolarDBClusters,
+	})
+}
+
+func testSweepPolarDBClusters(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	var insts []polardb.DBCluster
+	req := polardb.CreateDescribeDBClustersRequest()
+	req.RegionId = client.RegionId
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+			return polardbClient.DescribeDBClusters(req)
+		})
+		if err != nil {
+			return fmt.Errorf("Error retrieving Polardb Instances: %s", err)
+		}
+		resp, _ := raw.(*polardb.DescribeDBClustersResponse)
+		if resp == nil || len(resp.Items.DBCluster) < 1 {
+			break
+		}
+		insts = append(insts, resp.Items.DBCluster...)
+
+		if len(resp.Items.DBCluster) < PageSizeLarge {
+			break
+		}
+
+		page, err := getNextpageNumber(req.PageNumber)
+		if err != nil {
+			return err
+		}
+		req.PageNumber = page
+	}
+
+	vpcService := VpcService{client}
+	for _, v := range insts {
+		name := v.DBClusterDescription
+		id := v.DBClusterId
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+		if skip {
+			if need, err := vpcService.needSweepVpc(v.VpcId, ""); err == nil {
+				skip = !need
+			}
+
+		}
+
+		if skip {
+			log.Printf("[INFO] Skipping Polardb Instance: %s (%s)", name, id)
+			continue
+		}
+
+		log.Printf("[INFO] Deleting Polardb Instance: %s (%s)", name, id)
+
+		req := polardb.CreateDeleteDBClusterRequest()
+		req.DBClusterId = id
+		_, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+			return polardbClient.DeleteDBCluster(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Polardb Instance (%s (%s)): %s", name, id, err)
+		}
+	}
+
+	return nil
+}
 
 func TestAccAlicloudPolarDBCluster(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
@@ -59,9 +149,10 @@ func TestAccAlicloudPolarDBCluster(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -80,6 +171,17 @@ func TestAccAlicloudPolarDBCluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"maintain_time": "16:00Z-17:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_class": "polar.mysql.x4.xlarge",
+					"modify_type":   "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_node_class": "polar.mysql.x4.xlarge",
 					}),
 				),
 			},
@@ -122,12 +224,15 @@ func TestAccAlicloudPolarDBCluster(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":   "tf-testaccdnsrecordbasic1",
 					"maintain_time": "02:00Z-03:00Z",
+					"db_node_class": "polar.mysql.x8.xlarge",
+					"modify_type":   "Upgrade",
 					"security_ips":  []string{"10.168.1.13", "100.69.7.113"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":   "tf-testaccdnsrecordbasic1",
 						"maintain_time": "02:00Z-03:00Z",
+						"db_node_class": "polar.mysql.x8.xlarge",
 					}),
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.13,100.69.7.113"),
 				),

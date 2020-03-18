@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -38,10 +37,6 @@ func resourceAlicloudMNSSubscription() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				ValidateFunc: validation.Any(
-					validation.StringMatch(regexp.MustCompile(`^http://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]$`), "url pattern should with `http://"),
-					validation.StringMatch(regexp.MustCompile(`^acs:mns:\\S{2}-\\S+:\\d+:queues/\\S+$`), "queue pattern acs:mns:{REGION}:{AccountID}:queues/{QueueName}"),
-					validation.StringMatch(regexp.MustCompile(`^directmail:\\w+@\\w+\\.\\w{2,4}$`), "email pattern directmail:{MailAddress}")),
 			},
 
 			"filter_tag": {
@@ -65,9 +60,6 @@ func resourceAlicloudMNSSubscription() *schema.Resource {
 				Optional: true,
 				Default:  string(ali_mns.SIMPLIFIED),
 				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(ali_mns.SIMPLIFIED), string(ali_mns.XML),
-				}, false),
 			},
 		},
 	}

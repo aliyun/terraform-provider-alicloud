@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -486,7 +487,7 @@ type Catcher struct {
 
 var ClientErrorCatcher = Catcher{AliyunGoClientFailure, 10, 5}
 var ServiceBusyCatcher = Catcher{"ServiceUnavailable", 10, 5}
-var ThrottlingCatcher = Catcher{Throttling, 10, 10}
+var ThrottlingCatcher = Catcher{Throttling, 50, 2}
 
 func NewInvoker() Invoker {
 	i := Invoker{}
@@ -757,7 +758,7 @@ func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration
 		if retryCount == 1 {
 			waitTime = firstDuration
 		} else if retryCount > 1 {
-			waitTime = time.Duration(retryCount-1) * increaseDuration
+			waitTime += increaseDuration
 		}
 		time.Sleep(waitTime)
 		retryCount++
@@ -819,4 +820,25 @@ func computePeriodByUnit(createTime, endTime interface{}, currentPeriod int, per
 		period = currentPeriod
 	}
 	return period, WrapError(err)
+}
+
+func checkWaitForReady(object interface{}, conditions map[string]interface{}) (bool, map[string]interface{}, error) {
+	if conditions == nil {
+		return false, nil, nil
+	}
+	objectType := reflect.TypeOf(object)
+	objectValue := reflect.ValueOf(object)
+	values := make(map[string]interface{})
+	for key, value := range conditions {
+		if _, ok := objectType.FieldByName(key); ok {
+			current := objectValue.FieldByName(key)
+			values[key] = current
+			if fmt.Sprintf("%v", current) != fmt.Sprintf("%v", value) {
+				return false, values, nil
+			}
+		} else {
+			return false, values, WrapError(fmt.Errorf("There is missing attribute %s in the object.", key))
+		}
+	}
+	return true, values, nil
 }

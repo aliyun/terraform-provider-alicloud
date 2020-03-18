@@ -118,6 +118,26 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 					},
 				},
 			},
+			"bootstrap_action": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"arg": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -364,6 +384,29 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 	request.HostGroup = &hostGroups
+
+	var bootstrapActions []emr.CreateClusterV2BootstrapAction
+	if actions, ok := d.GetOk("bootstrap_action"); ok {
+		for _, action := range actions.(*schema.Set).List() {
+			kv := action.(map[string]interface{})
+			bootstrapAction := emr.CreateClusterV2BootstrapAction{}
+
+			if v, ok := kv["name"]; ok {
+				bootstrapAction.Name = v.(string)
+			}
+
+			if v, ok := kv["path"]; ok {
+				bootstrapAction.Path = v.(string)
+			}
+
+			if v, ok := kv["arg"]; ok {
+				bootstrapAction.Arg = v.(string)
+			}
+
+			bootstrapActions = append(bootstrapActions, bootstrapAction)
+		}
+	}
+	request.BootstrapAction = &bootstrapActions
 
 	raw, err := client.WithEmrClient(func(emrClient *emr.Client) (interface{}, error) {
 		return emrClient.CreateClusterV2(request)
