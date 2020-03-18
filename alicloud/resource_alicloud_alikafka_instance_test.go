@@ -238,6 +238,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 				),
 			},
 
+			// suspend PrePaid testing
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":        "${var.name}",
@@ -247,9 +248,9 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 					"deploy_type": "5",
 					"io_max":      "20",
 					"eip_max":     "0",
-					"paid_type":   "PrePaid",
-					"spec_type":   "professional",
-					"tags":        REMOVEKEY,
+					//"paid_type":   "PrePaid",
+					"spec_type": "professional",
+					"tags":      REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -260,7 +261,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 						"deploy_type":  "5",
 						"io_max":       "20",
 						"eip_max":      "0",
-						"paid_type":    "PrePaid",
+						"paid_type":    "PostPaid",
 						"spec_type":    "professional",
 						"tags.%":       REMOVEKEY,
 						"tags.Created": REMOVEKEY,

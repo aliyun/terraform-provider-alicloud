@@ -67,6 +67,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				DiffSuppressFunc: esVersionDiffSuppressFunc,
 				ForceNew:         true,
 			},
+			"tags": tagsSchema(),
 
 			// Life cycle
 			"instance_charge_type": {
@@ -241,6 +242,15 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	// Cross zone configuration
 	d.Set("zone_count", object.Result.ZoneCount)
 
+	// tags
+	tags, err := elasticsearchService.DescribeElasticsearchTags(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if len(tags) > 0 {
+		d.Set("tags", tags)
+	}
+
 	return nil
 }
 
@@ -281,6 +291,14 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		}
 
 		d.SetPartial("kibana_whitelist")
+	}
+
+	if d.HasChange("tags") {
+		if err := updateInstanceTags(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("tags")
 	}
 
 	if d.IsNewResource() {

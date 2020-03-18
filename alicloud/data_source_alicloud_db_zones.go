@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/r_kvstore"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func dataSourceAlicloudKVStoreZones() *schema.Resource {
+func dataSourceAlicloudDBZones() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudKVStoreZoneRead,
+		Read: dataSourceAlicloudDBZonesRead,
 
 		Schema: map[string]*schema.Schema{
 			"multi": {
@@ -58,41 +60,57 @@ func dataSourceAlicloudKVStoreZones() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudKVStoreZoneRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudDBZonesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+
 	multi := d.Get("multi").(bool)
 	var zoneIds []string
 	instanceChargeType := d.Get("instance_charge_type").(string)
 
-	request := r_kvstore.CreateDescribeAvailableResourceRequest()
+	request := rds.CreateDescribeAvailableResourceRequest()
 	request.RegionId = client.RegionId
-	request.InstanceChargeType = instanceChargeType
-	raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-		return rkvClient.DescribeAvailableResource(request)
+	if instanceChargeType == string(PostPaid) {
+		request.InstanceChargeType = string(Postpaid)
+	} else {
+		request.InstanceChargeType = string(Prepaid)
+	}
+	var response = &rds.DescribeAvailableResourceResponse{}
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (i interface{}, err error) {
+			return rdsClient.DescribeAvailableResource(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{Throttling}) {
+				time.Sleep(time.Duration(3) * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response = raw.(*rds.DescribeAvailableResourceResponse)
+		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kvstore_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_db_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	zones, _ := raw.(*r_kvstore.DescribeAvailableResourceResponse)
-	if len(zones.AvailableZones.AvailableZone) <= 0 {
-		return WrapError(fmt.Errorf("[ERROR] There is no available zones for KVStore"))
+	if len(response.AvailableZones.AvailableZone) <= 0 {
+		return WrapError(fmt.Errorf("[ERROR] There is no available zone for RDS."))
 	}
-	for _, zone := range zones.AvailableZones.AvailableZone {
-		if multi && strings.Contains(zone.ZoneId, MULTI_IZ_SYMBOL) {
-			zoneIds = append(zoneIds, zone.ZoneId)
+	for _, r := range response.AvailableZones.AvailableZone {
+		if multi && strings.Contains(r.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+			zoneIds = append(zoneIds, r.ZoneId)
 			continue
 		}
-		if !multi && !strings.Contains(zone.ZoneId, MULTI_IZ_SYMBOL) {
-			zoneIds = append(zoneIds, zone.ZoneId)
+		if !multi && !strings.Contains(r.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+			zoneIds = append(zoneIds, r.ZoneId)
+			continue
 		}
 	}
-
 	if len(zoneIds) > 0 {
 		sort.Strings(zoneIds)
 	}
-	var s []map[string]interface{}
 
+	var s []map[string]interface{}
 	if !multi {
 		for _, zoneId := range zoneIds {
 			mapping := map[string]interface{}{"id": zoneId}

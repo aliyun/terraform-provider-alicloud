@@ -5,14 +5,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func dataSourceAlicloudGpdbZones() *schema.Resource {
+func dataSourceAlicloudPolarDBZones() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudGpdbZonesRead,
+		Read: dataSourceAlicloudZonesPolarDBRead,
 
 		Schema: map[string]*schema.Schema{
 			"multi": {
@@ -50,34 +50,32 @@ func dataSourceAlicloudGpdbZones() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudGpdbZonesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudZonesPolarDBRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	multi := d.Get("multi").(bool)
 	var zoneIds []string
 
-	request := gpdb.CreateDescribeRegionsRequest()
+	request := polardb.CreateDescribeRegionsRequest()
 	request.RegionId = client.RegionId
-	raw, err := client.WithGpdbClient(func(gpdbClient *gpdb.Client) (interface{}, error) {
-		return gpdbClient.DescribeRegions(request)
+	raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+		return polarDBClient.DescribeRegions(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_gpdb_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_polardb_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*gpdb.DescribeRegionsResponse)
-	if len(response.Regions.Region) <= 0 {
-		return WrapError(fmt.Errorf("[ERROR] There is no available region for gpdb."))
+	regions, _ := raw.(*polardb.DescribeRegionsResponse)
+	if len(regions.Regions.Region) <= 0 {
+		return WrapError(fmt.Errorf("[ERROR] There is no available region for PolarDB."))
 	}
-	for _, r := range response.Regions.Region {
-		for _, zoneId := range r.Zones.Zone {
-			if multi && strings.Contains(zoneId.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
-				zoneIds = append(zoneIds, zoneId.ZoneId)
-				continue
-			}
-			if !multi && !strings.Contains(zoneId.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
-				zoneIds = append(zoneIds, zoneId.ZoneId)
-				continue
-			}
+	for _, r := range regions.Regions.Region {
+		if multi && strings.Contains(r.Zones.Zone[0].ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+			zoneIds = append(zoneIds, r.Zones.Zone[0].ZoneId)
+			continue
+		}
+		if !multi && !strings.Contains(r.Zones.Zone[0].ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+			zoneIds = append(zoneIds, r.Zones.Zone[0].ZoneId)
+			continue
 		}
 	}
 
