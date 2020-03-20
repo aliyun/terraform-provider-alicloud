@@ -144,7 +144,7 @@ func (s *CsService) WaitForContainerApplication(clusterName, appName string, sta
 	return nil
 }
 
-func (s *CsService) DescribeCsKubernetes(id string) (cluster cs.KubernetesCluster, err error) {
+func (s *CsService) DescribeCsKubernetes(id string) (cluster *cs.KubernetesClusterDetail, err error) {
 	invoker := NewInvoker()
 	var requestInfo *cs.Client
 	var response interface{}
@@ -152,7 +152,7 @@ func (s *CsService) DescribeCsKubernetes(id string) (cluster cs.KubernetesCluste
 	if err := invoker.Run(func() error {
 		raw, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 			requestInfo = csClient
-			return csClient.DescribeKubernetesCluster(id)
+			return csClient.DescribeKubernetesClusterDetail(id)
 		})
 		response = raw
 		return err
@@ -167,8 +167,8 @@ func (s *CsService) DescribeCsKubernetes(id string) (cluster cs.KubernetesCluste
 		requestMap["ClusterId"] = id
 		addDebug("DescribeKubernetesCluster", response, requestInfo, requestMap)
 	}
-	cluster, _ = response.(cs.KubernetesCluster)
-	if cluster.ClusterID != id {
+	cluster, _ = response.(*cs.KubernetesClusterDetail)
+	if cluster.ClusterId != id {
 		return cluster, WrapErrorf(Error(GetNotFoundMessage("CsKubernetes", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
@@ -188,11 +188,11 @@ func (s *CsService) WaitForCsKubernetes(id string, status Status, timeout int) e
 				return WrapError(err)
 			}
 		}
-		if object.ClusterID == id && status != Deleted {
+		if object.ClusterId == id && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ClusterID, id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ClusterId, id, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 
@@ -477,7 +477,7 @@ func (s *CsService) GetUserData(clusterId string, labels string, taints string) 
 	extra_options_in_line := strings.Join(extra_options, " ")
 
 	version := cluster.CurrentVersion
-	region := cluster.RegionID
+	region := cluster.RegionId
 
 	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(ATTACH_SCRIPT_WITH_VERSION+extra_options_in_line, region, region, version, token))), nil
 }

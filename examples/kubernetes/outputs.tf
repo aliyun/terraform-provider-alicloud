@@ -4,9 +4,14 @@ output "vpc_id" {
   value       = alicloud_cs_kubernetes.k8s[0].vpc_id
 }
 
-output "vswitch_ids" {
-  description = "List ID of the VSwitches."
-  value       = [alicloud_cs_kubernetes.k8s.*.vswitch_ids]
+output "master_vswitch_ids" {
+  description = "List ID of the master VSwitches."
+  value       = [alicloud_cs_kubernetes.k8s.*.master_vswitch_ids]
+}
+
+output "worker_vswitch_ids" {
+  description = "List ID of the worker VSwitches."
+  value       = [alicloud_cs_kubernetes.k8s.*.worker_vswitch_ids]
 }
 
 output "nat_gateway_id" {
