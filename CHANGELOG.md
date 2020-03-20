@@ -1,21 +1,21 @@
-## 1.75.0 (Unreleased)
+## 1.75.0 (March 20, 2020)
 
-- **Data Source:** `alicloud_adb_zones` [GH-2248]
-- **Data Source:** `alicloud_slb_zones` [GH-2244]
-- **Data Source:** `alicloud_elasticsearch_zones` [GH-2243]
+- **Data Source:** `alicloud_adb_zones` ([#2248](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2248))
+- **Data Source:** `alicloud_slb_zones` ([#2244](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2244))
+- **Data Source:** `alicloud_elasticsearch_zones` ([#2243](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2243))
 
 IMPROVEMENTS:
 
-- imporve(db_instance): support force_restart [GH-2287]
-- imporve the zones markdown [GH-2285]
-- Add Terway and other kubernetes params to resource [GH-2284]
+- imporve(db_instance): support force_restart ([#2287](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2287))
+- imporve the zones markdown ([#2285](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2285))
+- Add Terway and other kubernetes params to resource ([#2284](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2284))
 
 BUG FIXES:
 
-- fix ADB data source zones [GH-2283]
-- fix polardb data source zones [GH-2274]
-- fix adb ci bug [GH-2272]
-- fix(cen):modify resource_alicloud_cen_instance_attachment [GH-2269]
+- fix ADB data source zones ([#2283](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2283))
+- fix polardb data source zones ([#2274](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2274))
+- fix adb ci bug ([#2272](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2272))
+- fix(cen):modify resource_alicloud_cen_instance_attachment ([#2269](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2269))
 
 ## 1.74.1 (March 17, 2020)
 
