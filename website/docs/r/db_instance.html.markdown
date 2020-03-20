@@ -126,6 +126,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `security_ip_mode` - (Optional, Available in 1.62.1+)  Valid values are `normal`, `safety`, Default to `normal`. support `safety` switch to high security access mode 
 * `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) .
+* `force_restart` - (Optional, Available in 1.75.0+) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
