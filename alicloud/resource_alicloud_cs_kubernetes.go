@@ -61,7 +61,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Default:       "Terraform-Creation",
 				ValidateFunc:  validation.StringLenBetween(0, 37),
 				ConflictsWith: []string{"name"},
-				Deprecated:    "Field 'name_prefix' has been deprecated from provider version 1.72.0.",
+				Deprecated:    "Field 'name_prefix' has been deprecated from provider version 1.75.0.",
 			},
 			// master configurations
 			"master_vswitch_ids": {
@@ -462,7 +462,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"worker_instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Removed:  "Field 'worker_instance_type' has been removed from provider version 1.72.0. New field 'worker_instance_types' replaces it.",
+				Removed:  "Field 'worker_instance_type' has been removed from provider version 1.75.0. New field 'worker_instance_types' replaces it.",
 			},
 			"vswitch_ids": {
 				Type:     schema.TypeList,
@@ -474,20 +474,20 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				MinItems:         3,
 				MaxItems:         5,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'vswitch_ids' has been removed from provider version 1.72.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replace it.",
+				Removed:          "Field 'vswitch_ids' has been removed from provider version 1.75.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replace it.",
 			},
 			// single instance type would cause extra troubles
 			"master_instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Removed:  "Field 'master_instance_type' has been removed from provider version 1.72.0. New field 'master_instance_types' replaces it.",
+				Removed:  "Field 'master_instance_type' has been removed from provider version 1.75.0. New field 'master_instance_types' replaces it.",
 			},
 			// force update is a high risk operation
 			"force_update": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
-				Removed:  "Field 'force_update' has been removed from provider version 1.72.0.",
+				Removed:  "Field 'force_update' has been removed from provider version 1.75.0.",
 			},
 			"availability_zone": {
 				Type:     schema.TypeString,
@@ -498,7 +498,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Removed:  "Field 'vswitch_id' has been removed from provider version 1.72.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replaces it.",
+				Removed:  "Field 'vswitch_id' has been removed from provider version 1.75.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replaces it.",
 			},
 			// worker_numbers in array is a hell of management
 			"worker_numbers": {
@@ -511,7 +511,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				MinItems:         1,
 				MaxItems:         3,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'worker_numbers' has been removed from provider version 1.72.0. New field 'worker_number' replaces it.",
+				Removed:          "Field 'worker_numbers' has been removed from provider version 1.75.0. New field 'worker_number' replaces it.",
 			},
 			"nodes": {
 				Type:     schema.TypeList,
@@ -538,14 +538,14 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					},
 				},
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'log_config' has been removed from provider version 1.72.0. New field 'addons' replaces it.",
+				Removed:          "Field 'log_config' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
 			"cluster_network_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     validation.StringInSlice([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'cluster_network_type' has been removed from provider version 1.72.0. New field 'addons' replaces it.",
+				Removed:          "Field 'cluster_network_type' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
 		},
 	}

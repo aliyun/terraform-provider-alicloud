@@ -100,7 +100,7 @@ The following arguments are supported:
 
 
 #### Addons 
-It is a new field since 1.72.0. You can specific network plugin,log component,ingress component and so on.     
+It is a new field since 1.75.0. You can specific network plugin,log component,ingress component and so on.     
  
 ```$xslt
   main.tf

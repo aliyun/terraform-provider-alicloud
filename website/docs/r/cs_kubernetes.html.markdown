@@ -31,7 +31,7 @@ after creating cluster successfully, and you can put them into the specified loc
 -> **NOTE:** You need to activate several other products and confirm Authorization Policy used by Container Service before using this resource.
 Please refer to the `Authorization management` and `Cluster management` sections in the [Document Center](https://www.alibabacloud.com/help/doc-detail/86488.htm).
 
--> **NOTE:** From version 1.72.0, Some parameters have been removed from resource,You can check them below and re-import the cluster if necessary.
+-> **NOTE:** From version 1.75.0, Some parameters have been removed from resource,You can check them below and re-import the cluster if necessary.
 ## Example Usage
 ```$xslt
 
@@ -97,7 +97,7 @@ The following arguments are supported:
 
 
 #### Addons 
-It is a new field since 1.72.0. You can specific network plugin,log component,ingress component and so on.     
+It is a new field since 1.75.0. You can specific network plugin,log component,ingress component and so on.     
  
 ```$xslt
   main.tf

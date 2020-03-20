@@ -365,14 +365,14 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				MinItems:         3,
 				MaxItems:         5,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'vswitch_ids' has been deprecated from provider version 1.72.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replace it.",
+				Removed:          "Field 'vswitch_ids' has been deprecated from provider version 1.75.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replace it.",
 			},
 			// force update is a high risk operation
 			"force_update": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
-				Removed:  "Field 'force_update' has been removed from provider version 1.72.0.",
+				Removed:  "Field 'force_update' has been removed from provider version 1.75.0.",
 			},
 			// worker_numbers in array is a hell of management
 			"worker_numbers": {
@@ -385,14 +385,14 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				MinItems:         1,
 				MaxItems:         3,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'worker_numbers' has been removed from provider version 1.72.0. New field 'worker_number' replaces it.",
+				Removed:          "Field 'worker_numbers' has been removed from provider version 1.75.0. New field 'worker_number' replaces it.",
 			},
 			"cluster_network_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     validation.StringInSlice([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'cluster_network_type' has been removed from provider version 1.72.0. New field 'addons' replaces it.",
+				Removed:          "Field 'cluster_network_type' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
 			// too hard to use this config
 			"log_config": {
@@ -413,12 +413,12 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					},
 				},
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'log_config' has been removed from provider version 1.72.0. New field 'addons' replaces it.",
+				Removed:          "Field 'log_config' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
 			"worker_instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Removed:  "Field 'worker_instance_type' has been removed from provider version 1.72.0. New field 'worker_instance_types' replaces it.",
+				Removed:  "Field 'worker_instance_type' has been removed from provider version 1.75.0. New field 'worker_instance_types' replaces it.",
 			},
 		},
 	}
