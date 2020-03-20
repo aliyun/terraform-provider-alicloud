@@ -1,4 +1,4 @@
-Alibaba Cloud terraform example for kubernetes cluster
+Alibaba Cloud terraform example for managedkubernetes cluster
 ======================================================
 
 A terraform example to launching a kubernetes cluster in alibaba cloud.
@@ -31,7 +31,8 @@ This example can specify the following arguments to create user-defined kubernte
 * proxy_mode: Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
 * password: The password of ECS instance.
 * worker_number: The number of worker nodes in kubernetes cluster.
-* pod_cidr: The kubernetes pod cidr block. It cannot be equals to vpc's or vswitch's and cannot be in them. [Flannel]
+* terway_vswitch_ids: List of existing vswitch ids for terway. Leave it to empty then terraform will create new ones.[Terway]
+* terway_vswitch_cirds: List of cidr blocks used to create several new vswitches when 'terway_vswitch_ids' is not specified. [Terway]
 * service_cidr: The kubernetes service cidr block. It cannot be equals to vpc's or vswitch's or pod's and cannot be in them.
 * cluster_addons: Addon components in kubernetes cluster
                                                                                                                              

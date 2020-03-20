@@ -87,21 +87,24 @@ variable "worker_number" {
   default     = 4
 }
 
-# k8s_pod_cidr is only for flannel network
-variable "pod_cidr" {
-  description = "The kubernetes pod cidr block. It cannot be equals to vpc's or vswitch's and cannot be in them."
-  default     = "172.20.0.0/16"
-}
-
 variable "service_cidr" {
   description = "The kubernetes service cidr block. It cannot be equals to vpc's or vswitch's or pod's and cannot be in them."
   default     = "172.21.0.0/20"
 }
 
+variable "terway_vswitch_ids" {
+  description = "List of existing vswitch ids for terway."
+  type        = list(string)
+  default     = []
+}
+
+variable "terway_vswitch_cirds" {
+  description = "List of cidr blocks used to create several new vswitches when 'terway_vswitch_ids' is not specified."
+  type        = list(string)
+  default     = ["10.4.0.0/16","10.5.0.0/16","10.6.0.0/16"]
+}
 
 variable "cluster_addons" {
-    description = "Addon components in kubernetes cluster"
-
     type = list(object({
         name      = string
         config    = string
@@ -109,7 +112,7 @@ variable "cluster_addons" {
 
     default = [
         {
-            "name"     = "flannel",
+            "name"     = "terway-eniip",
             "config"   = "",
         },
         {
@@ -127,7 +130,7 @@ variable "cluster_addons" {
         {
             "name"     = "nginx-ingress-controller",
             "config"   = "{\"IngressSlbNetworkType\":\"internet\"}",
-        },
+        }
     ]
 }
 

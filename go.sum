@@ -29,14 +29,10 @@ github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412/go.mod h1:WPjqKcmVOxf0
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190329064014-6e358769c32a/go.mod h1:T9M45xf79ahXVelWoOBmH0y4aC1t5kXO5BxwyakgIGA=
-github.com/aliyun/alibaba-cloud-sdk-go v1.61.45-0.20200310093319-e371e410b752 h1:/sM9zqsbB2c5mFU6oIilDtfXY79x9HDQAhp0XMctvpU=
-github.com/aliyun/alibaba-cloud-sdk-go v1.61.45-0.20200310093319-e371e410b752/go.mod h1:v8ESoHo4SyHmuB4b1tJqDHxfTGEciD+yhvOU/5s1Rfk=
 github.com/aliyun/alibaba-cloud-sdk-go v1.61.58 h1:rfaULCpZMUQaifq+qz9xKXv8hn+rsPUvv3+G4A/bRa0=
 github.com/aliyun/alibaba-cloud-sdk-go v1.61.58/go.mod h1:v8ESoHo4SyHmuB4b1tJqDHxfTGEciD+yhvOU/5s1Rfk=
 github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0 h1:nvOIS4LOMKF65MCDkJgAMZXNk5MdbbfFcA3Dk9WwsXM=
 github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0/go.mod h1:GwtZxKUD+aLBrtlkEcyPNAx+jRkBioEC7EKOlQ26lTc=
-github.com/aliyun/aliyun-log-go-sdk v0.1.6-0.20191218073949-14a8ed32b27b h1:cOuyfNLzDY0/fEc7HLKHIXHfJs4KMAMPVileOlJc7AI=
-github.com/aliyun/aliyun-log-go-sdk v0.1.6-0.20191218073949-14a8ed32b27b/go.mod h1:G2G7t5ar1HmzwpWUJT63xntyyICtUGDpFDSNHY1LBCM=
 github.com/aliyun/aliyun-log-go-sdk v0.1.6 h1:xtTQNaJ768Fj+TYFNTeBaqP3nDXJaDTWAi/qp9Fgclo=
 github.com/aliyun/aliyun-log-go-sdk v0.1.6/go.mod h1:G2G7t5ar1HmzwpWUJT63xntyyICtUGDpFDSNHY1LBCM=
 github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20191115025756-088ba95470f4 h1:ZJpZCzQnbPwXTAKXqEqczw3SZZyPj8K8HQ+CbJ4T1CY=
@@ -105,8 +101,8 @@ github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f/go.mod h1:E3G3o1h8I7cfc
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/denverdino/aliyungo v0.0.0-20200221080937-dd4992dc11f6 h1:vmaYbRFe9ICAo5I6Wx8PniMpdpqHQb2/cwYm+UOKi/w=
-github.com/denverdino/aliyungo v0.0.0-20200221080937-dd4992dc11f6/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
+github.com/denverdino/aliyungo v0.0.0-20200313034858-035c7b930448 h1:DblnJY6p8cTgIepRcDvz7WoTd1QUVAWc417dE4w6nI8=
+github.com/denverdino/aliyungo v0.0.0-20200313034858-035c7b930448/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dimchansky/utfbom v1.0.0 h1:fGC2kkf4qOoKqZ4q7iIh+Vef4ubC1c38UDsEyZynZPc=
@@ -608,8 +604,6 @@ gopkg.in/yaml.v2 v2.0.0-20170812160011-eb3733d160e7/go.mod h1:JAlM8MvJe8wmxCU4Bl
 gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
-gopkg.in/yaml.v2 v2.2.4 h1:/eiJrUcujPVeJ3xlSWaiNi3uSVmDGBK1pDHUHAnao1I=
-gopkg.in/yaml.v2 v2.2.4/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.8 h1:obN1ZagJSUGI0Ek/LBmuj4SNLPfIny3KsKFopxRdj10=
 gopkg.in/yaml.v2 v2.2.8/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=

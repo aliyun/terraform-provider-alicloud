@@ -12,11 +12,19 @@ resource "alicloud_vswitch" "vswitches" {
   availability_zone = element(var.availability_zone, count.index)
 }
 
-resource "alicloud_cs_kubernetes" "k8s" {
+
+// According to the vswitch cidr blocks to launch several vswitches
+resource "alicloud_vswitch" "terway_vswitches" {
+  count             = length(var.terway_vswitch_ids) > 0 ? 0 : length(var.terway_vswitch_cirds)
+  vpc_id            = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
+  cidr_block        = element(var.terway_vswitch_cirds, count.index)
+  availability_zone = element(var.availability_zone, count.index)
+}
+
+resource "alicloud_cs_managed_kubernetes" "k8s" {
   count                 = var.k8s_number
-  master_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)): length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
   worker_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)): length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
-  master_instance_types = var.master_instance_types
+  pod_vswitch_ids       = length(var.terway_vswitch_ids) > 0 ? split(",", join(",", var.terway_vswitch_ids)): length(var.terway_vswitch_cirds) < 1 ? [] : split(",", join(",", alicloud_vswitch.terway_vswitches.*.id))
   worker_instance_types = var.worker_instance_types
   worker_number         = var.worker_number
   node_cidr_mask        = var.node_cidr_mask
@@ -25,7 +33,6 @@ resource "alicloud_cs_kubernetes" "k8s" {
   cpu_policy            = var.cpu_policy
   proxy_mode            = var.proxy_mode
   password              = var.password
-  pod_cidr              = var.pod_cidr
   service_cidr          = var.service_cidr
   # version can not be defined in variables.tf. Options: 1.16.6-aliyun.1|1.14.8-aliyun.1
   version               = "1.16.6-aliyun.1"
