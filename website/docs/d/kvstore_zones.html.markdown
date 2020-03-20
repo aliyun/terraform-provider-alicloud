@@ -1,4 +1,5 @@
 ---
+subcategory: "Redis And Memcache (KVStore)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_zones"
 sidebar_current: "docs-alicloud-datasource-kvstore-zones"

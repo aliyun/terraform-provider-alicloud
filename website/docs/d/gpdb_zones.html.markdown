@@ -1,4 +1,5 @@
 ---
+subcategory: "AnalyticDB for PostgreSQL (GPDB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_gpdb_zones"
 sidebar_current: "docs-alicloud-datasource-gpdb-zones"

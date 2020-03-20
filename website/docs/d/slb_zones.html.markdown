@@ -1,4 +1,5 @@
 ---
+subcategory: "Server Load Balancer (SLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_zones"
 sidebar_current: "docs-alicloud-datasource-slb-zones"
