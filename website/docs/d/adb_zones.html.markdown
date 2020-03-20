@@ -1,4 +1,5 @@
 ---
+subcategory: "ADB"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_adb_zones"
 sidebar_current: "docs-alicloud-datasource-adb-zones"
