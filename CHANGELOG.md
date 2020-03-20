@@ -6,6 +6,7 @@
 
 IMPROVEMENTS:
 
+- imporve(db_instance): support force_restart [GH-2287]
 - imporve the zones markdown [GH-2285]
 - Add Terway and other kubernetes params to resource [GH-2284]
 

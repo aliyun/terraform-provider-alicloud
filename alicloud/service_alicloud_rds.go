@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -268,6 +269,7 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 	request := rds.CreateModifyParameterRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = d.Id()
+	request.Forcerestart = requests.NewBoolean(d.Get("force_restart").(bool))
 	config := make(map[string]string)
 	documented := d.Get(attribute).(*schema.Set).List()
 	if len(documented) > 0 {
@@ -281,6 +283,35 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 		// wait instance status is Normal before modifying
 		if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
 			return WrapError(err)
+		}
+		// Need to check whether some parameter needs restart
+		if !d.Get("force_restart").(bool) {
+			req := rds.CreateDescribeParameterTemplatesRequest()
+			req.RegionId = s.client.RegionId
+			req.DBInstanceId = d.Id()
+			req.Engine = d.Get("engine").(string)
+			req.EngineVersion = d.Get("engine_version").(string)
+			req.ClientToken = buildClientToken(req.GetActionName())
+			forceRestartMap := make(map[string]string)
+			raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+				return rdsClient.DescribeParameterTemplates(req)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			response, _ := raw.(*rds.DescribeParameterTemplatesResponse)
+			for _, para := range response.Parameters.TemplateRecord {
+				if para.ForceRestart == "true" {
+					forceRestartMap[para.ParameterName] = para.ForceRestart
+				}
+			}
+			if len(forceRestartMap) > 0 {
+				for key, _ := range config {
+					if _, ok := forceRestartMap[key]; ok {
+						return WrapError(fmt.Errorf("Modifying RDS instance's parameter '%s' requires setting 'force_restart = true'.", key))
+					}
+				}
+			}
 		}
 		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.ModifyParameter(request)
