@@ -1,4 +1,21 @@
 ## 1.75.0 (Unreleased)
+
+- **Data Source:** `alicloud_adb_zones` [GH-2248]
+- **Data Source:** `alicloud_slb_zones` [GH-2244]
+- **Data Source:** `alicloud_elasticsearch_zones` [GH-2243]
+
+IMPROVEMENTS:
+
+- imporve the zones markdown [GH-2285]
+- Add Terway and other kubernetes params to resource [GH-2284]
+
+BUG FIXES:
+
+- fix ADB data source zones [GH-2283]
+- fix polardb data source zones [GH-2274]
+- fix adb ci bug [GH-2272]
+- fix(cen):modify resource_alicloud_cen_instance_attachment [GH-2269]
+
 ## 1.74.1 (March 17, 2020)
 
 IMPROVEMENTS:
