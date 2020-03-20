@@ -345,11 +345,13 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			return WrapError(fmt.Errorf("[ERROR] There is no available region for adb."))
 		}
 		for _, r := range regions.Regions.Region {
-			if multi && strings.Contains(r.Zones.Zone[0].ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
-				zoneIds = append(zoneIds, r.Zones.Zone[0].ZoneId)
-				continue
+			for _, zone := range r.Zones.Zone {
+				if multi && strings.Contains(zone.ZoneId, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+					zoneIds = append(zoneIds, zone.ZoneId)
+					continue
+				}
+				adbZones[zone.ZoneId] = r.RegionId
 			}
-			adbZones[r.Zones.Zone[0].ZoneId] = r.RegionId
 		}
 	}
 	if strings.ToLower(Trim(resType)) == strings.ToLower(string(ResourceTypeGpdb)) {
