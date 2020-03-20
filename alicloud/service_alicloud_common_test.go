@@ -809,20 +809,27 @@ resource "alicloud_vswitch" "default" {
 }
 `
 const AdbCommonTestCase = `
+data "alicloud_vpcs" "default" {
+ is_default = "true"
+}
 data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+ available_resource_creation = "ADB"
 }
-resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+
+data "alicloud_vswitches" "default" {
+ vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+ zone_id = "${data.alicloud_zones.default.zones.0.id}"
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%length(data.alicloud_zones.default.zones)], "id")}"
-  name              = "${var.name}"
+
+resource "alicloud_vswitch" "this" {
+ count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
+ name = "tf_testAccAdb_vpc"
+ vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+ availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ cidr_block = "172.16.0.0/24"
 }
 `
+
 const KVStoreCommonTestCase = `
 data "alicloud_zones" "default" {
   available_resource_creation = "${var.creation}"
@@ -860,16 +867,12 @@ const ElasticsearchInstanceCommonTestCase = `
 data "alicloud_zones" "default" {
     available_resource_creation = "${var.creation}"
 }
-resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+
+data "alicloud_vswitches" "default" {
+  zone_id = data.alicloud_zones.default.ids[0]
+  name_regex = "default-tf--testAcc-00"
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${lookup(data.alicloud_zones.default.zones[length(data.alicloud_zones.default.zones)-1], "id")}"
-  name              = "${var.name}"
-}`
+`
 
 const SlbVpcCommonTestCase = `
 data "alicloud_zones" "default" {

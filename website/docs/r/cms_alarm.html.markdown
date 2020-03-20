@@ -51,7 +51,7 @@ The following arguments are supported:
 * `threshold` - (Required) Alarm threshold value, which must be a numeric value currently.
 * `triggered_count` - Number of consecutive times it has been detected that the values exceed the threshold. Default to 3.
 * `contact_groups` - (Required) List contact groups of the alarm rule, which must have been created on the console.
-* `effective_interval` - (Available in 1.50.0+) The interval of effecting alarm rule. It foramt as "hh:mm-hh:mm", like "0:00-4:00". Default to "0:00-24:00".
+* `effective_interval` - (Available in 1.50.0+) The interval of effecting alarm rule. It foramt as "hh:mm-hh:mm", like "0:00-4:00". Default to "00:00-23:59".
 * `start_time` - It has been deprecated from provider version 1.50.0 and 'effective_interval' instead.
 * `end_time` - It has been deprecated from provider version 1.50.0 and 'effective_interval' instead.
 * `silence_time` - Notification silence period in the alarm state, in seconds. Valid value range: [300, 86400]. Default to 86400

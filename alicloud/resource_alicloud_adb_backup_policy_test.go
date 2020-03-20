@@ -25,6 +25,7 @@ func TestAccAlicloudAdbBackupPolicy(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -87,22 +88,21 @@ func resourceAdbBackupPolicyConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "creation" {
-		default = "Adb"
+		default = "ADB"
 	}
 
 	variable "name" {
 		default = "%s"
 	}
 
-	resource "alicloud_adb_cluster" "cluster" {
+	resource "alicloud_adb_cluster" "default" {
         db_cluster_version      = "3.0"
         db_cluster_category     = "Cluster"
-        db_cluster_network_type = "VPC"
         db_node_class           = "C8"
         db_node_count           = 2
         db_node_storage         = 200
 		pay_type                = "PostPaid"
-		vswitch_id              = "${alicloud_vswitch.default.id}"
+		vswitch_id              = "${data.alicloud_vswitches.default.ids.0}"
 		description             = "${var.name}"
 	}`, AdbCommonTestCase, name)
 }

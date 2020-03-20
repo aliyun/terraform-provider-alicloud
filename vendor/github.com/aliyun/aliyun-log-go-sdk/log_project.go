@@ -1,6 +1,7 @@
 package sls
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -85,6 +86,13 @@ func (p *LogProject) WithRequestTimeout(timeout time.Duration) *LogProject {
 func (p *LogProject) WithRetryTimeout(timeout time.Duration) *LogProject {
 	p.retryTimeout = timeout
 	return p
+}
+
+// RawRequest send raw http request to LogService and return the raw http response
+// @note you should call http.Response.Body.Close() to close body stream
+func (p *LogProject) RawRequest(method, uri string, headers map[string]string, body []byte) (*http.Response, error) {
+	ctx := context.Background()
+	return realRequest(ctx, p, method, uri, headers, body)
 }
 
 // ListLogStore returns all logstore names of project p.

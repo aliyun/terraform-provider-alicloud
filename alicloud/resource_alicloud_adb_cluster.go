@@ -26,7 +26,7 @@ func resourceAlicloudAdbCluster() *schema.Resource {
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
+			Create: schema.DefaultTimeout(50 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 
@@ -281,6 +281,8 @@ func resourceAlicloudAdbClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("db_node_class", cluster.DBNodeClass)
 	d.Set("db_node_count", cluster.DBNodeCount)
 	d.Set("db_node_storage", cluster.DBNodeStorage)
+	d.Set("db_cluster_category", cluster.Category)
+	d.Set("db_cluster_version", cluster.DBVersion)
 	tags, err := adbService.DescribeTags(d.Id(), "cluster")
 	if err != nil {
 		return WrapError(err)
@@ -369,7 +371,6 @@ func buildAdbCreateRequest(d *schema.ResourceData, meta interface{}) (*adb.Creat
 	request.DBClusterVersion = Trim(d.Get("db_cluster_version").(string))
 	request.DBClusterCategory = Trim(d.Get("db_cluster_category").(string))
 	request.DBClusterClass = d.Get("db_node_class").(string)
-	request.DBClusterNetworkType = d.Get("db_cluster_network_type").(string)
 	request.DBNodeGroupCount = strconv.Itoa(d.Get("db_node_count").(int))
 	request.DBNodeStorage = strconv.Itoa(d.Get("db_node_storage").(int))
 	request.DBClusterDescription = d.Get("description").(string)

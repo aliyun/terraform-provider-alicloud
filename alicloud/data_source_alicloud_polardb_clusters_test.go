@@ -131,7 +131,7 @@ func testAccCheckAlicloudPolarClusterDataSourceConfig(rand int, attrMap map[stri
 	}
 
 	variable "name" {
-		default = "pc-testAccDBInstanceConfig_%d"
+		default = "tf-testAccPolarDBConfig_%d"
 	}
 
 	resource "alicloud_polardb_cluster" "default" {

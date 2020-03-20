@@ -127,6 +127,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_images":                 dataSourceAlicloudImages(),
 			"alicloud_regions":                dataSourceAlicloudRegions(),
 			"alicloud_zones":                  dataSourceAlicloudZones(),
+			"alicloud_db_zones":               dataSourceAlicloudDBZones(),
 			"alicloud_instance_type_families": dataSourceAlicloudInstanceTypeFamilies(),
 			"alicloud_instance_types":         dataSourceAlicloudInstanceTypes(),
 			"alicloud_instances":              dataSourceAlicloudInstances(),
@@ -181,6 +182,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_file_crc64_checksum":               dataSourceAlicloudFileCRC64Checksum(),
 			"alicloud_fc_services":                       dataSourceAlicloudFcServices(),
 			"alicloud_fc_triggers":                       dataSourceAlicloudFcTriggers(),
+			"alicloud_fc_zones":                          dataSourceAlicloudFcZones(),
 			"alicloud_db_instances":                      dataSourceAlicloudDBInstances(),
 			"alicloud_db_instance_engines":               dataSourceAlicloudDBInstanceEngines(),
 			"alicloud_db_instance_classes":               dataSourceAlicloudDBInstanceClasses(),
@@ -194,8 +196,11 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ssl_vpn_client_certs":              dataSourceAlicloudSslVpnClientCerts(),
 			"alicloud_mongo_instances":                   dataSourceAlicloudMongoDBInstances(),
 			"alicloud_mongodb_instances":                 dataSourceAlicloudMongoDBInstances(),
+			"alicloud_mongodb_zones":                     dataSourceAlicloudMongoDBZones(),
 			"alicloud_gpdb_instances":                    dataSourceAlicloudGpdbInstances(),
+			"alicloud_gpdb_zones":                        dataSourceAlicloudGpdbZones(),
 			"alicloud_kvstore_instances":                 dataSourceAlicloudKVStoreInstances(),
+			"alicloud_kvstore_zones":                     dataSourceAlicloudKVStoreZones(),
 			"alicloud_kvstore_instance_classes":          dataSourceAlicloudKVStoreInstanceClasses(),
 			"alicloud_kvstore_instance_engines":          dataSourceAlicloudKVStoreInstanceEngines(),
 			"alicloud_cen_instances":                     dataSourceAlicloudCenInstances(),
@@ -254,8 +259,11 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_endpoints":                 dataSourceAlicloudPolarDBEndpoints(),
 			"alicloud_polardb_accounts":                  dataSourceAlicloudPolarDBAccounts(),
 			"alicloud_polardb_databases":                 dataSourceAlicloudPolarDBDatabases(),
+			"alicloud_polardb_zones":                     dataSourceAlicloudPolarDBZones(),
 			"alicloud_hbase_instances":                   dataSourceAlicloudHBaseInstances(),
+			"alicloud_hbase_zones":                       dataSourceAlicloudHBaseZones(),
 			"alicloud_adb_clusters":                      dataSourceAlicloudAdbClusters(),
+			"alicloud_adb_zones":                         dataSourceAlicloudAdbZones(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -452,6 +460,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_cluster":                         resourceAlicloudAdbCluster(),
 			"alicloud_adb_backup_policy":                   resourceAlicloudAdbBackupPolicy(),
 			"alicloud_adb_account":                         resourceAlicloudAdbAccount(),
+			"alicloud_cen_flowlog":                         resourceAlicloudCenFlowlog(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -579,6 +588,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.CasEndpoint = strings.TrimSpace(endpoints["cas"].(string))
 		config.MarketEndpoint = strings.TrimSpace(endpoints["market"].(string))
 		config.AdbEndpoint = strings.TrimSpace(endpoints["adb"].(string))
+		config.CbnEndpoint = strings.TrimSpace(endpoints["cbn"].(string))
 	}
 
 	if config.RamRoleArn != "" {
@@ -738,6 +748,8 @@ func init() {
 		"hbase_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom HBase endpoints.",
 
 		"adb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom AnalyticDB endpoints.",
+
+		"cbn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cbn endpoints.",
 	}
 }
 
@@ -782,6 +794,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"cbn": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cbn_endpoint"],
+				},
+
 				"ecs": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1076,6 +1095,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["emr"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["market"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["adb"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cbn"].(string)))
 	return hashcode.String(buf.String())
 }
 

@@ -27,7 +27,7 @@ func (s *AdbService) DescribeAdbCluster(id string) (instance *adb.DBCluster, err
 		return adbClient.DescribeDBClusters(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OperationDenied.InvalidDBClusterIdNotFound", "OperationDenied.InvalidDBClusterNameNotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -50,7 +50,7 @@ func (s *AdbService) DescribeAdbClusterAttribute(id string) (instance *adb.DBClu
 		return adbClient.DescribeDBClusterAttribute(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OperationDenied.InvalidDBClusterIdNotFound", "OperationDenied.InvalidDBClusterNameNotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -74,7 +74,7 @@ func (s *AdbService) DescribeAdbAutoRenewAttribute(id string) (instance *adb.Aut
 		return adbClient.DescribeAutoRenewAttribute(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OperationDenied.InvalidDBClusterIdNotFound", "OperationDenied.InvalidDBClusterNameNotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -154,7 +154,7 @@ func (s *AdbService) DescribeAdbClusterNetInfo(id string) ([]adb.Address, error)
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OperationDenied.InvalidDBClusterIdNotFound", "OperationDenied.InvalidDBClusterNameNotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -220,7 +220,7 @@ func (s *AdbService) DescribeAdbAccount(id string) (ds *adb.DBAccount, err error
 		response, _ = raw.(*adb.DescribeAccountsResponse)
 		return nil
 	}); err != nil {
-		if IsExpectedErrors(err, []string{"OperationDenied.InvalidDBClusterIdNotFound", "OperationDenied.InvalidDBClusterNameNotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -474,7 +474,7 @@ func (s *AdbService) DescribeAdbBackupPolicy(id string) (policy *adb.DescribeBac
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OperationDenied.InvalidDBClusterIdNotFound", "OperationDenied.InvalidDBClusterNameNotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return policy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)

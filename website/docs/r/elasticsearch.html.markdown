@@ -31,6 +31,10 @@ resource "alicloud_elasticsearch_instance" "instance" {
   version              = "5.5.3_with_X-Pack"
   description          = "description"
   zone_count           = "2"
+  tags = {
+    "key1":"value1",
+    "key2":"value2",
+  }
 }
 ```
 ## Argument Reference
@@ -55,6 +59,9 @@ The following arguments are supported:
 * `kibana_whitelist` - (Optional) Set the Kibana's IP whitelist in internet network.
 * `master_node_spec` - (Optional) The dedicated master node spec. If specified, dedicated master node will be created.
 * `zone_count` - (Optional, Available in 1.44.0+) The Multi-AZ supported for Elasticsearch, between 1 and 3. The `data_node_amount` value must be an integral multiple of the `zone_count` value.
+* `tags` - (Optional, Available in v1.73.0+) A mapping of tags to assign to the resource. 
+  - key: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:". It cannot contain "http://" and "https://". It cannot be a null string.
+  - value: It can be up to 128 characters in length. It cannot contain "http://" and "https://". It can be a null string.
 
 ### Timeouts
 

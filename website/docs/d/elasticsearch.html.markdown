@@ -10,7 +10,7 @@ description: |-
 # alicloud\_elasticsearch\_instances
 
 The `alicloud_elasticsearch_instances` data source provides a collection of Elasticsearch instances available in Alicloud account.
-Filters support description regex and other filters which are listed below.
+Filters support description regex, searches by tags, and other filters which are listed below.
 
 ## Example Usage
 
@@ -28,6 +28,7 @@ The following arguments are supported:
 * `description_regex` - (Optional) A regex string to apply to the instance description.
 * `ids` - (Optional, Available 1.52.1+) A list of Elasticsearch instance IDs.
 * `version` - (Optional) Elasticsearch version. Options are `5.5.3_with_X-Pack`, `6.3.2_with_X-Pack` and `6.7.0_with_X-Pack`. If no value is specified, all versions are returned.
+* `tags` - (Optional, Available 1.74.0+) A map of tags assigned to instances.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -49,3 +50,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `cerated_at` - The creation time of the instance. It's a GTM format, such as: "2019-01-08T15:50:50.623Z".
   * `updated_at` - The last modified time of the instance. It's a GMT format, such as: "2019-01-08T15:50:50.623Z".
   * `status` - Status of the instance. It includes `active`, `activating`, `inactive`
+  * `tags` - A map of tags assigned to the instance.

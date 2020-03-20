@@ -116,7 +116,6 @@ func dataSourceAlicloudAdbClustersRead(d *schema.ResourceData, meta interface{})
 	request := adb.CreateDescribeDBClustersRequest()
 
 	request.RegionId = client.RegionId
-	request.DBClusterStatus = d.Get("status").(string)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 
@@ -167,8 +166,10 @@ func dataSourceAlicloudAdbClustersRead(d *schema.ResourceData, meta interface{})
 				continue
 			}
 
-			if _, ok := idsMap[item.DBClusterId]; !ok {
-				continue
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[item.DBClusterId]; !ok {
+					continue
+				}
 			}
 
 			dbi = append(dbi, item)

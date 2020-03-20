@@ -1,4 +1,60 @@
-## 1.73.0 (Unreleased)
+## 1.75.0 (Unreleased)
+## 1.74.1 (March 17, 2020)
+
+IMPROVEMENTS:
+
+- improve(alikafka_instance): suspend kafka prepaid test ([#2264](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2264))
+- improve(gpdb): modify the vsw specified ([#2260](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2260))
+- improve(elasticsearch): modify the vsw specified ([#2239](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2239))
+
+BUG FIXES:
+
+- tagResource bug fix ([#2266](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2266))
+- fix(kvstore_instance): resolve auto_renew incorrect value ([#2265](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2265))
+
+## 1.74.0 (March 16, 2020)
+
+- **Data Source:** `alicloud_fc_zones` ([#2256](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2256))
+- **Data Source:** `alicloud_polardb_zones` ([#2250](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2250))
+
+IMPROVEMENTS:
+
+- improve(hbase): modify the vsw specified ([#2259](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2259))
+- improve(elasticsearch): data_source support tags ([#2257](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2257))
+- rename polardb test name ([#2255](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2255))
+- corrct cen_flowlog docs ([#2254](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2254))
+- Adjust the return error mode ([#2252](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2252))
+- improve(elasticsearch): resource support tags ([#2251](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2251))
+
+BUG FIXES:
+
+- fix(cms_alarm): resolve the effective_interval default value ([#2253](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2253))
+
+## 1.73.0 (March 13, 2020)
+
+- **New Resource:** `alicloud_cen_flowlog` ([#2229](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2229))
+- **Data Source:** `alicloud_gpdb_zones` ([#2241](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2241))
+- **Data Source:** `alicloud_hbase_zones` ([#2240](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2240))
+- **Data Source:** `alicloud_mongodb_zones` ([#2238](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2238))
+- **Data Source:** `alicloud_kvstore_zones` ([#2236](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2236))
+- **Data Source:** `alicloud_db_zones` ([#2235](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2235))
+
+IMPROVEMENTS:
+
+- improve(ecs): supported auto snapshop policy ([#2245](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2245))
+- add flowlog docs in the alicloud.erb ([#2237](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2237))
+- fix(elasticsearch): update the sdk ([#2234](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2234))
+- add new version aliyungo ([#2232](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2232))
+- terraform format examples [2231]
+- Hbase tags ([#2228](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2228))
+- mongodb support TDE [GH2207]
+
+BUG FIXES:
+
+- fix(cms_alarm): resolve the effective_interval format bug ([#2242](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2242))
+- fix SQLServer testcase ([#2233](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2233))
+- fix(es): fix ci bug ([#2230](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2230))
+
 ## 1.72.0 (March 06, 2020)
 
 - **New Resource:** `alicloud_cms_site_monitor` ([#2191](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2191))
