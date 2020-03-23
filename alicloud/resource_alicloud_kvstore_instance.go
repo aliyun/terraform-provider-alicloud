@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r_kvstore"
+	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 
 	"strconv"
 
@@ -137,7 +137,11 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
-
+			"security_group_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+			},
 			"vpc_auth_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -264,6 +268,22 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
+	}
+
+	if d.HasChange("security_group_id") {
+		request := r_kvstore.CreateModifySecurityGroupConfigurationRequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		request.SecurityGroupId = d.Get("security_group_id").(string)
+
+		raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+			return client.ModifySecurityGroupConfiguration(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("security_group_id")
 	}
 
 	if d.HasChange("vpc_auth_mode") {
@@ -483,6 +503,15 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 		}
 		return WrapError(err)
 	}
+	groupIp, err := kvstoreService.DescribeKVstoreSecurityGroupId(d.Id())
+	if err != nil {
+		if !NotFoundError(err) {
+			return WrapError(err)
+		}
+	} else if len(groupIp.Items.EcsSecurityGroupRelation) > 0 {
+		d.Set("security_group_id", groupIp.Items.EcsSecurityGroupRelation[0].SecurityGroupId)
+	}
+
 	d.Set("instance_name", object.InstanceName)
 	d.Set("instance_class", object.InstanceClass)
 	d.Set("availability_zone", object.ZoneId)
