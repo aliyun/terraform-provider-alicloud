@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r_kvstore"
+	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -408,6 +408,14 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_ips.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccKVStoreInstance_vpcUpdateSecurityGroupIds(KVStoreCommonTestCase, redisInstanceClassForTest, string(KVStoreRedis), string(KVStore4Dot0)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -943,6 +951,30 @@ func testAccKVStoreInstance_vpcUpdateSecurityIps(common, instanceClass, instance
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		instance_type = "%s"
 		engine_version = "%s"
+	}
+	`, common, instanceClass, instanceType, engineVersion)
+}
+
+func testAccKVStoreInstance_vpcUpdateSecurityGroupIds(common, instanceClass, instanceType, engineVersion string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "creation" {
+		default = "KVStore"
+	}
+	variable "name" {
+		default = "tf-testAccKVStoreInstance_vpc"
+	}
+	data "alicloud_security_groups" "default" {
+	}
+	resource "alicloud_kvstore_instance" "default" {
+		instance_class = "%s"
+		instance_name  = "${var.name}"
+		vswitch_id     = "${alicloud_vswitch.default.id}"
+		private_ip     = "172.16.0.10"
+		security_ips = ["10.0.0.3", "10.0.0.2"]
+		instance_type = "%s"
+		engine_version = "%s"
+		security_group_id    = "${data.alicloud_security_groups.default.groups.0.id}"
 	}
 	`, common, instanceClass, instanceType, engineVersion)
 }
