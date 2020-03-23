@@ -29,6 +29,7 @@ func testSweepCenBandwidthLimit(region string) error {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
+	cbnService := CbnService{client}
 	cenService := CenService{client}
 
 	prefixes := []string{
@@ -69,7 +70,7 @@ func testSweepCenBandwidthLimit(region string) error {
 
 	sweeped := false
 	for _, v := range insts {
-		cen, err := cenService.DescribeCenInstance(v.CenId)
+		cen, err := cbnService.DescribeCenInstance(v.CenId)
 		if err != nil {
 			log.Printf("[ERROR] Failed to describe cen instance, error: %#v", err)
 			continue

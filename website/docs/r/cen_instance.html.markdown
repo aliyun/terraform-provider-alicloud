@@ -36,8 +36,8 @@ The following arguments are supported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 5 mins) Used when creating the cen instance (until it reaches the initial `Active` status). 
-* `delete` - (Defaults to 3 mins) Used when terminating the cen instance. 
+* `create` - (Defaults to 6 mins) Used when creating the cen instance (until it reaches the initial `Active` status). 
+* `delete` - (Defaults to 6 mins) Used when terminating the cen instance. 
 
 ## Attributes Reference
 
@@ -46,6 +46,11 @@ The following attributes are exported:
 * `id` - The ID of the CEN instance.
 * `name` - The name of the CEN instance.
 * `description` - The description of the CEN instance.
+* `protection_level` - (Available in 1.76.0+) Indicates the allowed level of CIDR block overlapping. Valid values:
+   - FULL: No overlapping CIDR blocks are allowed.
+   - REDUCE: Overlapping CIDR blocks are allowed. However, the overlapping CIDR blocks cannot be identical.
+   
+   Default to "REDUCED".
 
 ## Import
 

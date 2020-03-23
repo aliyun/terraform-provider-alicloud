@@ -24,67 +24,6 @@ const DefaultCenTimeoutLong = 180
 const ChildInstanceTypeVpc = "VPC"
 const ChildInstanceTypeVbr = "VBR"
 
-func (s *CenService) DescribeCenInstance(id string) (c cbn.Cen, err error) {
-	request := cbn.CreateDescribeCensRequest()
-	request.RegionId = s.client.RegionId
-	values := []string{id}
-	filters := []cbn.DescribeCensFilter{{
-		Key:   "CenId",
-		Value: &values,
-	}}
-
-	request.Filter = &filters
-
-	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = s.client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribeCens(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, ThrottlingUser}) {
-				time.Sleep(10 * time.Second)
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		return nil
-	})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
-			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
-		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
-	response, _ := raw.(*cbn.DescribeCensResponse)
-	if len(response.Cens.Cen) <= 0 || response.Cens.Cen[0].CenId != id {
-		return c, WrapErrorf(Error(GetNotFoundMessage("Cen Instance", id)), NotFoundMsg, ProviderERROR)
-	}
-	c = response.Cens.Cen[0]
-	return c, nil
-}
-
-func (s *CenService) CenInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenInstance(id)
-		if err != nil {
-			if NotFoundError(err) {
-				// Set this to nil as if we didn't find anything.
-				return nil, "", nil
-			}
-			return nil, "", WrapError(err)
-		}
-
-		for _, failState := range failStates {
-			if object.Status == failState {
-				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
-			}
-		}
-		return object, object.Status, nil
-	}
-}
-
 func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstance, error) {
 	c := &cbn.ChildInstance{}
 	request := cbn.CreateDescribeCenAttachedChildInstancesRequest()

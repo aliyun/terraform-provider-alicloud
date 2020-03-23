@@ -91,6 +91,7 @@ func resourceAlicloudCenFlowlogRead(d *schema.ResourceData, meta interface{}) er
 		}
 		return WrapError(err)
 	}
+
 	d.Set("cen_id", object.CenId)
 	d.Set("description", object.Description)
 	d.Set("flow_log_name", object.FlowLogName)
@@ -137,7 +138,6 @@ func resourceAlicloudCenFlowlogUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("description")
 		d.SetPartial("flow_log_name")
 	}
-
 	if d.HasChange("status") {
 		object, err := cbnService.DescribeCenFlowlog(d.Id())
 		if err != nil {
@@ -197,7 +197,6 @@ func resourceAlicloudCenFlowlogUpdate(d *schema.ResourceData, meta interface{}) 
 }
 func resourceAlicloudCenFlowlogDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cbnService := CbnService{client}
 	request := cbn.CreateDeleteFlowlogRequest()
 	request.FlowLogId = d.Id()
 	request.CenId = d.Get("cen_id").(string)
@@ -207,11 +206,10 @@ func resourceAlicloudCenFlowlogDelete(d *schema.ResourceData, meta interface{}) 
 	})
 	addDebug(request.GetActionName(), raw)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"SourceProjectNotExist", "InvalidFlowlogId.NotFound", "ProjectOrLogstoreNotExist", "SourceProjectNotExist"}) {
+		if IsExpectedErrors(err, []string{"SourceProjectNotExist", "InvalidFlowlogId.NotFound", "ProjectOrLogstoreNotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	return WrapError(cbnService.WaitForCenFlowlog(d.Id(), nil, true, DefaultLongTimeout))
+	return nil
 }
