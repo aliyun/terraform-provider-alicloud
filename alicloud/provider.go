@@ -754,7 +754,7 @@ func init() {
 
 		"adb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom AnalyticDB endpoints.",
 
-		"cbn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cbn endpoints.",
+		"cbn_endpoint":        "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cbn endpoints.",
 		"maxcompute_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MaxCompute endpoints.",
 	}
 }
