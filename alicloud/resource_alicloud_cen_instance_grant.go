@@ -65,7 +65,7 @@ func resourceAlicloudCenInstanceGrantCreate(d *schema.ResourceData, meta interfa
 			return vpcClient.GrantInstanceToCen(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking", "UnknownError"}) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "UnknownError", "TaskConflict"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
