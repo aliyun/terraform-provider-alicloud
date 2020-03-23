@@ -138,7 +138,7 @@ func TestAccAlicloudCenInstance_basic(t *testing.T) {
 	resourceId := "alicloud_cen_instance.default"
 	ra := resourceAttrInit(resourceId, cenInstanceMap)
 	serviceFunc := func() interface{} {
-		return &CenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInit(resourceId, &cen, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
@@ -195,7 +195,7 @@ func TestAccAlicloudCenInstance_multi(t *testing.T) {
 	resourceId := "alicloud_cen_instance.default.4"
 	ra := resourceAttrInit(resourceId, nil)
 	serviceFunc := func() interface{} {
-		return &CenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInit(resourceId, &cen, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
@@ -272,8 +272,8 @@ func testAccCheckCenInstanceDestroy(s *terraform.State) error {
 		}
 
 		// Try to find the CEN
-		cenService := CenService{client}
-		instance, err := cenService.DescribeCenInstance(rs.Primary.ID)
+		cbnService := CbnService{client}
+		instance, err := cbnService.DescribeCenInstance(rs.Primary.ID)
 
 		if err != nil {
 			if NotFoundError(err) {
