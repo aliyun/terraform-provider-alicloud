@@ -72,6 +72,11 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+			"security_group_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+			},
 			"account_password": {
 				Type:      schema.TypeString,
 				Optional:  true,
@@ -89,6 +94,15 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 					return d.Get("kms_encrypted_password").(string) == ""
 				},
 				Elem: schema.TypeString,
+			},
+			"tde_status": {
+				Type: schema.TypeString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return old != "" || d.Get("engine_version").(string) < "4.0"
+				},
+				ValidateFunc: validation.StringInSlice([]string{"enabled"}, false),
+				Optional:     true,
+				ForceNew:     true,
 			},
 			"backup_period": {
 				Type:     schema.TypeSet,
@@ -342,6 +356,11 @@ func resourceAlicloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	if err != nil {
 		return WrapError(err)
 	}
+	tdeInfo, err := ddsService.DescribeMongoDBTDEInfo(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tde_Status", tdeInfo.TDEStatus)
 
 	ips, err := ddsService.DescribeMongoDBSecurityIps(d.Id())
 	if err != nil {
@@ -349,6 +368,13 @@ func resourceAlicloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	}
 
 	d.Set("security_ip_list", ips)
+	groupIp, err := ddsService.DescribeMongoDBSecurityGroupId(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if len(groupIp.Items.RdsEcsSecurityGroupRel) > 0 {
+		d.Set("security_group_id", groupIp.Items.RdsEcsSecurityGroupRel[0].SecurityGroupId)
+	}
 
 	return nil
 }
@@ -364,6 +390,36 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 		d.SetPartial("backup_time")
 		d.SetPartial("backup_period")
+	}
+	if d.HasChange("tde_status") {
+		request := dds.CreateModifyDBInstanceTDERequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		request.TDEStatus = d.Get("tde_status").(string)
+		raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
+			return client.ModifyDBInstanceTDE(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("tde_status")
+	}
+
+	if d.HasChange("security_group_id") {
+		request := dds.CreateModifySecurityGroupConfigurationRequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		request.SecurityGroupId = d.Get("security_group_id").(string)
+
+		raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
+			return client.ModifySecurityGroupConfiguration(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("security_group_id")
 	}
 
 	if d.IsNewResource() {

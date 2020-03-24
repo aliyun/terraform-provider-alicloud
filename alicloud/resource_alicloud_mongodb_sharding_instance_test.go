@@ -248,6 +248,68 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudMongoDBShardingInstance_classicVersion4(t *testing.T) {
+	var v dds.DBInstance
+	resourceId := "alicloud_mongodb_sharding_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckMongoDBShardingInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testMongoDBShardingInstance_classic_base4,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":                   CHECKSET,
+						"engine_version":            "4.0",
+						"shard_list.#":              "2",
+						"shard_list.0.node_class":   "dds.shard.mid",
+						"shard_list.0.node_storage": "10",
+						"shard_list.1.node_class":   "dds.shard.standard",
+						"shard_list.1.node_storage": "20",
+						"mongo_list.#":              "2",
+						"mongo_list.0.node_class":   "dds.mongos.mid",
+						"mongo_list.1.node_class":   "dds.mongos.mid",
+						"name":                      "",
+						"storage_engine":            "WiredTiger",
+						"instance_charge_type":      "PostPaid",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testMongoDBShardingInstance_classic_tde,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status": "enabled",
+					}),
+				),
+			},
+			{
+				Config: testMongoDBShardingInstance_classic_security_group_id,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id": CHECKSET,
+					}),
+				),
+			}},
+	})
+}
+
 func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_sharding_instance.default"
@@ -491,6 +553,80 @@ resource "alicloud_mongodb_sharding_instance" "default" {
   mongo_list {
     node_class = "dds.mongos.mid"
   }
+}`
+
+const testMongoDBShardingInstance_classic_base4 = `
+data "alicloud_zones" "default" {
+  available_resource_creation = "MongoDB"
+}
+resource "alicloud_mongodb_sharding_instance" "default" {
+  zone_id        = "${data.alicloud_zones.default.zones.0.id}"
+  engine_version = "4.0"
+  shard_list {
+    node_class   = "dds.shard.mid"
+    node_storage = 10
+  }
+  shard_list {
+    node_class   = "dds.shard.standard"
+    node_storage = 20
+  }
+  mongo_list {
+    node_class = "dds.mongos.mid"
+  }
+  mongo_list {
+    node_class = "dds.mongos.mid"
+  }
+}`
+
+const testMongoDBShardingInstance_classic_tde = `
+data "alicloud_zones" "default" {
+  available_resource_creation = "MongoDB"
+}
+resource "alicloud_mongodb_sharding_instance" "default" {
+  zone_id        = "${data.alicloud_zones.default.zones.0.id}"
+  engine_version = "4.0"
+  shard_list {
+    node_class   = "dds.shard.mid"
+    node_storage = 10
+  }
+  shard_list {
+    node_class   = "dds.shard.standard"
+    node_storage = 20
+  }
+  mongo_list {
+    node_class = "dds.mongos.mid"
+    }
+  mongo_list {
+    node_class = "dds.mongos.mid"
+  }
+  tde_status    = "enabled"
+}`
+
+const testMongoDBShardingInstance_classic_security_group_id = `
+data "alicloud_zones" "default" {
+  available_resource_creation = "MongoDB"
+}
+data "alicloud_security_groups" "default" {
+}
+resource "alicloud_mongodb_sharding_instance" "default" {
+  zone_id        = "${data.alicloud_zones.default.zones.0.id}"
+  engine_version = "4.0"
+  shard_list {
+    node_class   = "dds.shard.mid"
+    node_storage = 10
+  }
+  shard_list {
+    node_class   = "dds.shard.standard"
+    node_storage = 20
+  }
+  mongo_list {
+    node_class = "dds.mongos.mid"
+    }
+  mongo_list {
+    node_class = "dds.mongos.mid"
+  }
+  tde_status    = "enabled"
+  security_group_id    = "${data.alicloud_security_groups.default.groups.0.id}"
 }`
 
 const testMongoDBShardingInstance_classic_name = `

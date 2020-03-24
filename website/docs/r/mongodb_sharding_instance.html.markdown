@@ -89,6 +89,8 @@ If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of 
 * `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to a instance. If the `account_password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]). System default to `["127.0.0.1"]`.
+* `security_group_id` - (Optional, Available in 1.76.0+) The Security Group ID of ECS.
+* `tde_status` - (Optional, ForceNew, Available in 1.76.0+) The TDE(Transparent Data Encryption) status.
 * `mongo_list` - (Required) The mongo-node count can be purchased is in range of [2, 32].
     * `node_class` -(Required) Node specification. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
 * `shard_list` - (Required) the shard-node count can be purchased is in range of [2, 32].
