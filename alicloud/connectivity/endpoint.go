@@ -12,6 +12,7 @@ import (
 type ServiceCode string
 
 const (
+	WafOpenapiCode    = ServiceCode("WAFOPENAPI")
 	CbnCode           = ServiceCode("CBN")
 	ECSCode           = ServiceCode("ECS")
 	ESSCode           = ServiceCode("ESS")

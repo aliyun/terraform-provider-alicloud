@@ -80,6 +80,7 @@ type Config struct {
 	SkipRegionValidation bool
 	ConfigurationSource  string
 	CbnEndpoint          string
+	WafOpenapiEndpoint   string
 }
 
 func (c *Config) loadAndValidate() error {

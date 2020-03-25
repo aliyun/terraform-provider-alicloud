@@ -463,6 +463,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_backup_policy":                   resourceAlicloudAdbBackupPolicy(),
 			"alicloud_adb_account":                         resourceAlicloudAdbAccount(),
 			"alicloud_cen_flowlog":                         resourceAlicloudCenFlowlog(),
+			"alicloud_waf_domain":                          resourceAlicloudWafDomain(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -591,6 +592,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.MarketEndpoint = strings.TrimSpace(endpoints["market"].(string))
 		config.AdbEndpoint = strings.TrimSpace(endpoints["adb"].(string))
 		config.CbnEndpoint = strings.TrimSpace(endpoints["cbn"].(string))
+		config.WafOpenapiEndpoint = strings.TrimSpace(endpoints["waf_openapi"].(string))
 	}
 
 	if config.RamRoleArn != "" {
@@ -752,6 +754,8 @@ func init() {
 		"adb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom AnalyticDB endpoints.",
 
 		"cbn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cbn endpoints.",
+
+		"waf_openapi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom waf_openapi endpoints.",
 	}
 }
 
@@ -796,6 +800,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"waf_openapi": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["waf_openapi_endpoint"],
+				},
+
 				"cbn": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1098,6 +1109,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["market"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["adb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cbn"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["waf_openapi"].(string)))
 	return hashcode.String(buf.String())
 }
 

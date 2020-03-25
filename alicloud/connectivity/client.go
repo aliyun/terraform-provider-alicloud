@@ -41,6 +41,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	waf_openapi "github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
@@ -124,6 +125,7 @@ type AliyunClient struct {
 	hbaseconn                    *hbase.Client
 	adbconn                      *adb.Client
 	cbnConn                      *cbn.Client
+	waf_openapiConn              *waf_openapi.Client
 }
 
 type ApiVersion string
@@ -1577,4 +1579,29 @@ func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, err
 		client.cbnConn = cbnConn
 	}
 	return do(client.cbnConn)
+}
+
+func (client *AliyunClient) WithWafOpenapiClient(do func(*waf_openapi.Client) (interface{}, error)) (interface{}, error) {
+	if client.waf_openapiConn == nil {
+		endpoint := client.config.WafOpenapiEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, WafOpenapiCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(WafOpenapiCode), endpoint)
+		}
+
+		waf_openapiConn, err := waf_openapi.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the WafOpenapiclient: %#v", err)
+		}
+		waf_openapiConn.AppendUserAgent(Terraform, terraformVersion)
+		waf_openapiConn.AppendUserAgent(Provider, providerVersion)
+		waf_openapiConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.waf_openapiConn = waf_openapiConn
+	}
+	return do(client.waf_openapiConn)
 }
