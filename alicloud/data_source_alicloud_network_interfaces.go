@@ -227,10 +227,12 @@ func dataSourceAlicloudNetworkInterfacesRead(d *schema.ResourceData, meta interf
 	} else {
 		filterEnis = allEnis
 	}
-	return WrapError(networkInterfaceDescriptionAttributes(d, filterEnis))
+	return WrapError(networkInterfaceDescriptionAttributes(d, filterEnis, meta))
 }
 
-func networkInterfaceDescriptionAttributes(d *schema.ResourceData, enis []ecs.NetworkInterfaceSet) error {
+func networkInterfaceDescriptionAttributes(d *schema.ResourceData, enis []ecs.NetworkInterfaceSet, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 	var ids []string
 	var names []string
 	var s []map[string]interface{}
@@ -258,7 +260,7 @@ func networkInterfaceDescriptionAttributes(d *schema.ResourceData, enis []ecs.Ne
 			"instance_id":       eni.InstanceId,
 			"resource_group_id": eni.ResourceGroupId,
 			"creation_time":     eni.CreationTime,
-			"tags":              tagsToMap(eni.Tags.Tag),
+			"tags":              ecsService.tagsToMapForEni(eni.Tags.Tag),
 		}
 
 		ids = append(ids, eni.NetworkInterfaceId)

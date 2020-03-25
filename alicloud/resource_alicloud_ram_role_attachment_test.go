@@ -13,8 +13,8 @@ import (
 )
 
 func TestAccAlicloudRamRoleAttachment_basic(t *testing.T) {
-	var instanceA ecs.Instance
-	var instanceB ecs.Instance
+	var instanceA ecs.InstanceInDescribeInstances
+	var instanceB ecs.InstanceInDescribeInstances
 	var v *ecs.DescribeInstanceRamRoleResponse
 	resourceId := "alicloud_ram_role_attachment.default"
 	ra := resourceAttrInit(resourceId, ramRoleAttachmentMap)

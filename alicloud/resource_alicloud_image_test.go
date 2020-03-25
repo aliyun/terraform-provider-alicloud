@@ -11,7 +11,7 @@ import (
 )
 
 func TestAccAliCloudImageBasic(t *testing.T) {
-	var v ecs.Image
+	var v ecs.ImageInDescribeImages
 
 	resourceId := "alicloud_image.default"
 	ra := resourceAttrInit(resourceId, testAccImageCheckMap)

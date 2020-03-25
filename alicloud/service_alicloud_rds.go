@@ -37,8 +37,8 @@ type RdsService struct {
 // That the business layer only need to check error.
 var DBInstanceStatusCatcher = Catcher{"OperationDenied.DBInstanceStatus", 60, 5}
 
-func (s *RdsService) DescribeDBInstance(id string) (*rds.DBInstanceAttribute, error) {
-	instance := &rds.DBInstanceAttribute{}
+func (s *RdsService) DescribeDBInstance(id string) (*rds.DBInstanceAttributeInDescribeDBInstanceAttribute, error) {
+	instance := &rds.DBInstanceAttributeInDescribeDBInstanceAttribute{}
 	request := rds.CreateDescribeDBInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -60,8 +60,27 @@ func (s *RdsService) DescribeDBInstance(id string) (*rds.DBInstanceAttribute, er
 	return &response.Items.DBInstanceAttribute[0], nil
 }
 
-func (s *RdsService) DescribeDBReadonlyInstance(id string) (*rds.DBInstanceAttribute, error) {
-	instance := &rds.DBInstanceAttribute{}
+func (s *RdsService) DescribeTasks(id string) (task *rds.DescribeTasksResponse, err error) {
+	request := rds.CreateDescribeTasksRequest()
+	request.RegionId = s.client.RegionId
+	request.DBInstanceId = id
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DescribeTasks(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return task, WrapErrorf(err, NotFoundMsg, ProviderERROR)
+		}
+		return task, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*rds.DescribeTasksResponse)
+
+	return response, nil
+}
+
+func (s *RdsService) DescribeDBReadonlyInstance(id string) (*rds.DBInstanceAttributeInDescribeDBInstanceAttribute, error) {
+	instance := &rds.DBInstanceAttributeInDescribeDBInstanceAttribute{}
 	request := rds.CreateDescribeDBInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -157,8 +176,8 @@ func (s *RdsService) DescribeDBAccountPrivilege(id string) (*rds.DBInstanceAccou
 	return &response.Accounts.DBInstanceAccount[0], nil
 }
 
-func (s *RdsService) DescribeDBDatabase(id string) (*rds.Database, error) {
-	ds := &rds.Database{}
+func (s *RdsService) DescribeDBDatabase(id string) (*rds.DatabaseInDescribeDatabases, error) {
+	ds := &rds.DatabaseInDescribeDatabases{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return ds, WrapError(err)
@@ -906,6 +925,28 @@ func (s *RdsService) RdsDBInstanceStateRefreshFunc(id string, failStates []strin
 			}
 		}
 		return object, object.DBInstanceStatus, nil
+	}
+}
+
+func (s *RdsService) RdsTaskStateRefreshFunc(id string, taskAction string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeTasks(id)
+		if err != nil {
+
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, t := range object.Items.TaskProgressInfo {
+			if t.TaskAction == taskAction {
+				return object, t.Status, nil
+			}
+		}
+
+		return object, "", nil
 	}
 }
 

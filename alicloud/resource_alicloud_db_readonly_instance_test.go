@@ -12,7 +12,7 @@ import (
 )
 
 func TestAccAlicloudDBReadonlyInstance_update(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance *rds.DBInstanceAttributeInDescribeDBInstanceAttribute
 	resourceId := "alicloud_db_readonly_instance.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccDBInstance_vpc_%d", rand)
@@ -146,7 +146,7 @@ func TestAccAlicloudDBReadonlyInstance_update(t *testing.T) {
 }
 
 func TestAccAlicloudDBReadonlyInstance_multi(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance *rds.DBInstanceAttributeInDescribeDBInstanceAttribute
 	resourceId := "alicloud_db_readonly_instance.default.1"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccDBInstance_vpc_%d", rand)

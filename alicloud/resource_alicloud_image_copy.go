@@ -137,7 +137,7 @@ func resourceAliCloudImageCopyRead(d *schema.ResourceData, meta interface{}) err
 
 	tags := object.Tags.Tag
 	if len(tags) > 0 {
-		err = d.Set("tags", tagsToMap(tags))
+		err = d.Set("tags", ecsService.tagsToMapForImage(tags))
 	}
 	return WrapError(err)
 }

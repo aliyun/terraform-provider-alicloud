@@ -14,7 +14,7 @@ import (
 )
 
 func TestAccAliCloudImageCopyBasic(t *testing.T) {
-	var v ecs.Image
+	var v ecs.ImageInDescribeImages
 
 	resourceId := "alicloud_image_copy.default"
 	// multi provideris
@@ -124,7 +124,7 @@ func TestAccAliCloudImageCopyBasic(t *testing.T) {
 	})
 }
 
-func testAccCheckImageExistsWithProviders(n string, image *ecs.Image, providers *[]*schema.Provider) resource.TestCheckFunc {
+func testAccCheckImageExistsWithProviders(n string, image *ecs.ImageInDescribeImages, providers *[]*schema.Provider) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

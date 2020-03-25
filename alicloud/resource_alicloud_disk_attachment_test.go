@@ -11,9 +11,9 @@ import (
 )
 
 func TestAccAlicloudDiskAttachment(t *testing.T) {
-	var i ecs.Instance
-	var v ecs.Disk
-	var attachment ecs.Disk
+	var i ecs.InstanceInDescribeInstances
+	var v ecs.DiskInDescribeDisks
+	var attachment ecs.DiskInDescribeDisks
 	serverFunc := func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
@@ -61,9 +61,9 @@ func TestAccAlicloudDiskAttachment(t *testing.T) {
 }
 
 func TestAccAlicloudDiskMultiAttachment(t *testing.T) {
-	var i ecs.Instance
-	var v ecs.Disk
-	var attachment ecs.Disk
+	var i ecs.InstanceInDescribeInstances
+	var v ecs.DiskInDescribeDisks
+	var attachment ecs.DiskInDescribeDisks
 	serverFunc := func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}

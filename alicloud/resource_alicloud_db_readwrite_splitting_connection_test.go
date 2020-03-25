@@ -22,8 +22,8 @@ var DBReadWriteMap = map[string]string{
 
 func TestAccAlicloudDBReadWriteSplittingConnection_update(t *testing.T) {
 	var connection = &rds.DBInstanceNetInfo{}
-	var primary = &rds.DBInstanceAttribute{}
-	var readonly = &rds.DBInstanceAttribute{}
+	var primary = &rds.DBInstanceAttributeInDescribeDBInstanceAttribute{}
+	var readonly = &rds.DBInstanceAttributeInDescribeDBInstanceAttribute{}
 
 	resourceId := "alicloud_db_read_write_splitting_connection.default"
 	ra := resourceAttrInit(resourceId, DBReadWriteMap)

@@ -369,7 +369,7 @@ func ramPolicyPruneVersions(policyName, policyType string, meta interface{}) err
 	if len(versions) < 5 {
 		return nil
 	}
-	var oldestVersion ram.PolicyVersion
+	var oldestVersion ram.PolicyVersionInListPolicyVersions
 
 	for _, version := range versions {
 		if version.IsDefaultVersion {
@@ -399,7 +399,7 @@ func ramPolicyDeleteVersion(versionId, policyName string, meta interface{}) erro
 	return nil
 }
 
-func ramPolicyListVersions(policyName, policyType string, meta interface{}) ([]ram.PolicyVersion, error) {
+func ramPolicyListVersions(policyName, policyType string, meta interface{}) ([]ram.PolicyVersionInListPolicyVersions, error) {
 	client := meta.(*connectivity.AliyunClient)
 	request := ram.CreateListPolicyVersionsRequest()
 	request.RegionId = client.RegionId
