@@ -69,7 +69,7 @@ func (s *RdsService) DescribeTasks(id string) (task *rds.DescribeTasksResponse, 
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return task, WrapErrorf(err, InstanceNotFound, AlibabaCloudSdkGoERROR)
+			return task, WrapErrorf(err, NotFoundMsg, ProviderERROR)
 		}
 		return task, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
