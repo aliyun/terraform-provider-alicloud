@@ -210,7 +210,7 @@ func ramPoliciesDescriptionAttributes(d *schema.ResourceData, policies []interfa
 	var ids []string
 	var s []map[string]interface{}
 	for _, v := range policies {
-		policy := v.(ram.Policy)
+		policy := v.(ram.PolicyInListPolicies)
 		request := ram.CreateGetPolicyVersionRequest()
 		request.PolicyName = policy.PolicyName
 		request.PolicyType = policy.PolicyType

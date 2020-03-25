@@ -35,7 +35,7 @@ func testSweepDBInstances(region string) error {
 		"tf_testAcc",
 	}
 
-	var insts []rds.DBInstance
+	var insts []rds.DBInstanceInDescribeDBInstances
 	req := rds.CreateDescribeDBInstancesRequest()
 	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
@@ -120,7 +120,7 @@ func testSweepDBInstances(region string) error {
 }
 
 func TestAccAlicloudDBInstanceMysql(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance *rds.DBInstanceAttributeInDescribeDBInstanceAttribute
 	var ips []map[string]interface{}
 
 	resourceId := "alicloud_db_instance.default"
@@ -379,7 +379,7 @@ resource "alicloud_security_group" "default" {
 }
 
 func TestAccAlicloudDBInstanceMultiInstance(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance *rds.DBInstanceAttributeInDescribeDBInstanceAttribute
 
 	resourceId := "alicloud_db_instance.default.4"
 	ra := resourceAttrInit(resourceId, instanceBasicMap)
@@ -425,7 +425,7 @@ func TestAccAlicloudDBInstanceMultiInstance(t *testing.T) {
 
 // Unknown current resource exists
 func TestAccAlicloudDBInstanceSQLServer(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance *rds.DBInstanceAttributeInDescribeDBInstanceAttribute
 	var ips []map[string]interface{}
 
 	resourceId := "alicloud_db_instance.default"
@@ -586,7 +586,7 @@ resource "alicloud_security_group" "default" {
 }
 
 func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance *rds.DBInstanceAttributeInDescribeDBInstanceAttribute
 	var ips []map[string]interface{}
 
 	resourceId := "alicloud_db_instance.default"
@@ -749,7 +749,7 @@ resource "alicloud_security_group" "default" {
 
 // Unknown current resource exists
 func TestAccAlicloudDBInstancePPAS(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance *rds.DBInstanceAttributeInDescribeDBInstanceAttribute
 	var ips []map[string]interface{}
 
 	resourceId := "alicloud_db_instance.default"
@@ -918,7 +918,7 @@ resource "alicloud_security_group" "default" {
 
 // Unknown current resource exists
 func TestAccAlicloudDBInstanceMultiAZ(t *testing.T) {
-	var instance = &rds.DBInstanceAttribute{}
+	var instance = &rds.DBInstanceAttributeInDescribeDBInstanceAttribute{}
 	resourceId := "alicloud_db_instance.default"
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -991,7 +991,7 @@ resource "alicloud_security_group" "default" {
 }
 
 func TestAccAlicloudDBInstanceClassic(t *testing.T) {
-	var instance *rds.DBInstanceAttribute
+	var instance *rds.DBInstanceAttributeInDescribeDBInstanceAttribute
 
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap)

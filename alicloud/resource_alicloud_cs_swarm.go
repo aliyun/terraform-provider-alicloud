@@ -344,7 +344,7 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 	if cluster.Size > 0 {
 		resp, _ := raw.(cs.GetSwarmClusterNodesResponse)
 		var nodes []map[string]interface{}
-		var oneNode newsdk.Instance
+		var oneNode newsdk.InstanceInDescribeInstances
 
 		for _, node := range resp {
 			mapping := map[string]interface{}{

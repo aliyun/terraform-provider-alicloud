@@ -36,7 +36,7 @@ func testSweepDisks(region string) error {
 		"testAcc",
 	}
 
-	var disks []ecs.Disk
+	var disks []ecs.DiskInDescribeDisks
 	req := ecs.CreateDescribeDisksRequest()
 	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
@@ -117,7 +117,7 @@ func testAccCheckDiskDestroy(s *terraform.State) error {
 }
 
 func TestAccAlicloudDisk_basic(t *testing.T) {
-	var v ecs.Disk
+	var v ecs.DiskInDescribeDisks
 	resourceId := "alicloud_disk.default"
 	serverFunc := func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -229,7 +229,7 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 }
 
 func TestAccAlicloudDisk_multi(t *testing.T) {
-	var v ecs.Disk
+	var v ecs.DiskInDescribeDisks
 	resourceId := "alicloud_disk.default.4"
 	serverFunc := func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}

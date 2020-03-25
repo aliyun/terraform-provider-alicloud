@@ -191,7 +191,7 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 		request.ImageOwnerAlias = owners.(string)
 	}
 
-	var allImages []ecs.Image
+	var allImages []ecs.ImageInDescribeImages
 
 	for {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
@@ -218,7 +218,7 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 		request.PageNumber = page
 	}
 
-	var filteredImages []ecs.Image
+	var filteredImages []ecs.ImageInDescribeImages
 	if nameRegexOk {
 		r := regexp.MustCompile(nameRegex.(string))
 		for _, image := range allImages {
@@ -239,7 +239,7 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 		filteredImages = allImages[:]
 	}
 
-	var images []ecs.Image
+	var images []ecs.ImageInDescribeImages
 
 	if len(filteredImages) > 1 && mostRecent.(bool) {
 		// Query returned single result.
@@ -252,7 +252,7 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 }
 
 // populate the numerous fields that the image description returns.
-func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.Image, meta interface{}) error {
+func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.ImageInDescribeImages, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
 	for _, image := range images {
@@ -305,7 +305,7 @@ func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.Image, met
 }
 
 //Find most recent image
-type imageSort []ecs.Image
+type imageSort []ecs.ImageInDescribeImages
 
 func (a imageSort) Len() int {
 	return len(a)
@@ -320,14 +320,14 @@ func (a imageSort) Less(i, j int) bool {
 }
 
 // Returns the most recent Image out of a slice of images.
-func mostRecentImage(images []ecs.Image) ecs.Image {
+func mostRecentImage(images []ecs.ImageInDescribeImages) ecs.ImageInDescribeImages {
 	sortedImages := images
 	sort.Sort(imageSort(sortedImages))
 	return sortedImages[len(sortedImages)-1]
 }
 
 // Returns a set of disk device mappings.
-func imageDiskDeviceMappings(m []ecs.DiskDeviceMapping) []map[string]interface{} {
+func imageDiskDeviceMappings(m []ecs.DiskDeviceMappingInDescribeImages) []map[string]interface{} {
 	var s []map[string]interface{}
 
 	for _, v := range m {

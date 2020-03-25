@@ -37,8 +37,8 @@ type RdsService struct {
 // That the business layer only need to check error.
 var DBInstanceStatusCatcher = Catcher{"OperationDenied.DBInstanceStatus", 60, 5}
 
-func (s *RdsService) DescribeDBInstance(id string) (*rds.DBInstanceAttribute, error) {
-	instance := &rds.DBInstanceAttribute{}
+func (s *RdsService) DescribeDBInstance(id string) (*rds.DBInstanceAttributeInDescribeDBInstanceAttribute, error) {
+	instance := &rds.DBInstanceAttributeInDescribeDBInstanceAttribute{}
 	request := rds.CreateDescribeDBInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -60,8 +60,8 @@ func (s *RdsService) DescribeDBInstance(id string) (*rds.DBInstanceAttribute, er
 	return &response.Items.DBInstanceAttribute[0], nil
 }
 
-func (s *RdsService) DescribeDBReadonlyInstance(id string) (*rds.DBInstanceAttribute, error) {
-	instance := &rds.DBInstanceAttribute{}
+func (s *RdsService) DescribeDBReadonlyInstance(id string) (*rds.DBInstanceAttributeInDescribeDBInstanceAttribute, error) {
+	instance := &rds.DBInstanceAttributeInDescribeDBInstanceAttribute{}
 	request := rds.CreateDescribeDBInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -157,8 +157,8 @@ func (s *RdsService) DescribeDBAccountPrivilege(id string) (*rds.DBInstanceAccou
 	return &response.Accounts.DBInstanceAccount[0], nil
 }
 
-func (s *RdsService) DescribeDBDatabase(id string) (*rds.Database, error) {
-	ds := &rds.Database{}
+func (s *RdsService) DescribeDBDatabase(id string) (*rds.DatabaseInDescribeDatabases, error) {
+	ds := &rds.DatabaseInDescribeDatabases{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return ds, WrapError(err)
