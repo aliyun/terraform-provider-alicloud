@@ -63,6 +63,7 @@ func setCdnTags(client *connectivity.AliyunClient, resourceType TagResourceType,
 }
 
 func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceType, d *schema.ResourceData) error {
+	ecsService := EcsService{client}
 	if d.HasChange("volume_tags") {
 		request := ecs.CreateDescribeDisksRequest()
 		request.InstanceId = d.Id()
@@ -98,7 +99,7 @@ func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceTy
 			ids = append(ids, disk.DiskId)
 			if disk.Type == "system" {
 				for _, t := range disk.Tags.Tag {
-					if !ecsTagIgnored(t) {
+					if !ecsService.ecsTagIgnoredForDisk(t) {
 						systemDiskTag[t.TagKey] = t.TagValue
 					}
 				}
@@ -326,7 +327,7 @@ func gpdbTagsFromMap(m map[string]interface{}) []gpdb.TagResourcesTag {
 	return result
 }
 
-func tagsToMap(tags []ecs.Tag) map[string]string {
+func tagsToMap(tags []ecs.TagInDescribeTags) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		if !ecsTagIgnored(t) {
@@ -421,7 +422,7 @@ func tagsMapEqual(expectMap map[string]interface{}, compareMap map[string]string
 }
 
 // tagIgnored compares a tag against a list of strings and checks if it should be ignored or not
-func ecsTagIgnored(t ecs.Tag) bool {
+func ecsTagIgnored(t ecs.TagInDescribeTags) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)

@@ -189,7 +189,7 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 		request.Tag = &tags
 	}
 
-	var allDisks []ecs.Disk
+	var allDisks []ecs.DiskInDescribeDisks
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	for {
@@ -219,7 +219,7 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 		request.PageNumber = page
 	}
 
-	var filteredDisksTemp []ecs.Disk
+	var filteredDisksTemp []ecs.DiskInDescribeDisks
 
 	nameRegex, ok := d.GetOk("name_regex")
 	if ok && nameRegex.(string) != "" {
@@ -237,10 +237,12 @@ func dataSourceAlicloudDisksRead(d *schema.ResourceData, meta interface{}) error
 	} else {
 		filteredDisksTemp = allDisks
 	}
-	return disksDescriptionAttributes(d, filteredDisksTemp)
+	return disksDescriptionAttributes(d, filteredDisksTemp, meta)
 }
 
-func disksDescriptionAttributes(d *schema.ResourceData, disks []ecs.Disk) error {
+func disksDescriptionAttributes(d *schema.ResourceData, disks []ecs.DiskInDescribeDisks, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 	var ids []string
 	var s []map[string]interface{}
 	for _, disk := range disks {
@@ -263,7 +265,7 @@ func disksDescriptionAttributes(d *schema.ResourceData, disks []ecs.Disk) error 
 			"attached_time":     disk.AttachedTime,
 			"detached_time":     disk.DetachedTime,
 			"expiration_time":   disk.ExpiredTime,
-			"tags":              tagsToMap(disk.Tags.Tag),
+			"tags":              ecsService.tagsToMapForDisk(disk.Tags.Tag),
 		}
 		if !disk.Encrypted {
 			mapping["encrypted"] = string(OffFlag)

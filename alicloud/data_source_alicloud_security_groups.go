@@ -188,10 +188,12 @@ func dataSourceAlicloudSecurityGroupsRead(d *schema.ResourceData, meta interface
 			request.PageNumber = page
 		}
 	}
-	return securityGroupsDescription(d, sg)
+	return securityGroupsDescription(d, sg, meta)
 }
 
-func securityGroupsDescription(d *schema.ResourceData, sg []SecurityGroup) error {
+func securityGroupsDescription(d *schema.ResourceData, sg []SecurityGroup, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 	var ids []string
 	var names []string
 	var s []map[string]interface{}
@@ -206,7 +208,7 @@ func securityGroupsDescription(d *schema.ResourceData, sg []SecurityGroup) error
 			"security_group_type": item.SecurityGroupType,
 			"inner_access":        item.Attributes.InnerAccessPolicy == string(GroupInnerAccept),
 			"creation_time":       item.CreationTime,
-			"tags":                tagsToMap(item.Tags.Tag),
+			"tags":                ecsService.tagsToMapForSecurityGroup(item.Tags.Tag),
 		}
 
 		ids = append(ids, string(item.Attributes.SecurityGroupId))

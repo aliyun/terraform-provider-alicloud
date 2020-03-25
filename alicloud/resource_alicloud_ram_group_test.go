@@ -37,7 +37,7 @@ func testSweepRamGroups(region string) error {
 		fmt.Sprintf("tf_testAcc%s", region),
 	}
 
-	var groups []ram.Group
+	var groups []ram.GroupInListGroups
 	request := ram.CreateListGroupsRequest()
 	for {
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {

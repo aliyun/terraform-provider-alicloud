@@ -213,7 +213,7 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 
-	var dbi []rds.DBInstance
+	var dbi []rds.DBInstanceInDescribeDBInstances
 
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -274,7 +274,7 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 	return rdsInstancesDescription(d, meta, dbi)
 }
 
-func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, dbi []rds.DBInstance) error {
+func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, dbi []rds.DBInstanceInDescribeDBInstances) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 

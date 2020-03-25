@@ -454,7 +454,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("system_disk_category", disk.Category)
 	d.Set("system_disk_size", disk.Size)
 	d.Set("system_disk_auto_snapshot_policy_id", disk.AutoSnapshotPolicyId)
-	d.Set("volume_tags", tagsToMap(disk.Tags.Tag))
+	d.Set("volume_tags", ecsService.tagsToMapForDisk(disk.Tags.Tag))
 
 	d.Set("instance_name", instance.InstanceName)
 	d.Set("resource_group_id", instance.ResourceGroupId)
@@ -475,7 +475,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("deletion_protection", instance.DeletionProtection)
 	d.Set("credit_specification", instance.CreditSpecification)
 	d.Set("auto_release_time", instance.AutoReleaseTime)
-	d.Set("tags", tagsToMap(instance.Tags.Tag))
+	d.Set("tags", ecsService.tagsToMapForInstance(instance.Tags.Tag))
 
 	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
@@ -1094,7 +1094,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 			if errDesc != nil {
 				return update, WrapError(errDesc)
 			}
-			var disk ecs.Disk
+			var disk ecs.DiskInDescribeDisks
 			err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 				disk, err = ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
 				if err != nil {

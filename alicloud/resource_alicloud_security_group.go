@@ -144,7 +144,7 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 	}
 	d.Set("security_group_type", response.SecurityGroups.SecurityGroup[0].SecurityGroupType)
 	d.Set("resource_group_id", response.SecurityGroups.SecurityGroup[0].ResourceGroupId)
-	d.Set("tags", tagsToMap(response.SecurityGroups.SecurityGroup[0].Tags.Tag))
+	d.Set("tags", ecsService.tagsToMapForSecurityGroup(response.SecurityGroups.SecurityGroup[0].Tags.Tag))
 
 	return nil
 }
