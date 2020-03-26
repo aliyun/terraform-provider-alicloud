@@ -37,6 +37,11 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validation.IntBetween(0, 1000),
 			},
+			"desired_capacity": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(0, 1000),
+			},
 			"scaling_group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -162,6 +167,7 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 
 	d.Set("min_size", object.MinSize)
 	d.Set("max_size", object.MaxSize)
+	d.Set("desired_capacity", object.DesiredCapacity)
 	d.Set("scaling_group_name", object.ScalingGroupName)
 	d.Set("default_cooldown", object.DefaultCooldown)
 	d.Set("multi_az_policy", object.MultiAZPolicy)
@@ -222,7 +228,9 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("max_size") {
 		request.MaxSize = requests.NewInteger(d.Get("max_size").(int))
 	}
-
+	if d.HasChange("desired_capacity") {
+		request.DesiredCapacity = requests.NewInteger(d.Get("desired_capacity").(int))
+	}
 	if d.HasChange("default_cooldown") {
 		request.DefaultCooldown = requests.NewInteger(d.Get("default_cooldown").(int))
 	}
@@ -265,6 +273,7 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	d.SetPartial("scaling_group_name")
 	d.SetPartial("min_size")
 	d.SetPartial("max_size")
+	d.SetPartial("desired_capacity")
 	d.SetPartial("default_cooldown")
 	d.SetPartial("vswitch_ids")
 	d.SetPartial("removal_policies")
@@ -330,6 +339,10 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("scaling_group_name"); ok && v.(string) != "" {
 		request.ScalingGroupName = v.(string)
+	}
+
+	if v, ok := d.GetOk("desired_capacity"); ok {
+		request.DesiredCapacity = requests.NewInteger(v.(int))
 	}
 
 	if v, ok := d.GetOk("vswitch_ids"); ok {
