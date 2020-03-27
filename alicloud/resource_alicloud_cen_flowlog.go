@@ -206,7 +206,7 @@ func resourceAlicloudCenFlowlogDelete(d *schema.ResourceData, meta interface{}) 
 	})
 	addDebug(request.GetActionName(), raw)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"SourceProjectNotExist", "InvalidFlowlogId.NotFound", "ProjectOrLogstoreNotExist"}) {
+		if IsExpectedErrors(err, []string{"InvalidFlowlogId.NotFound", "ProjectOrLogstoreNotExist", "SourceProjectNotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)

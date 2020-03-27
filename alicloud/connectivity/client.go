@@ -124,6 +124,7 @@ type AliyunClient struct {
 	hbaseconn                    *hbase.Client
 	adbconn                      *adb.Client
 	cbnConn                      *cbn.Client
+	kmsConn                      *kms.Client
 }
 
 type ApiVersion string
