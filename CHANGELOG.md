@@ -1,3 +1,4 @@
+## 1.77.0 (Unreleased)
 ## 1.76.0 (March 27, 2020)
 
 - **New Resource:** `alicloud_kms_secret` ([#2310](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2310))
