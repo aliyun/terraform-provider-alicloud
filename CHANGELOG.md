@@ -1,20 +1,20 @@
-## 1.76.0 (Unreleased)
+## 1.76.0 (March 27, 2020)
 
-- **New Resource:** `alicloud_kms_secret` [GH-2310]
+- **New Resource:** `alicloud_kms_secret` ([#2310](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2310))
 
 IMPROVEMENTS:
 
-- change default autoscaler tag and refactor docs of managed kubernetes [GH-2309]
-- improve(sdk): update provider sdk and make it compatible [GH-2306]
-- add security group id and TDE for mongodb sharding [GH-2298]
-- improve cen_instance and cen_flowlog [GH-2297]
-- added support for isp_cities in site_monito [GH-2296]
+- change default autoscaler tag and refactor docs of managed kubernetes ([#2309](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2309))
+- improve(sdk): update provider sdk and make it compatible ([#2306](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2306))
+- add security group id and TDE for mongodb sharding ([#2298](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2298))
+- improve cen_instance and cen_flowlog ([#2297](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2297))
+- added support for isp_cities in site_monito ([#2296](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2296))
 - add security group id for kvstore [GH-]
-- support parameter DesiredCapacity [GH-2277]
+- support parameter DesiredCapacity ([#2277](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2277))
 
 BUG FIXES:
 
--fix(cen):modify resource_alicloud_cen_instance_grant [GH-2293]
+-fix(cen):modify resource_alicloud_cen_instance_grant ([#2293](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2293))
 
 
 ## 1.75.0 (March 20, 2020)
