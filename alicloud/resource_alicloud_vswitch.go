@@ -161,7 +161,7 @@ func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error 
 	request := vpc.CreateDeleteVSwitchRequest()
 	request.RegionId = client.RegionId
 	request.VSwitchId = d.Id()
-	err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(20*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DeleteVSwitch(request)
 		})
