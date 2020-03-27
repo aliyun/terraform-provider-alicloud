@@ -12,7 +12,7 @@ type CbnService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *CbnService) DescribeCenFlowlog(id string) (cenFlowlog cbn.FlowLog, err error) {
+func (s *CbnService) DescribeCenFlowlog(id string) (object cbn.FlowLog, err error) {
 	request := cbn.CreateDescribeFlowlogsRequest()
 	request.RegionId = s.client.RegionId
 
@@ -62,7 +62,7 @@ func (s *CbnService) WaitForCenFlowlog(id string, expected map[string]interface{
 	}
 }
 
-func (s *CbnService) DescribeCenInstance(id string) (cenInstance cbn.Cen, err error) {
+func (s *CbnService) DescribeCenInstance(id string) (object cbn.Cen, err error) {
 	request := cbn.CreateDescribeCensRequest()
 	request.RegionId = s.client.RegionId
 	filters := make([]cbn.DescribeCensFilter, 0)

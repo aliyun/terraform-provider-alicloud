@@ -77,3 +77,48 @@ func (s *KmsService) Decrypt(ciphertextBlob string, encryptionContext map[string
 	response, _ := raw.(*kms.DecryptResponse)
 	return response, err
 }
+
+func (s *KmsService) DescribeKmsSecret(id string) (object kms.DescribeSecretResponse, err error) {
+	request := kms.CreateDescribeSecretRequest()
+	request.RegionId = s.client.RegionId
+
+	request.SecretName = id
+	request.FetchTags = "true"
+
+	raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+		return kmsClient.DescribeSecret(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Forbidden.ResourceNotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("KmsSecret", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*kms.DescribeSecretResponse)
+	return *response, nil
+}
+
+func (s *KmsService) GetSecretValue(id string) (object kms.GetSecretValueResponse, err error) {
+	request := kms.CreateGetSecretValueRequest()
+	request.RegionId = s.client.RegionId
+
+	request.SecretName = id
+
+	raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+		return kmsClient.GetSecretValue(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Forbidden.ResourceNotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("kmssecret", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*kms.GetSecretValueResponse)
+	return *response, nil
+}

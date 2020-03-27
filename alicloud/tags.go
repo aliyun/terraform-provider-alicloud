@@ -15,6 +15,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -314,7 +315,17 @@ func tagsFromMap(m map[string]interface{}) []Tag {
 
 	return result
 }
+func jsonTagsFromMap(m map[string]interface{}) []JsonTag {
+	result := make([]JsonTag, 0, len(m))
+	for k, v := range m {
+		result = append(result, JsonTag{
+			TagKey:   k,
+			TagValue: v.(string),
+		})
+	}
 
+	return result
+}
 func gpdbTagsFromMap(m map[string]interface{}) []gpdb.TagResourcesTag {
 	result := make([]gpdb.TagResourcesTag, 0, len(m))
 	for k, v := range m {
@@ -399,6 +410,14 @@ func otsTagsToMap(tags []ots.TagInfo) map[string]string {
 	return result
 }
 
+func kmsTagsToMap(tags []kms.Tag) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		result[t.TagKey] = t.TagValue
+	}
+
+	return result
+}
 func tagsMapEqual(expectMap map[string]interface{}, compareMap map[string]string) bool {
 	if len(expectMap) != len(compareMap) {
 		return false
