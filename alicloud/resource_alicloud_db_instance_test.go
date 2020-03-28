@@ -699,7 +699,7 @@ func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
 						"engine":               "PostgreSQL",
 						"engine_version":       "9.4",
 						"instance_type":        CHECKSET,
-						"instance_storage":     "30",
+						"instance_storage":     "25",
 						"instance_name":        "tf-testAccDBInstanceConfig",
 						"monitoring_period":    "60",
 						"zone_id":              CHECKSET,
