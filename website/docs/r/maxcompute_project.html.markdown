@@ -10,7 +10,7 @@ description: |-
 
 The project is the basic unit of operation in maxcompute. It is similar to the concept of Database or Schema in traditional databases, and sets the boundary for maxcompute multi-user isolation and access control. [Refer to details](https://www.alibabacloud.com/help/doc-detail/27818.html).
 
-->**NOTE:** Available in 1.75.0+.
+->**NOTE:** Available in 1.77.0+.
 
 ## Example Usage
 
@@ -43,3 +43,4 @@ MaxCompute project can be imported using the *name* or ID, e.g.
 
 ```
 $ terraform import alicloud_maxcompute_project.example tf_maxcompute_project
+```
