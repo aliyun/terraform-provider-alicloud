@@ -511,6 +511,31 @@ func (s *PolarDBService) DescribePolarDBAccount(id string) (ds *polardb.DBAccoun
 	return &response.Accounts[0], nil
 }
 
+func (s *PolarDBService) DescribePolarDBNode(id string) (ds *polardb.DBNode, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	dbClusterId := parts[0]
+	dbNodeId := parts[1]
+	object, err := s.DescribePolarDBCluster(dbClusterId)
+	if err != nil {
+		if NotFoundError(err) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapError(err)
+	}
+	dbNodes := object.DBNodes.DBNode
+	var index = 0
+	for i, value := range dbNodes {
+		if value.DBNodeId == dbNodeId {
+			index = i
+			break
+		}
+	}
+	return &dbNodes[index], nil
+}
+
 // WaitForInstance waits for instance to given status
 func (s *PolarDBService) WaitForPolarDBInstance(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
