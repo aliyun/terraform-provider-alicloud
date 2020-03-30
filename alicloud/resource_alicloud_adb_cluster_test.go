@@ -145,7 +145,7 @@ func TestAccAlicloudAdbClusterMulti(t *testing.T) {
 	var v *adb.DBCluster
 	rand := acctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%sadbrecordbasic%v.abc", defaultRegionToTest, rand)
-	resourceId := "alicloud_adb_cluster.default"
+	resourceId := "alicloud_adb_cluster.default.1"
 	var basicMap = map[string]string{
 		"description":         CHECKSET,
 		"vswitch_id":          CHECKSET,
