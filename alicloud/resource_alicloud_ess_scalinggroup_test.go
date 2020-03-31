@@ -105,7 +105,8 @@ func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 
 	basicMap := map[string]string{
 		"min_size":           "1",
-		"max_size":           "1",
+		"max_size":           "4",
+		"desired_capacity":   "2",
 		"default_cooldown":   "20",
 		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
 		"vswitch_ids.#":      "2",
@@ -145,7 +146,15 @@ func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 				Config: testAccEssScalingGroupUpdateMaxSize(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"max_size": "2",
+						"max_size": "5",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupUpdateDesiredCapacity(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"desired_capacity": "3",
 					}),
 				),
 			},
@@ -546,7 +555,8 @@ func testAccEssScalingGroup(common string, rand int) string {
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
-		max_size = 1
+		max_size = 4
+        desired_capacity = 2
 		scaling_group_name = "${var.name}"
 		default_cooldown = 20
 		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
@@ -570,7 +580,33 @@ func testAccEssScalingGroupUpdateMaxSize(common string, rand int) string {
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
-		max_size = 2
+		max_size = 5
+        desired_capacity = 2
+		scaling_group_name = "${var.name}"
+		default_cooldown = 20
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}`, common, rand)
+}
+
+func testAccEssScalingGroupUpdateDesiredCapacity(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroup-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}-bar"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 5
+        desired_capacity = 3
 		scaling_group_name = "${var.name}"
 		default_cooldown = 20
 		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
@@ -594,7 +630,8 @@ func testAccEssScalingGroupUpdateScalingGroupName(common string, rand int) strin
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
-		max_size = 2
+		max_size = 5
+        desired_capacity = 3
 		scaling_group_name = "${var.name}"
 		default_cooldown = 20
 		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
@@ -618,7 +655,8 @@ func testAccEssScalingGroupUpdateRemovalPolicies(common string, rand int) string
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
-		max_size = 2
+		max_size = 5
+        desired_capacity = 3
 		scaling_group_name = "${var.name}"
 		default_cooldown = 20
 		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
@@ -642,7 +680,8 @@ func testAccEssScalingGroupUpdateDefaultCooldown(common string, rand int) string
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
-		max_size = 2
+		max_size = 5
+        desired_capacity = 3
 		scaling_group_name = "${var.name}"
 		default_cooldown = 200
 		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
@@ -666,7 +705,8 @@ func testAccEssScalingGroupUpdateMinSize(common string, rand int) string {
 	
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 2
-		max_size = 2
+		max_size = 5
+        desired_capacity = 3
 		scaling_group_name = "${var.name}"
 		default_cooldown = 200
 		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
@@ -1103,7 +1143,8 @@ func testAccEssScalingGroupModifyVSwitchIds(common string, rand int) string {
 
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 2
-		max_size = 2
+		max_size = 5
+        desired_capacity = 3
 		scaling_group_name = "${var.name}"
 		default_cooldown = 200
 		vswitch_ids = ["${alicloud_vswitch.default2.id}"]

@@ -450,9 +450,9 @@ func (s *CsService) GetUserData(clusterId string, labels string, taints string) 
 	}
 
 	if labels == "" {
-		labels = fmt.Sprintf("%s=true", DefaultAutoscalerTag)
+		labels = fmt.Sprintf("%s=true", DefaultECSTag)
 	} else {
-		labels = fmt.Sprintf("%s,%s=true", labels, DefaultAutoscalerTag)
+		labels = fmt.Sprintf("%s,%s=true", labels, DefaultECSTag)
 	}
 
 	cluster, err := s.DescribeCsKubernetes(clusterId)
