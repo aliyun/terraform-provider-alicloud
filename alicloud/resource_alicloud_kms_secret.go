@@ -1,9 +1,8 @@
 package alicloud
 
 import (
-	"fmt"
-
 	"encoding/json"
+	"fmt"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -98,11 +97,20 @@ func resourceAlicloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) e
 		request.SecretDataType = v.(string)
 	}
 	request.SecretName = d.Get("secret_name").(string)
-	tags, err := json.Marshal(jsonTagsFromMap(d.Get("tags").(map[string]interface{})))
-	if err != nil {
-		return WrapError(err)
+	if v, ok := d.GetOk("tags"); ok {
+		addTags := make([]JsonTag, 0)
+		for key, value := range v.(map[string]interface{}) {
+			addTags = append(addTags, JsonTag{
+				TagKey:   key,
+				TagValue: value.(string),
+			})
+		}
+		tags, err := json.Marshal(addTags)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.Tags = string(tags)
 	}
-	request.Tags = string(tags)
 	request.VersionId = d.Get("version_id").(string)
 	raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
 		return kmsClient.CreateSecret(request)
@@ -133,7 +141,12 @@ func resourceAlicloudKmsSecretRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("description", object.Description)
 	d.Set("encryption_key_id", object.EncryptionKeyId)
 	d.Set("planned_delete_time", object.PlannedDeleteTime)
-	d.Set("tags", kmsTagsToMap(object.Tags.Tag))
+
+	tags := make(map[string]string)
+	for _, t := range object.Tags.Tag {
+		tags[t.TagKey] = t.TagValue
+	}
+	d.Set("tags", tags)
 
 	getSecretValueObject, err := kmsService.GetSecretValue(d.Id())
 	if err != nil {
@@ -147,6 +160,7 @@ func resourceAlicloudKmsSecretRead(d *schema.ResourceData, meta interface{}) err
 }
 func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	kmsService := KmsService{client}
 	d.Partial(true)
 
 	update := false
@@ -181,46 +195,9 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("secret_data_type")
 		d.SetPartial("version_stages")
 	}
-	if !d.IsNewResource() && d.HasChange("tags") {
-		oraw, nraw := d.GetChange("tags")
-		added, removed := jsonTagsFromMap(nraw.(map[string]interface{})), jsonTagsFromMap(oraw.(map[string]interface{}))
-
-		if len(removed) > 0 {
-			rem := make([]string, len(removed))
-			for i, r := range removed {
-				rem[i] = r.TagKey
-			}
-			remove, err := json.Marshal(rem)
-			if err != nil {
-				return WrapError(err)
-			}
-			request := kms.CreateUntagResourceRequest()
-			request.SecretName = d.Id()
-			request.TagKeys = string(remove)
-			raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-				return kmsClient.UntagResource(request)
-			})
-			addDebug(request.GetActionName(), raw)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
-		}
-
-		if len(added) > 0 {
-			add, err := json.Marshal(added)
-			if err != nil {
-				return WrapError(err)
-			}
-			request := kms.CreateTagResourceRequest()
-			request.SecretName = d.Id()
-			request.Tags = string(add)
-			raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-				return kmsClient.TagResource(request)
-			})
-			addDebug(request.GetActionName(), raw)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
+	if d.HasChange("tags") {
+		if err := kmsService.setResourceTags(d, "kmssecret"); err != nil {
+			return WrapError(err)
 		}
 		d.SetPartial("tags")
 	}
