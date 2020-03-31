@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -121,4 +122,64 @@ func (s *KmsService) GetSecretValue(id string) (object kms.GetSecretValueRespons
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*kms.GetSecretValueResponse)
 	return *response, nil
+}
+
+func (s *KmsService) setResourceTags(d *schema.ResourceData, resourceType string) error {
+	oldItems, newItems := d.GetChange("tags")
+	added := make([]JsonTag, 0)
+	for key, value := range newItems.(map[string]interface{}) {
+		added = append(added, JsonTag{
+			TagKey:   key,
+			TagValue: value.(string),
+		})
+	}
+	removed := make([]string, 0)
+	for key, _ := range oldItems.(map[string]interface{}) {
+		removed = append(removed, key)
+	}
+	if len(removed) > 0 {
+		request := kms.CreateUntagResourceRequest()
+		request.RegionId = s.client.RegionId
+		if resourceType == "kmskey" {
+			request.KeyId = d.Id()
+		}
+		if resourceType == "kmssecret" {
+			request.SecretName = d.Id()
+		}
+		remove, err := json.Marshal(removed)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.TagKeys = string(remove)
+		raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+			return kmsClient.UntagResource(request)
+		})
+		addDebug(request.GetActionName(), raw)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+	}
+	if len(added) > 0 {
+		request := kms.CreateTagResourceRequest()
+		request.RegionId = s.client.RegionId
+		if resourceType == "kmskey" {
+			request.KeyId = d.Id()
+		}
+		if resourceType == "kmssecret" {
+			request.SecretName = d.Id()
+		}
+		add, err := json.Marshal(added)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.Tags = string(add)
+		raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+			return kmsClient.TagResource(request)
+		})
+		addDebug(request.GetActionName(), raw)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+	}
+	return nil
 }

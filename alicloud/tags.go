@@ -315,17 +315,7 @@ func tagsFromMap(m map[string]interface{}) []Tag {
 
 	return result
 }
-func jsonTagsFromMap(m map[string]interface{}) []JsonTag {
-	result := make([]JsonTag, 0, len(m))
-	for k, v := range m {
-		result = append(result, JsonTag{
-			TagKey:   k,
-			TagValue: v.(string),
-		})
-	}
 
-	return result
-}
 func gpdbTagsFromMap(m map[string]interface{}) []gpdb.TagResourcesTag {
 	result := make([]gpdb.TagResourcesTag, 0, len(m))
 	for k, v := range m {
