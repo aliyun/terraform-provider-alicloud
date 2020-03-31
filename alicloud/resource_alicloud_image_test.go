@@ -21,7 +21,6 @@ func TestAccAliCloudImageBasic(t *testing.T) {
 	}
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeImageById")
 	rac := resourceAttrCheckInit(rc, ra)
-
 	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAccEcsImageConfigBasic%d", rand)

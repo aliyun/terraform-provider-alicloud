@@ -464,6 +464,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_account":                         resourceAlicloudAdbAccount(),
 			"alicloud_cen_flowlog":                         resourceAlicloudCenFlowlog(),
 			"alicloud_kms_secret":                          resourceAlicloudKmsSecret(),
+			"alicloud_eciopenapi_image_cache":              resourceAlicloudEciopenapiImageCache(),
 			"alicloud_maxcompute_project":                  resourceAlicloudMaxComputeProject(),
 		},
 
@@ -594,6 +595,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.AdbEndpoint = strings.TrimSpace(endpoints["adb"].(string))
 		config.CbnEndpoint = strings.TrimSpace(endpoints["cbn"].(string))
 		config.MaxComputeEndpoint = strings.TrimSpace(endpoints["maxcompute"].(string))
+		config.EciEndpoint = strings.TrimSpace(endpoints["eci"].(string))
 	}
 
 	if config.RamRoleArn != "" {
@@ -756,6 +758,7 @@ func init() {
 
 		"cbn_endpoint":        "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cbn endpoints.",
 		"maxcompute_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MaxCompute endpoints.",
+		"eci_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eci endpoints.",
 	}
 }
 
@@ -1110,6 +1113,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cbn"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["maxcompute"].(string)))
 
+	buf.WriteString(fmt.Sprintf("%s-", m["eci"].(string)))
 	return hashcode.String(buf.String())
 }
 
