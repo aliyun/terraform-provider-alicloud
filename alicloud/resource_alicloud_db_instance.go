@@ -660,7 +660,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{"Creating", "Running", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{"Processing"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, rdsService.RdsTaskStateRefreshFunc(d.Id(), "DeleteDBInstance"))
 	if _, err = stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
