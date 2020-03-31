@@ -15,8 +15,8 @@ import (
 )
 
 func init() {
-	resource.AddTestSweepers("alicloud_kms_keys", &resource.Sweeper{
-		Name: "alicloud_kms_keys",
+	resource.AddTestSweepers("alicloud_kms_key", &resource.Sweeper{
+		Name: "alicloud_kms_key",
 		F:    testSweepKmsKey,
 	})
 }

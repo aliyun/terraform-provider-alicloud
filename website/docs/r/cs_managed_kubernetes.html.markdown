@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud resource to manage container managed kubernetes cluster.
 ---
 
-# alicloud\_cs\_kubernetes
+# alicloud\_cs\_managed\_kubernetes
 
 This resource will help you to manage a ManagedKubernetes Cluster in Alibaba Cloud Kubernetes Service. 
 
@@ -190,7 +190,7 @@ You can get more information about addons on ACK web console. When you create a 
 
 #### Network
 * `pod_cidr` - (Required) [Flannel Specific] The CIDR block for the pod network when using Flannel. 
-* `pod_vswitch_ids` - (Required) [Terway Specific] The vswitches for the pod network when using Terway.Be careful the `pod_vswitch_ids` can not equal to `worker_vswtich_ids` or `master_vswtich_ids` but must be in same availability zones.
+* `pod_vswitch_ids` - (Required) [Terway Specific] The vswitches for the pod network when using Terway.Be careful the `pod_vswitch_ids` can not equal to `worker_vswtich_ids`.but must be in same availability zones.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true. Then openapi in Alibaba Cloud are not all on intranet, So turn this option on is a good choice.
 * `service_cidr` - (Optional) The CIDR block for the service network. It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `node_cidr_mask` - (Optional) The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24
@@ -249,7 +249,6 @@ The following attributes are exported:
 * `slb_intranet` - The ID of private load balancer where the current cluster master node is located.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
-* `master_nodes` - List of cluster master nodes. It contains several attributes to `Block Nodes`.
 * `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
 * `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
 * `version` - The Kubernetes server version for the cluster.
@@ -263,7 +262,6 @@ The following attributes are exported:
 ### Block Connections
 * `api_server_internet` - API Server Internet endpoint.
 * `api_server_intranet` - API Server Intranet endpoint.
-* `master_public_ip` - Master node SSH IP address.
 * `service_domain` - Service Access Domain.
 
 ## Import
