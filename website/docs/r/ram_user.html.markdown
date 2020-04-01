@@ -41,17 +41,12 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The original id is user name, but it is user id in 1.37.0+.
-* `name` - The user name.
-* `display_name` - The user display name.
-* `mobile` - The user phone number.
-* `email` - The user email.
-* `comments` - The user comments.
+* `id` - The ram user id.
 
 ## Import
 
-RAM user can be imported using the id or name, e.g.
+RAM user can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_ram_user.example user
+$ terraform import alicloud_ram_user.example 123456789xxx
 ```
