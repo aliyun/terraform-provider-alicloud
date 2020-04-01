@@ -465,6 +465,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_flowlog":                         resourceAlicloudCenFlowlog(),
 			"alicloud_kms_secret":                          resourceAlicloudKmsSecret(),
 			"alicloud_maxcompute_project":                  resourceAlicloudMaxComputeProject(),
+			"alicloud_kms_alias":                           resourceAlicloudKmsAlias(),
 		},
 
 		ConfigureFunc: providerConfigure,
