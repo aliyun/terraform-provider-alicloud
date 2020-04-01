@@ -386,3 +386,132 @@ func (s *LogService) WaitForLogtailAttachment(id string, status Status, timeout 
 		}
 	}
 }
+
+func (s *LogService) DescribeLogAlert(id string) (*sls.Alert, error) {
+	alert := &sls.Alert{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return alert, WrapError(err)
+	}
+	projectName, alertName := parts[0], parts[1]
+	var requestInfo *sls.Client
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			return slsClient.GetAlert(projectName, alertName)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetLogstoreAlert", raw, requestInfo, map[string]string{
+				"project":    projectName,
+				"alert_name": alertName,
+			})
+		}
+		alert, _ = raw.(*sls.Alert)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "JobNotExist"}) {
+			return alert, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return alert, WrapErrorf(err, DefaultErrorMsg, id, "GetLogstoreAlert", AliyunLogGoSdkERROR)
+	}
+
+	if alert == nil || alert.Name == "" {
+		return alert, WrapErrorf(Error(GetNotFoundMessage("LogstoreAlert", id)), NotFoundMsg, ProviderERROR)
+	}
+	return alert, nil
+}
+
+func (s *LogService) WaitForLogstoreAlert(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	name := parts[1]
+	for {
+		object, err := s.DescribeLogAlert(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Name == name && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Name, name, ProviderERROR)
+		}
+	}
+}
+
+func (s *LogService) CreateLogDashboard(project, name string) error {
+	dashboard := sls.Dashboard{
+		DashboardName: name,
+		ChartList:     []sls.Chart{},
+	}
+	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return nil, slsClient.CreateDashboard(project, dashboard)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			if err.(*sls.Error).Message == "specified dashboard already exists" {
+				return nil
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("CreateLogDashboard", raw, map[string]string{
+				"project":        project,
+				"dashboard_name": name,
+			})
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func CreateDashboard(project, name string, client *sls.Client) error {
+	dashboard := sls.Dashboard{
+		DashboardName: name,
+		ChartList:     []sls.Chart{},
+	}
+	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		err := client.CreateDashboard(project, dashboard)
+		if err != nil {
+			if err.(*sls.Error).Message == "specified dashboard already exists" {
+				return nil
+			}
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+
+		}
+		if debugOn() {
+			addDebug("CreateLogDashboard", dashboard, map[string]string{
+				"project":        project,
+				"dashboard_name": name,
+			})
+		}
+		return nil
+	})
+	return err
+}
