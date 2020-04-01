@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -196,23 +197,30 @@ func (s *RamService) DescribeRamUser(id string) (*ram.UserInGetUser, error) {
 	user := &ram.UserInGetUser{}
 	listUsersRequest := ram.CreateListUsersRequest()
 	listUsersRequest.RegionId = s.client.RegionId
+	listUsersRequest.MaxItems = requests.NewInteger(100)
 	var userName string
-	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.ListUsers(listUsersRequest)
-	})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
-			return user, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+
+	for {
+		raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListUsers(listUsersRequest)
+		})
+		if err != nil {
+			return user, WrapErrorf(err, DefaultErrorMsg, id, listUsersRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		return user, WrapErrorf(err, DefaultErrorMsg, id, listUsersRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(listUsersRequest.GetActionName(), raw, listUsersRequest.RegionId, listUsersRequest)
-	users, _ := raw.(*ram.ListUsersResponse)
-	for _, user := range users.Users.User {
-		if user.UserId == id {
-			userName = user.UserName
+		addDebug(listUsersRequest.GetActionName(), raw, listUsersRequest.RegionId, listUsersRequest)
+		response, _ := raw.(*ram.ListUsersResponse)
+		for _, user := range response.Users.User {
+			if user.UserId == id {
+				userName = user.UserName
+				break
+			}
 		}
+		if userName != "" || !response.IsTruncated {
+			break
+		}
+		listUsersRequest.Marker = response.Marker
 	}
+
 	if userName == "" {
 		// the d.Id() has changed from userName to userId since v1.44.0, add the logic for backward compatibility.
 		userName = id
@@ -220,7 +228,7 @@ func (s *RamService) DescribeRamUser(id string) (*ram.UserInGetUser, error) {
 	getUserRequest := ram.CreateGetUserRequest()
 	getUserRequest.RegionId = s.client.RegionId
 	getUserRequest.UserName = userName
-	raw, err = s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.GetUser(getUserRequest)
 	})
 	if err != nil {
