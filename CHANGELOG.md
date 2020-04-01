@@ -1,3 +1,4 @@
+## 1.78.0 (Unreleased)
 ## 1.77.0 (April 01, 2020)
 
 - **New Resource:** `alicloud_kms_alias` ([#2307](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2307))
