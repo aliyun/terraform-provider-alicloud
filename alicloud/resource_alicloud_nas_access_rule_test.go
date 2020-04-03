@@ -11,7 +11,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudNas_AccessRule_update(t *testing.T) {
+func TestAccAlicloudNasAccessRule_update(t *testing.T) {
 	var v nas.DescribeAccessRulesAccessRule1
 	rand := acctest.RandIntRange(10000, 999999)
 	resourceID := "alicloud_nas_access_rule.default"
@@ -91,6 +91,42 @@ func TestAccAlicloudNas_AccessRule_update(t *testing.T) {
 						"source_cidr_ip":    "172.168.1.0/16",
 						"rw_access_type":    "RDONLY",
 						"user_access_type":  "root_squash",
+						"access_group_name": fmt.Sprintf("tf-testAccNasConfigName-%d", rand),
+						"priority":          "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudNasAccessRule_Multi(t *testing.T) {
+	var v nas.DescribeAccessRulesAccessRule1
+	rand := acctest.RandIntRange(10000, 999999)
+	resourceID := "alicloud_nas_access_rule.default.4"
+	ra := resourceAttrInit(resourceID, map[string]string{})
+	serviceFunc := func() interface{} {
+		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceID, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceID,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckAccessRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNasAccessRuleMulti(rand, acctest.RandIntRange(5, 20)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_cidr_ip":    "168.1.1.0/16",
+						"rw_access_type":    "RDWR",
+						"user_access_type":  "no_squash",
 						"access_group_name": fmt.Sprintf("tf-testAccNasConfigName-%d", rand),
 						"priority":          "2",
 					}),
@@ -209,4 +245,21 @@ func testAccNasAccessRuleConfigUpdatepriority(rand int) string {
                 priority = 10
  
         }`, rand)
+}
+
+func testAccNasAccessRuleMulti(rand, count int) string {
+	return fmt.Sprintf(`
+        resource "alicloud_nas_access_group" "default" {
+                name = "tf-testAccNasConfigName-%d"
+                type = "Vpc"
+                description = "tf-testAccNasConfig"
+        }
+        resource "alicloud_nas_access_rule" "default" {
+				count = %d
+                access_group_name = "${alicloud_nas_access_group.default.id}"
+                source_cidr_ip = "168.1.1.0/16"
+                rw_access_type = "RDWR"
+                user_access_type = "no_squash"
+                priority = 2
+        }`, rand, count)
 }
