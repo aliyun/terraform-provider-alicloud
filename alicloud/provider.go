@@ -266,6 +266,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbase_zones":                       dataSourceAlicloudHBaseZones(),
 			"alicloud_adb_clusters":                      dataSourceAlicloudAdbClusters(),
 			"alicloud_adb_zones":                         dataSourceAlicloudAdbZones(),
+			"alicloud_cen_flowlogs":                      dataSourceAlicloudCenFlowlog(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),

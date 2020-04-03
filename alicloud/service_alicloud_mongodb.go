@@ -325,6 +325,22 @@ func (s *MongoDBService) DescribeMongoDBTDEInfo(id string) (*dds.DescribeDBInsta
 	return response, nil
 }
 
+func (s *MongoDBService) DescribeDBInstanceSSL(id string) (*dds.DescribeDBInstanceSSLResponse, error) {
+	response := &dds.DescribeDBInstanceSSLResponse{}
+	request := dds.CreateDescribeDBInstanceSSLRequest()
+	request.RegionId = s.client.RegionId
+	request.DBInstanceId = id
+	raw, err := s.client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
+		return ddsClient.DescribeDBInstanceSSL(request)
+	})
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ = raw.(*dds.DescribeDBInstanceSSLResponse)
+	return response, nil
+}
+
 func (s *MongoDBService) MotifyMongoDBBackupPolicy(d *schema.ResourceData) error {
 	if err := s.WaitForMongoDBInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
 		return WrapError(err)

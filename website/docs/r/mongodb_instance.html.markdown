@@ -85,6 +85,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `tde_status` - (Optional, ForceNew, Available in 1.73.0+) The TDE(Transparent Data Encryption) status.
 * `maintain_start_time` - (Optional, Available in v1.56.0+) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available in v1.56.0+) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
+* `ssl_action` - (Optional, Available in v1.78.0+) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate.
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
 
 -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
@@ -96,6 +97,7 @@ The following attributes are exported:
 * `id` - The ID of the MongoDB.
 * `retention_period` - Instance log backup retention days. Available in 1.42.0+.
 * `replica_set_name` - The name of the mongo replica set
+* `ssl_status` - Status of the SSL feature. `Open`: SSL is turned on; `Closed`: SSL is turned off.
 
 ### Timeouts
 
