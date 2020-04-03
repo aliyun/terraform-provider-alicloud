@@ -183,3 +183,25 @@ func (s *KmsService) setResourceTags(d *schema.ResourceData, resourceType string
 	}
 	return nil
 }
+
+func (s *KmsService) DescribeKmsAlias(id string) (object kms.KeyMetadata, err error) {
+	request := kms.CreateDescribeKeyRequest()
+	request.RegionId = s.client.RegionId
+
+	request.KeyId = id
+
+	raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+		return kmsClient.DescribeKey(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Forbidden.AliasNotFound", "Forbidden.KeyNotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("KmsAlias", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*kms.DescribeKeyResponse)
+	return response.KeyMetadata, nil
+}

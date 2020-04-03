@@ -51,8 +51,9 @@ func resourceAlicloudKmsSecret() *schema.Resource {
 				},
 			},
 			"secret_data": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:      schema.TypeString,
+				Required:  true,
+				Sensitive: true,
 			},
 			"secret_data_type": {
 				Type:         schema.TypeString,

@@ -1,4 +1,19 @@
-## 1.77.0 (Unreleased)
+## 1.78.0 (Unreleased)
+## 1.77.0 (April 01, 2020)
+
+- **New Resource:** `alicloud_kms_alias` ([#2307](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2307))
+- **New Resource:** `alicloud_maxcompute_project` ([#1681](https://github.com/terraform-providers/terraform-provider-alicloud/issues/1681))
+
+IMPROVEMENTS:
+
+- improve(kms_secret): improve tags ([#2313](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2313))
+
+BUG FIXES:
+
+- fix(ram_user): resolve importing ram user notfound bug ([#2319](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2319))
+- fix adb ci bug ([#2312](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2312))
+- fix(db_instance): resolve postgres testcase ([#2311](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2311))
+
 ## 1.76.0 (March 27, 2020)
 
 - **New Resource:** `alicloud_kms_secret` ([#2310](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2310))
@@ -10,7 +25,7 @@ IMPROVEMENTS:
 - add security group id and TDE for mongodb sharding ([#2298](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2298))
 - improve cen_instance and cen_flowlog ([#2297](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2297))
 - added support for isp_cities in site_monito ([#2296](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2296))
-- add security group id for kvstore [GH-]
+- add security group id for kvstore ([#[#2292](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2292)](https://github.com/terraform-providers/terraform-provider-alicloud/pull/2292))
 - support parameter DesiredCapacity ([#2277](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2277))
 
 BUG FIXES:
