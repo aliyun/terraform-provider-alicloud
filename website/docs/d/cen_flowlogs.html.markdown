@@ -34,15 +34,13 @@ The following arguments are supported:
 
 * `ids` - (Optional) A list of CEN flow log IDs.
 * `name_regex` - (Optional) A regex string to filter CEN flow logs by name.
-* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-
-
-* `cen_id` - (Required, ForceNew) The ID of the CEN Instance.
-* `project_name` - (Required, ForceNew) The name of the SLS project.
-* `log_store_name` - (Required, ForceNew) The name of the log store which is in the  `project_name` SLS project.
+* `cen_id` - (Optional) The ID of the CEN Instance.
+* `project_name` - (Optional) The name of the SLS project.
+* `log_store_name` - (Optional) The name of the log store which is in the  `project_name` SLS project.
 * `flow_log_name` - (Optional) The name of flowlog.
 * `description` - (Optional) The description of flowlog.
 * `status` - (Optional) The status of flowlog. Valid values: ["Active", "Inactive"]. Default to "Active".
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 

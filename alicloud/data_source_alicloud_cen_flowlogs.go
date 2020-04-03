@@ -10,10 +10,20 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func dataSourceAlicloudCenFlowlog() *schema.Resource {
+func dataSourceAlicloudCenFlowlogs() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudCenFlowlogRead,
 		Schema: map[string]*schema.Schema{
+			"cen_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -30,6 +40,23 @@ func dataSourceAlicloudCenFlowlog() *schema.Resource {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
+			},
+			"log_store_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"project_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Active", "Inactive"}, false),
+				Default:      "Active",
 			},
 			"flowlogs": {
 				Type:     schema.TypeList,
@@ -79,6 +106,25 @@ func dataSourceAlicloudCenFlowlogRead(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 
 	request := cbn.CreateDescribeFlowlogsRequest()
+	if v, ok := d.GetOk("cen_id"); ok {
+		request.CenId = v.(string)
+	}
+	if v, ok := d.GetOk("description"); ok {
+		request.Description = v.(string)
+	}
+	if v, ok := d.GetOk("flow_log_name"); ok {
+		request.FlowLogName = v.(string)
+	}
+	if v, ok := d.GetOk("log_store_name"); ok {
+		request.LogStoreName = v.(string)
+	}
+	if v, ok := d.GetOk("project_name"); ok {
+		request.ProjectName = v.(string)
+	}
+	request.RegionId = client.RegionId
+	if v, ok := d.GetOk("status"); ok {
+		request.Status = v.(string)
+	}
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	var objects []cbn.FlowLog
