@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -114,6 +115,8 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.DescribeAccessRule
 		return
 	}
 	request.AccessGroupName = parts[0]
+	request.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(PageSizeXLarge)
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
@@ -136,7 +139,17 @@ func (s *NasService) DescribeNasAccessRule(id string) (fs nas.DescribeAccessRule
 				return nil
 			}
 		}
-		return resource.NonRetryableError(WrapErrorf(Error(GetNotFoundMessage("NasAccessRule", id)), NotFoundMsg, ProviderERROR))
+		err = WrapErrorf(Error(GetNotFoundMessage("NasAccessRule", id)), NotFoundMsg, ProviderERROR)
+		if len(response.AccessRules.AccessRule) < PageSizeXLarge {
+			return resource.NonRetryableError(err)
+		}
+
+		page, e := getNextpageNumber(request.PageNumber)
+		if e != nil {
+			return resource.NonRetryableError(WrapError(e))
+		}
+		request.PageNumber = page
+		return resource.RetryableError(err)
 	})
 	return fs, WrapError(err)
 }
