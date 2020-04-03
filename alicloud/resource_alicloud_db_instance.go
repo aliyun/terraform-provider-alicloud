@@ -372,6 +372,20 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("auto_upgrade_minor_version")
 	}
 
+	if d.HasChange("security_ip_mode") && d.Get("security_ip_mode").(string) == SafetyMode {
+		request := rds.CreateMigrateSecurityIPModeRequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.MigrateSecurityIPMode(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("security_ip_mode")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudDBInstanceRead(d, meta)
@@ -406,20 +420,6 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 		d.SetPartial("security_ips")
-	}
-
-	if d.HasChange("security_ip_mode") && d.Get("security_ip_mode").(string) == SafetyMode {
-		request := rds.CreateMigrateSecurityIPModeRequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = d.Id()
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.MigrateSecurityIPMode(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("security_ip_mode")
 	}
 
 	if d.HasChange("sql_collector_status") {
