@@ -1,3 +1,4 @@
+## 1.79.0 (Unreleased)
 ## 1.78.0 (April 03, 2020)
 
 - **New Resource:** `alicloud_log_alert` ([#2325](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2325))
