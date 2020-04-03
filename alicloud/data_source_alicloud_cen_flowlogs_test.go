@@ -13,12 +13,20 @@ import (
 
 func TestAccAlicloudCenFlowlogsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
-	nameRegexConf := dataSourceTestAccConfig{
+	cenIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_cen_flowlog.default.flow_log_name}"`,
+			"cen_id": `"${alicloud_cen_flowlog.default.cen_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_cen_flowlog.default.flow_log_name}-fake"`,
+			"cen_id": `"${alicloud_cen_flowlog.default.cen_id}-fake"`,
+		}),
+	}
+	descriptionConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
+			"description": `"${alicloud_cen_flowlog.default.description}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
+			"description": `"${alicloud_cen_flowlog.default.description}-fake"`,
 		}),
 	}
 	idsConf := dataSourceTestAccConfig{
@@ -29,10 +37,49 @@ func TestAccAlicloudCenFlowlogsDataSource(t *testing.T) {
 			"ids": `["${alicloud_cen_flowlog.default.id}-fake"]`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
+	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_cen_flowlog.default.flow_log_name}"`,
-			"ids":        `["${alicloud_cen_flowlog.default.id}"]`,
+		}),
+		fakeConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_cen_flowlog.default.flow_log_name}-fake"`,
+		}),
+	}
+	logStoreNameConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
+			"log_store_name": `"${alicloud_cen_flowlog.default.log_store_name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
+			"log_store_name": `"${alicloud_cen_flowlog.default.log_store_name}-fake"`,
+		}),
+	}
+	projectNameConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
+			"project_name": `"${alicloud_cen_flowlog.default.project_name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
+			"project_name": `"${alicloud_cen_flowlog.default.project_name}-fake"`,
+		}),
+	}
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
+			"status":     `"Active"`,
+			"name_regex": `"${alicloud_cen_flowlog.default.flow_log_name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
+			"status":     `"Inactive"`,
+			"name_regex": `"${alicloud_cen_flowlog.default.flow_log_name}"`,
+		}),
+	}
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
+			"cen_id":         `"${alicloud_cen_flowlog.default.cen_id}"`,
+			"description":    `"${alicloud_cen_flowlog.default.description}"`,
+			"name_regex":     `"${alicloud_cen_flowlog.default.flow_log_name}"`,
+			"ids":            `["${alicloud_cen_flowlog.default.id}"]`,
+			"log_store_name": `"${alicloud_cen_flowlog.default.log_store_name}"`,
+			"project_name":   `"${alicloud_cen_flowlog.default.project_name}"`,
+			"status":         `"Active"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_cen_flowlog.default.flow_log_name}-fake"`,
@@ -43,7 +90,7 @@ func TestAccAlicloudCenFlowlogsDataSource(t *testing.T) {
 		testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 	}
-	cenFlowlogsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+	cenFlowlogsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, cenIdConf, descriptionConf, idsConf, nameRegexConf, logStoreNameConf, projectNameConf, statusConf, allConf)
 }
 
 func testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand int, attrMap map[string]string) string {
