@@ -385,6 +385,73 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("security_ip_mode")
 	}
+	if d.HasChange("sql_collector_status") {
+		request := rds.CreateModifySQLCollectorPolicyRequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		if d.Get("sql_collector_status").(string) == "Enabled" {
+			request.SQLCollectorStatus = "Enable"
+		} else {
+			request.SQLCollectorStatus = d.Get("sql_collector_status").(string)
+		}
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifySQLCollectorPolicy(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("sql_collector_status")
+	}
+
+	if d.Get("sql_collector_status").(string) == "Enabled" && d.HasChange("sql_collector_config_value") && d.Get("sql_collector_config_value").(string) != "1" {
+		request := rds.CreateModifySQLCollectorRetentionRequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		request.ConfigValue = strconv.Itoa(d.Get("sql_collector_config_value").(int))
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifySQLCollectorRetention(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("sql_collector_config_value")
+	}
+
+	if d.HasChange("sql_collector_status") {
+		request := rds.CreateModifySQLCollectorPolicyRequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		if d.Get("sql_collector_status").(string) == "Enabled" {
+			request.SQLCollectorStatus = "Enable"
+		} else {
+			request.SQLCollectorStatus = d.Get("sql_collector_status").(string)
+		}
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifySQLCollectorPolicy(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("sql_collector_status")
+	}
+
+	if d.Get("sql_collector_status").(string) == "Enabled" && d.HasChange("sql_collector_config_value") {
+		request := rds.CreateModifySQLCollectorRetentionRequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		request.ConfigValue = strconv.Itoa(d.Get("sql_collector_config_value").(int))
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifySQLCollectorRetention(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("sql_collector_config_value")
+	}
 
 	if d.IsNewResource() {
 		d.Partial(false)
@@ -420,40 +487,6 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 		d.SetPartial("security_ips")
-	}
-
-	if d.HasChange("sql_collector_status") {
-		request := rds.CreateModifySQLCollectorPolicyRequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = d.Id()
-		if d.Get("sql_collector_status").(string) == "Enabled" {
-			request.SQLCollectorStatus = "Enable"
-		} else {
-			request.SQLCollectorStatus = d.Get("sql_collector_status").(string)
-		}
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.ModifySQLCollectorPolicy(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("sql_collector_status")
-	}
-
-	if d.Get("sql_collector_status").(string) == "Enabled" && d.HasChange("sql_collector_config_value") && d.Get("sql_collector_config_value").(string) != "1" {
-		request := rds.CreateModifySQLCollectorRetentionRequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = d.Id()
-		request.ConfigValue = strconv.Itoa(d.Get("sql_collector_config_value").(int))
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.ModifySQLCollectorRetention(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("sql_collector_config_value")
 	}
 
 	update := false
