@@ -139,5 +139,5 @@ The following arguments are exported:
 Function Compute function can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_fc_service.foo my-fc-service:hello-world
+$ terraform import alicloud_fc_function.foo my-fc-service:hello-world
 ```

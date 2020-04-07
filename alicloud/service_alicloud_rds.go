@@ -60,6 +60,25 @@ func (s *RdsService) DescribeDBInstance(id string) (*rds.DBInstanceAttributeInDe
 	return &response.Items.DBInstanceAttribute[0], nil
 }
 
+func (s *RdsService) DescribeTasks(id string) (task *rds.DescribeTasksResponse, err error) {
+	request := rds.CreateDescribeTasksRequest()
+	request.RegionId = s.client.RegionId
+	request.DBInstanceId = id
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DescribeTasks(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return task, WrapErrorf(err, NotFoundMsg, ProviderERROR)
+		}
+		return task, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*rds.DescribeTasksResponse)
+
+	return response, nil
+}
+
 func (s *RdsService) DescribeDBReadonlyInstance(id string) (*rds.DBInstanceAttributeInDescribeDBInstanceAttribute, error) {
 	instance := &rds.DBInstanceAttributeInDescribeDBInstanceAttribute{}
 	request := rds.CreateDescribeDBInstanceAttributeRequest()
@@ -906,6 +925,28 @@ func (s *RdsService) RdsDBInstanceStateRefreshFunc(id string, failStates []strin
 			}
 		}
 		return object, object.DBInstanceStatus, nil
+	}
+}
+
+func (s *RdsService) RdsTaskStateRefreshFunc(id string, taskAction string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeTasks(id)
+		if err != nil {
+
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, t := range object.Items.TaskProgressInfo {
+			if t.TaskAction == taskAction {
+				return object, t.Status, nil
+			}
+		}
+
+		return object, "", nil
 	}
 }
 

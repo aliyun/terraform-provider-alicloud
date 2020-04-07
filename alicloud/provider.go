@@ -266,7 +266,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbase_zones":                       dataSourceAlicloudHBaseZones(),
 			"alicloud_adb_clusters":                      dataSourceAlicloudAdbClusters(),
 			"alicloud_adb_zones":                         dataSourceAlicloudAdbZones(),
-			"alicloud_cen_flowlogs":                      dataSourceAlicloudCenFlowlog(),
+			"alicloud_cen_flowlogs":                      dataSourceAlicloudCenFlowlogs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -395,6 +395,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_log_machine_group":                   resourceAlicloudLogMachineGroup(),
 			"alicloud_logtail_config":                      resourceAlicloudLogtailConfig(),
 			"alicloud_logtail_attachment":                  resourceAlicloudLogtailAttachment(),
+			"alicloud_log_alert":                           resourceAlicloudLogAlert(),
 			"alicloud_fc_service":                          resourceAlicloudFCService(),
 			"alicloud_fc_function":                         resourceAlicloudFCFunction(),
 			"alicloud_fc_trigger":                          resourceAlicloudFCTrigger(),

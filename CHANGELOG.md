@@ -1,4 +1,21 @@
-## 1.78.0 (Unreleased)
+## 1.79.0 (Unreleased)
+## 1.78.0 (April 03, 2020)
+
+- **New Resource:** `alicloud_log_alert` ([#2325](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2325))
+- **Data Source:** `alicloud_cen_flowlogs` ([#2336](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2336))
+
+IMPROVEMENTS:
+
+- improve(cen_flowlogs): add more parameters ([#2338](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2338))
+- improve(mongodb): supported ssl setting ([#2335](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2335))
+- Add statistics attribute support ErrorCodeMaximum for cms ([#2328](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2328))
+- alicloud_kms_secret: mark secret_data as sensitive ([#2322](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2322))
+
+BUG FIXES:
+
+- fix create rds instance bug ([#2334](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2334))
+- fix(nas_rule): resolve pagesize bug ([#2330](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2330))
+
 ## 1.77.0 (April 01, 2020)
 
 - **New Resource:** `alicloud_kms_alias` ([#2307](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2307))
@@ -25,7 +42,7 @@ IMPROVEMENTS:
 - add security group id and TDE for mongodb sharding ([#2298](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2298))
 - improve cen_instance and cen_flowlog ([#2297](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2297))
 - added support for isp_cities in site_monito ([#2296](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2296))
-- add security group id for kvstore ([#[#2292](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2292)](https://github.com/terraform-providers/terraform-provider-alicloud/pull/2292))
+- add security group id for kvstore ([#2292](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2292)](https://github.com/terraform-providers/terraform-provider-alicloud/pull/2292))
 - support parameter DesiredCapacity ([#2277](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2277))
 
 BUG FIXES:
