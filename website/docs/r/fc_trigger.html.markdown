@@ -93,6 +93,7 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
 ```
 
 MNS topic trigger:
+
 ```
 variable "name" {
   default = "fctriggermnstopic"
@@ -211,6 +212,7 @@ resource "alicloud_fc_trigger" "foo" {
 ```
 
 CDN events trigger:
+
 ```
 variable "name" {
     default = "fctriggercdneventsconfig"
@@ -361,5 +363,5 @@ The following arguments are exported:
 Function Compute trigger can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_fc_service.foo my-fc-service:hello-world:hello-trigger
+$ terraform import alicloud_fc_trigger.foo my-fc-service:hello-world:hello-trigger
 ```
