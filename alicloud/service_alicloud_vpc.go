@@ -110,6 +110,27 @@ func (s *VpcService) DescribeVpc(id string) (v vpc.Vpc, err error) {
 	return
 }
 
+func (s *VpcService) VpcStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpc(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+
+		return object, object.Status, nil
+	}
+}
+
 func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
 	request := vpc.CreateDescribeVSwitchAttributesRequest()
 	request.RegionId = s.client.RegionId
@@ -135,6 +156,27 @@ func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributes
 		return nil
 	})
 	return
+}
+
+func (s *VpcService) VSwitchStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVSwitch(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+
+		return object, object.Status, nil
+	}
 }
 
 func (s *VpcService) DescribeSnatEntry(id string) (snat vpc.SnatTableEntry, err error) {
@@ -520,27 +562,6 @@ func (s *VpcService) DescribeRouteTableAttachment(id string) (v vpc.RouterTableL
 		return WrapErrorf(Error(GetNotFoundMessage("RouteTableAttachment", id)), NotFoundMsg, ProviderERROR)
 	})
 	return v, WrapError(err)
-}
-
-func (s *VpcService) WaitForVpc(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeVpc(id)
-		if err != nil {
-			if NotFoundError(err) && status == Deleted {
-				return nil
-			}
-			return WrapError(err)
-		}
-		if object.Status == string(status) {
-			break
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-	}
-	return nil
 }
 
 func (s *VpcService) WaitForVSwitch(id string, status Status, timeout int) error {

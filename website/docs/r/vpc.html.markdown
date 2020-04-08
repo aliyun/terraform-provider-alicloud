@@ -39,6 +39,15 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, ForceNew, Available in 1.40.0+) The Id of resource group which the VPC belongs.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 
+### Timeouts
+
+-> **NOTE:** Available in 1.79.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the vpc (until it reaches the initial `Available` status). 
+* `delete` - (Defaults to 10 mins) Used when terminating the vpc. 
+
 ## Attributes Reference
 
 The following attributes are exported:
