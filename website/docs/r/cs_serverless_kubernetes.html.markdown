@@ -77,7 +77,7 @@ The following arguments are supported:
 * `vswitch_id` - (Required, ForceNew) The vswitch where new kubernetes cluster will be located. Specify one vswitch's id, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true.
 * `endpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
-* `private_zone` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
+* `private_zone` - (Optional, ForceNew) Enable Privatezone if you need to use the service discovery feature within the serverless cluster. Default to false.
 * `deletion_protection` - (Optional, ForceNew) Whether enable the deletion protection or not.
     - true: Enable deletion protection.
     - false: Disable deletion protection.
