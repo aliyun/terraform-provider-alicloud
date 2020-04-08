@@ -248,7 +248,8 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		if err := invoker.Run(func() error {
 			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 				requestInfo = csClient
-				return csClient.DescribeClusterUserConfig(d.Id(), d.Get("endpoint_public_access_enabled").(bool))
+				publicAccessEnabled := d.Get("endpoint_public_access_enabled").(bool)
+				return csClient.DescribeClusterUserConfig(d.Id(), !publicAccessEnabled)
 			})
 			response = raw
 			return err
