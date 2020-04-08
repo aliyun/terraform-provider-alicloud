@@ -18,7 +18,10 @@ func resourceAliyunSubnet() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"availability_zone": {
 				Type:     schema.TypeString,
@@ -88,9 +91,12 @@ func resourceAliyunSwitchCreate(d *schema.ResourceData, meta interface{}) error 
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vswitch", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	if err := vpcService.WaitForVSwitch(d.Id(), Available, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
+
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, vpcService.VSwitchStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return resourceAliyunSwitchUpdate(d, meta)
 }
 
@@ -161,7 +167,7 @@ func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error 
 	request := vpc.CreateDeleteVSwitchRequest()
 	request.RegionId = client.RegionId
 	request.VSwitchId = d.Id()
-	err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DeleteVSwitch(request)
 		})
@@ -181,5 +187,11 @@ func resourceAliyunSwitchDelete(d *schema.ResourceData, meta interface{}) error 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(vpcService.WaitForVSwitch(d.Id(), Deleted, DefaultTimeout))
+
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Second, vpcService.VSwitchStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return nil
 }

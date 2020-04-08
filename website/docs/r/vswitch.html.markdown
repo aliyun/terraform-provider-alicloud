@@ -44,6 +44,15 @@ The following arguments are supported:
 * `description` - (Optional) The switch description. Defaults to null.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 
+### Timeouts
+
+-> **NOTE:** Available in 1.79.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the vswitch (until it reaches the initial `Available` status). 
+* `delete` - (Defaults to 10 mins) Used when terminating the vswitch. 
+
 ## Attributes Reference
 
 The following attributes are exported:
