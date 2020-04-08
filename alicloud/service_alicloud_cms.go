@@ -34,21 +34,33 @@ func (s *CmsService) BuildCmsAlarmRequest(id string) *requests.CommonRequest {
 func (s *CmsService) DescribeAlarm(id string) (alarm cms.Alarm, err error) {
 
 	request := cms.CreateDescribeMetricRuleListRequest()
+	request.PageSize = strconv.Itoa(PageSizeLarge)
+	request.Page = strconv.Itoa(1)
 
-	request.RuleIds = id
-	raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.DescribeMetricRuleList(request)
-	})
-	if err != nil {
-		return alarm, err
+	for i := 1; ; i++ {
+		request.Page = strconv.Itoa(i)
+		raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.DescribeMetricRuleList(request)
+		})
+		if err != nil {
+			return alarm, WrapError(err)
+		}
+		response, _ := raw.(*cms.DescribeMetricRuleListResponse)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		if len(response.Alarms.Alarm) < 1 {
+			return alarm, GetNotFoundErrorFromString(GetNotFoundMessage("Alarm Rule", id))
+		}
+		for _, v := range response.Alarms.Alarm {
+			if v.RuleId == id {
+				return v, nil
+			}
+		}
+
+		if len(response.Alarms.Alarm) < PageSizeLarge {
+			break
+		}
 	}
-	response, _ := raw.(*cms.DescribeMetricRuleListResponse)
-
-	if len(response.Alarms.Alarm) < 1 {
-		return alarm, GetNotFoundErrorFromString(GetNotFoundMessage("Alarm Rule", id))
-	}
-
-	return response.Alarms.Alarm[0], nil
+	return alarm, GetNotFoundErrorFromString(GetNotFoundMessage("Alarm Rule", id))
 }
 
 func (s *CmsService) WaitForCmsAlarm(id string, enabled bool, timeout int) error {
