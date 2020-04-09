@@ -290,9 +290,12 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 	request.DBInstanceId = d.Id()
 	request.Forcerestart = requests.NewBoolean(d.Get("force_restart").(bool))
 	config := make(map[string]string)
-	documented := d.Get(attribute).(*schema.Set).List()
-	if len(documented) > 0 {
-		for _, i := range documented {
+	allConfig := make(map[string]string)
+	o, n := d.GetChange(attribute)
+	os, ns := o.(*schema.Set), n.(*schema.Set)
+	add := ns.Difference(os).List()
+	if len(add) > 0 {
+		for _, i := range add {
 			key := i.(map[string]interface{})["name"].(string)
 			value := i.(map[string]interface{})["value"].(string)
 			config[key] = value
@@ -341,7 +344,12 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		// wait instance parameter expect after modifying
-		if err := s.WaitForDBParameter(d.Id(), DefaultTimeoutMedium, config); err != nil {
+		for _, i := range ns.List() {
+			key := i.(map[string]interface{})["name"].(string)
+			value := i.(map[string]interface{})["value"].(string)
+			allConfig[key] = value
+		}
+		if err := s.WaitForDBParameter(d.Id(), DefaultTimeoutMedium, allConfig); err != nil {
 			return WrapError(err)
 		}
 	}
