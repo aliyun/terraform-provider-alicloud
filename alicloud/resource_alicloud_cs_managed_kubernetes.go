@@ -222,6 +222,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"version": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			// cpu policy options of kubelet
 			"cpu_policy": {
