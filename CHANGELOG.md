@@ -1,3 +1,4 @@
+## 1.80.0 (Unreleased)
 ## 1.79.0 (April 10, 2020)
 
 - **New Resource:** `alicloud_auto_provisioning_group` ([#2303](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2303))
