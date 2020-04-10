@@ -81,6 +81,8 @@ type Config struct {
 	SkipRegionValidation bool
 	ConfigurationSource  string
 	CbnEndpoint          string
+	AlidnsEndpoint       string
+	BssopenapiEndpoint   string
 }
 
 func (c *Config) loadAndValidate() error {

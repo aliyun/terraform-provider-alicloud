@@ -469,6 +469,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kms_secret":                          resourceAlicloudKmsSecret(),
 			"alicloud_maxcompute_project":                  resourceAlicloudMaxComputeProject(),
 			"alicloud_kms_alias":                           resourceAlicloudKmsAlias(),
+			"alicloud_alidns_instance":                     resourceAlicloudAlidnsInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -598,6 +599,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.AdbEndpoint = strings.TrimSpace(endpoints["adb"].(string))
 		config.CbnEndpoint = strings.TrimSpace(endpoints["cbn"].(string))
 		config.MaxComputeEndpoint = strings.TrimSpace(endpoints["maxcompute"].(string))
+		config.AlidnsEndpoint = strings.TrimSpace(endpoints["alidns"].(string))
 	}
 
 	if config.RamRoleArn != "" {
@@ -760,6 +762,8 @@ func init() {
 
 		"cbn_endpoint":        "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cbn endpoints.",
 		"maxcompute_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MaxCompute endpoints.",
+
+		"alidns_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom alidns endpoints.",
 	}
 }
 
@@ -804,6 +808,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"alidns": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["alidns_endpoint"],
+				},
+
 				"cbn": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1114,6 +1125,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cbn"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["maxcompute"].(string)))
 
+	buf.WriteString(fmt.Sprintf("%s-", m["alidns"].(string)))
 	return hashcode.String(buf.String())
 }
 

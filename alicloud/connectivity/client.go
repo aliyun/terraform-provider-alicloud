@@ -127,6 +127,8 @@ type AliyunClient struct {
 	cbnConn                      *cbn.Client
 	kmsConn                      *kms.Client
 	maxcomputeconn               *maxcompute.Client
+	alidnsConn                   *alidns.Client
+	bssopenapiConn               *bssopenapi.Client
 }
 
 type ApiVersion string
@@ -1614,4 +1616,29 @@ func (client *AliyunClient) WithMaxComputeClient(do func(*maxcompute.Client) (in
 	}
 
 	return do(client.maxcomputeconn)
+}
+
+func (client *AliyunClient) WithAlidnsClient(do func(*alidns.Client) (interface{}, error)) (interface{}, error) {
+	if client.alidnsConn == nil {
+		endpoint := client.config.AlidnsEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, AlidnsCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(AlidnsCode), endpoint)
+		}
+
+		alidnsConn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Alidnsclient: %#v", err)
+		}
+		alidnsConn.AppendUserAgent(Terraform, terraformVersion)
+		alidnsConn.AppendUserAgent(Provider, providerVersion)
+		alidnsConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.alidnsConn = alidnsConn
+	}
+	return do(client.alidnsConn)
 }
