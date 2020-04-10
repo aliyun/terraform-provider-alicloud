@@ -1,28 +1,28 @@
-## 1.79.0 (Unreleased)
+## 1.79.0 (April 10, 2020)
 
-- **New Resource:** `alicloud_auto_provisioning_group` [GH-2303]
+- **New Resource:** `alicloud_auto_provisioning_group` ([#2303](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2303))
 
 IMPROVEMENTS:
 
-- optimize retryable request for alikafka [GH-2350]
-- Update data_source_alicloud_fc_triggers.go [GH-2348]
-- Add error retry in delete method [GH-2346]
-- improve(vpc): vpc and vswitch supported timeouts settings [GH-2345]
-- Update fc_function.html.markdown [GH-2342]
-- Update fc_trigger.html.markdown [GH-2341]
-- improve(polardb): modify the vsw specified [GH-2261]
-- eip associate add clientToken support [GH-2247]
+- optimize retryable request for alikafka ([#2350](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2350))
+- Update data_source_alicloud_fc_triggers.go ([#2348](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2348))
+- Add error retry in delete method ([#2346](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2346))
+- improve(vpc): vpc and vswitch supported timeouts settings ([#2345](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2345))
+- Update fc_function.html.markdown ([#2342](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2342))
+- Update fc_trigger.html.markdown ([#2341](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2341))
+- improve(polardb): modify the vsw specified ([#2261](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2261))
+- eip associate add clientToken support ([#2247](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2247))
 
 BUG FIXES:
 
-- fix(polardb): fix the bug of parameters modification [GH-2354]
-- fix(ram): fix datasource ram users convince bug [GH-2352]
-- fix(rds): fix the bug of parameters modification [GH-2351]
-- fix(managed_kubernetes): resolve field version diff issue [GH-2349]
-- private_zone has the wrong description [GH-2344]
-- Fix create rds bug [GH-2343]
-- fix(db_instance): resolve deleting db instance bug [GH-2317]
-- user want api server's public ip when they set endpoint_public_access_enabled to true. the second parameter in DescribeClusterUserConfig is "privateIpAddress", so it should be endpoint_public_access_enabled's negative value [GH-2290]
+- fix(polardb): fix the bug of parameters modification ([#2354](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2354))
+- fix(ram): fix datasource ram users convince bug ([#2352](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2352))
+- fix(rds): fix the bug of parameters modification ([#2351](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2351))
+- fix(managed_kubernetes): resolve field version diff issue ([#2349](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2349))
+- private_zone has the wrong description ([#2344](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2344))
+- Fix create rds bug ([#2343](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2343))
+- fix(db_instance): resolve deleting db instance bug ([#2317](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2317))
+- user want api server's public ip when they set endpoint_public_access_enabled to true. the second parameter in DescribeClusterUserConfig is "privateIpAddress", so it should be endpoint_public_access_enabled's negative value ([#2290](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2290))
 
 
 
