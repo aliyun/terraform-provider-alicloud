@@ -384,13 +384,13 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 	ecsService := EcsService{client}
 
 	// Ensure instance_type is valid
-	zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
-	if err != nil {
-		return WrapError(err)
-	}
-	if err := ecsService.InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
-		return WrapError(err)
-	}
+	//zoneId, validZones, requestId, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
+	//if err != nil {
+	//	return WrapError(err)
+	//}
+	//if err := ecsService.InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
+	//	return WrapError(Error("%s. RequestId: %s", err, requestId))
+	//}
 
 	request, err := buildAliyunInstanceArgs(d, meta)
 	if err != nil {
@@ -1313,24 +1313,23 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 			return update, nil
 		}
 		// Ensure instance_type is valid
-		zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
-		if err != nil {
-			return update, WrapError(err)
-		}
-		if err = ecsService.InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
-			return update, WrapError(err)
-		}
+		//zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
+		//if err != nil {
+		//	return update, WrapError(err)
+		//}
+		//if err = ecsService.InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
+		//	return update, WrapError(err)
+		//}
 
 		// There should use the old instance charge type to decide API method because of instance_charge_type will be updated at last step
 		oldCharge, _ := d.GetChange("instance_charge_type")
-		var raw interface{}
 		if oldCharge.(string) == string(PrePaid) {
 			request := ecs.CreateModifyPrepayInstanceSpecRequest()
 			request.InstanceId = d.Id()
 			request.InstanceType = d.Get("instance_type").(string)
 
-			err = resource.Retry(6*time.Minute, func() *resource.RetryError {
-				raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 					return ecsClient.ModifyPrepayInstanceSpec(request)
 				})
 				if err != nil {
@@ -1344,7 +1343,7 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 				return nil
 			})
 			if err != nil {
-				err = WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return update, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 		} else {
 			//An instance that was successfully modified once cannot be modified again within 5 minutes.
@@ -1353,9 +1352,9 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 			request.InstanceType = d.Get("instance_type").(string)
 			request.ClientToken = buildClientToken(request.GetActionName())
 
-			err = resource.Retry(6*time.Minute, func() *resource.RetryError {
+			err := resource.Retry(6*time.Minute, func() *resource.RetryError {
 				args := *request
-				raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 					return ecsClient.ModifyInstanceSpec(&args)
 				})
 				if err != nil {
@@ -1369,12 +1368,12 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 				return nil
 			})
 			if err != nil {
-				err = WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return update, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 		}
-		if err != nil {
-			return update, err
-		}
+		//if err != nil {
+		//	return update, err
+		//}
 
 		// Ensure instance's type has been replaced successfully.
 		timeout := DefaultTimeoutMedium

@@ -673,11 +673,11 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 
 func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta interface{}) (*ess.CreateScalingConfigurationRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
-	ecsService := EcsService{client}
-	zoneId, validZones, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	//ecsService := EcsService{client}
+	//zoneId, validZones, _, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
+	//if err != nil {
+	//	return nil, WrapError(err)
+	//}
 
 	request := ess.CreateCreateScalingConfigurationRequest()
 	request.RegionId = client.RegionId
@@ -730,11 +730,11 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 	if instanceType != "" {
 		types = append(types, instanceType)
 	}
-	for _, v := range types {
-		if err := ecsService.InstanceTypeValidation(v, zoneId, validZones); err != nil {
-			return nil, WrapError(err)
-		}
-	}
+	//for _, v := range types {
+	//	if err := ecsService.InstanceTypeValidation(v, zoneId, validZones); err != nil {
+	//		return nil, WrapError(err)
+	//	}
+	//}
 	request.InstanceTypes = &types
 
 	if v := d.Get("scaling_configuration_name").(string); v != "" {
