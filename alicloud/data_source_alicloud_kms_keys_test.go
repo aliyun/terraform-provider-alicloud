@@ -64,7 +64,7 @@ func TestAccAlicloudKmsKeysDataSource(t *testing.T) {
 			"keys.#":               "1",
 			"keys.0.id":            CHECKSET,
 			"keys.0.arn":           CHECKSET,
-			"keys.0.status":        "Enabled",
+			"keys.0.key_state":     "Enabled",
 			"keys.0.description":   fmt.Sprintf("tf_testAccKmsKeysDataSource_%d", rand),
 			"keys.0.creation_date": CHECKSET,
 			"keys.0.creator":       CHECKSET,
