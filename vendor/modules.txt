@@ -30,6 +30,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/ddosbgp
 github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo
 github.com/aliyun/alibaba-cloud-sdk-go/services/dds
 github.com/aliyun/alibaba-cloud-sdk-go/services/drds
+github.com/aliyun/alibaba-cloud-sdk-go/services/eci
 github.com/aliyun/alibaba-cloud-sdk-go/services/ecs
 github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch
 github.com/aliyun/alibaba-cloud-sdk-go/services/emr
@@ -38,6 +39,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb
 github.com/aliyun/alibaba-cloud-sdk-go/services/hbase
 github.com/aliyun/alibaba-cloud-sdk-go/services/kms
 github.com/aliyun/alibaba-cloud-sdk-go/services/market
+github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute
 github.com/aliyun/alibaba-cloud-sdk-go/services/nas
 github.com/aliyun/alibaba-cloud-sdk-go/services/ons
 github.com/aliyun/alibaba-cloud-sdk-go/services/ots
@@ -392,7 +394,7 @@ go.opencensus.io/stats/internal
 go.opencensus.io/internal/tagencoding
 go.opencensus.io/metric/metricproducer
 go.opencensus.io/resource
-# golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586
+# golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 golang.org/x/crypto/ssh/terminal
 golang.org/x/crypto/openpgp
 golang.org/x/crypto/ssh
@@ -410,7 +412,7 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/ed25519/internal/edwards25519
 golang.org/x/crypto/internal/subtle
-# golang.org/x/net v0.0.0-20191009170851-d66e71096ffb
+# golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
 golang.org/x/net/context
 golang.org/x/net/trace
 golang.org/x/net/publicsuffix
