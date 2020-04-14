@@ -455,7 +455,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		}
 	}
 
-	_, validZones, err := ecsService.DescribeAvailableResources(d, meta, ZoneResource)
+	_, validZones, _, err := ecsService.DescribeAvailableResources(d, meta, ZoneResource)
 	if err != nil {
 		return err
 	}

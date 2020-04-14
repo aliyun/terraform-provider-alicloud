@@ -321,7 +321,7 @@ func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, 
 
 }
 
-func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta interface{}, destination DestinationResource) (zoneId string, validZones []ecs.AvailableZoneInDescribeAvailableResource, err error) {
+func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta interface{}, destination DestinationResource) (zoneId string, validZones []ecs.AvailableZoneInDescribeAvailableResource, requestId string, err error) {
 	client := meta.(*connectivity.AliyunClient)
 	// Before creating resources, check input parameters validity according available zone.
 	// If availability zone is nil, it will return all of supported resources in the current.
@@ -359,13 +359,14 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 		return ecsClient.DescribeAvailableResource(request)
 	})
 	if err != nil {
-		return "", nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return "", nil, "", WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ecs.DescribeAvailableResourceResponse)
+	requestId = response.RequestId
 
 	if len(response.AvailableZones.AvailableZone) < 1 {
-		err = WrapError(Error("There are no availability resources in the region: %s.", client.RegionId))
+		err = WrapError(Error("There are no availability resources in the region: %s. RequestId: %s.", client.RegionId, requestId))
 		return
 	}
 
@@ -389,19 +390,19 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	}
 	if zoneId != "" {
 		if !valid {
-			err = WrapError(Error("Availability zone %s status is not available in the region %s. Expected availability zones: %s.",
-				zoneId, client.RegionId, strings.Join(expectedZones, ", ")))
+			err = WrapError(Error("Availability zone %s status is not available in the region %s. Expected availability zones: %s. RequestId: %s.",
+				zoneId, client.RegionId, strings.Join(expectedZones, ", "), requestId))
 			return
 		}
 		if soldout {
-			err = WrapError(Error("Availability zone %s status is sold out in the region %s. Expected availability zones: %s.",
-				zoneId, client.RegionId, strings.Join(expectedZones, ", ")))
+			err = WrapError(Error("Availability zone %s status is sold out in the region %s. Expected availability zones: %s. RequestId: %s.",
+				zoneId, client.RegionId, strings.Join(expectedZones, ", "), requestId))
 			return
 		}
 	}
 
 	if len(validZones) <= 0 {
-		err = WrapError(Error("There is no availability resources in the region %s. Please choose another region.", client.RegionId))
+		err = WrapError(Error("There is no availability resources in the region %s. Please choose another region. RequestId: %s.", client.RegionId, response.RequestId))
 		return
 	}
 
