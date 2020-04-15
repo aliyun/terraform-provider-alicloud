@@ -57,7 +57,12 @@ The following arguments are supported:
 * `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `version` - (Required, ForceNew) Elasticsearch version. Supported values: `5.5.3_with_X-Pack`, `6.3_with_X-Pack` and `6.7_with_X-Pack`.
 * `private_whitelist` - (Optional) Set the instance's IP whitelist in VPC network.
+* `public_whitelist` - (Optional) Set the instance's IP whitelist in internet network.
+* `enable_public` - (Optional, Available in v1.87.0+) Bool, default to false. When it set to true, the instance can enable public network access。
 * `kibana_whitelist` - (Optional) Set the Kibana's IP whitelist in internet network.
+* `enable_kibana_public_network` - (Optional, Available in v1.87.0+) Bool, default to true. When it set to false, the instance can enable kibana public network access。
+* `kibana_private_whitelist` - (Optional, Available in v1.87.0+) Set the Kibana's IP whitelist in private network.
+* `enable_kibana_private_network` - (Optional, Available in v1.87.0+) Bool, default to false. When it set to true, the instance can close kibana private network access。
 * `master_node_spec` - (Optional) The dedicated master node spec. If specified, dedicated master node will be created.
 * `zone_count` - (Optional, Available in 1.44.0+) The Multi-AZ supported for Elasticsearch, between 1 and 3. The `data_node_amount` value must be an integral multiple of the `zone_count` value.
 * `tags` - (Optional, Available in v1.73.0+) A mapping of tags to assign to the resource. 

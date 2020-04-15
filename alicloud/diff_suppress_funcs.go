@@ -247,12 +247,26 @@ func archiveBackupPeriodDiffSuppressFunc(k, old, new string, d *schema.ResourceD
 func PostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return strings.ToLower(d.Get("instance_charge_type").(string)) == "postpaid"
 }
+
 func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if strings.ToLower(d.Get("instance_charge_type").(string)) == "prepaid" && d.Get("auto_renew").(bool) {
 		return false
 	}
 	return true
 }
+
+func elasticsearchEnablePublicDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return d.Get("enable_public").(bool) == false
+}
+
+func elasticsearchEnableKibanaPublicDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return d.Get("enable_kibana_public_network").(bool) == false
+}
+
+func elasticsearchEnableKibanaPrivateDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return d.Get("enable_kibana_private_network").(bool) == false
+}
+
 func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if d.Get("instance_charge_type").(string) == "PostPaid" {
 		return true

@@ -85,6 +85,22 @@ const (
 	Vpc             = NetworkType("Vpc")
 	ClassicInternet = NetworkType("classic_internet")
 	ClassicIntranet = NetworkType("classic_intranet")
+	PUBLIC          = NetworkType("PUBLIC")
+	PRIVATE         = NetworkType("PRIVATE")
+)
+
+type NodeType string
+
+const (
+	WORKER = NodeType("WORKER")
+	KIBANA = NodeType("KIBANA")
+)
+
+type ActionType string
+
+const (
+	OPEN  = ActionType("OPEN")
+	CLOSE = ActionType("CLOSE")
 )
 
 type TimeType string

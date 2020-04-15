@@ -237,6 +237,16 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"master_node_spec": MasterNodeSpec,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"master_node_spec": MasterNodeSpec,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"private_whitelist": []string{"192.168.0.0/24", "127.0.0.1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -247,25 +257,51 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"master_node_spec": MasterNodeSpec,
+					"enable_public": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_public": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"public_whitelist": []string{"192.168.0.0/24", "127.0.0.1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"public_whitelist.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"kibana_whitelist": []string{"192.168.0.0/24", "127.0.0.1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"master_node_spec":   MasterNodeSpec,
 						"kibana_whitelist.#": "2",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"master_node_spec":  MasterNodeSpecForUpdate,
-					"private_whitelist": []string{"192.168.0.0/24", "127.0.0.1"},
+					"enable_kibana_private_network": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"master_node_spec":    MasterNodeSpecForUpdate,
-						"private_whitelist.#": "2",
+						"enable_kibana_private_network": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kibana_private_whitelist": []string{"192.168.0.0/24", "127.0.0.1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kibana_private_whitelist.#": "2",
 					}),
 				),
 			},
@@ -537,23 +573,27 @@ func TestAccAlicloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 }
 
 var elasticsearchMap = map[string]string{
-	"description":          CHECKSET,
-	"data_node_spec":       DataNodeSpec,
-	"data_node_amount":     DataNodeAmount,
-	"data_node_disk_size":  DataNodeDisk,
-	"data_node_disk_type":  DataNodeDiskType,
-	"instance_charge_type": string(PostPaid),
-	"status":               "active",
-	"kibana_whitelist.#":   "0",
-	"private_whitelist.#":  "0",
-	"public_whitelist.#":   "0",
-	"master_node_spec":     "",
-	"id":                   CHECKSET,
-	"domain":               CHECKSET,
-	"port":                 CHECKSET,
-	"kibana_domain":        CHECKSET,
-	"kibana_port":          CHECKSET,
-	"vswitch_id":           CHECKSET,
+	"description":                   CHECKSET,
+	"data_node_spec":                DataNodeSpec,
+	"data_node_amount":              DataNodeAmount,
+	"data_node_disk_size":           DataNodeDisk,
+	"data_node_disk_type":           DataNodeDiskType,
+	"instance_charge_type":          string(PostPaid),
+	"status":                        "active",
+	"private_whitelist.#":           "0",
+	"public_whitelist.#":            "0",
+	"enable_public":                 "false",
+	"kibana_whitelist.#":            "0",
+	"enable_kibana_public_network":  "true",
+	"kibana_private_whitelist.#":    "0",
+	"enable_kibana_private_network": "false",
+	"master_node_spec":              "",
+	"id":                            CHECKSET,
+	"domain":                        CHECKSET,
+	"port":                          CHECKSET,
+	"kibana_domain":                 CHECKSET,
+	"kibana_port":                   CHECKSET,
+	"vswitch_id":                    CHECKSET,
 }
 
 func resourceElasticsearchInstanceConfigDependence(name string) string {

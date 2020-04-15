@@ -91,6 +91,74 @@ func (s *ElasticsearchService) ElasticsearchRetryFunc(wait func(), errorCodeList
 	return raw, WrapError(err)
 }
 
+func (s *ElasticsearchService) TriggerNetwork(d *schema.ResourceData, content map[string]interface{}, meta interface{}) error {
+	data, err := json.Marshal(content)
+	if err != nil {
+		return WrapError(err)
+	}
+	request := elasticsearch.CreateTriggerNetworkRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
+	request.RegionId = s.client.RegionId
+	request.InstanceId = d.Id()
+	request.SetContent(data)
+	request.SetContentType("application/json")
+
+	// retry
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
+	raw, err := s.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.TriggerNetwork(request)
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, s.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
+}
+
+func (s *ElasticsearchService) ModifyWhiteIps(d *schema.ResourceData, content map[string]interface{}, meta interface{}) error {
+	data, err := json.Marshal(content)
+	if err != nil {
+		return WrapError(err)
+	}
+	request := elasticsearch.CreateModifyWhiteIpsRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
+	request.RegionId = s.client.RegionId
+	request.InstanceId = d.Id()
+	request.SetContent(data)
+	request.SetContentType("application/json")
+
+	// retry
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
+	raw, err := s.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.ModifyWhiteIps(request)
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, s.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
+}
+
 func (s *ElasticsearchService) DescribeElasticsearchTags(id string) (tags map[string]string, err error) {
 	resourceIds, err := json.Marshal([]string{id})
 	if err != nil {
@@ -140,6 +208,14 @@ func (s *ElasticsearchService) diffElasticsearchTags(oldTags, newTags map[string
 		add = append(add, tag)
 	}
 	return
+}
+
+func (s *ElasticsearchService) getActionType(actionType bool) string {
+	if actionType == true {
+		return string(OPEN)
+	} else {
+		return string(CLOSE)
+	}
 }
 
 func updateDescription(d *schema.ResourceData, meta interface{}) error {
@@ -314,83 +390,6 @@ func renewInstance(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func updatePrivateWhitelist(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	elasticsearchService := ElasticsearchService{client}
-
-	content := make(map[string]interface{})
-	content["esIPWhitelist"] = d.Get("private_whitelist").(*schema.Set).List()
-	data, err := json.Marshal(content)
-	if err != nil {
-		return WrapError(err)
-	}
-
-	request := elasticsearch.CreateUpdateWhiteIpsRequest()
-	request.ClientToken = buildClientToken(request.GetActionName())
-	request.RegionId = client.RegionId
-	request.InstanceId = d.Id()
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	// retry
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
-	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.UpdateWhiteIps(request)
-	})
-
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-
-	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
-	stateConf.PollInterval = 5 * time.Second
-
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
-	}
-	return nil
-}
-
-func updatePublicWhitelist(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	elasticsearchService := ElasticsearchService{client}
-
-	content := make(map[string]interface{})
-	content["publicIpWhitelist"] = d.Get("public_whitelist").(*schema.Set).List()
-	data, err := json.Marshal(content)
-	if err != nil {
-		return WrapError(err)
-	}
-	request := elasticsearch.CreateUpdatePublicWhiteIpsRequest()
-	request.ClientToken = buildClientToken(request.GetActionName())
-	request.RegionId = client.RegionId
-	request.InstanceId = d.Id()
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	// retry
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
-	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.UpdatePublicWhiteIps(request)
-	})
-
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-
-	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
-	stateConf.PollInterval = 5 * time.Second
-
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
-	}
-	return nil
-}
-
 func updateDataNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
@@ -515,45 +514,6 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 	if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-
-	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
-	stateConf.PollInterval = 5 * time.Second
-
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
-	}
-	return nil
-}
-
-func updateKibanaWhitelist(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	elasticsearchService := ElasticsearchService{client}
-
-	content := make(map[string]interface{})
-	content["kibanaIPWhitelist"] = d.Get("kibana_whitelist").(*schema.Set).List()
-	data, err := json.Marshal(content)
-	if err != nil {
-		return WrapError(err)
-	}
-	request := elasticsearch.CreateUpdateKibanaWhiteIpsRequest()
-	request.ClientToken = buildClientToken(request.GetActionName())
-	request.RegionId = client.RegionId
-	request.InstanceId = d.Id()
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	// retry
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
-	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.UpdateKibanaWhiteIps(request)
-	})
-
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
