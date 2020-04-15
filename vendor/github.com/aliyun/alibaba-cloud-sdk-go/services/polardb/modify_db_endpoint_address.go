@@ -76,14 +76,16 @@ func (client *Client) ModifyDBEndpointAddressWithCallback(request *ModifyDBEndpo
 // ModifyDBEndpointAddressRequest is the request struct for api ModifyDBEndpointAddress
 type ModifyDBEndpointAddressRequest struct {
 	*requests.RpcRequest
-	ResourceOwnerId        requests.Integer `position:"Query" name:"ResourceOwnerId"`
-	ConnectionStringPrefix string           `position:"Query" name:"ConnectionStringPrefix"`
-	DBEndpointId           string           `position:"Query" name:"DBEndpointId"`
-	ResourceOwnerAccount   string           `position:"Query" name:"ResourceOwnerAccount"`
-	DBClusterId            string           `position:"Query" name:"DBClusterId"`
-	OwnerAccount           string           `position:"Query" name:"OwnerAccount"`
-	OwnerId                requests.Integer `position:"Query" name:"OwnerId"`
-	NetType                string           `position:"Query" name:"NetType"`
+	ResourceOwnerId          requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ConnectionStringPrefix   string           `position:"Query" name:"ConnectionStringPrefix"`
+	DBEndpointId             string           `position:"Query" name:"DBEndpointId"`
+	PrivateZoneName          string           `position:"Query" name:"PrivateZoneName"`
+	PrivateZoneAddressPrefix string           `position:"Query" name:"PrivateZoneAddressPrefix"`
+	ResourceOwnerAccount     string           `position:"Query" name:"ResourceOwnerAccount"`
+	DBClusterId              string           `position:"Query" name:"DBClusterId"`
+	OwnerAccount             string           `position:"Query" name:"OwnerAccount"`
+	OwnerId                  requests.Integer `position:"Query" name:"OwnerId"`
+	NetType                  string           `position:"Query" name:"NetType"`
 }
 
 // ModifyDBEndpointAddressResponse is the response struct for api ModifyDBEndpointAddress
@@ -97,7 +99,7 @@ func CreateModifyDBEndpointAddressRequest() (request *ModifyDBEndpointAddressReq
 	request = &ModifyDBEndpointAddressRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("polardb", "2017-08-01", "ModifyDBEndpointAddress", "polardb", "openAPI")
+	request.InitWithApiInfo("polardb", "2017-08-01", "ModifyDBEndpointAddress", "", "")
 	return
 }
 

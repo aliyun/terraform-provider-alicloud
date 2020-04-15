@@ -77,10 +77,19 @@ func (client *Client) DescribeFileSystemsWithCallback(request *DescribeFileSyste
 type DescribeFileSystemsRequest struct {
 	*requests.RpcRequest
 	FileSystemId   string           `position:"Query" name:"FileSystemId"`
+	Description    string           `position:"Query" name:"Description"`
 	FileSystemType string           `position:"Query" name:"FileSystemType"`
 	VpcId          string           `position:"Query" name:"VpcId"`
 	PageSize       requests.Integer `position:"Query" name:"PageSize"`
 	PageNumber     requests.Integer `position:"Query" name:"PageNumber"`
+	CapacityUnit   string           `position:"Query" name:"CapacityUnit"`
+	MeteredUnit    string           `position:"Query" name:"MeteredUnit"`
+	UseUTCDateTime requests.Boolean `position:"Query" name:"UseUTCDateTime"`
+	StorageType    string           `position:"Query" name:"StorageType"`
+	PackageIds     string           `position:"Query" name:"PackageIds"`
+	FileSystemIds  string           `position:"Query" name:"FileSystemIds"`
+	OrderByField   string           `position:"Query" name:"OrderByField"`
+	SortOrder      string           `position:"Query" name:"SortOrder"`
 }
 
 // DescribeFileSystemsResponse is the response struct for api DescribeFileSystems
@@ -98,20 +107,30 @@ type DescribeFileSystemsFileSystems0 struct {
 }
 
 type DescribeFileSystemsFileSystem1 struct {
-	FileSystemId string                           `json:"FileSystemId" xml:"FileSystemId"`
-	Description  string                           `json:"Description" xml:"Description"`
-	CreateTime   string                           `json:"CreateTime" xml:"CreateTime"`
-	RegionId     string                           `json:"RegionId" xml:"RegionId"`
-	ProtocolType string                           `json:"ProtocolType" xml:"ProtocolType"`
-	StorageType  string                           `json:"StorageType" xml:"StorageType"`
-	MeteredSize  int64                            `json:"MeteredSize" xml:"MeteredSize"`
-	ZoneId       string                           `json:"ZoneId" xml:"ZoneId"`
-	Bandwidth    int64                            `json:"Bandwidth" xml:"Bandwidth"`
-	Capacity     int64                            `json:"Capacity" xml:"Capacity"`
-	Status       string                           `json:"Status" xml:"Status"`
-	MountTargets DescribeFileSystemsMountTargets2 `json:"MountTargets" xml:"MountTargets"`
-	Packages     DescribeFileSystemsPackages2     `json:"Packages" xml:"Packages"`
-	Ldap         DescribeFileSystemsLdap2         `json:"Ldap" xml:"Ldap"`
+	FileSystemId          string                                `json:"FileSystemId" xml:"FileSystemId"`
+	Description           string                                `json:"Description" xml:"Description"`
+	CreateTime            string                                `json:"CreateTime" xml:"CreateTime"`
+	ExpiredTime           string                                `json:"ExpiredTime" xml:"ExpiredTime"`
+	RegionId              string                                `json:"RegionId" xml:"RegionId"`
+	ZoneId                string                                `json:"ZoneId" xml:"ZoneId"`
+	ProtocolType          string                                `json:"ProtocolType" xml:"ProtocolType"`
+	StorageType           string                                `json:"StorageType" xml:"StorageType"`
+	FileSystemType        string                                `json:"FileSystemType" xml:"FileSystemType"`
+	EncryptType           int                                   `json:"EncryptType" xml:"EncryptType"`
+	MeteredSize           int64                                 `json:"MeteredSize" xml:"MeteredSize"`
+	MeteredIASize         int64                                 `json:"MeteredIASize" xml:"MeteredIASize"`
+	Bandwidth             int64                                 `json:"Bandwidth" xml:"Bandwidth"`
+	Capacity              int64                                 `json:"Capacity" xml:"Capacity"`
+	AutoSnapshotPolicyId  string                                `json:"AutoSnapshotPolicyId" xml:"AutoSnapshotPolicyId"`
+	Status                string                                `json:"Status" xml:"Status"`
+	ChargeType            string                                `json:"ChargeType" xml:"ChargeType"`
+	MountTargetCountLimit int64                                 `json:"MountTargetCountLimit" xml:"MountTargetCountLimit"`
+	NasNamespaceId        string                                `json:"NasNamespaceId" xml:"NasNamespaceId"`
+	KMSKeyId              string                                `json:"KMSKeyId" xml:"KMSKeyId"`
+	MountTargets          DescribeFileSystemsMountTargets2      `json:"MountTargets" xml:"MountTargets"`
+	Packages              DescribeFileSystemsPackages2          `json:"Packages" xml:"Packages"`
+	SupportedFeatures     DescribeFileSystemsSupportedFeatures2 `json:"SupportedFeatures" xml:"SupportedFeatures"`
+	Ldap                  DescribeFileSystemsLdap2              `json:"Ldap" xml:"Ldap"`
 }
 
 type DescribeFileSystemsMountTargets2 struct {
@@ -119,12 +138,22 @@ type DescribeFileSystemsMountTargets2 struct {
 }
 
 type DescribeFileSystemsMountTarget3 struct {
-	MountTargetDomain string `json:"MountTargetDomain" xml:"MountTargetDomain"`
-	NetworkType       string `json:"NetworkType" xml:"NetworkType"`
-	VpcId             string `json:"VpcId" xml:"VpcId"`
-	VswId             string `json:"VswId" xml:"VswId"`
-	AccessGroupName   string `json:"AccessGroupName" xml:"AccessGroupName"`
-	Status            string `json:"Status" xml:"Status"`
+	MountTargetDomain string                   `json:"MountTargetDomain" xml:"MountTargetDomain"`
+	NetworkType       string                   `json:"NetworkType" xml:"NetworkType"`
+	VpcId             string                   `json:"VpcId" xml:"VpcId"`
+	VswId             string                   `json:"VswId" xml:"VswId"`
+	AccessGroupName   string                   `json:"AccessGroupName" xml:"AccessGroupName"`
+	Status            string                   `json:"Status" xml:"Status"`
+	Tags              DescribeFileSystemsTags4 `json:"Tags" xml:"Tags"`
+}
+
+type DescribeFileSystemsTags4 struct {
+	Tag []DescribeFileSystemsTag5 `json:"Tag" xml:"Tag"`
+}
+
+type DescribeFileSystemsTag5 struct {
+	Key   string `json:"Key" xml:"Key"`
+	Value string `json:"Value" xml:"Value"`
 }
 
 type DescribeFileSystemsPackages2 struct {
@@ -132,13 +161,21 @@ type DescribeFileSystemsPackages2 struct {
 }
 
 type DescribeFileSystemsPackage3 struct {
-	PackageId string `json:"PackageId" xml:"PackageId"`
+	PackageId   string `json:"PackageId" xml:"PackageId"`
+	PackageType string `json:"PackageType" xml:"PackageType"`
+	Size        int64  `json:"Size" xml:"Size"`
+	StartTime   string `json:"StartTime" xml:"StartTime"`
+	ExpiredTime string `json:"ExpiredTime" xml:"ExpiredTime"`
 }
 
 type DescribeFileSystemsLdap2 struct {
 	BindDN     string `json:"BindDN" xml:"BindDN"`
 	URI        string `json:"URI" xml:"URI"`
 	SearchBase string `json:"SearchBase" xml:"SearchBase"`
+}
+
+type DescribeFileSystemsSupportedFeatures2 struct {
+	SupportedFeature []string `json:"SupportedFeature" xml:"SupportedFeature"`
 }
 
 // CreateDescribeFileSystemsRequest creates a request to invoke DescribeFileSystems API

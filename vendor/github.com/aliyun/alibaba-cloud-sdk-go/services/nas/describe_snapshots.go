@@ -111,6 +111,7 @@ type DescribeSnapshotsSnapshot1 struct {
 	SourceFileSystemId   string `json:"SourceFileSystemId" xml:"SourceFileSystemId"`
 	SourceFileSystemSize int64  `json:"SourceFileSystemSize" xml:"SourceFileSystemSize"`
 	Status               string `json:"Status" xml:"Status"`
+	EncryptType          int    `json:"EncryptType" xml:"EncryptType"`
 }
 
 // CreateDescribeSnapshotsRequest creates a request to invoke DescribeSnapshots API

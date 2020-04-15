@@ -79,6 +79,7 @@ type DescribeAccessGroupsRequest struct {
 	AccessGroupName string           `position:"Query" name:"AccessGroupName"`
 	PageSize        requests.Integer `position:"Query" name:"PageSize"`
 	PageNumber      requests.Integer `position:"Query" name:"PageNumber"`
+	UseUTCDateTime  requests.Boolean `position:"Query" name:"UseUTCDateTime"`
 	FileSystemType  string           `position:"Query" name:"FileSystemType"`
 }
 
@@ -97,11 +98,22 @@ type DescribeAccessGroupsAccessGroups0 struct {
 }
 
 type DescribeAccessGroupsAccessGroup1 struct {
-	AccessGroupName  string `json:"AccessGroupName" xml:"AccessGroupName"`
-	AccessGroupType  string `json:"AccessGroupType" xml:"AccessGroupType"`
-	RuleCount        int    `json:"RuleCount" xml:"RuleCount"`
-	MountTargetCount int    `json:"MountTargetCount" xml:"MountTargetCount"`
-	Description      string `json:"Description" xml:"Description"`
+	AccessGroupName  string                    `json:"AccessGroupName" xml:"AccessGroupName"`
+	AccessGroupType  string                    `json:"AccessGroupType" xml:"AccessGroupType"`
+	RuleCount        int                       `json:"RuleCount" xml:"RuleCount"`
+	MountTargetCount int                       `json:"MountTargetCount" xml:"MountTargetCount"`
+	Description      string                    `json:"Description" xml:"Description"`
+	CreateTime       string                    `json:"CreateTime" xml:"CreateTime"`
+	Tags             DescribeAccessGroupsTags2 `json:"Tags" xml:"Tags"`
+}
+
+type DescribeAccessGroupsTags2 struct {
+	Tag []DescribeAccessGroupsTag3 `json:"Tag" xml:"Tag"`
+}
+
+type DescribeAccessGroupsTag3 struct {
+	Key   string `json:"Key" xml:"Key"`
+	Value string `json:"Value" xml:"Value"`
 }
 
 // CreateDescribeAccessGroupsRequest creates a request to invoke DescribeAccessGroups API

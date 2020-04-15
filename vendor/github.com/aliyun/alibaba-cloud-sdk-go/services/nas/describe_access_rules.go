@@ -76,11 +76,13 @@ func (client *Client) DescribeAccessRulesWithCallback(request *DescribeAccessRul
 // DescribeAccessRulesRequest is the request struct for api DescribeAccessRules
 type DescribeAccessRulesRequest struct {
 	*requests.RpcRequest
-	AccessGroupName string           `position:"Query" name:"AccessGroupName"`
-	AccessRuleId    string           `position:"Query" name:"AccessRuleId"`
-	PageSize        requests.Integer `position:"Query" name:"PageSize"`
-	PageNumber      requests.Integer `position:"Query" name:"PageNumber"`
-	FileSystemType  string           `position:"Query" name:"FileSystemType"`
+	AccessGroupName    string           `position:"Query" name:"AccessGroupName"`
+	AccessRuleId       string           `position:"Query" name:"AccessRuleId"`
+	SourceCidrIp       string           `position:"Query" name:"SourceCidrIp"`
+	PageSize           requests.Integer `position:"Query" name:"PageSize"`
+	PageNumber         requests.Integer `position:"Query" name:"PageNumber"`
+	FileSystemType     string           `position:"Query" name:"FileSystemType"`
+	SourceCidrIpFilter string           `position:"Query" name:"SourceCidrIpFilter"`
 }
 
 // DescribeAccessRulesResponse is the response struct for api DescribeAccessRules
