@@ -214,7 +214,7 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 		az = strings.ToLower(v.(string))
 	}
 
-	var dbi []dds.DBInstance
+	var dbi []dds.DBInstanceInDescribeDBInstances
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -291,11 +291,9 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 		mongoList := []map[string]interface{}{}
 		for _, v := range item.MongosList.MongosAttribute {
 			mongo := map[string]interface{}{
-				"port":           v.Port,
-				"connect_string": v.ConnectSting,
-				"description":    v.NodeDescription,
-				"node_id":        v.NodeId,
-				"class":          v.NodeClass,
+				"description": v.NodeDescription,
+				"node_id":     v.NodeId,
+				"class":       v.NodeClass,
 			}
 			mongoList = append(mongoList, mongo)
 		}

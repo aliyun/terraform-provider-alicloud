@@ -20,7 +20,7 @@ type MongoDBService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *MongoDBService) DescribeMongoDBInstance(id string) (instance dds.DBInstance, err error) {
+func (s *MongoDBService) DescribeMongoDBInstance(id string) (instance dds.DBInstanceInDescribeDBInstanceAttribute, err error) {
 	request := dds.CreateDescribeDBInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -428,7 +428,7 @@ func (s *MongoDBService) setInstanceTags(d *schema.ResourceData) error {
 	return nil
 }
 
-func (s *MongoDBService) tagsToMap(tags []dds.Tag) map[string]string {
+func (s *MongoDBService) tagsToMap(tags []dds.TagInDescribeDBInstances) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		if !s.ignoreTag(t) {
@@ -438,7 +438,30 @@ func (s *MongoDBService) tagsToMap(tags []dds.Tag) map[string]string {
 	return result
 }
 
-func (s *MongoDBService) ignoreTag(t dds.Tag) bool {
+func (s *MongoDBService) ignoreTag(t dds.TagInDescribeDBInstances) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
+		ok, _ := regexp.MatchString(v, t.Key)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.Key, t.Value)
+			return true
+		}
+	}
+	return false
+}
+
+func (s *MongoDBService) tagsInAttributeToMap(tags []dds.TagInDescribeDBInstanceAttribute) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !s.ignoreTagInAttribute(t) {
+			result[t.Key] = t.Value
+		}
+	}
+	return result
+}
+
+func (s *MongoDBService) ignoreTagInAttribute(t dds.TagInDescribeDBInstanceAttribute) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)

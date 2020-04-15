@@ -52,7 +52,7 @@ func testSweepMongoDBInstances(region string) error {
 		"tf_testAcc",
 	}
 
-	var insts []dds.DBInstance
+	var insts []dds.DBInstanceInDescribeDBInstances
 	request := dds.CreateDescribeDBInstancesRequest()
 	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
@@ -84,7 +84,6 @@ func testSweepMongoDBInstances(region string) error {
 	}
 
 	sweeped := false
-	service := VpcService{client}
 	for _, v := range insts {
 		name := v.DBInstanceDescription
 		id := v.DBInstanceId
@@ -95,12 +94,7 @@ func testSweepMongoDBInstances(region string) error {
 				break
 			}
 		}
-		// If a mongoDB name is not set successfully, it should be fetched by vpc name and deleted.
-		if skip {
-			if need, err := service.needSweepVpc(v.VPCId, v.VSwitchId); err == nil {
-				skip = !need
-			}
-		}
+
 		if skip {
 			log.Printf("[INFO] Skipping MongoDB instance: %s (%s)\n", name, id)
 			continue
@@ -127,7 +121,7 @@ func testSweepMongoDBInstances(region string) error {
 }
 
 func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
-	var v dds.DBInstance
+	var v dds.DBInstanceInDescribeDBInstanceAttribute
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -280,7 +274,7 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 }
 
 func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
-	var v dds.DBInstance
+	var v dds.DBInstanceInDescribeDBInstanceAttribute
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -330,7 +324,7 @@ func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
 }
 
 func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
-	var v dds.DBInstance
+	var v dds.DBInstanceInDescribeDBInstanceAttribute
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -433,7 +427,7 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 }
 
 func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
-	var v dds.DBInstance
+	var v dds.DBInstanceInDescribeDBInstanceAttribute
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -536,7 +530,7 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 }
 
 func TestAccAlicloudMongoDBInstance_multi_instance(t *testing.T) {
-	var v dds.DBInstance
+	var v dds.DBInstanceInDescribeDBInstanceAttribute
 	resourceId := "alicloud_mongodb_instance.default.2"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}

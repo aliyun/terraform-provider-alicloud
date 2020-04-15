@@ -31,7 +31,7 @@ func testSweepMongoDBShardingInstances(region string) error {
 		"tf_testAcc",
 	}
 
-	var insts []dds.DBInstance
+	var insts []dds.DBInstanceInDescribeDBInstances
 	request := dds.CreateDescribeDBInstancesRequest()
 	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
@@ -136,7 +136,7 @@ func testAccCheckMongoDBShardingInstanceDestroy(s *terraform.State) error {
 }
 
 func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
-	var v dds.DBInstance
+	var v dds.DBInstanceInDescribeDBInstanceAttribute
 	resourceId := "alicloud_mongodb_sharding_instance.default"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -249,7 +249,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 }
 
 func TestAccAlicloudMongoDBShardingInstance_classicVersion4(t *testing.T) {
-	var v dds.DBInstance
+	var v dds.DBInstanceInDescribeDBInstanceAttribute
 	resourceId := "alicloud_mongodb_sharding_instance.default"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -311,7 +311,7 @@ func TestAccAlicloudMongoDBShardingInstance_classicVersion4(t *testing.T) {
 }
 
 func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
-	var v dds.DBInstance
+	var v dds.DBInstanceInDescribeDBInstanceAttribute
 	resourceId := "alicloud_mongodb_sharding_instance.default"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -425,7 +425,7 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 }
 
 func TestAccAlicloudMongoDBShardingInstance_multi_instance(t *testing.T) {
-	var v dds.DBInstance
+	var v dds.DBInstanceInDescribeDBInstanceAttribute
 	resourceId := "alicloud_mongodb_sharding_instance.default.2"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}

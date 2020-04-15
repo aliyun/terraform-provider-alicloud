@@ -97,12 +97,22 @@ type DescribeMountTargetsMountTargets0 struct {
 }
 
 type DescribeMountTargetsMountTarget1 struct {
-	MountTargetDomain string `json:"MountTargetDomain" xml:"MountTargetDomain"`
-	NetworkType       string `json:"NetworkType" xml:"NetworkType"`
-	VpcId             string `json:"VpcId" xml:"VpcId"`
-	VswId             string `json:"VswId" xml:"VswId"`
-	AccessGroup       string `json:"AccessGroup" xml:"AccessGroup"`
-	Status            string `json:"Status" xml:"Status"`
+	MountTargetDomain string                    `json:"MountTargetDomain" xml:"MountTargetDomain"`
+	NetworkType       string                    `json:"NetworkType" xml:"NetworkType"`
+	VpcId             string                    `json:"VpcId" xml:"VpcId"`
+	VswId             string                    `json:"VswId" xml:"VswId"`
+	AccessGroup       string                    `json:"AccessGroup" xml:"AccessGroup"`
+	Status            string                    `json:"Status" xml:"Status"`
+	Tags              DescribeMountTargetsTags2 `json:"Tags" xml:"Tags"`
+}
+
+type DescribeMountTargetsTags2 struct {
+	Tag []DescribeMountTargetsTag3 `json:"Tag" xml:"Tag"`
+}
+
+type DescribeMountTargetsTag3 struct {
+	Key   string `json:"Key" xml:"Key"`
+	Value string `json:"Value" xml:"Value"`
 }
 
 // CreateDescribeMountTargetsRequest creates a request to invoke DescribeMountTargets API
