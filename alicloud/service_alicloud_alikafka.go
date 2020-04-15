@@ -24,8 +24,9 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId stri
 
 	wait := incrementalWait(2*time.Second, 1*time.Second)
 	var raw interface{}
-	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-		raw, err := alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+	var err error
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		raw, err = alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
 			return client.GetInstanceList(instanceListReq)
 		})
 		if err != nil {
@@ -64,8 +65,9 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaNodeStatus(instanceId st
 
 	wait := incrementalWait(2*time.Second, 1*time.Second)
 	var raw interface{}
-	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-		raw, err := alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+	var err error
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		raw, err = alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
 			return client.DescribeNodeStatus(describeNodeStatusReq)
 		})
 		if err != nil {
@@ -100,8 +102,9 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderI
 
 		wait := incrementalWait(2*time.Second, 1*time.Second)
 		var raw interface{}
-		err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-			raw, err := alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+		var err error
+		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+			raw, err = alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
 				return client.GetInstanceList(instanceListReq)
 			})
 			if err != nil {
