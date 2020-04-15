@@ -112,6 +112,16 @@ func TestAccAlicloudAdbCluster(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"db_node_count": "4",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_node_count": "4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(

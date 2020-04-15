@@ -57,9 +57,9 @@ The following arguments are supported:
 
 * `db_cluster_version` - (Optional, ForceNew) Cluster version. Value options: `3.0`, Default to `3.0`.
 * `db_cluster_category` - (Optional, ForceNew) Cluster category. Value options: `Basic`, `Cluster`.
-* `db_node_class` - (Required, ForceNew) The db_node_class of cluster node.
-* `db_node_count` - (Required, ForceNew) The db_node_count of cluster node.
-* `db_node_storage` - (Required, ForceNew) The db_node_storage of cluster node.
+* `db_node_class` - (Required) The db_node_class of cluster node.
+* `db_node_count` - (Required) The db_node_count of cluster node.
+* `db_node_storage` - (Required) The db_node_storage of cluster node.
 * `zone_id` - (Optional) The Zone to launch the DB cluster.
 * `pay_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`. Currently, the resource can not supports change pay type.
 * `renewal_status` - (Optional) Valid values are `AutoRenewal`, `Normal`, `NotRenewal`, Default to `NotRenewal`.
@@ -90,7 +90,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 50 mins) Used when creating the adb cluster (until it reaches the initial `Running` status). 
-* `update` - (Defaults to 20 mins) Used when updating the adb cluster (until it reaches the initial `Running` status). 
+* `update` - (Defaults to 72 hours) Used when updating the adb cluster (until it reaches the initial `Running` status). 
 * `delete` - (Defaults to 10 mins) Used when terminating the adb cluster. 
 
 ## Import
