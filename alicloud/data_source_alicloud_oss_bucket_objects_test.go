@@ -61,7 +61,7 @@ func TestAccAlicloudOssBucketObjectsDataSource_basic(t *testing.T) {
 		return map[string]string{
 			"objects.#":                        "1",
 			"objects.0.key":                    fmt.Sprintf("tf-sample/%s-object", fmt.Sprintf("tf-testacc-bucket-object-%d", rand)),
-			"objects.0.acl":                    "default",
+			"objects.0.acl":                    "public-read",
 			"objects.0.content_type":           "text/plain",
 			"objects.0.content_length":         CHECKSET,
 			"objects.0.cache_control":          "max-age=0",
@@ -196,6 +196,7 @@ resource "alicloud_oss_bucket_object" "default" {
 	content_disposition = "attachment; filename=\"my-object\""
 	content_encoding = "gzip"
 	expires = "Wed, 06 May 2020 00:00:00 GMT"
+	acl = "public-read"
 }
 
 `, name)
