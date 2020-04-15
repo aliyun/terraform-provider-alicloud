@@ -364,7 +364,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("bucket", d.Id())
 
 	d.Set("acl", object.BucketInfo.ACL)
-	d.Set("creation_date", object.BucketInfo.CreationDate.Format("2016-01-01"))
+	d.Set("creation_date", object.BucketInfo.CreationDate.Format("2006-01-02"))
 	d.Set("extranet_endpoint", object.BucketInfo.ExtranetEndpoint)
 	d.Set("intranet_endpoint", object.BucketInfo.IntranetEndpoint)
 	d.Set("location", object.BucketInfo.Location)
