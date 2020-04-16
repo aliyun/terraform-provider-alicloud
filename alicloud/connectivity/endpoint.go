@@ -12,6 +12,7 @@ import (
 type ServiceCode string
 
 const (
+	DnsCode           = ServiceCode("DNS")
 	KmsCode           = ServiceCode("KMS")
 	CbnCode           = ServiceCode("CBN")
 	ECSCode           = ServiceCode("ECS")
