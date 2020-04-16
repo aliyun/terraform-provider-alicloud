@@ -88,3 +88,25 @@ func (dns *DnsService) DescribeDnsRecord(id string) (*alidns.DescribeDomainRecor
 	}
 	return response, nil
 }
+
+func (s *DnsService) DescribeDnsInstance(id string) (object alidns.DescribeDnsProductInstanceResponse, err error) {
+	request := alidns.CreateDescribeDnsProductInstanceRequest()
+	request.RegionId = s.client.RegionId
+
+	request.InstanceId = id
+
+	raw, err := s.client.WithDnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
+		return alidnsClient.DescribeDnsProductInstance(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDnsProduct"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("DnsInstance", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*alidns.DescribeDnsProductInstanceResponse)
+	return *response, nil
+}

@@ -127,6 +127,7 @@ type AliyunClient struct {
 	cbnConn                      *cbn.Client
 	kmsConn                      *kms.Client
 	maxcomputeconn               *maxcompute.Client
+	dnsConn                      *alidns.Client
 }
 
 type ApiVersion string

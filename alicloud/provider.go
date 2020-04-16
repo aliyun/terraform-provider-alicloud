@@ -472,6 +472,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kms_secret":                          resourceAlicloudKmsSecret(),
 			"alicloud_maxcompute_project":                  resourceAlicloudMaxComputeProject(),
 			"alicloud_kms_alias":                           resourceAlicloudKmsAlias(),
+			"alicloud_dns_instance":                        resourceAlicloudDnsInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
