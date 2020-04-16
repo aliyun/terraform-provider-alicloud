@@ -118,7 +118,9 @@ func resourceAlicloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	alikafkaService := AlikafkaService{client}
 	d.Partial(true)
-
+	if err := alikafkaService.setInstanceTags(d, TagResourceTopic); err != nil {
+		return WrapError(err)
+	}
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudAlikafkaTopicRead(d, meta)
@@ -190,9 +192,6 @@ func resourceAlicloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	if err := alikafkaService.setInstanceTags(d, TagResourceTopic); err != nil {
-		return WrapError(err)
-	}
 	d.Partial(false)
 	return resourceAlicloudAlikafkaTopicRead(d, meta)
 }
