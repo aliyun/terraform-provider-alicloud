@@ -95,6 +95,7 @@ groups:
       - PolarDB
       - HBase
       - Adb
+      - Maxcompute
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -1222,6 +1223,19 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "Adb"
+
+  - name: Maxcompute
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0230
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Maxcompute"
 
   - name: SweeperAfter
     plan:
