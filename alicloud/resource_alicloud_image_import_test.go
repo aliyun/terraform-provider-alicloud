@@ -12,7 +12,7 @@ import (
 )
 
 func TestAccAliCloudImportImage(t *testing.T) {
-	var v ecs.ImageInDescribeImages
+	var v ecs.Image
 	resourceId := "alicloud_image_import.default"
 	ra := resourceAttrInit(resourceId, testAccImageImageCheckMap)
 	serviceFunc := func() interface{} {

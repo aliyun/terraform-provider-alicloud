@@ -20,7 +20,7 @@ type MongoDBService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *MongoDBService) DescribeMongoDBInstance(id string) (instance dds.DBInstanceInDescribeDBInstanceAttribute, err error) {
+func (s *MongoDBService) DescribeMongoDBInstance(id string) (instance dds.DBInstance, err error) {
 	request := dds.CreateDescribeDBInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -428,7 +428,7 @@ func (s *MongoDBService) setInstanceTags(d *schema.ResourceData) error {
 	return nil
 }
 
-func (s *MongoDBService) tagsToMap(tags []dds.TagInDescribeDBInstances) map[string]string {
+func (s *MongoDBService) tagsToMap(tags []dds.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		if !s.ignoreTag(t) {
@@ -438,7 +438,7 @@ func (s *MongoDBService) tagsToMap(tags []dds.TagInDescribeDBInstances) map[stri
 	return result
 }
 
-func (s *MongoDBService) ignoreTag(t dds.TagInDescribeDBInstances) bool {
+func (s *MongoDBService) ignoreTag(t dds.Tag) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
@@ -451,7 +451,7 @@ func (s *MongoDBService) ignoreTag(t dds.TagInDescribeDBInstances) bool {
 	return false
 }
 
-func (s *MongoDBService) tagsInAttributeToMap(tags []dds.TagInDescribeDBInstanceAttribute) map[string]string {
+func (s *MongoDBService) tagsInAttributeToMap(tags []dds.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		if !s.ignoreTagInAttribute(t) {
@@ -461,7 +461,7 @@ func (s *MongoDBService) tagsInAttributeToMap(tags []dds.TagInDescribeDBInstance
 	return result
 }
 
-func (s *MongoDBService) ignoreTagInAttribute(t dds.TagInDescribeDBInstanceAttribute) bool {
+func (s *MongoDBService) ignoreTagInAttribute(t dds.Tag) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)

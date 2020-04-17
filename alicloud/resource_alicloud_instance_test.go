@@ -40,7 +40,7 @@ func testSweepInstances(region string) error {
 		"tf_testAcc",
 	}
 
-	var insts []ecs.InstanceInDescribeInstances
+	var insts []ecs.Instance
 	req := ecs.CreateDescribeInstancesRequest()
 	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
@@ -140,7 +140,7 @@ func testSweepInstances(region string) error {
 }
 
 func TestAccAlicloudInstanceBasic(t *testing.T) {
-	var v ecs.InstanceInDescribeInstances
+	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
@@ -447,7 +447,7 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 }
 
 func TestAccAlicloudInstanceVpc(t *testing.T) {
-	var v ecs.InstanceInDescribeInstances
+	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
@@ -762,7 +762,7 @@ func TestAccAlicloudInstanceVpc(t *testing.T) {
 }
 
 func TestAccAlicloudInstancePrepaid(t *testing.T) {
-	var v ecs.InstanceInDescribeInstances
+	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
@@ -1126,7 +1126,7 @@ func TestAccAlicloudInstancePrepaid(t *testing.T) {
 }
 
 func TestAccAlicloudInstanceDataDisks(t *testing.T) {
-	var v ecs.InstanceInDescribeInstances
+	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
@@ -1223,7 +1223,7 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 }
 
 func TestAccAlicloudInstanceTypeUpdate(t *testing.T) {
-	var v ecs.InstanceInDescribeInstances
+	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
@@ -1309,7 +1309,7 @@ func TestAccAlicloudInstanceTypeUpdate(t *testing.T) {
 }
 
 func TestAccAlicloudInstanceSpotInstanceLimit(t *testing.T) {
-	var v ecs.InstanceInDescribeInstances
+	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
@@ -1363,7 +1363,7 @@ func TestAccAlicloudInstanceSpotInstanceLimit(t *testing.T) {
 }
 
 func TestAccAlicloudInstanceMulti(t *testing.T) {
-	var v ecs.InstanceInDescribeInstances
+	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default.9"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)

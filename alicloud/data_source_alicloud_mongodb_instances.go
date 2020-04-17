@@ -214,7 +214,7 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 		az = strings.ToLower(v.(string))
 	}
 
-	var dbi []dds.DBInstanceInDescribeDBInstances
+	var dbi []dds.DBInstance
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {

@@ -479,7 +479,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		return fmt.Errorf("There are no availability zones in the region: %#v.", client.Region)
 	}
 
-	mapZones := make(map[string]ecs.ZoneInDescribeZones)
+	mapZones := make(map[string]ecs.Zone)
 	insType, _ := d.Get("available_instance_type").(string)
 	diskType, _ := d.Get("available_disk_category").(string)
 

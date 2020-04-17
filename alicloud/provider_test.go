@@ -255,7 +255,7 @@ provider "alicloud" {
 `
 
 func TestAccAlicloudProviderEcs(t *testing.T) {
-	var v ecs.InstanceInDescribeInstances
+	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
