@@ -17,7 +17,7 @@ import (
 )
 
 type instanceTypeWithOriginalPrice struct {
-	InstanceType  ecs.InstanceTypeInDescribeInstanceTypes
+	InstanceType  ecs.InstanceType
 	OriginalPrice float64
 }
 

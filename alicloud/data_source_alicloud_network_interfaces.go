@@ -260,7 +260,7 @@ func networkInterfaceDescriptionAttributes(d *schema.ResourceData, enis []ecs.Ne
 			"instance_id":       eni.InstanceId,
 			"resource_group_id": eni.ResourceGroupId,
 			"creation_time":     eni.CreationTime,
-			"tags":              ecsService.tagsToMapForEni(eni.Tags.Tag),
+			"tags":              ecsService.tagsToMap(eni.Tags.Tag),
 		}
 
 		ids = append(ids, eni.NetworkInterfaceId)

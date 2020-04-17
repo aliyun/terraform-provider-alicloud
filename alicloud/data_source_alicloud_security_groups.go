@@ -208,7 +208,7 @@ func securityGroupsDescription(d *schema.ResourceData, sg []SecurityGroup, meta 
 			"security_group_type": item.SecurityGroupType,
 			"inner_access":        item.Attributes.InnerAccessPolicy == string(GroupInnerAccept),
 			"creation_time":       item.CreationTime,
-			"tags":                ecsService.tagsToMapForSecurityGroup(item.Tags.Tag),
+			"tags":                ecsService.tagsToMap(item.Tags.Tag),
 		}
 
 		ids = append(ids, string(item.Attributes.SecurityGroupId))

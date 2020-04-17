@@ -246,7 +246,7 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 		request.Tag = &tags
 	}
 
-	var allInstances []ecs.InstanceInDescribeInstances
+	var allInstances []ecs.Instance
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 
@@ -276,7 +276,7 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
-	var filteredInstancesTemp []ecs.InstanceInDescribeInstances
+	var filteredInstancesTemp []ecs.Instance
 
 	nameRegex, ok := d.GetOk("name_regex")
 	imageId, okImg := d.GetOk("image_id")
@@ -349,7 +349,7 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 }
 
 // populate the numerous fields that the instance description returns.
-func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.InstanceInDescribeInstances, instanceRoleNameMap map[string]string, instanceDisksMap map[string][]map[string]interface{}, meta interface{}) error {
+func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Instance, instanceRoleNameMap map[string]string, instanceDisksMap map[string][]map[string]interface{}, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	var ids []string
@@ -383,7 +383,7 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 			"internet_max_bandwidth_out": inst.InternetMaxBandwidthOut,
 			// Complex types get their own functions
 			"disk_device_mappings": instanceDisksMap[inst.InstanceId],
-			"tags":                 ecsService.tagsToMapForInstance(inst.Tags.Tag),
+			"tags":                 ecsService.tagsToMap(inst.Tags.Tag),
 		}
 		if len(inst.InnerIpAddress.IpAddress) > 0 {
 			mapping["private_ip"] = inst.InnerIpAddress.IpAddress[0]
@@ -422,7 +422,7 @@ func getInstanceDisksMappings(instanceMap map[string]string, meta interface{}) (
 	request.PageSize = requests.NewInteger(PageSizeXLarge)
 	request.PageNumber = requests.NewInteger(1)
 	instanceDisks := make(map[string][]map[string]interface{})
-	var allDisks []ecs.DiskInDescribeDisks
+	var allDisks []ecs.Disk
 	for {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DescribeDisks(request)

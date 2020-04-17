@@ -269,7 +269,7 @@ func resourceAliCloudImageRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("disk_device_mapping", FlattenImageDiskDeviceMappings(object.DiskDeviceMappings.DiskDeviceMapping))
 	tags := object.Tags.Tag
 	if len(tags) > 0 {
-		err = d.Set("tags", ecsService.tagsToMapForImage(tags))
+		err = d.Set("tags", ecsService.tagsToMap(tags))
 	}
 	return WrapError(err)
 }
@@ -280,7 +280,7 @@ func resourceAliCloudImageDelete(d *schema.ResourceData, meta interface{}) error
 	return ecsService.deleteImage(d)
 }
 
-func FlattenImageDiskDeviceMappings(list []ecs.DiskDeviceMappingInDescribeImages) []map[string]interface{} {
+func FlattenImageDiskDeviceMappings(list []ecs.DiskDeviceMapping) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(list))
 	for _, i := range list {
 		size, _ := strconv.Atoi(i.Size)

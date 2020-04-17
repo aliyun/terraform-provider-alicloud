@@ -52,7 +52,7 @@ func testSweepMongoDBInstances(region string) error {
 		"tf_testAcc",
 	}
 
-	var insts []dds.DBInstanceInDescribeDBInstances
+	var insts []dds.DBInstance
 	request := dds.CreateDescribeDBInstancesRequest()
 	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
@@ -121,7 +121,7 @@ func testSweepMongoDBInstances(region string) error {
 }
 
 func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
-	var v dds.DBInstanceInDescribeDBInstanceAttribute
+	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -274,7 +274,7 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 }
 
 func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
-	var v dds.DBInstanceInDescribeDBInstanceAttribute
+	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -324,7 +324,7 @@ func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
 }
 
 func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
-	var v dds.DBInstanceInDescribeDBInstanceAttribute
+	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -427,7 +427,7 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 }
 
 func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
-	var v dds.DBInstanceInDescribeDBInstanceAttribute
+	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -530,7 +530,7 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 }
 
 func TestAccAlicloudMongoDBInstance_multi_instance(t *testing.T) {
-	var v dds.DBInstanceInDescribeDBInstanceAttribute
+	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default.2"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
