@@ -1,4 +1,26 @@
 ## 1.80.0 (Unreleased)
+
+- **New Resource:** `alicloud_dns_domain_attachmen` [GH-2365]
+- **New Resource:** `alicloud_dns_instance` [GH-2361]
+- **New Resource:** `alicloud_polardb_endpoint` [GH-2321]
+- **Data Source:** `alicloud_dns_domain_txt_guid` [GH-2357]
+- **Data Source:** `alicloud_kms_aliases` [GH-2353]
+
+IMPROVEMENTS:
+
+- improve(cen_instance): support tags [GH-2374]
+- improve(rds_instance): remove checking zone id [GH-2372]
+- ADB support scale in/out [GH-2367]
+- improve(skd): upgraded the sdk and made compatibility [GH-2363]
+- improve(cen_flowlogs): append output_file [GH-2362]
+- remove checking instance type before creating ecs instance ang ess configuration [GH-2358]
+
+BUG FIXES:
+
+- Fix alikafka topic tag crate bug [GH-2370]
+- Fix assign variable bug [GH-2368]
+- fix(oss): fix creation_date info displays incorrectly bug [GH-2364]
+
 ## 1.79.0 (April 10, 2020)
 
 - **New Resource:** `alicloud_auto_provisioning_group` ([#2303](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2303))
