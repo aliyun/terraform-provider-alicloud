@@ -164,6 +164,25 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 	kmsService := KmsService{client}
 	d.Partial(true)
 
+	if d.HasChange("tags") {
+		if err := kmsService.setResourceTags(d, "secret"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
+	if d.HasChange("description") {
+		request := kms.CreateUpdateSecretRequest()
+		request.SecretName = d.Id()
+		request.Description = d.Get("description").(string)
+		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+			return kmsClient.UpdateSecret(request)
+		})
+		addDebug(request.GetActionName(), raw)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("description")
+	}
 	update := false
 	request := kms.CreatePutSecretValueRequest()
 	request.SecretName = d.Id()
@@ -195,25 +214,6 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("version_id")
 		d.SetPartial("secret_data_type")
 		d.SetPartial("version_stages")
-	}
-	if d.HasChange("tags") {
-		if err := kmsService.setResourceTags(d, "kmssecret"); err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("tags")
-	}
-	if d.HasChange("description") {
-		request := kms.CreateUpdateSecretRequest()
-		request.SecretName = d.Id()
-		request.Description = d.Get("description").(string)
-		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-			return kmsClient.UpdateSecret(request)
-		})
-		addDebug(request.GetActionName(), raw)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		d.SetPartial("description")
 	}
 	d.Partial(false)
 	return resourceAlicloudKmsSecretRead(d, meta)

@@ -30,6 +30,7 @@ The following arguments are supported:
 
 * `ids` - (Optional) A list of CEN instances IDs.
 * `name_regex` - (Optional) A regex string to filter CEN instances by name.
+* `tags` - (Optional, Available in v1.81.0+) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -39,9 +40,11 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of CEN instances IDs.
 * `names` - A list of CEN instances names. 
 * `instances` - A list of CEN instances. Each element contains the following attributes:
+  * `cen_bandwidth_package_ids` - List of CEN Bandwidth Package IDs in the specified CEN instance.
   * `id` - ID of the CEN instance.
-  * `name` - Name of the CEN instance.
-  * `status` - Status of the CEN instance, including "Creating", "Active" and "Deleting".
-  * `bandwidth_package_ids` - List of CEN Bandwidth Package IDs in the specified CEN instance.
-  * `child_instance_ids` - List of child instance IDs in the specified CEN instance.
+  * `cen_id` - ID of the CEN instance.
   * `description` - Description of the CEN instance.
+  * `name` - Name of the CEN instance.
+  * `protection_level` - Indicates the allowed level of CIDR block overlapping.
+  * `status` - Status of the CEN instance, including "Creating", "Active" and "Deleting".
+  * `tags` - A map of tags assigned to the Cen Instance.

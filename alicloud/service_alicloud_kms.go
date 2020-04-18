@@ -140,10 +140,10 @@ func (s *KmsService) setResourceTags(d *schema.ResourceData, resourceType string
 	if len(removed) > 0 {
 		request := kms.CreateUntagResourceRequest()
 		request.RegionId = s.client.RegionId
-		if resourceType == "kmskey" {
+		if resourceType == "key" {
 			request.KeyId = d.Id()
 		}
-		if resourceType == "kmssecret" {
+		if resourceType == "secret" {
 			request.SecretName = d.Id()
 		}
 		remove, err := json.Marshal(removed)
@@ -162,10 +162,10 @@ func (s *KmsService) setResourceTags(d *schema.ResourceData, resourceType string
 	if len(added) > 0 {
 		request := kms.CreateTagResourceRequest()
 		request.RegionId = s.client.RegionId
-		if resourceType == "kmskey" {
+		if resourceType == "key" {
 			request.KeyId = d.Id()
 		}
-		if resourceType == "kmssecret" {
+		if resourceType == "secret" {
 			request.SecretName = d.Id()
 		}
 		add, err := json.Marshal(added)

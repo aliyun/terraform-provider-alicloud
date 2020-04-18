@@ -31,6 +31,23 @@ func TestAccAlicloudCenInstancesDataSource(t *testing.T) {
 		}),
 	}
 
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_cen_instance.default.name}"`,
+			"tags": `{
+							Created = "TF"
+							For 	= "acceptance test"
+					  }`,
+		}),
+		fakeConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_cen_instance.default.name}"`,
+			"tags": `{
+							Created = "TF-fake"
+							For 	= "acceptance test-fake"
+					  }`,
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccAlicloudCenInstancesDataSourceConfig(rand, map[string]string{
 			"ids":        `["${alicloud_cen_instance.default.id}"]`,
@@ -44,7 +61,7 @@ func TestAccAlicloudCenInstancesDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 	}
-	CenInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	CenInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, tagsConf, allConf)
 }
 
 func testAccAlicloudCenInstancesDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -57,6 +74,10 @@ func testAccAlicloudCenInstancesDataSourceConfig(rand int, attrMap map[string]st
 		resource "alicloud_cen_instance" "default" {
 			name = "tf-testAcc%sCenInstancesDataSourceCen-%d"
 			description = "tf-testAccCenConfigDescription"
+			tags 		= {
+				Created = "TF"
+				For 	= "acceptance test"
+			}
 		}
 
 		data "alicloud_cen_instances" "default" {
@@ -68,10 +89,18 @@ func testAccAlicloudCenInstancesDataSourceConfig(rand int, attrMap map[string]st
 
 var existCenInstancesMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"names.#":                 "1",
-		"instances.#":             "1",
-		"instances.0.name":        fmt.Sprintf("tf-testAcc%sCenInstancesDataSourceCen-%d", defaultRegionToTest, rand),
-		"instances.0.description": "tf-testAccCenConfigDescription",
+		"names.#":     "1",
+		"instances.#": "1",
+		"instances.0.cen_bandwidth_package_ids.#": "0",
+		"instances.0.id":               CHECKSET,
+		"instances.0.cen_id":           CHECKSET,
+		"instances.0.description":      "tf-testAccCenConfigDescription",
+		"instances.0.name":             fmt.Sprintf("tf-testAcc%sCenInstancesDataSourceCen-%d", defaultRegionToTest, rand),
+		"instances.0.protection_level": "REDUCED",
+		"instances.0.status":           "Active",
+		"instances.0.tags.%":           "2",
+		"instances.0.tags.Created":     "TF",
+		"instances.0.tags.For":         "acceptance test",
 	}
 }
 
