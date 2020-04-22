@@ -269,6 +269,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_flowlogs":                      dataSourceAlicloudCenFlowlogs(),
 			"alicloud_kms_aliases":                       dataSourceAlicloudKmsAliases(),
 			"alicloud_dns_domain_txt_guid":               dataSourceAlicloudDnsDomainTxtGuid(),
+			"alicloud_edas_applications":                 dataSourceAlicloudEdasApplications(),
+			"alicloud_edas_deploy_groups":                dataSourceAlicloudEdasDeployGroups(),
+			"alicloud_edas_clusters":                     dataSourceAlicloudEdasClusters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -474,6 +477,13 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kms_alias":                           resourceAlicloudKmsAlias(),
 			"alicloud_dns_instance":                        resourceAlicloudDnsInstance(),
 			"alicloud_dns_domain_attachment":               resourceAlicloudDnsDomainAttachment(),
+			"alicloud_edas_application":                    resourceAlicloudEdasApplication(),
+			"alicloud_edas_deploy_group":                   resourceAlicloudEdasDeployGroup(),
+			"alicloud_edas_application_scale":              resourceAlicloudEdasInstanceApplicationAttachment(),
+			"alicloud_edas_slb_bind":                       resourceAlicloudEdasSlbAttachment(),
+			"alicloud_edas_cluster":                        resourceAlicloudEdasCluster(),
+			"alicloud_edas_instance_cluster_attachment":    resourceAlicloudEdasInstanceClusterAttachment(),
+			"alicloud_edas_application_deployment":         resourceAlicloudEdasApplicationPackageAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
