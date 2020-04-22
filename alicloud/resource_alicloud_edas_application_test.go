@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"log"
+
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/hashicorp/terraform/helper/acctest"
 
