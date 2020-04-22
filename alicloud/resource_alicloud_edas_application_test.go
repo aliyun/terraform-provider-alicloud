@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/emicklei/go-restful/log"
+	"log"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/hashicorp/terraform/helper/acctest"
 

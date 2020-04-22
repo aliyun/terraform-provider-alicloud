@@ -4,8 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/emicklei/go-restful/log"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 
@@ -134,7 +132,6 @@ func (e *EdasService) CheckEcsStatus(instanceIds string, count int) error {
 		return WrapErrorf(Error("not enough instances"), DefaultErrorMsg, instanceIds, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	log.Printf("rsp: %+v", rsp.Instances.Instance)
 	return nil
 }
 
