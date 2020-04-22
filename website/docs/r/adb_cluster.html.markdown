@@ -56,7 +56,7 @@ resource "alicloud_adb_cluster" "default" {
 The following arguments are supported:
 
 * `db_cluster_version` - (Optional, ForceNew) Cluster version. Value options: `3.0`, Default to `3.0`.
-* `db_cluster_category` - (Optional, ForceNew) Cluster category. Value options: `Basic`, `Cluster`.
+* `db_cluster_category` - (Required, ForceNew) Cluster category. Value options: `Basic`, `Cluster`.
 * `db_node_class` - (Required) The db_node_class of cluster node.
 * `db_node_count` - (Required) The db_node_count of cluster node.
 * `db_node_storage` - (Required) The db_node_storage of cluster node.
@@ -66,7 +66,7 @@ The following arguments are supported:
 * `auto_renew_period` - (Optional) Auto-renewal period of an cluster, in the unit of the month. It is valid when pay_type is `PrePaid`. Valid value:1, 2, 3, 6, 12, 24, 36, Default to 1.
 * `period` - (Optional) The duration that you will buy DB cluster (in month). It is valid when pay_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of an cluster. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
-* `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
+* `vswitch_id` - (Required, ForceNew) The virtual switch ID to launch DB instances in one VPC.
 * `maintain_time` - (Optional) Maintainable time period format of the instance: HH:MMZ-HH:MMZ (UTC time)
 * `description` - (Optional) The description of cluster.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
