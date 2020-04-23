@@ -96,7 +96,7 @@ func (s *EmrService) setEmrClusterTags(d *schema.ResourceData) error {
 			}
 			request := emr.CreateUntagResourcesRequest()
 			request.ResourceId = &[]string{d.Id()}
-			request.ResourceType = string(TagResourceInstance)
+			request.ResourceType = string(TagResourceCluster)
 			request.TagKey = &tagKey
 			request.RegionId = s.client.RegionId
 			raw, err := s.client.WithEmrClient(func(client *emr.Client) (interface{}, error) {
@@ -112,7 +112,7 @@ func (s *EmrService) setEmrClusterTags(d *schema.ResourceData) error {
 			request := emr.CreateTagResourcesRequest()
 			request.ResourceId = &[]string{d.Id()}
 			request.Tag = &create
-			request.ResourceType = string(TagResourceInstance)
+			request.ResourceType = string(TagResourceCluster)
 			request.RegionId = s.client.RegionId
 			raw, err := s.client.WithEmrClient(func(client *emr.Client) (interface{}, error) {
 				return client.TagResources(request)
