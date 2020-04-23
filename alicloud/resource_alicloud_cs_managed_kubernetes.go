@@ -421,6 +421,10 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional: true,
 				Removed:  "Field 'worker_instance_type' has been removed from provider version 1.75.0. New field 'worker_instance_types' replaces it.",
 			},
+			"user_data": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
