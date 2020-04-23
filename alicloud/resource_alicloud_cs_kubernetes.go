@@ -547,6 +547,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 				Removed:          "Field 'cluster_network_type' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
+			"user_data": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -638,6 +642,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			KeyPair:             keyPair,
 			LoginPassword:       password,
 			ImageId:             d.Get("image_id").(string),
+			UserData:            d.Get("user_data").(string),
 			Count:               int64(newValue) - int64(oldValue),
 			WorkerVSwitchIds:    expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
 			WorkerInstanceTypes: expandStringList(d.Get("worker_instance_types").([]interface{})),
@@ -1039,6 +1044,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			SecurityGroupId:      d.Get("security_group_id").(string),
 			EndpointPublicAccess: d.Get("slb_internet_enabled").(bool),
 			SnatEntry:            d.Get("new_nat_gateway").(bool),
+			UserData:             d.Get("user_data").(string),
 			Addons:               addons,
 		},
 	}
