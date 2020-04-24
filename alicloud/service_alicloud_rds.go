@@ -954,7 +954,7 @@ func (s *RdsService) RdsTaskStateRefreshFunc(id string, taskAction string) resou
 			}
 		}
 
-		return object, "", nil
+		return object, "Pending", nil
 	}
 }
 
