@@ -101,7 +101,7 @@ func testSweepPolarDBClusters(region string) error {
 	return nil
 }
 
-func TestAccAlicloudPolarDBCluster(t *testing.T) {
+func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	var ips []map[string]interface{}
 	rand := acctest.RandInt()
@@ -141,12 +141,14 @@ func TestAccAlicloudPolarDBCluster(t *testing.T) {
 					"db_type":       "MySQL",
 					"db_version":    "8.0",
 					"pay_type":      "PostPaid",
-					"db_node_class": "polar.mysql.x4.large",
+					"db_node_class": "polar.mysql.x4.medium",
 					"vswitch_id":    "${data.alicloud_vswitches.default.ids.0}",
 					"description":   "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"connection_string": "",
+					}),
 				),
 			},
 			{
@@ -177,12 +179,12 @@ func TestAccAlicloudPolarDBCluster(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_node_class": "polar.mysql.x4.xlarge",
+					"db_node_class": "polar.mysql.x4.large",
 					"modify_type":   "Upgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_node_class": "polar.mysql.x4.xlarge",
+						"db_node_class": "polar.mysql.x4.large",
 					}),
 				),
 			},
@@ -192,6 +194,9 @@ func TestAccAlicloudPolarDBCluster(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.12,100.69.7.112"),
+					testAccCheck(map[string]string{
+						"connection_string": CHECKSET,
+					}),
 				),
 			},
 			{

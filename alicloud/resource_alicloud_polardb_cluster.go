@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"reflect"
 	"strings"
 	"time"
 
@@ -93,6 +94,10 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 				Optional: true,
+			},
+			"connection_string": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -309,6 +314,22 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 
 	d.Set("security_ips", ips)
+
+	//describe endpoints
+	localHost := []string{LOCAL_HOST_IP}
+	if ok := reflect.DeepEqual(ips, localHost); ok {
+		d.Set("connection_string", "")
+	} else {
+		endpoints, err := polarDBService.DescribePolarDBInstanceNetInfo(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		for _, endpoint := range endpoints {
+			if endpoint.EndpointType == "Primary" {
+				d.Set("connection_string", endpoint.AddressItems[0].ConnectionString)
+			}
+		}
+	}
 
 	d.Set("vswitch_id", clusterAttribute.VSwitchId)
 	d.Set("pay_type", getChargeType(clusterAttribute.PayType))
