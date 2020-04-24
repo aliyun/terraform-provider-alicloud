@@ -388,6 +388,7 @@ const (
 	TagResourceApp           = TagResourceType("app")
 	TagResourceTopic         = TagResourceType("topic")
 	TagResourceConsumerGroup = TagResourceType("consumergroup")
+	TagResourceCluster       = TagResourceType("cluster")
 )
 
 type KubernetesNodeType string

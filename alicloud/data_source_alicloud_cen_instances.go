@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"regexp"
-	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
@@ -14,38 +13,49 @@ import (
 func dataSourceAlicloudCenInstances() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudCenInstancesRead,
-
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
+				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				ForceNew: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.ValidateRegexp,
+				ForceNew:     true,
 			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-			},
-
-			// Computed values
-			"names": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"instances": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"cen_bandwidth_package_ids": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
 						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"cen_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"description": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -53,22 +63,16 @@ func dataSourceAlicloudCenInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"protection_level": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"bandwidth_package_ids": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
-						"child_instance_ids": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
-						"description": {
-							Type:     schema.TypeString,
+						"tags": {
+							Type:     schema.TypeMap,
 							Computed: true,
 						},
 					},
@@ -79,208 +83,115 @@ func dataSourceAlicloudCenInstances() *schema.Resource {
 }
 
 func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}) error {
-
-	multiFilters := constructCenRequestFilters(d)
-	if len(multiFilters) <= 0 {
-		multiFilters = append(multiFilters, nil)
-	}
-
-	var allCens []cbn.Cen
-	for _, filters := range multiFilters {
-		tmpCens, err := getCenInstances(filters, d, meta)
-		if err != nil {
-			return WrapError(err)
-		}
-		if len(tmpCens) > 0 {
-			allCens = append(allCens, tmpCens...)
-		}
-	}
-
-	return censDescriptionAttributes(d, allCens, meta)
-}
-
-func getCenInstances(filters []cbn.DescribeCensFilter, d *schema.ResourceData, meta interface{}) ([]cbn.Cen, error) {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := cbn.CreateDescribeCensRequest()
-	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-	if filters != nil {
-		request.Filter = &filters
-	}
-
+	var objects []cbn.Cen
 	var nameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok && v.(string) != "" {
-		if r, err := regexp.Compile(Trim(v.(string))); err == nil {
-			nameRegex = r
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		nameRegex = r
+	}
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-
-	var allCens []cbn.Cen
-
-	deadline := time.Now().Add(10 * time.Minute)
+	tagsMap := make(map[string]interface{})
+	if v, ok := d.GetOk("tags"); ok && len(v.(map[string]interface{})) > 0 {
+		tagsMap = v.(map[string]interface{})
+	}
 	for {
-		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCens(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
-				if time.Now().After(deadline) {
-					return nil, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
-				}
-				time.Sleep(10 * time.Second)
-				continue
-			}
-			return allCens, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
+		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*cbn.DescribeCensResponse)
-		if len(response.Cens.Cen) < 1 {
-			break
-		}
 
-		for _, e := range response.Cens.Cen {
-			// filter by name
+		for _, item := range response.Cens.Cen {
 			if nameRegex != nil {
-				if !nameRegex.MatchString(e.Name) {
+				if !nameRegex.MatchString(item.Name) {
 					continue
 				}
 			}
-			allCens = append(allCens, e)
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[item.CenId]; !ok {
+					continue
+				}
+			}
+			if len(tagsMap) > 0 {
+				if len(item.Tags.Tag) != len(tagsMap) {
+					continue
+				}
+				match := true
+				for _, tag := range item.Tags.Tag {
+					if v, ok := tagsMap[tag.Key]; !ok || v.(string) != tag.Value {
+						match = false
+						break
+					}
+				}
+				if !match {
+					continue
+				}
+			}
+			objects = append(objects, item)
 		}
-
 		if len(response.Cens.Cen) < PageSizeLarge {
 			break
 		}
 
 		page, err := getNextpageNumber(request.PageNumber)
 		if err != nil {
-			return allCens, WrapError(err)
+			return WrapError(err)
 		}
 		request.PageNumber = page
 	}
-	return allCens, nil
-}
+	ids := make([]string, len(objects))
+	names := make([]string, len(objects))
+	s := make([]map[string]interface{}, len(objects))
 
-func constructCenRequestFilters(d *schema.ResourceData) [][]cbn.DescribeCensFilter {
-	var res [][]cbn.DescribeCensFilter
-	maxQueryItem := 5
-	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
-		// split ids
-		requestTimes := len(v.([]interface{})) / maxQueryItem
-		if (len(v.([]interface{})) % maxQueryItem) > 0 {
-			requestTimes += 1
-		}
-		filtersArr := make([][]string, requestTimes)
-		for k, vv := range v.([]interface{}) {
-			if vv == nil {
-				continue
-			}
-			index := k / maxQueryItem
-			filtersArr[index] = append(filtersArr[index], Trim(vv.(string)))
-		}
-
-		for k := range filtersArr {
-			filters := []cbn.DescribeCensFilter{{
-				Key:   "CenId",
-				Value: &filtersArr[k],
-			},
-			}
-			res = append(res, filters)
-		}
-	}
-	return res
-}
-
-func censDescriptionAttributes(d *schema.ResourceData, cenSetTypes []cbn.Cen, meta interface{}) error {
-	var ids []string
-	var names []string
-	var s []map[string]interface{}
-
-	for _, cen := range cenSetTypes {
+	for i, object := range objects {
 		mapping := map[string]interface{}{
-			"id":                    cen.CenId,
-			"name":                  cen.Name,
-			"status":                cen.Status,
-			"bandwidth_package_ids": cen.CenBandwidthPackageIds.CenBandwidthPackageId,
-			"description":           cen.Description,
+			"cen_bandwidth_package_ids": object.CenBandwidthPackageIds.CenBandwidthPackageId,
+			"id":                        object.CenId,
+			"cen_id":                    object.CenId,
+			"description":               object.Description,
+			"name":                      object.Name,
+			"protection_level":          object.ProtectionLevel,
+			"status":                    object.Status,
 		}
-
-		// get child instances
-		instanceIds, err := censDescribeCenAttachedChildInstances(d, cen.CenId, meta)
-		if err != nil {
-			return WrapError(err)
+		tags := make(map[string]string)
+		for _, t := range object.Tags.Tag {
+			tags[t.Key] = t.Value
 		}
-
-		if instanceIds != nil {
-			mapping["child_instance_ids"] = instanceIds
-		} else {
-			mapping["child_instance_ids"] = []string{}
-		}
-
-		ids = append(ids, cen.CenId)
-		names = append(names, cen.Name)
-		s = append(s, mapping)
+		mapping["tags"] = tags
+		ids[i] = object.CenId
+		names[i] = object.Name
+		s[i] = mapping
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
-	}
 	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
-
-	// create a json file in current directory and write data source to it.
+	if err := d.Set("instances", s); err != nil {
+		return WrapError(err)
+	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
 
 	return nil
-}
-
-func censDescribeCenAttachedChildInstances(d *schema.ResourceData, cenId string, meta interface{}) ([]string, error) {
-	client := meta.(*connectivity.AliyunClient)
-	var instanceIds []string
-
-	request := cbn.CreateDescribeCenAttachedChildInstancesRequest()
-	request.CenId = cenId
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-
-	for {
-		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribeCenAttachedChildInstances(request)
-		})
-		if err != nil {
-			return nil, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-		response, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
-		if len(response.ChildInstances.ChildInstance) > 0 {
-
-			for _, inst := range response.ChildInstances.ChildInstance {
-				instanceIds = append(instanceIds, inst.ChildInstanceId)
-			}
-
-		}
-
-		if len(response.ChildInstances.ChildInstance) < PageSizeLarge {
-			break
-		}
-
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return instanceIds, WrapError(err)
-		}
-		request.PageNumber = page
-	}
-
-	return instanceIds, nil
 }

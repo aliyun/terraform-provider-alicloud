@@ -28,6 +28,7 @@ func resourceAlicloudAdbCluster() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(50 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(72 * time.Hour),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -46,17 +47,14 @@ func resourceAlicloudAdbCluster() *schema.Resource {
 			},
 			"db_node_class": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
 			},
 			"db_node_count": {
 				Type:     schema.TypeInt,
-				ForceNew: true,
 				Required: true,
 			},
 			"db_node_storage": {
 				Type:     schema.TypeInt,
-				ForceNew: true,
 				Required: true,
 			},
 			"zone_id": {
@@ -236,6 +234,33 @@ func resourceAlicloudAdbClusterUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 		d.SetPartial("security_ips")
+	}
+
+	if d.HasChange("db_node_class") || d.HasChange("db_node_count") || d.HasChange("db_node_storage") {
+		request := adb.CreateModifyDBClusterRequest()
+		request.RegionId = client.RegionId
+		request.DBClusterId = d.Id()
+		request.DBNodeClass = d.Get("db_node_class").(string)
+		request.DBNodeStorage = strconv.Itoa(d.Get("db_node_storage").(int))
+		request.DBNodeGroupCount = strconv.Itoa(d.Get("db_node_count").(int))
+
+		raw, err := client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+			return adbClient.ModifyDBCluster(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		// wait cluster status change from ClassChanging to Running
+		stateConf := BuildStateConf([]string{"ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 30*time.Minute, adbService.AdbClusterStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("db_node_class")
+		d.SetPartial("db_node_count")
+		d.SetPartial("db_node_storage")
 	}
 
 	d.Partial(false)

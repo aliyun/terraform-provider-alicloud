@@ -72,6 +72,7 @@ func dataSourceAlicloudRamUsers() *schema.Resource {
 							Computed: true,
 						},
 						"last_login_date": {
+							Removed:  "Field 'last_login_date' has been removed from provider version 1.79.0.",
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -191,15 +192,14 @@ func ramUsersDescriptionAttributes(d *schema.ResourceData, users []interface{}) 
 	var names []string
 	var s []map[string]interface{}
 	for _, v := range users {
-		user, ok := v.(ram.UserInGetUser)
+		user, ok := v.(ram.UserInListUsers)
 		if !ok {
 			return WrapError(Error("wrong interface convince"))
 		}
 		mapping := map[string]interface{}{
-			"id":              user.UserId,
-			"name":            user.UserName,
-			"create_date":     user.CreateDate,
-			"last_login_date": user.LastLoginDate,
+			"id":          user.UserId,
+			"name":        user.UserName,
+			"create_date": user.CreateDate,
 		}
 		log.Printf("[DEBUG] alicloud_ram_users - adding user: %v", mapping)
 		ids = append(ids, user.UserId)

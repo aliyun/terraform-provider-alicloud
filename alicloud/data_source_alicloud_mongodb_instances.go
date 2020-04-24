@@ -291,11 +291,9 @@ func dataSourceAlicloudMongoDBInstancesRead(d *schema.ResourceData, meta interfa
 		mongoList := []map[string]interface{}{}
 		for _, v := range item.MongosList.MongosAttribute {
 			mongo := map[string]interface{}{
-				"port":           v.Port,
-				"connect_string": v.ConnectSting,
-				"description":    v.NodeDescription,
-				"node_id":        v.NodeId,
-				"class":          v.NodeClass,
+				"description": v.NodeDescription,
+				"node_id":     v.NodeId,
+				"class":       v.NodeClass,
 			}
 			mongoList = append(mongoList, mongo)
 		}

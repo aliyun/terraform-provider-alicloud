@@ -48,6 +48,7 @@ type DBInstance struct {
 	DBInstanceStatus      string                                   `json:"DBInstanceStatus" xml:"DBInstanceStatus"`
 	CurrentKernelVersion  string                                   `json:"CurrentKernelVersion" xml:"CurrentKernelVersion"`
 	ZoneId                string                                   `json:"ZoneId" xml:"ZoneId"`
+	ProtocolType          string                                   `json:"ProtocolType" xml:"ProtocolType"`
 	LockMode              string                                   `json:"LockMode" xml:"LockMode"`
 	MongosList            MongosListInDescribeDBInstances          `json:"MongosList" xml:"MongosList"`
 	ReplicaSets           ReplicaSetsInDescribeDBInstanceAttribute `json:"ReplicaSets" xml:"ReplicaSets"`

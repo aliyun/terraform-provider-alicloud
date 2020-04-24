@@ -84,7 +84,6 @@ func testSweepMongoDBInstances(region string) error {
 	}
 
 	sweeped := false
-	service := VpcService{client}
 	for _, v := range insts {
 		name := v.DBInstanceDescription
 		id := v.DBInstanceId
@@ -95,12 +94,7 @@ func testSweepMongoDBInstances(region string) error {
 				break
 			}
 		}
-		// If a mongoDB name is not set successfully, it should be fetched by vpc name and deleted.
-		if skip {
-			if need, err := service.needSweepVpc(v.VPCId, v.VSwitchId); err == nil {
-				skip = !need
-			}
-		}
+
 		if skip {
 			log.Printf("[INFO] Skipping MongoDB instance: %s (%s)\n", name, id)
 			continue

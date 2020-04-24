@@ -78,6 +78,7 @@ type ModifyAutoRenewAttributeRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	Duration             string           `position:"Query" name:"Duration"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	RenewalStatus        string           `position:"Query" name:"RenewalStatus"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -97,7 +98,7 @@ func CreateModifyAutoRenewAttributeRequest() (request *ModifyAutoRenewAttributeR
 	request = &ModifyAutoRenewAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("polardb", "2017-08-01", "ModifyAutoRenewAttribute", "polardb", "openAPI")
+	request.InitWithApiInfo("polardb", "2017-08-01", "ModifyAutoRenewAttribute", "", "")
 	return
 }
 

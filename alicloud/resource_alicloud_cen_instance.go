@@ -6,7 +6,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -33,11 +32,15 @@ func resourceAlicloudCenInstance() *schema.Resource {
 				Optional: true,
 			},
 			"protection_level": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"REDUCED", "FULL"}, false),
-				Default:      "REDUCED",
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -62,7 +65,7 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 			return cbnClient.CreateCen(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking", "UnknownError"}) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -81,7 +84,7 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCenInstanceRead(d, meta)
+	return resourceAlicloudCenInstanceUpdate(d, meta)
 }
 func resourceAlicloudCenInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -97,22 +100,38 @@ func resourceAlicloudCenInstanceRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("description", object.Description)
 	d.Set("name", object.Name)
 	d.Set("protection_level", object.ProtectionLevel)
+	d.Set("status", object.Status)
+
+	tags := make(map[string]string)
+	for _, t := range object.Tags.Tag {
+		tags[t.Key] = t.Value
+	}
+	d.Set("tags", tags)
 	return nil
 }
 func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	cbnService := CbnService{client}
+	d.Partial(true)
+
+	if d.HasChange("tags") {
+		if err := cbnService.setResourceTags(d, "cen"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
 	update := false
 	request := cbn.CreateModifyCenAttributeRequest()
 	request.CenId = d.Id()
-	if d.HasChange("description") {
+	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
 		request.Description = d.Get("description").(string)
 	}
-	if d.HasChange("name") {
+	if !d.IsNewResource() && d.HasChange("name") {
 		update = true
 		request.Name = d.Get("name").(string)
 	}
-	if d.HasChange("protection_level") {
+	if !d.IsNewResource() && d.HasChange("protection_level") {
 		update = true
 		request.ProtectionLevel = d.Get("protection_level").(string)
 	}
@@ -124,7 +143,11 @@ func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		d.SetPartial("description")
+		d.SetPartial("name")
+		d.SetPartial("protection_level")
 	}
+	d.Partial(false)
 	return resourceAlicloudCenInstanceRead(d, meta)
 }
 func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{}) error {

@@ -252,7 +252,7 @@ func resourceAlicloudOssBucketObjectDelete(d *schema.ResourceData, meta interfac
 func buildObjectHeaderOptions(d *schema.ResourceData) (options []oss.Option, err error) {
 
 	if v, ok := d.GetOk("acl"); ok {
-		options = append(options, oss.ACL(oss.ACLType(v.(string))))
+		options = append(options, oss.ObjectACL(oss.ACLType(v.(string))))
 	}
 
 	if v, ok := d.GetOk("content_type"); ok {

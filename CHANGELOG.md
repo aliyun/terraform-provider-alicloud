@@ -1,4 +1,55 @@
-## 1.79.0 (Unreleased)
+## 1.81.0 (Unreleased)
+## 1.80.0 (April 17, 2020)
+
+- **New Resource:** `alicloud_dns_domain_attachmen` ([#2365](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2365))
+- **New Resource:** `alicloud_dns_instance` ([#2361](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2361))
+- **New Resource:** `alicloud_polardb_endpoint` ([#2321](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2321))
+- **Data Source:** `alicloud_dns_domain_txt_guid` ([#2357](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2357))
+- **Data Source:** `alicloud_kms_aliases` ([#2353](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2353))
+
+IMPROVEMENTS:
+
+- improve(cen_instance): support tags ([#2374](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2374))
+- improve(rds_instance): remove checking zone id ([#2372](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2372))
+- ADB support scale in/out ([#2367](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2367))
+- improve(skd): upgraded the sdk and made compatibility ([#2363](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2363))
+- improve(cen_flowlogs): append output_file ([#2362](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2362))
+- remove checking instance type before creating ecs instance ang ess configuration ([#2358](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2358))
+
+BUG FIXES:
+
+- Fix alikafka topic tag crate bug ([#2370](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2370))
+- Fix assign variable bug ([#2368](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2368))
+- fix(oss): fix creation_date info displays incorrectly bug ([#2364](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2364))
+
+## 1.79.0 (April 10, 2020)
+
+- **New Resource:** `alicloud_auto_provisioning_group` ([#2303](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2303))
+
+IMPROVEMENTS:
+
+- optimize retryable request for alikafka ([#2350](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2350))
+- Update data_source_alicloud_fc_triggers.go ([#2348](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2348))
+- Add error retry in delete method ([#2346](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2346))
+- improve(vpc): vpc and vswitch supported timeouts settings ([#2345](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2345))
+- Update fc_function.html.markdown ([#2342](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2342))
+- Update fc_trigger.html.markdown ([#2341](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2341))
+- improve(polardb): modify the vsw specified ([#2261](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2261))
+- eip associate add clientToken support ([#2247](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2247))
+
+BUG FIXES:
+
+- fix(polardb): fix the bug of parameters modification ([#2354](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2354))
+- fix(ram): fix datasource ram users convince bug ([#2352](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2352))
+- fix(rds): fix the bug of parameters modification ([#2351](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2351))
+- fix(managed_kubernetes): resolve field version diff issue ([#2349](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2349))
+- private_zone has the wrong description ([#2344](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2344))
+- Fix create rds bug ([#2343](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2343))
+- fix(db_instance): resolve deleting db instance bug ([#2317](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2317))
+- user want api server's public ip when they set endpoint_public_access_enabled to true. the second parameter in DescribeClusterUserConfig is "privateIpAddress", so it should be endpoint_public_access_enabled's negative value ([#2290](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2290))
+
+
+
 ## 1.78.0 (April 03, 2020)
 
 - **New Resource:** `alicloud_log_alert` ([#2325](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2325))

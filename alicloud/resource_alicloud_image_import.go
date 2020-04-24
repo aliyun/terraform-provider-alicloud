@@ -214,7 +214,7 @@ func resourceAliCloudImageImportDelete(d *schema.ResourceData, meta interface{})
 	return ecsService.deleteImage(d)
 }
 
-func FlattenImageImportDiskDeviceMappings(list []ecs.DiskDeviceMappingInDescribeImages) []map[string]interface{} {
+func FlattenImageImportDiskDeviceMappings(list []ecs.DiskDeviceMapping) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(list))
 	for _, i := range list {
 		size, _ := strconv.Atoi(i.Size)

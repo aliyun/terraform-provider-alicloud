@@ -17,7 +17,7 @@ package dds
 
 // Rule is a nested struct in dds response
 type Rule struct {
-	RuleDescId int64  `json:"RuleDescId" xml:"RuleDescId"`
 	Name       string `json:"Name" xml:"Name"`
+	RuleDescId int64  `json:"RuleDescId" xml:"RuleDescId"`
 	Title      string `json:"Title" xml:"Title"`
 }

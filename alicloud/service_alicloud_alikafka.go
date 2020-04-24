@@ -22,8 +22,22 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId stri
 	instanceListReq := alikafka.CreateGetInstanceListRequest()
 	instanceListReq.RegionId = alikafkaService.client.RegionId
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-		return alikafkaClient.GetInstanceList(instanceListReq)
+	wait := incrementalWait(2*time.Second, 1*time.Second)
+	var raw interface{}
+	var err error
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		raw, err = alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+			return client.GetInstanceList(instanceListReq)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(instanceListReq.GetActionName(), raw, instanceListReq.RpcRequest, instanceListReq)
+		return nil
 	})
 
 	if err != nil {
@@ -49,8 +63,22 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaNodeStatus(instanceId st
 	describeNodeStatusReq.RegionId = alikafkaService.client.RegionId
 	describeNodeStatusReq.InstanceId = instanceId
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-		return alikafkaClient.DescribeNodeStatus(describeNodeStatusReq)
+	wait := incrementalWait(2*time.Second, 1*time.Second)
+	var raw interface{}
+	var err error
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		raw, err = alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+			return client.DescribeNodeStatus(describeNodeStatusReq)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(describeNodeStatusReq.GetActionName(), raw, describeNodeStatusReq.RpcRequest, describeNodeStatusReq)
+		return nil
 	})
 
 	if err != nil {
@@ -71,8 +99,23 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderI
 
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-			return alikafkaClient.GetInstanceList(instanceListReq)
+
+		wait := incrementalWait(2*time.Second, 1*time.Second)
+		var raw interface{}
+		var err error
+		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+			raw, err = alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+				return client.GetInstanceList(instanceListReq)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(instanceListReq.GetActionName(), raw, instanceListReq.RpcRequest, instanceListReq)
+			return nil
 		})
 
 		if err != nil {
@@ -106,8 +149,21 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string)
 	request.InstanceId = instanceId
 	request.RegionId = alikafkaService.client.RegionId
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-		return alikafkaClient.GetConsumerList(request)
+	wait := incrementalWait(2*time.Second, 1*time.Second)
+	var raw interface{}
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		raw, err = alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+			return client.GetConsumerList(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
 
 	if err != nil {
@@ -147,7 +203,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (*alika
 			return alikafkaClient.GetTopicList(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -193,7 +249,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaSaslUser(id string) (*al
 			return alikafkaClient.DescribeSaslUsers(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -241,13 +297,12 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*ali
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var raw interface{}
-
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 			return alikafkaClient.DescribeAcls(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -503,7 +558,7 @@ func (s *AlikafkaService) DescribeTags(resourceId string, resourceTags map[strin
 			return alikafkaClient.ListTagResources(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{Throttling}) {
+			if IsExpectedErrors(err, []string{Throttling, ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -538,13 +593,26 @@ func (s *AlikafkaService) setInstanceTags(d *schema.ResourceData, resourceType T
 			request.ResourceType = string(resourceType)
 			request.TagKey = &tagKey
 			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
-				return client.UntagResources(request)
+
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				raw, err := s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+					return client.UntagResources(request)
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
 			})
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 		if len(create) > 0 {
@@ -553,13 +621,26 @@ func (s *AlikafkaService) setInstanceTags(d *schema.ResourceData, resourceType T
 			request.Tag = &create
 			request.ResourceType = string(resourceType)
 			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
-				return client.TagResources(request)
+
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				raw, err := s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+					return client.TagResources(request)
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
 			})
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 		d.SetPartial("tags")

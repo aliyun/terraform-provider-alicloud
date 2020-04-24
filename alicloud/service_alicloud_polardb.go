@@ -317,6 +317,118 @@ func (s *PolarDBService) WaitForPolarDBConnection(id string, status Status, time
 	}
 }
 
+func (s *PolarDBService) WaitPolardbEndpointConfigEffect(id string, item map[string]string, timeout int) error {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		effected := true
+		object, err := s.DescribePolarDBInstanceNetInfo(parts[0])
+
+		if err != nil {
+			if NotFoundError(err) {
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
+			return WrapError(err)
+		}
+
+		var endpoint polardb.DBEndpoint
+		if object != nil {
+			for _, o := range object {
+				if o.DBEndpointId == parts[1] {
+					endpoint = o
+					break
+				}
+			}
+		}
+		if value, ok := item["Nodes"]; ok {
+			if endpoint.Nodes != value {
+				effected = false
+			}
+		}
+		if value, ok := item["ReadWriteMode"]; ok {
+			if endpoint.ReadWriteMode != value {
+				effected = false
+			}
+		}
+		if value, ok := item["AutoAddNewNodes"]; ok {
+			if endpoint.AutoAddNewNodes != value {
+				effected = false
+			}
+		}
+		if value, ok := item["EndpointConfig"]; ok {
+			expectConfig := make(map[string]string)
+			actualConfig := make(map[string]string)
+			err = json.Unmarshal([]byte(value), &expectConfig)
+			err = json.Unmarshal([]byte(endpoint.EndpointConfig), &actualConfig)
+			for k, v := range expectConfig {
+				if subVal, ok := actualConfig[k]; !ok || subVal != v {
+					effected = false
+					break
+				}
+			}
+		}
+		if effected {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, endpoint, item, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
+}
+
+func (s *PolarDBService) WaitForPolarDBEndpoints(d *schema.ResourceData, status Status, endpointIds *schema.Set, timeout int) (string, error) {
+	var dbEndpointId string
+	if d.Id() != "" {
+		parts, err := ParseResourceId(d.Id(), 2)
+		if err != nil {
+			return "", WrapError(err)
+		}
+		dbEndpointId = parts[1]
+	}
+	dbClusterId := d.Get("db_cluster_id").(string)
+	endpointType := d.Get("endpoint_type").(string)
+
+	newEndpoint := make(map[string]string)
+	newEndpoint["endpoint_type"] = endpointType
+
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		endpoints, err := s.DescribePolarDBInstanceNetInfo(dbClusterId)
+		if err != nil {
+			return "", WrapError(err)
+		}
+
+		var deleted bool
+		deleted = true
+		for _, value := range endpoints {
+			if status == Deleted {
+				if dbEndpointId == value.DBEndpointId {
+					deleted = false
+				}
+				continue
+			}
+			if !endpointIds.Contains(value.DBEndpointId) && value.EndpointType == endpointType {
+				return value.DBEndpointId, nil
+			}
+		}
+		if status == Deleted && deleted {
+			return "", nil
+		}
+
+		if time.Now().After(deadline) {
+			return "", WrapErrorf(err, WaitTimeoutMsg, dbClusterId, GetFunc(1), timeout, endpoints, newEndpoint, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return "", nil
+}
+
 func (s *PolarDBService) DescribePolarDBConnection(id string) (*polardb.Address, error) {
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -377,6 +489,45 @@ func (s *PolarDBService) DescribePolarDBInstanceNetInfo(id string) ([]polardb.DB
 	}
 
 	return response.Items, nil
+}
+
+func (s *PolarDBService) DescribePolarDBClusterEndpoint(id string) (*polardb.DBEndpoint, error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	dbClusterId := parts[0]
+	dbEndpointId := parts[1]
+
+	request := polardb.CreateDescribeDBClusterEndpointsRequest()
+	request.RegionId = s.client.RegionId
+	dbClusterIds := []string{}
+	dbClusterIds = append(dbClusterIds, id)
+	request.DBClusterId = dbClusterId
+	request.DBEndpointId = dbEndpointId
+
+	var raw interface{}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.DescribeDBClusterEndpoints(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+				time.Sleep(10 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	})
+
+	response, _ := raw.(*polardb.DescribeDBClusterEndpointsResponse)
+	if len(response.Items) < 1 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("DBEndpoint", dbEndpointId)), NotFoundMsg, ProviderERROR)
+	}
+
+	return &response.Items[0], nil
 }
 
 func (s *PolarDBService) DescribePolarDBDatabase(id string) (ds *polardb.Database, err error) {
@@ -556,6 +707,36 @@ func (s *PolarDBService) WaitForPolarDBConnectionPrefix(id, prefix string, timeo
 	return nil
 }
 
+func (s *PolarDBService) RefreshEndpointConfig(d *schema.ResourceData) error {
+	var config map[string]interface{}
+	config = make(map[string]interface{}, 0)
+	documented, ok := d.GetOk("endpoint_config")
+	if !ok {
+		d.Set("endpoint_config", config)
+		return nil
+	}
+	object, err := s.DescribePolarDBClusterEndpoint(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	var endpointConfig = make(map[string]interface{})
+	err = json.Unmarshal([]byte(object.EndpointConfig), &endpointConfig)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	for k, v := range documented.(map[string]interface{}) {
+		if _, ok := endpointConfig[k]; ok {
+			config[k] = v
+		}
+	}
+	if err := d.Set("endpoint_config", config); err != nil {
+		return WrapError(err)
+	}
+	return nil
+}
+
 func (s *PolarDBService) RefreshParameters(d *schema.ResourceData) error {
 	var param []map[string]interface{}
 	documented, ok := d.GetOk("parameters")
@@ -599,9 +780,12 @@ func (s *PolarDBService) ModifyParameters(d *schema.ResourceData) error {
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = d.Id()
 	config := make(map[string]string)
-	documented := d.Get("parameters").(*schema.Set).List()
-	if len(documented) > 0 {
-		for _, i := range documented {
+	allConfig := make(map[string]string)
+	o, n := d.GetChange("parameters")
+	os, ns := o.(*schema.Set), n.(*schema.Set)
+	add := ns.Difference(os).List()
+	if len(add) > 0 {
+		for _, i := range add {
 			key := i.(map[string]interface{})["name"].(string)
 			value := i.(map[string]interface{})["value"].(string)
 			config[key] = value
@@ -621,7 +805,12 @@ func (s *PolarDBService) ModifyParameters(d *schema.ResourceData) error {
 
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		// wait instance parameter expect after modifying
-		if err := s.WaitForPolarDBParameter(d.Id(), DefaultTimeoutMedium, config); err != nil {
+		for _, i := range ns.List() {
+			key := i.(map[string]interface{})["name"].(string)
+			value := i.(map[string]interface{})["value"].(string)
+			allConfig[key] = value
+		}
+		if err := s.WaitForPolarDBParameter(d.Id(), DefaultTimeoutMedium, allConfig); err != nil {
 			return WrapError(err)
 		}
 	}

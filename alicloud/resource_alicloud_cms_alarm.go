@@ -307,12 +307,17 @@ func resourceAlicloudCmsAlarmDelete(d *schema.ResourceData, meta interface{}) er
 
 	request.Id = &[]string{d.Id()}
 
-	return resource.Retry(3*time.Minute, func() *resource.RetryError {
+	wait := incrementalWait(1*time.Second, 2*time.Second)
+	return resource.Retry(10*time.Minute, func() *resource.RetryError {
 		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
 			return cmsClient.DeleteMetricRules(request)
 		})
 
 		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+				wait()
+				return resource.RetryableError(err)
+			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting alarm rule got an error: %#v", err))
 		}
 

@@ -341,7 +341,7 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("tde_Status", tdeInfo.TDEStatus)
 
-	d.Set("tags", ddsService.tagsToMap(instance.Tags.Tag))
+	d.Set("tags", ddsService.tagsInAttributeToMap(instance.Tags.Tag))
 	return nil
 }
 

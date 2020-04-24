@@ -23,7 +23,10 @@ func resourceAliyunVpc() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"cidr_block": {
 				Type:         schema.TypeString,
@@ -103,9 +106,9 @@ func resourceAliyunVpcCreate(d *schema.ResourceData, meta interface{}) error {
 
 	d.SetId(response.VpcId)
 
-	err = vpcService.WaitForVpc(d.Id(), Available, DefaultTimeout)
-	if err != nil {
-		return WrapError(err)
+	stateConf := BuildStateConf([]string{"Pending"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, vpcService.VpcStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAliyunVpcUpdate(d, meta)
@@ -223,7 +226,7 @@ func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 	request := vpc.CreateDeleteVpcRequest()
 	request.RegionId = client.RegionId
 	request.VpcId = d.Id()
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DeleteVpc(request)
 		})
@@ -239,7 +242,11 @@ func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(vpcService.WaitForVpc(d.Id(), Deleted, DefaultTimeoutMedium))
+	stateConf := BuildStateConf([]string{"Pending"}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Second, vpcService.VpcStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }
 
 func buildAliyunVpcArgs(d *schema.ResourceData, meta interface{}) *vpc.CreateVpcRequest {

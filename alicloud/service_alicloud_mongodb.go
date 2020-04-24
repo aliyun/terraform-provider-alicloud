@@ -451,6 +451,29 @@ func (s *MongoDBService) ignoreTag(t dds.Tag) bool {
 	return false
 }
 
+func (s *MongoDBService) tagsInAttributeToMap(tags []dds.Tag) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		if !s.ignoreTagInAttribute(t) {
+			result[t.Key] = t.Value
+		}
+	}
+	return result
+}
+
+func (s *MongoDBService) ignoreTagInAttribute(t dds.Tag) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
+		ok, _ := regexp.MatchString(v, t.Key)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.Key, t.Value)
+			return true
+		}
+	}
+	return false
+}
+
 func (s *MongoDBService) diffTags(oldTags, newTags []dds.TagResourcesTag) ([]dds.TagResourcesTag, []dds.TagResourcesTag) {
 	// First, we're creating everything we have
 	create := make(map[string]interface{})

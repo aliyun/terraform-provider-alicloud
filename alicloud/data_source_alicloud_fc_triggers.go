@@ -126,12 +126,19 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 		}
 
 		for _, trigger := range response.Triggers {
+			var sourceARN, invocationRole string
+			if trigger.SourceARN != nil {
+				sourceARN = *trigger.SourceARN
+			}
+			if trigger.InvocationRole != nil {
+				invocationRole = *trigger.InvocationRole
+			}
 			mapping := map[string]interface{}{
 				"id":                     *trigger.TriggerID,
 				"name":                   *trigger.TriggerName,
-				"source_arn":             *trigger.SourceARN,
+				"source_arn":             sourceARN,
 				"type":                   *trigger.TriggerType,
-				"invocation_role":        *trigger.InvocationRole,
+				"invocation_role":        invocationRole,
 				"config":                 string(trigger.RawTriggerConfig),
 				"creation_time":          *trigger.CreatedTime,
 				"last_modification_time": *trigger.LastModifiedTime,

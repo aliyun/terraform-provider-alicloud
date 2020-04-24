@@ -47,7 +47,7 @@ func (s *EcsService) JudgeRegionValidation(key, region string) error {
 }
 
 // DescribeZone validate zoneId is valid in region
-func (s *EcsService) DescribeZone(id string) (zone ecs.ZoneInDescribeZones, err error) {
+func (s *EcsService) DescribeZone(id string) (zone ecs.Zone, err error) {
 	request := ecs.CreateDescribeZonesRequest()
 	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
@@ -73,7 +73,7 @@ func (s *EcsService) DescribeZone(id string) (zone ecs.ZoneInDescribeZones, err 
 	return zone, WrapError(Error("availability_zone %s not exists in region %s, all zones are %s", id, s.client.RegionId, zoneIds))
 }
 
-func (s *EcsService) DescribeZones(d *schema.ResourceData) (zones []ecs.ZoneInDescribeZones, err error) {
+func (s *EcsService) DescribeZones(d *schema.ResourceData) (zones []ecs.Zone, err error) {
 	request := ecs.CreateDescribeZonesRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceChargeType = d.Get("instance_charge_type").(string)
@@ -94,7 +94,7 @@ func (s *EcsService) DescribeZones(d *schema.ResourceData) (zones []ecs.ZoneInDe
 		zoneIds := []string{}
 		for _, z := range response.Zones.Zone {
 			if z.ZoneId == v.(string) {
-				return []ecs.ZoneInDescribeZones{z}, nil
+				return []ecs.Zone{z}, nil
 			}
 			zoneIds = append(zoneIds, z.ZoneId)
 		}
@@ -104,7 +104,7 @@ func (s *EcsService) DescribeZones(d *schema.ResourceData) (zones []ecs.ZoneInDe
 	}
 }
 
-func (s *EcsService) DescribeInstance(id string) (instance ecs.InstanceInDescribeInstances, err error) {
+func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err error) {
 	request := ecs.CreateDescribeInstancesRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceIds = convertListToJsonString([]interface{}{id})
@@ -158,7 +158,7 @@ func (s *EcsService) DescribeInstanceAttribute(id string) (instance ecs.Describe
 	return *response, nil
 }
 
-func (s *EcsService) DescribeInstanceSystemDisk(id, rg string) (disk ecs.DiskInDescribeDisks, err error) {
+func (s *EcsService) DescribeInstanceSystemDisk(id, rg string) (disk ecs.Disk, err error) {
 	request := ecs.CreateDescribeDisksRequest()
 	request.InstanceId = id
 	request.DiskType = string(DiskTypeSystem)
@@ -192,7 +192,7 @@ func (s *EcsService) DescribeInstanceSystemDisk(id, rg string) (disk ecs.DiskInD
 }
 
 // ResourceAvailable check resource available for zone
-func (s *EcsService) ResourceAvailable(zone ecs.ZoneInDescribeZones, resourceType ResourceType) error {
+func (s *EcsService) ResourceAvailable(zone ecs.Zone, resourceType ResourceType) error {
 	for _, res := range zone.AvailableResourceCreation.ResourceTypes {
 		if res == string(resourceType) {
 			return nil
@@ -201,7 +201,7 @@ func (s *EcsService) ResourceAvailable(zone ecs.ZoneInDescribeZones, resourceTyp
 	return WrapError(Error("%s is not available in %s zone of %s region", resourceType, zone.ZoneId, s.client.Region))
 }
 
-func (s *EcsService) DiskAvailable(zone ecs.ZoneInDescribeZones, diskCategory DiskCategory) error {
+func (s *EcsService) DiskAvailable(zone ecs.Zone, diskCategory DiskCategory) error {
 	for _, disk := range zone.AvailableDiskCategories.DiskCategories {
 		if disk == string(diskCategory) {
 			return nil
@@ -321,7 +321,7 @@ func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, 
 
 }
 
-func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta interface{}, destination DestinationResource) (zoneId string, validZones []ecs.AvailableZoneInDescribeAvailableResource, err error) {
+func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta interface{}, destination DestinationResource) (zoneId string, validZones []ecs.AvailableZone, requestId string, err error) {
 	client := meta.(*connectivity.AliyunClient)
 	// Before creating resources, check input parameters validity according available zone.
 	// If availability zone is nil, it will return all of supported resources in the current.
@@ -359,13 +359,14 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 		return ecsClient.DescribeAvailableResource(request)
 	})
 	if err != nil {
-		return "", nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return "", nil, "", WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ecs.DescribeAvailableResourceResponse)
+	requestId = response.RequestId
 
 	if len(response.AvailableZones.AvailableZone) < 1 {
-		err = WrapError(Error("There are no availability resources in the region: %s.", client.RegionId))
+		err = WrapError(Error("There are no availability resources in the region: %s. RequestId: %s.", client.RegionId, requestId))
 		return
 	}
 
@@ -381,7 +382,7 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 		}
 		if zoneId != "" && zone.ZoneId == zoneId {
 			valid = true
-			validZones = append(make([]ecs.AvailableZoneInDescribeAvailableResource, 1), zone)
+			validZones = append(make([]ecs.AvailableZone, 1), zone)
 			break
 		}
 		expectedZones = append(expectedZones, zone.ZoneId)
@@ -389,26 +390,26 @@ func (s *EcsService) DescribeAvailableResources(d *schema.ResourceData, meta int
 	}
 	if zoneId != "" {
 		if !valid {
-			err = WrapError(Error("Availability zone %s status is not available in the region %s. Expected availability zones: %s.",
-				zoneId, client.RegionId, strings.Join(expectedZones, ", ")))
+			err = WrapError(Error("Availability zone %s status is not available in the region %s. Expected availability zones: %s. RequestId: %s.",
+				zoneId, client.RegionId, strings.Join(expectedZones, ", "), requestId))
 			return
 		}
 		if soldout {
-			err = WrapError(Error("Availability zone %s status is sold out in the region %s. Expected availability zones: %s.",
-				zoneId, client.RegionId, strings.Join(expectedZones, ", ")))
+			err = WrapError(Error("Availability zone %s status is sold out in the region %s. Expected availability zones: %s. RequestId: %s.",
+				zoneId, client.RegionId, strings.Join(expectedZones, ", "), requestId))
 			return
 		}
 	}
 
 	if len(validZones) <= 0 {
-		err = WrapError(Error("There is no availability resources in the region %s. Please choose another region.", client.RegionId))
+		err = WrapError(Error("There is no availability resources in the region %s. Please choose another region. RequestId: %s.", client.RegionId, response.RequestId))
 		return
 	}
 
 	return
 }
 
-func (s *EcsService) InstanceTypeValidation(targetType, zoneId string, validZones []ecs.AvailableZoneInDescribeAvailableResource) error {
+func (s *EcsService) InstanceTypeValidation(targetType, zoneId string, validZones []ecs.AvailableZone) error {
 
 	mapInstanceTypeToZones := make(map[string]string)
 	var expectedInstanceTypes []string
@@ -440,7 +441,7 @@ func (s *EcsService) InstanceTypeValidation(targetType, zoneId string, validZone
 	return WrapError(Error("The instance type %s is solded out or is not supported in the region %s. Expected instance types: %s", targetType, s.client.RegionId, strings.Join(expectedInstanceTypes, ", ")))
 }
 
-func (s *EcsService) QueryInstancesWithKeyPair(instanceIdsStr, keyPair string) (instanceIds []string, instances []ecs.InstanceInDescribeInstances, err error) {
+func (s *EcsService) QueryInstancesWithKeyPair(instanceIdsStr, keyPair string) (instanceIds []string, instances []ecs.Instance, err error) {
 
 	request := ecs.CreateDescribeInstancesRequest()
 	request.RegionId = s.client.RegionId
@@ -517,7 +518,7 @@ func (s *EcsService) DescribeKeyPairAttachment(id string) (keyPair ecs.KeyPair, 
 
 }
 
-func (s *EcsService) DescribeDisk(id string) (disk ecs.DiskInDescribeDisks, err error) {
+func (s *EcsService) DescribeDisk(id string) (disk ecs.Disk, err error) {
 	request := ecs.CreateDescribeDisksRequest()
 	request.DiskIds = convertListToJsonString([]interface{}{id})
 	request.RegionId = s.client.RegionId
@@ -536,7 +537,7 @@ func (s *EcsService) DescribeDisk(id string) (disk ecs.DiskInDescribeDisks, err 
 	return response.Disks.Disk[0], nil
 }
 
-func (s *EcsService) DescribeDiskAttachment(id string) (disk ecs.DiskInDescribeDisks, err error) {
+func (s *EcsService) DescribeDiskAttachment(id string) (disk ecs.Disk, err error) {
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return disk, WrapError(err)
@@ -552,7 +553,7 @@ func (s *EcsService) DescribeDiskAttachment(id string) (disk ecs.DiskInDescribeD
 	return
 }
 
-func (s *EcsService) DescribeDisksByType(instanceId string, diskType DiskType) (disk []ecs.DiskInDescribeDisks, err error) {
+func (s *EcsService) DescribeDisksByType(instanceId string, diskType DiskType) (disk []ecs.Disk, err error) {
 	request := ecs.CreateDescribeDisksRequest()
 	request.RegionId = s.client.RegionId
 	if instanceId != "" {
@@ -574,7 +575,7 @@ func (s *EcsService) DescribeDisksByType(instanceId string, diskType DiskType) (
 	return resp.Disks.Disk, nil
 }
 
-func (s *EcsService) DescribeTags(resourceId string, resourceType TagResourceType) (tags []ecs.TagInDescribeTags, err error) {
+func (s *EcsService) DescribeTags(resourceId string, resourceType TagResourceType) (tags []ecs.Tag, err error) {
 	request := ecs.CreateDescribeTagsRequest()
 	request.RegionId = s.client.RegionId
 	request.ResourceType = string(resourceType)
@@ -596,7 +597,7 @@ func (s *EcsService) DescribeTags(resourceId string, resourceType TagResourceTyp
 	return response.Tags.Tag, nil
 }
 
-func (s *EcsService) DescribeImageById(id string) (image ecs.ImageInDescribeImages, err error) {
+func (s *EcsService) DescribeImageById(id string) (image ecs.Image, err error) {
 	request := ecs.CreateDescribeImagesRequest()
 	request.RegionId = s.client.RegionId
 	request.ImageId = id
@@ -1334,10 +1335,57 @@ func (s *EcsService) DescribeImageShareByImageId(id string) (imageShare *ecs.Des
 	return resp, nil
 }
 
-func (s *EcsService) tagsToMapForDisk(tags []ecs.TagInDescribeDisks) map[string]string {
+func (s *EcsService) WaitForAutoProvisioningGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		object, err := s.DescribeAutoProvisioningGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Status == string(status) {
+			return nil
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+	}
+}
+
+func (s *EcsService) DescribeAutoProvisioningGroup(id string) (group ecs.AutoProvisioningGroup, err error) {
+	request := ecs.CreateDescribeAutoProvisioningGroupsRequest()
+	ids := []string{id}
+	request.AutoProvisioningGroupId = &ids
+	request.RegionId = s.client.RegionId
+	raw, e := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeAutoProvisioningGroups(request)
+	})
+	if e != nil {
+		err = WrapErrorf(e, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*ecs.DescribeAutoProvisioningGroupsResponse)
+	for _, v := range response.AutoProvisioningGroups.AutoProvisioningGroup {
+		if v.AutoProvisioningGroupId == id {
+			return v, nil
+		}
+	}
+	err = WrapErrorf(Error(GetNotFoundMessage("AutoProvisioningGroup", id)), NotFoundMsg, ProviderERROR)
+	return
+}
+
+func (s *EcsService) tagsToMap(tags []ecs.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
-		if !s.ecsTagIgnoredForDisk(t) {
+		if !s.ecsTagIgnored(t) {
 			result[t.TagKey] = t.TagValue
 		}
 	}
@@ -1345,127 +1393,7 @@ func (s *EcsService) tagsToMapForDisk(tags []ecs.TagInDescribeDisks) map[string]
 	return result
 }
 
-func (s *EcsService) ecsTagIgnoredForDisk(t ecs.TagInDescribeDisks) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
-	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
-		ok, _ := regexp.MatchString(v, t.TagKey)
-		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
-			return true
-		}
-	}
-	return false
-}
-
-func (s *EcsService) tagsToMapForInstance(tags []ecs.TagInDescribeInstances) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		if !s.ecsTagIgnoredForInstance(t) {
-			result[t.TagKey] = t.TagValue
-		}
-	}
-
-	return result
-}
-
-func (s *EcsService) ecsTagIgnoredForInstance(t ecs.TagInDescribeInstances) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
-	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
-		ok, _ := regexp.MatchString(v, t.TagKey)
-		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
-			return true
-		}
-	}
-	return false
-}
-
-func (s *EcsService) tagsToMapForKeyPair(tags []ecs.TagInDescribeKeyPairs) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		if !s.ecsTagIgnoredForKeyPair(t) {
-			result[t.TagKey] = t.TagValue
-		}
-	}
-
-	return result
-}
-
-func (s *EcsService) ecsTagIgnoredForKeyPair(t ecs.TagInDescribeKeyPairs) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
-	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
-		ok, _ := regexp.MatchString(v, t.TagKey)
-		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
-			return true
-		}
-	}
-	return false
-}
-
-func (s *EcsService) tagsToMapForEni(tags []ecs.TagInDescribeNetworkInterfaces) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		if !s.ecsTagIgnoredForEni(t) {
-			result[t.TagKey] = t.TagValue
-		}
-	}
-
-	return result
-}
-
-func (s *EcsService) ecsTagIgnoredForEni(t ecs.TagInDescribeNetworkInterfaces) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
-	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
-		ok, _ := regexp.MatchString(v, t.TagKey)
-		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
-			return true
-		}
-	}
-	return false
-}
-
-func (s *EcsService) tagsToMapForSecurityGroup(tags []ecs.TagInDescribeSecurityGroups) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		if !s.ecsTagIgnoredForSecurityGroup(t) {
-			result[t.TagKey] = t.TagValue
-		}
-	}
-
-	return result
-}
-
-func (s *EcsService) ecsTagIgnoredForSecurityGroup(t ecs.TagInDescribeSecurityGroups) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
-	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
-		ok, _ := regexp.MatchString(v, t.TagKey)
-		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
-			return true
-		}
-	}
-	return false
-}
-
-func (s *EcsService) tagsToMapForImage(tags []ecs.TagInDescribeImages) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		if !s.ecsTagIgnoredForImage(t) {
-			result[t.TagKey] = t.TagValue
-		}
-	}
-
-	return result
-}
-
-func (s *EcsService) ecsTagIgnoredForImage(t ecs.TagInDescribeImages) bool {
+func (s *EcsService) ecsTagIgnored(t ecs.Tag) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)

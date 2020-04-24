@@ -133,7 +133,7 @@ func resourceAlicloudAlikafkaConsumerGroupDelete(d *schema.ResourceData, meta in
 			return alikafkaClient.DeleteConsumerGroup(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}

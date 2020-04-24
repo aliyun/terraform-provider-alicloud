@@ -127,6 +127,7 @@ type AliyunClient struct {
 	cbnConn                      *cbn.Client
 	kmsConn                      *kms.Client
 	maxcomputeconn               *maxcompute.Client
+	dnsConn                      *alidns.Client
 }
 
 type ApiVersion string
@@ -153,7 +154,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.78.0"
+var providerVersion = "1.80.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient

@@ -54,8 +54,10 @@ func TestAccAlicloudPolarDBClusterAccountsDataSource(t *testing.T) {
 		existMapFunc: existPolarClusterMapFunc,
 		fakeMapFunc:  fakePolarClusterMapFunc,
 	}
-
-	PolarClusterCheckInfo.dataSourceTestCheck(t, rand, idConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithNoDefaultVpc(t)
+	}
+	PolarClusterCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idConf, allConf)
 }
 
 func testAccCheckAlicloudPolarClusterAccountsDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -78,7 +80,7 @@ func testAccCheckAlicloudPolarClusterAccountsDataSourceConfig(rand int, attrMap 
 	  db_version        = "8.0"
       pay_type          = "PostPaid"
 	  db_node_class     = "polar.mysql.x4.large"
-	  vswitch_id        = "${alicloud_vswitch.default.id}"
+	  vswitch_id        = "${data.alicloud_vswitches.default.ids.0}"
 	  description       = "${var.name}"
 	}
 

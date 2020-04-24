@@ -33,7 +33,6 @@ The following arguments are supported:
 
 * `description_regex` - (Optional) A regex string to filter results by cluster description.
 * `ids` - (Optional) A list of ADB cluster IDs. 
-* `status` - (Optional) status of the cluster.
 * `tags` - (Optional, Available in v1.68.0+) A mapping of tags to assign to the resource.
       - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
       - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.

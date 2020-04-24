@@ -267,6 +267,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_clusters":                      dataSourceAlicloudAdbClusters(),
 			"alicloud_adb_zones":                         dataSourceAlicloudAdbZones(),
 			"alicloud_cen_flowlogs":                      dataSourceAlicloudCenFlowlogs(),
+			"alicloud_kms_aliases":                       dataSourceAlicloudKmsAliases(),
+			"alicloud_dns_domain_txt_guid":               dataSourceAlicloudDnsDomainTxtGuid(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -299,6 +301,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gpdb_instance":                      resourceAlicloudGpdbInstance(),
 			"alicloud_gpdb_connection":                    resourceAlicloudGpdbConnection(),
 			"alicloud_db_readonly_instance":               resourceAlicloudDBReadonlyInstance(),
+			"alicloud_auto_provisioning_group":            resourceAlicloudAutoProvisioningGroup(),
 			"alicloud_ess_scaling_group":                  resourceAlicloudEssScalingGroup(),
 			"alicloud_ess_scaling_configuration":          resourceAlicloudEssScalingConfiguration(),
 			"alicloud_ess_scaling_rule":                   resourceAlicloudEssScalingRule(),
@@ -458,6 +461,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_database":                    resourceAlicloudPolarDBDatabase(),
 			"alicloud_polardb_account":                     resourceAlicloudPolarDBAccount(),
 			"alicloud_polardb_account_privilege":           resourceAlicloudPolarDBAccountPrivilege(),
+			"alicloud_polardb_endpoint":                    resourceAlicloudPolarDBEndpoint(),
 			"alicloud_polardb_endpoint_address":            resourceAlicloudPolarDBEndpointAddress(),
 			"alicloud_hbase_instance":                      resourceAlicloudHBaseInstance(),
 			"alicloud_market_order":                        resourceAlicloudMarketOrder(),
@@ -468,6 +472,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kms_secret":                          resourceAlicloudKmsSecret(),
 			"alicloud_maxcompute_project":                  resourceAlicloudMaxComputeProject(),
 			"alicloud_kms_alias":                           resourceAlicloudKmsAlias(),
+			"alicloud_dns_instance":                        resourceAlicloudDnsInstance(),
+			"alicloud_dns_domain_attachment":               resourceAlicloudDnsDomainAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,

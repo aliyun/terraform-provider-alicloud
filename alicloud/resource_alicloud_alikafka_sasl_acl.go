@@ -171,7 +171,7 @@ func resourceAlicloudAlikafkaSaslAclDelete(d *schema.ResourceData, meta interfac
 			return alikafkaClient.DeleteAcl(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
 				time.Sleep(10 * time.Second)
 				return resource.RetryableError(err)
 			}

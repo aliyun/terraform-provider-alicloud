@@ -83,6 +83,7 @@ type CreateDBClusterRequest struct {
 	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	DBNodeClass          string           `position:"Query" name:"DBNodeClass"`
 	Engine               string           `position:"Query" name:"Engine"`
+	GDNId                string           `position:"Query" name:"GDNId"`
 	CreationOption       string           `position:"Query" name:"CreationOption"`
 	SourceResourceId     string           `position:"Query" name:"SourceResourceId"`
 	Period               string           `position:"Query" name:"Period"`
@@ -98,6 +99,7 @@ type CreateDBClusterRequest struct {
 	ZoneId               string           `position:"Query" name:"ZoneId"`
 	DBVersion            string           `position:"Query" name:"DBVersion"`
 	CloneDataPoint       string           `position:"Query" name:"CloneDataPoint"`
+	TDEStatus            requests.Boolean `position:"Query" name:"TDEStatus"`
 	PayType              string           `position:"Query" name:"PayType"`
 }
 
@@ -115,7 +117,7 @@ func CreateCreateDBClusterRequest() (request *CreateDBClusterRequest) {
 	request = &CreateDBClusterRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("polardb", "2017-08-01", "CreateDBCluster", "polardb", "openAPI")
+	request.InitWithApiInfo("polardb", "2017-08-01", "CreateDBCluster", "", "")
 	return
 }
 
