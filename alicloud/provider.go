@@ -475,6 +475,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kms_alias":                           resourceAlicloudKmsAlias(),
 			"alicloud_dns_instance":                        resourceAlicloudDnsInstance(),
 			"alicloud_dns_domain_attachment":               resourceAlicloudDnsDomainAttachment(),
+			"alicloud_dns_domain":                          resourceAlicloudDnsDomain(),
 		},
 
 		ConfigureFunc: providerConfigure,
