@@ -36,15 +36,13 @@ func resourceAlicloudAdbBackupPolicy() *schema.Resource {
 				Elem: &schema.Schema{Type: schema.TypeString},
 				// terraform does not support ValidateFunc of TypeList attr
 				// ValidateFunc: validateAllowedStringValue([]string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}),
-				Optional: true,
-				Computed: true,
+				Required: true,
 			},
 
 			"preferred_backup_time": {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice(BACKUP_TIME, false),
-				Optional:     true,
-				Default:      "02:00Z-03:00Z",
+				Required:     true,
 			},
 			"backup_retention_period": {
 				Type:     schema.TypeString,
