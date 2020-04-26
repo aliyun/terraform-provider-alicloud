@@ -3,7 +3,8 @@ package alicloud
 import (
 	"time"
 
-	sls "github.com/aliyun/aliyun-log-go-sdk"
+	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
+	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -514,4 +515,22 @@ func CreateDashboard(project, name string, client *sls.Client) error {
 		return nil
 	})
 	return err
+}
+
+func (s *LogService) DescribeLogAudit(id string) (*slsPop.DescribeAppResponse, error) {
+	request := slsPop.CreateDescribeAppRequest()
+	response := &slsPop.DescribeAppResponse{}
+	request.AppName = "audit"
+	raw, err := s.client.WithLogPopClient(func(client *slsPop.Client) (interface{}, error) {
+		return client.DescribeApp(request)
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"AppNotExist"}) {
+			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ = raw.(*slsPop.DescribeAppResponse)
+	return response, nil
 }
