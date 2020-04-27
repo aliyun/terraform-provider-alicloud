@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/base64"
 	"fmt"
 	"regexp"
 	"strings"
@@ -648,6 +649,15 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			WorkerInstanceTypes: expandStringList(d.Get("worker_instance_types").([]interface{})),
 		}
 
+		if v := d.Get("user_data").(string); v != "" {
+			_, base64DecodeError := base64.StdEncoding.DecodeString(v)
+			if base64DecodeError == nil {
+				args.UserData = v
+			} else {
+				args.UserData = base64.StdEncoding.EncodeToString([]byte(v))
+			}
+		}
+
 		if v, ok := d.GetOk("worker_instance_charge_type"); ok {
 			args.WorkerInstanceChargeType = v.(string)
 			if args.WorkerInstanceChargeType == string(PrePaid) {
@@ -1044,9 +1054,17 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			SecurityGroupId:      d.Get("security_group_id").(string),
 			EndpointPublicAccess: d.Get("slb_internet_enabled").(bool),
 			SnatEntry:            d.Get("new_nat_gateway").(bool),
-			UserData:             d.Get("user_data").(string),
 			Addons:               addons,
 		},
+	}
+
+	if v := d.Get("user_data").(string); v != "" {
+		_, base64DecodeError := base64.StdEncoding.DecodeString(v)
+		if base64DecodeError == nil {
+			creationArgs.UserData = v
+		} else {
+			creationArgs.UserData = base64.StdEncoding.EncodeToString([]byte(v))
+		}
 	}
 
 	if _, ok := d.GetOk("pod_vswitch_ids"); ok {

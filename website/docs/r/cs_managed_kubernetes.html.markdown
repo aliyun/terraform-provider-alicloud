@@ -97,6 +97,7 @@ The following arguments are supported:
 * `cpu_policy` - kubelet cpu policy. options: static|none. default: none.
 * `proxy_mode` - Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
 * `image_id` - Custom Image support. Must based on CentOS7 or AliyunLinux2.
+* `user_data` - (Optional) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
 
 
 #### Addons 
@@ -196,7 +197,7 @@ You can get more information about addons on ACK web console. When you create a 
 * `node_cidr_mask` - (Optional) The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24
 * `slb_internet_enabled` - (Optional) Whether to create internet load balancer for API Server. Default to true.
 
-If you want to use `Terway` as CNI network plugin, You need to specific the `pod_vswitch_ids` field and addons with `terway-eniip`.    
+If you want to use `Terway` as CNI network plugin, You need to specific the `pod_vswitch_ids` field and addons with `terway-eniip` or `terway-eni`. The `terway-eni` mode for pod with one exclude ENI, the `terway-eniip` mode for pods share ENI.
 If you want to use `Flannel` as CNI network plugin, You need to specific the `pod_cidr` field and addons with `flannel`.
 
 #### Worker params 
@@ -209,7 +210,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `worker_auto_renew` - (Optional) Enable worker payment auto-renew, defaults to false.
 * `worker_auto_renew_period` - (Optional) Worker payment auto-renew period. When period unit is `Month`, it can be one of {“1”, “2”, “3”, “6”, “12”}.  When period unit is `Week`, it can be one of {“1”, “2”, “3”}.
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
+* `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
 
 #### Computed params (No need to configure) 
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
