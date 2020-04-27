@@ -217,7 +217,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `worker_auto_renew` - (Optional) Enable worker payment auto-renew, defaults to false.
 * `worker_auto_renew_period` - (Optional) Worker payment auto-renew period. When period unit is `Month`, it can be one of {“1”, “2”, “3”, “6”, “12”}.  When period unit is `Week`, it can be one of {“1”, “2”, “3”}.
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
+* `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
 
 #### Computed params (No need to configure) 
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
