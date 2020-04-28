@@ -1,5 +1,5 @@
 ---
-subcategory: "ADB"
+subcategory: "AnalyticDB for MySQL (ADB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_adb_backup_policy"
 sidebar_current: "docs-alicloud-resource-adb-backup-policy"
