@@ -65,6 +65,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
+* `instance_id` - The instance id.
 * `dba_nick_name` - The instance dba nickname.
 * `state` - The instance status.
 
