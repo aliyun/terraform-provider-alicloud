@@ -82,6 +82,10 @@ type Config struct {
 	ConfigurationSource  string
 	CbnEndpoint          string
 	edasEndpoint         string
+	SkipRegionValidation  bool
+	ConfigurationSource   string
+	CbnEndpoint           string
+	DmsEnterpriseEndpoint string
 }
 
 func (c *Config) loadAndValidate() error {
