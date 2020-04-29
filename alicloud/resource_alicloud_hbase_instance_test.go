@@ -119,7 +119,7 @@ resource "alicloud_hbase_instance" "default" {
   core_instance_type = "hbase.sn1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
-  core_disk_size = 100
+  core_disk_size = 400
   pay_type = "PostPaid"
   cold_storage_size = 0
   deletion_protection = false
@@ -139,7 +139,7 @@ resource "alicloud_hbase_instance" "default" {
   core_instance_type = "hbase.sn1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
-  core_disk_size = 100
+  core_disk_size = 400
   pay_type = "PostPaid"
   cold_storage_size = 0
   deletion_protection = false
@@ -159,7 +159,7 @@ resource "alicloud_hbase_instance" "default" {
   core_instance_type = "hbase.sn1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
-  core_disk_size = 100
+  core_disk_size = 400
   pay_type = "PostPaid"
   cold_storage_size = 0
   maintain_start_time = "04:00Z"
@@ -180,7 +180,7 @@ resource "alicloud_hbase_instance" "default" {
   core_instance_type = "hbase.sn1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
-  core_disk_size = 100
+  core_disk_size = 400
   pay_type = "PostPaid"
   cold_storage_size = 0
   maintain_start_time = "04:00Z"
@@ -209,7 +209,7 @@ resource "alicloud_hbase_instance" "default" {
   core_instance_type = "hbase.sn1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
-  core_disk_size = 100
+  core_disk_size = 400
   pay_type = "PostPaid"
   vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
@@ -234,7 +234,7 @@ resource "alicloud_hbase_instance" "default" {
   core_instance_type = "hbase.sn1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
-  core_disk_size = 100
+  core_disk_size = 400
   pay_type = "PostPaid"
   vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
@@ -259,7 +259,7 @@ resource "alicloud_hbase_instance" "default" {
   core_instance_type = "hbase.sn1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
-  core_disk_size = 100
+  core_disk_size = 400
   pay_type = "PostPaid"
   vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
@@ -286,7 +286,7 @@ resource "alicloud_hbase_instance" "default" {
   core_instance_type = "hbase.sn1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
-  core_disk_size = 100
+  core_disk_size = 400
   pay_type = "PostPaid"
   vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
@@ -319,7 +319,7 @@ resource "alicloud_hbase_instance" "default" {
   core_instance_type = "hbase.sn1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
-  core_disk_size = 100
+  core_disk_size = 400
   pay_type = "PostPaid"
   vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
@@ -346,7 +346,7 @@ resource "alicloud_hbase_instance" "default" {
   core_instance_type = "hbase.sn1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
-  core_disk_size = 100
+  core_disk_size = 400
   pay_type = "PostPaid"
   vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
