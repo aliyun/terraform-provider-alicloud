@@ -81,8 +81,8 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			"core_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(100, 8000),
-				Default:      100,
+				ValidateFunc: validation.IntBetween(400, 8000),
+				Default:      400,
 			},
 			"pay_type": {
 				Type:         schema.TypeString,
@@ -137,37 +137,36 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 	}
 }
 
-func checkParams(request *hbase.CreateInstanceRequest) error {
-	if request.DbType == "bds" && request.NetType == "classic" {
+func checkParams(request *hbase.CreateClusterRequest) error {
+	if request.Engine == "bds" && request.VSwitchId == "" {
 		return WrapError(Error("bds is not support classic"))
 	}
 	return nil
 }
 
-func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.CreateInstanceRequest, error) {
+func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.CreateClusterRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-	request := hbase.CreateCreateInstanceRequest()
+	request := hbase.CreateCreateClusterRequest()
 	request.ClusterName = Trim(d.Get("name").(string))
 	request.RegionId = string(client.Region)
 	request.ZoneId = Trim(d.Get("zone_id").(string))
 	request.Engine = Trim(d.Get("engine").(string))
-	request.DbType = request.Engine
 	request.EngineVersion = Trim(d.Get("engine_version").(string))
 	request.MasterInstanceType = Trim(d.Get("master_instance_type").(string))
 	request.CoreInstanceType = Trim(d.Get("core_instance_type").(string))
-	request.CoreInstanceQuantity = strconv.Itoa(d.Get("core_instance_quantity").(int))
-	request.CoreDiskType = Trim(d.Get("core_disk_type").(string))
-	request.CoreDiskQuantity = "4"
-	request.CoreDiskSize = strconv.Itoa(d.Get("core_disk_size").(int))
+	request.NodeCount = requests.NewInteger(d.Get("core_instance_quantity").(int))
+	request.DiskType = Trim(d.Get("core_disk_type").(string))
+	request.DiskSize = requests.NewInteger(d.Get("core_disk_size").(int))
 	request.PayType = Trim(d.Get("pay_type").(string))
-	request.PricingCycle = "month"
-	request.Duration = strconv.Itoa(d.Get("duration").(int))
-	request.AutoRenew = strconv.FormatBool(d.Get("auto_renew").(bool))
-	request.NetType = "classic"
+	request.PeriodUnit = "month"
+	request.Period = requests.NewInteger(d.Get("duration").(int))
+	if d.Get("auto_renew").(bool) {
+		request.AutoRenewPeriod = requests.NewInteger(1)
+	}
+
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
-		request.NetType = "vpc"
 		request.VSwitchId = vswitchId
 		// check vswitchId in zone
 		vsw, err := vpcService.DescribeVSwitch(vswitchId)
@@ -189,12 +188,10 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 		request.VpcId = vsw.VpcId
 	}
 
-	if d.Get("cold_storage_size").(int) > 0 {
-		request.IsColdStorage = "true"
-		request.ColdStorageSize = strconv.Itoa(d.Get("cold_storage_size").(int))
-	} else {
-		request.IsColdStorage = "false"
+	if d.Get("cold_storage_size").(int) < 0 {
+		return nil, WrapError(Error("cold_storage_size=%s is invalid", d.Get("cold_storage_size")))
 	}
+	request.ColdStorageSize = requests.NewInteger(d.Get("cold_storage_size").(int))
 
 	request.SecurityIPList = LOCAL_HOST_IP
 	return request, checkParams(request)
@@ -210,7 +207,7 @@ func resourceAlicloudHBaseInstanceCreate(d *schema.ResourceData, meta interface{
 	}
 
 	raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
-		return client.CreateInstance(request)
+		return client.CreateCluster(request)
 	})
 
 	if err != nil {
@@ -218,7 +215,7 @@ func resourceAlicloudHBaseInstanceCreate(d *schema.ResourceData, meta interface{
 	}
 
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*hbase.CreateInstanceResponse)
+	response, _ := raw.(*hbase.CreateClusterResponse)
 
 	d.SetId(response.ClusterId)
 
@@ -251,7 +248,11 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 	d.Set("master_instance_type", instance.MasterInstanceType)
 	d.Set("core_instance_type", instance.CoreInstanceType)
 	d.Set("core_instance_quantity", instance.CoreNodeCount)
-	d.Set("core_disk_size", instance.CoreDiskSize)
+	diskCount, err := strconv.Atoi(instance.CoreDiskCount)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("core_disk_size", diskCount*instance.CoreDiskSize)
 	d.Set("core_disk_type", instance.CoreDiskType)
 	// Postpaid -> PostPaid
 	if instance.PayType == string(Postpaid) {
@@ -354,7 +355,7 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("core_disk_size") {
 		request := hbase.CreateResizeDiskSizeRequest()
 		request.ClusterId = d.Id()
-		request.NodeDiskSize = requests.NewInteger(d.Get("core_disk_size").(int) * 4)
+		request.NodeDiskSize = requests.NewInteger(d.Get("core_disk_size").(int))
 
 		raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
 			return client.ResizeDiskSize(request)
