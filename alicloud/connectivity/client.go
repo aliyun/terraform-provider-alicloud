@@ -39,6 +39,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -101,6 +102,7 @@ type AliyunClient struct {
 	logconn                      *sls.Client
 	fcconn                       *fc.Client
 	cenconn                      *cbn.Client
+	logpopconn                   *slsPop.Client
 	pvtzconn                     *pvtz.Client
 	ddsconn                      *dds.Client
 	gpdbconn                     *gpdb.Client
@@ -737,6 +739,31 @@ func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, err
 	}
 
 	return do(client.stsconn)
+}
+
+func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{}, error)) (interface{}, error) {
+	// Initialize the HBase client if necessary
+	if client.logpopconn == nil {
+		endpoint := client.config.LogEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, LOGCode)
+		}
+		if endpoint != "" {
+			endpoint = fmt.Sprintf("%s.log.aliyuncs.com", client.config.RegionId)
+		}
+		logpopconn, err := slsPop.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the sls client: %#v", err)
+		}
+
+		logpopconn.AppendUserAgent(Terraform, terraformVersion)
+		logpopconn.AppendUserAgent(Provider, providerVersion)
+		logpopconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.logpopconn = logpopconn
+	}
+
+	return do(client.logpopconn)
 }
 
 func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, error)) (interface{}, error) {
