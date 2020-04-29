@@ -65,7 +65,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `instance_id` - The instance id.
+* `id` - The id of the DMS enterprise instance.
 * `dba_nick_name` - The instance dba nickname.
 * `state` - The instance status.
 
