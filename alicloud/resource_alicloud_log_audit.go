@@ -128,7 +128,9 @@ func resourceAlicloudLogAuditRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("aliuid", initMap["aliuid"].(string))
 	delete(initMap, "region")
 	delete(initMap, "aliuid")
-	delete(initMap, "variable_map.project")
+	delete(initMap, "project")
+	delete(initMap, "logstore")
+	delete(initMap, "multi_account")
 	d.Set("variable_map", initMap)
 	return nil
 }
