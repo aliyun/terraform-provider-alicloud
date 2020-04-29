@@ -19,7 +19,6 @@ func TestAccAlicloudAdbAccount_update_forSuper(t *testing.T) {
 		"db_cluster_id":    CHECKSET,
 		"account_name":     "tftestsuper",
 		"account_password": "YourPassword_123",
-		"account_type":     "Super",
 	}
 	resourceId := "alicloud_adb_account.default"
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -33,6 +32,7 @@ func TestAccAlicloudAdbAccount_update_forSuper(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 			testAccPreCheckWithNoDefaultVswitch(t)
 		},
 
@@ -47,7 +47,6 @@ func TestAccAlicloudAdbAccount_update_forSuper(t *testing.T) {
 					"db_cluster_id":    "${alicloud_adb_cluster.cluster.id}",
 					"account_name":     "tftestsuper",
 					"account_password": "YourPassword_123",
-					"account_type":     "Super",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),

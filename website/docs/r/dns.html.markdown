@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_dns
 
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.81.0`. Please use new resource [alicloud_dns_domain](https://www.terraform.io/docs/providers/alicloud/r/dns_domain.html).
+
 Provides a DNS resource.
 
 -> **NOTE:** The domain name which you want to add must be already registered and had not added by another account. Every domain name can only exist in a unique group.

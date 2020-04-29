@@ -36,7 +36,7 @@ Basic Usage
 variable "name" {
   default = "my-first-k8s"
 }
-data "alicloud_zones" main {
+data "alicloud_zones" default {
   available_resource_creation = "VSwitch"
 }
 

@@ -102,7 +102,7 @@ func resourceAlicloudAdbCluster() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
-				Optional: true,
+				Required: true,
 			},
 			"maintain_time": {
 				Type:     schema.TypeString,

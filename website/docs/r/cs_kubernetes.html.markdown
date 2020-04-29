@@ -94,6 +94,7 @@ The following arguments are supported:
 * `cpu_policy` - kubelet cpu policy. options: static|none. default: none.
 * `proxy_mode` - Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
 * `image_id` - Custom Image support. Must based on CentOS7 or AliyunLinux2.
+* `user_data` - (Optional, Available in 1.81.0+) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
 
 
 #### Addons 
@@ -217,7 +218,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `worker_auto_renew` - (Optional) Enable worker payment auto-renew, defaults to false.
 * `worker_auto_renew_period` - (Optional) Worker payment auto-renew period. When period unit is `Month`, it can be one of {“1”, “2”, “3”, “6”, “12”}.  When period unit is `Week`, it can be one of {“1”, “2”, “3”}.
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 20.
+* `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
 
 #### Computed params (No need to configure) 
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.

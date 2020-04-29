@@ -82,6 +82,7 @@ The alicloud_polardb_cluster resource allows you to manage your polardb cluster,
 The following attributes are exported:
 
 * `id` - The PolarDB cluster ID.
+* `connection_string` - (Available in 1.81.0+) PolarDB cluster connection string. Only return the Primary endpoint address if security_ips is configured.
 
 ### Timeouts
 

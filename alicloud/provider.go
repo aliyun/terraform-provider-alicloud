@@ -258,6 +258,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_market_product":                    dataSourceAlicloudProduct(),
 			"alicloud_market_products":                   dataSourceAlicloudProducts(),
 			"alicloud_polardb_clusters":                  dataSourceAlicloudPolarDBClusters(),
+			"alicloud_polardb_node_classes":              dataSourceAlicloudPolarDBNodeClasses(),
 			"alicloud_polardb_endpoints":                 dataSourceAlicloudPolarDBEndpoints(),
 			"alicloud_polardb_accounts":                  dataSourceAlicloudPolarDBAccounts(),
 			"alicloud_polardb_databases":                 dataSourceAlicloudPolarDBDatabases(),
@@ -471,6 +472,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_cluster":                         resourceAlicloudAdbCluster(),
 			"alicloud_adb_backup_policy":                   resourceAlicloudAdbBackupPolicy(),
 			"alicloud_adb_account":                         resourceAlicloudAdbAccount(),
+			"alicloud_adb_connection":                      resourceAlicloudAdbConnection(),
 			"alicloud_cen_flowlog":                         resourceAlicloudCenFlowlog(),
 			"alicloud_kms_secret":                          resourceAlicloudKmsSecret(),
 			"alicloud_maxcompute_project":                  resourceAlicloudMaxComputeProject(),
@@ -484,6 +486,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_edas_cluster":                        resourceAlicloudEdasCluster(),
 			"alicloud_edas_instance_cluster_attachment":    resourceAlicloudEdasInstanceClusterAttachment(),
 			"alicloud_edas_application_deployment":         resourceAlicloudEdasApplicationPackageAttachment(),
+			"alicloud_dns_domain":                          resourceAlicloudDnsDomain(),
+
 		},
 
 		ConfigureFunc: providerConfigure,
