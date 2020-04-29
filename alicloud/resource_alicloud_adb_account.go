@@ -60,9 +60,10 @@ func resourceAlicloudAdbAccount() *schema.Resource {
 			"account_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{string("Normal"), string("Super")}, false),
-				Default:      "Normal",
+				ValidateFunc: validation.StringInSlice([]string{string("Super")}, false),
+				Default:      "Super",
 				ForceNew:     true,
+				Removed:      "Field 'account_type' has been removed from provider version 1.81.0.",
 			},
 
 			"account_description": {
@@ -151,7 +152,6 @@ func resourceAlicloudAdbAccountRead(d *schema.ResourceData, meta interface{}) er
 
 	d.Set("db_cluster_id", parts[0])
 	d.Set("account_name", object.AccountName)
-	d.Set("account_type", object.AccountType)
 	d.Set("account_description", object.AccountDescription)
 
 	return nil

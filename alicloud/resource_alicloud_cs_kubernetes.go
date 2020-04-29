@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/base64"
 	"fmt"
 	"regexp"
 	"strings"
@@ -547,6 +548,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 				Removed:          "Field 'cluster_network_type' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
+			"user_data": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -638,9 +643,19 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			KeyPair:             keyPair,
 			LoginPassword:       password,
 			ImageId:             d.Get("image_id").(string),
+			UserData:            d.Get("user_data").(string),
 			Count:               int64(newValue) - int64(oldValue),
 			WorkerVSwitchIds:    expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
 			WorkerInstanceTypes: expandStringList(d.Get("worker_instance_types").([]interface{})),
+		}
+
+		if v := d.Get("user_data").(string); v != "" {
+			_, base64DecodeError := base64.StdEncoding.DecodeString(v)
+			if base64DecodeError == nil {
+				args.UserData = v
+			} else {
+				args.UserData = base64.StdEncoding.EncodeToString([]byte(v))
+			}
 		}
 
 		if v, ok := d.GetOk("worker_instance_charge_type"); ok {
@@ -1041,6 +1056,15 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			SnatEntry:            d.Get("new_nat_gateway").(bool),
 			Addons:               addons,
 		},
+	}
+
+	if v := d.Get("user_data").(string); v != "" {
+		_, base64DecodeError := base64.StdEncoding.DecodeString(v)
+		if base64DecodeError == nil {
+			creationArgs.UserData = v
+		} else {
+			creationArgs.UserData = base64.StdEncoding.EncodeToString([]byte(v))
+		}
 	}
 
 	if _, ok := d.GetOk("pod_vswitch_ids"); ok {

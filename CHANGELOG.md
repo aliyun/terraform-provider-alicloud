@@ -1,4 +1,18 @@
 ## 1.81.0 (Unreleased)
+## 1.80.1 (April 24, 2020)
+
+IMPROVEMENTS:
+
+- update emr tag resourceType from instance to cluste ([#2383](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2383))
+- improve(cen_instances): support tags ([#2376](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2376))
+- improve(sdk): upgraded the sdk and made compatibility ([#2373](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2373))
+- Update oss_bucket.html.markdown ([#2359](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2359))
+
+BUG FIXES:
+
+- fix adb account & documents bug ([#2382](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2382))
+- fix(oss): fix the bug of setting a object acl with the wrong option ([#2366](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2366))
+
 ## 1.80.0 (April 17, 2020)
 
 - **New Resource:** `alicloud_dns_domain_attachmen` ([#2365](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2365))
