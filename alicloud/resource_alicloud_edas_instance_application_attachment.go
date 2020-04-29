@@ -54,8 +54,6 @@ func resourceAlicloudEdasInstanceApplicationAttachmentCreate(d *schema.ResourceD
 	edasService := EdasService{client}
 
 	appId := d.Get("app_id").(string)
-	regionId := client.RegionId
-	deployGroup := d.Get("deploy_group").(string)
 	ecuInfo := d.Get("ecu_info").([]interface{})
 	aString := make([]string, len(ecuInfo))
 	for i, v := range ecuInfo {
@@ -63,9 +61,9 @@ func resourceAlicloudEdasInstanceApplicationAttachmentCreate(d *schema.ResourceD
 	}
 
 	request := edas.CreateScaleOutApplicationRequest()
-	request.RegionId = regionId
+	request.RegionId = client.RegionId
 	request.AppId = appId
-	request.DeployGroup = deployGroup
+	request.DeployGroup = d.Get("deploy_group").(string)
 	request.EcuInfo = strings.Join(aString, ",")
 
 	var changeOrderId string
@@ -83,7 +81,7 @@ func resourceAlicloudEdasInstanceApplicationAttachmentCreate(d *schema.ResourceD
 	changeOrderId = response.ChangeOrderId
 	d.SetId(appId + ":" + strings.Join(aString, ","))
 	if response.Code != 200 {
-		return Error("scaleOut application failed for " + response.Message)
+		return WrapError(Error("scaleOut application failed for " + response.Message))
 	}
 
 	if len(changeOrderId) > 0 {
@@ -100,9 +98,9 @@ func resourceAlicloudEdasInstanceApplicationAttachmentRead(d *schema.ResourceDat
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	strs := strings.Split(d.Id(), ":")
-	if len(strs) != 2 {
-		return WrapError(Error("resource id decode failed: " + d.Id()))
+	strs, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
 	}
 
 	appId := strs[0]
@@ -121,11 +119,10 @@ func resourceAlicloudEdasInstanceApplicationAttachmentRead(d *schema.ResourceDat
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_instance_application_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	/////有问题
 	var eccs []string
 	response := raw.(*edas.QueryApplicationStatusResponse)
 	if response.Code != 200 {
-		return Error("QueryApplicationStatus failed for " + response.Message)
+		return WrapError(Error("QueryApplicationStatus failed for " + response.Message))
 	}
 	for _, ecc := range response.AppInfo.EccList.Ecc {
 		for _, ecu := range aString {
@@ -144,16 +141,14 @@ func resourceAlicloudEdasInstanceApplicationAttachmentDelete(d *schema.ResourceD
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	appId := d.Get("app_id").(string)
-	regionId := client.RegionId
-	eccInfo := d.Get("ecc_info").(string)
-	forceStatus := d.Get("force_status").(bool)
-
 	request := edas.CreateScaleInApplicationRequest()
-	request.RegionId = regionId
-	request.AppId = appId
-	request.EccInfo = eccInfo
-	request.ForceStatus = requests.NewBoolean(forceStatus)
+	request.RegionId = client.RegionId
+	request.AppId = d.Get("app_id").(string)
+	request.EccInfo = d.Get("ecc_info").(string)
+	if v, ok := d.GetOk("force_status"); ok {
+		request.ForceStatus = requests.NewBoolean(v.(bool))
+	}
+
 
 	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 		return edasClient.ScaleInApplication(request)
@@ -166,7 +161,7 @@ func resourceAlicloudEdasInstanceApplicationAttachmentDelete(d *schema.ResourceD
 	var changeOrderId string
 	response, _ := raw.(*edas.ScaleInApplicationResponse)
 	if response.Code != 200 {
-		return Error("scaleIn application failed for " + response.Message)
+		return WrapError(Error("scaleIn application failed for " + response.Message))
 	}
 	changeOrderId = response.ChangeOrderId
 

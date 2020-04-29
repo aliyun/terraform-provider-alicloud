@@ -55,16 +55,11 @@ func resourceAlicloudEdasApplication() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"component_ids": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"ecu_info": {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 			},
-
 			"group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -84,32 +79,37 @@ func resourceAlicloudEdasApplication() *schema.Resource {
 func resourceAlicloudEdasApplicationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
-
-	applicationName := d.Get("application_name").(string)
-	regionId := client.RegionId
-	clusterId := d.Get("cluster_id").(string)
-	ecuInfo := d.Get("ecu_info").([]interface{})
-	aString := make([]string, len(ecuInfo))
-	for i, v := range ecuInfo {
-		aString[i] = v.(string)
-	}
-	packageType := d.Get("package_type").(string)
-	buildPackId := d.Get("build_pack_id").(int)
-	description := d.Get("descriotion").(string)
-	healthCheckUrl := d.Get("health_check_url").(string)
-	logicalRegionId := d.Get("logical_region_id").(string)
-	//componentIds := d.Get("component_ids").(string)
-
 	request := edas.CreateInsertApplicationRequest()
-	request.RegionId = regionId
-	request.ApplicationName = applicationName
-	request.ClusterId = clusterId
-	request.PackageType = packageType
-	request.EcuInfo = strings.Join(aString, ",")
-	request.BuildPackId = requests.NewInteger(buildPackId)
-	request.Description = description
-	request.HealthCheckURL = healthCheckUrl
-	request.LogicalRegionId = logicalRegionId
+
+	request.ApplicationName = d.Get("application_name").(string)
+	request.RegionId = client.RegionId
+	request.PackageType = d.Get("package_type").(string)
+	request.ClusterId = d.Get("cluster_id").(string)
+
+	if v, ok := d.GetOk("build_pack_id"); ok {
+		request.BuildPackId = requests.NewInteger(v.(int))
+	}
+
+	if v, ok := d.GetOk("descriotion"); ok {
+		request.Description = v.(string)
+	}
+
+	if v, ok := d.GetOk("health_check_url"); ok {
+		request.HealthCheckURL = v.(string)
+	}
+
+	if v, ok := d.GetOk("logical_region_id"); ok {
+		request.LogicalRegionId = v.(string)
+	}
+
+	if v, ok := d.GetOk("ecu_info"); ok {
+		ecuInfo := v.([]interface{})
+		aString := make([]string, len(ecuInfo))
+		for i, v := range ecuInfo {
+			aString[i] = v.(string)
+		}
+		request.EcuInfo = strings.Join(aString, ",")
+	}
 
 	var appId string
 	var changeOrderId string
@@ -128,7 +128,7 @@ func resourceAlicloudEdasApplicationCreate(d *schema.ResourceData, meta interfac
 	changeOrderId = response.ApplicationInfo.ChangeOrderId
 	d.SetId(appId)
 	if response.Code != 200 {
-		return Error("create application failed for " + response.Message)
+		return WrapError(Error("create application failed for " + response.Message))
 	}
 
 	if len(changeOrderId) > 0 {
@@ -178,7 +178,7 @@ func resourceAlicloudEdasApplicationUpdate(d *schema.ResourceData, meta interfac
 	response, _ := raw.(*edas.DeployApplicationResponse)
 	changeOrderId := response.ChangeOrderId
 	if response.Code != 200 {
-		return Error("deploy application failed for " + response.Message)
+		return WrapError(Error("deploy application failed for " + response.Message))
 	}
 
 	if len(changeOrderId) > 0 {
@@ -202,13 +202,14 @@ func resourceAlicloudEdasApplicationRead(d *schema.ResourceData, meta interface{
 	request.RegionId = regionId
 	request.AppId = appId
 
+	wait := incrementalWait(1*time.Second, 2*time.Second)
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.GetApplication(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
-				time.Sleep(10 * time.Second)
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -243,48 +244,44 @@ func resourceAlicloudEdasApplicationDelete(d *schema.ResourceData, meta interfac
 	regionId := client.RegionId
 	appId := d.Id()
 
-	//packageVersion := d.Get("package_version").(string)
-	//groupId := d.Get("group_id").(string)
-	//warUlr := d.Get("war_url").(string)
-	if true {
-		request := edas.CreateStopApplicationRequest()
-		request.RegionId = regionId
-		request.AppId = appId
+	request := edas.CreateStopApplicationRequest()
+	request.RegionId = regionId
+	request.AppId = appId
 
-		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
-			return edasClient.StopApplication(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-		response, _ := raw.(*edas.StopApplicationResponse)
-		changeOrderId := response.ChangeOrderId
+	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+		return edasClient.StopApplication(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+	response, _ := raw.(*edas.StopApplicationResponse)
+	changeOrderId := response.ChangeOrderId
 
-		if len(changeOrderId) > 0 {
-			stateConf := BuildStateConf([]string{"0", "1"}, []string{"2"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, edasService.EdasChangeOrderStatusRefreshFunc(changeOrderId, []string{"3", "6", "10"}))
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
-			}
+	if len(changeOrderId) > 0 {
+		stateConf := BuildStateConf([]string{"0", "1"}, []string{"2"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, edasService.EdasChangeOrderStatusRefreshFunc(changeOrderId, []string{"3", "6", "10"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
-	request := edas.CreateDeleteApplicationRequest()
-	request.RegionId = regionId
-	request.AppId = d.Id()
+	req := edas.CreateDeleteApplicationRequest()
+	req.RegionId = regionId
+	req.AppId = d.Id()
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	wait := incrementalWait(1*time.Second, 2*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
-			return edasClient.DeleteApplication(request)
+			return edasClient.DeleteApplication(req)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
-				time.Sleep(10 * time.Second)
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+		addDebug(req.GetActionName(), raw, req.RoaRequest, req)
 		rsp := raw.(*edas.DeleteApplicationResponse)
 		if rsp.Code == 601 && strings.Contains(rsp.Message, "Operation cannot be processed because there are running instances.") {
 			err = Error("Operation cannot be processed because there are running instances.")
@@ -293,7 +290,7 @@ func resourceAlicloudEdasApplicationDelete(d *schema.ResourceData, meta interfac
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

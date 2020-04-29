@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
@@ -51,13 +50,14 @@ func resourceAlicloudEdasDeployGroupCreate(d *schema.ResourceData, meta interfac
 	request.AppId = appId
 	request.GroupName = groupName
 
+	wait := incrementalWait(1*time.Second, 2*time.Second)
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.InsertDeployGroup(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
-				time.Sleep(10 * time.Second)
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -80,10 +80,9 @@ func resourceAlicloudEdasDeployGroupRead(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	strs := strings.Split(d.Id(), ":")
-
-	if len(strs) != 3 {
-		return WrapError(Error("resource id decode failed: " + d.Id()))
+	strs, err := ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return WrapError(err)
 	}
 
 	appId := strs[0]
@@ -105,22 +104,19 @@ func resourceAlicloudEdasDeployGroupDelete(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	appId := d.Get("app_id").(string)
-	regionId := client.RegionId
-	groupName := d.Get("group_name").(string)
-
 	request := edas.CreateDeleteDeployGroupRequest()
-	request.RegionId = regionId
-	request.AppId = appId
-	request.GroupName = groupName
+	request.RegionId = client.RegionId
+	request.AppId = d.Get("app_id").(string)
+	request.GroupName = d.Get("group_name").(string)
 
+	wait := incrementalWait(1*time.Second, 2*time.Second)
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.DeleteDeployGroup(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
-				time.Sleep(10 * time.Second)
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

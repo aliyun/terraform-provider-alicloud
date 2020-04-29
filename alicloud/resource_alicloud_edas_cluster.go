@@ -58,23 +58,21 @@ func rresourceAlicloudEdasClusterCreate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	clusterName := d.Get("cluster_name").(string)
-	regionId := client.RegionId
-	clusterType := d.Get("cluster_type").(int)
-	networkMode := d.Get("network_mode").(int)
-	vpcId := d.Get("vpc_id").(string)
-	if networkMode == 2 && len(vpcId) == 0 {
-		return Error("vpcId is required for vpc network mode")
-	}
-	logicalRegionId := d.Get("logical_region_id").(string)
-
 	request := edas.CreateInsertClusterRequest()
-	request.RegionId = regionId
-	request.ClusterName = clusterName
-	request.ClusterType = requests.NewInteger(clusterType)
-	request.NetworkMode = requests.NewInteger(networkMode)
-	request.LogicalRegionId = logicalRegionId
-	request.VpcId = vpcId
+	request.RegionId = client.RegionId
+	request.ClusterName = d.Get("cluster_name").(string)
+	request.ClusterType = requests.NewInteger(d.Get("cluster_type").(int))
+	request.NetworkMode = requests.NewInteger(d.Get("network_mode").(int))
+	if v, ok := d.GetOk("logical_region_id"); ok {
+		request.LogicalRegionId = v.(string)
+	}
+	if v, ok := d.GetOk("vpc_id"); !ok {
+		if d.Get("network_mode").(int) == 2 {
+			return WrapError(Error("vpcId is required for vpc network mode"))
+		}
+	} else {
+		request.VpcId = v.(string)
+	}
 
 	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 		return edasClient.InsertCluster(request)
@@ -87,7 +85,7 @@ func rresourceAlicloudEdasClusterCreate(d *schema.ResourceData, meta interface{}
 
 	response, _ := raw.(*edas.InsertClusterResponse)
 	if response.Code != 200 {
-		return Error("create cluster failed for " + response.Message)
+		return WrapError(Error("create cluster failed for " + response.Message))
 	}
 	d.SetId(response.Cluster.ClusterId)
 
@@ -116,7 +114,7 @@ func resourceAlicloudEdasClusterRead(d *schema.ResourceData, meta interface{}) e
 
 	response, _ := raw.(*edas.GetClusterResponse)
 	if response.Code != 200 {
-		return Error("create cluster failed for " + response.Message)
+		return WrapError(Error("create cluster failed for " + response.Message))
 	}
 
 	d.Set("cluster_name", response.Cluster.ClusterName)
@@ -138,6 +136,7 @@ func resourceAlicloudEdasClusterDelete(d *schema.ResourceData, meta interface{})
 	request.RegionId = regionId
 	request.ClusterId = clusterId
 
+	wait := incrementalWait(1*time.Second, 2*time.Second)
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.DeleteCluster(request)
@@ -145,7 +144,7 @@ func resourceAlicloudEdasClusterDelete(d *schema.ResourceData, meta interface{})
 		response, _ := raw.(*edas.DeleteClusterResponse)
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
-				time.Sleep(10 * time.Second)
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

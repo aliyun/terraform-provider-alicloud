@@ -54,28 +54,29 @@ func resourceAlicloudEdasApplicationPackageAttachmentCreate(d *schema.ResourceDa
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	regionId := client.RegionId
 	appId := d.Get("app_id").(string)
-	packageVersion := d.Get("package_version").(string)
-	if len(packageVersion) == 0 {
+	groupId := d.Get("group_id").(string)
+
+	request := edas.CreateDeployApplicationRequest()
+	request.RegionId = client.RegionId
+	request.AppId = appId
+	request.GroupId = groupId
+	request.WarUrl = d.Get("war_url").(string)
+	var packageVersion string
+	if v, ok := d.GetOk("package_version"); ok {
+		packageVersion = v.(string)
+	} else {
 		packageVersion = strconv.Itoa(time.Now().Second())
 	}
-	groupId := d.Get("group_id").(string)
-	warUlr := d.Get("war_url").(string)
+	request.DeployType = "url"
+	request.PackageVersion = packageVersion
+
 
 	if version, err := edasService.GetLastPackgeVersion(appId, groupId); err != nil {
-		return err
+		return WrapError(err)
 	} else {
 		d.Set("last_package_version", version)
 	}
-
-	request := edas.CreateDeployApplicationRequest()
-	request.RegionId = regionId
-	request.AppId = appId
-	request.PackageVersion = packageVersion
-	request.DeployType = "url"
-	request.WarUrl = warUlr
-	request.GroupId = groupId
 
 	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 		return edasClient.DeployApplication(request)
@@ -88,7 +89,7 @@ func resourceAlicloudEdasApplicationPackageAttachmentCreate(d *schema.ResourceDa
 	response, _ := raw.(*edas.DeployApplicationResponse)
 	changeOrderId := response.ChangeOrderId
 	if response.Code != 200 {
-		return Error("deploy application failed for " + response.Message)
+		return WrapError(Error("deploy application failed for " + response.Message))
 	}
 
 	if len(changeOrderId) > 0 {
@@ -123,7 +124,7 @@ func resourceAlicloudEdasApplicationPackageAttachmentRead(d *schema.ResourceData
 	response, _ := raw.(*edas.QueryApplicationStatusResponse)
 
 	if response.Code != 200 {
-		return Error("QueryApplicationStatus failed for " + response.Message)
+		return WrapError(Error("QueryApplicationStatus failed for " + response.Message))
 	}
 
 	groupId := d.Get("group_id").(string)

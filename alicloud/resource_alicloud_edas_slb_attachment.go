@@ -1,8 +1,6 @@
 package alicloud
 
 import (
-	"strings"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -72,21 +70,20 @@ func resourceAlicloudEdasSlbAttachmentCreate(d *schema.ResourceData, meta interf
 	edasService := EdasService{client}
 
 	appId := d.Get("app_id").(string)
-	regionId := client.RegionId
 	slbId := d.Get("slb_id").(string)
-	slbIp := d.Get("slb_ip").(string)
-	slbType := d.Get("type").(string)
-	listenerPort := d.Get("listener_port").(int)
-	vserverGroupId := d.Get("vserver_group_id").(string)
 
 	request := edas.CreateBindSlbRequest()
-	request.RegionId = regionId
-	request.Type = slbType
+	request.RegionId = client.RegionId
+	request.Type = d.Get("type").(string)
 	request.AppId = appId
 	request.SlbId = slbId
-	request.SlbIp = slbIp
-	request.ListenerPort = requests.NewInteger(listenerPort)
-	request.VServerGroupId = vserverGroupId
+	request.SlbIp = d.Get("slb_ip").(string)
+	if v, ok := d.GetOk("listener_port"); ok {
+		request.ListenerPort = requests.NewInteger(v.(int))
+	}
+	if v, ok := d.GetOk("vserver_group_id"); ok {
+		request.VServerGroupId = v.(string)
+	}
 
 	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 		return edasClient.BindSlb(request)
@@ -99,7 +96,7 @@ func resourceAlicloudEdasSlbAttachmentCreate(d *schema.ResourceData, meta interf
 
 	response, _ := raw.(*edas.BindSlbResponse)
 	if response.Code != 200 {
-		return Error("bind slb failed for " + response.Message)
+		return WrapError(Error("bind slb failed for " + response.Message))
 	}
 	d.SetId(appId + ":" + slbId)
 	return resourceAlicloudEdasInstanceApplicationAttachmentRead(d, meta)
@@ -110,9 +107,9 @@ func resourceAlicloudEdasSlbAttachmentRead(d *schema.ResourceData, meta interfac
 	edasService := EdasService{client}
 
 	id := d.Id()
-	strs := strings.Split(id, ":")
-	if len(strs) != 2 {
-		return WrapError(Error("resource id decode failed: " + id))
+	strs, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
 	}
 
 	regionId := client.RegionId
@@ -134,7 +131,7 @@ func resourceAlicloudEdasSlbAttachmentRead(d *schema.ResourceData, meta interfac
 
 	rs := raw.(*edas.GetApplicationResponse)
 	if rs.Applcation.SlbId != slbId && rs.Applcation.ExtSlbId != slbId {
-		return Error("can not find slb:" + slbId)
+		return WrapError(Error("can not find slb:" + slbId))
 	}
 
 	request := edas.CreateListSlbRequest()
@@ -151,7 +148,7 @@ func resourceAlicloudEdasSlbAttachmentRead(d *schema.ResourceData, meta interfac
 
 	response := raw.(*edas.ListSlbResponse)
 	if response.Code != 200 {
-		return Error("List Slb failed for " + response.Message)
+		return WrapError(Error("List Slb failed for " + response.Message))
 	}
 
 	for _, slb := range response.SlbList.SlbEntity {
@@ -169,16 +166,11 @@ func resourceAlicloudEdasSlbAttachmentDelete(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	appId := d.Get("app_id").(string)
-	regionId := client.RegionId
-	slbId := d.Get("slb_id").(string)
-	slbType := d.Get("type").(string)
-
 	request := edas.CreateUnbindSlbRequest()
-	request.RegionId = regionId
-	request.AppId = appId
-	request.SlbId = slbId
-	request.Type = slbType
+	request.RegionId = client.RegionId
+	request.AppId = d.Get("app_id").(string)
+	request.SlbId = d.Get("slb_id").(string)
+	request.Type = d.Get("type").(string)
 
 	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 		return edasClient.UnbindSlb(request)
@@ -191,7 +183,7 @@ func resourceAlicloudEdasSlbAttachmentDelete(d *schema.ResourceData, meta interf
 
 	response := raw.(*edas.UnbindSlbResponse)
 	if response.Code != 200 {
-		return Error("unbind slb failed," + response.Message)
+		return WrapError(Error("unbind slb failed," + response.Message))
 	}
 
 	return nil

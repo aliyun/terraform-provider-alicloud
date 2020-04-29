@@ -125,10 +125,9 @@ func resourceAlicloudEdasInstanceClusterAttachmentRead(d *schema.ResourceData, m
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	id := d.Id()
-	strs := strings.Split(id, ":")
-	if len(strs) != 2 {
-		return WrapError(Error("resource id decode failed: " + id))
+	strs, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
 	}
 
 	clusterId := strs[0]
@@ -173,14 +172,11 @@ func resourceAlicloudEdasInstanceClusterAttachmentDelete(d *schema.ResourceData,
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	clusterId := d.Get("cluster_id").(string)
-	regionId := client.RegionId
 	memIds := d.Get("cluster_member_ids").(map[string]interface{})
-
 	for instanceId, memberId := range memIds {
 		request := edas.CreateDeleteClusterMemberRequest()
-		request.RegionId = regionId
-		request.ClusterId = clusterId
+		request.RegionId = client.RegionId
+		request.ClusterId = d.Get("cluster_id").(string)
 		request.ClusterMemberId = memberId.(string)
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
