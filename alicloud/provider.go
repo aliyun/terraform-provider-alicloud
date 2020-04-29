@@ -478,6 +478,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dns_instance":                        resourceAlicloudDnsInstance(),
 			"alicloud_dns_domain_attachment":               resourceAlicloudDnsDomainAttachment(),
 			"alicloud_dns_domain":                          resourceAlicloudDnsDomain(),
+			"alicloud_dms_enterprise_instance":             resourceAlicloudDmsEnterpriseInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -607,6 +608,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.AdbEndpoint = strings.TrimSpace(endpoints["adb"].(string))
 		config.CbnEndpoint = strings.TrimSpace(endpoints["cbn"].(string))
 		config.MaxComputeEndpoint = strings.TrimSpace(endpoints["maxcompute"].(string))
+		config.DmsEnterpriseEndpoint = strings.TrimSpace(endpoints["dms_enterprise"].(string))
 	}
 
 	if config.RamRoleArn != "" {
@@ -769,6 +771,8 @@ func init() {
 
 		"cbn_endpoint":        "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cbn endpoints.",
 		"maxcompute_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MaxCompute endpoints.",
+
+		"dms_enterprise_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dms_enterprise endpoints.",
 	}
 }
 
@@ -813,6 +817,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"dms_enterprise": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["dms_enterprise_endpoint"],
+				},
+
 				"cbn": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1123,6 +1134,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cbn"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["maxcompute"].(string)))
 
+	buf.WriteString(fmt.Sprintf("%s-", m["dms_enterprise"].(string)))
 	return hashcode.String(buf.String())
 }
 
