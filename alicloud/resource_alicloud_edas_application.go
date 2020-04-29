@@ -28,15 +28,18 @@ func resourceAlicloudEdasApplication() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"application_name": {
 				Type:     schema.TypeString,
+				ForceNew:     true,
 				Required: true,
 			},
 			"package_type": {
 				Type:         schema.TypeString,
 				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"JAR", "WAR"}, false),
 			},
 			"cluster_id": {
 				Type:     schema.TypeString,
+				ForceNew:     true,
 				Required: true,
 			},
 			"build_pack_id": {
@@ -224,7 +227,7 @@ func resourceAlicloudEdasApplicationRead(d *schema.ResourceData, meta interface{
 		if len(response.Applcation.ApplicationType) > 0 && response.Applcation.ApplicationType == "FatJar" {
 			d.Set("package_type", "JAR")
 		} else {
-			d.Set("package_type", response.Applcation.ApplicationType)
+			d.Set("package_type", "WAR")
 		}
 
 		return nil
