@@ -65,7 +65,6 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `requestId` - The request unique ID.
 * `dba_nick_name` - The instance dba nickname.
 * `state` - The instance status.
 
@@ -74,5 +73,5 @@ The following attributes are exported:
 DMS Enterprise can be imported using host and port, e.g.
 
 ```
-$ terraform import alicloud_dms_enterprise.example rm-uf648hgs7874xxxx.mysql.rds.aliyuncs.com:3306
+$ terraform import alicloud_dms_enterprise_instance.example rm-uf648hgs7874xxxx.mysql.rds.aliyuncs.com:3306
 ```
