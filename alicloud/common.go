@@ -445,6 +445,21 @@ func GetUserHomeDir() (string, error) {
 }
 
 func writeToFile(filePath string, data interface{}) error {
+	var out string
+	switch data.(type) {
+	case string:
+		out = data.(string)
+		break
+	case nil:
+		return nil
+	default:
+		bs, err := json.MarshalIndent(data, "", "\t")
+		if err != nil {
+			return fmt.Errorf("MarshalIndent data %#v got an error: %#v", data, err)
+		}
+		out = string(bs)
+	}
+
 	if strings.HasPrefix(filePath, "~") {
 		home, err := GetUserHomeDir()
 		if err != nil {
@@ -459,21 +474,6 @@ func writeToFile(filePath string, data interface{}) error {
 		if err := os.Remove(filePath); err != nil {
 			return err
 		}
-	}
-
-	var out string
-	switch data.(type) {
-	case string:
-		out = data.(string)
-		break
-	case nil:
-		return nil
-	default:
-		bs, err := json.MarshalIndent(data, "", "\t")
-		if err != nil {
-			return fmt.Errorf("MarshalIndent data %#v got an error: %#v", data, err)
-		}
-		out = string(bs)
 	}
 
 	return ioutil.WriteFile(filePath, []byte(out), 422)
