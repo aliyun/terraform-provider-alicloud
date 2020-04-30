@@ -471,8 +471,7 @@ func writeToFile(filePath string, data interface{}) error {
 		out = string(bs)
 	}
 
-	ioutil.WriteFile(filePath, []byte(out), 422)
-	return nil
+	return ioutil.WriteFile(filePath, []byte(out), 422)
 }
 
 type Invoker struct {
