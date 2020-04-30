@@ -2,7 +2,7 @@
 subcategory: "EDAS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_application_scale"
-sidebar_current: "docs-alicloud-resource-edas_application_scale"
+sidebar_current: "docs-alicloud-resource-edas-application-scale"
 description: |-
   Provides a Alicloud EDAS Application Scale resource.
 ---

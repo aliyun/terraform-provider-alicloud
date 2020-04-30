@@ -1,15 +1,15 @@
 ---
 subcategory: "EDAS"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_alikafka_consumer_group"
-sidebar_current: "docs-alicloud-resource-alikafka-consumer-group"
+page_title: "Alicloud: alicloud_edas_application_deployment"
+sidebar_current: "docs-alicloud-resource-edas-application-deployment"
 description: |-
   Provides a Alicloud Alikafka Consumer Group resource.
 ---
 
 # alicloud\_alikafka\_consumer\_group
 
-Provides an ALIKAFKA consumer group resource.
+Provides an EDAS application deployment.
 
 -> **NOTE:** Available in 1.81.0+
 

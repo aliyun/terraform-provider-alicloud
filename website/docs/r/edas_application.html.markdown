@@ -2,7 +2,7 @@
 subcategory: "EDAS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_application"
-sidebar_current: "docs-alicloud-resource-edas_application"
+sidebar_current: "docs-alicloud-resource-edas-application"
 description: |-
   Provides a EDAS application resource.
 ---
