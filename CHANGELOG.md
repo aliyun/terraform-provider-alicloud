@@ -1,4 +1,24 @@
 ## 1.81.0 (Unreleased)
+
+- **New Resource:** `alicloud_adb_connection` [GH-2392]
+- **New Resource:** `alicloud_dms_enterprise_instance` [GH-2390]
+- **New Resource:** `alicloud_dns_domain` [GH-2379]
+- **Data Source:** `alicloud_polardb_node_classes` [GH-2369]
+
+IMPROVEMENTS:
+
+- add test Parameter dependence [GH-2402]
+- improve dms docs [GH-2401]
+- hbase createCluster [GH-2395]
+- Feature/create kubernetes cluster support user_data [GH-2391]
+- Add sls log audit [GH-2389]
+- return connection_string after polardb cluster created [GH-2385]
+
+BUG FIXES:
+
+- fix adb documents bug [GH-2388]
+- fix del rds ins task [GH-2387]
+
 ## 1.80.1 (April 24, 2020)
 
 IMPROVEMENTS:
