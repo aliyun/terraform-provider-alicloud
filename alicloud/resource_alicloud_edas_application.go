@@ -28,7 +28,6 @@ func resourceAlicloudEdasApplication() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"application_name": {
 				Type:     schema.TypeString,
-				ForceNew:     true,
 				Required: true,
 			},
 			"package_type": {
@@ -141,6 +140,54 @@ func resourceAlicloudEdasApplicationCreate(d *schema.ResourceData, meta interfac
 		}
 	}
 
+	// check url information
+	var groupId string
+	var warUrl string
+	if v, ok := d.GetOk("group_id"); ok {
+		groupId = v.(string)
+	}
+	if v, ok := d.GetOk("war_url"); ok {
+		warUrl = v.(string)
+	}
+	if len(warUrl) != 0 && len(groupId) != 0 {
+		// deploy application
+		var packageVersion string
+		if v, ok := d.GetOk("package_version"); ok {
+			packageVersion = v.(string)
+		} else {
+			packageVersion = strconv.Itoa(time.Now().Second())
+		}
+		request := edas.CreateDeployApplicationRequest()
+		request.RegionId = client.RegionId
+		request.AppId = appId
+		request.GroupId = groupId
+		request.PackageVersion = packageVersion
+		request.DeployType = "url"
+
+		request.WarUrl = warUrl
+
+		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+			return edasClient.DeployApplication(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+		response, _ := raw.(*edas.DeployApplicationResponse)
+		changeOrderId := response.ChangeOrderId
+		if response.Code != 200 {
+			return WrapError(Error("deploy application failed for " + response.Message))
+		}
+
+		if len(changeOrderId) > 0 {
+			stateConf := BuildStateConf([]string{"0", "1"}, []string{"2"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, edasService.EdasChangeOrderStatusRefreshFunc(changeOrderId, []string{"3", "6", "10"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+	}
+
 	return resourceAlicloudEdasApplicationUpdate(d, meta)
 }
 
@@ -148,49 +195,28 @@ func resourceAlicloudEdasApplicationUpdate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	regionId := client.RegionId
-	appId := d.Id()
-	packageVersion := d.Get("package_version").(string)
-	groupId := d.Get("group_id").(string)
-	warUlr := d.Get("war_url").(string)
-
-	if len(warUlr) == 0 || len(groupId) == 0 {
-		return nil
+	if d.IsNewResource() {
+		return resourceAlicloudEdasApplicationRead(d, meta)
 	}
 
-	if len(packageVersion) == 0 {
-		packageVersion = strconv.Itoa(time.Now().Second())
-	}
-	request := edas.CreateDeployApplicationRequest()
-	request.RegionId = regionId
-	request.AppId = appId
-	request.GroupId = groupId
-	request.PackageVersion = packageVersion
-	request.DeployType = "url"
-
-	request.WarUrl = warUlr
-
-	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
-		return edasClient.DeployApplication(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-
-	response, _ := raw.(*edas.DeployApplicationResponse)
-	changeOrderId := response.ChangeOrderId
-	if response.Code != 200 {
-		return WrapError(Error("deploy application failed for " + response.Message))
-	}
-
-	if len(changeOrderId) > 0 {
-		stateConf := BuildStateConf([]string{"0", "1"}, []string{"2"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, edasService.EdasChangeOrderStatusRefreshFunc(changeOrderId, []string{"3", "6", "10"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+	if d.HasChange("application_name") || d.HasChange("descriotion") {
+		request := edas.CreateUpdateApplicationBaseInfoRequest()
+		request.AppId = d.Id()
+		request.RegionId = client.RegionId
+		request.AppName = d.Get("application_name").(string)
+		if v, ok := d.GetOk("descriotion"); ok {
+			request.Desc = v.(string)
 		}
+		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+			return edasClient.UpdateApplicationBaseInfo(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	}
 
+	time.Sleep(3 * time.Second)
 	return resourceAlicloudEdasApplicationRead(d, meta)
 }
 

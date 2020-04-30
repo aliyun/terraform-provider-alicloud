@@ -46,7 +46,7 @@ func TestAccAlicloudEdasDeployGroup_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"group_name": fmt.Sprintf("tf-testacc-edasdeploygroupbasic%v", rand),
+						"group_name": name,
 					}),
 				),
 			},

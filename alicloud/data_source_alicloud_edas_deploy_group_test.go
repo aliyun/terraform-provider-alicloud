@@ -28,7 +28,7 @@ func TestAccAlicloudEdasDeployGroupDataSource(t *testing.T) {
 	var existEdasDeployGroupsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"groups.#":             "1",
-			"groups.0.group_name":  fmt.Sprintf("tf-testacc-edas-deploy-groups%v", rand),
+			"groups.0.group_name":  name,
 			"groups.0.app_id":      CHECKSET,
 			"groups.0.group_type":  CHECKSET,
 			"groups.0.cluster_id":  CHECKSET,

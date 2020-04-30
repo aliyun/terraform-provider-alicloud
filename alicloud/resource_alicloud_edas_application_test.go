@@ -155,7 +155,7 @@ func TestAccAlicloudEdasApplication_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"application_name": fmt.Sprintf("tf-testacc-edasapplicationbasic%v", rand),
+						"application_name": name,
 					}),
 				),
 			},

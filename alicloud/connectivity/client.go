@@ -1620,7 +1620,7 @@ func (client *AliyunClient) WithMaxComputeClient(do func(*maxcompute.Client) (in
 }
 
 func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the alikafka client if necessary
+	// Initialize the edas client if necessary
 	if client.edasconn == nil {
 		endpoint := client.config.edasEndpoint
 		if endpoint == "" {

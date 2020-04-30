@@ -31,7 +31,7 @@ func TestAccAlicloudEdasClustersDataSource(t *testing.T) {
 		return map[string]string{
 			"clusters.#":              "1",
 			"clusters.0.cluster_id":   CHECKSET,
-			"clusters.0.cluster_name": fmt.Sprintf("tf-testacc-edas-clusters%v", rand),
+			"clusters.0.cluster_name": name,
 			"clusters.0.cluster_type": "2",
 			"clusters.0.network_mode": "2",
 			"clusters.0.vpc_id":       CHECKSET,

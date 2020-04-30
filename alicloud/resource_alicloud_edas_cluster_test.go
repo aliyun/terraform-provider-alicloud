@@ -132,7 +132,7 @@ func TestAccAlicloudEdasCluster_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_name": fmt.Sprintf("tf-testacc-edasclusterbasic%v", rand),
+						"cluster_name": name,
 					}),
 				),
 			},

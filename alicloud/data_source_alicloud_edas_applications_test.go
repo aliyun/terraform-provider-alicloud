@@ -27,7 +27,7 @@ func TestAccAlicloudEdasApplicationsDataSource(t *testing.T) {
 	var existEdasApplicationsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"applications.#":                  "1",
-			"applications.0.app_name":         fmt.Sprintf("tf-testacc-edas-applications%v", rand),
+			"applications.0.app_name":         name,
 			"applications.0.app_id":           CHECKSET,
 			"applications.0.application_type": "War",
 			"applications.0.build_package_id": CHECKSET,
