@@ -101,7 +101,7 @@ func (e *EdasService) SyncResource(resourceType string) error {
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 	rsp := raw.(*edas.SynchronizeResourceResponse)
 	if rsp.Code != 200 || !rsp.Success {
-		return Error("sync resource failed for " + rsp.Message)
+		return WrapError(Error("sync resource failed for " + rsp.Message))
 	}
 
 	return nil
@@ -150,7 +150,7 @@ func (e *EdasService) GetLastPackgeVersion(appId, groupId string) (string, error
 	response, _ := raw.(*edas.QueryApplicationStatusResponse)
 
 	if response.Code != 200 {
-		return "", Error("QueryApplicationStatus failed for " + response.Message)
+		return "", WrapError(Error("QueryApplicationStatus failed for " + response.Message))
 	}
 
 	for _, group := range response.AppInfo.GroupList.Group {
@@ -172,7 +172,7 @@ func (e *EdasService) GetLastPackgeVersion(appId, groupId string) (string, error
 	rsp, _ := raw.(*edas.ListHistoryDeployVersionResponse)
 
 	if rsp.Code != 200 {
-		return "", Error("QueryApplicationStatus failed for " + response.Message)
+		return "", WrapError(Error("QueryApplicationStatus failed for " + response.Message))
 	}
 
 	for _, version := range rsp.PackageVersionList.PackageVersion {
@@ -229,7 +229,7 @@ func (e *EdasService) DescribeEdasCluster(clusterId string) (*edas.Cluster, erro
 
 	response, _ := raw.(*edas.GetClusterResponse)
 	if response.Code != 200 {
-		return cluster, Error("create cluster failed for " + response.Message)
+		return cluster, WrapError(Error("create cluster failed for " + response.Message))
 	}
 
 	v := response.Cluster
@@ -258,7 +258,7 @@ func (e *EdasService) DescribeEdasDeployGroup(id string) (*edas.DeployGroup, err
 
 	response, _ := raw.(*edas.ListDeployGroupResponse)
 	if response.Code != 200 {
-		return group, Error("create cluster failed for " + response.Message)
+		return group, WrapError(Error("create cluster failed for " + response.Message))
 	}
 
 	for _, v := range response.DeployGroupList.DeployGroup {

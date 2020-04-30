@@ -54,7 +54,7 @@ func TestAccAlicloudEdasDeployGroup_basic(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: false,
+				ImportStateVerify: true,
 			},
 
 			{

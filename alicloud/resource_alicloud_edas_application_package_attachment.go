@@ -166,7 +166,7 @@ func resourceAlicloudEdasApplicationPackageAttachmentDelete(d *schema.ResourceDa
 	response, _ := raw.(*edas.RollbackApplicationResponse)
 	changeOrderId := response.ChangeOrderId
 	if response.Code != 200 && !strings.Contains(response.Message, "ex.app.deploy.group.empty") {
-		return Error("deploy application failed for " + response.Message)
+		return WrapError(Error("deploy application failed for " + response.Message))
 	}
 
 	if len(changeOrderId) > 0 {

@@ -2,7 +2,7 @@
 subcategory: "EDAS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_deploy_groups"
-sidebar_current: "docs-alicloud-datasource-edas_deploy_groups"
+sidebar_current: "docs-alicloud-datasource-edas-deploy-groups"
 description: |-
     Provides a list of edas deploy groups available to the user.
 ---
@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list of EDAS Deploy Groups in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.80.0+
+-> **NOTE:** Available in 1.81.0+
 
 ## Example Usage
 
@@ -23,7 +23,7 @@ data "alicloud_edas_deploy_groups" "groups" {
 }
 
 output "first_group_name" {
-  value = "${data.alicloud_edas_deploy_groups.groups.groups.0.group_name}"
+  value = data.alicloud_edas_deploy_groups.groups.groups.0.group_name
 }
 ```
 

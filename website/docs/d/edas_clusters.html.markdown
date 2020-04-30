@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list of EDAS clusters in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.80.0+
+-> **NOTE:** Available in 1.81.0+
 
 ## Example Usage
 
@@ -23,7 +23,7 @@ data "alicloud_edas_clusters" "clusters" {
 }
 
 output "first_cluster_name" {
-  value = "${data.alicloud_alikafka_consumer_groups.clusters.clusters.0.cluster_name}"
+  value = data.alicloud_alikafka_consumer_groups.clusters.clusters.0.cluster_name
 }
 ```
 

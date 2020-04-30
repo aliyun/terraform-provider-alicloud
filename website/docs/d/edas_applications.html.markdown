@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list of EDAS application in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.80.0+
+-> **NOTE:** Available in 1.81.0+
 
 ## Example Usage
 
@@ -22,7 +22,7 @@ data "alicloud_edas_applications" "applications" {
 }
 
 output "first_application_name" {
-  value = "${data.alicloud_edas_applications.applications.applications.0.app_name}"
+  value = data.alicloud_edas_applications.applications.applications.0.app_name
 }
 ```
 

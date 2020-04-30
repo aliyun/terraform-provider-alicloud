@@ -1,5 +1,5 @@
 ---
-subcategory: "Alikafka"
+subcategory: "EDAS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alikafka_consumer_group"
 sidebar_current: "docs-alicloud-resource-alikafka-consumer-group"
@@ -11,7 +11,7 @@ description: |-
 
 Provides an ALIKAFKA consumer group resource.
 
--> **NOTE:** Available in 1.80.0+
+-> **NOTE:** Available in 1.81.0+
 
 ## Example Usage
 
@@ -19,10 +19,10 @@ Basic Usage
 
 ```
 resource "alicloud_edas_application_deployment" "default" {
-  app_id = "${var.app_id}"
-  group_id = "${var.group_id}"
-  package_version = "${var.package_version}"
-  war_url = "${var.war_url}"
+  app_id = var.app_id
+  group_id = var.group_id
+  package_version = var.package_version
+  war_url = var.war_url
 }
 ```
 

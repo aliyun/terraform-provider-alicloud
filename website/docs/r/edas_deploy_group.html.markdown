@@ -11,7 +11,7 @@ description: |-
 
 Provides an EDAS deploy group resource.
 
--> **NOTE:** Available in 1.80.0+
+-> **NOTE:** Available in 1.81.0+
 
 
 ## Example Usage
@@ -20,8 +20,8 @@ Basic Usage
 
 ```
 resource "alicloud_edas_deploy_group" "default" {
-  app_id = "${var.app_id}"
-  group_name = "${var.group_name}"
+  app_id = var.app_id
+  group_name = var.group_name
 }
 
 ```
