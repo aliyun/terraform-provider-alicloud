@@ -534,3 +534,20 @@ func (s *LogService) DescribeLogAudit(id string) (*slsPop.DescribeAppResponse, e
 	response, _ = raw.(*slsPop.DescribeAppResponse)
 	return response, nil
 }
+
+func GetCharTitile(project, dashboard, char string, client *sls.Client) string {
+	board, err := client.GetDashboard(project, dashboard)
+	// If the query fails to ignore the error, return the original value.
+	if err != nil {
+		return char
+	}
+	for _, v := range board.ChartList {
+		if v.Display.DisplayName == char {
+			return v.Title
+		} else {
+			return char
+		}
+
+	}
+	return char
+}
