@@ -455,8 +455,10 @@ func writeToFile(filePath string, data interface{}) error {
 		}
 	}
 
-	if err := os.Remove(filePath); err != nil {
-		return err
+	if _, err := os.Stat(filePath); err == nil {
+		if err := os.Remove(filePath); err != nil {
+			return err
+		}
 	}
 
 	var out string
