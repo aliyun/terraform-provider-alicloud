@@ -454,7 +454,9 @@ func writeToFile(filePath string, data interface{}) error {
 		}
 	}
 
-	os.Remove(filePath)
+	if err := os.Remove(filePath); err != nil {
+		return err
+	}
 
 	var out string
 	switch data.(type) {
