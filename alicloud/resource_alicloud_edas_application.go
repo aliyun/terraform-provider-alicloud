@@ -38,7 +38,7 @@ func resourceAlicloudEdasApplication() *schema.Resource {
 			},
 			"cluster_id": {
 				Type:     schema.TypeString,
-				ForceNew:     true,
+				ForceNew: true,
 				Required: true,
 			},
 			"build_pack_id": {

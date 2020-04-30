@@ -71,7 +71,6 @@ func resourceAlicloudEdasApplicationPackageAttachmentCreate(d *schema.ResourceDa
 	request.DeployType = "url"
 	request.PackageVersion = packageVersion
 
-
 	if version, err := edasService.GetLastPackgeVersion(appId, groupId); err != nil {
 		return WrapError(err)
 	} else {

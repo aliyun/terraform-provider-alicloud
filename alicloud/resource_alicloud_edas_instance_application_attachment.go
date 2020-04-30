@@ -149,7 +149,6 @@ func resourceAlicloudEdasInstanceApplicationAttachmentDelete(d *schema.ResourceD
 		request.ForceStatus = requests.NewBoolean(v.(bool))
 	}
 
-
 	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 		return edasClient.ScaleInApplication(request)
 	})
