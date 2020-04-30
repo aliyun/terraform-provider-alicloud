@@ -2,11 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"testing"
+
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"testing"
 )
 
 func TestAccAlicloudLogAudit_basic(t *testing.T) {

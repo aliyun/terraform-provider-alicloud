@@ -3,12 +3,13 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
+
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"log"
-	"time"
 )
 
 func resourceAlicloudLogAudit() *schema.Resource {
