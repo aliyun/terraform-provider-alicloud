@@ -4,7 +4,7 @@ import (
 	"time"
 
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
-	"github.com/aliyun/aliyun-log-go-sdk"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
