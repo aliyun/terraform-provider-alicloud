@@ -74,7 +74,7 @@ func resourceAlicloudLogAuditUpdate(d *schema.ResourceData, meta interface{}) er
 		resultMutiAccount := string(data)
 		variableMap["multi_account"] = resultMutiAccount
 	}
-	variableMap["region"] = request.RegionId
+	variableMap["region"] = client.RegionId
 	variableMap["aliuid"] = d.Get("aliuid").(string)
 	variableMap["project"] = fmt.Sprintf("slsaudit-center-%s-%s", variableMap["aliuid"], variableMap["region"])
 	variableMap["logstore"] = "xx"
