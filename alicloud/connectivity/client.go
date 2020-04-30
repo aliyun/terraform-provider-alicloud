@@ -65,6 +65,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
 )
 
 type AliyunClient struct {
@@ -130,6 +132,7 @@ type AliyunClient struct {
 	maxcomputeconn               *maxcompute.Client
 	dnsConn                      *alidns.Client
 	edasconn                     *edas.Client
+	dms_enterpriseConn           *dms_enterprise.Client
 }
 
 type ApiVersion string
@@ -1640,4 +1643,29 @@ func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, e
 	}
 
 	return do(client.edasconn)
+}
+
+func (client *AliyunClient) WithDmsEnterpriseClient(do func(*dms_enterprise.Client) (interface{}, error)) (interface{}, error) {
+	if client.dms_enterpriseConn == nil {
+		endpoint := client.config.DmsEnterpriseEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, DmsEnterpriseCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(DmsEnterpriseCode), endpoint)
+		}
+
+		dms_enterpriseConn, err := dms_enterprise.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the DmsEnterpriseclient: %#v", err)
+		}
+		dms_enterpriseConn.AppendUserAgent(Terraform, terraformVersion)
+		dms_enterpriseConn.AppendUserAgent(Provider, providerVersion)
+		dms_enterpriseConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.dms_enterpriseConn = dms_enterpriseConn
+	}
+	return do(client.dms_enterpriseConn)
 }
