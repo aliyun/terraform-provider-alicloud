@@ -1,27 +1,27 @@
-## 1.81.0 (Unreleased)
+## 1.81.0 (May 01, 2020)
 
-- **New Resource:** `alicloud_hbase_instance` [GH-2395]
-- **New Resource:** `alicloud_adb_connection` [GH-2392]
-- **New Resource:** `alicloud_cs_kubernetes` [GH-2391]
-- **New Resource:** `alicloud_dms_enterprise_instance` [GH-2390]
-- **Data Source:** `alicloud_polardb_node_classes` [GH-2369]
+- **New Resource:** `alicloud_hbase_instance` ([#2395](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2395))
+- **New Resource:** `alicloud_adb_connection` ([#2392](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2392))
+- **New Resource:** `alicloud_cs_kubernetes` ([#2391](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2391))
+- **New Resource:** `alicloud_dms_enterprise_instance` ([#2390](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2390))
+- **Data Source:** `alicloud_polardb_node_classes` ([#2369](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2369))
 
 IMPROVEMENTS:
 
-- Update go sdk to 1.61.155 [GH-2413]
-- add test Parameter dependence [GH-2402]
-- improve dms docs [GH-2401]
-- Add sls log audit [GH-2389]
-- Update CHANGELOG.md [GH-2386]
-- return connection_string after polardb cluster created [GH-2379]
+- Update go sdk to 1.61.155 ([#2413](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2413))
+- add test Parameter dependence ([#2402](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2402))
+- improve dms docs ([#2401](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2401))
+- Add sls log audit ([#2389](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2389))
+- Update CHANGELOG.md ([#2386](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2386))
+- return connection_string after polardb cluster created ([#2379](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2379))
 
 BUG FIXES:
 
-- Fix regression in writeToFile [GH-2412]
-- fix(log_audit): resolve cannot get region [GH-2411]
-- Let WriteFile return write/delete errors [GH-2408]
-- fix adb documents bug [GH-2388]
-- fix del rds ins task [GH-2387]
+- Fix regression in writeToFile ([#2412](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2412))
+- fix(log_audit): resolve cannot get region ([#2411](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2411))
+- Let WriteFile return write/delete errors ([#2408](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2408))
+- fix adb documents bug ([#2388](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2388))
+- fix del rds ins task ([#2387](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2387))
 
 ## 1.80.1 (April 24, 2020)
 
