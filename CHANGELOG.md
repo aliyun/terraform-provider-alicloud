@@ -1,3 +1,4 @@
+## 1.82.0 (Unreleased)
 ## 1.81.0 (May 01, 2020)
 
 - **New Resource:** `alicloud_hbase_instance` ([#2395](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2395))
