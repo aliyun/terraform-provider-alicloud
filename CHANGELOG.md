@@ -8,6 +8,7 @@
 
 IMPROVEMENTS:
 
+- Update go sdk to 1.61.155 [GH-2413]
 - add test Parameter dependence [GH-2402]
 - improve dms docs [GH-2401]
 - Add sls log audit [GH-2389]
@@ -16,6 +17,9 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Fix regression in writeToFile [GH-2412]
+- fix(log_audit): resolve cannot get region [GH-2411]
+- Let WriteFile return write/delete errors [GH-2408]
 - fix adb documents bug [GH-2388]
 - fix del rds ins task [GH-2387]
 
