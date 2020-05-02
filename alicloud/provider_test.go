@@ -167,6 +167,13 @@ func testAccPreCheckWithSmartAccessGatewaySetting(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithWafInstanceSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_WAF_INSTANCE_ID")); v == "" {
+		t.Skipf("Skipping the test case with no WAF instance id setting")
+		t.Skipped()
+	}
+}
+
 func testAccPreCheckWithSmartAccessGatewayAppSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("SAG_APP_INSTANCE_ID")); v == "" {
 		t.Skipf("Skipping the test case with no sag app instance id setting")

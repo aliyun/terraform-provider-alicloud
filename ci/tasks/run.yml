@@ -26,4 +26,5 @@ params:
   BUCKET_NAME:           "terraform-ci"
   BUCKET_REGION:         "cn-beijing"
   ALICLOUD_RESOURCE_GROUP_ID : ""
+  ALICLOUD_WAF_INSTANCE_ID: ""
 

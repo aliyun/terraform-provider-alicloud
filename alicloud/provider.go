@@ -479,6 +479,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dns_domain_attachment":               resourceAlicloudDnsDomainAttachment(),
 			"alicloud_dns_domain":                          resourceAlicloudDnsDomain(),
 			"alicloud_dms_enterprise_instance":             resourceAlicloudDmsEnterpriseInstance(),
+			"alicloud_waf_domain":                          resourceAlicloudWafDomain(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -609,6 +610,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.CbnEndpoint = strings.TrimSpace(endpoints["cbn"].(string))
 		config.MaxComputeEndpoint = strings.TrimSpace(endpoints["maxcompute"].(string))
 		config.DmsEnterpriseEndpoint = strings.TrimSpace(endpoints["dms_enterprise"].(string))
+		config.WafOpenapiEndpoint = strings.TrimSpace(endpoints["waf_openapi"].(string))
 	}
 
 	if config.RamRoleArn != "" {
@@ -773,6 +775,8 @@ func init() {
 		"maxcompute_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MaxCompute endpoints.",
 
 		"dms_enterprise_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dms_enterprise endpoints.",
+
+		"waf_openapi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom waf_openapi endpoints.",
 	}
 }
 
@@ -817,6 +821,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"waf_openapi": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["waf_openapi_endpoint"],
+				},
+
 				"dms_enterprise": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1135,6 +1146,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["maxcompute"].(string)))
 
 	buf.WriteString(fmt.Sprintf("%s-", m["dms_enterprise"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["waf_openapi"].(string)))
 	return hashcode.String(buf.String())
 }
 

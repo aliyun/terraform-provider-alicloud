@@ -12,6 +12,7 @@ import (
 type ServiceCode string
 
 const (
+	WafOpenapiCode    = ServiceCode("WAFOPENAPI")
 	DmsEnterpriseCode = ServiceCode("DMSENTERPRISE")
 	DnsCode           = ServiceCode("DNS")
 	KmsCode           = ServiceCode("KMS")
