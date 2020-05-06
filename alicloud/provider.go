@@ -480,6 +480,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dns_domain":                          resourceAlicloudDnsDomain(),
 			"alicloud_dms_enterprise_instance":             resourceAlicloudDmsEnterpriseInstance(),
 			"alicloud_waf_domain":                          resourceAlicloudWafDomain(),
+			"alicloud_cen_route_map":                       resourceAlicloudCenRouteMap(),
 		},
 
 		ConfigureFunc: providerConfigure,
