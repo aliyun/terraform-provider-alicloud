@@ -83,6 +83,7 @@ type Config struct {
 	ConfigurationSource   string
 	CbnEndpoint           string
 	DmsEnterpriseEndpoint string
+	WafOpenapiEndpoint    string
 }
 
 func (c *Config) loadAndValidate() error {

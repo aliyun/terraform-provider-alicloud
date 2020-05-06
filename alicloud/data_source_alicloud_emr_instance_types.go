@@ -171,24 +171,64 @@ func emrClusterInstanceTypesAttributes(d *schema.ResourceData,
 			"zone_id": zoneID,
 		}
 		if v, ok := supportedResources[zoneID]; ok {
+			selector := make(map[string]interface{})
+			selectFunc := func(m map[string]interface{}, tpe emr.SupportedResource, localStorage bool) {
+				prefix := "ecs.i2." // use those instance types first to localStorage
+				if localStorage {
+					prefix = "ecs.g5." // use those instance types first to cloudStorage
+				}
+				if preID, ok := selector["id"]; !ok {
+					selector["id"] = tpe.EmrInstanceType.InstanceType
+					selector["cpu_core_count"] = tpe.EmrInstanceType.CpuCoreCount
+					if localStorage {
+						selector["local_storage_capacity"] = tpe.EmrInstanceType.LocalStorageCapacity
+					}
+				} else if !strings.HasPrefix(tpe.EmrInstanceType.InstanceType, prefix) {
+					if !strings.HasPrefix(preID.(string), prefix) &&
+						selector["cpu_core_count"].(int) > tpe.EmrInstanceType.CpuCoreCount {
+						selector["id"] = tpe.EmrInstanceType.InstanceType
+						selector["cpu_core_count"] = tpe.EmrInstanceType.CpuCoreCount
+						if localStorage {
+							selector["local_storage_capacity"] = tpe.EmrInstanceType.LocalStorageCapacity
+						}
+					}
+					return
+				} else if !strings.HasPrefix(preID.(string), prefix) {
+					selector["id"] = tpe.EmrInstanceType.InstanceType
+					selector["cpu_core_count"] = tpe.EmrInstanceType.CpuCoreCount
+					if localStorage {
+						selector["local_storage_capacity"] = tpe.EmrInstanceType.LocalStorageCapacity
+					}
+				} else if selector["cpu_core_count"].(int) > tpe.EmrInstanceType.CpuCoreCount {
+					selector["id"] = tpe.EmrInstanceType.InstanceType
+					selector["cpu_core_count"] = tpe.EmrInstanceType.CpuCoreCount
+					if localStorage {
+						selector["local_storage_capacity"] = tpe.EmrInstanceType.LocalStorageCapacity
+					}
+				}
+			}
+
 			for _, tpe := range v {
 				if nodeTypeFilter(supportNodeType, tpe.SupportNodeTypeList.SupportNodeType) == false {
 					continue
 				}
 
 				if localStorage == true && tpe.EmrInstanceType.LocalStorageAmount > 0 {
-					mapping["id"] = tpe.EmrInstanceType.InstanceType
-					mapping["local_storage_capacity"] = tpe.EmrInstanceType.LocalStorageCapacity
-					ids = append(ids, tpe.EmrInstanceType.InstanceType)
-					s = append(s, mapping)
-					break
+					selectFunc(selector, tpe, true)
 				} else if localStorage == false && tpe.EmrInstanceType.LocalStorageAmount == 0 {
-					mapping["id"] = tpe.EmrInstanceType.InstanceType
-					ids = append(ids, tpe.EmrInstanceType.InstanceType)
-					s = append(s, mapping)
-					break
+					selectFunc(selector, tpe, false)
 				}
 			}
+			if v, ok := selector["id"]; !ok {
+				continue
+			} else {
+				mapping["id"] = v
+			}
+			if v, ok := selector["local_storage_capacity"]; ok {
+				mapping["local_storage_capacity"] = v
+			}
+			ids = append(ids, selector["id"].(string))
+			s = append(s, mapping)
 		}
 	}
 

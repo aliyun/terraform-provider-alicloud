@@ -3,6 +3,7 @@ package alicloud
 import (
 	"time"
 
+	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
@@ -514,4 +515,39 @@ func CreateDashboard(project, name string, client *sls.Client) error {
 		return nil
 	})
 	return err
+}
+
+func (s *LogService) DescribeLogAudit(id string) (*slsPop.DescribeAppResponse, error) {
+	request := slsPop.CreateDescribeAppRequest()
+	response := &slsPop.DescribeAppResponse{}
+	request.AppName = "audit"
+	raw, err := s.client.WithLogPopClient(func(client *slsPop.Client) (interface{}, error) {
+		return client.DescribeApp(request)
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"AppNotExist"}) {
+			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ = raw.(*slsPop.DescribeAppResponse)
+	return response, nil
+}
+
+func GetCharTitile(project, dashboard, char string, client *sls.Client) string {
+	board, err := client.GetDashboard(project, dashboard)
+	// If the query fails to ignore the error, return the original value.
+	if err != nil {
+		return char
+	}
+	for _, v := range board.ChartList {
+		if v.Display.DisplayName == char {
+			return v.Title
+		} else {
+			return char
+		}
+
+	}
+	return char
 }

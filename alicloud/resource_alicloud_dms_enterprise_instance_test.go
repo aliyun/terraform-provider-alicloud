@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
@@ -37,7 +36,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 
-					"dba_uid":           os.Getenv("DBA_UID"),
+					"dba_uid":           "${tonumber(data.alicloud_account.current.id)}",
 					"host":              "${alicloud_db_connection.foo.connection_string}",
 					"port":              "3306",
 					"network_type":      "VPC",
@@ -50,7 +49,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 					"database_password": "${alicloud_db_account.account.password}",
 					"instance_alias":    name,
 					"query_timeout":     "70",
-					"export_timeout":    "600",
+					"export_timeout":    "2000",
 					"ecs_region":        "cn-shanghai",
 					"ddl_online":        "0",
 					"use_dsql":          "0",
@@ -59,7 +58,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 
-						"dba_uid":           os.Getenv("DBA_UID"),
+						"dba_uid":           "${tonumber(data.alicloud_account.current.id)}",
 						"host":              "${alicloud_db_connection.foo.connection_string}",
 						"port":              "3306",
 						"network_type":      "VPC",
@@ -72,7 +71,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 						"database_password": CHECKSET,
 						"instance_alias":    name,
 						"query_timeout":     "70",
-						"export_timeout":    "600",
+						"export_timeout":    "2000",
 						"ecs_region":        "cn-shanghai",
 						"ddl_online":        "0",
 						"use_dsql":          "0",
@@ -146,7 +145,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 
-					"dba_uid":           os.Getenv("DBA_UID"),
+					"dba_uid":           "${tonumber(data.alicloud_account.current.id)}",
 					"host":              "${alicloud_db_connection.foo.connection_string}",
 					"port":              "3306",
 					"network_type":      "VPC",
@@ -159,7 +158,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 					"database_password": "${alicloud_db_account.account.password}",
 					"instance_alias":    name,
 					"query_timeout":     "70",
-					"export_timeout":    "600",
+					"export_timeout":    "2000",
 					"ecs_region":        "cn-shanghai",
 					"ddl_online":        "0",
 					"use_dsql":          "0",
@@ -168,7 +167,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 
-						"dba_uid":           os.Getenv("DBA_UID"),
+						"dba_uid":           "${tonumber(data.alicloud_account.current.id)}",
 						"host":              "${alicloud_db_connection.foo.connection_string}",
 						"port":              "3306",
 						"network_type":      "VPC",
@@ -181,7 +180,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 						"database_password": CHECKSET,
 						"instance_alias":    name,
 						"query_timeout":     "70",
-						"export_timeout":    "600",
+						"export_timeout":    "2000",
 						"ecs_region":        "cn-shanghai",
 						"ddl_online":        "0",
 						"use_dsql":          "0",
@@ -200,7 +199,8 @@ func resourceDmsConfigDependence(name string) string {
 variable "creation" {
   default = "Rds"
 }
-
+data "alicloud_account" "current"{
+}
 variable "name" {
   default = "dbconnectionbasic"
 }
@@ -242,6 +242,7 @@ resource "alicloud_db_account" "account" {
   instance_id = "${alicloud_db_instance.instance.id}"
   name        = "tftestnormal"
   password    = "Test12345"
+  type        = "Normal"
 }
 `)
 }
