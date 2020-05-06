@@ -1,8 +1,11 @@
 package alicloud
 
 import (
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -23,12 +26,16 @@ func dataSourceAlicloudEdasDeployGroups() *schema.Resource {
 				ForceNew: true,
 			},
 
-			"ids": {
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.ValidateRegexp,
+				ForceNew:     true,
+			},
+			"names": {
 				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 
 			"groups": {
@@ -89,13 +96,6 @@ func dataSourceAlicloudEdasDeployGroupsRead(d *schema.ResourceData, meta interfa
 	request.RegionId = regionId
 	request.AppId = appId
 
-	idsMap := make(map[string]string)
-	if v, ok := d.GetOk("ids"); ok {
-		for _, id := range v.([]interface{}) {
-			idsMap[Trim(id.(string))] = Trim(id.(string))
-		}
-	}
-
 	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 		return edasClient.ListDeployGroup(request)
 	})
@@ -113,11 +113,18 @@ func dataSourceAlicloudEdasDeployGroupsRead(d *schema.ResourceData, meta interfa
 	}
 
 	var filteredGroups []edas.DeployGroup
-	if len(idsMap) > 0 {
+	nameRegex, ok := d.GetOk("name_regex")
+	if ok && nameRegex.(string) != "" {
+		var r *regexp.Regexp
+		if nameRegex != "" {
+			r = regexp.MustCompile(nameRegex.(string))
+		}
 		for _, group := range response.DeployGroupList.DeployGroup {
-			if _, ok := idsMap[group.GroupId]; ok {
-				filteredGroups = append(filteredGroups, group)
+			if r != nil && !r.MatchString(group.GroupName) {
+				continue
 			}
+
+			filteredGroups = append(filteredGroups, group)
 		}
 	} else {
 		filteredGroups = response.DeployGroupList.DeployGroup
@@ -127,8 +134,9 @@ func dataSourceAlicloudEdasDeployGroupsRead(d *schema.ResourceData, meta interfa
 }
 
 func edasDeployGroupAttributes(d *schema.ResourceData, groups []edas.DeployGroup) error {
-	var Ids []string
+	var ids []string
 	var s []map[string]interface{}
+	var names []string
 
 	for _, group := range groups {
 		mapping := map[string]interface{}{
@@ -142,11 +150,16 @@ func edasDeployGroupAttributes(d *schema.ResourceData, groups []edas.DeployGroup
 			"package_version_id": group.PackageVersionId,
 			"app_version_id":     group.AppVersionId,
 		}
-		Ids = append(Ids, group.GroupId)
+		ids = append(ids, group.GroupId)
 		s = append(s, mapping)
+		names = append(names, group.GroupName)
 	}
 
-	d.SetId(dataResourceIdHash(Ids))
+	d.SetId(dataResourceIdHash(ids))
+
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
 	if err := d.Set("groups", s); err != nil {
 		return WrapError(err)
 	}

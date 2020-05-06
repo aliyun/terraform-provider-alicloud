@@ -15,12 +15,32 @@ func TestAccAlicloudEdasApplicationsDataSource(t *testing.T) {
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceEdasApplicationConfigDependence)
 
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_edas_application.default.application_name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "fake_tf-testacc*",
+		}),
+	}
+
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_edas_application.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_edas_application.default.id}_fake"},
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":        []string{"${alicloud_edas_application.default.id}"},
+			"name_regex": "${alicloud_edas_application.default.application_name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":        []string{"${alicloud_edas_application.default.id}_fake"},
+			"name_regex": "${alicloud_edas_application.default.application_name}",
 		}),
 	}
 
@@ -36,6 +56,7 @@ func TestAccAlicloudEdasApplicationsDataSource(t *testing.T) {
 
 	var fakeEdasApplicationsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
+			"ids.#":          "0",
 			"applications.#": "0",
 		}
 	}
@@ -50,7 +71,7 @@ func TestAccAlicloudEdasApplicationsDataSource(t *testing.T) {
 		testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 	}
 
-	edasApplicationCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
+	edasApplicationCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceEdasApplicationConfigDependence(name string) string {

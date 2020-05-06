@@ -1,8 +1,11 @@
 package alicloud
 
 import (
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -27,6 +30,17 @@ func dataSourceAlicloudEdasClusters() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 				ForceNew: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.ValidateRegexp,
+				ForceNew:     true,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"clusters": {
 				Type:     schema.TypeList,
@@ -123,11 +137,22 @@ func dataSourceAlicloudEdasClustersRead(d *schema.ResourceData, meta interface{}
 	}
 
 	var filteredClusters []edas.Cluster
-	if len(idsMap) > 0 {
+	nameRegex, ok := d.GetOk("name_regex")
+	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
+		var r *regexp.Regexp
+		if nameRegex != "" {
+			r = regexp.MustCompile(nameRegex.(string))
+		}
 		for _, cluster := range response.ClusterList.Cluster {
-			if _, ok := idsMap[cluster.ClusterId]; ok {
-				filteredClusters = append(filteredClusters, cluster)
+			if r != nil && !r.MatchString(cluster.ClusterName) {
+				continue
 			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[cluster.ClusterId]; !ok {
+					continue
+				}
+			}
+			filteredClusters = append(filteredClusters, cluster)
 		}
 	} else {
 		filteredClusters = response.ClusterList.Cluster
@@ -137,7 +162,8 @@ func dataSourceAlicloudEdasClustersRead(d *schema.ResourceData, meta interface{}
 }
 
 func edasClusterDescriptionAttributes(d *schema.ResourceData, clusters []edas.Cluster) error {
-	var Ids []string
+	var ids []string
+	var names []string
 	var s []map[string]interface{}
 
 	for _, cluster := range clusters {
@@ -156,11 +182,18 @@ func edasClusterDescriptionAttributes(d *schema.ResourceData, clusters []edas.Cl
 			"vpc_id":       cluster.VpcId,
 			"region_id":    cluster.RegionId,
 		}
-		Ids = append(Ids, cluster.ClusterId)
+		ids = append(ids, cluster.ClusterId)
 		s = append(s, mapping)
+		names = append(names, cluster.ClusterName)
 	}
 
-	d.SetId(dataResourceIdHash(Ids))
+	d.SetId(dataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
 	if err := d.Set("clusters", s); err != nil {
 		return WrapError(err)
 	}

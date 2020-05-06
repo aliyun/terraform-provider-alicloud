@@ -188,16 +188,12 @@ func resourceAlicloudEdasApplicationCreate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	return resourceAlicloudEdasApplicationUpdate(d, meta)
+	return resourceAlicloudEdasApplicationRead(d, meta)
 }
 
 func resourceAlicloudEdasApplicationUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
-
-	if d.IsNewResource() {
-		return resourceAlicloudEdasApplicationRead(d, meta)
-	}
 
 	if d.HasChange("application_name") || d.HasChange("descriotion") {
 		request := edas.CreateUpdateApplicationBaseInfoRequest()

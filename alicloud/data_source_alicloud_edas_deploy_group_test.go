@@ -15,14 +15,14 @@ func TestAccAlicloudEdasDeployGroupDataSource(t *testing.T) {
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceEdasDeployGroupConfigDependence)
 
-	allConf := dataSourceTestAccConfig{
+	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids":    []string{"${alicloud_edas_deploy_group.default.id}"},
-			"app_id": "${alicloud_edas_application.default.id}",
+			"name_regex": "${alicloud_edas_deploy_group.default.group_name}",
+			"app_id":     "${alicloud_edas_application.default.id}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids":    []string{"${alicloud_edas_deploy_group.default.id}_fake"},
-			"app_id": "${alicloud_edas_application.default.id}_fake",
+			"name_regex": "fake_tf-testacc*",
+			"app_id":     "${alicloud_edas_application.default.id}",
 		}),
 	}
 	var existEdasDeployGroupsMapFunc = func(rand int) map[string]string {
@@ -54,7 +54,7 @@ func TestAccAlicloudEdasDeployGroupDataSource(t *testing.T) {
 		testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 	}
 
-	edasApplicationCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
+	edasApplicationCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
 
 func dataSourceEdasDeployGroupConfigDependence(name string) string {

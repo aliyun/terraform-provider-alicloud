@@ -1,8 +1,11 @@
 package alicloud
 
 import (
+	"regexp"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -22,6 +25,17 @@ func dataSourceAlicloudEdasApplications() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 				ForceNew: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.ValidateRegexp,
+				ForceNew:     true,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"applications": {
 				Type:     schema.TypeList,
@@ -120,11 +134,22 @@ func dataSourceAlicloudEdasApplicationsRead(d *schema.ResourceData, meta interfa
 		return WrapError(Error(response.Message))
 	}
 	var filteredApps []edas.Application
-	if len(idsMap) > 0 {
+	nameRegex, ok := d.GetOk("name_regex")
+	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
+		var r *regexp.Regexp
+		if nameRegex != "" {
+			r = regexp.MustCompile(nameRegex.(string))
+		}
 		for _, app := range response.ApplicationList.Application {
-			if _, ok := idsMap[app.AppId]; ok {
-				filteredApps = append(filteredApps, app)
+			if r != nil && !r.MatchString(app.Name) {
+				continue
 			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[app.AppId]; !ok {
+					continue
+				}
+			}
+			filteredApps = append(filteredApps, app)
 		}
 	} else {
 		filteredApps = response.ApplicationList.Application
@@ -136,6 +161,7 @@ func dataSourceAlicloudEdasApplicationsRead(d *schema.ResourceData, meta interfa
 func edasApplicationAttributes(d *schema.ResourceData, apps []edas.Application) error {
 	var appIds []string
 	var s []map[string]interface{}
+	var names []string
 
 	for _, app := range apps {
 		mapping := map[string]interface{}{
@@ -155,10 +181,17 @@ func edasApplicationAttributes(d *schema.ResourceData, apps []edas.Application) 
 			"region_id":              app.RegionId,
 		}
 		appIds = append(appIds, app.AppId)
+		names = append(names, app.Name)
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(appIds))
+	if err := d.Set("ids", appIds); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
 	if err := d.Set("applications", s); err != nil {
 		return WrapError(err)
 	}

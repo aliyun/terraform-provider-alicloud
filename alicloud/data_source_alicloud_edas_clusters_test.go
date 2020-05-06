@@ -16,14 +16,38 @@ func TestAccAlicloudEdasClustersDataSource(t *testing.T) {
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceEdasClustersConfigDependence)
 
-	allConf := dataSourceTestAccConfig{
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex":        "${alicloud_edas_cluster.default.cluster_name}",
+			"logical_region_id": os.Getenv("ALICLOUD_REGION"),
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex":        "fake_tf-testacc*",
+			"logical_region_id": os.Getenv("ALICLOUD_REGION"),
+		}),
+	}
+
+	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids":               []string{"${alicloud_edas_cluster.default.id}"},
 			"logical_region_id": os.Getenv("ALICLOUD_REGION"),
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":               []string{"${alicloud_edas_cluster.default.id}_fake"},
-			"logical_region_id": "fake_region_id",
+			"logical_region_id": os.Getenv("ALICLOUD_REGION"),
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":               []string{"${alicloud_edas_cluster.default.id}"},
+			"logical_region_id": os.Getenv("ALICLOUD_REGION"),
+			"name_regex":        "${alicloud_edas_cluster.default.cluster_name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":               []string{"${alicloud_edas_cluster.default.id}_fake"},
+			"logical_region_id": os.Getenv("ALICLOUD_REGION"),
+			"name_regex":        "${alicloud_edas_cluster.default.cluster_name}",
 		}),
 	}
 
@@ -41,6 +65,7 @@ func TestAccAlicloudEdasClustersDataSource(t *testing.T) {
 
 	var fakeEdasClustersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
+			"ids.#":      "0",
 			"clusters.#": "0",
 		}
 	}
@@ -55,7 +80,7 @@ func TestAccAlicloudEdasClustersDataSource(t *testing.T) {
 		testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 	}
 
-	edasApplicationCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
+	edasApplicationCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceEdasClustersConfigDependence(name string) string {
