@@ -112,15 +112,15 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Computed: true,
 			},
 			"client_key_content": {
-				Type:    schema.TypeString,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"cluster_ca_cert_content": {
-				Type:    schema.TypeString,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"kube_config_content": {
-				Type:    schema.TypeString,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 		},
