@@ -62,6 +62,7 @@ const (
 	HBASECode           = ServiceCode("HBASE")
 	ADBCode             = ServiceCode("ADB")
 	MAXCOMPUTECode      = ServiceCode("MAXCOMPUTE")
+	EDASCode            = ServiceCode("EDAS")
 )
 
 type Endpoints struct {

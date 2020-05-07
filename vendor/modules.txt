@@ -32,6 +32,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/dds
 github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise
 github.com/aliyun/alibaba-cloud-sdk-go/services/drds
 github.com/aliyun/alibaba-cloud-sdk-go/services/ecs
+github.com/aliyun/alibaba-cloud-sdk-go/services/edas
 github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch
 github.com/aliyun/alibaba-cloud-sdk-go/services/emr
 github.com/aliyun/alibaba-cloud-sdk-go/services/ess

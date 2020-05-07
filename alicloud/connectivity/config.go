@@ -78,6 +78,7 @@ type Config struct {
 	AdbEndpoint           string
 	MaxComputeEndpoint    string
 
+	edasEndpoint            string
 	SkipRegionValidation    bool
 	ConfigurationSource     string
 	CbnEndpoint             string
