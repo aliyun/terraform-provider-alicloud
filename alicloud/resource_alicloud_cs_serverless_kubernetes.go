@@ -107,6 +107,10 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				ForceNew: true,
 				Default:  false,
 			},
+			"security_group_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
