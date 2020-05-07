@@ -86,7 +86,7 @@ type UnbindSlbResponse struct {
 	*responses.BaseResponse
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
-	//Data      string `json:"Data" xml:"Data"`
+	Data      string `json:"Data" xml:"Data"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
@@ -95,7 +95,7 @@ func CreateUnbindSlbRequest() (request *UnbindSlbRequest) {
 	request = &UnbindSlbRequest{
 		RoaRequest: &requests.RoaRequest{},
 	}
-	request.InitWithApiInfo("Edas", "2017-08-01", "UnbindSlb", "/pop/app/unbind_slb_json", "Edas", "openAPI")
+	request.InitWithApiInfo("Edas", "2017-08-01", "UnbindSlb", "/pop/app/unbind_slb_json", "edas", "openAPI")
 	request.Method = requests.POST
 	return
 }

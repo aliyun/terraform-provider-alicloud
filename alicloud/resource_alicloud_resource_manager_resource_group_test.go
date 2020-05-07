@@ -10,7 +10,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudResourceGroup_basic(t *testing.T) {
+func TestAccAlicloudResourceManagerResourceGroup_basic(t *testing.T) {
 	var v resourcemanager.ResourceGroup
 	resourceId := "alicloud_resource_manager_resource_group.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerResourceGroupMap)
