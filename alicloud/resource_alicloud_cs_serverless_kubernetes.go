@@ -99,13 +99,29 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Type:     schema.TypeMap,
 				Optional: true,
 				ForceNew: true,
-				//ValidateFunc: validateCSClusterTags,
+				// ValidateFunc: validateCSClusterTags,
 			},
 			"force_update": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
 				Default:  false,
+			},
+			"client_cert_content": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"client_key_content": {
+				Type:    schema.TypeString,
+				Computed: true,
+			},
+			"cluster_ca_cert_content": {
+				Type:    schema.TypeString,
+				Computed: true,
+			},
+			"kube_config_content": {
+				Type:    schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -151,7 +167,7 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		DeletionProtection:   d.Get("deletion_protection").(bool),
 	}
 
-	//set tags
+	// set tags
 	if len(tags) > 0 {
 		args.Tags = tags
 	}
@@ -230,38 +246,40 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 			return WrapError(err)
 		}
 	}
+	_ = d.Set("client_cert_content", cert.Cert)
 	if key, ok := d.GetOk("client_key"); ok && key.(string) != "" {
 		if err := writeToFile(key.(string), cert.Key); err != nil {
 			return WrapError(err)
 		}
 	}
+	_ = d.Set("client_key_content", cert.Key)
 	if ca, ok := d.GetOk("cluster_ca_cert"); ok && ca.(string) != "" {
 		if err := writeToFile(ca.(string), cert.CA); err != nil {
 			return WrapError(err)
 		}
 	}
+	_ = d.Set("cluster_ca_cert_content", cert.CA)
 
 	var config *cs.ClusterConfig
+
+	if err := invoker.Run(func() error {
+		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			requestInfo = csClient
+			return csClient.DescribeClusterUserConfig(d.Id(), !d.Get("endpoint_public_access_enabled").(bool))
+		})
+		response = raw
+		return err
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterConfig", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = d.Id()
+		addDebug("GetClusterConfig", response, requestInfo, requestMap)
+	}
+	config, _ = response.(*cs.ClusterConfig)
+	_ = d.Set("kube_config_content", config.Config)
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		var requestInfo *cs.Client
-
-		if err := invoker.Run(func() error {
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				requestInfo = csClient
-				return csClient.DescribeClusterUserConfig(d.Id(), !d.Get("endpoint_public_access_enabled").(bool))
-			})
-			response = raw
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterConfig", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			requestMap := make(map[string]interface{})
-			requestMap["ClusterId"] = d.Id()
-			addDebug("GetClusterConfig", response, requestInfo, requestMap)
-		}
-		config, _ = response.(*cs.ClusterConfig)
-
 		if err := writeToFile(file.(string), config.Config); err != nil {
 			return WrapError(err)
 		}

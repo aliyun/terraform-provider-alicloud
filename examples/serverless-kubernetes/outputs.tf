@@ -26,4 +26,3 @@ output "endpoint_public_access_enabled" {
 }
 
 
-
