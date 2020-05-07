@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_cluster"
 sidebar_current: "docs-alicloud-resource-edas-cluster"
 description: |-
-  Provides a Alicloud EDAS Cluster resource.
+  Provides a Alicloud EDAS cluster resource.
 ---
 
 # alicloud\_edas\_cluster
 
-Provides an EDAS Cluster resource.
+Provides an EDAS cluster resource.
 
 -> **NOTE:** Available in 1.82.0+
 
@@ -46,7 +46,7 @@ The following attributes are exported:
 
 ## Import
 
-EDAS CLUSTER can be imported using the id, e.g.
+EDAS cluster can be imported using the id, e.g.
 
 ```
 $ terraform import alicloud_edas_cluster.cluster cluster_id

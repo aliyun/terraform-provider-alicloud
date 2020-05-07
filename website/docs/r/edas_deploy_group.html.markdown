@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_deploy_group"
 sidebar_current: "docs-alicloud-resource-edas-deploy-group"
 description: |-
-  Provides a Alicloud EDAS Deploy Group resource.
+  Provides a Alicloud EDAS deploy group resource.
 ---
 
 # alicloud\_edas\_deploy\_group
@@ -42,7 +42,7 @@ The following attributes are exported:
 
 ## Import
 
-EDAS DEPLOY GROUP can be imported using the id, e.g.
+EDAS deploy group can be imported using the id, e.g.
 
 ```
 $ terraform import alicloud_edas_deploy_group.group app_id:group_name:group_id

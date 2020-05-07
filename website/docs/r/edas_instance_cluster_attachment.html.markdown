@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_instance_cluster_attachment"
 sidebar_current: "docs-alicloud-resource-edas-instance-cluster-attachment"
 description: |-
-  Provides a Alicloud EDAS Instance Cluster Attachment resource.
+  Provides a Alicloud EDAS instance cluster attachment resource.
 ---
 
 # alicloud\_edas\_instance\_cluster\_attachment
 
-Provides an ALIKAFKA consumer group resource.
+Provides an EDAS instance cluster attachment resource.
 
 -> **NOTE:** Available in 1.82.0+
 

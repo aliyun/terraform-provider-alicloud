@@ -5,7 +5,7 @@ output "cluster_name" {
 
 output "cluster_type" {
   value = "${alicloud_edas_cluster.default.cluster_type}"
-  description = "The type of the cluster that you want to create. Valid values: 1: Swan cluster. 2: ECS cluster. 3: Kubernates cluster."
+  description = "The type of the cluster that you want to create. Valid values: 1: Swarm cluster. 2: ECS cluster. 3: Kubernates cluster."
 }
 
 output "network_mode" {

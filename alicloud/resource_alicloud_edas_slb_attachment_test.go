@@ -13,7 +13,7 @@ import (
 
 func TestAccAlicloudEdasSlbAttachment_basic(t *testing.T) {
 	var v *edas.Applcation
-	resourceId := "alicloud_edas_slb_bind.default"
+	resourceId := "alicloud_edas_slb_attachment.default"
 
 	ra := resourceAttrInit(resourceId, edasSLBAttachmentMap)
 	serviceFunc := func() interface{} {

@@ -85,6 +85,10 @@ func resourceAlicloudEdasSlbAttachmentCreate(d *schema.ResourceData, meta interf
 		request.VServerGroupId = v.(string)
 	}
 
+	if err := edasService.SyncResource("slb"); err != nil {
+		return err
+	}
+
 	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 		return edasClient.BindSlb(request)
 	})

@@ -1,15 +1,15 @@
 ---
 subcategory: "EDAS"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_edas_slb_bind"
-sidebar_current: "docs-alicloud-resource-edas-slb-bind"
+page_title: "Alicloud: alicloud_edas_slb_attachment"
+sidebar_current: "docs-alicloud-resource-edas-slb-attachment"
 description: |-
-  Provides a Alicloud EDAS Slb Bind resource.
+  Provides bind slb to EDAS application resource.
 ---
 
-# alicloud\_edas\_slb\_bind
+# alicloud\_edas\_slb\_attachment
 
-Provides an EDAS Slb Bind resource.
+Provides bind slb to EDAS application resource.
 
 -> **NOTE:** Available in 1.82.0+
 
@@ -18,7 +18,7 @@ Provides an EDAS Slb Bind resource.
 Basic Usage
 
 ```
-resource "alicloud_edas_slb_bind" "default" {
+resource "alicloud_edas_slb_attachment" "default" {
   app_id = var.app_id
   slb_id = var.slb_id
   slb_ip = var.slb_ip

@@ -483,7 +483,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_edas_application":                    resourceAlicloudEdasApplication(),
 			"alicloud_edas_deploy_group":                   resourceAlicloudEdasDeployGroup(),
 			"alicloud_edas_application_scale":              resourceAlicloudEdasInstanceApplicationAttachment(),
-			"alicloud_edas_slb_bind":                       resourceAlicloudEdasSlbAttachment(),
+			"alicloud_edas_slb_attachment":                 resourceAlicloudEdasSlbAttachment(),
 			"alicloud_edas_cluster":                        resourceAlicloudEdasCluster(),
 			"alicloud_edas_instance_cluster_attachment":    resourceAlicloudEdasInstanceClusterAttachment(),
 			"alicloud_edas_application_deployment":         resourceAlicloudEdasApplicationPackageAttachment(),

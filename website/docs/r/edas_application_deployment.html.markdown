@@ -4,10 +4,10 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_application_deployment"
 sidebar_current: "docs-alicloud-resource-edas-application-deployment"
 description: |-
-  Provides a Alicloud Alikafka Consumer Group resource.
+  Provides a Alicloud EDAS application deployment resource.
 ---
 
-# alicloud\_alikafka\_consumer\_group
+# alicloud\_edas\_application\_deployment
 
 Provides an EDAS application deployment.
 

@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_deploy_groups"
 sidebar_current: "docs-alicloud-datasource-edas-deploy-groups"
 description: |-
-    Provides a list of edas deploy groups available to the user.
+    Provides a list of EDAS deploy groups available to the user.
 ---
 
 # alicloud\_edas\_deploy\_groups
 
-This data source provides a list of EDAS Deploy Groups in an Alibaba Cloud account according to the specified filters.
+This data source provides a list of EDAS deploy groups in an Alibaba Cloud account according to the specified filters.
 
 -> **NOTE:** Available in 1.82.0+
 

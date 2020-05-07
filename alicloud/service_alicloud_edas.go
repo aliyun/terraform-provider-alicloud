@@ -303,7 +303,7 @@ func (e *EdasService) DescribeEdasApplicationScale(id string) (*edas.Applcation,
 	return o, nil
 }
 
-func (e *EdasService) DescribeEdasSlbBind(id string) (*edas.Applcation, error) {
+func (e *EdasService) DescribeEdasSlbAttachment(id string) (*edas.Applcation, error) {
 	application := &edas.Applcation{}
 	v := strings.Split(id, ":")
 	o, err := e.DescribeEdasApplication(v[0])

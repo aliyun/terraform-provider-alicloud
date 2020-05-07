@@ -1,4 +1,4 @@
-resource "alicloud_edas_slb_bind" "default" {
+resource "alicloud_edas_slb_attachment" "default" {
   app_id = "${var.app_id}"
   slb_id = "${var.slb_id}"
   slb_ip = "${var.slb_ip}"
