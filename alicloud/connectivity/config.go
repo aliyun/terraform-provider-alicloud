@@ -78,11 +78,12 @@ type Config struct {
 	AdbEndpoint           string
 	MaxComputeEndpoint    string
 
-	SkipRegionValidation  bool
-	ConfigurationSource   string
-	CbnEndpoint           string
-	DmsEnterpriseEndpoint string
-	WafOpenapiEndpoint    string
+	SkipRegionValidation    bool
+	ConfigurationSource     string
+	CbnEndpoint             string
+	DmsEnterpriseEndpoint   string
+	WafOpenapiEndpoint      string
+	ResourcemanagerEndpoint string
 }
 
 func (c *Config) loadAndValidate() error {
