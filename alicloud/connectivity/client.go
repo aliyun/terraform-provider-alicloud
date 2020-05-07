@@ -69,6 +69,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 )
@@ -144,6 +145,7 @@ type AliyunClient struct {
 	bssopenapiConn               *bssopenapi.Client
 	alidnsConn                   *alidns.Client
 	ddoscooConn                  *ddoscoo.Client
+	cassandraConn                *cassandra.Client
 }
 
 type ApiVersion string
@@ -1805,4 +1807,23 @@ func (client *AliyunClient) WithAlidnsClient(do func(*alidns.Client) (interface{
 		client.alidnsConn = alidnsConn
 	}
 	return do(client.alidnsConn)
+}
+
+func (client *AliyunClient) WithCassandraClient(do func(*cassandra.Client) (interface{}, error)) (interface{}, error) {
+	if client.cassandraConn == nil {
+		endpoint := client.config.CassandraEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CassandraCode)
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CassandraCode), endpoint)
+		}
+		cassandraConn, err := cassandra.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Cassandraclient: %#v", err)
+		}
+		cassandraConn.AppendUserAgent(Terraform, terraformVersion)
+		cassandraConn.AppendUserAgent(Provider, providerVersion)
+		cassandraConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.cassandraConn = cassandraConn
+	}
+	return do(client.cassandraConn)
 }

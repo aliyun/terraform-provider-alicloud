@@ -87,6 +87,7 @@ type Config struct {
 	ResourcemanagerEndpoint string
 	BssopenapiEndpoint      string
 	AlidnsEndpoint          string
+	CassandraEndpoint       string
 }
 
 func (c *Config) loadAndValidate() error {

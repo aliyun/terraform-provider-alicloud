@@ -526,6 +526,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kms_key_version":                     resourceAlicloudKmsKeyVersion(),
 			"alicloud_alidns_record":                       resourceAlicloudAlidnsRecord(),
 			"alicloud_ddoscoo_scheduler_rule":              resourceAlicloudDdoscooSchedulerRule(),
+			"alicloud_cassandra_cluster":                   resourceAlicloudCassandraCluster(),
+			"alicloud_cassandra_data_center":               resourceAlicloudCassandraDataCenter(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -663,6 +665,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		} else {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoints["dns"].(string))
 		}
+		config.CassandraEndpoint = strings.TrimSpace(endpoints["cassandra"].(string))
 	}
 
 	if config.RamRoleArn != "" {
@@ -833,6 +836,8 @@ func init() {
 		"resourcemanager_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom resourcemanager endpoints.",
 
 		"alidns_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom alidns endpoints.",
+
+		"cassandra_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cassandra endpoints.",
 	}
 }
 
@@ -903,6 +908,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["dms_enterprise_endpoint"],
+				},
+
+				"cassandra": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cassandra_endpoint"],
 				},
 
 				"cbn": {
@@ -1219,6 +1231,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["waf_openapi"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["resourcemanager"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["alidns"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cassandra"].(string)))
 	return hashcode.String(buf.String())
 }
 
