@@ -40,9 +40,11 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	waf_openapi "github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
@@ -102,6 +104,7 @@ type AliyunClient struct {
 	logconn                      *sls.Client
 	fcconn                       *fc.Client
 	cenconn                      *cbn.Client
+	logpopconn                   *slsPop.Client
 	pvtzconn                     *pvtz.Client
 	ddsconn                      *dds.Client
 	gpdbconn                     *gpdb.Client
@@ -133,6 +136,7 @@ type AliyunClient struct {
 	dnsConn                      *alidns.Client
 	edasconn                     *edas.Client
 	dms_enterpriseConn           *dms_enterprise.Client
+	waf_openapiConn              *waf_openapi.Client
 }
 
 type ApiVersion string
@@ -159,7 +163,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.80.1"
+var providerVersion = "1.81.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient
@@ -739,6 +743,31 @@ func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, err
 	}
 
 	return do(client.stsconn)
+}
+
+func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{}, error)) (interface{}, error) {
+	// Initialize the HBase client if necessary
+	if client.logpopconn == nil {
+		endpoint := client.config.LogEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, LOGCode)
+		}
+		if endpoint != "" {
+			endpoint = fmt.Sprintf("%s.log.aliyuncs.com", client.config.RegionId)
+		}
+		logpopconn, err := slsPop.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the sls client: %#v", err)
+		}
+
+		logpopconn.AppendUserAgent(Terraform, terraformVersion)
+		logpopconn.AppendUserAgent(Provider, providerVersion)
+		logpopconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.logpopconn = logpopconn
+	}
+
+	return do(client.logpopconn)
 }
 
 func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, error)) (interface{}, error) {
@@ -1668,4 +1697,29 @@ func (client *AliyunClient) WithDmsEnterpriseClient(do func(*dms_enterprise.Clie
 		client.dms_enterpriseConn = dms_enterpriseConn
 	}
 	return do(client.dms_enterpriseConn)
+}
+
+func (client *AliyunClient) WithWafOpenapiClient(do func(*waf_openapi.Client) (interface{}, error)) (interface{}, error) {
+	if client.waf_openapiConn == nil {
+		endpoint := client.config.WafOpenapiEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, WafOpenapiCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(WafOpenapiCode), endpoint)
+		}
+
+		waf_openapiConn, err := waf_openapi.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the WafOpenapiclient: %#v", err)
+		}
+		waf_openapiConn.AppendUserAgent(Terraform, terraformVersion)
+		waf_openapiConn.AppendUserAgent(Provider, providerVersion)
+		waf_openapiConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.waf_openapiConn = waf_openapiConn
+	}
+	return do(client.waf_openapiConn)
 }

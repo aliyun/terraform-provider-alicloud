@@ -36,8 +36,8 @@ func (c *CdnService) DescribeCdnDomainNew(id string) (*cdn.GetDomainDetailModel,
 	return &domain.GetDomainDetailModel, nil
 }
 
-func (c *CdnService) DescribeCdnDomainConfig(id string) (*cdn.DomainConfig, error) {
-	conf := &cdn.DomainConfig{}
+func (c *CdnService) DescribeCdnDomainConfig(id string) (*cdn.DomainConfigInDescribeCdnDomainConfigs, error) {
+	conf := &cdn.DomainConfigInDescribeCdnDomainConfigs{}
 	parts, err := ParseResourceId(id, 2)
 	if err != err {
 		return conf, WrapError(err)

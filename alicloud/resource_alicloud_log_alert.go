@@ -149,13 +149,12 @@ func resourceAlicloudLogAlertCreate(d *schema.ResourceData, meta interface{}) er
 	project_name := d.Get("project_name").(string)
 	alert_name := d.Get("alert_name").(string)
 	alert_displayname := d.Get("alert_displayname").(string)
-	config := createAlertConfig(d)
+
 	alert := &sls.Alert{
-		Name:          alert_name,
-		DisplayName:   alert_displayname,
-		Description:   d.Get("alert_description").(string),
-		State:         "Enabled",
-		Configuration: config,
+		Name:        alert_name,
+		DisplayName: alert_displayname,
+		Description: d.Get("alert_description").(string),
+		State:       "Enabled",
 		Schedule: &sls.Schedule{
 			Type:     d.Get("schedule_type").(string),
 			Interval: d.Get("schedule_interval").(string),
@@ -163,11 +162,12 @@ func resourceAlicloudLogAlertCreate(d *schema.ResourceData, meta interface{}) er
 	}
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			err := CreateDashboard(project_name, d.Get("dashboard").(string), slsClient)
+			dashboard := d.Get("dashboard").(string)
+			err := CreateDashboard(project_name, dashboard, slsClient)
 			if err != nil {
 				return nil, err
 			}
-
+			alert.Configuration = createAlertConfig(d, project_name, dashboard, slsClient)
 			return nil, slsClient.CreateAlert(project_name, alert)
 		})
 		if err != nil {
@@ -249,11 +249,10 @@ func resourceAlicloudLogAlertUpdate(d *schema.ResourceData, meta interface{}) er
 
 	client := meta.(*connectivity.AliyunClient)
 	params := &sls.Alert{
-		Name:          parts[1],
-		DisplayName:   d.Get("alert_displayname").(string),
-		Description:   d.Get("alert_description").(string),
-		State:         "Enabled",
-		Configuration: createAlertConfig(d),
+		Name:        parts[1],
+		DisplayName: d.Get("alert_displayname").(string),
+		Description: d.Get("alert_description").(string),
+		State:       "Enabled",
 		Schedule: &sls.Schedule{
 			Type:     d.Get("schedule_type").(string),
 			Interval: d.Get("schedule_interval").(string),
@@ -262,10 +261,13 @@ func resourceAlicloudLogAlertUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			err := CreateDashboard(d.Get("project_name").(string), d.Get("dashboard").(string), slsClient)
+			project_name := d.Get("project_name").(string)
+			dashboard := d.Get("dashboard").(string)
+			err := CreateDashboard(project_name, dashboard, slsClient)
 			if err != nil {
 				return nil, err
 			}
+			params.Configuration = createAlertConfig(d, project_name, dashboard, slsClient)
 			return nil, slsClient.UpdateAlert(parts[0], params)
 		})
 		if err != nil {
@@ -317,7 +319,7 @@ func resourceAlicloudLogAlertDelete(d *schema.ResourceData, meta interface{}) er
 	return WrapError(logService.WaitForLogstoreAlert(d.Id(), Deleted, DefaultTimeout))
 }
 
-func createAlertConfig(d *schema.ResourceData) *sls.AlertConfiguration {
+func createAlertConfig(d *schema.ResourceData, project, dashboard string, client *sls.Client) *sls.AlertConfiguration {
 
 	noti := []*sls.Notification{}
 	if v, ok := d.GetOk("notification_list"); ok {
@@ -374,7 +376,7 @@ func createAlertConfig(d *schema.ResourceData) *sls.AlertConfiguration {
 		for _, e := range v.([]interface{}) {
 			query_map := e.(map[string]interface{})
 			query := &sls.AlertQuery{
-				ChartTitle:   query_map["chart_title"].(string),
+				ChartTitle:   GetCharTitile(project, dashboard, query_map["chart_title"].(string), client),
 				LogStore:     query_map["logstore"].(string),
 				Query:        query_map["query"].(string),
 				Start:        query_map["start"].(string),
