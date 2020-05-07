@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_edas\_slb\_attachment
 
-Provides an EDAS slb application attachment resource
+Provides an EDAS slb application attachment resource.
 
 -> **NOTE:** Available in 1.82.0+
 
