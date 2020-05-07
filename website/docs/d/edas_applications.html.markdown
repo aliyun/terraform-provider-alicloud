@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list of EDAS application in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.81.0+
+-> **NOTE:** Available in 1.82.0+
 
 ## Example Usage
 
@@ -31,12 +31,14 @@ output "first_application_name" {
 The following arguments are supported:
 
 * `ids` - (Optional) An ids string to filter results by the application id. 
+* `name_regex` - (Optional) A regex string to filter results by the application name. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
-
+* `ids` - A list of application IDs.
+* `names` - A list of applications names.
 * `applications` - A list of applications.
   * `app_name` - The name of your EDAS application. Only letters '-' '_' and numbers are allowed. The length cannot exceed 36 characters.
   * `app_id` - The ID of the application that you want to deploy.

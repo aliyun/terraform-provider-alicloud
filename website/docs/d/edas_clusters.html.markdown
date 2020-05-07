@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list of EDAS clusters in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.81.0+
+-> **NOTE:** Available in 1.82.0+
 
 ## Example Usage
 
@@ -33,12 +33,14 @@ The following arguments are supported:
 
 * `logical_region_id` - (Required) ID of the namespace in EDAS.
 * `ids` - (Optional) An ids string to filter results by the cluster id. 
+* `name_regex` - (Optional) A regex string to filter results by the cluster name. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
-
+* `ids` - A list of cluster IDs.
+* `names` - A list of cluster names.
 * `clusters` - A list of clusters.
   * `cluster_id` - The ID of the cluster that you want to create the application.
   * `cluster_name` - The name of the cluster.

@@ -11,7 +11,7 @@ description: |-
 
 Provides an EDAS Slb Bind resource.
 
--> **NOTE:** Available in 1.81.0+
+-> **NOTE:** Available in 1.82.0+
 
 ## Example Usage
 

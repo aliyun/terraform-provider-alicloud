@@ -11,7 +11,7 @@ description: |-
 
 Provides an Alicloud EDAS Application Scale resource.
 
--> **NOTE:** Available in 1.81.0+
+-> **NOTE:** Available in 1.82.0+
 
 ## Example Usage
 

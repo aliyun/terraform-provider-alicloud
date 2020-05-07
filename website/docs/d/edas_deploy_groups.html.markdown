@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list of EDAS Deploy Groups in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.81.0+
+-> **NOTE:** Available in 1.82.0+
 
 ## Example Usage
 
@@ -33,12 +33,14 @@ The following arguments are supported:
 
 * `app_id` - (Required) ID of the EDAS application.
 * `ids` - (Optional) An ids string to filter results by the deploy group id. 
+* `name_regex` - (Optional) A regex string to filter results by the deploy group name. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
-
+* `ids` - A list of deploy group IDs.
+* `names` - A list of deploy group names.
 * `groups` - A list of consumer group ids.
   * `group_id` - The ID of the instance group.
   * `group_name` - The name of the instance group. The length cannot exceed 64 characters.
