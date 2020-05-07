@@ -68,6 +68,7 @@ import (
 	"time"
 
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 )
 
 type AliyunClient struct {
@@ -135,6 +136,7 @@ type AliyunClient struct {
 	dnsConn                      *alidns.Client
 	dms_enterpriseConn           *dms_enterprise.Client
 	waf_openapiConn              *waf_openapi.Client
+	resourcemanagerConn          *resourcemanager.Client
 }
 
 type ApiVersion string
@@ -1697,4 +1699,29 @@ func (client *AliyunClient) WithWafOpenapiClient(do func(*waf_openapi.Client) (i
 		client.waf_openapiConn = waf_openapiConn
 	}
 	return do(client.waf_openapiConn)
+}
+
+func (client *AliyunClient) WithResourcemanagerClient(do func(*resourcemanager.Client) (interface{}, error)) (interface{}, error) {
+	if client.resourcemanagerConn == nil {
+		endpoint := client.config.ResourcemanagerEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, ResourcemanagerCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(ResourcemanagerCode), endpoint)
+		}
+
+		resourcemanagerConn, err := resourcemanager.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Resourcemanagerclient: %#v", err)
+		}
+		resourcemanagerConn.AppendUserAgent(Terraform, terraformVersion)
+		resourcemanagerConn.AppendUserAgent(Provider, providerVersion)
+		resourcemanagerConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.resourcemanagerConn = resourcemanagerConn
+	}
+	return do(client.resourcemanagerConn)
 }
