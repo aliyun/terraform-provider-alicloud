@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_cluster"
 sidebar_current: "docs-alicloud-resource-edas-cluster"
 description: |-
-  Provides a Alicloud EDAS cluster resource.
+  Provides an EDAS cluster resource.
 ---
 
 # alicloud\_edas\_cluster

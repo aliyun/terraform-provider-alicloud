@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_instance_cluster_attachment"
 sidebar_current: "docs-alicloud-resource-edas-instance-cluster-attachment"
 description: |-
-  Provides a Alicloud EDAS instance cluster attachment resource.
+  Provides an EDAS instance cluster attachment resource.
 ---
 
 # alicloud\_edas\_instance\_cluster\_attachment

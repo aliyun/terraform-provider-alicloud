@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_application"
 sidebar_current: "docs-alicloud-resource-edas-application"
 description: |-
-  Provides a EDAS application resource.
+  Provides an EDAS application resource.
 ---
 
 # alicloud\_edas\_application

@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_application_scale"
 sidebar_current: "docs-alicloud-resource-edas-application-scale"
 description: |-
-  Provides a Alicloud EDAS application scale resource.
+  Provides an EDAS application scale resource.
 ---
 
 # alicloud\_edas\_application\_scale

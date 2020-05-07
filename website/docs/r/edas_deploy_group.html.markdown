@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_deploy_group"
 sidebar_current: "docs-alicloud-resource-edas-deploy-group"
 description: |-
-  Provides a Alicloud EDAS deploy group resource.
+  Provides an EDAS deploy group resource.
 ---
 
 # alicloud\_edas\_deploy\_group
