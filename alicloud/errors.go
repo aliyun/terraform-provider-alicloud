@@ -32,6 +32,11 @@ const (
 	AliyunGoClientFailure = "AliyunGoClientFailure"
 
 	LogClientTimeout = "Client.Timeout exceeded while awaiting headers"
+
+	// renew
+	RenewIncorrectStatus             = "IncorrectStatus"
+	InvalidRouterInterfaceIdNotFound = "InvalidRouterInterfaceId.NotFound"
+	ForbiddenFinancialLocked         = "Forbidden.FinancialLocked"
 )
 
 var SlbIsBusy = []string{"SystemBusy", "OperationBusy", "ServiceIsStopping", "BackendServer.configuring", "ServiceIsConfiguring"}

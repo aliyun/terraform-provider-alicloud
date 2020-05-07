@@ -270,6 +270,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_flowlogs":                      dataSourceAlicloudCenFlowlogs(),
 			"alicloud_kms_aliases":                       dataSourceAlicloudKmsAliases(),
 			"alicloud_dns_domain_txt_guid":               dataSourceAlicloudDnsDomainTxtGuid(),
+			"alicloud_auto_renew_instances":              dataSourceAlicloudRenewInterfaces(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -480,8 +481,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dns_domain":                          resourceAlicloudDnsDomain(),
 			"alicloud_dms_enterprise_instance":             resourceAlicloudDmsEnterpriseInstance(),
 			"alicloud_waf_domain":                          resourceAlicloudWafDomain(),
-			"alicloud_cen_route_map":                       resourceAlicloudCenRouteMap(),
-			"alicloud_resource_manager_role":               resourceAlicloudResourceManagerRole(),
+			"alicloud_renew_interface":                     resourceAlicloudRenewInterfaceNetwork(),
 		},
 
 		ConfigureFunc: providerConfigure,
