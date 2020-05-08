@@ -60,7 +60,6 @@ resource "alicloud_vswitch" "vswitch" {
 
 resource "alicloud_slb" "slb" {
   name       = "test-slb-tf"
-  vpc_id     = "${alicloud_vpc.vpc.id}"
   vswitch_id = "${alicloud_vswitch.vswitch.id}"
 }
 ```

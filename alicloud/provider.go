@@ -270,6 +270,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_flowlogs":                      dataSourceAlicloudCenFlowlogs(),
 			"alicloud_kms_aliases":                       dataSourceAlicloudKmsAliases(),
 			"alicloud_dns_domain_txt_guid":               dataSourceAlicloudDnsDomainTxtGuid(),
+			"alicloud_edas_applications":                 dataSourceAlicloudEdasApplications(),
+			"alicloud_edas_deploy_groups":                dataSourceAlicloudEdasDeployGroups(),
+			"alicloud_edas_clusters":                     dataSourceAlicloudEdasClusters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -477,10 +480,20 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kms_alias":                           resourceAlicloudKmsAlias(),
 			"alicloud_dns_instance":                        resourceAlicloudDnsInstance(),
 			"alicloud_dns_domain_attachment":               resourceAlicloudDnsDomainAttachment(),
+			"alicloud_edas_application":                    resourceAlicloudEdasApplication(),
+			"alicloud_edas_deploy_group":                   resourceAlicloudEdasDeployGroup(),
+			"alicloud_edas_application_scale":              resourceAlicloudEdasInstanceApplicationAttachment(),
+			"alicloud_edas_slb_attachment":                 resourceAlicloudEdasSlbAttachment(),
+			"alicloud_edas_cluster":                        resourceAlicloudEdasCluster(),
+			"alicloud_edas_instance_cluster_attachment":    resourceAlicloudEdasInstanceClusterAttachment(),
+			"alicloud_edas_application_deployment":         resourceAlicloudEdasApplicationPackageAttachment(),
 			"alicloud_dns_domain":                          resourceAlicloudDnsDomain(),
 			"alicloud_dms_enterprise_instance":             resourceAlicloudDmsEnterpriseInstance(),
 			"alicloud_waf_domain":                          resourceAlicloudWafDomain(),
 			"alicloud_cen_route_map":                       resourceAlicloudCenRouteMap(),
+			"alicloud_resource_manager_role":               resourceAlicloudResourceManagerRole(),
+			"alicloud_resource_manager_resource_group":     resourceAlicloudResourceManagerResourceGroup(),
+			"alicloud_resource_manager_folder":             resourceAlicloudResourceManagerFolder(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -612,6 +625,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.MaxComputeEndpoint = strings.TrimSpace(endpoints["maxcompute"].(string))
 		config.DmsEnterpriseEndpoint = strings.TrimSpace(endpoints["dms_enterprise"].(string))
 		config.WafOpenapiEndpoint = strings.TrimSpace(endpoints["waf_openapi"].(string))
+		config.ResourcemanagerEndpoint = strings.TrimSpace(endpoints["resourcemanager"].(string))
 	}
 
 	if config.RamRoleArn != "" {
@@ -778,6 +792,8 @@ func init() {
 		"dms_enterprise_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dms_enterprise endpoints.",
 
 		"waf_openapi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom waf_openapi endpoints.",
+
+		"resourcemanager_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom resourcemanager endpoints.",
 	}
 }
 
@@ -822,6 +838,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"resourcemanager": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["resourcemanager_endpoint"],
+				},
+
 				"waf_openapi": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1148,6 +1171,7 @@ func endpointsToHash(v interface{}) int {
 
 	buf.WriteString(fmt.Sprintf("%s-", m["dms_enterprise"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["waf_openapi"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["resourcemanager"].(string)))
 	return hashcode.String(buf.String())
 }
 

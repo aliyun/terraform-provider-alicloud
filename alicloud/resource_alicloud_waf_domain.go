@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"fmt"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	waf_openapi "github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -189,7 +191,7 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_waf_domain", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
-	d.SetId(d.Get("instance_id").(string) + ":" + d.Get("domain").(string))
+	d.SetId(fmt.Sprintf("%v:%v", request.InstanceId, request.Domain))
 
 	return resourceAlicloudWafDomainRead(d, meta)
 }
