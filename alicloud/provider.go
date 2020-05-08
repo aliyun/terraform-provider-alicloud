@@ -494,6 +494,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_role":               resourceAlicloudResourceManagerRole(),
 			"alicloud_resource_manager_resource_group":     resourceAlicloudResourceManagerResourceGroup(),
 			"alicloud_resource_manager_folder":             resourceAlicloudResourceManagerFolder(),
+			"alicloud_resource_manager_handshake":          resourceAlicloudResourceManagerHandshake(),
 		},
 
 		ConfigureFunc: providerConfigure,
