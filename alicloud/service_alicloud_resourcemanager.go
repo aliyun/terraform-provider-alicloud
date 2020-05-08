@@ -79,3 +79,25 @@ func (s *ResourcemanagerService) ResourceManagerResourceGroupStateRefreshFunc(id
 		return object, object.Status, nil
 	}
 }
+
+func (s *ResourcemanagerService) DescribeResourceManagerFolder(id string) (object resourcemanager.Folder, err error) {
+	request := resourcemanager.CreateGetFolderRequest()
+	request.RegionId = s.client.RegionId
+
+	request.FolderId = id
+
+	raw, err := s.client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
+		return resourcemanagerClient.GetFolder(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.Folder", "EntityNotExists.ResourceDirectory"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerFolder", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*resourcemanager.GetFolderResponse)
+	return response.Folder, nil
+}
