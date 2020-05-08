@@ -101,3 +101,25 @@ func (s *ResourcemanagerService) DescribeResourceManagerFolder(id string) (objec
 	response, _ := raw.(*resourcemanager.GetFolderResponse)
 	return response.Folder, nil
 }
+
+func (s *ResourcemanagerService) DescribeResourceManagerHandshake(id string) (object resourcemanager.Handshake, err error) {
+	request := resourcemanager.CreateGetHandshakeRequest()
+	request.RegionId = s.client.RegionId
+
+	request.HandshakeId = id
+
+	raw, err := s.client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
+		return resourcemanagerClient.GetHandshake(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.Handshake"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerHandshake", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*resourcemanager.GetHandshakeResponse)
+	return response.Handshake, nil
+}
