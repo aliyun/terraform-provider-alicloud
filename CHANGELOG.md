@@ -1,35 +1,35 @@
-## 1.82.0 (Unreleased)
+## 1.82.0 (May 08, 2020)
 
-- **New Resource:** `alicloud_resource_manager_handshake` [GH-2425]
-- **New Resource:** `alicloud_resource_manager_folder` [GH-2425]
-- **New Resource:** `alicloud_resource_manager_resource_group` [GH-2422]
-- **New Resource:** `alicloud_waf_domain` [GH-2414]
-- **New Resource:** `alicloud_resource_manager_role` [GH-2405]
-- **New Resource:** `alicloud_edas_application` [GH-2384]
-- **New Resource:** `alicloud_edas_deploy_group` [GH-2384]
-- **New Resource:** `alicloud_edas_application_scale` [GH-2384]
-- **New Resource:** `alicloud_edas_slb_attachment` [GH-2384]
-- **New Resource:** `alicloud_edas_cluster` [GH-2384]
-- **New Resource:** `alicloud_edas_instance_cluster_attachment` [GH-2384]
-- **New Resource:** `alicloud_edas_application_deployment` [GH-2384]
-- **New Resource:** `alicloud_cen_route_map` [GH-2371]
-- **Data Source:** `alicloud_edas_applications` [GH-2384]
-- **Data Source:** `alicloud_edas_deploy_groups` [GH-2384]
-- **Data Source:** `alicloud_edas_clusters` [GH-2384]
+- **New Resource:** `alicloud_resource_manager_handshake` ([#2425](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2425))
+- **New Resource:** `alicloud_resource_manager_folder` ([#2425](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2425))
+- **New Resource:** `alicloud_resource_manager_resource_group` ([#2422](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2422))
+- **New Resource:** `alicloud_waf_domain` ([#2414](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2414))
+- **New Resource:** `alicloud_resource_manager_role` ([#2405](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2405))
+- **New Resource:** `alicloud_edas_application` ([#2384](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2384))
+- **New Resource:** `alicloud_edas_deploy_group` ([#2384](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2384))
+- **New Resource:** `alicloud_edas_application_scale` ([#2384](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2384))
+- **New Resource:** `alicloud_edas_slb_attachment` ([#2384](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2384))
+- **New Resource:** `alicloud_edas_cluster` ([#2384](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2384))
+- **New Resource:** `alicloud_edas_instance_cluster_attachment` ([#2384](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2384))
+- **New Resource:** `alicloud_edas_application_deployment` ([#2384](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2384))
+- **New Resource:** `alicloud_cen_route_map` ([#2371](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2371))
+- **Data Source:** `alicloud_edas_applications` ([#2384](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2384))
+- **Data Source:** `alicloud_edas_deploy_groups` ([#2384](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2384))
+- **Data Source:** `alicloud_edas_clusters` ([#2384](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2384))
 
 IMPROVEMENTS:
 
-- ci supports edas and resourceManager dependencies [GH-2424]
-- add missing "security_group_id" attribute declaration to schema [GH-2417]
-- Update go sdk to 1.61.155 [GH-2413]
-- optimized create emr cluster test case [GH-2397]
+- ci supports edas and resourceManager dependencies ([#2424](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2424))
+- add missing "security_group_id" attribute declaration to schema ([#2417](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2417))
+- Update go sdk to 1.61.155 ([#2413](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2413))
+- optimized create emr cluster test case ([#2397](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2397))
 
 BUG FIXES:
 
-- fix_markdown_instance  documentation [GH-2430]
-- fix_markdown_slb_vpc  documentation [GH-2429]
-- fix log audit document  documentation [GH-2415]
-- Fix regression in writeToFile [GH-2412]
+- fix_markdown_instance  documentation ([#2430](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2430))
+- fix_markdown_slb_vpc  documentation ([#2429](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2429))
+- fix log audit document  documentation ([#2415](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2415))
+- Fix regression in writeToFile ([#2412](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2412))
 
 ## 1.81.0 (May 01, 2020)
 
