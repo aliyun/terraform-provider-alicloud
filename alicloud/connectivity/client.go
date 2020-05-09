@@ -139,6 +139,7 @@ type AliyunClient struct {
 	dms_enterpriseConn           *dms_enterprise.Client
 	waf_openapiConn              *waf_openapi.Client
 	resourcemanagerConn          *resourcemanager.Client
+	pvtzConn                     *pvtz.Client
 }
 
 type ApiVersion string
