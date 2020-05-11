@@ -12,6 +12,7 @@ import (
 type ServiceCode string
 
 const (
+	PvtzCode            = ServiceCode("PVTZ")
 	ResourcemanagerCode = ServiceCode("RESOURCEMANAGER")
 	WafOpenapiCode      = ServiceCode("WAFOPENAPI")
 	DmsEnterpriseCode   = ServiceCode("DMSENTERPRISE")

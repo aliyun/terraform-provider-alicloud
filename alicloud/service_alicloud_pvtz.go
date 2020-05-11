@@ -231,3 +231,25 @@ func (s *PvtzService) WaitForPvtzZoneRecord(id string, status Status, timeout in
 
 	}
 }
+
+func (s *PvtzService) DescribePrivateZoneZoneManage(id string) (object pvtz.DescribeZoneInfoResponse, err error) {
+	request := pvtz.CreateDescribeZoneInfoRequest()
+	request.RegionId = s.client.RegionId
+
+	request.ZoneId = id
+
+	raw, err := s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+		return pvtzClient.DescribeZoneInfo(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.NotExists"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("PrivateZoneZoneManage", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*pvtz.DescribeZoneInfoResponse)
+	return *response, nil
+}
