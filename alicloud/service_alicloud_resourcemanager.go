@@ -5,6 +5,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -122,4 +123,53 @@ func (s *ResourcemanagerService) DescribeResourceManagerHandshake(id string) (ob
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*resourcemanager.GetHandshakeResponse)
 	return response.Handshake, nil
+}
+
+func (s *ResourcemanagerService) GetPolicyVersion(id string, d *schema.ResourceData) (object resourcemanager.PolicyVersion, err error) {
+	request := resourcemanager.CreateGetPolicyVersionRequest()
+	request.RegionId = s.client.RegionId
+
+	request.PolicyName = id
+	if v, ok := d.GetOk("default_version"); ok {
+		request.VersionId = v.(string)
+	}
+	request.PolicyType = "Custom"
+
+	raw, err := s.client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
+		return resourcemanagerClient.GetPolicyVersion(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Policy", "EntityNotExist.Policy.Version"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicy", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*resourcemanager.GetPolicyVersionResponse)
+	return response.PolicyVersion, nil
+}
+
+func (s *ResourcemanagerService) DescribeResourceManagerPolicy(id string) (object resourcemanager.Policy, err error) {
+	request := resourcemanager.CreateGetPolicyRequest()
+	request.RegionId = s.client.RegionId
+
+	request.PolicyName = id
+	request.PolicyType = "Custom"
+
+	raw, err := s.client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
+		return resourcemanagerClient.GetPolicy(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicy", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*resourcemanager.GetPolicyResponse)
+	return response.Policy, nil
 }
