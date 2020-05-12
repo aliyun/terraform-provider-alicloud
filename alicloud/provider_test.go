@@ -181,6 +181,13 @@ func testAccPreCheckWithSmartAccessGatewayAppSetting(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithPhysicalConnectionSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_PHYSICAL_CONNECTION_ID")); v == "" {
+		t.Skipf("Skipping the test case with no physical connection id setting")
+		t.Skipped()
+	}
+}
+
 func testAccPreCheckWithTime(t *testing.T) {
 	if time.Now().Day() != 1 {
 		t.Skipf("Skipping the test case with not the 1st of every month")

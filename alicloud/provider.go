@@ -273,6 +273,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_edas_applications":                 dataSourceAlicloudEdasApplications(),
 			"alicloud_edas_deploy_groups":                dataSourceAlicloudEdasDeployGroups(),
 			"alicloud_edas_clusters":                     dataSourceAlicloudEdasClusters(),
+			"alicloud_virtual_border_routers":            dataSourceAlicloudVirtualBorderRouters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -496,6 +497,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_folder":             resourceAlicloudResourceManagerFolder(),
 			"alicloud_resource_manager_handshake":          resourceAlicloudResourceManagerHandshake(),
 			"alicloud_cen_private_zone":                    resourceAlicloudCenPrivateZone(),
+			"alicloud_virtual_border_router":               resourceAlicloudVirtualBorderRouter(),
 		},
 
 		ConfigureFunc: providerConfigure,

@@ -434,6 +434,73 @@ func (s *VpcService) DescribeCenInstanceGrant(id string) (rule vpc.CbnGrantRule,
 	return
 }
 
+func (s *VpcService) DescribeVirtualBorderRouter(id string) (vpc.VirtualBorderRouterType, error) {
+	var vbrType vpc.VirtualBorderRouterType
+	request := vpc.CreateDescribeVirtualBorderRoutersRequest()
+	request.RegionId = string(s.client.Region)
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
+	values := []string{id}
+	filter := []vpc.DescribeVirtualBorderRoutersFilter{
+		{
+			Key:   "VbrId",
+			Value: &values,
+		},
+	}
+	request.Filter = &filter
+	for {
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVirtualBorderRouters(request)
+		})
+		if err != nil {
+			return vbrType, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*vpc.DescribeVirtualBorderRoutersResponse)
+		virtualBorderRouterTypes := response.VirtualBorderRouterSet.VirtualBorderRouterType
+		for _, virtualBorderRouterType := range virtualBorderRouterTypes {
+			if virtualBorderRouterType.VbrId == id {
+				return virtualBorderRouterType, nil
+			}
+		}
+		if len(virtualBorderRouterTypes) < PageSizeLarge {
+			break
+		}
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return vbrType, WrapError(err)
+		} else {
+			request.PageNumber = page
+		}
+	}
+
+	return vbrType, WrapErrorf(Error(GetNotFoundMessage("VirtualBorderRouter", id)), NotFoundMsg, ProviderERROR)
+}
+
+func (s *VpcService) DescribeVirtualBorderRouterAttachment(id string) (v vpc.VirtualBorderRouterType, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return v, WrapError(err)
+	}
+	vbrId, physicalConnectionId := parts[0], parts[1]
+
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		object, err := s.DescribeVirtualBorderRouter(vbrId)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		for _, associatedPhysicalConnection := range object.AssociatedPhysicalConnections.AssociatedPhysicalConnection {
+			if associatedPhysicalConnection.PhysicalConnectionId == physicalConnectionId {
+				v = object
+				return nil
+			}
+		}
+		return WrapErrorf(Error(GetNotFoundMessage("VirtualBorderRouterAttachment", id)), NotFoundMsg, ProviderERROR)
+	})
+	return v, WrapError(err)
+}
+
 func (s *VpcService) WaitForCenInstanceGrant(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	parts, err := ParseResourceId(id, 3)
@@ -685,6 +752,52 @@ func (s *VpcService) WaitForRouterInterfaceConnection(id, regionId string, statu
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
 		object, err := s.DescribeRouterInterfaceConnection(id, regionId)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *VpcService) WaitForVirtualBorderRouter(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeVirtualBorderRouter(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
+
+func (s *VpcService) WaitForVirtualBorderRouterAttachment(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeVirtualBorderRouterAttachment(id)
 		if err != nil {
 			if NotFoundError(err) {
 				if status == Deleted {
