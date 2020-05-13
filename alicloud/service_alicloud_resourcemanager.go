@@ -173,3 +173,25 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicy(id string) (objec
 	response, _ := raw.(*resourcemanager.GetPolicyResponse)
 	return response.Policy, nil
 }
+
+func (s *ResourcemanagerService) DescribeResourceManagerAccount(id string) (object resourcemanager.Account, err error) {
+	request := resourcemanager.CreateGetAccountRequest()
+	request.RegionId = s.client.RegionId
+
+	request.AccountId = id
+
+	raw, err := s.client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
+		return resourcemanagerClient.GetAccount(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.Account", "EntityNotExists.ResourceDirectory"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerAccount", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*resourcemanager.GetAccountResponse)
+	return response.Account, nil
+}

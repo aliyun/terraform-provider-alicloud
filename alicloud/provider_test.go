@@ -167,6 +167,17 @@ func testAccPreCheckWithSmartAccessGatewaySetting(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithResourceManagerFloderIdSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID1")); v == "" {
+		t.Skip("Skipping the test case with no sag folder id setting")
+		t.Skipped()
+	}
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID2")); v == "" {
+		t.Skip("Skipping the test case with no sag folder id setting")
+		t.Skipped()
+	}
+}
+
 func testAccPreCheckWithWafInstanceSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_WAF_INSTANCE_ID")); v == "" {
 		t.Skipf("Skipping the test case with no WAF instance id setting")

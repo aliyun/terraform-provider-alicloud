@@ -497,6 +497,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_handshake":          resourceAlicloudResourceManagerHandshake(),
 			"alicloud_cen_private_zone":                    resourceAlicloudCenPrivateZone(),
 			"alicloud_resource_manager_policy":             resourceAlicloudResourceManagerPolicy(),
+			"alicloud_resource_manager_account":            resourceAlicloudResourceManagerAccount(),
 		},
 
 		ConfigureFunc: providerConfigure,
