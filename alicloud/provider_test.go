@@ -153,6 +153,13 @@ func testAccPreCheckOSSForImageImport(t *testing.T) {
 	}
 }
 
+func testAccPreCheckKMSForKeyIdImport(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_KMS_KEY_ID")); v == "" {
+		t.Skipf("Skipping tests without KEY_ID set.")
+		t.Skipped()
+	}
+}
+
 func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_CMS_CONTACT_GROUP")); v == "" {
 		t.Skipf("Skipping the test case with no cms contact group setting")

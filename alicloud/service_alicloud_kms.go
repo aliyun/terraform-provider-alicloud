@@ -183,3 +183,26 @@ func (s *KmsService) DescribeKmsAlias(id string) (object kms.KeyMetadata, err er
 	response, _ := raw.(*kms.DescribeKeyResponse)
 	return response.KeyMetadata, nil
 }
+
+func (s *KmsService) DescribeKmsKeyVersion(id string) (object kms.DescribeKeyVersionResponse, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := kms.CreateDescribeKeyVersionRequest()
+	request.RegionId = s.client.RegionId
+	request.KeyId = parts[0]
+	request.KeyVersionId = parts[1]
+
+	raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+		return kmsClient.DescribeKeyVersion(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*kms.DescribeKeyVersionResponse)
+	return *response, nil
+}
