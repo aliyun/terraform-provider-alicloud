@@ -9,10 +9,9 @@ description: |-
 
 # alicloud\_polardb\_endpoint
 
-Provides a PolarDB endpoint resource to allocate an Internet endpoint string for PolarDB instance.
+Provides a PolarDB endpoint resource to manage custom endpoint of PolarDB cluster.
 
--> **NOTE:** Available in v1.80.0+. Each PolarDB instance will allocate a intranet connection string automatically and its prefix is Cluster ID.
- To avoid unnecessary conflict, please specified a internet connection prefix before applying the resource.
+-> **NOTE:** Available in v1.80.0+. Only used to manage PolarDB MySQL custom cluster endpoint.
 
 ## Example Usage
 

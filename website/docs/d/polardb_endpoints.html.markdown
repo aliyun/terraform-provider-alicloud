@@ -26,7 +26,7 @@ data "alicloud_polardb_endpoints" "default" {
   db_cluster_id    = "${data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id}"
 }
 
-output "ends" {
+output "endpoints" {
     value = "${data.alicloud_polardb_endpoints.default.endpoints[0].db_endpoint_id}"
 }
 ```

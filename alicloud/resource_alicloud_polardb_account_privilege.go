@@ -37,7 +37,7 @@ func resourceAlicloudPolarDBAccountPrivilege() *schema.Resource {
 			"account_privilege": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ReadOnly", "ReadWrite"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"ReadOnly", "ReadWrite", "DMLOnly", "DDLOnly"}, false),
 				Default:      "ReadOnly",
 				ForceNew:     true,
 			},

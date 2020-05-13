@@ -26,7 +26,7 @@ data "alicloud_polardb_databases" "default" {
   db_cluster_id    = "${data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id}"
 }
 
-output "ends" {
+output "databases" {
     value = "${data.alicloud_polardb_databases.default.databases[0].db_name}"
 }
 ```

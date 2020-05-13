@@ -49,8 +49,8 @@ resource "alicloud_polardb_cluster" "cluster" {
   description           = "${var.name}"
 }
 
-resource "alicloud_db_account" "account" {
-  db_cluster_id    = "${alicloud_db_instance.cluster.id}"
+resource "alicloud_polardb_account" "account" {
+  db_cluster_id         = "${alicloud_polardb_cluster.cluster.id}"
   account_name          = "tftestnormal"
   account_password      = "Test12345"
   account_description   = "${var.name}"
