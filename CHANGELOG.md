@@ -1,5 +1,6 @@
 ## 1.83.0 (Unreleased)
 
+- **New Resource:** `alicloud_resource_waf_instance` [GH-2455]
 - **New Resource:** `alicloud_resource_manager_account` [GH-2441]
 - **New Resource:** `alicloud_resource_manager_policy` [GH-2439]
 - **New Resource:** `alicloud_resource_manager_handshake` [GH-2432]

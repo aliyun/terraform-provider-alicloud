@@ -16,8 +16,8 @@ type DdoscooService struct {
 func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance, err error) {
 	request := ddoscoo.CreateDescribeInstancesRequest()
 	request.RegionId = s.client.RegionId
-	request.InstanceIds = "[\"" + id + "\"]"
-	request.PageNo = "1"
+	request.InstanceIds = &[]string{id}
+	request.PageNumber = "1"
 	request.PageSize = "10"
 
 	raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
@@ -44,7 +44,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (v ddoscoo.Instance,
 func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (v ddoscoo.InstanceSpec, err error) {
 	request := ddoscoo.CreateDescribeInstanceSpecsRequest()
 	request.RegionId = s.client.RegionId
-	request.InstanceIds = "[\"" + id + "\"]"
+	request.InstanceIds = &[]string{id}
 
 	raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
 		return ddoscooClient.DescribeInstanceSpecs(request)
