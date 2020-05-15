@@ -53,3 +53,25 @@ func (s *Waf_openapiService) DescribeWafDomain(id string) (object waf_openapi.Do
 	response, _ := raw.(*waf_openapi.DescribeDomainResponse)
 	return response.Domain, nil
 }
+
+func (s *Waf_openapiService) DescribeWafInstance(id string) (object waf_openapi.DescribeInstanceInfoResponse, err error) {
+	request := waf_openapi.CreateDescribeInstanceInfoRequest()
+	request.RegionId = s.client.RegionId
+
+	request.InstanceId = id
+
+	raw, err := s.client.WithWafOpenapiClient(func(waf_openapiClient *waf_openapi.Client) (interface{}, error) {
+		return waf_openapiClient.DescribeInstanceInfo(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*waf_openapi.DescribeInstanceInfoResponse)
+	if response != nil && response.InstanceInfo.InstanceId != id {
+		err = WrapErrorf(Error(GetNotFoundMessage("WafInstance", id)), NotFoundMsg, ProviderERROR)
+		return
+	}
+	return *response, nil
+}

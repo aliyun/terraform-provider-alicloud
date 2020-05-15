@@ -76,13 +76,19 @@ func (client *Client) DescribeInstancesWithCallback(request *DescribeInstancesRe
 // DescribeInstancesRequest is the request struct for api DescribeInstances
 type DescribeInstancesRequest struct {
 	*requests.RpcRequest
-	SourceIp    string                  `position:"Query" name:"SourceIp"`
-	InstanceIds string                  `position:"Query" name:"InstanceIds"`
-	PageNo      string                  `position:"Query" name:"PageNo"`
-	Ip          string                  `position:"Query" name:"Ip"`
-	PageSize    string                  `position:"Query" name:"PageSize"`
-	Remark      string                  `position:"Query" name:"Remark"`
-	Tag         *[]DescribeInstancesTag `position:"Query" name:"Tag"  type:"Repeated"`
+	Edition         requests.Integer        `position:"Query" name:"Edition"`
+	Remark          string                  `position:"Query" name:"Remark"`
+	PageNumber      string                  `position:"Query" name:"PageNumber"`
+	Enabled         requests.Integer        `position:"Query" name:"Enabled"`
+	ResourceGroupId string                  `position:"Query" name:"ResourceGroupId"`
+	SourceIp        string                  `position:"Query" name:"SourceIp"`
+	PageSize        string                  `position:"Query" name:"PageSize"`
+	Tag             *[]DescribeInstancesTag `position:"Query" name:"Tag"  type:"Repeated"`
+	ExpireStartTime requests.Integer        `position:"Query" name:"ExpireStartTime"`
+	ExpireEndTime   requests.Integer        `position:"Query" name:"ExpireEndTime"`
+	Ip              string                  `position:"Query" name:"Ip"`
+	InstanceIds     *[]string               `position:"Query" name:"InstanceIds"  type:"Repeated"`
+	Status          *[]string               `position:"Query" name:"Status"  type:"Repeated"`
 }
 
 // DescribeInstancesTag is a repeated param struct in DescribeInstancesRequest
@@ -94,9 +100,9 @@ type DescribeInstancesTag struct {
 // DescribeInstancesResponse is the response struct for api DescribeInstances
 type DescribeInstancesResponse struct {
 	*responses.BaseResponse
-	RequestId string     `json:"RequestId" xml:"RequestId"`
-	Total     int        `json:"Total" xml:"Total"`
-	Instances []Instance `json:"Instances" xml:"Instances"`
+	RequestId  string     `json:"RequestId" xml:"RequestId"`
+	TotalCount int64      `json:"TotalCount" xml:"TotalCount"`
+	Instances  []Instance `json:"Instances" xml:"Instances"`
 }
 
 // CreateDescribeInstancesRequest creates a request to invoke DescribeInstances API
@@ -104,7 +110,7 @@ func CreateDescribeInstancesRequest() (request *DescribeInstancesRequest) {
 	request = &DescribeInstancesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("ddoscoo", "2017-12-28", "DescribeInstances", "ddoscoo", "openAPI")
+	request.InitWithApiInfo("ddoscoo", "2020-01-01", "DescribeInstances", "ddoscoo", "openAPI")
 	return
 }
 

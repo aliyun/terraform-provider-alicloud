@@ -18,7 +18,9 @@ package hbase
 // Full is a nested struct in hbase response
 type Full struct {
 	HasMore            string  `json:"HasMore" xml:"HasMore"`
-	RecordSize         string  `json:"RecordSize" xml:"RecordSize"`
 	NextFullBackupDate string  `json:"NextFullBackupDate" xml:"NextFullBackupDate"`
+	PageNumber         int     `json:"PageNumber" xml:"PageNumber"`
+	PageSize           int     `json:"PageSize" xml:"PageSize"`
+	Total              int     `json:"Total" xml:"Total"`
 	Records            Records `json:"Records" xml:"Records"`
 }

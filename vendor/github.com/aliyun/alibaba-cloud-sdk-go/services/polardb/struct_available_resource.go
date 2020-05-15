@@ -18,4 +18,5 @@ package polardb
 // AvailableResource is a nested struct in polardb response
 type AvailableResource struct {
 	DBNodeClass string `json:"DBNodeClass" xml:"DBNodeClass"`
+	Category    string `json:"Category" xml:"Category"`
 }

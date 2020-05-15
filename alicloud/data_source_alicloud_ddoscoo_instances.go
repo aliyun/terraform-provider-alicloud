@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"regexp"
 	"strconv"
 
@@ -83,7 +82,7 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 	request := ddoscoo.CreateDescribeInstancesRequest()
 	request.RegionId = client.RegionId
 	request.PageSize = strconv.Itoa(PageSizeSmall)
-	request.PageNo = "1"
+	request.PageNumber = "1"
 	var instances []ddoscoo.Instance
 
 	var nameRegex *regexp.Regexp
@@ -93,9 +92,9 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	if v, ok := d.GetOk("ids"); ok {
-		idsStr, _ := json.Marshal(v)
-		request.InstanceIds = string(idsStr)
+	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
+		ids := expandStringList(v.([]interface{}))
+		request.InstanceIds = &ids
 	}
 	// describe ddoscoo instance filtered by name_regex
 	for {
@@ -125,14 +124,14 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 			break
 		}
 
-		currentPageNo, err := strconv.Atoi(request.PageNo)
+		currentPageNo, err := strconv.Atoi(request.PageNumber)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddoscoo_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		if page, err := getNextpageNumber(requests.NewInteger(currentPageNo)); err != nil {
 			return WrapError(err)
 		} else {
-			request.PageNo = string(page)
+			request.PageNumber = string(page)
 		}
 	}
 
@@ -149,8 +148,7 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 	}
 
 	specReq := ddoscoo.CreateDescribeInstanceSpecsRequest()
-	instanceIdsStr, _ := json.Marshal(instanceIds)
-	specReq.InstanceIds = string(instanceIdsStr)
+	specReq.InstanceIds = &instanceIds
 
 	raw, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
 		return ddoscooClient.DescribeInstanceSpecs(specReq)

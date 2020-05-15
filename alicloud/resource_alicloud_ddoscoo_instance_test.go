@@ -43,7 +43,7 @@ func testSweepDdoscooInstances(region string) error {
 	req.PageSize = strconv.Itoa(PageSizeLarge)
 
 	var page = 1
-	req.PageNo = strconv.Itoa(page)
+	req.PageNumber = strconv.Itoa(page)
 	for {
 		raw, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
 			return ddoscooClient.DescribeInstances(req)
@@ -62,7 +62,7 @@ func testSweepDdoscooInstances(region string) error {
 		}
 
 		page++
-		req.PageNo = strconv.Itoa(page)
+		req.PageNumber = strconv.Itoa(page)
 	}
 
 	for _, v := range insts {
@@ -81,15 +81,15 @@ func testSweepDdoscooInstances(region string) error {
 
 		log.Printf("[INFO] Deleting Ddoscoo Instance %s .", v.InstanceId)
 
-		releaseReq := ddoscoo.CreateReleaseInstanceRequest()
-		releaseReq.InstanceId = v.InstanceId
-
-		_, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-			return ddoscooClient.ReleaseInstance(releaseReq)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Deleting Instance %s got an error: %#v.", v.InstanceId, err)
-		}
+		//releaseReq := ddoscoo.CreateReleaseInstanceRequest()
+		//releaseReq.InstanceId = v.InstanceId
+		//
+		//_, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+		//	return ddoscooClient.ReleaseInstance(releaseReq)
+		//})
+		//if err != nil {
+		//	log.Printf("[ERROR] Deleting Instance %s got an error: %#v.", v.InstanceId, err)
+		//}
 	}
 	return nil
 }
