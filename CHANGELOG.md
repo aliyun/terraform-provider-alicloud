@@ -1,4 +1,14 @@
 ## 1.83.0 (Unreleased)
+
+- **New Resource:** `alicloud_resource_manager_account` [GH-2441]
+- **New Resource:** `alicloud_resource_manager_policy` [GH-2439]
+- **New Resource:** `alicloud_resource_manager_handshake` [GH-2432]
+- **New Resource:** `alicloud_cen_private_zone` [GH-2421]
+
+BUG FIXES:
+
+- fix_markdown_instance [GH-2436]
+
 ## 1.82.0 (May 08, 2020)
 
 - **New Resource:** `alicloud_resource_manager_handshake` ([#2425](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2425))
