@@ -92,6 +92,9 @@ func resourceAlicloudEdasDeployGroupRead(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
+	if deployGroup == nil {
+		return nil
+	}
 
 	d.Set("group_type", deployGroup.GroupType)
 	d.Set("app_id", deployGroup.AppId)
