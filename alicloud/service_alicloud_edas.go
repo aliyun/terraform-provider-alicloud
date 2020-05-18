@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 
@@ -312,4 +313,65 @@ func (e *EdasService) DescribeEdasSlbAttachment(id string) (*edas.Applcation, er
 	}
 
 	return o, nil
+}
+
+type CommandArg struct {
+	argument string `json:"argument" xml:"argument"`
+}
+
+func (e *EdasService) GetK8sCommandArgs(args []interface{}) (string, error) {
+	aString := make([]CommandArg, len(args))
+	for i, v := range args {
+		aString[i].argument = v.(string)
+	}
+	b, err := json.Marshal(aString)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return string(b), nil
+}
+
+type K8sEnv struct {
+	name  string `json:"name" xml:"name"`
+	value string `json:"value" xml:"value"`
+}
+
+func (e *EdasService) GetK8sEnvs(envs map[string]interface{}) (string, error) {
+	k8sEnvs := make([]K8sEnv, 0)
+	for n, v := range envs {
+		k8sEnvs = append(k8sEnvs, K8sEnv{name: n, value: v.(string)})
+	}
+
+	b, err := json.Marshal(k8sEnvs)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return string(b), nil
+}
+
+func (e *EdasService) QueryK8sAppPackageType(appId string) (string, error) {
+	request := edas.CreateGetApplicationRequest()
+	request.RegionId = e.client.RegionId
+	request.AppId = appId
+	raw, err := e.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+		return edasClient.GetApplication(request)
+	})
+
+	if err != nil {
+		return "", WrapError(err)
+	}
+
+	response, _ := raw.(*edas.GetApplicationResponse)
+	if len(response.Applcation.App.DeployType) > 0 {
+		if response.Applcation.App.ApplicationType == "Image" {
+			return "Image", nil
+		}
+		if response.Applcation.App.ApplicationType == "FatJar" {
+			return "JAR", nil
+		}
+		if response.Applcation.App.ApplicationType == "War" {
+			return "WAR", nil
+		}
+	}
+	return "", WrapError(Error("not package type for appId:" + appId))
 }

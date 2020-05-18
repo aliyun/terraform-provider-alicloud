@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_application_deployment"
 sidebar_current: "docs-alicloud-resource-edas-application-deployment"
 description: |-
-  Provides an EDAS application deployment resource.
+  Deploys applications on EDAS.
 ---
 
 # alicloud\_edas\_application\_deployment
 
-Provides an EDAS application deployment resource.
+Deploys applications on EDAS.
 
 -> **NOTE:** Available in 1.82.0+
 

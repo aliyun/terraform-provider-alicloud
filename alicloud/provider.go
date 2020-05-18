@@ -492,6 +492,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_waf_domain":                          resourceAlicloudWafDomain(),
 			"alicloud_cen_route_map":                       resourceAlicloudCenRouteMap(),
 			"alicloud_resource_manager_role":               resourceAlicloudResourceManagerRole(),
+			"alicloud_edas_k8s_application":                resourceAlicloudEdasK8sApplication(),
+			"alicloud_edas_k8s_cluster":                    resourceAlicloudEdasK8sCluster(),
+			"alicloud_edas_k8s_application_deployment":     resourceAlicloudEdasK8sApplicationPackageAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
