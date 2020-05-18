@@ -275,6 +275,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_edas_clusters":                     dataSourceAlicloudEdasClusters(),
 			"alicloud_resource_manager_folders":          dataSourceAlicloudResourceManagerFolders(),
 			"alicloud_dns_instances":                     dataSourceAlicloudDnsInstances(),
+			"alicloud_resource_manager_resource_groups":  dataSourceAlicloudResourceManagerResourceGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
