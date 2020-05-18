@@ -195,3 +195,23 @@ func (s *ResourcemanagerService) DescribeResourceManagerAccount(id string) (obje
 	response, _ := raw.(*resourcemanager.GetAccountResponse)
 	return response.Account, nil
 }
+
+func (s *ResourcemanagerService) DescribeResourceManagerResourceDirectory(id string) (object resourcemanager.ResourceDirectory, err error) {
+	request := resourcemanager.CreateGetResourceDirectoryRequest()
+	request.RegionId = s.client.RegionId
+
+	raw, err := s.client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
+		return resourcemanagerClient.GetResourceDirectory(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceDirectoryNotInUse"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerResourceDirectory", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*resourcemanager.GetResourceDirectoryResponse)
+	return response.ResourceDirectory, nil
+}
