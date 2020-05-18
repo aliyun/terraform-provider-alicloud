@@ -155,7 +155,7 @@ func resourceAlicloudEdasApplicationCreate(d *schema.ResourceData, meta interfac
 		if v, ok := d.GetOk("package_version"); ok {
 			packageVersion = v.(string)
 		} else {
-			packageVersion = strconv.Itoa(time.Now().Second())
+			packageVersion = strconv.FormatInt(time.Now().Unix(), 10)
 		}
 		request := edas.CreateDeployApplicationRequest()
 		request.RegionId = client.RegionId
