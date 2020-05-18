@@ -232,7 +232,7 @@ func TestAccAlicloudEmrCluster_local_storage(t *testing.T) {
 						},
 						{
 							"host_group_type":   "CORE",
-							"node_count":        "2",
+							"node_count":        "3",
 							"instance_type":     "${data.alicloud_emr_instance_types.local_disk.types.0.id}",
 							"disk_type":         "local_disk",
 							"disk_capacity":     "${data.alicloud_emr_instance_types.local_disk.types.0.local_storage_capacity}",
