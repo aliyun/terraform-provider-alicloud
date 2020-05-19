@@ -215,3 +215,31 @@ func (s *ResourcemanagerService) DescribeResourceManagerResourceDirectory(id str
 	response, _ := raw.(*resourcemanager.GetResourceDirectoryResponse)
 	return response.ResourceDirectory, nil
 }
+
+func (s *ResourcemanagerService) DescribeResourceManagerPolicyVersion(id string) (object resourcemanager.PolicyVersion, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := resourcemanager.CreateGetPolicyVersionRequest()
+	request.RegionId = s.client.RegionId
+	request.PolicyName = parts[0]
+	request.VersionId = parts[1]
+	request.PolicyType = "Custom"
+
+	raw, err := s.client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
+		return resourcemanagerClient.GetPolicyVersion(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Policy", "EntityNotExist.Policy.Version"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicyVersion", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*resourcemanager.GetPolicyVersionResponse)
+	return response.PolicyVersion, nil
+}
