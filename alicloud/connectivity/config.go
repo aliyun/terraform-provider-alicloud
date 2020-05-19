@@ -86,6 +86,7 @@ type Config struct {
 	WafOpenapiEndpoint      string
 	ResourcemanagerEndpoint string
 	BssopenapiEndpoint      string
+	AlidnsEndpoint          string
 }
 
 func (c *Config) loadAndValidate() error {
