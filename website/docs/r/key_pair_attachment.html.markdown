@@ -75,7 +75,7 @@ resource "alicloud_key_pair" "pair" {
 
 resource "alicloud_key_pair_attachment" "attachment" {
   key_name     = "${alicloud_key_pair.pair.id}"
-  instance_ids = ["${alicloud_instance.instance.*.id}"]
+  instance_ids = "${alicloud_instance.instance.*.id}"
 }
 ```
 ## Argument Reference
