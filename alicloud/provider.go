@@ -500,6 +500,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_account":            resourceAlicloudResourceManagerAccount(),
 			"alicloud_waf_instance":                        resourceAlicloudWafInstance(),
 			"alicloud_resource_manager_resource_directory": resourceAlicloudResourceManagerResourceDirectory(),
+			"alicloud_alidns_domain_group":                 resourceAlicloudAlidnsDomainGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -632,6 +633,11 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DmsEnterpriseEndpoint = strings.TrimSpace(endpoints["dms_enterprise"].(string))
 		config.WafOpenapiEndpoint = strings.TrimSpace(endpoints["waf_openapi"].(string))
 		config.ResourcemanagerEndpoint = strings.TrimSpace(endpoints["resourcemanager"].(string))
+		if endpoint, ok := endpoints["alidns"]; ok {
+			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
+		} else {
+			config.AlidnsEndpoint = strings.TrimSpace(endpoints["dns"].(string))
+		}
 	}
 
 	if config.RamRoleArn != "" {
@@ -800,6 +806,8 @@ func init() {
 		"waf_openapi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom waf_openapi endpoints.",
 
 		"resourcemanager_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom resourcemanager endpoints.",
+
+		"alidns_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom alidns endpoints.",
 	}
 }
 
@@ -844,6 +852,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"alidns": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["alidns_endpoint"],
+				},
+
 				"resourcemanager": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1178,6 +1193,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["dms_enterprise"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["waf_openapi"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["resourcemanager"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["alidns"].(string)))
 	return hashcode.String(buf.String())
 }
 
