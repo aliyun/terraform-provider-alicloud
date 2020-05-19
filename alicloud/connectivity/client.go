@@ -140,6 +140,7 @@ type AliyunClient struct {
 	waf_openapiConn              *waf_openapi.Client
 	resourcemanagerConn          *resourcemanager.Client
 	bssopenapiConn               *bssopenapi.Client
+	ddoscooConn                  *ddoscoo.Client
 }
 
 type ApiVersion string

@@ -500,6 +500,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_account":            resourceAlicloudResourceManagerAccount(),
 			"alicloud_waf_instance":                        resourceAlicloudWafInstance(),
 			"alicloud_resource_manager_resource_directory": resourceAlicloudResourceManagerResourceDirectory(),
+			"alicloud_ddos_coo_web_rule":                   resourceAlicloudDdosCooWebRule(),
 		},
 
 		ConfigureFunc: providerConfigure,

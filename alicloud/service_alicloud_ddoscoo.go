@@ -3,6 +3,8 @@ package alicloud
 import (
 	"strconv"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -121,4 +123,28 @@ func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, 
 		return WrapError(Error(response.Message))
 	}
 	return nil
+}
+
+func (s *DdoscooService) DescribeDdosCooWebRule(id string) (object ddoscoo.WebRule, err error) {
+	request := ddoscoo.CreateDescribeWebRulesRequest()
+	request.RegionId = s.client.RegionId
+
+	request.Domain = id
+	request.PageSize = requests.NewInteger(10)
+
+	raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+		return ddoscooClient.DescribeWebRules(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*ddoscoo.DescribeWebRulesResponse)
+
+	if len(response.WebRules) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("DdosCooWebRule", id)), NotFoundMsg, ProviderERROR)
+		return
+	}
+	return response.WebRules[0], nil
 }
