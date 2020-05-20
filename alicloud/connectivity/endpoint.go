@@ -13,6 +13,7 @@ type ServiceCode string
 
 const (
 	BssopenapiCode      = ServiceCode("BSSOPENAPI")
+	DdoscooCode         = ServiceCode("DDOSCOO")
 	ResourcemanagerCode = ServiceCode("RESOURCEMANAGER")
 	WafOpenapiCode      = ServiceCode("WAFOPENAPI")
 	DmsEnterpriseCode   = ServiceCode("DMSENTERPRISE")
