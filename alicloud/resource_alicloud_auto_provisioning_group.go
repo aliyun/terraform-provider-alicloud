@@ -393,10 +393,10 @@ func buildAlicloudAutoProvisioningGroupArgs(d *schema.ResourceData, meta interfa
 			conf.InstanceType = cc["instance_type"].(string)
 		}
 		if v, ok := cc["weighted_capacity"]; ok && v.(string) != "" {
-			conf.InstanceType = cc["weighted_capacity"].(string)
+			conf.WeightedCapacity = cc["weighted_capacity"].(string)
 		}
 		if v, ok := cc["priority"]; ok && v.(string) != "" {
-			conf.InstanceType = cc["priority"].(string)
+			conf.Priority = cc["priority"].(string)
 		}
 		createConfigs = append(createConfigs, conf)
 	}
