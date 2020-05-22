@@ -1,27 +1,27 @@
-## 1.84.0 (Unreleased)
+## 1.84.0 (May 22, 2020)
 
-- **New Resource:** `alicloud_alidns_domain_group.` [GH-2454]
-- **New Resource:** `alicloud_resource_manager_resource_directory` [GH-2459]
-- **New Resource:** `alicloud_resource_manager_policy_version` [GH-2457]
-- **Data Source:** `alicloud_resource_manager_folders` [GH-2467]
-- **Data Source:** `alicloud_alidns_instance.` [GH-2468]
-- **Data Source:** `alicloud_resource_manager_resource_groups` [GH-2462]
+- **New Resource:** `alicloud_alidns_domain_group.` ([#2454](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2454))
+- **New Resource:** `alicloud_resource_manager_resource_directory` ([#2459](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2459))
+- **New Resource:** `alicloud_resource_manager_policy_version` ([#2457](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2457))
+- **Data Source:** `alicloud_resource_manager_folders` ([#2467](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2467))
+- **Data Source:** `alicloud_alidns_instance.` ([#2468](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2468))
+- **Data Source:** `alicloud_resource_manager_resource_groups` ([#2462](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2462))
 
 IMPROVEMENTS:
 
-- Update CHANGELOG.md [GH-2455]
+- Update CHANGELOG.md ([#2455](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2455))
 
 BUG FIXES:
 
-- fix autoscaler configmap update [GH-2377]
-- fix eip association failed cause by snat entry's snat_ip update bug [GH-2440]
-- fix_tag_validation [GH-2445]
-- fix polardb connection string output bug [GH-2453]
-- fix the bug of TestAccAlicloudEmrCluster_local_storage nodeCount less… [GH-2458]
-- fix_markdown_key_pair_attachment [GH-2460]
-- fix_finger_print [GH-2463]
-- fix_markdown_instance_type_families [GH-2465]
-- fix_markdown_alicloud_network_interface_attachment [GH-2469]
+- fix autoscaler configmap update ([#2377](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2377))
+- fix eip association failed cause by snat entry's snat_ip update bug ([#2440](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2440))
+- fix_tag_validation ([#2445](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2445))
+- fix polardb connection string output bug ([#2453](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2453))
+- fix the bug of TestAccAlicloudEmrCluster_local_storage nodeCount less… ([#2458](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2458))
+- fix_markdown_key_pair_attachment ([#2460](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2460))
+- fix_finger_print ([#2463](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2463))
+- fix_markdown_instance_type_families ([#2465](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2465))
+- fix_markdown_alicloud_network_interface_attachment ([#2469](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2469))
 
 ## 1.83.0 (May 15, 2020)
 
