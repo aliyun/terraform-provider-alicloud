@@ -3,6 +3,8 @@ package alicloud
 import (
 	"log"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
@@ -40,6 +42,17 @@ func tagsSchemaComputed() *schema.Schema {
 		Type:     schema.TypeMap,
 		Optional: true,
 		Computed: true,
+	}
+}
+
+func tagsSchemaWithIgnore() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeMap,
+		Optional: true,
+		Elem: &schema.Schema{
+			Type:         schema.TypeString,
+			ValidateFunc: validation.StringDoesNotMatch(regexp.MustCompile(`(^acs:.*)|(^aliyun.*)|(/.*http://.*\.\w+/gm)|(/.*https://.*\.\w+/gm)`), "It cannot begin with \"aliyun\", \"acs:\"; without \"http://\", and \"https://\"."),
+		},
 	}
 }
 

@@ -21,5 +21,6 @@ type InstanceDTO struct {
 	InstanceIp           string               `json:"InstanceIp" xml:"InstanceIp"`
 	Status               int                  `json:"Status" xml:"Status"`
 	PodName              string               `json:"PodName" xml:"PodName"`
+	PodStatus            string               `json:"PodStatus" xml:"PodStatus"`
 	InstanceStageDTOList InstanceStageDTOList `json:"InstanceStageDTOList" xml:"InstanceStageDTOList"`
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudRole_basic(t *testing.T) {
+func TestAccAlicloudResourceManagerRole_basic(t *testing.T) {
 	var v resourcemanager.Role
 	resourceId := "alicloud_resource_manager_role.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerRoleMap)

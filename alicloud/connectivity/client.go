@@ -139,6 +139,8 @@ type AliyunClient struct {
 	dms_enterpriseConn           *dms_enterprise.Client
 	waf_openapiConn              *waf_openapi.Client
 	resourcemanagerConn          *resourcemanager.Client
+	bssopenapiConn               *bssopenapi.Client
+	alidnsConn                   *alidns.Client
 }
 
 type ApiVersion string
@@ -165,7 +167,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.81.0"
+var providerVersion = "1.83.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient
@@ -1749,4 +1751,29 @@ func (client *AliyunClient) WithResourcemanagerClient(do func(*resourcemanager.C
 		client.resourcemanagerConn = resourcemanagerConn
 	}
 	return do(client.resourcemanagerConn)
+}
+
+func (client *AliyunClient) WithAlidnsClient(do func(*alidns.Client) (interface{}, error)) (interface{}, error) {
+	if client.alidnsConn == nil {
+		endpoint := client.config.AlidnsEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, AlidnsCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(AlidnsCode), endpoint)
+		}
+
+		alidnsConn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Alidnsclient: %#v", err)
+		}
+		alidnsConn.AppendUserAgent(Terraform, terraformVersion)
+		alidnsConn.AppendUserAgent(Provider, providerVersion)
+		alidnsConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.alidnsConn = alidnsConn
+	}
+	return do(client.alidnsConn)
 }

@@ -85,6 +85,8 @@ type Config struct {
 	DmsEnterpriseEndpoint   string
 	WafOpenapiEndpoint      string
 	ResourcemanagerEndpoint string
+	BssopenapiEndpoint      string
+	AlidnsEndpoint          string
 }
 
 func (c *Config) loadAndValidate() error {

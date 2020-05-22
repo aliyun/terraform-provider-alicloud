@@ -201,3 +201,51 @@ func (s *CbnService) CenRouteMapStateRefreshFunc(id string, failStates []string)
 		return object, object.Status, nil
 	}
 }
+
+func (s *CbnService) DescribeCenPrivateZone(id string) (object cbn.PrivateZoneInfo, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := cbn.CreateDescribeCenPrivateZoneRoutesRequest()
+	request.RegionId = s.client.RegionId
+	request.AccessRegionId = parts[1]
+	request.CenId = parts[0]
+
+	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		return cbnClient.DescribeCenPrivateZoneRoutes(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*cbn.DescribeCenPrivateZoneRoutesResponse)
+
+	if len(response.PrivateZoneInfos.PrivateZoneInfo) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("CenPrivateZone", id)), NotFoundMsg, ProviderERROR)
+		return
+	}
+	return response.PrivateZoneInfos.PrivateZoneInfo[0], nil
+}
+
+func (s *CbnService) CenPrivateZoneStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenPrivateZone(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+		return object, object.Status, nil
+	}
+}

@@ -14,6 +14,8 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
+var clusterConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.[a-z]+.rds.aliyuncs.com"
+
 func init() {
 	resource.AddTestSweepers("alicloud_polardb_cluster", &resource.Sweeper{
 		Name: "alicloud_polardb_cluster",
@@ -195,7 +197,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.12,100.69.7.112"),
 					testAccCheck(map[string]string{
-						"connection_string": CHECKSET,
+						"connection_string": REGEXMATCH + clusterConnectionStringRegexp,
 					}),
 				),
 			},

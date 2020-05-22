@@ -103,5 +103,5 @@ In addition to all arguments above, the following attributes are exported:
 Network Interfaces Attachment resource can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_network_interface.eni eni-abc123456789000:i-abc123456789000
+$ terraform import alicloud_network_interface_attachment.eni eni-abc123456789000:i-abc123456789000
 ```

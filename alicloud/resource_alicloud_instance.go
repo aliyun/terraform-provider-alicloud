@@ -358,7 +358,7 @@ func resourceAliyunInstance() *schema.Resource {
 				}, false),
 			},
 
-			"tags":        tagsSchema(),
+			"tags":        tagsSchemaWithIgnore(),
 			"volume_tags": tagsSchemaComputed(),
 
 			"auto_release_time": {

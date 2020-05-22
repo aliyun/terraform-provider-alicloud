@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -297,7 +298,7 @@ func resourceAlicloudCenRouteMapCreate(d *schema.ResourceData, meta interface{})
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*cbn.CreateCenRouteMapResponse)
-		d.SetId(d.Get("cen_id").(string) + ":" + response.RouteMapId)
+		d.SetId(fmt.Sprintf("%v:%v", request.CenId, response.RouteMapId))
 		return nil
 	})
 	if err != nil {
