@@ -72,17 +72,17 @@ resource "alicloud_network_interface_attachment" "attachment" {
 
 data "alicloud_network_interfaces" "default" {
   ids = [
-    "${alicloud_network_interface_attachment.attachment.network_interface_id}"],
-  name_regex = "tf-testAccNetworkInterfacesBasic%d",
+    "${alicloud_network_interface_attachment.attachment.network_interface_id}"]
+  name_regex = "${var.name}"
   tags = {
     TF-VER = "0.11.3"
-  },
-  vpc_id = "${alicloud_vpc.vpc.id}",
-  vswitch_id = "${alicloud_vswitch.vswitch.id}",
-  private_ip = "192.168.0.2",
-  security_group_id = "${alicloud_security_group.group.id}",
-  type = "Secondary",
-  instance_id = "${alicloud_instance.instance.id}",
+  }
+  vpc_id = "${alicloud_vpc.vpc.id}"
+  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  private_ip = "192.168.0.2"
+  security_group_id = "${alicloud_security_group.group.id}"
+  type = "Secondary"
+  instance_id = "${alicloud_instance.instance.id}"
 }
 
 output "eni0_name" {
