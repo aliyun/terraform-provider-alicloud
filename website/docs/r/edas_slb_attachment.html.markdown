@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_slb_attachment"
 sidebar_current: "docs-alicloud-resource-edas-slb-attachment"
 description: |-
-  Provides an EDAS slb application attachment resource.
+  Binds SLB to an EDAS application.
 ---
 
 # alicloud\_edas\_slb\_attachment
 
-Provides an EDAS slb application attachment resource.
+Binds SLB to an EDAS application.
 
 -> **NOTE:** Available in 1.82.0+
 

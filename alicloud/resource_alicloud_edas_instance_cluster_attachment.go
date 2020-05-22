@@ -72,6 +72,7 @@ func resourceAlicloudEdasInstanceClusterAttachmentCreate(d *schema.ResourceData,
 
 	request := edas.CreateInstallAgentRequest()
 	request.ClusterId = clusterId
+	request.RegionId = client.RegionId
 
 	request.InstanceIds = strings.Join(aString, ",")
 	request.SetReadTimeout(30 * time.Second)
