@@ -1,7 +1,31 @@
 ## 1.84.0 (Unreleased)
+
+- **New Resource:** `alicloud_alidns_domain_group.` [GH-2454]
+- **New Resource:** `alicloud_resource_manager_resource_directory` [GH-2459]
+- **New Resource:** `alicloud_resource_manager_policy_version` [GH-2457]
+- **Data Source:** `alicloud_resource_manager_folders` [GH-2467]
+- **Data Source:** `alicloud_alidns_instance.` [GH-2468]
+- **Data Source:** `alicloud_resource_manager_resource_groups` [GH-2462]
+
+IMPROVEMENTS:
+
+- Update CHANGELOG.md [GH-2455]
+
+BUG FIXES:
+
+- fix autoscaler configmap update [GH-2377]
+- fix eip association failed cause by snat entry's snat_ip update bug [GH-2440]
+- fix_tag_validation [GH-2445]
+- fix polardb connection string output bug [GH-2453]
+- fix the bug of TestAccAlicloudEmrCluster_local_storage nodeCount less… [GH-2458]
+- fix_markdown_key_pair_attachment [GH-2460]
+- fix_finger_print [GH-2463]
+- fix_markdown_instance_type_families [GH-2465]
+- fix_markdown_alicloud_network_interface_attachment [GH-2469]
+
 ## 1.83.0 (May 15, 2020)
 
-- **New Resource:** `alicloud_resource_waf_instance` ([#2455](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2455))
+- **New Resource:** `alicloud_waf_instance` ([#2456](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2456))
 - **New Resource:** `alicloud_resource_manager_account` ([#2441](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2441))
 - **New Resource:** `alicloud_resource_manager_policy` ([#2439](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2439))
 - **New Resource:** `alicloud_resource_manager_handshake` ([#2432](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2432))
