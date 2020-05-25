@@ -173,6 +173,7 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
 
         Default to true
     * `description` - (Optional, ForceNew) The description of the data disk.
+* `status` - (Optional 1.85.0+) The instance status. Valid values: ["Running", "Stopped"]. You can control the instance start and stop through this parameter. Default to `Running`.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
@@ -204,7 +205,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 The following attributes are exported:
 
 * `id` - The instance ID.
-* `status` - The instance status.
 * `public_ip` - The instance public ip.
 
 ## Import
