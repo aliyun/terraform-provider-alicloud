@@ -49,6 +49,7 @@ func resourceAlicloudKmsKey() *schema.Resource {
 			"key_spec": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Aliyun_AES_256", "Aliyun_SM4", "RSA_2048", "EC_P256", "EC_P256K", "EC_SM2"}, false),
 			},
