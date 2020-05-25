@@ -26,6 +26,10 @@ func resourceAlicloudResourceManagerRole() *schema.Resource {
 			"assume_role_policy_document": {
 				Type:     schema.TypeString,
 				Required: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
 			},
 			"create_date": {
 				Type:     schema.TypeString,
