@@ -7,7 +7,7 @@ description: |-
   Provides an ECS Reserved Instance resource.
 ---
 
-# alicloud\_reserved\_instance\_offering
+# alicloud\_reserved\_instance
 
 Provides an Reserved Instance resource.
 
