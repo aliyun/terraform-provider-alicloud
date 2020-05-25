@@ -86,7 +86,6 @@ type UnbindSlbResponse struct {
 	*responses.BaseResponse
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
-	Data      string `json:"Data" xml:"Data"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 

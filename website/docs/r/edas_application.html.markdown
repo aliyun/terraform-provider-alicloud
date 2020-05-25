@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_application"
 sidebar_current: "docs-alicloud-resource-edas-application"
 description: |-
-  Provides an EDAS application resource.
+  Creates an EDAS ecs application on EDAS.
 ---
 
 # alicloud\_edas\_application
 
-Provides an EDAS application resource.
+Creates an EDAS ecs application on EDAS. The application will be deployed when `group_id` and `war_url` are given.
 
 -> **NOTE:** Available in 1.82.0+
 

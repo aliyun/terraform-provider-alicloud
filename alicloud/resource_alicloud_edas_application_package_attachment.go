@@ -66,7 +66,7 @@ func resourceAlicloudEdasApplicationPackageAttachmentCreate(d *schema.ResourceDa
 	if v, ok := d.GetOk("package_version"); ok {
 		packageVersion = v.(string)
 	} else {
-		packageVersion = strconv.Itoa(time.Now().Second())
+		packageVersion = strconv.FormatInt(time.Now().Unix(), 10)
 	}
 	request.DeployType = "url"
 	request.PackageVersion = packageVersion

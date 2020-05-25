@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_edas_application_deployment"
 sidebar_current: "docs-alicloud-resource-edas-application-deployment"
 description: |-
-  Provides an EDAS application deployment resource.
+  Creates an EDAS application deployment resource.
 ---
 
 # alicloud\_edas\_application\_deployment
 
-Provides an EDAS application deployment resource.
+Creates an EDAS application deployment. It will rollback to last package version when run `terraform destroy`.
 
 -> **NOTE:** Available in 1.82.0+
 
