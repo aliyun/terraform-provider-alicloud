@@ -1,27 +1,25 @@
 ---
-subcategory: "DNS"
+subcategory: "Alidns"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_dns_domain"
-sidebar_current: "docs-alicloud-resource-dns-domain"
+page_title: "Alicloud: alicloud_alidns_domain"
+sidebar_current: "docs-alicloud-resource-alidns-domain"
 description: |-
-  Provides a DNS domain resource.
+  Provides a Alidns Domain resource.
 ---
 
-# alicloud\_dns\_domain
+# alicloud\_alidns\_domain
 
--> **DEPRECATED:**  This resource has been deprecated from version `1.85.0`. Please use new resource [alicloud_alidns_domain](https://www.terraform.io/docs/providers/alicloud/r/alidns_domain.html).
-
-Provides a DNS domain resource.
+Provides a Alidns Domain domain resource. For information about Alidns Domain and how to use it, see [What is Resource Alidns Domain](https://www.alibabacloud.com/help/en/doc-detail/29749.htm).
 
 -> **NOTE:** The domain name which you want to add must be already registered and had not added by another account. Every domain name can only exist in a unique group.
 
--> **NOTE:** Available in v1.81.0+.
+-> **NOTE:** Available in v1.85.0+.
 
 ## Example Usage
 
 ```
 # Add a new Domain.
-resource "alicloud_dns_domain" "dns" {
+resource "alicloud_alidns_domain" "dns" {
   domain_name     = "starmove.com"
   group_id        = "85ab8713-4a30-4de4-9d20-155ff830****"
   tags = {
