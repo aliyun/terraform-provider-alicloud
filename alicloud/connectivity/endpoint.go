@@ -12,6 +12,7 @@ import (
 type ServiceCode string
 
 const (
+	PvtzCode            = ServiceCode("PVTZ")
 	BssopenapiCode      = ServiceCode("BSSOPENAPI")
 	AlidnsCode          = ServiceCode("ALIDNS")
 	ResourcemanagerCode = ServiceCode("RESOURCEMANAGER")
