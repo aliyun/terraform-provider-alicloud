@@ -49,3 +49,25 @@ func (s *AlidnsService) DescribeAlidnsDomainGroup(id string) (object alidns.Doma
 	err = WrapErrorf(Error(GetNotFoundMessage("AlidnsDomainGroup", id)), NotFoundMsg, ProviderERROR)
 	return
 }
+
+func (s *AlidnsService) DescribeAlidnsRecord(id string) (object alidns.DescribeDomainRecordInfoResponse, err error) {
+	request := alidns.CreateDescribeDomainRecordInfoRequest()
+	request.RegionId = s.client.RegionId
+
+	request.RecordId = id
+
+	raw, err := s.client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
+		return alidnsClient.DescribeDomainRecordInfo(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"DomainRecordNotBelongToUser", "InvalidRR.NoExist"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("AlidnsRecord", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*alidns.DescribeDomainRecordInfoResponse)
+	return *response, nil
+}
