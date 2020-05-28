@@ -79,6 +79,7 @@ resource "alicloud_ess_scaling_configuration" "default" {
   instance_type     = "${data.alicloud_instance_types.default.instance_types.0.id}"
   security_group_id = "${alicloud_security_group.default.id}"
   force_delete      = true
+  active            = true
 }
 
 ```
