@@ -65,6 +65,7 @@ func dataSourceAlicloudNetworkInterfaces() *schema.Resource {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
+				Optional: true,
 			},
 			"interfaces": {
 				Type:     schema.TypeList,
