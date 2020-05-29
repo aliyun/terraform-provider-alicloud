@@ -276,6 +276,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_folders":          dataSourceAlicloudResourceManagerFolders(),
 			"alicloud_dns_instances":                     dataSourceAlicloudDnsInstances(),
 			"alicloud_resource_manager_resource_groups":  dataSourceAlicloudResourceManagerResourceGroups(),
+			"alicloud_resource_manager_policy_versions":  dataSourceAlicloudResourceManagerPolicyVersions(),
 			"alicloud_alidns_domain_groups":              dataSourceAlicloudAlidnsDomainGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
