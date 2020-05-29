@@ -1,21 +1,21 @@
-## 1.85.0 (Unreleased)
+## 1.85.0 (May 29, 2020)
 
-- **New Resource:** `alicloud_alidns_record` [GH-2495]
-- **New Resource:** `alicloud_kms_key` [GH-2444]
-- **New Resource:** `alicloud_kms_keyversion` [GH-2471]
-- **Data Source:** `alicloud_alidns_domain_group` [GH-2482]
+- **New Resource:** `alicloud_alidns_record` ([#2495](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2495))
+- **New Resource:** `alicloud_kms_key` ([#2444](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2444))
+- **New Resource:** `alicloud_kms_keyversion` ([#2471](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2471))
+- **Data Source:** `alicloud_alidns_domain_group` ([#2482](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2482))
 
 IMPROVEMENTS:
 
-- 增加cdn_config删除错误码 [GH-2490]
-- UPDATE CHANGELOG.md [GH-2477]
-- Alicloud edas docs modify [GH-2473]
+- 增加cdn_config删除错误码 ([#2490](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2490))
+- UPDATE CHANGELOG.md ([#2477](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2477))
+- Alicloud edas docs modify ([#2473](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2473))
 
 BUG FIXES:
 
-- fix_markdown_reserved_instance [GH-2478]
-- fix_markdown_network_interfaces [GH-2475]
-- fix_apg [GH-2472]
+- fix_markdown_reserved_instance ([#2478](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2478))
+- fix_markdown_network_interfaces ([#2475](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2475))
+- fix_apg ([#2472](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2472))
 
 ## 1.84.0 (May 22, 2020)
 
