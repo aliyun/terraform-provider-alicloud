@@ -551,3 +551,72 @@ func GetCharTitile(project, dashboard, char string, client *sls.Client) string {
 	}
 	return char
 }
+
+func (s *LogService) DescribeLogDashboard(id string) (*sls.Dashboard, error) {
+	dashboard := &sls.Dashboard{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return dashboard, WrapError(err)
+	}
+	projectName, dashboardName := parts[0], parts[1]
+	var requestInfo *sls.Client
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			return slsClient.GetDashboard(projectName, dashboardName)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetLogstoreDashboard", raw, requestInfo, map[string]string{
+				"project":        projectName,
+				"dashboard_name": dashboardName,
+			})
+		}
+		dashboard, _ = raw.(*sls.Dashboard)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "DashboardNotExist"}) {
+			return dashboard, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return dashboard, WrapErrorf(err, DefaultErrorMsg, id, "GetLogstoreDashboard", AliyunLogGoSdkERROR)
+	}
+
+	if dashboard == nil || dashboard.DashboardName == "" {
+		return dashboard, WrapErrorf(Error(GetNotFoundMessage("LogstoreDashboard", id)), NotFoundMsg, ProviderERROR)
+	}
+	return dashboard, nil
+}
+
+func (s *LogService) WaitForLogDashboard(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	name := parts[1]
+	for {
+		object, err := s.DescribeLogDashboard(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.DashboardName == name && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.DashboardName, name, ProviderERROR)
+		}
+	}
+}
