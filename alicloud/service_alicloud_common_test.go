@@ -799,7 +799,7 @@ data "alicloud_zones" "default" {
 }
 data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_zones.default.ids[0]
-  name_regex = "default-tf--testAcc-00"
+  is_default = "true"
 }
 `
 const AdbCommonTestCase = `

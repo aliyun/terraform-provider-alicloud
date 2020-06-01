@@ -34,7 +34,7 @@ resource "alicloud_hbase_instance" "default" {
   core_instance_type = "hbase.sn1.large"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
-  core_disk_size = 100
+  core_disk_size = 400
   pay_type = "PostPaid"
   cold_storage_size = 0
 }
@@ -54,8 +54,8 @@ The following arguments are supported:
 * `core_instance_quantity`- (Optional. ForceNew) default=2. if core_instance_quantity > 1,this is cluster's instance.  if core_instance_quantity = 1,this is a single instance. 
 * `core_disk_type`-  (Required, ForceNew) Valid values are `cloud_ssd`, `cloud_efficiency`, `local_hdd_pro`, `local_ssd_pro`. local_disk size is fixed.
 * `core_disk_size` -  (Optional, ForceNew) User-defined HBase instance one core node's storage space.Unit: GB. Value range:
-  - Custom storage space; value range: [100,2000]
-  - 10-GB increments. 
+  - Custom storage space; value range: [400, 8000]
+  - 40-GB increments. 
 * `pay_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`,System default to `PostPaid`.
 * `duration` - (Optional, ForceNew) 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 60, valid when pay_type = PrePaid. unit: month.
 * `auto_renew` - (Optional, ForceNew) `true`, `false`, System default to `false`, valid when pay_type = PrePaid.

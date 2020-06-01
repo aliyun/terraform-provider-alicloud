@@ -126,7 +126,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 					"emr_ver":                   "${data.alicloud_emr_main_versions.default.main_versions.0.emr_version}",
 					"cluster_type":              "${data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0}",
 					"deposit_type":              "HALF_MANAGED",
-					"high_availability_enable":  "true",
+					"high_availability_enable":  "false",
 					"zone_id":                   "${data.alicloud_emr_instance_types.default.types.0.zone_id}",
 					"security_group_id":         "${alicloud_security_group.default.id}",
 					"is_open_public_ip":         "true",
@@ -143,7 +143,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 					"host_group": []map[string]interface{}{
 						{
 							"host_group_type":   "MASTER",
-							"node_count":        "2",
+							"node_count":        "1",
 							"instance_type":     "${data.alicloud_emr_instance_types.default.types.0.id}",
 							"disk_type":         "${data.alicloud_emr_disk_types.data_disk.types.0.value}",
 							"disk_capacity":     "${data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160}",
@@ -153,7 +153,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 						},
 						{
 							"host_group_type":   "CORE",
-							"node_count":        "3",
+							"node_count":        "2",
 							"instance_type":     "${data.alicloud_emr_instance_types.default.types.0.id}",
 							"disk_type":         "${data.alicloud_emr_disk_types.data_disk.types.0.value}",
 							"disk_capacity":     "${data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160}",
@@ -209,7 +209,7 @@ func TestAccAlicloudEmrCluster_local_storage(t *testing.T) {
 					"emr_ver":                   "${data.alicloud_emr_main_versions.default.main_versions.0.emr_version}",
 					"cluster_type":              "${data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0}",
 					"deposit_type":              "HALF_MANAGED",
-					"high_availability_enable":  "true",
+					"high_availability_enable":  "false",
 					"zone_id":                   "${data.alicloud_emr_instance_types.cloud_disk.types.0.zone_id}",
 					"security_group_id":         "${alicloud_security_group.default.id}",
 					"is_open_public_ip":         "true",
@@ -222,7 +222,7 @@ func TestAccAlicloudEmrCluster_local_storage(t *testing.T) {
 					"host_group": []map[string]interface{}{
 						{
 							"host_group_type":   "MASTER",
-							"node_count":        "2",
+							"node_count":        "1",
 							"instance_type":     "${data.alicloud_emr_instance_types.cloud_disk.types.0.id}",
 							"disk_type":         "${data.alicloud_emr_disk_types.data_disk.types.0.value}",
 							"disk_capacity":     "${data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160}",

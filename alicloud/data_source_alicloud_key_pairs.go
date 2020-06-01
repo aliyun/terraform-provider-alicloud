@@ -34,7 +34,7 @@ func dataSourceAlicloudKeyPairs() *schema.Resource {
 			},
 			"tags": tagsSchema(),
 			"finger_print": {
-				Type:     schema.TypeBool,
+				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},

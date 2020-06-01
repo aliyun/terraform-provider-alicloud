@@ -96,6 +96,10 @@ groups:
       - HBase
       - Adb
       - Maxcompute
+      - Dms
+      - Waf
+      - Edas
+      - ResourceManager
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -161,6 +165,7 @@ groups:
       - PolarDB
       - HBase
       - Adb
+      - Dms
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -232,6 +237,7 @@ groups:
       - ActionTrail
       # Cms
       - Cms
+      - ResourceManager
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -246,6 +252,7 @@ groups:
       - Ons
       # Kafka
       - Alikafka
+      - Edas
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -274,6 +281,7 @@ groups:
       - Ddosbgp
       - YundunDbaudit
       - YundunBastionhost
+      - Waf
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -307,6 +315,7 @@ shared:
       DING_TALK_TOKEN: {{ding_talk_token}}
       ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
       ALICLOUD_RESOURCE_GROUP_ID: {{alicloud_resource_group_id}}
+      ALICLOUD_WAF_INSTANCE_ID: {{alicloud_waf_instance_id}}
 
 jobs:
   - name: Sweeper-1
@@ -1236,6 +1245,58 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "Maxcompute"
+
+  - name: Dms
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0330
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Dms"
+
+  - name: Waf
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0430
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Waf"
+
+  - name: Edas
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0530
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Edas"
+
+  - name: ResourceManager
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0630
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "ResourceManager"
 
   - name: SweeperAfter
     plan:

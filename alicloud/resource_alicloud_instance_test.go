@@ -383,6 +383,16 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"status": "Stopped",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Stopped",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_type":              "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"security_groups":            []string{"${alicloud_security_group.default.0.id}"},
 					"instance_name":              fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d", rand),
@@ -398,6 +408,7 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 					"tags":             REMOVEKEY,
 
 					"deletion_protection": "false",
+					"status":              "Running",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

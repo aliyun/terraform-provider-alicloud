@@ -258,6 +258,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_market_product":                    dataSourceAlicloudProduct(),
 			"alicloud_market_products":                   dataSourceAlicloudProducts(),
 			"alicloud_polardb_clusters":                  dataSourceAlicloudPolarDBClusters(),
+			"alicloud_polardb_node_classes":              dataSourceAlicloudPolarDBNodeClasses(),
 			"alicloud_polardb_endpoints":                 dataSourceAlicloudPolarDBEndpoints(),
 			"alicloud_polardb_accounts":                  dataSourceAlicloudPolarDBAccounts(),
 			"alicloud_polardb_databases":                 dataSourceAlicloudPolarDBDatabases(),
@@ -269,6 +270,15 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_flowlogs":                      dataSourceAlicloudCenFlowlogs(),
 			"alicloud_kms_aliases":                       dataSourceAlicloudKmsAliases(),
 			"alicloud_dns_domain_txt_guid":               dataSourceAlicloudDnsDomainTxtGuid(),
+			"alicloud_edas_applications":                 dataSourceAlicloudEdasApplications(),
+			"alicloud_edas_deploy_groups":                dataSourceAlicloudEdasDeployGroups(),
+			"alicloud_edas_clusters":                     dataSourceAlicloudEdasClusters(),
+			"alicloud_resource_manager_folders":          dataSourceAlicloudResourceManagerFolders(),
+			"alicloud_dns_instances":                     dataSourceAlicloudDnsInstances(),
+			"alicloud_resource_manager_resource_groups":  dataSourceAlicloudResourceManagerResourceGroups(),
+			"alicloud_resource_manager_policy_versions":  dataSourceAlicloudResourceManagerPolicyVersions(),
+			"alicloud_alidns_domain_groups":              dataSourceAlicloudAlidnsDomainGroups(),
+			"alicloud_kms_key_versions":                  dataSourceAlicloudKmsKeyVersions(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -399,6 +409,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_logtail_config":                      resourceAlicloudLogtailConfig(),
 			"alicloud_logtail_attachment":                  resourceAlicloudLogtailAttachment(),
 			"alicloud_log_alert":                           resourceAlicloudLogAlert(),
+			"alicloud_log_audit":                           resourceAlicloudLogAudit(),
 			"alicloud_fc_service":                          resourceAlicloudFCService(),
 			"alicloud_fc_function":                         resourceAlicloudFCFunction(),
 			"alicloud_fc_trigger":                          resourceAlicloudFCTrigger(),
@@ -468,12 +479,37 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_cluster":                         resourceAlicloudAdbCluster(),
 			"alicloud_adb_backup_policy":                   resourceAlicloudAdbBackupPolicy(),
 			"alicloud_adb_account":                         resourceAlicloudAdbAccount(),
+			"alicloud_adb_connection":                      resourceAlicloudAdbConnection(),
 			"alicloud_cen_flowlog":                         resourceAlicloudCenFlowlog(),
 			"alicloud_kms_secret":                          resourceAlicloudKmsSecret(),
 			"alicloud_maxcompute_project":                  resourceAlicloudMaxComputeProject(),
 			"alicloud_kms_alias":                           resourceAlicloudKmsAlias(),
 			"alicloud_dns_instance":                        resourceAlicloudDnsInstance(),
 			"alicloud_dns_domain_attachment":               resourceAlicloudDnsDomainAttachment(),
+			"alicloud_edas_application":                    resourceAlicloudEdasApplication(),
+			"alicloud_edas_deploy_group":                   resourceAlicloudEdasDeployGroup(),
+			"alicloud_edas_application_scale":              resourceAlicloudEdasInstanceApplicationAttachment(),
+			"alicloud_edas_slb_attachment":                 resourceAlicloudEdasSlbAttachment(),
+			"alicloud_edas_cluster":                        resourceAlicloudEdasCluster(),
+			"alicloud_edas_instance_cluster_attachment":    resourceAlicloudEdasInstanceClusterAttachment(),
+			"alicloud_edas_application_deployment":         resourceAlicloudEdasApplicationPackageAttachment(),
+			"alicloud_dns_domain":                          resourceAlicloudDnsDomain(),
+			"alicloud_dms_enterprise_instance":             resourceAlicloudDmsEnterpriseInstance(),
+			"alicloud_waf_domain":                          resourceAlicloudWafDomain(),
+			"alicloud_cen_route_map":                       resourceAlicloudCenRouteMap(),
+			"alicloud_resource_manager_role":               resourceAlicloudResourceManagerRole(),
+			"alicloud_resource_manager_resource_group":     resourceAlicloudResourceManagerResourceGroup(),
+			"alicloud_resource_manager_folder":             resourceAlicloudResourceManagerFolder(),
+			"alicloud_resource_manager_handshake":          resourceAlicloudResourceManagerHandshake(),
+			"alicloud_cen_private_zone":                    resourceAlicloudCenPrivateZone(),
+			"alicloud_resource_manager_policy":             resourceAlicloudResourceManagerPolicy(),
+			"alicloud_resource_manager_account":            resourceAlicloudResourceManagerAccount(),
+			"alicloud_waf_instance":                        resourceAlicloudWafInstance(),
+			"alicloud_resource_manager_resource_directory": resourceAlicloudResourceManagerResourceDirectory(),
+			"alicloud_alidns_domain_group":                 resourceAlicloudAlidnsDomainGroup(),
+			"alicloud_resource_manager_policy_version":     resourceAlicloudResourceManagerPolicyVersion(),
+			"alicloud_kms_key_version":                     resourceAlicloudKmsKeyVersion(),
+			"alicloud_alidns_record":                       resourceAlicloudAlidnsRecord(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -603,6 +639,14 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.AdbEndpoint = strings.TrimSpace(endpoints["adb"].(string))
 		config.CbnEndpoint = strings.TrimSpace(endpoints["cbn"].(string))
 		config.MaxComputeEndpoint = strings.TrimSpace(endpoints["maxcompute"].(string))
+		config.DmsEnterpriseEndpoint = strings.TrimSpace(endpoints["dms_enterprise"].(string))
+		config.WafOpenapiEndpoint = strings.TrimSpace(endpoints["waf_openapi"].(string))
+		config.ResourcemanagerEndpoint = strings.TrimSpace(endpoints["resourcemanager"].(string))
+		if endpoint, ok := endpoints["alidns"]; ok {
+			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
+		} else {
+			config.AlidnsEndpoint = strings.TrimSpace(endpoints["dns"].(string))
+		}
 	}
 
 	if config.RamRoleArn != "" {
@@ -765,6 +809,14 @@ func init() {
 
 		"cbn_endpoint":        "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cbn endpoints.",
 		"maxcompute_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom MaxCompute endpoints.",
+
+		"dms_enterprise_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dms_enterprise endpoints.",
+
+		"waf_openapi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom waf_openapi endpoints.",
+
+		"resourcemanager_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom resourcemanager endpoints.",
+
+		"alidns_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom alidns endpoints.",
 	}
 }
 
@@ -809,6 +861,34 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"alidns": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["alidns_endpoint"],
+				},
+
+				"resourcemanager": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["resourcemanager_endpoint"],
+				},
+
+				"waf_openapi": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["waf_openapi_endpoint"],
+				},
+
+				"dms_enterprise": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["dms_enterprise_endpoint"],
+				},
+
 				"cbn": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1119,6 +1199,10 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cbn"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["maxcompute"].(string)))
 
+	buf.WriteString(fmt.Sprintf("%s-", m["dms_enterprise"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["waf_openapi"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["resourcemanager"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["alidns"].(string)))
 	return hashcode.String(buf.String())
 }
 

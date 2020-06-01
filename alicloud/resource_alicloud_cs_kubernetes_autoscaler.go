@@ -624,6 +624,7 @@ func createOrUpdateAutoscalerMeta(clientSet *kubernetes.Clientset, meta autoscal
 			if err != nil {
 				return WrapError(fmt.Errorf("failed to create configmap of autoscaler meta,because of %v", err))
 			}
+			return nil
 		} else {
 			// return errror
 			return WrapError(fmt.Errorf("failed to describe configmap autoscaler meta,because of %v", err))

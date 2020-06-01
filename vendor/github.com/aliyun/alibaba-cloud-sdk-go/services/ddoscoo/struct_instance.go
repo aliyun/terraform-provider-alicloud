@@ -17,11 +17,12 @@ package ddoscoo
 
 // Instance is a nested struct in ddoscoo response
 type Instance struct {
-	InstanceId string `json:"InstanceId" xml:"InstanceId"`
-	Remark     string `json:"Remark" xml:"Remark"`
 	Status     int    `json:"Status" xml:"Status"`
+	Remark     string `json:"Remark" xml:"Remark"`
+	InstanceId string `json:"InstanceId" xml:"InstanceId"`
 	DebtStatus int    `json:"DebtStatus" xml:"DebtStatus"`
-	ExpireTime int    `json:"ExpireTime" xml:"ExpireTime"`
-	GmtCreate  int    `json:"GmtCreate" xml:"GmtCreate"`
+	Enabled    int    `json:"Enabled" xml:"Enabled"`
+	ExpireTime int64  `json:"ExpireTime" xml:"ExpireTime"`
+	CreateTime int64  `json:"CreateTime" xml:"CreateTime"`
 	Edition    int    `json:"Edition" xml:"Edition"`
 }

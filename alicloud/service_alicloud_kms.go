@@ -3,7 +3,6 @@ package alicloud
 import (
 	"encoding/json"
 	"log"
-	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -14,50 +13,30 @@ type KmsService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *KmsService) DescribeKmsKey(id string) (*kms.DescribeKeyResponse, error) {
-	key := &kms.DescribeKeyResponse{}
+func (s *KmsService) DescribeKmsKey(id string) (object kms.KeyMetadata, err error) {
 	request := kms.CreateDescribeKeyRequest()
 	request.RegionId = s.client.RegionId
+
 	request.KeyId = id
 
 	raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
 		return kmsClient.DescribeKey(request)
 	})
 	if err != nil {
-		return key, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		if IsExpectedErrors(err, []string{"Forbidden.AliasNotFound", "Forbidden.KeyNotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("KmsKey", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
 	}
-	key, _ = raw.(*kms.DescribeKeyResponse)
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	if key == nil || key.KeyMetadata.KeyId != id {
-		return key, WrapErrorf(Error(GetNotFoundMessage("Kms_key", id)), NotFoundMsg, ProviderERROR)
+	response, _ := raw.(*kms.DescribeKeyResponse)
+	if response.KeyMetadata.KeyState == "PendingDeletion" {
+		log.Printf("[WARN] Removing KmsKey  %s because it's already gone", id)
+		return response.KeyMetadata, WrapErrorf(Error(GetNotFoundMessage("KmsKey", id)), NotFoundMsg, ProviderERROR)
 	}
-	if KeyState(key.KeyMetadata.KeyState) == PendingDeletion {
-		log.Printf("[WARN] Removing KMS key %s because it's already gone", id)
-		return key, WrapErrorf(Error(GetNotFoundMessage("Kms_key", id)), NotFoundMsg, ProviderERROR)
-	}
-	return key, nil
-}
-
-func (s *KmsService) WaitForKmsKey(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeKmsKey(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-		if object.KeyMetadata.KeyId == id && status != Deleted {
-			return nil
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, id, status, ProviderERROR)
-		}
-	}
+	return response.KeyMetadata, nil
 }
 
 func (s *KmsService) Decrypt(ciphertextBlob string, encryptionContext map[string]interface{}) (*kms.DecryptResponse, error) {
@@ -204,4 +183,27 @@ func (s *KmsService) DescribeKmsAlias(id string) (object kms.KeyMetadata, err er
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*kms.DescribeKeyResponse)
 	return response.KeyMetadata, nil
+}
+
+func (s *KmsService) DescribeKmsKeyVersion(id string) (object kms.DescribeKeyVersionResponse, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := kms.CreateDescribeKeyVersionRequest()
+	request.RegionId = s.client.RegionId
+	request.KeyId = parts[0]
+	request.KeyVersionId = parts[1]
+
+	raw, err := s.client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+		return kmsClient.DescribeKeyVersion(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*kms.DescribeKeyVersionResponse)
+	return *response, nil
 }

@@ -94,6 +94,10 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+			"connection_string": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -219,6 +223,21 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("maintain_time")
 	}
 
+	if d.HasChange("security_ips") {
+		ipList := expandStringList(d.Get("security_ips").(*schema.Set).List())
+
+		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
+		// default disable connect from outside
+		if ipstr == "" {
+			ipstr = LOCAL_HOST_IP
+		}
+
+		if err := polarDBService.ModifyDBSecurityIps(d.Id(), ipstr); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("security_ips")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudPolarDBClusterRead(d, meta)
@@ -262,21 +281,6 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("description")
 	}
 
-	if d.HasChange("security_ips") {
-		ipList := expandStringList(d.Get("security_ips").(*schema.Set).List())
-
-		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
-		// default disable connect from outside
-		if ipstr == "" {
-			ipstr = LOCAL_HOST_IP
-		}
-
-		if err := polarDBService.ModifyDBSecurityIps(d.Id(), ipstr); err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("security_ips")
-	}
-
 	d.Partial(false)
 	return resourceAlicloudPolarDBClusterRead(d, meta)
 }
@@ -309,6 +313,21 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 
 	d.Set("security_ips", ips)
+
+	//describe endpoints
+	if len(ips) == 1 && strings.HasPrefix(ips[0], LOCAL_HOST_IP) {
+		d.Set("connection_string", "")
+	} else {
+		endpoints, err := polarDBService.DescribePolarDBInstanceNetInfo(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		for _, endpoint := range endpoints {
+			if endpoint.EndpointType == "Cluster" {
+				d.Set("connection_string", endpoint.AddressItems[0].ConnectionString)
+			}
+		}
+	}
 
 	d.Set("vswitch_id", clusterAttribute.VSwitchId)
 	d.Set("pay_type", getChargeType(clusterAttribute.PayType))

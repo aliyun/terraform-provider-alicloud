@@ -445,18 +445,6 @@ func GetUserHomeDir() (string, error) {
 }
 
 func writeToFile(filePath string, data interface{}) error {
-	if strings.HasPrefix(filePath, "~") {
-		home, err := GetUserHomeDir()
-		if err != nil {
-			return err
-		}
-		if home != "" {
-			filePath = strings.Replace(filePath, "~", home, 1)
-		}
-	}
-
-	os.Remove(filePath)
-
 	var out string
 	switch data.(type) {
 	case string:
@@ -472,8 +460,23 @@ func writeToFile(filePath string, data interface{}) error {
 		out = string(bs)
 	}
 
-	ioutil.WriteFile(filePath, []byte(out), 422)
-	return nil
+	if strings.HasPrefix(filePath, "~") {
+		home, err := GetUserHomeDir()
+		if err != nil {
+			return err
+		}
+		if home != "" {
+			filePath = strings.Replace(filePath, "~", home, 1)
+		}
+	}
+
+	if _, err := os.Stat(filePath); err == nil {
+		if err := os.Remove(filePath); err != nil {
+			return err
+		}
+	}
+
+	return ioutil.WriteFile(filePath, []byte(out), 422)
 }
 
 type Invoker struct {

@@ -295,8 +295,10 @@ func resourceAliyunInstance() *schema.Resource {
 			},
 
 			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Running", "Stopped"}, false),
+				Default:      "Running",
 			},
 
 			"user_data": {
@@ -358,7 +360,7 @@ func resourceAliyunInstance() *schema.Resource {
 				}, false),
 			},
 
-			"tags":        tagsSchema(),
+			"tags":        tagsSchemaWithIgnore(),
 			"volume_tags": tagsSchemaComputed(),
 
 			"auto_release_time": {
@@ -651,13 +653,15 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapError(err)
 	}
-	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate {
+	target := d.Get("status").(string)
+	statusUpdate := d.HasChange("status")
+	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate || statusUpdate {
 		run = true
 		instance, errDesc := ecsService.DescribeInstance(d.Id())
 		if errDesc != nil {
 			return WrapError(errDesc)
 		}
-		if instance.Status == string(Running) {
+		if (statusUpdate && target == string(Stopped)) || instance.Status == string(Running) {
 			stopRequest := ecs.CreateStopInstanceRequest()
 			stopRequest.RegionId = client.RegionId
 			stopRequest.InstanceId = d.Id()
@@ -669,14 +673,13 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), stopRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 			addDebug(stopRequest.GetActionName(), raw)
+
+			stateConf := BuildStateConf([]string{"Pending", "Running", "Stopping"}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
+
+			if _, err = stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
-
-		stateConf := BuildStateConf([]string{"Pending", "Running", "Stopping"}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
-
-		if _, err = stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-
 		if _, err := modifyInstanceImage(d, meta, run); err != nil {
 			return WrapError(err)
 		}
@@ -689,40 +692,44 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			return WrapError(err)
 		}
 
-		startRequest := ecs.CreateStartInstanceRequest()
-		startRequest.InstanceId = d.Id()
+		if target == string(Running) {
+			startRequest := ecs.CreateStartInstanceRequest()
+			startRequest.InstanceId = d.Id()
 
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.StartInstance(startRequest)
-			})
-			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) {
-					time.Sleep(time.Second)
-					return resource.RetryableError(err)
+			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+					return ecsClient.StartInstance(startRequest)
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) {
+						time.Sleep(time.Second)
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				addDebug(startRequest.GetActionName(), raw)
+				return nil
+			})
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), startRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(startRequest.GetActionName(), raw)
-			return nil
-		})
+			// Start instance sometimes costs more than 8 minutes when os type is centos.
+			stateConf := &resource.StateChangeConf{
+				Pending:    []string{"Pending", "Starting", "Stopped"},
+				Target:     []string{"Running"},
+				Refresh:    ecsService.InstanceStateRefreshFunc(d.Id(), []string{}),
+				Timeout:    d.Timeout(schema.TimeoutUpdate),
+				Delay:      5 * time.Second,
+				MinTimeout: 3 * time.Second,
+			}
 
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), startRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			if _, err = stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
-
-		// Start instance sometimes costs more than 8 minutes when os type is centos.
-		stateConf = &resource.StateChangeConf{
-			Pending:    []string{"Pending", "Starting", "Stopped"},
-			Target:     []string{"Running"},
-			Refresh:    ecsService.InstanceStateRefreshFunc(d.Id(), []string{}),
-			Timeout:    d.Timeout(schema.TimeoutUpdate),
-			Delay:      5 * time.Second,
-			MinTimeout: 3 * time.Second,
-		}
-
-		if _, err = stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		if d.HasChange("status") {
+			d.SetPartial("status")
 		}
 	}
 
