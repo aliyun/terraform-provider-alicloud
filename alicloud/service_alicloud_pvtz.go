@@ -16,14 +16,15 @@ type PvtzService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *PvtzService) DescribePvtzZone(id string) (zone pvtz.DescribeZoneInfoResponse, err error) {
+func (s *PvtzService) DescribePvtzZone(id string) (object pvtz.DescribeZoneInfoResponse, err error) {
 	request := pvtz.CreateDescribeZoneInfoRequest()
 	request.RegionId = s.client.RegionId
-	request.ZoneId = id
 
+	request.ZoneId = id
 	var response *pvtz.DescribeZoneInfoResponse
+	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
+		raw, err = s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
 			return pvtzClient.DescribeZoneInfo(request)
 		})
 		if err != nil {
@@ -33,22 +34,19 @@ func (s *PvtzService) DescribePvtzZone(id string) (zone pvtz.DescribeZoneInfoRes
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ = raw.(*pvtz.DescribeZoneInfoResponse)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
-			return zone, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("PvtzZone", id)), NotFoundMsg, ProviderERROR)
+			return
 		}
-		return zone, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
 	}
-	if response.ZoneId != id {
-		return zone, WrapErrorf(Error(GetNotFoundMessage("PvtzZone", id)), NotFoundMsg, ProviderERROR)
-	}
-	zone = *response
-
-	return
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ = raw.(*pvtz.DescribeZoneInfoResponse)
+	return *response, nil
 }
 
 func (s *PvtzService) DescribePvtzZoneAttachment(id string) (object pvtz.DescribeZoneInfoResponse, err error) {

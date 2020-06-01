@@ -9,8 +9,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -110,43 +110,34 @@ func testSweepPvtzZones(region string) error {
 	return nil
 }
 
-func TestAccAlicloudPvtzZone_basic(t *testing.T) {
+func TestAccAlicloudPrivateZoneZone_basic(t *testing.T) {
 	var v pvtz.DescribeZoneInfoResponse
-
 	resourceId := "alicloud_pvtz_zone.default"
-	ra := resourceAttrInit(resourceId, pvtzZoneBasicMap)
-
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, PrivateZoneZoneMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
+	}, "DescribePvtzZone")
 	rac := resourceAttrCheckInit(rc, ra)
-
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc%d.test.com", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePvtzZoneConfigDependence)
-
+	name := fmt.Sprintf("tf-testAccPrivateZoneZone%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, PrivateZoneZoneBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		// module name
+
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": name,
+					"zone_name": "demo.com",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":           name,
-						"proxy_pattern":  "ZONE",
-						"user_client_ip": NOSET,
-						"lang":           NOSET,
+						"zone_name": "demo.com",
 					}),
 				),
 			},
@@ -154,37 +145,7 @@ func TestAccAlicloudPvtzZone_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"user_client_ip", "lang"},
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"remark": "remark-test",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"remark": "remark-test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"remark": "remark-test-update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"remark": "remark-test-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"proxy_pattern": "ZONE",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"proxy_pattern": "ZONE",
-					}),
-				),
+				ImportStateVerifyIgnore: []string{"lang", "resource_group_id", "user_client_ip"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -198,41 +159,47 @@ func TestAccAlicloudPvtzZone_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"user_client_ip": "172.10.1.0",
+					"proxy_pattern": "RECORD",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"user_client_ip": "172.10.1.0",
+						"proxy_pattern": "RECORD",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"proxy_pattern":  "RECORD",
+					"remark": "zoneRemark",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"remark": "zoneRemark",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_client_ip": "1.1.1.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_client_ip": "1.1.1.1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"lang":           "zh",
-					"user_client_ip": "172.10.2.0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"proxy_pattern":  "RECORD",
-						"lang":           "zh",
-						"user_client_ip": "172.10.2.0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"remark":         REMOVEKEY,
 					"proxy_pattern":  "ZONE",
-					"lang":           "jp",
-					"user_client_ip": REMOVEKEY,
+					"remark":         "zoneLastRemark",
+					"user_client_ip": "2.2.2.2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"remark":         REMOVEKEY,
+						"lang":           "zh",
 						"proxy_pattern":  "ZONE",
-						"lang":           "jp",
-						"user_client_ip": REMOVEKEY,
+						"remark":         "zoneLastRemark",
+						"user_client_ip": "2.2.2.2",
 					}),
 				),
 			},
@@ -278,10 +245,19 @@ func TestAccAlicloudPvtzZone_multi(t *testing.T) {
 		},
 	})
 }
+
 func resourcePvtzZoneConfigDependence(name string) string {
 	return ""
 }
 
 var pvtzZoneBasicMap = map[string]string{
 	"name": CHECKSET,
+}
+
+var PrivateZoneZoneMap = map[string]string{
+	"proxy_pattern": "ZONE",
+}
+
+func PrivateZoneZoneBasicdependence(name string) string {
+	return ""
 }
