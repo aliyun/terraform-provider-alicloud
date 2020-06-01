@@ -38,7 +38,6 @@ resource "alicloud_instance" "ecs_instance" {
   availability_zone     = "cn-beijing-a"
   security_groups       = ["${alicloud_security_group.ecs_sg.id}"]
   instance_name         = "Hello"
-  instance_network_type = "classic"
   internet_charge_type  = "PayByBandwidth"
 
   tags = {
