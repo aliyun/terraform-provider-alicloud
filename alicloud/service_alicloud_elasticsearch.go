@@ -442,6 +442,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 	spec["spec"] = d.Get("data_node_spec")
 	spec["disk"] = d.Get("data_node_disk_size")
 	spec["diskType"] = d.Get("data_node_disk_type")
+	spec["diskEncryption"] = d.Get("data_node_disk_encrypted")
 	content["nodeSpec"] = spec
 	data, err := json.Marshal(content)
 	if err != nil {

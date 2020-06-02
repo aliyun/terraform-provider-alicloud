@@ -107,6 +107,11 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Required: true,
 			},
 
+			"data_node_disk_encrypted": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+
 			"private_whitelist": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -237,6 +242,7 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	d.Set("data_node_spec", object.Result.NodeSpec.Spec)
 	d.Set("data_node_disk_size", object.Result.NodeSpec.Disk)
 	d.Set("data_node_disk_type", object.Result.NodeSpec.DiskType)
+	d.Set("data_node_disk_encrypted", object.Result.NodeSpec.DiskEncryption)
 	d.Set("master_node_spec", object.Result.MasterConfiguration.Spec)
 
 	// Cross zone configuration
@@ -335,6 +341,10 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("data_node_amount")
 	}
 
+	if d.HasChange("data_node_disk_encrypted") {
+		return WrapError(Error("At present, the value of 'data_node_disk_encrypted' can't be changed"))
+	}
+
 	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_type") {
 
 		if _, err := stateConf.WaitForState(); err != nil {
@@ -348,6 +358,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("data_node_spec")
 		d.SetPartial("data_node_disk_size")
 		d.SetPartial("data_node_disk_type")
+		d.SetPartial("data_node_disk_encrypted")
 	}
 
 	if d.HasChange("master_node_spec") {
@@ -470,6 +481,7 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 	dataNodeSpec["spec"] = d.Get("data_node_spec")
 	dataNodeSpec["disk"] = d.Get("data_node_disk_size")
 	dataNodeSpec["diskType"] = d.Get("data_node_disk_type")
+	dataNodeSpec["diskEncryption"] = d.Get("data_node_disk_encrypted")
 	content["nodeSpec"] = dataNodeSpec
 
 	// Master node configuration
