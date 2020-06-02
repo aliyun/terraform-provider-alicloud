@@ -216,6 +216,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_repos":                              dataSourceAlicloudCRRepos(),
 			"alicloud_cr_ee_instances":                       dataSourceAlicloudCrEEInstances(),
 			"alicloud_cr_ee_namespaces":                      dataSourceAlicloudCrEENamespaces(),
+			"alicloud_cr_ee_repos":                           dataSourceAlicloudCrEERepos(),
 			"alicloud_mns_queues":                            dataSourceAlicloudMNSQueues(),
 			"alicloud_mns_topics":                            dataSourceAlicloudMNSTopics(),
 			"alicloud_mns_topic_subscriptions":               dataSourceAlicloudMNSTopicSubscriptions(),
