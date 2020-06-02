@@ -182,6 +182,12 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -628,6 +634,10 @@ func buildKVStoreCreateRequest(d *schema.ResourceData, meta interface{}) (*r_kvs
 
 	if zone, ok := d.GetOk("availability_zone"); ok && Trim(zone.(string)) != "" {
 		request.ZoneId = Trim(zone.(string))
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+		request.ResourceGroupId = v.(string)
 	}
 
 	request.NetworkType = strings.ToUpper(string(Classic))
