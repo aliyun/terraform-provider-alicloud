@@ -214,6 +214,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_serverless_kubernetes_clusters":     dataSourceAlicloudCSServerlessKubernetesClusters(),
 			"alicloud_cr_namespaces":                         dataSourceAlicloudCRNamespaces(),
 			"alicloud_cr_repos":                              dataSourceAlicloudCRRepos(),
+			"alicloud_cr_ee_instances":                       dataSourceAlicloudCrEEInstances(),
 			"alicloud_mns_queues":                            dataSourceAlicloudMNSQueues(),
 			"alicloud_mns_topics":                            dataSourceAlicloudMNSTopics(),
 			"alicloud_mns_topic_subscriptions":               dataSourceAlicloudMNSTopicSubscriptions(),
