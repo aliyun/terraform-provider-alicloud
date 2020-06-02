@@ -280,6 +280,13 @@ func testAccPreCheckWithResourceManagerAccountsSetting(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithResourceManagerHandshakesSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("INVITED_ALICLOUD_ACCOUNT_ID")); v == "" {
+		t.Skipf("Skipping the test case with there is no \"INVITED_ALICLOUD_ACCOUNT_ID\" setting")
+		t.Skipped()
+	}
+}
+
 var providerCommon = `
 provider "alicloud" {
 	assume_role {}
