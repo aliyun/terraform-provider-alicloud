@@ -17,10 +17,11 @@ package cbn
 
 // CenInterRegionBandwidthLimit is a nested struct in cbn response
 type CenInterRegionBandwidthLimit struct {
-	CenId            string `json:"CenId" xml:"CenId"`
-	LocalRegionId    string `json:"LocalRegionId" xml:"LocalRegionId"`
-	OppositeRegionId string `json:"OppositeRegionId" xml:"OppositeRegionId"`
-	GeographicSpanId string `json:"GeographicSpanId" xml:"GeographicSpanId"`
-	BandwidthLimit   int64  `json:"BandwidthLimit" xml:"BandwidthLimit"`
-	Status           string `json:"Status" xml:"Status"`
+	CenId              string `json:"CenId" xml:"CenId"`
+	LocalRegionId      string `json:"LocalRegionId" xml:"LocalRegionId"`
+	OppositeRegionId   string `json:"OppositeRegionId" xml:"OppositeRegionId"`
+	GeographicSpanId   string `json:"GeographicSpanId" xml:"GeographicSpanId"`
+	BandwidthLimit     int64  `json:"BandwidthLimit" xml:"BandwidthLimit"`
+	Status             string `json:"Status" xml:"Status"`
+	BandwidthPackageId string `json:"BandwidthPackageId" xml:"BandwidthPackageId"`
 }
