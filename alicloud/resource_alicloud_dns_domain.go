@@ -36,10 +36,12 @@ func resourceAlicloudDnsDomain() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+
 			"lang": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+
 			"remark": {
 				Type:     schema.TypeString,
 				Optional: true,
