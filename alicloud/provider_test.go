@@ -273,6 +273,13 @@ func testAccPreCheckWithNoDefaultVswitch(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithResourceManagerAccountsSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_RESOURCE_MANAGER_ACCOUNT_ID")); v == "" {
+		t.Skip("Skipping the test case with no sag account id setting")
+		t.Skipped()
+	}
+}
+
 var providerCommon = `
 provider "alicloud" {
 	assume_role {}

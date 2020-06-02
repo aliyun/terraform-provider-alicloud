@@ -280,6 +280,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_domain_groups":              dataSourceAlicloudAlidnsDomainGroups(),
 			"alicloud_kms_key_versions":                  dataSourceAlicloudKmsKeyVersions(),
 			"alicloud_alidns_records":                    dataSourceAlicloudAlidnsRecords(),
+			"alicloud_resource_manager_accounts":         dataSourceAlicloudResourceManagerAccounts(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
