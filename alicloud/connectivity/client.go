@@ -15,6 +15,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
 	officalCS "github.com/aliyun/alibaba-cloud-sdk-go/services/cs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddosbgp"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
@@ -98,6 +99,7 @@ type AliyunClient struct {
 	officalCSConn                *officalCS.Client
 	cdnconn_new                  *cdn_new.Client
 	crconn                       *cr.Client
+	creeconn                     *cr_ee.Client
 	cdnconn                      *cdn.CdnClient
 	kmsconn                      *kms.Client
 	otsconn                      *ots.Client
@@ -579,6 +581,32 @@ func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error
 	}
 
 	return do(client.crconn)
+}
+
+func (client *AliyunClient) WithCrEEClient(do func(*cr_ee.Client) (interface{}, error)) (interface{}, error) {
+	// Initialize the CR EE client if necessary
+	if client.creeconn == nil {
+		endpoint := client.config.CrEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CRCode)
+			if endpoint == "" {
+				endpoint = fmt.Sprintf("cr.%s.aliyuncs.com", client.config.RegionId)
+			}
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CRCode), endpoint)
+		}
+		creeconn, err := cr_ee.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CR EE client: %#v", err)
+		}
+		creeconn.AppendUserAgent(Terraform, terraformVersion)
+		creeconn.AppendUserAgent(Provider, providerVersion)
+		creeconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.creeconn = creeconn
+	}
+
+	return do(client.creeconn)
 }
 
 func (client *AliyunClient) WithCdnClient(do func(*cdn.CdnClient) (interface{}, error)) (interface{}, error) {
