@@ -26,6 +26,10 @@ variable "data_node_disk_type" {
   default = "cloud_ssd"
 }
 
+variable "data_node_disk_encrypted" {
+  default = false
+}
+
 variable "es_version" {
   default = "6.3_with_X-Pack"
 }
@@ -53,6 +57,6 @@ variable "master_node_spec" {
 }
 
 variable "zone_count" {
-  default = "2"
+  default = "1"
 }
 
