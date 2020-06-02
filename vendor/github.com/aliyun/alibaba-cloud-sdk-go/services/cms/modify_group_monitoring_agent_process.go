@@ -86,6 +86,7 @@ type ModifyGroupMonitoringAgentProcessRequest struct {
 type ModifyGroupMonitoringAgentProcessAlertConfig struct {
 	Times               string `name:"Times"`
 	NoEffectiveInterval string `name:"NoEffectiveInterval"`
+	Webhook             string `name:"Webhook"`
 	SilenceTime         string `name:"SilenceTime"`
 	Threshold           string `name:"Threshold"`
 	EffectiveInterval   string `name:"EffectiveInterval"`
@@ -109,6 +110,7 @@ func CreateModifyGroupMonitoringAgentProcessRequest() (request *ModifyGroupMonit
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Cms", "2019-01-01", "ModifyGroupMonitoringAgentProcess", "cms", "openAPI")
+	request.Method = requests.POST
 	return
 }
 
