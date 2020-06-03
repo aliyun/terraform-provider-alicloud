@@ -1,9 +1,14 @@
 ## 1.86.0 (Unreleased)
+
+- **Data Source:** `alicloud_waf_domains` ([#2498](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2498))
+
 ## 1.85.0 (May 29, 2020)
 
 - **New Resource:** `alicloud_alidns_record` ([#2495](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2495))
 - **New Resource:** `alicloud_kms_key` ([#2444](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2444))
 - **New Resource:** `alicloud_kms_keyversion` ([#2471](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2471))
+- **Data Source:** `alicloud_resource_manager_policy_versions` ([#2496](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2496))
+- **Data Source:** `alicloud_kms_key_versions` ([#2494](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2494))
 - **Data Source:** `alicloud_alidns_domain_group` ([#2482](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2482))
 
 IMPROVEMENTS:
