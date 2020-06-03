@@ -342,6 +342,10 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("data_node_amount")
 	}
 
+	if d.HasChange("data_node_disk_encrypted") {
+		return WrapError(Error("At present, the value of 'data_node_disk_encrypted' can't be changed"))
+	}
+
 	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_type") {
 
 		if _, err := stateConf.WaitForState(); err != nil {
