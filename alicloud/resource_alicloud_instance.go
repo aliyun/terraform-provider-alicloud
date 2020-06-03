@@ -655,6 +655,9 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	target := d.Get("status").(string)
 	statusUpdate := d.HasChange("status")
+	if d.IsNewResource() && target == string(Running) {
+		statusUpdate = false
+	}
 	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate || statusUpdate {
 		run = true
 		instance, errDesc := ecsService.DescribeInstance(d.Id())
@@ -666,14 +669,23 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			stopRequest.RegionId = client.RegionId
 			stopRequest.InstanceId = d.Id()
 			stopRequest.ForceStop = requests.NewBoolean(false)
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.StopInstance(stopRequest)
+			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+					return ecsClient.StopInstance(stopRequest)
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) {
+						time.Sleep(time.Second)
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(stopRequest.GetActionName(), raw)
+				return nil
 			})
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), stopRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(stopRequest.GetActionName(), raw)
-
 			stateConf := BuildStateConf([]string{"Pending", "Running", "Stopping"}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
 
 			if _, err = stateConf.WaitForState(); err != nil {
