@@ -41,7 +41,7 @@ The following arguments are supported:
 
 * `architecture` - (Optional, ForceNew) Specifies the architecture of the system disk after you specify a data disk snapshot as the data source of the system disk for creating an image. Valid values: `i386` , Default is `x86_64`.
 * `description` - (Optional) Description of the image. The length is 2 to 256 English or Chinese characters, and cannot begin with http: // and https: //.
-* `image_name` - (Optional) The image name. The length is 2 ~ 128 English or Chinese characters. Must start with a capital letter or Chinese, and cannot start with http: // and https: //. Can contain numbers, colons (:), underscores (_), or hyphens (-).
+* `image_name` - (Optional) The image name. The length is 2 ~ 128 English or Chinese characters. Must start with a english letter or Chinese, and cannot start with http: // and https: //. Can contain numbers, colons (:), underscores (_), or hyphens (-).
 * `license_type` - (Optional, ForceNew) 
 * `platform` - (Optional, ForceNew) Specifies the operating system platform of the system disk after you specify a data disk snapshot as the data source of the system disk for creating an image. Valid values: `CentOS`, `Ubuntu`, `SUSE`, `OpenSUSE`, `Debian`, `CoreOS`, `Windows Server 2003`, `Windows Server 2008`, `Windows Server 2012`, `Windows 7`, Default is `Others Linux`, `Customized Linux`.
 * `os_type` - (Optional, ForceNew) Operating system platform type. Valid values: `windows`, Default is `linux`.
