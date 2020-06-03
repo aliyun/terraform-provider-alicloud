@@ -70,6 +70,7 @@ The following arguments are supported:
 * `instance_type` - (Required) DB Instance type. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
 * `instance_storage` - (Required) User-defined DB instance storage space. Value range: [5, 2000] for MySQL/SQL Server HA dual node edition. Increase progressively at a rate of 5 GB. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
+* `resource_group_id` (Optional, ForceNew, Computed, Available in 1.86.0+) The ID of resource group which the DB read-only instance belongs.
 * `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm).
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance.
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
