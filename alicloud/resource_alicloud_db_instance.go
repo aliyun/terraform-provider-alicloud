@@ -202,6 +202,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ValidateFunc: validation.IntInSlice([]int{30, 180, 365, 1095, 1825}),
 				Default:      30,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -552,6 +558,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
+	d.Set("resource_group_id", instance.ResourceGroupId)
 	d.Set("monitoring_period", monitoringPeriod)
 
 	d.Set("security_ips", ips)
@@ -679,6 +686,10 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 	request.DBInstanceNetType = string(Intranet)
 	request.DBInstanceDescription = d.Get("instance_name").(string)
 	request.DBInstanceStorageType = d.Get("db_instance_storage_type").(string)
+
+	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+		request.ResourceGroupId = v.(string)
+	}
 
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
 		request.ZoneId = Trim(zone.(string))
