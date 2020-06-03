@@ -104,6 +104,13 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Computed: true,
 			},
 			"tags": tagsSchema(),
+
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -264,6 +271,7 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("vswitch_id", instance.VSwitchId)
 	d.Set("connection_string", instance.ConnectionString)
 	d.Set("instance_name", instance.DBInstanceDescription)
+	d.Set("resource_group_id", instance.ResourceGroupId)
 
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
 		return err
@@ -341,6 +349,10 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (*rd
 	request.DBInstanceStorage = requests.NewInteger(d.Get("instance_storage").(int))
 	request.DBInstanceClass = Trim(d.Get("instance_type").(string))
 	request.DBInstanceDescription = d.Get("instance_name").(string)
+
+	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+		request.ResourceGroupId = v.(string)
+	}
 
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
 		request.ZoneId = Trim(zone.(string))
