@@ -78,7 +78,6 @@ resource "alicloud_ess_scaling_group" "default" {
   max_size = "2"
   scaling_group_name = "${var.name}"
   vswitch_ids = ["${alicloud_vswitch.default.id}"]
-  depends_on = ["alicloud_slb_listener.default"]
 }
 
 resource "alicloud_ess_scalinggroup_vserver_groups" "default" {
