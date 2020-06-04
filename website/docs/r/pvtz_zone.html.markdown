@@ -36,6 +36,7 @@ The following arguments are supported:
 
 * `user_client_ip` - (Optional, Available in 1.69.0+) The IP address of the client.
 * `lang` - (Optional, Available in 1.69.0+) The language. Valid values: "zh", "en", "jp".
+* `resource_group_id` - (Optional, ForceNew, Available in v1.86.0+) The Id of resource group which the Private Zone belongs.
 
 ## Attributes Reference
 
