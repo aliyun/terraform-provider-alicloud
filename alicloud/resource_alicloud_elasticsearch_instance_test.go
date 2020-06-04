@@ -475,6 +475,67 @@ func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudElasticsearchInstance_encrypt_disk(t *testing.T) {
+	var instance *elasticsearch.DescribeInstanceResponse
+
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := resourceAttrInit(resourceId, elasticsearchMap)
+
+	serviceFunc := func() interface{} {
+		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	if len(name) > 30 {
+		name = name[:30]
+	}
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":              name,
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids[0]}",
+					"version":                  "5.5.3_with_X-Pack",
+					"password":                 "Yourpassword1234",
+					"data_node_spec":           DataNodeSpec,
+					"data_node_amount":         DataNodeAmountForMultiZone,
+					"data_node_disk_size":      DataNodeDisk,
+					"data_node_disk_type":      DataNodeDiskType,
+					"data_node_disk_encrypted": "true",
+					"instance_charge_type":     string(PostPaid),
+					"master_node_spec":         MasterNodeSpec,
+					"zone_count":               DefaultZoneAmount,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":              name,
+						"version":                  "5.5.3_with_X-Pack",
+						"data_node_amount":         DataNodeAmountForMultiZone,
+						"data_node_disk_encrypted": "true",
+						"master_node_spec":         MasterNodeSpec,
+						"zone_count":               DefaultZoneAmount,
+					}),
+				),
+			},
+		},
+	})
+}
+
 var elasticsearchMap = map[string]string{
 	"description":          CHECKSET,
 	"data_node_spec":       DataNodeSpec,
