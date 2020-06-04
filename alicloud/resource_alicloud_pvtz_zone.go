@@ -62,6 +62,11 @@ func resourceAlicloudPvtzZone() *schema.Resource {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -82,6 +87,9 @@ func resourceAlicloudPvtzZoneCreate(d *schema.ResourceData, meta interface{}) er
 	}
 	if v, ok := d.GetOk("lang"); ok && v.(string) != "" {
 		request.Lang = v.(string)
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+		request.ResourceGroupId = v.(string)
 	}
 	// API AddZone has a throttling limitation 5qps which one use only can send 5 requests in one second.
 	var response *pvtz.AddZoneResponse
