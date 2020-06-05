@@ -39,9 +39,9 @@ func resourceAlicloudDdoscooSchedulerRule() *schema.Resource {
 				ForceNew: true,
 			},
 			"rule_type": {
-				Type:         schema.TypeString,
+				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"2", "3", "6"}, false),
+				ValidateFunc: validation.IntInSlice([]int{2, 3, 6}),
 			},
 			"rules": {
 				Type:     schema.TypeSet,
