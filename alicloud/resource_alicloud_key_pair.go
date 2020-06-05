@@ -36,23 +36,26 @@ func resourceAlicloudKeyPair() *schema.Resource {
 				ConflictsWith: []string{"key_name_prefix"},
 			},
 			"key_name_prefix": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(0, 100),
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"key_name"},
+				ValidateFunc:  validation.StringLenBetween(0, 100),
 			},
 			"resource_group_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"public_key"},
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("public_key").(string) != ""
 				},
 			},
 			"public_key": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"resource_group_id", "key_file"},
 				StateFunc: func(v interface{}) string {
 					switch v.(type) {
 					case string:
@@ -63,9 +66,10 @@ func resourceAlicloudKeyPair() *schema.Resource {
 				},
 			},
 			"key_file": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"public_key"},
 			},
 			"finger_print": {
 				Type:     schema.TypeString,
