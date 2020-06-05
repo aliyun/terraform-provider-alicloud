@@ -172,6 +172,12 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				ValidateFunc: validation.IntBetween(1, 3),
 				Default:      1,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -249,6 +255,7 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 
 	// Cross zone configuration
 	d.Set("zone_count", object.Result.ZoneCount)
+	d.Set("resource_group_id", object.Result.ResourceGroupId)
 
 	// tags
 	tags, err := elasticsearchService.DescribeElasticsearchTags(d.Id())
@@ -438,6 +445,9 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 	vpcService := VpcService{client}
 
 	content := make(map[string]interface{})
+	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+		content["resourceGroupId"] = v.(string)
+	}
 
 	content["paymentType"] = strings.ToLower(d.Get("instance_charge_type").(string))
 	if d.Get("instance_charge_type").(string) == string(PrePaid) {
