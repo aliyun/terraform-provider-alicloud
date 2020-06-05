@@ -518,6 +518,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_policy_version":     resourceAlicloudResourceManagerPolicyVersion(),
 			"alicloud_kms_key_version":                     resourceAlicloudKmsKeyVersion(),
 			"alicloud_alidns_record":                       resourceAlicloudAlidnsRecord(),
+			"alicloud_ddoscoo_scheduler_rule":              resourceAlicloudDdoscooSchedulerRule(),
 		},
 
 		ConfigureFunc: providerConfigure,
