@@ -39,15 +39,24 @@ func resourceAlicloudDdoscooSchedulerRule() *schema.Resource {
 				ForceNew: true,
 			},
 			"rule_type": {
-				Type:         schema.TypeString,
+				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"2", "3", "6"}, false),
+				ValidateFunc: validation.IntInSlice([]int{2, 3, 6}),
 			},
 			"rules": {
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"status": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"A", "CNAME"}, false),
+						},
 						"value": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -64,15 +73,6 @@ func resourceAlicloudDdoscooSchedulerRule() *schema.Resource {
 						"region_id": {
 							Type:     schema.TypeString,
 							Optional: true,
-						},
-						"status": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"A", "CNAME"}, false),
 						},
 					},
 				},
@@ -93,11 +93,7 @@ func resourceAlicloudDdoscooSchedulerRuleCreate(d *schema.ResourceData, meta int
 		request.ResourceGroupId = v.(string)
 	}
 	request.RuleName = d.Get("rule_name").(string)
-	rule_type, err := strconv.Atoi(d.Get("rule_type").(string))
-	if err != nil {
-		return WrapError(err)
-	}
-	request.RuleType = requests.NewInteger(rule_type)
+	request.RuleType = requests.NewInteger(d.Get("rule_type").(int))
 	rules, err := ddoscooService.convertRulesToString(d.Get("rules").(*schema.Set).List())
 	if err != nil {
 		return WrapError(err)
@@ -129,7 +125,8 @@ func resourceAlicloudDdoscooSchedulerRuleRead(d *schema.ResourceData, meta inter
 
 	d.Set("rule_name", d.Id())
 	d.Set("cname", object.Cname)
-	d.Set("rule_type", object.RuleType)
+	rule_type, _ := strconv.Atoi(object.RuleType)
+	d.Set("rule_type", rule_type)
 	rules := make([]map[string]interface{}, len(object.Rules))
 	for i, v := range object.Rules {
 		rules[i] = map[string]interface{}{
@@ -155,11 +152,7 @@ func resourceAlicloudDdoscooSchedulerRuleUpdate(d *schema.ResourceData, meta int
 	if d.HasChange("rule_type") {
 		update = true
 	}
-	rule_type, err := strconv.Atoi(d.Get("rule_type").(string))
-	if err != nil {
-		return WrapError(err)
-	}
-	request.RuleType = requests.NewInteger(rule_type)
+	request.RuleType = requests.NewInteger(d.Get("rule_type").(int))
 	if d.HasChange("rules") {
 		update = true
 	}
