@@ -1,34 +1,34 @@
-## 1.86.0 (Unreleased)
+## 1.86.0 (June 05, 2020)
 
-- **New Resource:** `alicloud_container_registry_enterprise_repo` [GH-2525]
-- **New Resource:** `alicloud_Container_registry_enterprise_namespace` [GH-2519]
-- **New Resource:** `alicloud_ddoscoo_scheduler_rule` [GH-2476]
-- **New Resource:** `alicloud_resource_manager_policies` [GH-2474]
+- **New Resource:** `alicloud_container_registry_enterprise_repo` ([#2525](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2525))
+- **New Resource:** `alicloud_Container_registry_enterprise_namespace` ([#2519](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2519))
+- **New Resource:** `alicloud_ddoscoo_scheduler_rule` ([#2476](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2476))
+- **New Resource:** `alicloud_resource_manager_policies` ([#2474](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2474))
 - **Data Source:** `alicloud_waf_domains` ([#2498](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2498))
-- **Data Source:** `alicloud_kms_secrets` [GH-2515]
-- **Data Source:** `alicloud_alidns_domain_records` [GH-2503]
-- **Data Source:** `alicloud_resource_manager_resource_directories` [GH-2499]
-- **Data Source:** `alicloud_resource_manager_handshakes` [GH-2489]
-- **Data Source:** `alicloud_resource_manager_accounts` [GH-2488]
-- **Data Source:** `alicloud_resource_manager_roles` [GH-2483]
+- **Data Source:** `alicloud_kms_secrets` ([#2515](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2515))
+- **Data Source:** `alicloud_alidns_domain_records` ([#2503](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2503))
+- **Data Source:** `alicloud_resource_manager_resource_directories` ([#2499](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2499))
+- **Data Source:** `alicloud_resource_manager_handshakes` ([#2489](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2489))
+- **Data Source:** `alicloud_resource_manager_accounts` ([#2488](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2488))
+- **Data Source:** `alicloud_resource_manager_roles` ([#2483](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2483))
 
 IMPROVEMENTS:
-- support "resource_group_id" for Elasticsearch instance [GH-2528]
-- Added new feature of encrypting data node disk [GH-2521]
-- support "resource_group_id" for Private Zone [GH-2518]
-- support "resource_group_id" for DB instance [GH-2514]
-- 更新sdk到v1.61.230 [GH-2510]
-- support "resource_group_id" for kvstore instance [GH-2509]
-- Add Log Dashboard [GH-2502]
-- UPDATE CHANGELOG [GH-2497]
-- Control the instance start and stop through the status attribute [GH-2464]
+- support "resource_group_id" for Elasticsearch instance ([#2528](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2528))
+- Added new feature of encrypting data node disk ([#2521](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2521))
+- support "resource_group_id" for Private Zone ([#2518](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2518))
+- support "resource_group_id" for DB instance ([#2514](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2514))
+- 更新sdk到v1.61.230 ([#2510](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2510))
+- support "resource_group_id" for kvstore instance ([#2509](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2509))
+- Add Log Dashboard ([#2502](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2502))
+- UPDATE CHANGELOG ([#2497](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2497))
+- Control the instance start and stop through the status attribute ([#2464](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2464))
 
 BUG FIXES:
-- fix_markdown_image_import [GH-2516]
-- fix ecs 'status' attribute bug [GH-2512]
-- fix_markdown_ess_scalinggroup_vserver_groups [GH-2508]
-- fix_markdown_disk_attachment [GH-2501]
-- fix_markdown_disk_attachment [GH-2481]
+- fix_markdown_image_import ([#2516](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2516))
+- fix ecs 'status' attribute bug ([#2512](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2512))
+- fix_markdown_ess_scalinggroup_vserver_groups ([#2508](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2508))
+- fix_markdown_disk_attachment ([#2501](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2501))
+- fix_markdown_disk_attachment ([#2481](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2481))
 
 ## 1.85.0 (May 29, 2020)
 
