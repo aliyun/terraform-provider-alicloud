@@ -143,6 +143,7 @@ type AliyunClient struct {
 	resourcemanagerConn          *resourcemanager.Client
 	bssopenapiConn               *bssopenapi.Client
 	alidnsConn                   *alidns.Client
+	ddoscooConn                  *ddoscoo.Client
 }
 
 type ApiVersion string

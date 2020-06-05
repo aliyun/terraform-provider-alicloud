@@ -1,8 +1,10 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"strconv"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -121,4 +123,48 @@ func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, 
 		return WrapError(Error(response.Message))
 	}
 	return nil
+}
+
+func (s *DdoscooService) convertRulesToString(v []interface{}) (string, error) {
+	arrayMaps := make([]ddoscoo.Rule, len(v))
+	for i, vv := range v {
+		item := vv.(map[string]interface{})
+		arrayMaps[i] = ddoscoo.Rule{
+			Priority:  item["priority"].(int),
+			RegionId:  item["region_id"].(string),
+			Status:    item["status"].(int),
+			Type:      item["type"].(string),
+			Value:     item["value"].(string),
+			ValueType: item["value_type"].(int),
+		}
+	}
+	maps, err := json.Marshal(arrayMaps)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return string(maps), nil
+}
+
+func (s *DdoscooService) DescribeDdoscooSchedulerRule(id string) (object ddoscoo.SchedulerRule, err error) {
+	request := ddoscoo.CreateDescribeSchedulerRulesRequest()
+	request.RegionId = s.client.RegionId
+
+	request.RuleName = id
+	request.PageSize = requests.NewInteger(10)
+
+	raw, err := s.client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+		return ddoscooClient.DescribeSchedulerRules(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*ddoscoo.DescribeSchedulerRulesResponse)
+
+	if len(response.SchedulerRules) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("DdoscooSchedulerRule", id)), NotFoundMsg, ProviderERROR)
+		return
+	}
+	return response.SchedulerRules[0], nil
 }
