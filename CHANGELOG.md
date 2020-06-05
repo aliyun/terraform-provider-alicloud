@@ -1,6 +1,34 @@
 ## 1.86.0 (Unreleased)
 
+- **New Resource:** `alicloud_container_registry_enterprise_repo` [GH-2525]
+- **New Resource:** `alicloud_Container_registry_enterprise_namespace` [GH-2519]
+- **New Resource:** `alicloud_ddoscoo_scheduler_rule` [GH-2476]
+- **New Resource:** `alicloud_resource_manager_policies` [GH-2474]
 - **Data Source:** `alicloud_waf_domains` ([#2498](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2498))
+- **Data Source:** `alicloud_kms_secrets` [GH-2515]
+- **Data Source:** `alicloud_alidns_domain_records` [GH-2503]
+- **Data Source:** `alicloud_resource_manager_resource_directories` [GH-2499]
+- **Data Source:** `alicloud_resource_manager_handshakes` [GH-2489]
+- **Data Source:** `alicloud_resource_manager_accounts` [GH-2488]
+- **Data Source:** `alicloud_resource_manager_roles` [GH-2483]
+
+IMPROVEMENTS:
+- support "resource_group_id" for Elasticsearch instance [GH-2528]
+- Added new feature of encrypting data node disk [GH-2521]
+- support "resource_group_id" for Private Zone [GH-2518]
+- support "resource_group_id" for DB instance [GH-2514]
+- 更新sdk到v1.61.230 [GH-2510]
+- support "resource_group_id" for kvstore instance [GH-2509]
+- Add Log Dashboard [GH-2502]
+- UPDATE CHANGELOG [GH-2497]
+- Control the instance start and stop through the status attribute [GH-2464]
+
+BUG FIXES:
+- fix_markdown_image_import [GH-2516]
+- fix ecs 'status' attribute bug [GH-2512]
+- fix_markdown_ess_scalinggroup_vserver_groups [GH-2508]
+- fix_markdown_disk_attachment [GH-2501]
+- fix_markdown_disk_attachment [GH-2481]
 
 ## 1.85.0 (May 29, 2020)
 
