@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
@@ -48,15 +47,6 @@ func resourceAlicloudDdoscooSchedulerRule() *schema.Resource {
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"value": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"value_type": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 6}),
-						},
 						"priority": {
 							Type:     schema.TypeInt,
 							Optional: true,
@@ -73,6 +63,15 @@ func resourceAlicloudDdoscooSchedulerRule() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ValidateFunc: validation.StringInSlice([]string{"A", "CNAME"}, false),
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value_type": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 6}),
 						},
 					},
 				},
@@ -93,11 +92,7 @@ func resourceAlicloudDdoscooSchedulerRuleCreate(d *schema.ResourceData, meta int
 		request.ResourceGroupId = v.(string)
 	}
 	request.RuleName = d.Get("rule_name").(string)
-	rule_type, err := strconv.Atoi(d.Get("rule_type").(string))
-	if err != nil {
-		return WrapError(err)
-	}
-	request.RuleType = requests.NewInteger(rule_type)
+	request.RuleType = requests.NewInteger(d.Get("rule_type").(int))
 	rules, err := ddoscooService.convertRulesToString(d.Get("rules").(*schema.Set).List())
 	if err != nil {
 		return WrapError(err)
@@ -155,11 +150,7 @@ func resourceAlicloudDdoscooSchedulerRuleUpdate(d *schema.ResourceData, meta int
 	if d.HasChange("rule_type") {
 		update = true
 	}
-	rule_type, err := strconv.Atoi(d.Get("rule_type").(string))
-	if err != nil {
-		return WrapError(err)
-	}
-	request.RuleType = requests.NewInteger(rule_type)
+	request.RuleType = requests.NewInteger(d.Get("rule_type").(int))
 	if d.HasChange("rules") {
 		update = true
 	}
