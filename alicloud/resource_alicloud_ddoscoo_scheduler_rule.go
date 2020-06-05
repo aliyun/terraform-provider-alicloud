@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
@@ -47,14 +48,6 @@ func resourceAlicloudDdoscooSchedulerRule() *schema.Resource {
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"priority": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-						"region_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
 						"status": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -72,6 +65,14 @@ func resourceAlicloudDdoscooSchedulerRule() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 6}),
+						},
+						"priority": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"region_id": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 					},
 				},
@@ -124,7 +125,8 @@ func resourceAlicloudDdoscooSchedulerRuleRead(d *schema.ResourceData, meta inter
 
 	d.Set("rule_name", d.Id())
 	d.Set("cname", object.Cname)
-	d.Set("rule_type", object.RuleType)
+	rule_type, _ := strconv.Atoi(object.RuleType)
+	d.Set("rule_type", rule_type)
 	rules := make([]map[string]interface{}, len(object.Rules))
 	for i, v := range object.Rules {
 		rules[i] = map[string]interface{}{
