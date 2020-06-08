@@ -54,5 +54,5 @@ The following attributes are exported:
 Snapshot can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_snapshot.snapshot s-abc1234567890000
+$ terraform import alicloud_snapshot_policy.snapshot sp-abc1234567890000
 ```
