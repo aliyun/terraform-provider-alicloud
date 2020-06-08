@@ -62,6 +62,11 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"tags": tagsSchema(),
+
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -164,6 +169,13 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			return WrapError(err)
 		}
 		d.SetPartial("description")
+	}
+
+	if d.HasChange("resource_group_id") {
+		if err := bastionhostService.UpdateResourceGroup(d.Id(), d.Get("resource_group_id").(string)); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("resource_group_id")
 	}
 
 	if d.IsNewResource() {

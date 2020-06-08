@@ -42,6 +42,7 @@ const (
 		],
 		"Version": "1"
 	}`
+	BastionhostResourceType = "INSTANCE"
 )
 
 var bastionhostpolicyRequired = []BastionhostPolicyRequired{
@@ -422,4 +423,20 @@ func (s *bastionhostService) tagsFromMap(m map[string]interface{}) []yundun_bast
 	}
 
 	return result
+}
+
+func (s *bastionhostService) UpdateResourceGroup(resourceId, resourceGroupId string) error {
+	request := yundun_bastionhost.CreateMoveResourceGroupRequest()
+	request.RegionId = s.client.RegionId
+	request.ResourceId = resourceId
+	request.ResourceType = BastionhostResourceType
+	request.ResourceGroupId = resourceGroupId
+	raw, err := s.client.WithBastionhostClient(func(BastionhostClient *yundun_bastionhost.Client) (interface{}, error) {
+		return BastionhostClient.MoveResourceGroup(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	return nil
 }

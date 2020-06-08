@@ -134,6 +134,7 @@ func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
 					"period":             "1",
 					"vswitch_id":         "${alicloud_vswitch.default.id}",
 					"security_group_ids": []string{"${alicloud_security_group.default.0.id}"},
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -147,6 +148,16 @@ func TestAccAlicloudYundunBastionhostInstance_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: false,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -285,6 +296,10 @@ func resourceBastionhostInstanceDependence(name string) string {
 	return fmt.Sprintf(
 		`data "alicloud_zones" "default" {
 				  available_resource_creation = "VSwitch"
+				}
+
+				data "alicloud_resource_manager_resource_groups" "default"{
+					status="OK"
 				}
 				
 				variable "name" {
