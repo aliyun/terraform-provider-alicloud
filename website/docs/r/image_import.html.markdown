@@ -54,7 +54,7 @@ The following arguments are supported:
 
 -> **NOTE:** The disk_device_mapping is a list and it's first item will be used to system disk and other items are used to data disks.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
@@ -62,13 +62,13 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 * `delete` - (Defaults to 20 mins) Used when terminating the image.
    
    
- ## Attributes Reference0
+## Attributes Reference0
  
  The following attributes are exported:
  
 * `id` - ID of the image.
 
- ## Import
+## Import
  
 image can be imported using the id, e.g.
 

@@ -36,13 +36,13 @@ The following arguments are supported:
 * `account_id` - (Required, ForceNew) Alibaba Cloud Account ID. It is used to share images.
    
    
- ## Attributes Reference0
+## Attributes Reference0
  
  The following attributes are exported:
  
 * `id` - ID of the image. It formats as `<image_id>:<account_id>`
 
- ## Import
+## Import
  
 image can be imported using the id, e.g.
 

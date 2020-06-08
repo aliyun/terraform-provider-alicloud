@@ -56,7 +56,7 @@ The following arguments are supported:
   - true：Force deletes the custom image, regardless of whether the image is currently being used by other instances.
   - false：Verifies that the image is not currently in use by any other instances before deleting the image.
    
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
@@ -64,13 +64,13 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 * `delete` - (Defaults to 10 mins) Used when terminating the image.
    
    
- ## Attributes Reference
+## Attributes Reference
  
  The following attributes are exported:
  
 * `id` - ID of the image.
 
- ## Import
+## Import
  
  image can be imported using the id, e.g.
 

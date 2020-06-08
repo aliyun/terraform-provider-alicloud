@@ -37,14 +37,14 @@ The following arguments are supported:
 * `oss_bucket` - (Required, ForceNew) Save the exported OSS bucket.
 * `oss_prefix` - (Optional, ForceNew) The prefix of your OSS Object. It can be composed of numbers or letters, and the character length is 1 ~ 30.
    
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when exporting the image (until it reaches the initial `Available` status). 
    
    
- ## Attributes Reference0
+## Attributes Reference0
  
  The following attributes are exported:
  
