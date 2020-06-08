@@ -46,6 +46,7 @@ The following arguments are supported:
 * `vswitch_id` - (Required, ForceNew) vSwtich ID configured to bastionhost
 * `security_group_ids` - (Required) security group IDs configured to bastionhost
 * `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
+* `resource_group_id` - (Optional, Available in v1.87.0+) The Id of resource group which the Bastionhost Instance belongs. If not set, the resource is created in the default resource group.
 
 ## Attributes Reference
 
