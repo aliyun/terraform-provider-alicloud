@@ -41,7 +41,7 @@ The following arguments are supported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 10 mins) Used when exporting the image (until it reaches the initial `Available` status). 
+* `create` - (Defaults to 20 mins) Used when exporting the image (until it reaches the initial `Available` status). 
    
    
  ## Attributes Reference0
