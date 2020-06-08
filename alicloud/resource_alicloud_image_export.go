@@ -17,7 +17,7 @@ func resourceAliCloudImageExport() *schema.Resource {
 		Read:   resourceAliCloudImageExportRead,
 		Delete: resourceAliCloudImageExportDelete,
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(20 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"image_id": {
@@ -59,7 +59,7 @@ func resourceAliCloudImageExportCreate(d *schema.ResourceData, meta interface{})
 	response := raw.(*ecs.ExportImageResponse)
 	taskId := response.TaskId
 	d.SetId(request.ImageId)
-	stateConf := BuildStateConf([]string{"Waiting"}, []string{"Finished"}, d.Timeout(schema.TimeoutCreate), 2*time.Minute, ecsService.TaskStateRefreshFunc(taskId, []string{"CreateFailed", "UnAvailable"}))
+	stateConf := BuildStateConf([]string{"Waiting", "Processing"}, []string{"Finished"}, d.Timeout(schema.TimeoutCreate), 2*time.Minute, ecsService.TaskStateRefreshFunc(taskId, []string{"CreateFailed", "UnAvailable"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
