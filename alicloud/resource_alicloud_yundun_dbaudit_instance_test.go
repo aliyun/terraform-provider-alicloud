@@ -131,10 +131,11 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}",
-					"plan_code":   "alpha.professional",
-					"period":      "1",
-					"vswitch_id":  "${alicloud_vswitch.default.id}",
+					"description":       "${var.name}",
+					"plan_code":         "alpha.professional",
+					"period":            "1",
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -165,6 +166,16 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -275,6 +286,10 @@ func resourceDbauditInstanceDependence(name string) string {
 		`  data "alicloud_zones" "default" {
     				available_resource_creation = "VSwitch"
 			  }
+				
+				data "alicloud_resource_manager_resource_groups" "default"{
+					status="OK"
+				}
 
 			  variable "name" {
 				default = "%s"

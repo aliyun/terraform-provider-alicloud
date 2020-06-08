@@ -42,6 +42,7 @@ const (
 		],
 		"Version": "1"
 	}`
+	DBauditResourceType = "INSTANCE"
 )
 
 var policyRequired = []PolicyRequired{
@@ -414,4 +415,20 @@ func (s *DbauditService) tagsFromMap(m map[string]interface{}) []yundun_dbaudit.
 	}
 
 	return result
+}
+
+func (s *DbauditService) UpdateResourceGroup(resourceId, resourceGroupId string) error {
+	request := yundun_dbaudit.CreateMoveResourceGroupRequest()
+	request.RegionId = s.client.RegionId
+	request.ResourceId = resourceId
+	request.ResourceType = DBauditResourceType
+	request.ResourceGroupId = resourceGroupId
+	raw, err := s.client.WithDbauditClient(func(dbauditClient *yundun_dbaudit.Client) (interface{}, error) {
+		return dbauditClient.MoveResourceGroup(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	return nil
 }

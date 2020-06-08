@@ -44,6 +44,7 @@ The following arguments are supported:
 * `period` - (Required, ForceNew) Duration for initially producing the instance. Valid values: [1~9], 12, 24, 36. Default to 12. At present, the provider does not support modify "period".
 * `vswitch_id` - (Required, ForceNew) vSwtich ID configured to audit
 * `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
+* `resource_group_id` - (Optional, Available in v1.87.0+) The Id of resource group which the DBaudit Instance belongs. If not set, the resource is created in the default resource group.
 
 ## Attributes Reference
 

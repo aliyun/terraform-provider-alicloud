@@ -16,10 +16,10 @@ This data source provides the Resource Manager Resource Directories of the curre
 ## Example Usage
 
 ```
-data "alicloud_resource_manager_resource_directories" "defaule" {}
+data "alicloud_resource_manager_resource_directories" "default" {}
 
 output "resource_directory_id" {
-  value = "${data.alicloud_resource_manager_resource_directories.defaule.directories.0.id}"
+  value = "${data.alicloud_resource_manager_resource_directories.default.directories.0.id}"
 }
 ```
 
