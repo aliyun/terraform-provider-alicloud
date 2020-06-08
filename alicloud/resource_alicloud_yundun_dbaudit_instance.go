@@ -56,6 +56,11 @@ func resourceAlicloudDbauditInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"tags": tagsSchema(),
+
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -147,6 +152,13 @@ func resourceAlicloudDbauditInstanceUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 		d.SetPartial("description")
+	}
+
+	if d.HasChange("resource_group_id") {
+		if err := dbauditService.UpdateResourceGroup(d.Id(), d.Get("resource_group_id").(string)); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("resource_group_id")
 	}
 
 	if d.IsNewResource() {
