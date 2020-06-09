@@ -58,6 +58,7 @@ func TestAccAlicloudDBReadonlyInstance_update(t *testing.T) {
 					"instance_storage":      "${alicloud_db_instance.default.instance_storage}",
 					"instance_name":         "${var.name}",
 					"vswitch_id":            "${alicloud_vswitch.default.id}",
+					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -224,6 +225,10 @@ data "alicloud_db_instance_classes" "default" {
   instance_charge_type = "PostPaid"
   engine               = "MySQL"
   engine_version       = "5.6"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
 }
 
 	resource "alicloud_db_instance" "default" {
