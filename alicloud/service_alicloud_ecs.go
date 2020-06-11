@@ -1336,30 +1336,6 @@ func (s *EcsService) DescribeImageShareByImageId(id string) (imageShare *ecs.Des
 	return resp, nil
 }
 
-func (s *EcsService) WaitForAutoProvisioningGroup(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-
-	for {
-		object, err := s.DescribeAutoProvisioningGroup(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-		if object.Status == string(status) {
-			return nil
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
-		}
-	}
-}
-
 func (s *EcsService) DescribeAutoProvisioningGroup(id string) (group ecs.AutoProvisioningGroup, err error) {
 	request := ecs.CreateDescribeAutoProvisioningGroupsRequest()
 	ids := []string{id}

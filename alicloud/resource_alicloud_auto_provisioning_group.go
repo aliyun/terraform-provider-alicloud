@@ -302,7 +302,6 @@ func resourceAlicloudAutoProvisioningGroupUpdate(d *schema.ResourceData, meta in
 
 func resourceAlicloudAutoProvisioningGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ecsService := EcsService{client}
 
 	request := ecs.CreateDeleteAutoProvisioningGroupRequest()
 	request.RegionId = client.RegionId
@@ -321,7 +320,7 @@ func resourceAlicloudAutoProvisioningGroupDelete(d *schema.ResourceData, meta in
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	return WrapError(ecsService.WaitForAutoProvisioningGroup(d.Id(), "deleted", DefaultTimeout))
+	return nil
 }
 
 func buildAlicloudAutoProvisioningGroupArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateAutoProvisioningGroupRequest, error) {
