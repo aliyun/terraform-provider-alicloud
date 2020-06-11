@@ -292,6 +292,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kms_secrets":                           dataSourceAlicloudKmsSecrets(),
 			"alicloud_cen_route_maps":                        dataSourceAlicloudCenRouteMaps(),
 			"alicloud_cen_private_zones":                     dataSourceAlicloudCenPrivateZones(),
+			"alicloud_dms_enterprise_instances":              dataSourceAlicloudDmsEnterpriseInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
