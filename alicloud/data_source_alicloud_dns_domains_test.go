@@ -15,69 +15,69 @@ func TestAccAlicloudDnsDomainsDataSource(t *testing.T) {
 	aliDomainConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ali_domain":        "false",
-			"domain_name_regex": "${alicloud_dns.default.name}",
+			"domain_name_regex": "${alicloud_dns_domain.default.domain_name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ali_domain":        "true",
-			"domain_name_regex": "${alicloud_dns.default.name}",
+			"domain_name_regex": "${alicloud_dns_domain.default.domain_name}",
 		}),
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_dns.default.domain_id}"},
+			"ids": []string{"${alicloud_dns_domain.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_dns.default.domain_id}-fake"},
+			"ids": []string{"${alicloud_dns_domain.default.id}-fake"},
 		}),
 	}
 	groupNameConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ali_domain":        "false",
 			"group_name_regex":  "${alicloud_dns_group.default.name}",
-			"domain_name_regex": "${alicloud_dns.default.name}",
+			"domain_name_regex": "${alicloud_dns_domain.default.domain_name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ali_domain":        "false",
 			"group_name_regex":  "${alicloud_dns_group.default.name}_fake",
-			"domain_name_regex": "${alicloud_dns.default.name}",
+			"domain_name_regex": "${alicloud_dns_domain.default.domain_name}",
 		}),
 	}
 	instanceIdConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name_regex": "${alicloud_dns.default.name}",
+			"domain_name_regex": "${alicloud_dns_domain.default.domain_name}",
 			"instance_id":       "",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"domain_name_regex": "${alicloud_dns.default.name}",
+			"domain_name_regex": "${alicloud_dns_domain.default.domain_name}",
 			"instance_id":       "fake",
 		}),
 	}
 	versionCodeConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name_regex": "${alicloud_dns.default.name}",
+			"domain_name_regex": "${alicloud_dns_domain.default.domain_name}",
 			"version_code":      "mianfei",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"domain_name_regex": "${alicloud_dns.default.name}",
+			"domain_name_regex": "${alicloud_dns_domain.default.domain_name}",
 			"version_code":      "bumianfei",
 		}),
 	}
 
 	resourceGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name_regex": "${alicloud_dns.default.name}",
+			"domain_name_regex": "${alicloud_dns_domain.default.domain_name}",
 			"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"domain_name_regex": "${alicloud_dns.default.name}",
+			"domain_name_regex": "${alicloud_dns_domain.default.domain_name}",
 			"resource_group_id": fmt.Sprintf("%s_fake", os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"domain_name_regex": "${alicloud_dns.default.name}",
-			"ids":               []string{"${alicloud_dns.default.domain_id}"},
+			"domain_name_regex": "${alicloud_dns_domain.default.domain_name}",
+			"ids":               []string{"${alicloud_dns_domain.default.id}"},
 			"version_code":      "mianfei",
 			"instance_id":       "",
 			"ali_domain":        "false",
@@ -85,8 +85,8 @@ func TestAccAlicloudDnsDomainsDataSource(t *testing.T) {
 			"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"domain_name_regex": "${alicloud_dns.default.name}",
-			"ids":               []string{"${alicloud_dns.default.domain_id}"},
+			"domain_name_regex": "${alicloud_dns_domain.default.domain_name}",
+			"ids":               []string{"${alicloud_dns_domain.default.id}"},
 			"version_code":      "mianfei",
 			"instance_id":       "",
 			"ali_domain":        "true",
@@ -111,8 +111,8 @@ resource "alicloud_dns_group" "default" {
   name = "${var.dnsGroupName}"
 }
 
-resource "alicloud_dns" "default" {
-	name = "${var.dnsName}"
+resource "alicloud_dns_domain" "default" {
+	domain_name = "${var.dnsName}"
 	group_id = "${alicloud_dns_group.default.id}"
 	resource_group_id = "%s"
 }
