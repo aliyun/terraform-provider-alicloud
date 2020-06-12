@@ -704,7 +704,9 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 		request.InstanceNetworkType = strings.ToUpper(string(Vpc))
 
 		// check vswitchId in zone
-		vsw, err := vpcService.DescribeVSwitch(vswitchId)
+		v := strings.Split(vswitchId, COMMA_SEPARATED)[0]
+
+		vsw, err := vpcService.DescribeVSwitch(v)
 		if err != nil {
 			return nil, WrapError(err)
 		}
@@ -712,6 +714,11 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 		if request.ZoneId == "" {
 			request.ZoneId = vsw.ZoneId
 		}
+
+		if request.VPCId == "" {
+			request.VPCId = vsw.VpcId
+		}
+
 		//else if strings.Contains(request.ZoneId, MULTI_IZ_SYMBOL) {
 		//	zonestr := strings.Split(strings.SplitAfter(request.ZoneId, "(")[1], ")")[0]
 		//	if !strings.Contains(zonestr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
@@ -720,8 +727,6 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 		//} else if request.ZoneId != vsw.ZoneId {
 		//	return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
 		//}
-
-		request.VPCId = vsw.VpcId
 	}
 
 	request.PayType = Trim(d.Get("instance_charge_type").(string))
