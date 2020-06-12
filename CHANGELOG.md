@@ -1,29 +1,29 @@
-## 1.87.0 (Unreleased)
+## 1.87.0 (June 12, 2020)
 
-- **Data Source:** `alicloud_container_registry_enterprise_repos` [GH-2538]
-- **Data Source:** `alicloud_container_registry_enterprise_namespaces` [GH-2530]
-- **Data Source:** `alicloud_container_registry_enterprise_instances` [GH-2526]
-- **Data Source:** `alicloud_cen_route_maps` [GH-2554]
+- **Data Source:** `alicloud_container_registry_enterprise_repos` ([#2538](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2538))
+- **Data Source:** `alicloud_container_registry_enterprise_namespaces` ([#2530](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2530))
+- **Data Source:** `alicloud_container_registry_enterprise_instances` ([#2526](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2526))
+- **Data Source:** `alicloud_cen_route_maps` ([#2554](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2554))
 
 IMPROVEMENTS:
 
-- adapter schedulerrule [GH-2537]
-- UPDATE CHANHELOG [GH-2535]
-- improve_user_experience [GH-2491]
-- add testcase [GH-2556]
-- improve(elasticsearch): resource support to open or close network, and modify the kibana whitelist in private network [GH-2548]
-- support "resource_group_id" for Bastionhost Instance [GH-2544]
-- support "resource_group_id" for DBaudit Instance [GH-2539]
-- Automatically generate dns_domain datasource [GH-2549]
+- adapter schedulerrule ([#2537](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2537))
+- UPDATE CHANHELOG ([#2535](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2535))
+- improve_user_experience ([#2491](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2491))
+- add testcase ([#2556](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2556))
+- improve(elasticsearch): resource support to open or close network, and modify the kibana whitelist in private network ([#2548](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2548))
+- support "resource_group_id" for Bastionhost Instance ([#2544](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2544))
+- support "resource_group_id" for DBaudit Instance ([#2539](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2539))
+- Automatically generate dns_domain datasource ([#2549](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2549))
 
 BUG FIXES:
 
-- Fix image export [GH-2542]
-- fix: perf create rds pg [GH-2533]
-- fix_markdown_ess_scalinggroup [GH-2529]
-- fix_markdown_image_import [GH-2520]
-- fix_markdown_disk [GH-2504]
-- fix_markdown_image_s [GH-2546]
+- Fix image export ([#2542](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2542))
+- fix: perf create rds pg ([#2533](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2533))
+- fix_markdown_ess_scalinggroup ([#2529](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2529))
+- fix_markdown_image_import ([#2520](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2520))
+- fix_markdown_disk ([#2504](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2504))
+- fix_markdown_image_s ([#2546](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2546))
 
 ## 1.86.0 (June 05, 2020)
 
