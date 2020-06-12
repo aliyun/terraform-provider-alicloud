@@ -290,6 +290,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_handshakes":           dataSourceAlicloudResourceManagerHandshakes(),
 			"alicloud_waf_domains":                           dataSourceAlicloudWafDomains(),
 			"alicloud_kms_secrets":                           dataSourceAlicloudKmsSecrets(),
+			"alicloud_cen_route_maps":                        dataSourceAlicloudCenRouteMaps(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
