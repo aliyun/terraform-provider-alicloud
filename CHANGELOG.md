@@ -1,4 +1,30 @@
 ## 1.87.0 (Unreleased)
+
+- **Data Source:** `alicloud_container_registry_enterprise_repos` [GH-2538]
+- **Data Source:** `alicloud_container_registry_enterprise_namespaces` [GH-2530]
+- **Data Source:** `alicloud_container_registry_enterprise_instances` [GH-2526]
+- **Data Source:** `alicloud_cen_route_maps` [GH-2554]
+
+IMPROVEMENTS:
+
+- adapter schedulerrule [GH-2537]
+- UPDATE CHANHELOG [GH-2535]
+- improve_user_experience [GH-2491]
+- add testcase [GH-2556]
+- improve(elasticsearch): resource support to open or close network, and modify the kibana whitelist in private network [GH-2548]
+- support "resource_group_id" for Bastionhost Instance [GH-2544]
+- support "resource_group_id" for DBaudit Instance [GH-2539]
+- Automatically generate dns_domain datasource [GH-2549]
+
+BUG FIXES:
+
+- Fix image export [GH-2542]
+- fix: perf create rds pg [GH-2533]
+- fix_markdown_ess_scalinggroup [GH-2529]
+- fix_markdown_image_import [GH-2520]
+- fix_markdown_disk [GH-2504]
+- fix_markdown_image_s [GH-2546]
+
 ## 1.86.0 (June 05, 2020)
 
 - **New Resource:** `alicloud_container_registry_enterprise_repo` ([#2525](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2525))
