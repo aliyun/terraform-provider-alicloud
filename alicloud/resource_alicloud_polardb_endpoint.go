@@ -31,9 +31,9 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 			},
 			"endpoint_type": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Custom"}, false),
-				ForceNew:     true,
+				Computed:     true,
 			},
 			"nodes": {
 				Type:     schema.TypeSet,
@@ -66,11 +66,14 @@ func resourceAlicloudPolarDBEndpointCreate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	polarDBService := PolarDBService{client}
 	clusterId := d.Get("db_cluster_id").(string)
-	endpointType := d.Get("endpoint_type").(string)
 	request := polardb.CreateCreateDBClusterEndpointRequest()
 	request.RegionId = client.RegionId
 	request.DBClusterId = clusterId
-	request.EndpointType = endpointType
+	if endpointType, ok := d.GetOk("endpoint_type"); ok {
+		request.EndpointType = endpointType.(string)
+	} else {
+		request.EndpointType = "Custom"
+	}
 	if nodes, ok := d.GetOk("nodes"); ok {
 		nodes := expandStringList(nodes.(*schema.Set).List())
 		dbNodes := strings.Join(nodes, ",")
@@ -231,12 +234,24 @@ func resourceAlicloudPolarDBEndpointDelete(d *schema.ResourceData, meta interfac
 	if errParse != nil {
 		return WrapError(errParse)
 	}
+	object, err := polarDBService.DescribePolarDBClusterEndpoint(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+	if object.EndpointType != "Custom" {
+		return WrapErrorf(Error(fmt.Sprintf("%s type endpoint can not be deleted.", object.EndpointType)), DefaultErrorMsg, d.Id(), "DeleteDBClusterEndpoint", ProviderERROR)
+	}
+
 	request := polardb.CreateDeleteDBClusterEndpointRequest()
 	request.RegionId = client.RegionId
 	request.DBClusterId = parts[0]
 	request.DBEndpointId = parts[1]
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.DeleteDBClusterEndpoint(request)
 		})

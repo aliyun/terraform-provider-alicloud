@@ -392,7 +392,7 @@ func (s *PolarDBService) WaitForPolarDBEndpoints(d *schema.ResourceData, status 
 		dbEndpointId = parts[1]
 	}
 	dbClusterId := d.Get("db_cluster_id").(string)
-	endpointType := d.Get("endpoint_type").(string)
+	endpointType := "Custom"
 
 	newEndpoint := make(map[string]string)
 	newEndpoint["endpoint_type"] = endpointType
