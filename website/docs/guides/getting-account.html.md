@@ -6,7 +6,7 @@ description: |-
   Sign up Alibaba Cloud and distinguish its type.
 ---
 
-# Getting Alibaba Cloud Account
+# Getting an Alibaba Cloud Account
 
 The Alibaba Cloud has three accounts: International-Site Account, China-Site Account and JP-Site Account.
 In most cases the account type makes no difference when creating Alibaba Cloud resources.
