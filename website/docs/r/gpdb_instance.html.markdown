@@ -41,7 +41,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_gpdb_instance" "example" {
-  description          = "tf-gpdb-test""
+  description          = "tf-gpdb-test"
   engine               = "gpdb"
   engine_version       = "4.3"
   instance_class       = "gpdb.group.segsdx2"
