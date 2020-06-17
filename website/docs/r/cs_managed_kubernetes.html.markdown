@@ -98,6 +98,7 @@ The following arguments are supported:
 * `proxy_mode` - Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
 * `image_id` - Custom Image support. Must based on CentOS7 or AliyunLinux2.
 * `user_data` - (Optional, Available in 1.81.0+) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
+* `exclude_autoscaler_nodes` - (Optional, Available in 1.88.0+) Exclude autoscaler nodes from `worker_nodes`. default: false 
 
 
 #### Addons 
