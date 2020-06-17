@@ -137,6 +137,11 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 			},
+			"exclude_autoscaler_nodes": {
+				Type:     schema.TypeBool,
+				Default:  false,
+				Optional: true,
+			},
 			// global configurations
 			"pod_vswitch_ids": {
 				Type:     schema.TypeList,
