@@ -47,15 +47,11 @@ resource "alicloud_oss_bucket" "default" {
   bucket = "${var.name}"
 }
 
+# If you upload the function by OSS Bucket, you need to specify path can't upload by content.
 resource "alicloud_oss_bucket_object" "default" {
   bucket  = "${alicloud_oss_bucket.default.id}"
   key     = "fc/hello.zip"
-  content = <<EOF
-        # -*- coding: utf-8 -*-
-        def handler(event, context):
-            print "hello world"
-            return 'hello world'
-    EOF
+  source  = "./hello.zip"
 }
 
 resource "alicloud_ram_role" "default" {

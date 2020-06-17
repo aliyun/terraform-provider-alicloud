@@ -95,7 +95,10 @@ func testSweepFcFunction(region string) error {
 	return nil
 }
 
+var filePath string
+
 func TestAccAlicloudFCFunction_basic(t *testing.T) {
+	defer os.Remove(filePath)
 	var v *fc.GetFunctionOutput
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testaccalicloudfcfunction-%d", rand)
@@ -263,6 +266,20 @@ func TestAccAlicloudFCFunctionMulti(t *testing.T) {
 }
 
 func resourceFCFunctionConfigDependence(name string) string {
+	path, _, err := createTempFile(name)
+	result := `# -*- coding: utf-8 -*-
+				def handler(event, context):
+					print "hello world"
+					return 'hello world'`
+	if err != nil {
+		return ""
+	}
+	err = ioutil.WriteFile(path, []byte(result), 0644)
+	if err != nil {
+		return ""
+	}
+	filePath = path
+
 	return fmt.Sprintf(`
 variable "name" {
     default = "%v"
@@ -295,12 +312,7 @@ resource "alicloud_oss_bucket" "default" {
 resource "alicloud_oss_bucket_object" "default" {
   bucket = "${alicloud_oss_bucket.default.id}"
   key = "fc/hello.zip"
-  content = <<EOF
-  	# -*- coding: utf-8 -*-
-	def handler(event, context):
-	    print "hello world"
-	    return 'hello world'
-  EOF
+  source = "%s"
 }
 
 resource "alicloud_ram_role" "default" {
@@ -316,7 +328,7 @@ resource "alicloud_ram_role_policy_attachment" "default" {
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }
-`, name, testFCRoleTemplate)
+`, name, path, testFCRoleTemplate)
 }
 
 func TestAccAlicloudFCFunction_code_checksum(t *testing.T) {
