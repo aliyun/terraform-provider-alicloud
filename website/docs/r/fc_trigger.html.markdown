@@ -129,15 +129,11 @@ resource "alicloud_fc_service" "foo" {
 resource "alicloud_oss_bucket" "foo" {
   bucket = "${var.name}"
 }
+# If you upload the function by OSS Bucket, you need to specify path can't upload by content.
 resource "alicloud_oss_bucket_object" "foo" {
   bucket  = "${alicloud_oss_bucket.foo.id}"
   key     = "fc/hello.zip"
-  content = <<EOF
-  	# -*- coding: utf-8 -*-
-	def handler(event, context):
-	    print "hello world"
-	    return 'hello world'
-  EOF
+  source  = "./hello.zip"
 }
 resource "alicloud_fc_function" "foo" {
   service = "${alicloud_fc_service.foo.name}"
@@ -169,29 +165,10 @@ resource "alicloud_ram_role" "foo" {
   description = "this is a test"
   force       = true
 }
-resource "alicloud_ram_policy" "foo" {
-  name     = "${var.name}-trigger"
-  document = <<EOF
-  {
-    "Version": "1",
-    "Statement": [
-        {
-            "Action": [
-              "log:PostLogStoreLogs"
-            ],
-            "Resource": "*",
-            "Effect": "Allow"
-        }
-    ]
-  }
-  EOF
-  description = "this is a test"
-  force = true
-}
 resource "alicloud_ram_role_policy_attachment" "foo" {
   role_name = "${alicloud_ram_role.foo.name}"
-  policy_name = "${alicloud_ram_policy.foo.name}"
-  policy_type = "Custom"
+  policy_name = "AliyunMNSNotificationRolePolicy" 
+  policy_type = "System" 
 }
 resource "alicloud_fc_trigger" "foo" {
   service = "${alicloud_fc_service.foo.name}"
@@ -241,15 +218,11 @@ resource "alicloud_fc_service" "foo" {
 resource "alicloud_oss_bucket" "foo" {
     bucket = "${var.name}"
 }
+# If you upload the function by OSS Bucket, you need to specify path can't upload by content.
 resource "alicloud_oss_bucket_object" "foo" {
     bucket = "${alicloud_oss_bucket.foo.id}"
     key = "fc/hello.zip"
-    content = <<EOF
-        # -*- coding: utf-8 -*-
-    def handler(event, context):
-        print "hello world"
-        return 'hello world'
-    EOF
+    source  = "./hello.zip"
 }
 resource "alicloud_fc_function" "foo" {
     service = "${alicloud_fc_service.foo.name}"
