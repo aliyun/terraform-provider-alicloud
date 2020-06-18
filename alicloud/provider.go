@@ -293,6 +293,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_route_maps":                        dataSourceAlicloudCenRouteMaps(),
 			"alicloud_cen_private_zones":                     dataSourceAlicloudCenPrivateZones(),
 			"alicloud_dms_enterprise_instances":              dataSourceAlicloudDmsEnterpriseInstances(),
+			"alicloud_cassandra_clusters":                    dataSourceAlicloudCassandraClusters(),
+			"alicloud_cassandra_data_centers":                dataSourceAlicloudCassandraDataCenters(),
+			"alicloud_cassandra_zones":                       dataSourceAlicloudCassandraZones(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
