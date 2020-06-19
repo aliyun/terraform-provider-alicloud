@@ -287,6 +287,17 @@ func testAccPreCheckWithResourceManagerHandshakesSetting(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithCenVbrHealthCheckSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("VBR_INSTANCE_ID")); v == "" {
+		t.Skipf("Skipping the test case with no vbr instance id setting")
+		t.Skipped()
+	}
+	if v := strings.TrimSpace(os.Getenv("VBR_INSTANCE_REGION_ID")); v == "" {
+		t.Skipf("Skipping the test case with no vbr instance region id setting")
+		t.Skipped()
+	}
+}
+
 var providerCommon = `
 provider "alicloud" {
 	assume_role {}
