@@ -58,11 +58,12 @@ type scalingConfiguration struct {
 
 // autoscalerOptions define the options used by autoscaler creation
 type autoscalerOptions struct {
-	Args            []string
-	RegionId        string
-	AccessKeyId     string
-	AccessKeySecret string
-	Image           string
+	Args               []string
+	RegionId           string
+	AccessKeyId        string
+	AccessKeySecret    string
+	Image              string
+	UseEcsRamRoleToken bool
 }
 
 // resourceAlicloudCSKubernetesAutoscaler defines the schema of resource
@@ -130,6 +131,11 @@ func resourceAlicloudCSKubernetesAutoscaler() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"use_ecs_ram_role_token": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -154,7 +160,7 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 	csService := CsService{client}
 
 	// any changes need to ready autoscaler.
-	if d.HasChange("nodepools") || d.HasChange("utilization") || d.HasChange("cool_down_duration") || d.HasChange("defer_scale_in_duration") {
+	if d.HasChange("nodepools") || d.HasChange("utilization") || d.HasChange("cool_down_duration") || d.HasChange("defer_scale_in_duration") || d.HasChange("use_ecs_ram_role_token") {
 
 		regionId := client.RegionId
 
@@ -162,6 +168,7 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 		utilization := d.Get("utilization").(string)
 		coolDownDuration := d.Get("cool_down_duration").(string)
 		deferScaleInDuration := d.Get("defer_scale_in_duration").(string)
+		useEcsRamroleToken := d.Get("use_ecs_ram_role_token").(bool)
 
 		// parse nodepools
 		nodePoolsParams := d.Get("nodepools").(*schema.Set)
@@ -248,11 +255,12 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 		}
 
 		options := autoscalerOptions{
-			Args:            args,
-			Image:           fmt.Sprintf(defaultAutoscalerImage, regionId),
-			RegionId:        regionId,
-			AccessKeyId:     client.AccessKey,
-			AccessKeySecret: client.SecretKey,
+			Args:               args,
+			Image:              fmt.Sprintf(defaultAutoscalerImage, regionId),
+			RegionId:           regionId,
+			AccessKeyId:        client.AccessKey,
+			AccessKeySecret:    client.SecretKey,
+			UseEcsRamRoleToken: useEcsRamroleToken,
 		}
 
 		clientSet, err := getClientSetFromKubeconf(kubeConfPath)
@@ -453,6 +461,12 @@ func DeployAutoscaler(options autoscalerOptions, clientSet *kubernetes.Clientset
 	deploy, err := clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Get(clusterAutoscaler, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
+			ak := options.AccessKeyId
+			sk := options.AccessKeySecret
+			if options.UseEcsRamRoleToken {
+				ak = ""
+				sk = ""
+			}
 			// create a new deploy
 			deployObject := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
@@ -508,11 +522,11 @@ func DeployAutoscaler(options autoscalerOptions, clientSet *kubernetes.Clientset
 										},
 										v1.EnvVar{
 											Name:  "ACCESS_KEY_ID",
-											Value: options.AccessKeyId,
+											Value: ak,
 										},
 										v1.EnvVar{
 											Name:  "ACCESS_KEY_SECRET",
-											Value: options.AccessKeySecret,
+											Value: sk,
 										},
 									},
 								},
