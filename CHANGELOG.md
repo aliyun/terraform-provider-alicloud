@@ -1,4 +1,23 @@
 ## 1.88.0 (Unreleased)
+
+- **New Resource:** `alicloud_cen_vbr_health_check` [GH-2575]
+- **Data Source:** `alicloud_cen_private_zones` [GH-2564]
+- **Data Source:** `alicloud_dms_enterprise_instances` [GH-2557]
+- **Data Source:** `alicloud_cassandra` [GH-2574]
+
+IMPROVEMENTS:
+
+- Features/knock autoscaler off nodes [GH-2571]
+- modify cen_instance_attachment [GH-2566]
+- gpdb doc change "tf-gpdb-test"" to "tf-gpdb-test" [GH-2561]
+- UPDATE CHANGELOG [GH-2555]
+- cassandra cluster [GH-2522]
+
+BUG FIXES:
+
+- Fix the fc-function testcase and markdown [GH-2569]
+- fix name spelling mistake [GH-2558]
+
 ## 1.87.0 (June 12, 2020)
 
 - **Data Source:** `alicloud_container_registry_enterprise_repos` ([#2538](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2538))
