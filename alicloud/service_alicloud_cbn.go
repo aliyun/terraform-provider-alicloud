@@ -249,3 +249,31 @@ func (s *CbnService) CenPrivateZoneStateRefreshFunc(id string, failStates []stri
 		return object, object.Status, nil
 	}
 }
+
+func (s *CbnService) DescribeCenVbrHealthCheck(id string) (object cbn.VbrHealthCheck, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := cbn.CreateDescribeCenVbrHealthCheckRequest()
+	request.RegionId = s.client.RegionId
+	request.VbrInstanceId = parts[0]
+	request.VbrInstanceRegionId = parts[1]
+
+	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		return cbnClient.DescribeCenVbrHealthCheck(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*cbn.DescribeCenVbrHealthCheckResponse)
+
+	if len(response.VbrHealthChecks.VbrHealthCheck) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("CenVbrHealthCheck", id)), NotFoundMsg, ProviderERROR)
+		return
+	}
+	return response.VbrHealthChecks.VbrHealthCheck[0], nil
+}

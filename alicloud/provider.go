@@ -530,6 +530,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ddoscoo_scheduler_rule":              resourceAlicloudDdoscooSchedulerRule(),
 			"alicloud_cassandra_cluster":                   resourceAlicloudCassandraCluster(),
 			"alicloud_cassandra_data_center":               resourceAlicloudCassandraDataCenter(),
+			"alicloud_cen_vbr_health_check":                resourceAlicloudCenVbrHealthCheck(),
 		},
 
 		ConfigureFunc: providerConfigure,
