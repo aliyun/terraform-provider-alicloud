@@ -193,6 +193,7 @@ const (
 	ResourceTypeGpdb          = ResourceType("Gpdb")
 	ResourceTypeHBase         = ResourceType("HBase")
 	ResourceTypeAdb           = ResourceType("ADB")
+	ResourceTypeCassandra     = ResourceType("Cassandra")
 )
 
 type InternetChargeType string

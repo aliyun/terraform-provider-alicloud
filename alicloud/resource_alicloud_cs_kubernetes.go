@@ -3,12 +3,16 @@ package alicloud
 import (
 	"encoding/base64"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 
@@ -226,6 +230,11 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Default:          1,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
+			},
+			"exclude_autoscaler_nodes": {
+				Type:     schema.TypeBool,
+				Default:  false,
+				Optional: true,
 			},
 			// global configurations
 			// Terway network
@@ -824,6 +833,13 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 		}
 
+		if d.Get("exclude_autoscaler_nodes").(bool) {
+			result, err = knockOffAutoScalerNodes(result, meta)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", AlibabaCloudSdkGoERROR)
+			}
+		}
+
 		for _, node := range result {
 			mapping := map[string]interface{}{
 				"id":         node.InstanceId,
@@ -845,7 +861,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	d.Set("master_nodes", masterNodes)
 	d.Set("worker_nodes", workerNodes)
-	d.Set("worker_number", object.Size-int64(len(masterNodes)))
+	d.Set("worker_number", int64(len(workerNodes)))
 
 	// Get slb information
 	connection := make(map[string]string)
@@ -1158,4 +1174,50 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		}
 	}
 	return creationArgs, nil
+}
+
+func knockOffAutoScalerNodes(nodes []cs.KubernetesNodeType, meta interface{}) ([]cs.KubernetesNodeType, error) {
+	log.Printf("[DEBUG] start to knock off auto scaler nodes %++v\n", nodes)
+	client := meta.(*connectivity.AliyunClient)
+	scaleNoddesMap := make(map[string]ecs.Instance)
+	result := make([]cs.KubernetesNodeType, 0)
+	instanceIds := make([]interface{}, 0)
+
+	if len(nodes) == 0 {
+		return result, nil
+	}
+
+	for _, node := range nodes {
+		instanceIds = append(instanceIds, node.InstanceId)
+	}
+
+	request := ecs.CreateDescribeInstancesRequest()
+	request.RegionId = client.RegionId
+	request.PageSize = requests.NewInteger(len(nodes))
+	request.InstanceIds = convertListToJsonString(instanceIds)
+	tags := []ecs.DescribeInstancesTag{{Key: defaultScalingGroupTag, Value: "true"}}
+	request.Tag = &tags
+
+	// filter ecs by tags, find all ecs created by autoscaler
+	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeInstances(request)
+	})
+
+	if err != nil {
+		return result, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	response, _ := raw.(*ecs.DescribeInstancesResponse)
+	for _, instance := range response.Instances.Instance {
+		scaleNoddesMap[instance.InstanceId] = instance
+	}
+
+	for _, node := range nodes {
+		if _, ok := scaleNoddesMap[node.InstanceId]; !ok {
+			result = append(result, node)
+		}
+	}
+
+	return result, nil
 }
