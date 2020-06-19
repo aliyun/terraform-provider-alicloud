@@ -20,7 +20,10 @@ func resourceAlicloudCenInstanceAttachment() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -87,9 +90,11 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 
 	d.SetId(cenId + COLON_SEPARATED + instanceId)
 
-	if err := cenService.WaitForCenInstanceAttachment(d.Id(), Status("Attached"), DefaultCenTimeoutLong); err != nil {
-		return WrapError(err)
+	stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cenService.CenInstanceAttachmentStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return resourceAlicloudCenInstanceAttachmentRead(d, meta)
 }
 
@@ -154,6 +159,9 @@ func resourceAlicloudCenInstanceAttachmentDelete(d *schema.ResourceData, meta in
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	return WrapError(cenService.WaitForCenInstanceAttachment(d.Id(), Deleted, DefaultCenTimeoutLong))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cenService.CenInstanceAttachmentStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }
