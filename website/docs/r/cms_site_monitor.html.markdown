@@ -1,13 +1,13 @@
 ---
 subcategory: "Cloud Monitor"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_cms_sitemonitor"
-sidebar_current: "docs-alicloud-resource-cms-sitemonitor"
+page_title: "Alicloud: alicloud_cms_site_monitor"
+sidebar_current: "docs-alicloud-resource-cms-site-monitor"
 description: |-
   Provides a resource to build a sitemonitor rule for cloud monitor.
 ---
 
-# alicloud\_cms\_sitemonitor
+# alicloud\_cms\_site\_monitor
 
 This resource provides a sitemonitor resource and it can be used to monitor public endpoints and websites.
 Details at https://www.alibabacloud.com/help/doc-detail/67907.htm
@@ -19,7 +19,7 @@ Available in 1.72.0+
 Basic Usage
 
 ```
-resource "alicloud_cms_sitemonitor" "basic" {
+resource "alicloud_cms_site_monitor" "basic" {
 	  address = "http://www.alibabacloud.com"
 	  task_name = "tf-testAccCmsSiteMonitor_basic"
 	  task_type = "HTTP"
@@ -28,7 +28,6 @@ resource "alicloud_cms_sitemonitor" "basic" {
 		city = "546"
 		isp = "465"
 	  }
-	}   
 }
 ```
 
@@ -55,5 +54,5 @@ The following attributes are exported:
 Alarm rule can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_cms_sitemonitor.alarm abc12345
+$ terraform import alicloud_cms_site_monitor.alarm abc12345
 ```
