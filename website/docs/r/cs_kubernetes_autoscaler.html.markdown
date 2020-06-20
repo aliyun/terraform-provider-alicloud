@@ -50,6 +50,7 @@ The following arguments are supported:
 * `utilization` - (Required) The utilization option of cluster-autoscaler.
 * `cool_down_duration` (Required) The cool_down_duration option of cluster-autoscaler.  
 * `defer_scale_in_duration` (Required) The defer_scale_in_duration option of cluster-autoscaler.
+* `use_ecs_ram_role_token` (Optional, Available in 1.88.0+) Enable autoscaler access to alibabacloud service by ecs ramrole token. default: false
 
 ### Timeouts
 

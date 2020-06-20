@@ -417,6 +417,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"nat_gateway_id": {
@@ -1080,6 +1081,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			SecurityGroupId:      d.Get("security_group_id").(string),
 			EndpointPublicAccess: d.Get("slb_internet_enabled").(bool),
 			SnatEntry:            d.Get("new_nat_gateway").(bool),
+			NodeNameMode:         d.Get("node_name_mode").(string),
 			Addons:               addons,
 		},
 	}
@@ -1091,10 +1093,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		} else {
 			creationArgs.UserData = base64.StdEncoding.EncodeToString([]byte(v))
 		}
-	}
-
-	if v := d.Get("node_name_mode").(string); v != "" {
-		creationArgs.NodeNameMode = v
 	}
 
 	if _, ok := d.GetOk("pod_vswitch_ids"); ok {
