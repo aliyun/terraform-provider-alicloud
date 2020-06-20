@@ -28,7 +28,6 @@ resource "alicloud_cms_sitemonitor" "basic" {
 		city = "546"
 		isp = "465"
 	  }
-	}   
 }
 ```
 
