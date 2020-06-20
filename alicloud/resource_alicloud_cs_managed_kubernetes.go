@@ -324,6 +324,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"nat_gateway_id": {

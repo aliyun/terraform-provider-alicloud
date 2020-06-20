@@ -99,6 +99,7 @@ The following arguments are supported:
 * `image_id` - Custom Image support. Must based on CentOS7 or AliyunLinux2.
 * `user_data` - (Optional, Available in 1.81.0+) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
 * `exclude_autoscaler_nodes` - (Optional, Available in 1.88.0+) Exclude autoscaler nodes from `worker_nodes`. default: false 
+* `node_name_mode` - (Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test. 
 
 
 #### Addons 
@@ -254,6 +255,7 @@ The following attributes are exported:
 * `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
 * `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
 * `version` - The Kubernetes server version for the cluster.
+* `worker_ram_role_name` - The RamRole Name attached to worker node.
 
 ### Block Nodes
 * `id` - ID of the node.
