@@ -109,6 +109,7 @@ func CreateCreateInstanceRequest() (request *CreateInstanceRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "CreateInstance", "", "")
+	request.Method = requests.POST
 	return
 }
 

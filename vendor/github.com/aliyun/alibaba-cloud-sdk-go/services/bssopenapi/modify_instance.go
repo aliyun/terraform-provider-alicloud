@@ -108,6 +108,7 @@ func CreateModifyInstanceRequest() (request *ModifyInstanceRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "ModifyInstance", "", "")
+	request.Method = requests.POST
 	return
 }
 

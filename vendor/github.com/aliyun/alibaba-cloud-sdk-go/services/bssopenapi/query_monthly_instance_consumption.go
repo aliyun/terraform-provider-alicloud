@@ -101,6 +101,7 @@ func CreateQueryMonthlyInstanceConsumptionRequest() (request *QueryMonthlyInstan
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "QueryMonthlyInstanceConsumption", "", "")
+	request.Method = requests.POST
 	return
 }
 

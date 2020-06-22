@@ -102,6 +102,7 @@ func CreateCreateResourcePackageRequest() (request *CreateResourcePackageRequest
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "CreateResourcePackage", "", "")
+	request.Method = requests.POST
 	return
 }
 

@@ -7,6 +7,8 @@
 
 IMPROVEMENTS:
 
+- Support setting NO_PROXY and upgrade go sdk [GH-2581]
+- Features/atoscaler_use_worker_token [GH-2578]
 - Features/knock autoscaler off nodes [GH-2571]
 - modify cen_instance_attachment [GH-2566]
 - gpdb doc change "tf-gpdb-test"" to "tf-gpdb-test" [GH-2561]

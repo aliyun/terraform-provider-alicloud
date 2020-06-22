@@ -101,6 +101,7 @@ func CreateQueryUserOmsDataRequest() (request *QueryUserOmsDataRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "QueryUserOmsData", "", "")
+	request.Method = requests.POST
 	return
 }
 
