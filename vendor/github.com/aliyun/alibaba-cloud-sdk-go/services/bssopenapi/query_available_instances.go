@@ -94,11 +94,11 @@ type QueryAvailableInstancesRequest struct {
 // QueryAvailableInstancesResponse is the response struct for api QueryAvailableInstances
 type QueryAvailableInstancesResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
-	Code      string `json:"Code" xml:"Code"`
-	Message   string `json:"Message" xml:"Message"`
-	Data      Data   `json:"Data" xml:"Data"`
+	RequestId string                        `json:"RequestId" xml:"RequestId"`
+	Success   bool                          `json:"Success" xml:"Success"`
+	Code      string                        `json:"Code" xml:"Code"`
+	Message   string                        `json:"Message" xml:"Message"`
+	Data      DataInQueryAvailableInstances `json:"Data" xml:"Data"`
 }
 
 // CreateQueryAvailableInstancesRequest creates a request to invoke QueryAvailableInstances API
@@ -107,6 +107,7 @@ func CreateQueryAvailableInstancesRequest() (request *QueryAvailableInstancesReq
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "QueryAvailableInstances", "", "")
+	request.Method = requests.POST
 	return
 }
 

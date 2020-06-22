@@ -98,6 +98,7 @@ func CreateDescribePricingModuleRequest() (request *DescribePricingModuleRequest
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "DescribePricingModule", "", "")
+	request.Method = requests.POST
 	return
 }
 

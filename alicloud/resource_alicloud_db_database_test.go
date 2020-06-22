@@ -10,7 +10,7 @@ import (
 )
 
 func TestAccAlicloudDBDatabaseUpdate(t *testing.T) {
-	var database *rds.DatabaseInDescribeDatabases
+	var database *rds.Database
 	resourceId := "alicloud_db_database.default"
 
 	var dbDatabaseBasicMap = map[string]string{

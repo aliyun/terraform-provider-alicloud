@@ -97,6 +97,7 @@ func CreateQueryPrepaidCardsRequest() (request *QueryPrepaidCardsRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "QueryPrepaidCards", "", "")
+	request.Method = requests.POST
 	return
 }
 

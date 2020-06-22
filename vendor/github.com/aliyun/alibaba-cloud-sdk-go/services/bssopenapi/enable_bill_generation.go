@@ -96,6 +96,7 @@ func CreateEnableBillGenerationRequest() (request *EnableBillGenerationRequest) 
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "EnableBillGeneration", "", "")
+	request.Method = requests.POST
 	return
 }
 

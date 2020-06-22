@@ -99,6 +99,7 @@ func CreateUpgradeResourcePackageRequest() (request *UpgradeResourcePackageReque
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "UpgradeResourcePackage", "", "")
+	request.Method = requests.POST
 	return
 }
 

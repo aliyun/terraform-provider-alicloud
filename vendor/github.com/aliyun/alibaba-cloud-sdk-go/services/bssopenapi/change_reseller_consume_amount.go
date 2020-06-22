@@ -102,6 +102,7 @@ func CreateChangeResellerConsumeAmountRequest() (request *ChangeResellerConsumeA
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "ChangeResellerConsumeAmount", "", "")
+	request.Method = requests.POST
 	return
 }
 
