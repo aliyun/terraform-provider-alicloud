@@ -74,6 +74,13 @@ func testAccPreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
 	}
 }
 
+func testAccPreCheckPrePaidResources(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ENABLE_CHECKING_PRE_PAID")); v != "true" {
+		t.Skip("Skipping testing PrePaid resources, otherwise setting environment parameter 'ENABLE_CHECKING_PRE_PAID'.")
+		t.Skipped()
+	}
+}
+
 // Skip automatically the testcases which does not support some known regions.
 // If supported is true, the regions should a list of supporting the service regions.
 // If supported is false, the regions should a list of unsupporting the service regions.
