@@ -4,6 +4,7 @@
 - **Data Source:** `alicloud_cen_private_zones` [GH-2564]
 - **Data Source:** `alicloud_dms_enterprise_instances` [GH-2557]
 - **Data Source:** `alicloud_cassandra` [GH-2574]
+- **Data Source:** `alicloud_kms_secret_versions` [GH-2583]
 
 IMPROVEMENTS:
 
