@@ -8,6 +8,7 @@
 
 IMPROVEMENTS:
 
+- skip instance prepaid testcase [GH-2585]
 - Support setting NO_PROXY and upgrade go sdk [GH-2581]
 - Features/atoscaler_use_worker_token [GH-2578]
 - Features/knock autoscaler off nodes [GH-2571]
@@ -18,6 +19,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- run 'go mod vendor' to sync [GH-2586]
 - Fix the fc-function testcase and markdown [GH-2569]
 - fix name spelling mistake [GH-2558]
 
