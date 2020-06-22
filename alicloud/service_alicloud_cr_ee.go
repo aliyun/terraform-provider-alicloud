@@ -356,6 +356,48 @@ func (c *CrService) ListCrEERepoTags(instanceId string, repoId string, pageNo in
 	return response, nil
 }
 
+func (c *CrService) DescribeCrEESyncRule(id string) (*cr_ee.SyncRulesItem, error) {
+	strRet := c.ParseResourceId(id)
+	instanceId := strRet[0]
+	namespace := strRet[1]
+	syncRuleId := strRet[2]
+
+	pageNo := 1
+	for {
+		response := &cr_ee.ListRepoSyncRuleResponse{}
+		request := cr_ee.CreateListRepoSyncRuleRequest()
+		request.RegionId = c.client.RegionId
+		request.InstanceId = instanceId
+		request.NamespaceName = namespace
+		request.PageNo = requests.NewInteger(pageNo)
+		request.PageSize = requests.NewInteger(PageSizeLarge)
+		raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+			return creeClient.ListRepoSyncRule(request)
+		})
+		if err != nil {
+			return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		response, _ = raw.(*cr_ee.ListRepoSyncRuleResponse)
+		if !response.ListRepoSyncRuleIsSuccess {
+			return nil, c.wrapCrServiceError(id, request.GetActionName(), response.Code)
+		}
+
+		for _, rule := range response.SyncRules {
+			if rule.SyncRuleId == syncRuleId && rule.LocalInstanceId == instanceId {
+				return &rule, nil
+			}
+		}
+
+		if len(response.SyncRules) < PageSizeLarge {
+			return nil, WrapErrorf(errors.New("sync rule not found"), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+
+		pageNo++
+	}
+}
+
 func (c *CrService) wrapCrServiceError(resource string, action string, code string) error {
 	switch code {
 	case "INSTANCE_NOT_EXIST", "NAMESPACE_NOT_EXIST", "REPO_NOT_EXIST":
