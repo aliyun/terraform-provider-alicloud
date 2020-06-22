@@ -1,27 +1,27 @@
-## 1.88.0 (Unreleased)
+## 1.88.0 (June 22, 2020)
 
-- **New Resource:** `alicloud_cen_vbr_health_check` [GH-2575]
-- **Data Source:** `alicloud_cen_private_zones` [GH-2564]
-- **Data Source:** `alicloud_dms_enterprise_instances` [GH-2557]
-- **Data Source:** `alicloud_cassandra` [GH-2574]
-- **Data Source:** `alicloud_kms_secret_versions` [GH-2583]
+- **New Resource:** `alicloud_cen_vbr_health_check` ([#2575](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2575))
+- **Data Source:** `alicloud_cen_private_zones` ([#2564](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2564))
+- **Data Source:** `alicloud_dms_enterprise_instances` ([#2557](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2557))
+- **Data Source:** `alicloud_cassandra` ([#2574](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2574))
+- **Data Source:** `alicloud_kms_secret_versions` ([#2583](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2583))
 
 IMPROVEMENTS:
 
-- skip instance prepaid testcase [GH-2585]
-- Support setting NO_PROXY and upgrade go sdk [GH-2581]
-- Features/atoscaler_use_worker_token [GH-2578]
-- Features/knock autoscaler off nodes [GH-2571]
-- modify cen_instance_attachment [GH-2566]
-- gpdb doc change "tf-gpdb-test"" to "tf-gpdb-test" [GH-2561]
-- UPDATE CHANGELOG [GH-2555]
-- cassandra cluster [GH-2522]
+- skip instance prepaid testcase ([#2585](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2585))
+- Support setting NO_PROXY and upgrade go sdk ([#2581](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2581))
+- Features/atoscaler_use_worker_token ([#2578](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2578))
+- Features/knock autoscaler off nodes ([#2571](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2571))
+- modify cen_instance_attachment ([#2566](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2566))
+- gpdb doc change "tf-gpdb-test"" to "tf-gpdb-test" ([#2561](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2561))
+- UPDATE CHANGELOG ([#2555](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2555))
+- cassandra cluster ([#2522](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2522))
 
 BUG FIXES:
 
-- run 'go mod vendor' to sync [GH-2586]
-- Fix the fc-function testcase and markdown [GH-2569]
-- fix name spelling mistake [GH-2558]
+- run 'go mod vendor' to sync ([#2586](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2586))
+- Fix the fc-function testcase and markdown ([#2569](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2569))
+- fix name spelling mistake ([#2558](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2558))
 
 ## 1.87.0 (June 12, 2020)
 
