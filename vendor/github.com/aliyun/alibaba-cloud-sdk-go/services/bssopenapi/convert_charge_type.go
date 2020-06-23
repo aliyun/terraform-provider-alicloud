@@ -100,6 +100,7 @@ func CreateConvertChargeTypeRequest() (request *ConvertChargeTypeRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "ConvertChargeType", "", "")
+	request.Method = requests.POST
 	return
 }
 

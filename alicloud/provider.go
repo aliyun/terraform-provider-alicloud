@@ -296,6 +296,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cassandra_clusters":                    dataSourceAlicloudCassandraClusters(),
 			"alicloud_cassandra_data_centers":                dataSourceAlicloudCassandraDataCenters(),
 			"alicloud_cassandra_zones":                       dataSourceAlicloudCassandraZones(),
+			"alicloud_kms_secret_versions":                   dataSourceAlicloudKmsSecretVersions(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),

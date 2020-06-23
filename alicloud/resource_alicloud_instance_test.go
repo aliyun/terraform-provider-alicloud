@@ -791,6 +791,7 @@ func TestAccAlicloudInstancePrepaid(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
@@ -1284,27 +1285,28 @@ func TestAccAlicloudInstanceTypeUpdate(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_type":        "${data.alicloud_instance_types.new3.instance_types.0.id}",
-					"instance_charge_type": "PrePaid",
-					"period_unit":          "Week",
-					"force_delete":         "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_type":        REGEXMATCH + "^ecs.t5-[a-z0-9]{1,}.small",
-						"instance_charge_type": "PrePaid",
-						"period":               "1",
-						"include_data_disks":   "true",
-						"dry_run":              "false",
-						"renewal_status":       "Normal",
-						"period_unit":          "Week",
-						"force_delete":         "true",
-						"auto_renew_period":    "0",
-					}),
-				),
-			},
+			// Skip PrePaid instance resources.
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"instance_type":        "${data.alicloud_instance_types.new3.instance_types.0.id}",
+			//		"instance_charge_type": "PrePaid",
+			//		"period_unit":          "Week",
+			//		"force_delete":         "true",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"instance_type":        REGEXMATCH + "^ecs.t5-[a-z0-9]{1,}.small",
+			//			"instance_charge_type": "PrePaid",
+			//			"period":               "1",
+			//			"include_data_disks":   "true",
+			//			"dry_run":              "false",
+			//			"renewal_status":       "Normal",
+			//			"period_unit":          "Week",
+			//			"force_delete":         "true",
+			//			"auto_renew_period":    "0",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_type": "${data.alicloud_instance_types.new4.instance_types.0.id}",

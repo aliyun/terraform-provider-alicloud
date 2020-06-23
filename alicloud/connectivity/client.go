@@ -459,9 +459,15 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 
 		clientOptions := []oss.ClientOption{oss.UserAgent(client.getUserAgent()),
 			oss.SecurityToken(client.config.SecurityToken)}
-		proxyUrl := client.getHttpProxyUrl()
-		if proxyUrl != nil {
-			clientOptions = append(clientOptions, oss.Proxy(proxyUrl.String()))
+		proxy, err := client.getHttpProxy()
+		if proxy != nil {
+			skip, err := client.skipProxy(endpoint)
+			if err != nil {
+				return nil, err
+			}
+			if !skip {
+				clientOptions = append(clientOptions, oss.Proxy(proxy.String()))
+			}
 		}
 
 		ossconn, err := oss.New(endpoint, client.config.AccessKey, client.config.SecretKey, clientOptions...)
@@ -1048,7 +1054,16 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 		mnsUrl := fmt.Sprintf("https://%s.mns.%s", accountId, endpoint)
 
 		mnsClient := ali_mns.NewAliMNSClientWithToken(mnsUrl, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
-
+		proxy, err := client.getHttpProxy()
+		if proxy != nil {
+			skip, err := client.skipProxy(endpoint)
+			if err != nil {
+				return nil, err
+			}
+			if !skip {
+				mnsClient.SetProxy(proxy.String())
+			}
+		}
 		client.mnsconn = &mnsClient
 	}
 
@@ -1217,29 +1232,46 @@ func (client *AliyunClient) getTransport() *http.Transport {
 	transport := &http.Transport{}
 	transport.TLSHandshakeTimeout = time.Duration(handshakeTimeout) * time.Second
 
-	// After building a new transport and it need to set http proxy to support proxy.
-	proxyUrl := client.getHttpProxyUrl()
-	if proxyUrl != nil {
-		transport.Proxy = http.ProxyURL(proxyUrl)
-	}
 	return transport
 }
 
-func (client *AliyunClient) getHttpProxyUrl() *url.URL {
-	for _, v := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"} {
-		value := strings.Trim(os.Getenv(v), " ")
-		if value != "" {
-			if !regexp.MustCompile(`^http(s)?://`).MatchString(value) {
-				value = fmt.Sprintf("https://%s", value)
-			}
-			proxyUrl, err := url.Parse(value)
-			if err == nil {
-				return proxyUrl
-			}
-			break
+func (client *AliyunClient) getHttpProxy() (proxy *url.URL, err error) {
+	if client.config.Protocol == "HTTPS" {
+		if rawurl := os.Getenv("HTTPS_PROXY"); rawurl != "" {
+			proxy, err = url.Parse(rawurl)
+		} else if rawurl := os.Getenv("https_proxy"); rawurl != "" {
+			proxy, err = url.Parse(rawurl)
+		}
+	} else {
+		if rawurl := os.Getenv("HTTP_PROXY"); rawurl != "" {
+			proxy, err = url.Parse(rawurl)
+		} else if rawurl := os.Getenv("http_proxy"); rawurl != "" {
+			proxy, err = url.Parse(rawurl)
 		}
 	}
-	return nil
+	return proxy, err
+}
+
+func (client *AliyunClient) skipProxy(endpoint string) (bool, error) {
+	var urls []string
+	if rawurl := os.Getenv("NO_PROXY"); rawurl != "" {
+		urls = strings.Split(rawurl, ",")
+	} else if rawurl := os.Getenv("no_proxy"); rawurl != "" {
+		urls = strings.Split(rawurl, ",")
+	}
+	for _, value := range urls {
+		if strings.HasPrefix(value, "*") {
+			value = fmt.Sprintf(".%s", value)
+		}
+		noProxyReg, err := regexp.Compile(value)
+		if err != nil {
+			return false, err
+		}
+		if noProxyReg.MatchString(endpoint) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (client *AliyunClient) describeEndpointForService(serviceCode string) (*location.Endpoint, error) {
