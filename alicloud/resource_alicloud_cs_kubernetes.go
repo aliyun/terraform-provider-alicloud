@@ -347,11 +347,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
-						// TODO update SDK to support
-						//"disabled": {
-						//	Type:     schema.TypeBool,
-						//	Optional: true,
-						//},
+						"disabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -1054,8 +1053,9 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 				addon, ok := a.(map[string]interface{})
 				if ok {
 					addons = append(addons, cs.Addon{
-						Name:   addon["name"].(string),
-						Config: addon["config"].(string),
+						Name:     addon["name"].(string),
+						Config:   addon["config"].(string),
+						Disabled: addon["disabled"].(bool),
 					})
 				}
 			}

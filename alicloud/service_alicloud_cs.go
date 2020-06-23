@@ -11,6 +11,8 @@ import (
 
 	"encoding/base64"
 
+	"encoding/json"
+
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -41,6 +43,7 @@ const (
 var (
 	ATTACH_SCRIPT_WITH_VERSION = `#!/bin/sh
 curl http://aliacs-k8s-%s.oss-%s.aliyuncs.com/public/pkg/run/attach/%s/attach_node.sh | bash -s -- --openapi-token %s --ess true `
+	NETWORK_ADDON_NAMES = []string{"terway", "kube-flannel-ds", "terway-eni", "terway-eniip"}
 )
 
 func (s *CsService) GetContainerClusterByName(name string) (cluster cs.ClusterType, err error) {
@@ -474,6 +477,10 @@ func (s *CsService) GetUserData(clusterId string, labels string, taints string) 
 		}
 	}
 
+	if network, err := GetKubernetesNetworkName(cluster); err == nil && network != "" {
+		extra_options = append(extra_options, fmt.Sprintf("--network %s", network))
+	}
+
 	extra_options_in_line := strings.Join(extra_options, " ")
 
 	version := cluster.CurrentVersion
@@ -555,4 +562,19 @@ func (s *CsService) WaitForUpgradeCluster(clusterId string, action string) (stri
 	}
 
 	return cs.Task_Status_Failed, WrapError(err)
+}
+
+func GetKubernetesNetworkName(cluster *cs.KubernetesClusterDetail) (network string, err error) {
+
+	metadata := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(cluster.MetaData), &metadata); err != nil {
+		return "", fmt.Errorf("unmarshal metaData failed. error: %s", err)
+	}
+
+	for _, name := range NETWORK_ADDON_NAMES {
+		if _, ok := metadata[fmt.Sprintf("%s%s", name, "Version")]; ok {
+			return name, nil
+		}
+	}
+	return "", fmt.Errorf("no network addon found")
 }
