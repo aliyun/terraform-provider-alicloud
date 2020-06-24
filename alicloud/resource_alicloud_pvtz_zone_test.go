@@ -156,7 +156,7 @@ func TestAccAlicloudPvtzZone_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"user_client_ip", "lang"},
+				ImportStateVerifyIgnore: []string{"user_client_ip", "lang", "resource_group_id"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
