@@ -393,6 +393,16 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"system_disk_size": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_size": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_type":              "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"security_groups":            []string{"${alicloud_security_group.default.0.id}"},
 					"instance_name":              fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d", rand),

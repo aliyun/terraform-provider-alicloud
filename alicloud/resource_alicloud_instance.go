@@ -619,6 +619,42 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
+	if !d.IsNewResource() && d.HasChange("system_disk_size") {
+		diskReq := ecs.CreateDescribeDisksRequest()
+		diskReq.InstanceId = d.Id()
+		diskReq.DiskType = "system"
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeDisks(diskReq)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), diskReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(diskReq.GetActionName(), raw, diskReq.RpcRequest, diskReq)
+		resp := raw.(*ecs.DescribeDisksResponse)
+
+		instance, errDesc := ecsService.DescribeInstance(d.Id())
+		if errDesc != nil {
+			return WrapError(errDesc)
+		}
+
+		request := ecs.CreateResizeDiskRequest()
+		request.NewSize = requests.NewInteger(d.Get("system_disk_size").(int))
+		if instance.Status == string(Stopped) {
+			request.Type = "offline"
+		} else {
+			request.Type = "online"
+		}
+		request.DiskId = resp.Disks.Disk[0].DiskId
+		_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ResizeDisk(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("system_disk_size")
+	}
+
 	run := false
 	imageUpdate, err := modifyInstanceImage(d, meta, run)
 	if err != nil {
@@ -1084,7 +1120,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	update := false
-	if d.HasChange("image_id") || d.HasChange("system_disk_size") {
+	if d.HasChange("image_id") {
 		update = true
 		if !run {
 			return update, nil
