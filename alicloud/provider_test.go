@@ -206,9 +206,16 @@ func testAccPreCheckWithSmartAccessGatewayAppSetting(t *testing.T) {
 	}
 }
 
-func testAccPreCheckWithTime(t *testing.T) {
-	if time.Now().Day() != 1 {
-		t.Skipf("Skipping the test case with not the 1st of every month")
+func testAccPreCheckWithTime(t *testing.T, days []int) {
+	skipped := true
+	for _, d := range days {
+		if time.Now().Day() == d {
+			skipped = false
+			break
+		}
+	}
+	if skipped {
+		t.Skipf("Skipping the test case when not in specified days %#v of every month", days)
 		t.Skipped()
 	}
 }

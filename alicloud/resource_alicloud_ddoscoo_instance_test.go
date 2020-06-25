@@ -81,15 +81,15 @@ func testSweepDdoscooInstances(region string) error {
 
 		log.Printf("[INFO] Deleting Ddoscoo Instance %s .", v.InstanceId)
 
-		//releaseReq := ddoscoo.CreateReleaseInstanceRequest()
-		//releaseReq.InstanceId = v.InstanceId
-		//
-		//_, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-		//	return ddoscooClient.ReleaseInstance(releaseReq)
-		//})
-		//if err != nil {
-		//	log.Printf("[ERROR] Deleting Instance %s got an error: %#v.", v.InstanceId, err)
-		//}
+		releaseReq := ddoscoo.CreateReleaseInstanceRequest()
+		releaseReq.InstanceId = v.InstanceId
+
+		_, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+			return ddoscooClient.ReleaseInstance(releaseReq)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Deleting Instance %s got an error: %#v.", v.InstanceId, err)
+		}
 	}
 	return nil
 }
@@ -114,6 +114,7 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithTime(t, []int{1, 15})
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 		},
@@ -246,6 +247,7 @@ func TestAccAlicloudDdoscooInstance_multi(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithTime(t, []int{1})
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 		},
