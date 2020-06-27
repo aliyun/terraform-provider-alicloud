@@ -7,7 +7,7 @@ description: |-
     Provides a list of available KMS Secrets.
 ---
 
-# alicloud\_kms\secrets
+# alicloud\_kms\_secrets
 
 This data source provides a list of KMS Secrets in an Alibaba Cloud account according to the specified filters.
  
@@ -18,12 +18,11 @@ This data source provides a list of KMS Secrets in an Alibaba Cloud account acco
 ```
 # Declare the data source
 data "alicloud_kms_secrets" "kms_secrets_ds" {
-  "fetch_tags":     "true",
-  "name_regex":     "^name_regex",
-  "ids":            ["secret-id"]       
+  fetch_tags = true
+  name_regex = "name_regex"
   tags = {
-    "k-aa" : "v-aa"
-    "k-bb" : "v-aa",
+    "k-aa" = "v-aa",
+    "k-bb" = "v-bb"
   }
 }
 
