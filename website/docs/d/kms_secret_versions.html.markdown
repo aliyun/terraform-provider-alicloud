@@ -18,13 +18,12 @@ This data source provides a list of KMS Secret Versions in an Alibaba Cloud acco
 ```
 # Declare the data source
 data "alicloud_kms_secret_versions" "kms_secret_versions_ds" {
-  "secret_name":     "tf-test",
-  "enable_details":  "true",
-  "ids":            ["version-id"]       
+  secret_name = "secret_name"
+  enable_details = true
 }
 
-output "versions" {
-  value = "${data.alicloud_kms_secret_versions.kms_secret_versions_ds.versions}"
+output "first_secret_data" {
+  value = "${data.alicloud_kms_secret_versions.kms_secret_versions_ds.versions.0.secret_data}"
 }
 ```
 
