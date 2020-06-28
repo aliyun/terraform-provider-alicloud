@@ -34,6 +34,7 @@ The following arguments are supported:
 * `include_deprecated` - (Optional, ForceNew) Specifies whether to return deprecated secret versions. Default to `false`.
 * `ids` - (Optional, ForceNew) A list of KMS Secret Version ids.
 * `secret_name` - (Required, ForceNew) The name of the secret.
+* `version_stage` - (Optional, ForceNew, Available in 1.89.0+) The stage of the secret version.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional) Default to false and only output `secret_name`, `version_id`, `version_stages`. Set it to true can output more details.
 

@@ -26,6 +26,19 @@ func TestAccAlicloudKmsSecretVersionsDataSource(t *testing.T) {
 		}),
 	}
 
+	VersionStageConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"secret_name":    "${alicloud_kms_secret.default.secret_name}",
+			"enable_details": "true",
+			"version_stage":  "ACSCurrent",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"secret_name":    "${alicloud_kms_secret.default.secret_name}",
+			"enable_details": "true",
+			"version_stage":  "ACSCurrent-fake",
+		}),
+	}
+
 	var existKmsSecretVersionsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                       "1",
@@ -52,7 +65,7 @@ func TestAccAlicloudKmsSecretVersionsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeKmsSecretVersionsMapFunc,
 	}
 
-	kmsSecretVersionsCheckInfo.dataSourceTestCheck(t, rand, idsConf)
+	kmsSecretVersionsCheckInfo.dataSourceTestCheck(t, rand, idsConf, VersionStageConf)
 }
 
 func dataSourceKmsSecretsVersionsConfigDependence(name string) string {

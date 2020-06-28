@@ -21,6 +21,11 @@ func dataSourceAlicloudKmsSecretVersions() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"version_stage": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -85,6 +90,9 @@ func dataSourceAlicloudKmsSecretVersionsRead(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("include_deprecated"); ok {
 		request.IncludeDeprecated = v.(string)
 	}
+
+	VersionStage, okStage := d.GetOk("version_stage")
+
 	request.SecretName = d.Get("secret_name").(string)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
@@ -108,6 +116,19 @@ func dataSourceAlicloudKmsSecretVersionsRead(d *schema.ResourceData, meta interf
 					continue
 				}
 			}
+			if okStage && VersionStage.(string) != "" {
+				hasVersionStage := false
+				for _, VStage := range item.VersionStages.VersionStage {
+					if VStage == VersionStage {
+						hasVersionStage = true
+						break
+					}
+				}
+				if !hasVersionStage {
+					continue
+				}
+			}
+
 			objects = append(objects, item)
 		}
 		if len(response.VersionIds.VersionId) < PageSizeLarge {
@@ -136,6 +157,9 @@ func dataSourceAlicloudKmsSecretVersionsRead(d *schema.ResourceData, meta interf
 		request := kms.CreateGetSecretValueRequest()
 		request.RegionId = client.RegionId
 		request.VersionId = object.VersionId
+		if okStage && VersionStage.(string) != "" {
+			request.VersionStage = VersionStage.(string)
+		}
 		request.SecretName = d.Get("secret_name").(string)
 		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
 			return kmsClient.GetSecretValue(request)
