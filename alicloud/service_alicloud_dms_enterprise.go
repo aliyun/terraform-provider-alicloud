@@ -43,3 +43,26 @@ func (s *Dms_enterpriseService) DescribeDmsEnterpriseInstance(id string) (object
 	response, _ := raw.(*dms_enterprise.GetInstanceResponse)
 	return response.Instance, nil
 }
+
+func (s *Dms_enterpriseService) DescribeDmsEnterpriseUser(id string) (object dms_enterprise.User, err error) {
+	request := dms_enterprise.CreateGetUserRequest()
+	request.RegionId = s.client.RegionId
+
+	if v, err := strconv.Atoi(id); err == nil {
+		request.Uid = requests.NewInteger(v)
+	} else {
+		err = WrapError(err)
+		return object, err
+	}
+
+	raw, err := s.client.WithDmsEnterpriseClient(func(dms_enterpriseClient *dms_enterprise.Client) (interface{}, error) {
+		return dms_enterpriseClient.GetUser(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*dms_enterprise.GetUserResponse)
+	return response.User, nil
+}
