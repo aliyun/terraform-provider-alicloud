@@ -272,7 +272,7 @@ func (s *CbnService) DescribeCenVbrHealthCheck(id string) (object cbn.VbrHealthC
 	response, _ := raw.(*cbn.DescribeCenVbrHealthCheckResponse)
 
 	if len(response.VbrHealthChecks.VbrHealthCheck) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("CenVbrHealthCheck", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("CenVbrHealthCheck", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 	return response.VbrHealthChecks.VbrHealthCheck[0], nil
