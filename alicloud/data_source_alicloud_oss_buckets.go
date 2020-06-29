@@ -307,11 +307,11 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 	var requestInfo *oss.Client
 	for _, bucket := range buckets {
 		mapping := map[string]interface{}{
-			"name":          bucket.Name,
-			"location":      bucket.Location,
-			"storage_class": bucket.StorageClass,
-			"redundancy_type": bucket.RedundancyType
-			"creation_date": bucket.CreationDate.Format("2006-01-02"),
+			"name":            bucket.Name,
+			"location":        bucket.Location,
+			"storage_class":   bucket.StorageClass,
+			"redundancy_type": bucket.RedundancyType,
+			"creation_date":   bucket.CreationDate.Format("2006-01-02"),
 		}
 
 		// Add additional information
