@@ -332,6 +332,22 @@ func convertListToJsonString(configured []interface{}) string {
 	return result
 }
 
+// Convert the result for an array and returns a comma separate
+func convertListToCommaSeparate(configured []interface{}) string {
+	if len(configured) < 1 {
+		return ""
+	}
+	result := ""
+	for i, v := range configured {
+		rail := ","
+		if i == len(configured)-1 {
+			rail = ""
+		}
+		result += v.(string) + rail
+	}
+	return result
+}
+
 func convertJsonStringToList(configured string) ([]interface{}, error) {
 	result := make([]interface{}, 0)
 	if err := json.Unmarshal([]byte(configured), &result); err != nil {
