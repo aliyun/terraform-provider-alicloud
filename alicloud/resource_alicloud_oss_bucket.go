@@ -244,7 +244,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 					string(oss.StorageArchive),
 				}, false),
 			},
-			"storage_class": {
+			"redundancy_type": {
 				Type:     schema.TypeString,
 				Default:  oss.RedundancyLRS,
 				Optional: true,
