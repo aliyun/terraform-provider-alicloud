@@ -43,6 +43,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `location` - Region of the data center where the bucket is located.
   * `owner` - Bucket owner.
   * `storage_class` - Object storage type. Possible values: `Standard`, `IA` and `Archive`.
+  * `redundancy_type` - Redundancy type. Possible values: `LRS`, and `ZRS`.
   * `creation_date` - Bucket creation date.
   * `cors_rules` - A list of CORS rule configurations. Each element contains the following attributes:
     * `allowed_origins` - The origins allowed for cross-domain requests. Multiple elements can be used to specify multiple allowed origins. Each rule allows up to one wildcard "\*". If "\*" is specified, cross-domain requests of all origins are allowed.

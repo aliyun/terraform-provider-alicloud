@@ -67,6 +67,10 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"redundancy_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"creation_date": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -306,6 +310,7 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			"name":          bucket.Name,
 			"location":      bucket.Location,
 			"storage_class": bucket.StorageClass,
+			"redundancy_type": bucket.RedundancyType
 			"creation_date": bucket.CreationDate.Format("2006-01-02"),
 		}
 

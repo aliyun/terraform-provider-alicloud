@@ -244,6 +244,16 @@ func resourceAlicloudOssBucket() *schema.Resource {
 					string(oss.StorageArchive),
 				}, false),
 			},
+			"storage_class": {
+				Type:     schema.TypeString,
+				Default:  oss.RedundancyLRS,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(oss.RedundancyLRS),
+					string(oss.RedundancyZRS),
+				}, false),
+			},
 			"server_side_encryption_rule": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -315,6 +325,7 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 	req := Request{
 		d.Get("bucket").(string),
 		oss.StorageClass(oss.StorageClassType(d.Get("storage_class").(string))),
+		oss.RedundancyType(oss.DataRedundancyType(d.get("redundancy_type").(string))),
 	}
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return nil, ossClient.CreateBucket(req.BucketName, req.Option)
@@ -370,6 +381,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("location", object.BucketInfo.Location)
 	d.Set("owner", object.BucketInfo.Owner.ID)
 	d.Set("storage_class", object.BucketInfo.StorageClass)
+	d.Set("redundancy_type", object.BucketInfo.RedundancyType)
 
 	if &object.BucketInfo.SseRule != nil {
 		if len(object.BucketInfo.SseRule.SSEAlgorithm) > 0 && object.BucketInfo.SseRule.SSEAlgorithm != "None" {
