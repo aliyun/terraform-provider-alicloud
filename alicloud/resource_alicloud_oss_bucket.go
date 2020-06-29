@@ -318,8 +318,9 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapError(Error("[ERROR] The specified bucket name: %#v is not available. The bucket namespace is shared by all users of the OSS system. Please select a different name and try again.", request["bucketName"]))
 	}
 	type Request struct {
-		BucketName string
-		Option     oss.Option
+		BucketName            string
+		StorageClassOption    oss.Option
+		RedundancyTypeOption  oss.Option
 	}
 
 	req := Request{
@@ -328,7 +329,7 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 		oss.RedundancyType(oss.DataRedundancyType(d.Get("redundancy_type").(string))),
 	}
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return nil, ossClient.CreateBucket(req.BucketName, req.Option)
+		return nil, ossClient.CreateBucket(req.BucketName, req.StorageClassOption, req.RedundancyTypeOption)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "CreateBucket", AliyunOssGoSdk)
