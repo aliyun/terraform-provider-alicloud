@@ -6,7 +6,7 @@ require (
 	github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
 	github.com/aliyun/aliyun-log-go-sdk v0.1.6
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20191115025756-088ba95470f4
-	github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20190528142024-f8d6d645dc4b
+	github.com/aliyun/aliyun-oss-go-sdk v2.1.2+incompatible
 	github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible
 	github.com/aliyun/fc-go-sdk v0.0.0-20190326033901-db3e654c23d6
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
@@ -34,6 +34,7 @@ require (
 	github.com/valyala/fasthttp v0.0.0-20180927122258-761788a34bb6 // indirect
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
+	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
