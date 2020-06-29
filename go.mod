@@ -4,7 +4,7 @@ require (
 	github.com/Sirupsen/logrus v0.0.0-20181010200618-458213699411 // indirect
 	github.com/alibabacloud-go/tea-rpc v1.1.6
 	github.com/alibabacloud-go/tea-utils v1.3.4
-	github.com/aliyun/alibaba-cloud-sdk-go v1.61.497
+	github.com/aliyun/alibaba-cloud-sdk-go v1.61.508
 	github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
 	github.com/aliyun/aliyun-log-go-sdk v0.1.6
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20191115025756-088ba95470f4
