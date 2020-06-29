@@ -255,6 +255,8 @@ func convertGeographicRegionId(regionId string) (retStr string) {
 		retStr = "Europe"
 	case "middle-east":
 		retStr = "Middle-East"
+	case "australia":
+		retStr = "Australia"
 	}
 
 	return
