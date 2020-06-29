@@ -325,7 +325,7 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 	req := Request{
 		d.Get("bucket").(string),
 		oss.StorageClass(oss.StorageClassType(d.Get("storage_class").(string))),
-		oss.RedundancyType(oss.DataRedundancyType(d.get("redundancy_type").(string))),
+		oss.RedundancyType(oss.DataRedundancyType(d.Get("redundancy_type").(string))),
 	}
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		return nil, ossClient.CreateBucket(req.BucketName, req.Option)

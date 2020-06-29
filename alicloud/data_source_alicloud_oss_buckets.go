@@ -307,10 +307,10 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 	var requestInfo *oss.Client
 	for _, bucket := range buckets {
 		mapping := map[string]interface{}{
-			"name":            bucket.Name,
-			"location":        bucket.Location,
-			"storage_class":   bucket.StorageClass,
-			"creation_date":   bucket.CreationDate.Format("2006-01-02"),
+			"name":          bucket.Name,
+			"location":      bucket.Location,
+			"storage_class": bucket.StorageClass,
+			"creation_date": bucket.CreationDate.Format("2006-01-02"),
 		}
 
 		// Add additional information
@@ -327,7 +327,7 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			mapping["extranet_endpoint"] = response.BucketInfo.ExtranetEndpoint
 			mapping["intranet_endpoint"] = response.BucketInfo.IntranetEndpoint
 			mapping["owner"] = response.BucketInfo.Owner.ID
-			mapping["redundancy_type"] = bucket.BucketInfo.DataRedundancyType
+			mapping["redundancy_type"] = response.BucketInfo.DataRedundancyType
 
 			//Add ServerSideEncryption information
 			var sseconfig []map[string]interface{}
