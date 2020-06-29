@@ -35,6 +35,7 @@ func TestAccAlicloudOssBucketsDataSource_basic(t *testing.T) {
 			"buckets.0.location":          CHECKSET,
 			"buckets.0.owner":             CHECKSET,
 			"buckets.0.storage_class":     "Standard",
+			"buckets.0.redundancy_type":   "LRS",
 			"buckets.0.creation_date":     CHECKSET,
 
 			"buckets.0.cors_rules.#":                   "2",
@@ -132,6 +133,7 @@ func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
 			"buckets.0.location":          CHECKSET,
 			"buckets.0.owner":             CHECKSET,
 			"buckets.0.storage_class":     "Standard",
+			"buckets.0.redundancy_type":   "LRS",
 			"buckets.0.creation_date":     CHECKSET,
 
 			"buckets.0.server_side_encryption_rule.0.sse_algorithm": "AES256",
@@ -183,6 +185,7 @@ func TestAccAlicloudOssBucketsDataSource_versioning(t *testing.T) {
 			"buckets.0.location":          CHECKSET,
 			"buckets.0.owner":             CHECKSET,
 			"buckets.0.storage_class":     "Standard",
+			"buckets.0.redundancy_type":   "LRS",
 			"buckets.0.creation_date":     CHECKSET,
 
 			"buckets.0.versioning.0.status": "Enabled",
