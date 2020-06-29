@@ -327,7 +327,7 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			mapping["extranet_endpoint"] = response.BucketInfo.ExtranetEndpoint
 			mapping["intranet_endpoint"] = response.BucketInfo.IntranetEndpoint
 			mapping["owner"] = response.BucketInfo.Owner.ID
-			mapping["redundancy_type"] = response.BucketInfo.Bucket.DataRedundancyType
+			mapping["redundancy_type"] = response.BucketInfo.RedundancyType
 
 			//Add ServerSideEncryption information
 			var sseconfig []map[string]interface{}
