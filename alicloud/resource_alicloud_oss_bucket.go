@@ -318,9 +318,9 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapError(Error("[ERROR] The specified bucket name: %#v is not available. The bucket namespace is shared by all users of the OSS system. Please select a different name and try again.", request["bucketName"]))
 	}
 	type Request struct {
-		BucketName            string
-		StorageClassOption    oss.Option
-		RedundancyTypeOption  oss.Option
+		BucketName           string
+		StorageClassOption   oss.Option
+		RedundancyTypeOption oss.Option
 	}
 
 	req := Request{
