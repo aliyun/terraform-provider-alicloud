@@ -70,13 +70,11 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_same_region(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "",
-					"map_result":  "Deny",
+					"map_result": "Deny",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "",
-						"map_result":  "Deny",
+						"map_result": "Deny",
 					}),
 				),
 			},
@@ -203,13 +201,11 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_different_region(t *testing
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "",
-					"map_result":  "Deny",
+					"map_result": "Deny",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "",
-						"map_result":  "Deny",
+						"map_result": "Deny",
 					}),
 				),
 			},
