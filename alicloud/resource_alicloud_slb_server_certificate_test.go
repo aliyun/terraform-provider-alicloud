@@ -194,7 +194,7 @@ func TestAccAlicloudSlbServerCertificate_aliCloud_server_certificate(t *testing.
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                           "tf-testAccSlbServerCertificate",
+					"name": "tf-testAccSlbServerCertificate",
 					"alicloud_certificate_id":        "${alicloud_cas_certificate.default.id}",
 					"alicloud_certificate_name":      "${alicloud_cas_certificate.default.name}",
 					"alicloud_certificate_region_id": os.Getenv("ALICLOUD_REGION"),

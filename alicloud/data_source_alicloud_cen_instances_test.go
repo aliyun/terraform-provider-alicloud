@@ -89,18 +89,18 @@ func testAccAlicloudCenInstancesDataSourceConfig(rand int, attrMap map[string]st
 
 var existCenInstancesMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"names.#":     "1",
-		"instances.#": "1",
+		"names.#":                                 "1",
+		"instances.#":                             "1",
 		"instances.0.cen_bandwidth_package_ids.#": "0",
-		"instances.0.id":               CHECKSET,
-		"instances.0.cen_id":           CHECKSET,
-		"instances.0.description":      "tf-testAccCenConfigDescription",
-		"instances.0.name":             fmt.Sprintf("tf-testAcc%sCenInstancesDataSourceCen-%d", defaultRegionToTest, rand),
-		"instances.0.protection_level": "REDUCED",
-		"instances.0.status":           "Active",
-		"instances.0.tags.%":           "2",
-		"instances.0.tags.Created":     "TF",
-		"instances.0.tags.For":         "acceptance test",
+		"instances.0.id":                          CHECKSET,
+		"instances.0.cen_id":                      CHECKSET,
+		"instances.0.description":                 "tf-testAccCenConfigDescription",
+		"instances.0.name":                        fmt.Sprintf("tf-testAcc%sCenInstancesDataSourceCen-%d", defaultRegionToTest, rand),
+		"instances.0.protection_level":            "REDUCED",
+		"instances.0.status":                      "Active",
+		"instances.0.tags.%":                      "2",
+		"instances.0.tags.Created":                "TF",
+		"instances.0.tags.For":                    "acceptance test",
 	}
 }
 

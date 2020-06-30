@@ -162,12 +162,12 @@ func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}
 	for i, object := range objects {
 		mapping := map[string]interface{}{
 			"cen_bandwidth_package_ids": object.CenBandwidthPackageIds.CenBandwidthPackageId,
-			"id":                        object.CenId,
-			"cen_id":                    object.CenId,
-			"description":               object.Description,
-			"name":                      object.Name,
-			"protection_level":          object.ProtectionLevel,
-			"status":                    object.Status,
+			"id":               object.CenId,
+			"cen_id":           object.CenId,
+			"description":      object.Description,
+			"name":             object.Name,
+			"protection_level": object.ProtectionLevel,
+			"status":           object.Status,
 		}
 		tags := make(map[string]string)
 		for _, t := range object.Tags.Tag {

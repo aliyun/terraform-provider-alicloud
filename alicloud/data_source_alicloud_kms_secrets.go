@@ -154,8 +154,8 @@ func dataSourceAlicloudKmsSecretsRead(d *schema.ResourceData, meta interface{}) 
 	for i, object := range objects {
 		mapping := map[string]interface{}{
 			"planned_delete_time": object.PlannedDeleteTime,
-			"id":                  object.SecretName,
-			"secret_name":         object.SecretName,
+			"id":          object.SecretName,
+			"secret_name": object.SecretName,
 		}
 		tags := make(map[string]string)
 		for _, t := range object.Tags.Tag {

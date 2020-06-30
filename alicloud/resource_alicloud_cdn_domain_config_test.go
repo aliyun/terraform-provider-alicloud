@@ -56,8 +56,8 @@ func TestAccAlicloudCdnDomainConfig_ip_allow_list(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "ip_allow_list_set",
+						"domain_name":                               name,
+						"function_name":                             "ip_allow_list_set",
 						"function_args." + hashcode1 + ".arg_name":  "ip_list",
 						"function_args." + hashcode1 + ".arg_value": "110.110.110.110",
 					}),
@@ -116,8 +116,8 @@ func TestAccAlicloudCdnDomainConfig_referer_white_list(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "referer_white_list_set",
+						"domain_name":                               name,
+						"function_name":                             "referer_white_list_set",
 						"function_args." + hashcode1 + ".arg_name":  "refer_domain_allow_list",
 						"function_args." + hashcode1 + ".arg_value": "110.110.110.110",
 					}),
@@ -176,8 +176,8 @@ func TestAccAlicloudCdnDomainConfig_referer_black_list(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "referer_black_list_set",
+						"domain_name":                               name,
+						"function_name":                             "referer_black_list_set",
 						"function_args." + hashcode1 + ".arg_name":  "refer_domain_deny_list",
 						"function_args." + hashcode1 + ".arg_value": "110.110.110.110",
 					}),
@@ -253,8 +253,8 @@ func TestAccAlicloudCdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "filetype_based_ttl_set",
+						"domain_name":                               name,
+						"function_name":                             "filetype_based_ttl_set",
 						"function_args." + hashcode1 + ".arg_name":  "ttl",
 						"function_args." + hashcode1 + ".arg_value": "300",
 						"function_args." + hashcode2 + ".arg_name":  "file_type",
@@ -375,8 +375,8 @@ func TestAccAlicloudCdnDomainConfig_ip_black_list(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "ip_black_list_set",
+						"domain_name":                               name,
+						"function_name":                             "ip_black_list_set",
 						"function_args." + hashcode1 + ".arg_name":  "ip_list",
 						"function_args." + hashcode1 + ".arg_value": "110.110.110.110",
 					}),
@@ -436,8 +436,8 @@ func TestAccAlicloudCdnDomainConfig_ip_white_list(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "ip_white_list_set",
+						"domain_name":                               name,
+						"function_name":                             "ip_white_list_set",
 						"function_args." + hashcode1 + ".arg_name":  "ip_list",
 						"function_args." + hashcode1 + ".arg_value": "110.110.110.110",
 					}),
@@ -504,8 +504,8 @@ func TestAccAlicloudCdnDomainConfig_error_page(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "error_page",
+						"domain_name":                               name,
+						"function_name":                             "error_page",
 						"function_args." + hashcode1 + ".arg_name":  "error_code",
 						"function_args." + hashcode1 + ".arg_value": "502",
 						"function_args." + hashcode2 + ".arg_name":  "rewrite_page",
@@ -567,8 +567,8 @@ func TestAccAlicloudCdnDomainConfig_set_req_host_header(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "set_req_host_header",
+						"domain_name":                               name,
+						"function_name":                             "set_req_host_header",
 						"function_args." + hashcode1 + ".arg_name":  "domain_name",
 						"function_args." + hashcode1 + ".arg_value": "xiaozhu.com",
 					}),
@@ -628,8 +628,8 @@ func TestAccAlicloudCdnDomainConfig_set_hashkey_args(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "set_hashkey_args",
+						"domain_name":                               name,
+						"function_name":                             "set_hashkey_args",
 						"function_args." + hashcode1 + ".arg_name":  "disable",
 						"function_args." + hashcode1 + ".arg_value": "on",
 					}),
@@ -697,8 +697,8 @@ func TestAccAlicloudCdnDomainConfig_aliauth(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "aliauth",
+						"domain_name":                               name,
+						"function_name":                             "aliauth",
 						"function_args." + hashcode1 + ".arg_name":  "auth_type",
 						"function_args." + hashcode1 + ".arg_value": "no_auth",
 						"function_args." + hashcode2 + ".arg_name":  "ali_auth_delta",
@@ -768,8 +768,8 @@ func TestAccAlicloudCdnDomainConfig_set_resp_header(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "set_resp_header",
+						"domain_name":                               name,
+						"function_name":                             "set_resp_header",
 						"function_args." + hashcode1 + ".arg_name":  "key",
 						"function_args." + hashcode1 + ".arg_value": "expires",
 						"function_args." + hashcode2 + ".arg_name":  "value",
@@ -831,8 +831,8 @@ func TestAccAlicloudCdnDomainConfig_https_force(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "https_force",
+						"domain_name":                               name,
+						"function_name":                             "https_force",
 						"function_args." + hashcode1 + ".arg_name":  "enable",
 						"function_args." + hashcode1 + ".arg_value": "on",
 					}),
@@ -892,8 +892,8 @@ func TestAccAlicloudCdnDomainConfig_http_force(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "http_force",
+						"domain_name":                               name,
+						"function_name":                             "http_force",
 						"function_args." + hashcode1 + ".arg_name":  "enable",
 						"function_args." + hashcode1 + ".arg_value": "on",
 					}),
@@ -953,8 +953,8 @@ func TestAccAlicloudCdnDomainConfig_https_option(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "https_option",
+						"domain_name":                               name,
+						"function_name":                             "https_option",
 						"function_args." + hashcode1 + ".arg_name":  "http2",
 						"function_args." + hashcode1 + ".arg_value": "on",
 					}),
@@ -1014,8 +1014,8 @@ func TestAccAlicloudCdnDomainConfig_l2_oss_key(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "l2_oss_key",
+						"domain_name":                               name,
+						"function_name":                             "l2_oss_key",
 						"function_args." + hashcode1 + ".arg_name":  "private_oss_auth",
 						"function_args." + hashcode1 + ".arg_value": "on",
 					}),
@@ -1083,8 +1083,8 @@ func TestAccAlicloudCdnDomainConfig_forward_scheme(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "forward_scheme",
+						"domain_name":                               name,
+						"function_name":                             "forward_scheme",
 						"function_args." + hashcode1 + ".arg_name":  "enable",
 						"function_args." + hashcode1 + ".arg_value": "on",
 						"function_args." + hashcode2 + ".arg_name":  "scheme_origin",
@@ -1146,8 +1146,8 @@ func TestAccAlicloudCdnDomainConfig_green_manager(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "green_manager",
+						"domain_name":                               name,
+						"function_name":                             "green_manager",
 						"function_args." + hashcode1 + ".arg_name":  "enable",
 						"function_args." + hashcode1 + ".arg_value": "on",
 					}),
@@ -1254,8 +1254,8 @@ func TestAccAlicloudCdnDomainConfig_tmd_signature(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "tmd_signature",
+						"domain_name":                               name,
+						"function_name":                             "tmd_signature",
 						"function_args." + hashcode1 + ".arg_name":  "ttl",
 						"function_args." + hashcode1 + ".arg_value": "10",
 						"function_args." + hashcode2 + ".arg_name":  "name",
@@ -1327,8 +1327,8 @@ func TestAccAlicloudCdnDomainConfig_dynamic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "dynamic",
+						"domain_name":                               name,
+						"function_name":                             "dynamic",
 						"function_args." + hashcode1 + ".arg_name":  "enable",
 						"function_args." + hashcode1 + ".arg_value": "on",
 					}),
@@ -1396,8 +1396,8 @@ func TestAccAlicloudCdnDomainConfig_set_req_header(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "set_req_header",
+						"domain_name":                               name,
+						"function_name":                             "set_req_header",
 						"function_args." + hashcode1 + ".arg_name":  "key",
 						"function_args." + hashcode1 + ".arg_value": "tftest",
 						"function_args." + hashcode2 + ".arg_name":  "value",
@@ -1459,8 +1459,8 @@ func TestAccAlicloudCdnDomainConfig_range(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "range",
+						"domain_name":                               name,
+						"function_name":                             "range",
 						"function_args." + hashcode1 + ".arg_name":  "enable",
 						"function_args." + hashcode1 + ".arg_value": "on",
 					}),
@@ -1520,8 +1520,8 @@ func TestAccAlicloudCdnDomainConfig_video_seek(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "video_seek",
+						"domain_name":                               name,
+						"function_name":                             "video_seek",
 						"function_args." + hashcode1 + ".arg_name":  "enable",
 						"function_args." + hashcode1 + ".arg_value": "on",
 					}),
@@ -1581,8 +1581,8 @@ func TestAccAlicloudCdnDomainConfig_https_tls_version(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "https_tls_version",
+						"domain_name":                               name,
+						"function_name":                             "https_tls_version",
 						"function_args." + hashcode1 + ".arg_name":  "tls10",
 						"function_args." + hashcode1 + ".arg_value": "on",
 					}),
@@ -1650,8 +1650,8 @@ func TestAccAlicloudCdnDomainConfig_HSTS(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "HSTS",
+						"domain_name":                               name,
+						"function_name":                             "HSTS",
 						"function_args." + hashcode1 + ".arg_name":  "enabled",
 						"function_args." + hashcode1 + ".arg_value": "on",
 						"function_args." + hashcode2 + ".arg_name":  "https_hsts_max_age",
@@ -1721,8 +1721,8 @@ func TestAccAlicloudCdnDomainConfig_filetype_force_ttl_code(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "filetype_force_ttl_code",
+						"domain_name":                               name,
+						"function_name":                             "filetype_force_ttl_code",
 						"function_args." + hashcode1 + ".arg_name":  "file_type",
 						"function_args." + hashcode1 + ".arg_value": "jpg",
 						"function_args." + hashcode2 + ".arg_name":  "code_string",
@@ -1792,8 +1792,8 @@ func TestAccAlicloudCdnDomainConfig_path_force_ttl_code(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "path_force_ttl_code",
+						"domain_name":                               name,
+						"function_name":                             "path_force_ttl_code",
 						"function_args." + hashcode1 + ".arg_name":  "code_string",
 						"function_args." + hashcode1 + ".arg_value": "302=0",
 						"function_args." + hashcode2 + ".arg_name":  "path",
@@ -1855,8 +1855,8 @@ func TestAccAlicloudCdnDomainConfig_gzip(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "gzip",
+						"domain_name":                               name,
+						"function_name":                             "gzip",
 						"function_args." + hashcode1 + ".arg_name":  "enable",
 						"function_args." + hashcode1 + ".arg_value": "on",
 					}),
@@ -1916,8 +1916,8 @@ func TestAccAlicloudCdnDomainConfig_tesla(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "tesla",
+						"domain_name":                               name,
+						"function_name":                             "tesla",
 						"function_args." + hashcode1 + ".arg_name":  "enable",
 						"function_args." + hashcode1 + ".arg_value": "on",
 					}),
@@ -1984,8 +1984,8 @@ func TestAccAlicloudCdnDomainConfig_https_origin_sni(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "https_origin_sni",
+						"domain_name":                               name,
+						"function_name":                             "https_origin_sni",
 						"function_args." + hashcode1 + ".arg_name":  "enabled",
 						"function_args." + hashcode1 + ".arg_value": "on",
 						"function_args." + hashcode2 + ".arg_name":  "https_origin_sni",
@@ -2055,8 +2055,8 @@ func TestAccAlicloudCdnDomainConfig_brotli(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "brotli",
+						"domain_name":                               name,
+						"function_name":                             "brotli",
 						"function_args." + hashcode1 + ".arg_name":  "brotli_level",
 						"function_args." + hashcode1 + ".arg_value": "1",
 						"function_args." + hashcode2 + ".arg_name":  "enable",
@@ -2126,8 +2126,8 @@ func TestAccAlicloudCdnDomainConfig_ali_ua(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "ali_ua",
+						"domain_name":                               name,
+						"function_name":                             "ali_ua",
 						"function_args." + hashcode1 + ".arg_name":  "ua",
 						"function_args." + hashcode1 + ".arg_value": "User-Agent",
 						"function_args." + hashcode2 + ".arg_name":  "type",
@@ -2205,8 +2205,8 @@ func TestAccAlicloudCdnDomainConfig_host_redirect(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "host_redirect",
+						"domain_name":                               name,
+						"function_name":                             "host_redirect",
 						"function_args." + hashcode1 + ".arg_name":  "regex",
 						"function_args." + hashcode1 + ".arg_value": "/$",
 						"function_args." + hashcode2 + ".arg_name":  "replacement",

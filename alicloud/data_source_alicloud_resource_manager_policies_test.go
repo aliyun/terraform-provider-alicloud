@@ -56,9 +56,9 @@ func TestAccAlicloudResourceManagerPoliciesDataSource(t *testing.T) {
 
 	var existResourceManagerPoliciesRecordsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"policies.#":                  "1",
-			"names.#":                     "1",
-			"ids.#":                       "1",
+			"policies.#": "1",
+			"names.#":    "1",
+			"ids.#":      "1",
 			"policies.0.attachment_count": CHECKSET,
 			"policies.0.create_date":      CHECKSET,
 			"policies.0.default_version":  "v1",

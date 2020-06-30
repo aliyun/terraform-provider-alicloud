@@ -61,9 +61,9 @@ func dataSourceAlicloudResourceManagerResourceDirectorysRead(d *schema.ResourceD
 
 	s := make([]map[string]interface{}, 0)
 	mapping := map[string]interface{}{
-		"master_account_id":     response.ResourceDirectory.MasterAccountId,
-		"master_account_name":   response.ResourceDirectory.MasterAccountName,
-		"id":                    response.ResourceDirectory.ResourceDirectoryId,
+		"master_account_id":   response.ResourceDirectory.MasterAccountId,
+		"master_account_name": response.ResourceDirectory.MasterAccountName,
+		"id": response.ResourceDirectory.ResourceDirectoryId,
 		"resource_directory_id": response.ResourceDirectory.ResourceDirectoryId,
 		"root_folder_id":        response.ResourceDirectory.RootFolderId,
 	}
