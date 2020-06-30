@@ -117,8 +117,8 @@ func alikafkaSaslAclsDecriptionAttributes(d *schema.ResourceData, kafkaAclsInfo 
 			"acl_resource_type":         item.AclResourceType,
 			"acl_resource_name":         item.AclResourceName,
 			"acl_resource_pattern_type": item.AclResourcePatternType,
-			"host":               item.Host,
-			"acl_operation_type": item.AclOperationType,
+			"host":                      item.Host,
+			"acl_operation_type":        item.AclOperationType,
 		}
 
 		name := fmt.Sprintf("%s:%s:%s:%s:%s", item.Username, item.AclResourceType, item.AclResourceName, item.AclResourcePatternType, item.AclOperationType)

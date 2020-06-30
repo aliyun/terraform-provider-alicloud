@@ -91,11 +91,11 @@ func TestAccAlicloudCenRouteMapsDataSource(t *testing.T) {
 
 	var existCenRouteMapsRecordsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"maps.#":                                        "1",
-			"ids.#":                                         "1",
-			"maps.0.id":                                     CHECKSET,
-			"maps.0.cen_region_id":                          defaultRegionToTest,
-			"maps.0.description":                            "datasource_test",
+			"maps.#":               "1",
+			"ids.#":                "1",
+			"maps.0.id":            CHECKSET,
+			"maps.0.cen_region_id": defaultRegionToTest,
+			"maps.0.description":   "datasource_test",
 			"maps.0.destination_instance_ids_reverse_match": CHECKSET,
 			"maps.0.map_result":                             "Permit",
 			"maps.0.priority":                               "3",
