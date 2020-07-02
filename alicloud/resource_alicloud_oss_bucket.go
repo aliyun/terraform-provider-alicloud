@@ -177,9 +177,10 @@ func resourceAlicloudOssBucket() *schema.Resource {
 							},
 						},
 						"noncurrent_version_expiration": {
-							Type:     schema.TypeList,
+							Type:     schema.TypeSet,
 							MaxItems: 1,
 							Optional: true,
+							Set:      expirationHash,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"days": {
@@ -219,9 +220,10 @@ func resourceAlicloudOssBucket() *schema.Resource {
 							},
 						},
 						"noncurrent_version_transition": {
-							Type:     schema.TypeList,
+							Type:     schema.TypeSet,
 							MaxItems: 1,
 							Optional: true,
+							Set:      transitionsHash,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"days": {
@@ -561,6 +563,12 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 			e["days"] = int(lifecycleRule.Expiration.Days)
 			rule["expiration"] = schema.NewSet(expirationHash, []interface{}{e})
 		}
+		//noncurrent_version_expiration
+		if lifecycleRule.NonVersionExpiration != nil {
+			e := make(map[string]interface{})
+			e["days"] = int(lifecycleRule.NonVersionExpiration.NoncurrentDays)
+			rule["noncurrent_version_expiration"] = schema.NewSet(expirationHash, []interface{}{e})
+		}
 		// transitions
 		if len(lifecycleRule.Transitions) != 0 {
 			var eSli []interface{}
@@ -578,6 +586,13 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 				eSli = append(eSli, e)
 			}
 			rule["transitions"] = schema.NewSet(transitionsHash, eSli)
+		}
+		//noncurrent_version_transition
+		if lifecycleRule.NonVersionTransition != nil {
+			e := make(map[string]interface{})
+			e["days"] = int(lifecycleRule.NonVersionTransition.NoncurrentDays)
+			e["storage_class"] = string(lifecycleRule.NonVersionTransition.StorageClass)
+			rule["noncurrent_version_transition"] = schema.NewSet(transitionsHash, []interface{}{e})
 		}
 
 		lrules = append(lrules, rule)
@@ -1012,11 +1027,15 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 
 		// NoncurrentVersionTransition
 		nc_transition := d.Get(fmt.Sprintf("lifecycle_rule.%d.noncurrent_version_transition", i)).(*schema.Set).List()
-		if len(nc_transition) > 0 && nc_expiration[0] != nil {
+		if len(nc_transition) > 0 {
 			e := nc_transition[0].(map[string]interface{})
 			i := oss.LifecycleVersionTransition{}
 			valDays := e["days"].(int)
 			valStorageClass := e["storage_class"].(string)
+
+			if (valDays >= 0) || (valStorageClass == "") {
+				WrapError(Error("'Days' must be set greater than 0. 'storage_class' must be set."))
+			}
 
 			i.NoncurrentDays = valDays
 			i.StorageClass = oss.StorageClassType(valStorageClass)

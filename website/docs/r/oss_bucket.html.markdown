@@ -137,6 +137,36 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
   }
 }
 
+resource "alicloud_oss_bucket" "bucket-lifecycle" {
+  bucket = "bucket-170309-lifecycle"
+  acl    = "public-read"
+
+  lifecycle_rule {
+    id      = "rule-days-noncurrentversion-expiration"
+    prefix  = "path3/"
+    enabled = true
+
+    noncurrent_version_expiration {
+      days = "30"
+    }
+  }
+}
+
+resource "alicloud_oss_bucket" "bucket-lifecycle" {
+  bucket = "bucket-170309-lifecycle"
+  acl    = "public-read"
+
+  lifecycle_rule {
+    id      = "rule-days-noncurrentversion-transition"
+    prefix  = "path3/"
+    enabled = true
+
+    noncurrent_version_transition {
+      days = "29"
+      storage_class = "Archive"
+    }
+  }
+}
 ```
 
 Set bucket policy 
@@ -277,6 +307,12 @@ The lifecycle_rule expiration object supports the following:
 
 `NOTE`: One and only one of "date" and "days" can be specified in one expiration configuration.
 
+#### Block Non-Current Version Expiration
+
+The lifecycle_rule noncurrent_version_expiration object supports the following:
+
+* `days` - (Required, Type: int) Specifies the number of days after object old version creation when the specific rule action takes affect.
+
 #### Block transitions
 
 The lifecycle_rule transitions object supports the following:
@@ -286,6 +322,13 @@ The lifecycle_rule transitions object supports the following:
 * `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`. 
 
 `NOTE`: One and only one of "created_before_date" and "days" can be specified in one transition configuration.
+
+#### Block Non-Current Version Transition
+
+The lifecycle_rule noncurrent_version_transition supports the following:
+
+* `days` - (Required, Type: int) Specified the number of days after object old version creation when the specific rule action takes effect.
+* `storage_class` - (Required) Specifies the storage class that object's old version that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`.
 
 #### Block server-side encryption rule
 
