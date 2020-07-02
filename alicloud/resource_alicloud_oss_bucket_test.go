@@ -468,6 +468,17 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 						"lifecycle_rule.3.transitions." + hashcode6 + ".created_before_date": REMOVEKEY,
 						"lifecycle_rule.3.transitions." + hashcode6 + ".storage_class":       REMOVEKEY,
 
+						"lifecycle_rule.4.id":      REMOVEKEY,
+						"lifecycle_rule.4.prefix":  REMOVEKEY,
+						"lifecycle_rule.4.enabled": REMOVEKEY,
+						"lifecycle_rule.4.noncurrent_version_expiration." + hashcode7 + ".days": REMOVEKEY,
+
+						"lifecycle_rule.5.id":      REMOVEKEY,
+						"lifecycle_rule.5.prefix":  REMOVEKEY,
+						"lifecycle_rule.5.enabled": REMOVEKEY,
+						"lifecycle_rule.5.noncurrent_version_transition." + hashcode8 + ".days":          REMOVEKEY,
+						"lifecycle_rule.5.noncurrent_version_transition." + hashcode8 + ".storage_class": REMOVEKEY,
+
 						"tags.%":           "0",
 						"tags.key1-update": REMOVEKEY,
 						"tags.Key2-update": REMOVEKEY,
