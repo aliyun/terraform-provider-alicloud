@@ -535,6 +535,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cassandra_cluster":                   resourceAlicloudCassandraCluster(),
 			"alicloud_cassandra_data_center":               resourceAlicloudCassandraDataCenter(),
 			"alicloud_cen_vbr_health_check":                resourceAlicloudCenVbrHealthCheck(),
+			"alicloud_eci_openapi_image_cache":             resourceAlicloudEciOpenapiImageCache(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -667,6 +668,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DmsEnterpriseEndpoint = strings.TrimSpace(endpoints["dms_enterprise"].(string))
 		config.WafOpenapiEndpoint = strings.TrimSpace(endpoints["waf_openapi"].(string))
 		config.ResourcemanagerEndpoint = strings.TrimSpace(endpoints["resourcemanager"].(string))
+		config.EciEndpoint = strings.TrimSpace(endpoints["eci"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -845,6 +847,8 @@ func init() {
 		"alidns_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom alidns endpoints.",
 
 		"cassandra_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cassandra endpoints.",
+
+		"eci_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eci endpoints.",
 	}
 }
 
@@ -889,6 +893,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"eci": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["eci_endpoint"],
+				},
+
 				"alidns": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1239,6 +1250,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["resourcemanager"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["alidns"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cassandra"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["eci"].(string)))
 	return hashcode.String(buf.String())
 }
 

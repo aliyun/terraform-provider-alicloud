@@ -12,6 +12,7 @@ import (
 type ServiceCode string
 
 const (
+	EciCode             = ServiceCode("ECI")
 	DdoscooCode         = ServiceCode("DDOSCOO")
 	BssopenapiCode      = ServiceCode("BSSOPENAPI")
 	AlidnsCode          = ServiceCode("ALIDNS")

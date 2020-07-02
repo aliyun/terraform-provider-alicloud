@@ -71,6 +71,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 )
 
@@ -146,6 +147,7 @@ type AliyunClient struct {
 	alidnsConn                   *alidns.Client
 	ddoscooConn                  *ddoscoo.Client
 	cassandraConn                *cassandra.Client
+	eciConn                      *eci.Client
 }
 
 type ApiVersion string
@@ -1858,4 +1860,29 @@ func (client *AliyunClient) WithCassandraClient(do func(*cassandra.Client) (inte
 		client.cassandraConn = cassandraConn
 	}
 	return do(client.cassandraConn)
+}
+
+func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, error)) (interface{}, error) {
+	if client.eciConn == nil {
+		endpoint := client.config.EciEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, EciCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(EciCode), endpoint)
+		}
+
+		eciConn, err := eci.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Eciclient: %#v", err)
+		}
+		eciConn.AppendUserAgent(Terraform, terraformVersion)
+		eciConn.AppendUserAgent(Provider, providerVersion)
+		eciConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.eciConn = eciConn
+	}
+	return do(client.eciConn)
 }
