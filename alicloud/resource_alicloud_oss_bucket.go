@@ -1033,6 +1033,10 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 			valDays := e["days"].(int)
 			valStorageClass := e["storage_class"].(string)
 
+			if (valDays >= 0) || (valStorageClass == "") {
+				WrapError(Error("'Days' must be set greater than 0. 'storage_class' must be set."))
+			}
+
 			i.NoncurrentDays = valDays
 			i.StorageClass = oss.StorageClassType(valStorageClass)
 
