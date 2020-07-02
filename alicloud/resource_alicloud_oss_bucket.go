@@ -176,6 +176,21 @@ func resourceAlicloudOssBucket() *schema.Resource {
 								},
 							},
 						},
+						"noncurrent_version_expiration": {
+							Type:     schema.TypeSet,
+							MaxItems: 1,
+							Optional: true,
+							Set:      expirationHash,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"days": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										ValidateFunc: validation.IntAtLeast(1),
+									},
+								},
+							},
+						},
 						"transitions": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -190,6 +205,31 @@ func resourceAlicloudOssBucket() *schema.Resource {
 									"days": {
 										Type:     schema.TypeInt,
 										Optional: true,
+									},
+									"storage_class": {
+										Type:     schema.TypeString,
+										Default:  oss.StorageStandard,
+										Optional: true,
+										ValidateFunc: validation.StringInSlice([]string{
+											string(oss.StorageStandard),
+											string(oss.StorageIA),
+											string(oss.StorageArchive),
+										}, false),
+									},
+								},
+							},
+						},
+						"noncurrent_version_transition": {
+							Type:     schema.TypeSet,
+							MaxItems: 1,
+							Optional: true,
+							Set:      transitionsHash,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"days": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										ValidateFunc: validation.IntAtLeast(1),
 									},
 									"storage_class": {
 										Type:     schema.TypeString,
@@ -523,6 +563,12 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 			e["days"] = int(lifecycleRule.Expiration.Days)
 			rule["expiration"] = schema.NewSet(expirationHash, []interface{}{e})
 		}
+		//noncurrent_version_expiration
+		if lifecycleRule.NonVersionExpiration != nil {
+			e := make(map[string]interface{})
+			e["days"] = int(lifecycleRule.NonVersionExpiration.NoncurrentDays)
+			rule["noncurrent_version_expiration"] = schema.NewSet(expirationHash, []interface{}{e})
+		}
 		// transitions
 		if len(lifecycleRule.Transitions) != 0 {
 			var eSli []interface{}
@@ -540,6 +586,13 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 				eSli = append(eSli, e)
 			}
 			rule["transitions"] = schema.NewSet(transitionsHash, eSli)
+		}
+		//noncurrent_version_transition
+		if lifecycleRule.NonVersionTransition != nil {
+			e := make(map[string]interface{})
+			e["days"] = int(lifecycleRule.NonVersionTransition.NoncurrentDays)
+			e["storage_class"] = string(lifecycleRule.NonVersionTransition.StorageClass)
+			rule["noncurrent_version_transition"] = schema.NewSet(transitionsHash, []interface{}{e})
 		}
 
 		lrules = append(lrules, rule)
@@ -932,6 +985,18 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 			rule.Expiration = &i
 		}
 
+		//NoncurrentVersionExpiration
+		nc_expiration := d.Get(fmt.Sprintf("lifecycle_rule.%d.noncurrent_version_expiration", i)).(*schema.Set).List()
+		if len(nc_expiration) > 0 && nc_expiration[0] != nil {
+			e := nc_expiration[0].(map[string]interface{})
+			i := oss.LifecycleVersionExpiration{}
+
+			if val, ok := e["days"].(int); ok && val > 0 {
+				i.NoncurrentDays = val
+				rule.NonVersionExpiration = &i
+			}
+		}
+
 		// Transitions
 		transitions := d.Get(fmt.Sprintf("lifecycle_rule.%d.transitions", i)).(*schema.Set).List()
 		if len(transitions) > 0 {
@@ -958,6 +1023,24 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 				}
 				rule.Transitions = append(rule.Transitions, i)
 			}
+		}
+
+		// NoncurrentVersionTransition
+		nc_transition := d.Get(fmt.Sprintf("lifecycle_rule.%d.noncurrent_version_transition", i)).(*schema.Set).List()
+		if len(nc_transition) > 0 {
+			e := nc_transition[0].(map[string]interface{})
+			i := oss.LifecycleVersionTransition{}
+			valDays := e["days"].(int)
+			valStorageClass := e["storage_class"].(string)
+
+			if (valDays >= 0) || (valStorageClass == "") {
+				WrapError(Error("'Days' must be set greater than 0. 'storage_class' must be set."))
+			}
+
+			i.NoncurrentDays = valDays
+			i.StorageClass = oss.StorageClassType(valStorageClass)
+
+			rule.NonVersionTransition = &i
 		}
 
 		rules = append(rules, rule)
