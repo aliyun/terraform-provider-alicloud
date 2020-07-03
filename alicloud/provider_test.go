@@ -199,6 +199,13 @@ func testAccPreCheckWithWafInstanceSetting(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithAlicloudResourceGroupIdSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")); v == "" {
+		t.Skipf("Skipping the test case with no alicloud resource group id setting")
+		t.Skipped()
+	}
+}
+
 func testAccPreCheckWithSmartAccessGatewayAppSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("SAG_APP_INSTANCE_ID")); v == "" {
 		t.Skipf("Skipping the test case with no sag app instance id setting")
