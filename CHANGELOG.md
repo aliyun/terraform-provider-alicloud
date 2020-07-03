@@ -1,4 +1,30 @@
 ## 1.89.0 (Unreleased)
+
+- **New Resource:** `alicloud_eci_image_cache` [GH-2615]
+
+IMPROVEMENTS:
+
+- improve(alikafka): using default vswitch to run alikafka testcases [GH-2591]
+- run 'go mod vendor' to sync [GH-2587]
+- update waf SDK [GH-2616]
+- umodify cen_route_map [GH-2606]
+- modify cen_bandwidth_package [GH-2603]
+- support region cn-wulanchabu [GH-2599]
+- Add version_stage filter [GH-2597]
+- support releasing ddoscoo instance [GH-2595]
+- Support modify system_disk_size online [GH-2593]
+- Changelog [GH-2584]
+
+BUG FIXES:
+
+- fix cms site monitor document [GH-2614]
+- fix_kms_ecs_disk [GH-2613]
+- fix_markdown_ess_notification [GH-2598]
+- fix kms secret, secret version doc [GH-2596]
+- fix testcase for pvtz_zone [GH-2592]
+- fix the dns_record test case bug [GH-2588]
+- fix_markdown_launch_template [GH-2541]
+
 ## 1.88.0 (June 22, 2020)
 
 - **New Resource:** `alicloud_cen_vbr_health_check` ([#2575](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2575))
@@ -20,7 +46,6 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- run 'go mod vendor' to sync ([#2586](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2586))
 - Fix the fc-function testcase and markdown ([#2569](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2569))
 - fix name spelling mistake ([#2558](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2558))
 
