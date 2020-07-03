@@ -199,7 +199,7 @@ func (s *CsService) WaitForCsKubernetes(id string, status Status, timeout int) e
 	}
 }
 
-func (s *CsService) DescribeCsManagedKubernetes(id string) (cluster cs.KubernetesCluster, err error) {
+func (s *CsService) DescribeCsManagedKubernetes(id string) (cluster *cs.KubernetesClusterDetail, err error) {
 	var requestInfo *cs.Client
 	invoker := NewInvoker()
 	var response interface{}
@@ -207,7 +207,7 @@ func (s *CsService) DescribeCsManagedKubernetes(id string) (cluster cs.Kubernete
 	if err := invoker.Run(func() error {
 		raw, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 			requestInfo = csClient
-			return csClient.DescribeKubernetesCluster(id)
+			return csClient.DescribeKubernetesClusterDetail(id)
 		})
 		response = raw
 		return err
@@ -222,8 +222,8 @@ func (s *CsService) DescribeCsManagedKubernetes(id string) (cluster cs.Kubernete
 		requestMap["Id"] = id
 		addDebug("DescribeKubernetesCluster", response, requestInfo, requestMap, map[string]interface{}{"Id": id})
 	}
-	cluster, _ = response.(cs.KubernetesCluster)
-	if cluster.ClusterID != id {
+	cluster, _ = response.(*cs.KubernetesClusterDetail)
+	if cluster.ClusterId != id {
 		return cluster, WrapErrorf(Error(GetNotFoundMessage("CSManagedKubernetes", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
@@ -244,11 +244,11 @@ func (s *CsService) WaitForCSManagedKubernetes(id string, status Status, timeout
 				return WrapError(err)
 			}
 		}
-		if object.ClusterID == id && status != Deleted {
+		if object.ClusterId == id && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ClusterID, id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ClusterId, id, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 

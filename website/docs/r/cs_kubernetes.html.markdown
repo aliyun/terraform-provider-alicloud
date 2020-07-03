@@ -115,7 +115,7 @@ It is a new field since 1.75.0. You can specific network plugin,log component,in
 ```$xslt
     varibales.tf 
     
-    // Flannel 
+    // Network-flannel 
     variable "cluster_addons" {
         description = "Addon components in kubernetes cluster"
     
@@ -128,28 +128,12 @@ It is a new field since 1.75.0. You can specific network plugin,log component,in
             {
                 "name"     = "flannel",
                 "config"   = "",
-            },
-            {
-                "name"     = "flexvolume",
-                "config"   = "",
-            },
-            {
-                "name"     = "alicloud-disk-controller",
-                "config"   = "",
-            },
-            {
-                "name"     = "logtail-ds",
-                "config"   = "{\"IngressDashboardEnabled\":\"true\"}",
-            },
-            {
-                "name"     = "nginx-ingress-controller",
-                "config"   = "{\"IngressSlbNetworkType\":\"internet\"}",
-            },
+            }
         ]
     }
        
     
-    // Terway 
+    // Network-terway 
     variable "cluster_addons" {
         type = list(object({
             name      = string
@@ -160,25 +144,90 @@ It is a new field since 1.75.0. You can specific network plugin,log component,in
             {
                 "name"     = "terway-eniip",
                 "config"   = "",
+            }
+        ]
+    }
+    
+    // Storage-csi
+    variable "cluster_addons" {
+        type = list(object({
+            name      = string
+            config    = string
+        }))
+    
+        default = [
+            {
+                "name"     = "csi-plugin",
+                "config"   = "",
             },
+            {
+                "name"     = "csi-provisioner",
+                "config"   = "",
+            }
+        ]
+    } 
+    
+    // Storage-flexvolume
+    variable "cluster_addons" {
+        type = list(object({
+            name      = string
+            config    = string
+        }))
+    
+        default = [
             {
                 "name"     = "flexvolume",
                 "config"   = "",
-            },
-            {
-                "name"     = "alicloud-disk-controller",
-                "config"   = "",
-            },
+            }
+        ]
+    } 
+    
+    // Log
+    variable "cluster_addons" {
+        type = list(object({
+            name      = string
+            config    = string
+        }))
+    
+        default = [
             {
                 "name"     = "logtail-ds",
-                "config"   = "{\"IngressDashboardEnabled\":\"true\"}",
-            },
+                "config"   = "{\"IngressDashboardEnabled\":\"true\",\"sls_project_name\":\"your-sls-project-name\"}",
+            }
+        ]
+    } 
+    
+    // Ingress
+    variable "cluster_addons" {
+        type = list(object({
+            name      = string
+            config    = string
+        }))
+    
+        default = [
             {
                 "name"     = "nginx-ingress-controller",
                 "config"   = "{\"IngressSlbNetworkType\":\"internet\"}",
             }
         ]
-    }
+    } 
+    
+    // Ingress-Disable
+    variable "cluster_addons" {
+        type = list(object({
+            name      = string
+            config    = string
+            disabled  = bool
+        }))
+    
+        default = [
+            {
+                "name"     = "nginx-ingress-controller",
+                "config"   = "",
+                "disabled": true,
+            }
+        ]
+    } 
   
 ```
 * `logtail-ds` - You can specific `IngressDashboardEnabled` and `sls_project_name` in config. If you switch on `IngressDashboardEnabled` and `sls_project_name`,then logtail-ds would use `sls_project_name` as default log store.
