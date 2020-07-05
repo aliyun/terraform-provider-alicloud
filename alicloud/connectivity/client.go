@@ -70,6 +70,7 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/config"
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
@@ -148,6 +149,7 @@ type AliyunClient struct {
 	ddoscooConn                  *ddoscoo.Client
 	cassandraConn                *cassandra.Client
 	eciConn                      *eci.Client
+	configConn                   *config.Client
 }
 
 type ApiVersion string
@@ -1885,4 +1887,29 @@ func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, err
 		client.eciConn = eciConn
 	}
 	return do(client.eciConn)
+}
+
+func (client *AliyunClient) WithConfigClient(do func(*config.Client) (interface{}, error)) (interface{}, error) {
+	if client.configConn == nil {
+		endpoint := client.config.ConfigEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, ConfigCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(ConfigCode), endpoint)
+		}
+
+		configConn, err := config.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Configclient: %#v", err)
+		}
+		configConn.AppendUserAgent(Terraform, terraformVersion)
+		configConn.AppendUserAgent(Provider, providerVersion)
+		configConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.configConn = configConn
+	}
+	return do(client.configConn)
 }
