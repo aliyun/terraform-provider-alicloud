@@ -101,6 +101,11 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					_, a := d.GetOk("zone_id_slave_a")
+					_, b := d.GetOk("zone_id_slave_b")
+					return (a || b) && (old != new)
+				},
 			},
 			"instance_name": {
 				Type:         schema.TypeString,
@@ -223,6 +228,16 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"ssl_status": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"zone_id_slave_a": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"zone_id_slave_b": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -655,6 +670,12 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_name", instance.DBInstanceDescription)
 	d.Set("maintain_time", instance.MaintainTime)
 	d.Set("auto_upgrade_minor_version", instance.AutoUpgradeMinorVersion)
+	if len(instance.SlaveZones.SlaveZone) == 2 {
+		d.Set("zone_id_slave_a", instance.SlaveZones.SlaveZone[0].ZoneId)
+		d.Set("zone_id_slave_b", instance.SlaveZones.SlaveZone[1].ZoneId)
+	} else if len(instance.SlaveZones.SlaveZone) == 1 {
+		d.Set("zone_id_slave_a", instance.SlaveZones.SlaveZone[0].ZoneId)
+	}
 	if sqlCollectorPolicy.SQLCollectorStatus == "Enable" {
 		d.Set("sql_collector_status", "Enabled")
 	} else {
@@ -840,6 +861,14 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 	request.SecurityIPList = LOCAL_HOST_IP
 	if len(d.Get("security_ips").(*schema.Set).List()) > 0 {
 		request.SecurityIPList = strings.Join(expandStringList(d.Get("security_ips").(*schema.Set).List())[:], COMMA_SEPARATED)
+	}
+
+	if v, ok := d.GetOk("zone_id_slave_a"); ok {
+		request.ZoneIdSlave1 = v.(string)
+	}
+
+	if v, ok := d.GetOk("zone_id_slave_b"); ok {
+		request.ZoneIdSlave2 = v.(string)
 	}
 
 	uuid, err := uuid.GenerateUUID()
