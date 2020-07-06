@@ -94,6 +94,11 @@ func resourceAliyunDisk() *schema.Resource {
 				Computed: true,
 			},
 
+			"kms_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -128,6 +133,10 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
 		request.DiskName = v.(string)
+	}
+
+	if v, ok := d.GetOk("kms_key_id"); ok && v.(string) != "" {
+		request.KMSKeyId = v.(string)
 	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
@@ -188,6 +197,7 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("name", object.DiskName)
 	d.Set("description", object.Description)
 	d.Set("snapshot_id", object.SourceSnapshotId)
+	d.Set("kms_key_id", object.KMSKeyId)
 	d.Set("encrypted", object.Encrypted)
 	d.Set("delete_auto_snapshot", object.DeleteAutoSnapshot)
 	d.Set("delete_with_instance", object.DeleteWithInstance)

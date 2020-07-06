@@ -1,4 +1,31 @@
-## 1.89.0 (Unreleased)
+## 1.90.0 (Unreleased)
+## 1.89.0 (July 03, 2020)
+
+- **New Resource:** `alicloud_eci_image_cache` ([#2615](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2615))
+
+IMPROVEMENTS:
+
+- improve(alikafka): using default vswitch to run alikafka testcases ([#2591](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2591))
+- run 'go mod vendor' to sync ([#2587](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2587))
+- update waf SDK ([#2616](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2616))
+- umodify cen_route_map ([#2606](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2606))
+- modify cen_bandwidth_package ([#2603](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2603))
+- support region cn-wulanchabu ([#2599](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2599))
+- Add version_stage filter ([#2597](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2597))
+- support releasing ddoscoo instance ([#2595](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2595))
+- Support modify system_disk_size online ([#2593](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2593))
+- Changelog ([#2584](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2584))
+
+BUG FIXES:
+
+- fix cms site monitor document ([#2614](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2614))
+- fix_kms_ecs_disk ([#2613](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2613))
+- fix_markdown_ess_notification ([#2598](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2598))
+- fix kms secret, secret version doc ([#2596](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2596))
+- fix testcase for pvtz_zone ([#2592](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2592))
+- fix the dns_record test case bug ([#2588](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2588))
+- fix_markdown_launch_template ([#2541](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2541))
+
 ## 1.88.0 (June 22, 2020)
 
 - **New Resource:** `alicloud_cen_vbr_health_check` ([#2575](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2575))
@@ -20,7 +47,6 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-- run 'go mod vendor' to sync ([#2586](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2586))
 - Fix the fc-function testcase and markdown ([#2569](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2569))
 - fix name spelling mistake ([#2558](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2558))
 

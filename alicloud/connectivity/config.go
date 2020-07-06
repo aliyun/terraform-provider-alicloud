@@ -88,6 +88,7 @@ type Config struct {
 	BssopenapiEndpoint      string
 	AlidnsEndpoint          string
 	CassandraEndpoint       string
+	EciEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {

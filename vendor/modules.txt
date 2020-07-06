@@ -10,13 +10,7 @@ cloud.google.com/go/storage
 github.com/Sirupsen/logrus
 # github.com/agext/levenshtein v1.2.2
 github.com/agext/levenshtein
-# github.com/aliyun/alibaba-cloud-sdk-go v1.61.278
-github.com/aliyun/alibaba-cloud-sdk-go/sdk
-github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth
-github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials
-github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials/provider
-github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/signers
-github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints
+# github.com/aliyun/alibaba-cloud-sdk-go v1.61.299
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses
@@ -40,6 +34,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo
 github.com/aliyun/alibaba-cloud-sdk-go/services/dds
 github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise
 github.com/aliyun/alibaba-cloud-sdk-go/services/drds
+github.com/aliyun/alibaba-cloud-sdk-go/services/eci
 github.com/aliyun/alibaba-cloud-sdk-go/services/ecs
 github.com/aliyun/alibaba-cloud-sdk-go/services/edas
 github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch
