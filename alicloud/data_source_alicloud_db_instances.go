@@ -183,6 +183,18 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"master_zone": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"zone_id_slave_a": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"zone_id_slave_b": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -320,6 +332,13 @@ func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, dbi []rds
 			"port":                     instance.Port,
 			"db_instance_storage_type": instance.DBInstanceStorageType,
 			"instance_storage":         instance.DBInstanceStorage,
+			"master_zone":              instance.MasterZone,
+		}
+		if len(instance.SlaveZones.SlaveZone) == 2 {
+			mapping["zone_id_slave_a"] = instance.SlaveZones.SlaveZone[0].ZoneId
+			mapping["zone_id_slave_b"] = instance.SlaveZones.SlaveZone[1].ZoneId
+		} else if len(instance.SlaveZones.SlaveZone) == 1 {
+			mapping["zone_id_slave_a"] = instance.SlaveZones.SlaveZone[0].ZoneId
 		}
 
 		ids = append(ids, item.DBInstanceId)
