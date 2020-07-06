@@ -765,6 +765,43 @@ func (s *RdsService) DescribeSecurityGroupConfiguration(id string) ([]string, er
 	return groupIds, nil
 }
 
+func (s *RdsService) DescribeDBInstanceSSL(id string) (*rds.DescribeDBInstanceSSLResponse, error) {
+	response := &rds.DescribeDBInstanceSSLResponse{}
+	request := rds.CreateDescribeDBInstanceSSLRequest()
+	request.RegionId = s.client.RegionId
+	request.DBInstanceId = id
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DescribeDBInstanceSSL(request)
+	})
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ = raw.(*rds.DescribeDBInstanceSSLResponse)
+	return response, nil
+}
+
+func (s *RdsService) DescribeRdsTDEInfo(id string) (*rds.DescribeDBInstanceTDEResponse, error) {
+
+	response := &rds.DescribeDBInstanceTDEResponse{}
+	request := rds.CreateDescribeDBInstanceTDERequest()
+	request.RegionId = s.client.RegionId
+	request.DBInstanceId = id
+	statErr := s.WaitForDBInstance(id, Running, DefaultLongTimeout)
+	if statErr != nil {
+		return response, WrapError(statErr)
+	}
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DescribeDBInstanceTDE(request)
+	})
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ = raw.(*rds.DescribeDBInstanceTDEResponse)
+	return response, nil
+}
+
 func (s *RdsService) ModifySecurityGroupConfiguration(id string, groupid string) error {
 	request := rds.CreateModifySecurityGroupConfigurationRequest()
 	request.RegionId = s.client.RegionId
