@@ -12,7 +12,6 @@ import (
 func TestAccAlicloudWafInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	wafInstanceId := os.Getenv("ALICLOUD_WAF_INSTANCE_ID")
-	resourceGroupId := os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudWafInstanceDataSourceConfig(rand, map[string]string{
 			"ids": fmt.Sprintf(`["%s"]`, wafInstanceId),
@@ -43,11 +42,11 @@ func TestAccAlicloudWafInstancesDataSource(t *testing.T) {
 
 	resourceGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudWafInstanceDataSourceConfig(rand, map[string]string{
-			"resource_group_id": fmt.Sprintf(`"%s"`, resourceGroupId),
+			"resource_group_id": "data.alicloud_resource_manager_resource_groups.default.groups.0.id",
 		}),
 		fakeConfig: testAccCheckAlicloudWafInstanceDataSourceConfig(rand, map[string]string{
 			"ids":               `["fake"]`,
-			"resource_group_id": fmt.Sprintf(`"%s"`, resourceGroupId),
+			"resource_group_id": "data.alicloud_resource_manager_resource_groups.default.groups.0.id",
 		}),
 	}
 
@@ -56,13 +55,13 @@ func TestAccAlicloudWafInstancesDataSource(t *testing.T) {
 			"ids":               fmt.Sprintf(`["%s"]`, wafInstanceId),
 			"status":            `"1"`,
 			"instance_source":   `"waf-cloud"`,
-			"resource_group_id": fmt.Sprintf(`"%s"`, resourceGroupId),
+			"resource_group_id": "data.alicloud_resource_manager_resource_groups.default.groups.0.id",
 		}),
 		fakeConfig: testAccCheckAlicloudWafInstanceDataSourceConfig(rand, map[string]string{
 			"ids":               `["fake"]`,
 			"status":            `"1"`,
 			"instance_source":   `"waf-cloud"`,
-			"resource_group_id": fmt.Sprintf(`"%s"`, resourceGroupId),
+			"resource_group_id": "data.alicloud_resource_manager_resource_groups.default.groups.0.id",
 		}),
 	}
 
@@ -98,7 +97,6 @@ func TestAccAlicloudWafInstancesDataSource(t *testing.T) {
 	var perCheck = func() {
 		testAccPreCheck(t)
 		testAccPreCheckWithWafInstanceSetting(t)
-		testAccPreCheckWithAlicloudResourceGroupIdSetting(t)
 	}
 
 	wafInstancesRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, perCheck, idsConf, statusConf, instanceSourceConf, resourceGroupIdConf, allConf)
@@ -112,6 +110,10 @@ func testAccCheckAlicloudWafInstanceDataSourceConfig(rand int, attrMap map[strin
 	}
 
 	config := fmt.Sprintf(`
+data "alicloud_resource_manager_resource_groups" "default"{
+	name_regex = "default"
+}
+
 data "alicloud_waf_instances" "default" {
   %s
 }
