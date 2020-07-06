@@ -73,6 +73,7 @@ The `certificate_config` block supports the following:
 The following attributes are exported:
 
 * `id` - The cdn domain id. The value is same as the domain name.
+* `cname` - The CNAME of the CDN domain.
 
 ## Import
 
