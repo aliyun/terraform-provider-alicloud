@@ -429,6 +429,88 @@ func TestAccAlicloudDBInstanceMultiInstance(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudDBInstanceSlaveZoneInstance(t *testing.T) {
+	var instance *rds.DBInstanceAttribute
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap2)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "tf-testAccDBInstanceConfig_slave_zone"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceSlaveZoneConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":               "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}",
+					"engine_version":       "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
+					"instance_type":        "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":     "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
+					"instance_charge_type": "Postpaid",
+					"instance_name":        "${var.name}",
+					"zone_id":              "${alicloud_vswitch.default.availability_zone}",
+					"slave_zone_ids":       []string{"${alicloud_vswitch.default.availability_zone}"},
+					"vswitch_id":           "${alicloud_vswitch.default.id},${alicloud_vswitch.default.id}",
+					"monitoring_period":    "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":         "MySQL",
+						"engine_version": "8.0",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceDBInstanceSlaveZoneConfigDependence(name string) string {
+	return fmt.Sprintf(`
+%s
+variable "name" {
+	default = "%s"
+}
+variable "creation" {
+		default = "Rds"
+}
+
+data "alicloud_db_instance_engines" "default" {
+  instance_charge_type = "PostPaid"
+  engine               = "MySQL"
+  engine_version       = "8.0"
+}
+
+data "alicloud_db_instance_classes" "default" {
+  instance_charge_type = "PostPaid"
+  engine               = "MySQL"
+  engine_version       = "8.0"
+  storage_type       = "local_ssd"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
+
+resource "alicloud_security_group" "default" {
+	name   = "${var.name}"
+	vpc_id = "${alicloud_vpc.default.id}"
+}
+`, RdsCommonTestCase, name)
+}
+
 // Unknown current resource exists
 func TestAccAlicloudDBInstanceSQLServer(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
@@ -1107,6 +1189,19 @@ var instanceBasicMap = map[string]string{
 	"instance_type":        CHECKSET,
 	"instance_storage":     "5",
 	"instance_name":        "tf-testAccDBInstanceConfig",
+	"monitoring_period":    "60",
+	"zone_id":              CHECKSET,
+	"instance_charge_type": "Postpaid",
+	"connection_string":    CHECKSET,
+	"port":                 CHECKSET,
+}
+
+var instanceBasicMap2 = map[string]string{
+	"engine":               "MySQL",
+	"engine_version":       "8.0",
+	"instance_type":        CHECKSET,
+	"instance_storage":     "5",
+	"instance_name":        "tf-testAccDBInstanceConfig_slave_zone",
 	"monitoring_period":    "60",
 	"zone_id":              CHECKSET,
 	"instance_charge_type": "Postpaid",

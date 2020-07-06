@@ -77,3 +77,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `connection_string` - (Available in 1.70.3+) RDS database connection string.
   * `instance_storage` - (Available in 1.70.3+) User-defined DB instance storage space.
   * `db_instance_storage_type` - (Available in 1.70.3+) The storage type of the instance.
+  * `master_zone` - (Available in 1.89.0+) The master zone of the instance.
+  * `slave_zone_ids` - (Available in 1.89.0+) A list of IDs of slave_zone of the slave instance.

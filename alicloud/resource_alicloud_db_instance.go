@@ -208,6 +208,14 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			"slave_zone_ids": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Optional: true,
+				MaxItems: 2,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -558,6 +566,11 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
+	var slaveZoneIds []string
+	for _, id := range instance.SlaveZones.SlaveZone {
+		slaveZoneIds = append(slaveZoneIds, id.ZoneId)
+	}
+
 	d.Set("resource_group_id", instance.ResourceGroupId)
 	d.Set("monitoring_period", monitoringPeriod)
 
@@ -573,11 +586,12 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("zone_id", instance.ZoneId)
 	d.Set("instance_charge_type", instance.PayType)
 	d.Set("period", d.Get("period"))
-	d.Set("vswitch_id", instance.VSwitchId)
+	d.Set("vswitch_id", d.Get("vswitch_id"))
 	d.Set("connection_string", instance.ConnectionString)
 	d.Set("instance_name", instance.DBInstanceDescription)
 	d.Set("maintain_time", instance.MaintainTime)
 	d.Set("auto_upgrade_minor_version", instance.AutoUpgradeMinorVersion)
+	d.Set("slave_zone_ids", slaveZoneIds)
 	if sqlCollectorPolicy.SQLCollectorStatus == "Enable" {
 		d.Set("sql_collector_status", "Enabled")
 	} else {
@@ -750,6 +764,16 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 	request.SecurityIPList = LOCAL_HOST_IP
 	if len(d.Get("security_ips").(*schema.Set).List()) > 0 {
 		request.SecurityIPList = strings.Join(expandStringList(d.Get("security_ips").(*schema.Set).List())[:], COMMA_SEPARATED)
+	}
+
+	if v, ok := d.GetOk("slave_zone_ids"); ok {
+		slaveZoneIds := v.([]interface{})
+		if len(slaveZoneIds) > 0 {
+			request.ZoneIdSlave1 = slaveZoneIds[0].(string)
+		}
+		if len(slaveZoneIds) > 1 {
+			request.ZoneIdSlave2 = slaveZoneIds[1].(string)
+		}
 	}
 
 	uuid, err := uuid.GenerateUUID()

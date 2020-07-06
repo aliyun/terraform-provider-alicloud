@@ -140,6 +140,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `auto_upgrade_minor_version` - (Optional, Available in 1.62.1+) The upgrade method to use. Valid values:
    - Auto: Instances are automatically upgraded to a higher minor version.
    - Manual: Instances are forcibly upgraded to a higher minor version when the current version is unpublished.
+* `slave_zone_ids` - (Optional, ForceNew, Available in 1.89.0+) List of slave zone ids can specify slave zone ids when creating the high-availability or enterprise edition instances. Meanwhile, `vswitch_id` needs to pass in the corresponding vswitch id to the slave zone by order. For example, `zone_id = "zone-a"` and `slave_zone_ids = ["zone-c", "zone-b"]`, then the `vswitch_id` must be `"vsw-zone-a,vsw-zone-c,vsw-zone-b"`. Of course, you can also choose automatic allocation, for example, `zone_id = "zone-a"` and `slave_zone_ids = ["Auto", "Auto"]`, then the `vswitch_id` must be `"vsw-zone-a,Auto,Auto"`. The list contains up to 2 slave zone ids, separated by commas.
    
    Default to "Manual". See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
 
