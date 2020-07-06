@@ -152,7 +152,8 @@ func resourceAlicloudOssBucket() *schema.Resource {
 						},
 						"prefix": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+							Default:  "",
 						},
 						"enabled": {
 							Type:     schema.TypeBool,

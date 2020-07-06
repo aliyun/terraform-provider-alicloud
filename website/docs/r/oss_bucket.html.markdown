@@ -261,7 +261,7 @@ The referer configuration supports the following:
 The lifecycle_rule object supports the following:
 
 * `id` - (Optional) Unique identifier for the rule. If omitted, OSS bucket will assign a unique name.
-* `prefix` - (Required) Object key prefix identifying one or more objects to which the rule applies.
+* `prefix` - (Optional, Available in v1.90.0+) Object key prefix identifying one or more objects to which the rule applies. Default value is null, the rule applies to all objects in a bucket.
 * `enabled` - (Required, Type: bool) Specifies lifecycle rule status.
 * `expiration` - (Optional, Type: set) Specifies a period in the object's expire (documented below).
 * `transitions` - (Optional, Type: set, Available in 1.62.1+) Specifies the time when an object is converted to the IA or archive storage class during a valid life cycle. (documented below).
