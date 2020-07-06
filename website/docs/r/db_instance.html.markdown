@@ -143,6 +143,9 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
    
    Default to "Manual". See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
 
+* `ssl_action` - (Optional, Available in v1.90.0+) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate.
+* `tde_status` - (Optional, ForceNew, Available in 1.90.0+) The TDE(Transparent Data Encryption) status.
+
 -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
 ## Attributes Reference
@@ -152,6 +155,8 @@ The following attributes are exported:
 * `id` - The RDS instance ID.
 * `port` - RDS database connection port.
 * `connection_string` - RDS database connection string.
+* `ssl_status` - Status of the SSL feature. `Yes`: SSL is turned on; `No`: SSL is turned off.
+
 
 ### Timeouts
 
