@@ -1030,9 +1030,14 @@ func TestAccAlicloudDBInstanceClassic(t *testing.T) {
 					"zone_id":              `${lookup(data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids[length(data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids)-1], "id")}`,
 					"instance_name":        "${var.name}",
 					"monitoring_period":    "60",
+					"tde_status":           "Enabled",
+					"ssl_action":           "Open",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"tde_status": "Enabled",
+						"ssl_status": "Yes",
+					}),
 				),
 			},
 		},
