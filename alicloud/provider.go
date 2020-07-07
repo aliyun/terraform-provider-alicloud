@@ -298,6 +298,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cassandra_zones":                       dataSourceAlicloudCassandraZones(),
 			"alicloud_kms_secret_versions":                   dataSourceAlicloudKmsSecretVersions(),
 			"alicloud_waf_instances":                         dataSourceAlicloudWafInstances(),
+			"alicloud_eci_image_caches":                      dataSourceAlicloudEciImageCaches(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -536,7 +537,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cassandra_cluster":                   resourceAlicloudCassandraCluster(),
 			"alicloud_cassandra_data_center":               resourceAlicloudCassandraDataCenter(),
 			"alicloud_cen_vbr_health_check":                resourceAlicloudCenVbrHealthCheck(),
-			"alicloud_eci_openapi_image_cache":             resourceAlicloudEciOpenapiImageCache(),
+			"alicloud_eci_openapi_image_cache":             resourceAlicloudEciImageCache(),
+			"alicloud_eci_image_cache":                     resourceAlicloudEciImageCache(),
 		},
 
 		ConfigureFunc: providerConfigure,

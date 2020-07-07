@@ -10,7 +10,7 @@ type EciService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *EciService) DescribeEciOpenapiImageCache(id string) (object eci.DescribeImageCachesImageCache0, err error) {
+func (s *EciService) DescribeEciImageCache(id string) (object eci.DescribeImageCachesImageCache0, err error) {
 	request := eci.CreateDescribeImageCachesRequest()
 	request.RegionId = s.client.RegionId
 
@@ -27,15 +27,15 @@ func (s *EciService) DescribeEciOpenapiImageCache(id string) (object eci.Describ
 	response, _ := raw.(*eci.DescribeImageCachesResponse)
 
 	if len(response.ImageCaches) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("EciOpenapiImageCache", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("EciImageCache", id)), NotFoundMsg, ProviderERROR)
 		return
 	}
 	return response.ImageCaches[0], nil
 }
 
-func (s *EciService) EciOpenapiImageCacheStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *EciService) EciImageCacheStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeEciOpenapiImageCache(id)
+		object, err := s.DescribeEciImageCache(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.

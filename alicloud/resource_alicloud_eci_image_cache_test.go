@@ -14,15 +14,15 @@ import (
 
 func TestAccAlicloudECIOpenAPIImageCache_basic(t *testing.T) {
 	var v eci.DescribeImageCachesImageCache0
-	resourceId := "alicloud_eci_openapi_image_cache.default"
+	resourceId := "alicloud_eci_image_cache.default"
 	ra := resourceAttrInit(resourceId, EciOpenapiImageCacheMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEciOpenapiImageCache")
+	}, "DescribeEciImageCache")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccEciOpenapiImageCache%d", rand)
+	name := fmt.Sprintf("tf-testAccEciImageCache%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, EciOpenapiImageCacheBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
