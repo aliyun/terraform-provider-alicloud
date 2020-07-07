@@ -1,13 +1,13 @@
 ---
 subcategory: "Elastic Container Instance (ECI)"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_eci_openapi_image_cache"
-sidebar_current: "docs-alicloud-eci-openapi-image-cache"
+page_title: "Alicloud: alicloud_eci_image_cache"
+sidebar_current: "docs-alicloud-eci-image-cache"
 description: |-
   Provides an Alicloud ECI Image Cache resource.
 ---
 
-# alicloud\_eci\_openapi\_image\_cache
+# alicloud\_eci\_image\_cache
 
 An ECI Image Cache can help user to solve the time-consuming problem of image pull. For information about Alicloud ECI Image Cache and how to use it, see [What is Resource Alicloud ECI Image Cache](https://www.alibabacloud.com/help/doc-detail/146891.htm).
 
@@ -20,7 +20,7 @@ An ECI Image Cache can help user to solve the time-consuming problem of image pu
 Basic Usage
 
 ```
-resource "alicloud_eci_openapi_image_cache" "example" {
+resource "alicloud_eci_image_cache" "example" {
   image_cache_name  = "tf-test"
   images            = ["registry.cn-beijing.aliyuncs.com/sceneplatform/sae-image-xxxx:latest"]
   security_group_id = "sg-2zeef68b66fxxxx"
@@ -59,5 +59,5 @@ The following arguments are supported:
 ECI Image Cache can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_eci_openapi_image_cache.example abc123456
+$ terraform import alicloud_eci_image_cache.example abc123456
 ```

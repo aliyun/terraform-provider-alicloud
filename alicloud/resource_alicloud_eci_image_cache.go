@@ -10,11 +10,11 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func resourceAlicloudEciOpenapiImageCache() *schema.Resource {
+func resourceAlicloudEciImageCache() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudEciOpenapiImageCacheCreate,
-		Read:   resourceAlicloudEciOpenapiImageCacheRead,
-		Delete: resourceAlicloudEciOpenapiImageCacheDelete,
+		Create: resourceAlicloudEciImageCacheCreate,
+		Read:   resourceAlicloudEciImageCacheRead,
+		Delete: resourceAlicloudEciImageCacheDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -103,7 +103,7 @@ func resourceAlicloudEciOpenapiImageCache() *schema.Resource {
 	}
 }
 
-func resourceAlicloudEciOpenapiImageCacheCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEciImageCacheCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eciService := EciService{client}
 
@@ -148,22 +148,22 @@ func resourceAlicloudEciOpenapiImageCacheCreate(d *schema.ResourceData, meta int
 		return eciClient.CreateImageCache(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eci_openapi_image_cache", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eci_image_cache", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*eci.CreateImageCacheResponse)
 	d.SetId(fmt.Sprintf("%v", response.ImageCacheId))
-	stateConf := BuildStateConf([]string{}, []string{"Ready"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, eciService.EciOpenapiImageCacheStateRefreshFunc(d.Id(), []string{"Failed"}))
+	stateConf := BuildStateConf([]string{}, []string{"Ready"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, eciService.EciImageCacheStateRefreshFunc(d.Id(), []string{"Failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudEciOpenapiImageCacheRead(d, meta)
+	return resourceAlicloudEciImageCacheRead(d, meta)
 }
-func resourceAlicloudEciOpenapiImageCacheRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEciImageCacheRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eciService := EciService{client}
-	object, err := eciService.DescribeEciOpenapiImageCache(d.Id())
+	object, err := eciService.DescribeEciImageCache(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -178,7 +178,7 @@ func resourceAlicloudEciOpenapiImageCacheRead(d *schema.ResourceData, meta inter
 	d.Set("status", object.Status)
 	return nil
 }
-func resourceAlicloudEciOpenapiImageCacheDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEciImageCacheDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := eci.CreateDeleteImageCacheRequest()
 	request.ImageCacheId = d.Id()
