@@ -102,10 +102,14 @@ to create scheduled task, different type rules and alarm task one-click.
 
 The following arguments are supported:
 
-* `scheduled_action` - (Required) The operation to be performed when a scheduled task is triggered. Enter the unique identifier of a scaling rule.
+* `scheduled_action` - (Optional) The operation to be performed when a scheduled task is triggered. Enter the unique identifier of a scaling rule. **NOTE:** You cannot specify `scheduled_action` and `scaling_group_id` at the same time.
 * `scheduled_task_name` - (Optional) Display name of the scheduled task, which must be 2-40 characters (English or Chinese) long.
+* `scaling_group_id` - (Optional, Available in 1.90.0+) The ID of the scaling group where the number of instances is modified when the scheduled task is triggered. After the `ScalingGroupId` parameter is specified, the scaling method of the scheduled task is to specify the number of instances in a scaling group. You must specify at least one of the following parameters: `MinValue`, `MaxValue`, and `DesiredCapacity`. **NOTE:** You cannot specify `scheduled_action` and `scaling_group_id` at the same time.
+* `min_value` - (Optional, Available in 1.90.0+) The minimum number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group.
+* `max_value` - (Optional, Available in 1.90.0+) The maximum number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group.
+* `desired_capacity` - (Optional, Available in 1.90.0+) The expected number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group. **NOTE:** You must specify the `DesiredCapacity` parameter when you create the scaling group.
 * `description` - (Optional) Description of the scheduled task, which is 2-200 characters (English or Chinese) long.
-* `launch_time` - (Required) The time at which the scheduled task is triggered. Specify the time in the ISO 8601 standard in the YYYY-MM-DDThh:mm:ssZ format. 
+* `launch_time` - (Optional) The time at which the scheduled task is triggered. Specify the time in the ISO 8601 standard in the YYYY-MM-DDThh:mm:ssZ format. 
 The time must be in UTC. You cannot enter a time point later than 90 days from the date of scheduled task creation. 
 If the `recurrence_type` parameter is specified, the task is executed repeatedly at the time specified by LaunchTime. 
 Otherwise, the task is only executed once at the date and time specified by LaunchTime.
@@ -140,3 +144,4 @@ ESS schedule task can be imported using the id, e.g.
 ```
 $ terraform import alicloud_ess_scheduled_task.example abc123456
 ```
+

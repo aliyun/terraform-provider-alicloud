@@ -20,12 +20,13 @@ func resourceAlicloudEssScheduledTask() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"scheduled_action": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"scaling_group_id"},
 			},
 			"launch_time": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 			"scheduled_task_name": {
 				Type:     schema.TypeString,
@@ -36,11 +37,29 @@ func resourceAlicloudEssScheduledTask() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+			"scaling_group_id": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"scheduled_action"},
+			},
 			"launch_expiration_time": {
 				Type:         schema.TypeInt,
 				Default:      600,
 				Optional:     true,
 				ValidateFunc: validation.IntBetween(0, 21600),
+			},
+			"min_value": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"max_value": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"desired_capacity": {
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			//RecurrenceType, RecurrenceValue and RecurrenceEndTime must be specified.
 			"recurrence_type": {
@@ -109,6 +128,10 @@ func resourceAliyunEssScheduledTaskRead(d *schema.ResourceData, meta interface{}
 	d.Set("recurrence_value", object.RecurrenceValue)
 	d.Set("recurrence_end_time", object.RecurrenceEndTime)
 	d.Set("task_enabled", object.TaskEnabled)
+	d.Set("min_value", object.MinValue)
+	d.Set("max_value", object.MaxValue)
+	d.Set("desired_capacity", object.DesiredCapacity)
+	d.Set("scaling_group_id", object.ScalingGroupId)
 
 	return nil
 }
@@ -124,6 +147,22 @@ func resourceAliyunEssScheduledTaskUpdate(d *schema.ResourceData, meta interface
 
 	if d.HasChange("scheduled_task_name") {
 		request.ScheduledTaskName = d.Get("scheduled_task_name").(string)
+	}
+
+	if d.HasChange("scaling_group_id") {
+		request.ScalingGroupId = d.Get("scaling_group_id").(string)
+	}
+
+	if d.HasChange("min_value") {
+		request.MinValue = requests.NewInteger(d.Get("min_value").(int))
+	}
+
+	if d.HasChange("max_value") {
+		request.MaxValue = requests.NewInteger(d.Get("max_value").(int))
+	}
+
+	if d.HasChange("desired_capacity") {
+		request.DesiredCapacity = requests.NewInteger(d.Get("desired_capacity").(int))
 	}
 
 	if d.HasChange("description") {
@@ -181,8 +220,13 @@ func resourceAliyunEssScheduledTaskDelete(d *schema.ResourceData, meta interface
 
 func buildAlicloudEssScheduledTaskArgs(d *schema.ResourceData) *ess.CreateScheduledTaskRequest {
 	request := ess.CreateCreateScheduledTaskRequest()
-	request.ScheduledAction = d.Get("scheduled_action").(string)
-	request.LaunchTime = d.Get("launch_time").(string)
+	if v, ok := d.GetOk("scheduled_action"); ok && v.(string) != "" {
+		request.ScheduledAction = v.(string)
+	}
+
+	if v, ok := d.GetOk("launch_time"); ok && v.(string) != "" {
+		request.LaunchTime = v.(string)
+	}
 
 	if v, ok := d.GetOk("task_enabled"); ok {
 		request.TaskEnabled = requests.NewBoolean(v.(bool))
@@ -208,8 +252,24 @@ func buildAlicloudEssScheduledTaskArgs(d *schema.ResourceData) *ess.CreateSchedu
 		request.RecurrenceEndTime = v.(string)
 	}
 
+	if v, ok := d.GetOk("scaling_group_id"); ok && v.(string) != "" {
+		request.ScalingGroupId = v.(string)
+	}
+
 	if v, ok := d.GetOk("launch_expiration_time"); ok && v.(int) != 0 {
 		request.LaunchExpirationTime = requests.NewInteger(v.(int))
+	}
+
+	if v, ok := d.GetOk("min_value"); ok && v.(int) != 0 {
+		request.MinValue = requests.NewInteger(v.(int))
+	}
+
+	if v, ok := d.GetOk("max_value"); ok && v.(int) != 0 {
+		request.MaxValue = requests.NewInteger(v.(int))
+	}
+
+	if v, ok := d.GetOk("desired_capacity"); ok && v.(int) != 0 {
+		request.DesiredCapacity = requests.NewInteger(v.(int))
 	}
 
 	return request
