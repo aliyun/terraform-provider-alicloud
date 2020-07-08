@@ -203,6 +203,86 @@ func TestAccAlicloudEssScheduledTask_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudEssScheduledTask_basic_2(t *testing.T) {
+	var v ess.ScheduledTask
+	resourceId := "alicloud_ess_scheduled_task.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	// Setting schedule time to more than one day
+	oneDay, _ := time.ParseDuration("24h")
+	rand := acctest.RandIntRange(1000, 999999)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEssScheduleConfig_2(EcsInstanceCommonTestCase,
+					time.Now().Add(oneDay).Format("2006-01-02T15:04Z"), rand),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_id":       CHECKSET,
+						"launch_time":            CHECKSET,
+						"scheduled_task_name":    fmt.Sprintf("tf-testAccEssScheduleConfig-%d", rand),
+						"launch_expiration_time": "600",
+						"task_enabled":           "true",
+						"min_value":              "1",
+						"max_value":              "5",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccEssScheduleUpdateMin(EcsInstanceCommonTestCase,
+					time.Now().Add(oneDay).Format("2006-01-02T15:04Z"), rand),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"min_value": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScheduleUpdateMax(EcsInstanceCommonTestCase,
+					time.Now().Add(oneDay).Format("2006-01-02T15:04Z"), rand),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_value": "4",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScheduleUpdateMinMax(EcsInstanceCommonTestCase,
+					time.Now().Add(oneDay).Format("2006-01-02T15:04Z"), rand),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"min_value": "3",
+						"max_value": "6",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudEssScheduledTask_multi(t *testing.T) {
 	var v ess.ScheduledTask
 	resourceId := "alicloud_ess_scheduled_task.default.9"
@@ -303,6 +383,46 @@ func testAccEssScheduleConfig(common, scheduleTime string, rand int) string {
 	`, common, rand, scheduleTime)
 }
 
+func testAccEssScheduleConfig_2(common, scheduleTime string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScheduleConfig-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}
+	
+	resource "alicloud_ess_scaling_configuration" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		force_delete = "true"
+	}
+	
+	resource "alicloud_ess_scaling_rule" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		adjustment_type = "TotalCapacity"
+		adjustment_value = 2
+		cooldown = 60
+	}
+	
+	resource "alicloud_ess_scheduled_task" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		launch_time = "%s"
+		scheduled_task_name = "${var.name}"
+		min_value = 1
+  		max_value = 5
+	}
+	`, common, rand, scheduleTime)
+}
+
 func testAccEssScheduleUpdateScheduledTaskName(common, scheduleTime string, rand int) string {
 	return fmt.Sprintf(`
 	%s
@@ -376,6 +496,126 @@ func testAccEssScheduleUpdateDescription(common, scheduleTime string, rand int) 
 		launch_time = "%s"
 		scheduled_task_name = "${var.name}"
 		description = "terraform test"
+	}
+	`, common, rand, scheduleTime)
+}
+
+func testAccEssScheduleUpdateMin(common, scheduleTime string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScheduleConfig-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}
+	
+	resource "alicloud_ess_scaling_configuration" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		force_delete = "true"
+	}
+	
+	resource "alicloud_ess_scaling_rule" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		adjustment_type = "TotalCapacity"
+		adjustment_value = 2
+		cooldown = 60
+	}
+	
+	resource "alicloud_ess_scheduled_task" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		launch_time = "%s"
+		scheduled_task_name = "${var.name}"
+		min_value = 2
+  		max_value = 5
+	}
+	`, common, rand, scheduleTime)
+}
+
+func testAccEssScheduleUpdateMax(common, scheduleTime string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScheduleConfig-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}
+	
+	resource "alicloud_ess_scaling_configuration" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		force_delete = "true"
+	}
+	
+	resource "alicloud_ess_scaling_rule" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		adjustment_type = "TotalCapacity"
+		adjustment_value = 2
+		cooldown = 60
+	}
+	
+	resource "alicloud_ess_scheduled_task" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		launch_time = "%s"
+		scheduled_task_name = "${var.name}"
+		min_value = 2
+  		max_value = 4
+	}
+	`, common, rand, scheduleTime)
+}
+
+func testAccEssScheduleUpdateMinMax(common, scheduleTime string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScheduleConfig-%d"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+	}
+	
+	resource "alicloud_ess_scaling_configuration" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		force_delete = "true"
+	}
+	
+	resource "alicloud_ess_scaling_rule" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		adjustment_type = "TotalCapacity"
+		adjustment_value = 2
+		cooldown = 60
+	}
+	
+	resource "alicloud_ess_scheduled_task" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		launch_time = "%s"
+		scheduled_task_name = "${var.name}"
+		min_value = 3
+  		max_value = 6
 	}
 	`, common, rand, scheduleTime)
 }
