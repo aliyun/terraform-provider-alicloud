@@ -186,7 +186,7 @@ func (s *EcsService) DescribeInstanceSystemDisk(id, rg string) (disk ecs.Disk, e
 		return disk, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	if len(response.Disks.Disk) < 1 || response.Disks.Disk[0].InstanceId != id {
-		return disk, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR)
+		return disk, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	}
 	return response.Disks.Disk[0], nil
 }
