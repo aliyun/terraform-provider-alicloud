@@ -444,13 +444,18 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		}
 		return WrapError(err)
 	}
-
-	disk, err := ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
-	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
+	var disk ecs.Disk
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		disk, err = ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
+		if err != nil {
+			if NotFoundError(err) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
+		return nil
+	})
+	if err != nil {
 		return WrapError(err)
 	}
 	d.Set("system_disk_category", disk.Category)
