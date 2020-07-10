@@ -1,4 +1,25 @@
 ## 1.90.0 (Unreleased)
+
+- **New Resource:** `alicloud_container_registry_enterprise_sync_rule` [GH-2607]
+- **New Resource:** `alicloud_dms_user` [GH-2604]
+- **Data Source:** `alicloud_eci_image_cache` [GH-2627]
+- **Data Source:** `alicloud_waf_instance` [GH-2617]
+- **Data Source:** `alicloud_dms_user` [GH-2604]
+
+IMPROVEMENTS:
+
+- support the CNAME of CDN domain new [GH-2622]
+- UPDATE CHANGELOG [GH-2594]
+- Feature/disable addon [GH-2590]
+- set system default and make fmt [GH-2480]
+
+BUG FIXES:
+
+- fix_ess_scheduled_task [GH-2628]
+- fix testcase of WAF instance datasource [GH-2625]
+- fix oss lifecycle rule match the whole bucket by default [GH-2621]
+- fix ack uat [GH-2618]
+
 ## 1.89.0 (July 03, 2020)
 
 - **New Resource:** `alicloud_eci_image_cache` ([#2615](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2615))
