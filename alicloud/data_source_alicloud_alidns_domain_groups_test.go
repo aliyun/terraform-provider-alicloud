@@ -8,9 +8,9 @@ import (
 )
 
 func TestAccAlicloudAlidnsDomainGroupDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "data.alicloud_alidns_domain_groups.default"
-	name := fmt.Sprintf("tf-alidnsDG%v", rand)
+	name := fmt.Sprintf("tf-testAccadnsDG%v", rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceAlidnsDomainGroupConfigDependence)
 
 	idsConf := dataSourceTestAccConfig{
