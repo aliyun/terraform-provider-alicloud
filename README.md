@@ -1,9 +1,10 @@
-Terraform Provider For Alibaba Cloud
-==================
+# Terraform Provider For Alibaba Cloud
+![Travis CI Build Status](https://travis-ci.org/terraform-providers/terraform-provider-alicloud.svg?branch=master)
+
 
 - Website: https://www.terraform.io
-- [![Gitter chat](https://badges.gitter.im/hashicorp-terraform/Lobby.png)](https://gitter.im/hashicorp-terraform/Lobby)
 - Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
+- [![Gitter chat](https://badges.gitter.im/hashicorp-terraform/Lobby.png)](https://gitter.im/hashicorp-terraform/Lobby)
 
 <img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="400px"> 
 
