@@ -65,11 +65,11 @@ func TestAccAlicloudCassandraCluster_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_name": name,
+					"cluster_name": name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_name": name,
+						"cluster_name": name + "_update",
 					}),
 				),
 			},
@@ -105,11 +105,11 @@ func TestAccAlicloudCassandraCluster_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"data_center_name": "dc-1",
+					"data_center_name": name + "_dc",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"data_center_name": "dc-1",
+						"data_center_name": name + "_dc",
 					}),
 				),
 			},
@@ -160,16 +160,16 @@ func TestAccAlicloudCassandraCluster_basic(t *testing.T) {
 					"maintain_start_time": "18:00Z",
 					"maintain_end_time":   "20:00Z",
 					"ip_white":            "127.0.0.1",
-					"cluster_name":        name + "_update",
-					"data_center_name":    "dc-1—update",
+					"cluster_name":        name,
+					"data_center_name":    name + "_dc_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"maintain_start_time": "18:00Z",
 						"maintain_end_time":   "20:00Z",
 						"ip_white":            "127.0.0.1",
-						"cluster_name":        name + "_update",
-						"data_center_name":    "dc-1—update",
+						"cluster_name":        name,
+						"data_center_name":    name + "_dc_update",
 					}),
 				),
 			},
@@ -184,9 +184,6 @@ var CassandraClusterMap = map[string]string{
 
 func CassandraClusterBasicdependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
 data "alicloud_cassandra_zones" "default" {
 }
 
@@ -199,7 +196,7 @@ data "alicloud_vswitches" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name = "terraform-test-group"
+  name = "%s"
   description = "New security group"
   vpc_id = data.alicloud_vpcs.default.ids[0]
 }

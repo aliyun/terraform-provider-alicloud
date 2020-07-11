@@ -61,11 +61,11 @@ func TestAccAlicloudCassandraDataCenter_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"data_center_name": name,
+					"data_center_name": name + "_dc",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"data_center_name": name,
+						"data_center_name": name + "_dc",
 					}),
 				),
 			},
@@ -133,9 +133,6 @@ var CassandraDataCenterMap = map[string]string{
 
 func CassandraDataCenterBasicdependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
 data "alicloud_cassandra_zones" "default" {
 }
 
@@ -149,7 +146,7 @@ data "alicloud_vswitches" "default_1" {
 
 resource "alicloud_vswitch" "this_1" {
   count = "${length(data.alicloud_vswitches.default_1.ids) > 0 ? 0 : 1}"
-  name = "tf_testAccCassandra_vpc"
+  name = "%[1]s"
   vpc_id = "${data.alicloud_vpcs.default.ids.0}"
   availability_zone = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)-1].id
   cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)}"
@@ -167,8 +164,8 @@ resource "alicloud_vswitch" "this_2" {
   cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 10)}"
 }
 resource "alicloud_cassandra_cluster" "default" {
-  cluster_name = "${var.name}"
-  data_center_name = "${var.name}"
+  cluster_name = "%[1]s"
+  data_center_name = "%[1]s"
   auto_renew = "false"
   instance_type = "cassandra.c.large"
   major_version = "3.11"

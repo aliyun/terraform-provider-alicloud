@@ -38,43 +38,44 @@ var checkCassandraInfo = dataSourceAttr{
 }
 
 func TestAccAlicloudCassandraClustersDataSourceNewCluster(t *testing.T) {
-	rand := acctest.RandInt()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccCasDataSource_%d", rand)
 	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(name, map[string]string{
 			"name_regex": `"${alicloud_cassandra_cluster.default.cluster_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(name, map[string]string{
 			"name_regex": `"${alicloud_cassandra_cluster.default.cluster_name}_fake"`,
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(name, map[string]string{
 			"ids": `["${alicloud_cassandra_cluster.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(name, map[string]string{
 			"ids": `["${alicloud_cassandra_cluster.default.id}_fake"]`,
 		}),
 	}
 
 	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(name, map[string]string{
 			"name_regex": `"${alicloud_cassandra_cluster.default.cluster_name}"`,
 			"tags":       `{Created = "TF"}`,
 		}),
-		fakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(name, map[string]string{
 			"name_regex": `"${alicloud_cassandra_cluster.default.cluster_name}"`,
 			"tags":       `{Created = "TF1"}`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(name, map[string]string{
 			"name_regex": `"${alicloud_cassandra_cluster.default.cluster_name}"`,
 			"ids":        `["${alicloud_cassandra_cluster.default.id}"]`,
 			"tags":       `{Created = "TF"}`,
 		}),
-		fakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+		fakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(name, map[string]string{
 			"name_regex": `"${alicloud_cassandra_cluster.default.cluster_name}"`,
 			"ids":        `["${alicloud_cassandra_cluster.default.id}_fake"]`,
 			"tags":       `{Created = "TF1"}`,
@@ -87,15 +88,12 @@ func TestAccAlicloudCassandraClustersDataSourceNewCluster(t *testing.T) {
 }
 
 // new a cluster config
-func testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand int, attrMap map[string]string) string {
+func testAccCheckAlicloudCassandraDataSourceConfigNewCluster(name string, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
 	}
 	config := fmt.Sprintf(`
-variable "name" {
-  default = "tf-testAccCassandraCluster_datasource_%d"
-}
 data "alicloud_cassandra_zones" "default" {
 }
 
@@ -109,15 +107,15 @@ data "alicloud_vswitches" "default" {
 
 resource "alicloud_vswitch" "this" {
   count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
-  name = "tf_testAccCassandra_vpc"
+  name ="%[1]s"
   vpc_id = "${data.alicloud_vpcs.default.ids.0}"
   availability_zone = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)-1].id
   cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)}"
 }
 
 resource "alicloud_cassandra_cluster" "default" {
-  cluster_name = "${var.name}"
-  data_center_name = "${var.name}"
+  cluster_name = "%[1]s"
+  data_center_name = "%[1]s"
   auto_renew = false
   instance_type = "cassandra.c.large"
   major_version = "3.11"
@@ -136,10 +134,6 @@ resource "alicloud_cassandra_cluster" "default" {
     For     = "acceptance test"
   }
 }
-
-data "alicloud_cassandra_clusters" "default" {
-  %s
-}
-`, rand, strings.Join(pairs, "\n  "))
+`, name, strings.Join(pairs, "\n  "))
 	return config
 }
