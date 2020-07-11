@@ -129,7 +129,7 @@ func testAccCheckAlicloudCenRouteMapsSourceConfig(rand int, attrMap map[string]s
 	}
 	config := fmt.Sprintf(`
 variable "name" {
-  default = "test_%d"
+  default = "tf-testAccCenRouteMaps-%d"
 }
 
 variable "child_region" {

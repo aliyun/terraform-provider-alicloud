@@ -58,7 +58,7 @@ func testAccCheckAlicloudResourceManagerPolicyVersionsSourceConfig(rand int, att
 	}
 	config := fmt.Sprintf(`
 resource "alicloud_resource_manager_policy" "default"{
-	policy_name = "tf-%d"
+	policy_name = "tf-testAccPolicy-%d"
 	policy_document = <<EOF
 		{
 			"Statement": [{
