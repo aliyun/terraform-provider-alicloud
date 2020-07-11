@@ -20,7 +20,7 @@ func TestAccAlicloudResourceManagerFolder_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-%d", rand)
+	name := fmt.Sprintf("tf-testAcc-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ResourceManagerFolderBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -48,11 +48,11 @@ func TestAccAlicloudResourceManagerFolder_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"folder_name": "tf-test",
+					"folder_name": "tf-testAccFolder-change",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"folder_name": "tf-test",
+						"folder_name": "tf-testAccFolder-change",
 					}),
 				),
 			},

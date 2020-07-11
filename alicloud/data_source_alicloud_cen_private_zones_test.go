@@ -100,7 +100,7 @@ func testAccCheckAlicloudCenPrivateZonesSourceConfig(rand int, attrMap map[strin
 	}
 	config := fmt.Sprintf(`
 variable "name" {
-  default = "test_%d"
+  default = "tf-testAccCenPrivateZones-%d"
 }
 resource "alicloud_cen_instance" "default" {
   name = var.name

@@ -84,7 +84,7 @@ func testAccCheckAlicloudResourceManagerRolesSourceConfig(rand int, attrMap map[
 data "alicloud_account" "example" {}
 
 resource "alicloud_resource_manager_role" "example"{
-	  role_name = "tf-%d"
+	  role_name = "tf-testAccRole-%d"
 	  assume_role_policy_document = <<EOF
 		{
 			"Statement": [{
