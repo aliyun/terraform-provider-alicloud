@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"os"
-
 	waf_openapi "github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -47,7 +45,7 @@ func TestAccAlicloudWafInstance_basic(t *testing.T) {
 					"waf_log":              "false",
 					"log_storage":          "3",
 					"log_time":             "180",
-					"resource_group_id":    os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+					"resource_group_id":    `${"data.alicloud_resource_manager_resource_groups.this.groups.0.id"}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -168,6 +166,9 @@ func WafInstanceBasicdependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
+}
+data "alicloud_resource_manager_resource_groups" "this" {
+  name_regex = "default"
 }
 `, name)
 }
