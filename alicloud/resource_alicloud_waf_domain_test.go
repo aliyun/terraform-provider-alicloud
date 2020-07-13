@@ -11,9 +11,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	//"github.com/hashicorp/terraform/helper/acctest"
-	"os"
-
 	"sync"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -102,14 +99,11 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.wafqa3.com", defaultRegionToTest, rand)
-	//name := "tf-testacctest.wafqa3.com"
-	instanceId := os.Getenv("ALICLOUD_WAF_INSTANCE_ID")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceWafDomainDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithWafInstanceSetting(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -119,7 +113,7 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"domain":            name,
-					"instance_id":       instanceId,
+					"instance_id":       "${alicloud_waf_instance.default.id}",
 					"is_access_product": "Off",
 					"source_ips":        []string{"1.1.1.1"},
 					"cluster_type":      "PhysicalCluster",
@@ -139,12 +133,12 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 							"value": "ddd",
 						},
 					},
-					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"domain":            name,
-						"instance_id":       instanceId,
+						"instance_id":       CHECKSET,
 						"is_access_product": "Off",
 						"source_ips.#":      "1",
 						"cluster_type":      "PhysicalCluster",
@@ -155,7 +149,7 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 						"https_redirect":    "Off",
 						"load_balancing":    "IpHash",
 						"log_headers.#":     "2",
-						"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -164,18 +158,18 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				//ImportStateVerifyIgnore: []string{"resource_group_id"},
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"cluster_type": "VirtualCluster",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"cluster_type": "VirtualCluster",
-					}),
-				),
-			},
+			// This property change requires WAF Instance to be the exclusive version.
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"cluster_type": "VirtualCluster",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"cluster_type": "VirtualCluster",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"connection_time": "60",
@@ -299,7 +293,7 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"domain":            name,
-					"instance_id":       instanceId,
+					"instance_id":       "${alicloud_waf_instance.default.id}",
 					"cluster_type":      "PhysicalCluster",
 					"connection_time":   "30",
 					"http2_port":        []string{"8443"},
@@ -322,12 +316,12 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 					"read_time":         "140",
 					"source_ips":        []string{"1.1.1.1"},
 					"write_time":        "800",
-					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"domain":            name,
-						"instance_id":       instanceId,
+						"instance_id":       CHECKSET,
 						"cluster_type":      "PhysicalCluster",
 						"connection_time":   "30",
 						"http2_port.#":      "1",
@@ -341,7 +335,7 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 						"read_time":         "140",
 						"source_ips.#":      "1",
 						"write_time":        "800",
-						"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -352,7 +346,26 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 var wafDomainBasicMap = map[string]string{}
 
 func resourceWafDomainDependence(name string) string {
-	return ``
+	return `
+data "alicloud_resource_manager_resource_groups" "default"{
+ 	name_regex= "default"
+}
+
+resource "alicloud_waf_instance" "default" {
+  big_screen = "0"
+  exclusive_ip_package = "1"
+  ext_bandwidth = "50"
+  ext_domain_package = "1"
+  package_code = "version_3"
+  prefessional_service = "false"
+  subscription_type = "Subscription"
+  period = 1
+  waf_log = "false"
+  log_storage = "3"
+  log_time = "180"
+  resource_group_id = "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}"
+}
+`
 }
 
 var wg sync.WaitGroup
