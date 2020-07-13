@@ -703,14 +703,14 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("security_group_ids", groups)
 
 	sslAction, err := rdsService.DescribeDBInstanceSSL(d.Id())
-	if err != nil {
+	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
 		return WrapError(err)
 	}
 	d.Set("ssl_status", sslAction.RequireUpdate)
 	d.Set("ssl_action", d.Get("ssl_action"))
 
 	tdeInfo, err := rdsService.DescribeRdsTDEInfo(d.Id())
-	if err != nil {
+	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
 		return WrapError(err)
 	}
 	d.Set("tde_Status", tdeInfo.TDEStatus)
