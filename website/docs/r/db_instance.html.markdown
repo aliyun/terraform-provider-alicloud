@@ -143,8 +143,8 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
    
    Default to "Manual". See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
 
-* `ssl_action` - (Optional, Available in v1.90.0+) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate.
-* `tde_status` - (Optional, ForceNew, Available in 1.90.0+) The TDE(Transparent Data Encryption) status.
+* `ssl_action` - (Optional, Available in v1.90.0+) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26254.htm).
+* `tde_status` - (Optional, ForceNew, Available in 1.90.0+) The TDE(Transparent Data Encryption) status. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26256.htm).
 
 -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
