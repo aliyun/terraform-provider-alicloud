@@ -193,6 +193,10 @@ func resourceAliyunInstance() *schema.Resource {
 							Default:  false,
 							ForceNew: true,
 						},
+						"kms_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 						"snapshot_id": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -1033,6 +1037,9 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 				Encrypted:          strconv.FormatBool(disk["encrypted"].(bool)),
 			}
 
+			if kmsKeyId, ok := disk["kms_key_id"]; ok {
+				dataDiskRequest.KMSKeyId = kmsKeyId.(string)
+			}
 			if name, ok := disk["name"]; ok {
 				dataDiskRequest.DiskName = name.(string)
 			}

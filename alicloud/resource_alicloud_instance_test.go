@@ -1186,7 +1186,7 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "I_am_user_data",
 
-					"instance_charge_type": "PrePaid",
+					"instance_charge_type": "PostPaid",
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"role_name":            "${alicloud_ram_role.default.name}",
 					"data_disks": []map[string]string{
@@ -1201,6 +1201,8 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 							"size":        "20",
 							"category":    "cloud_efficiency",
 							"description": "disk2",
+							"encrypted":   "true",
+							"kms_key_id":  "${alicloud_kms_key.key.id}",
 						},
 					},
 					"force_delete": "true",
@@ -1221,15 +1223,10 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 						"data_disks.1.size":        "20",
 						"data_disks.1.category":    "cloud_efficiency",
 						"data_disks.1.description": "disk2",
-
-						"force_delete":         "true",
-						"instance_charge_type": "PrePaid",
-						"period":               "1",
-						"period_unit":          "Month",
-						"renewal_status":       "Normal",
-						"auto_renew_period":    "0",
-						"include_data_disks":   "true",
-						"dry_run":              "false",
+						"data_disks.1.encrypted":   "true",
+						"data_disks.1.kms_key_id":  CHECKSET,
+						"instance_charge_type":     "PostPaid",
+						"dry_run":                  "false",
 					}),
 				),
 			},
@@ -1545,6 +1542,12 @@ resource "alicloud_ram_role" "default" {
 
 resource "alicloud_key_pair" "default" {
 	key_name = "${var.name}"
+}
+
+resource "alicloud_kms_key" "key" {
+        description             = "Hello KMS"
+        pending_window_in_days  = "7"
+        key_state               = "Enabled"
 }
 
 `, name)
