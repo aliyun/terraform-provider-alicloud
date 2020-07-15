@@ -1,21 +1,21 @@
-## 1.90.1 (Unreleased)
+## 1.90.1 (July 15, 2020)
 
 IMPROVEMENTS:
 
-- perf: rds ssl and tde limitation [GH-2645]
-- add isp support to cbwp [GH-2642]
-- Remove the resource_group_id parameter when querying the system disk [GH-2641]
-- Add 'testAcc' prefix for test case name [GH-2636]
-- Support DescribeInstanceSystemDisk method return the error message [GH-2635]
-- UPDATE CHANGELOG [GH-2634]
+- perf: rds ssl and tde limitation ([#2645](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2645))
+- add isp support to cbwp ([#2642](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2642))
+- Remove the resource_group_id parameter when querying the system disk ([#2641](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2641))
+- Add 'testAcc' prefix for test case name ([#2636](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2636))
+- Support DescribeInstanceSystemDisk method return the error message ([#2635](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2635))
+- UPDATE CHANGELOG ([#2634](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2634))
 
 BUG FIXES:
 
-- fix cassandra doc  [GH-2648]
-- fix_markdown_ess_scheduled_task [GH-2647]
-- fix WAF instance testcase [GH-2640]
-- fix testcase name [GH-2638]
-- fix_instance [GH-2632]
+- fix cassandra doc  ([#2648](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2648))
+- fix_markdown_ess_scheduled_task ([#2647](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2647))
+- fix WAF instance testcase ([#2640](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2640))
+- fix testcase name ([#2638](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2638))
+- fix_instance ([#2632](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2632))
 
 ## 1.90.0 (July 10, 2020)
 
