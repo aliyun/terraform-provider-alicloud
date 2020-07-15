@@ -39,7 +39,7 @@ The following arguments are supported:
 * `name` - (Optional) The name of the common bandwidth package.
 * `description` - (Optional) The description of the common bandwidth package instance.
 * `resource_group_id` - (ForceNew, Available in 1.58.0+) The Id of resource group which the common bandwidth package belongs.
-* `isp` - (Optional, Available in 1.91.0+) The type of the Internet Service Provider. Default to `BGP`.
+* `isp` - (Optional, Available in 1.90.1+) The type of the Internet Service Provider. Default to `BGP`.
 
 ## Attributes Reference
 
