@@ -191,7 +191,7 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
         - `ephemeral_ssd`: The local SSD disk.
         Default to `cloud_efficiency`.
     * `encrypted` -(Optional, Bool, ForceNew) Encrypted the data in this disk. Default value: `false`.
-    * `kms_key_id` - (Optional, Available in 1.91.0+) The KMS key ID corresponding to the Nth data disk.
+    * `kms_key_id` - (Optional, Available in 1.90.1+) The KMS key ID corresponding to the Nth data disk.
     * `snapshot_id` - (Optional, ForceNew) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
     * `auto_snapshot_policy_id` - (Optional, ForceNew, Available in 1.73.0+) The ID of the automatic snapshot policy applied to the system disk.
     * `delete_with_instance` - (Optional, ForceNew) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency, cloud_essd, cloud_ssd disk. If the category of this data disk was ephemeral_ssd, please don't set this param. Default value: `true`.

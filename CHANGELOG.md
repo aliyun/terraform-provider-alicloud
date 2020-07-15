@@ -1,8 +1,28 @@
 ## 1.91.0 (Unreleased)
+## 1.90.1 (July 15, 2020)
+
+IMPROVEMENTS:
+
+- perf: rds ssl and tde limitation [GH-2645]
+- add isp support to cbwp [GH-2642]
+- Remove the resource_group_id parameter when querying the system disk [GH-2641]
+- Add 'testAcc' prefix for test case name [GH-2636]
+- Support DescribeInstanceSystemDisk method return the error message [GH-2635]
+- UPDATE CHANGELOG [GH-2634]
+
+BUG FIXES:
+
+- fix cassandra doc  [GH-2648]
+- fix_markdown_ess_scheduled_task [GH-2647]
+- fix WAF instance testcase [GH-2640]
+- fix testcase name [GH-2638]
+- fix_instance [GH-2632]
+
 ## 1.90.0 (July 10, 2020)
 
 - **New Resource:** `alicloud_container_registry_enterprise_sync_rule` ([#2607](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2607))
 - **New Resource:** `alicloud_dms_user` ([#2604](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2604))
+- **Data Source:** `alicloud_cr_ee_sync_rules` ([#2630](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2630))
 - **Data Source:** `alicloud_eci_image_cache` ([#2627](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2627))
 - **Data Source:** `alicloud_waf_instance` ([#2617](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2617))
 - **Data Source:** `alicloud_dms_user` ([#2604](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2604))
