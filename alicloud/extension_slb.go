@@ -179,6 +179,43 @@ func expandBackendServersInfoToString(items []interface{}) string {
 		s := server.(map[string]interface{})
 
 		var serverId string
+		var serverIp string
+		var weight int
+		var stype string
+		if v, ok := s["server_id"]; ok {
+			serverId = v.(string)
+		}
+		if v, ok := s["weight"]; ok {
+			weight = v.(int)
+		}
+		if v, ok := s["type"]; ok {
+			stype = v.(string)
+		}
+		if v, ok := s["server_ip"]; ok {
+			serverIp = strings.Trim(v.(string), " ")
+		}
+		if len(serverIp) > 0 {
+			str := fmt.Sprintf("{'ServerId':'%s','Weight':'%d', 'Type': '%s', 'ServerIp':'%s'}", strings.Trim(serverId, " "), weight, strings.Trim(stype, " "), serverIp)
+			servers = append(servers, str)
+		} else {
+			str := fmt.Sprintf("{'ServerId':'%s','Weight':'%d', 'Type': '%s'}", strings.Trim(serverId, " "), weight, strings.Trim(stype, " "))
+			servers = append(servers, str)
+		}
+
+	}
+	return fmt.Sprintf("[%s]", strings.Join(servers, COMMA_SEPARATED))
+}
+
+func expandBackendServersWithTypeToString(items []interface{}) string {
+
+	if len(items) < 1 {
+		return ""
+	}
+	var servers []string
+	for _, server := range items {
+		s := server.(map[string]interface{})
+
+		var serverId string
 		var weight int
 		var stype string
 		if v, ok := s["server_id"]; ok {
@@ -191,30 +228,6 @@ func expandBackendServersInfoToString(items []interface{}) string {
 			stype = v.(string)
 		}
 		str := fmt.Sprintf("{'ServerId':'%s','Weight':'%d', 'Type': '%s'}", strings.Trim(serverId, " "), weight, strings.Trim(stype, " "))
-		servers = append(servers, str)
-
-	}
-	return fmt.Sprintf("[%s]", strings.Join(servers, COMMA_SEPARATED))
-}
-
-func expandBackendServersWithoutTypeToString(items []interface{}) string {
-
-	if len(items) < 1 {
-		return ""
-	}
-	var servers []string
-	for _, server := range items {
-		s := server.(map[string]interface{})
-
-		var serverId string
-		var weight int
-		if v, ok := s["server_id"]; ok {
-			serverId = v.(string)
-		}
-		if v, ok := s["weight"]; ok {
-			weight = v.(int)
-		}
-		str := fmt.Sprintf("{'ServerId':'%s','Weight':'%d'}", strings.Trim(serverId, " "), weight)
 		servers = append(servers, str)
 
 	}

@@ -81,6 +81,24 @@ func TestAccAlicloudSlbBackendServers_vpc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_id": "${alicloud_slb.default.id}",
+					"backend_servers": []map[string]interface{}{
+						{
+							"server_id": "${alicloud_network_interface.default.0.id}",
+							"weight":    "80",
+							"type":      "eni",
+							"server_ip": "${alicloud_network_interface.default.0.private_ip}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backend_servers.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id": "${alicloud_slb.default.id}",
 					"backend_servers":  buildBackendServersMap(21),
 				}),
 				Check: resource.ComposeTestCheckFunc(
