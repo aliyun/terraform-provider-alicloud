@@ -1406,3 +1406,117 @@ func (s *EcsService) ecsTagIgnored(t ecs.Tag) bool {
 	}
 	return false
 }
+
+func (s *EcsService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+	oldItems, newItems := d.GetChange("tags")
+	added := make([]ecs.TagResourcesTag, 0)
+	for key, value := range newItems.(map[string]interface{}) {
+		added = append(added, ecs.TagResourcesTag{
+			Key:   key,
+			Value: value.(string),
+		})
+	}
+	removed := make([]string, 0)
+	for key, _ := range oldItems.(map[string]interface{}) {
+		removed = append(removed, key)
+	}
+	if len(removed) > 0 {
+		request := ecs.CreateUntagResourcesRequest()
+		request.RegionId = s.client.RegionId
+		request.ResourceId = &[]string{d.Id()}
+		request.ResourceType = resourceType
+		request.TagKey = &removed
+		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.UntagResources(request)
+		})
+		addDebug(request.GetActionName(), raw)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidRegionId.NotFound", "InvalidResourceId.NotFound", "InvalidResourceType.NotFound", "MissingParameter.RegionId", "MissingParameter.ResourceIds", "MissingParameter.ResourceType", "MissingParameter.TagOwnerBid", "MissingParameter.TagOwnerUid", "MissingParameter.Tags"}) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+	}
+	if len(added) > 0 {
+		request := ecs.CreateTagResourcesRequest()
+		request.RegionId = s.client.RegionId
+		request.ResourceId = &[]string{d.Id()}
+		request.ResourceType = resourceType
+		request.Tag = &added
+		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.TagResources(request)
+		})
+		addDebug(request.GetActionName(), raw)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidRegionId.NotFound", "InvalidResourceId.NotFound", "InvalidResourceType.NotFound", "MissingParameter.RegionId", "MissingParameter.ResourceIds", "MissingParameter.ResourceType", "MissingParameter.TagOwnerBid", "MissingParameter.TagOwnerUid", "MissingParameter.Tags"}) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+	}
+	return nil
+}
+
+func (s *EcsService) DescribeEcsDedicatedHost(id string) (object ecs.DedicatedHost, err error) {
+	request := ecs.CreateDescribeDedicatedHostsRequest()
+	request.RegionId = s.client.RegionId
+
+	request.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(20)
+	for {
+
+		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeDedicatedHosts(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidLockReason.NotFound"}) {
+				err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR)
+				return object, err
+			}
+			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return object, err
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*ecs.DescribeDedicatedHostsResponse)
+
+		if len(response.DedicatedHosts.DedicatedHost) < 1 {
+			err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		for _, object := range response.DedicatedHosts.DedicatedHost {
+			if object.DedicatedHostId == id {
+				return object, nil
+			}
+		}
+		if len(response.DedicatedHosts.DedicatedHost) < PageSizeMedium {
+			break
+		}
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return object, WrapError(err)
+		} else {
+			request.PageNumber = page
+		}
+	}
+	err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR)
+	return
+}
+
+func (s *EcsService) EcsDedicatedHostStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEcsDedicatedHost(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+		return object, object.Status, nil
+	}
+}

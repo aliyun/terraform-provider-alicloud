@@ -301,6 +301,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_waf_instances":                         dataSourceAlicloudWafInstances(),
 			"alicloud_eci_image_caches":                      dataSourceAlicloudEciImageCaches(),
 			"alicloud_dms_enterprise_users":                  dataSourceAlicloudDmsEnterpriseUsers(),
+			"alicloud_ecs_dedicated_hosts":                   dataSourceAlicloudEcsDedicatedHosts(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -543,6 +544,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eci_openapi_image_cache":             resourceAlicloudEciImageCache(),
 			"alicloud_eci_image_cache":                     resourceAlicloudEciImageCache(),
 			"alicloud_dms_enterprise_user":                 resourceAlicloudDmsEnterpriseUser(),
+			"alicloud_ecs_dedicated_host":                  resourceAlicloudEcsDedicatedHost(),
 		},
 
 		ConfigureFunc: providerConfigure,
