@@ -49,6 +49,10 @@ func resourceAliyunSlbBackendServer() *schema.Resource {
 							Default:      string(ECS),
 							ValidateFunc: validation.StringInSlice([]string{"eni", "ecs"}, false),
 						},
+						"server_ip": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -105,6 +109,7 @@ func resourceAliyunSlbBackendServersRead(d *schema.ResourceData, meta interface{
 			"server_id": server.ServerId,
 			"weight":    server.Weight,
 			"type":      server.Type,
+			"server_ip": server.ServerIp,
 		}
 		servers = append(servers, s)
 	}
@@ -294,7 +299,7 @@ func resourceAliyunSlbBackendServersDelete(d *schema.ResourceData, meta interfac
 				end = len(servers)
 			}
 
-			request.BackendServers = expandBackendServersWithoutTypeToString(servers[start:end])
+			request.BackendServers = expandBackendServersWithTypeToString(servers[start:end])
 			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 					return slbClient.RemoveBackendServers(request)
