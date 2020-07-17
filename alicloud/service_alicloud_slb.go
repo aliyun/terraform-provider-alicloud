@@ -36,7 +36,7 @@ func (s *SlbService) BuildSlbCommonRequest() (*requests.CommonRequest, error) {
 	slbReq := slb.CreateCreateLoadBalancerRequest()
 	req, err := s.client.NewCommonRequest(slbReq.GetProduct(), slbReq.GetLocationServiceCode(), strings.ToUpper(string(Https)), connectivity.ApiVersion20140515)
 	if err != nil {
-		err = WrapError(err)
+		return req, WrapError(err)
 	}
 	req.RegionId = s.client.RegionId
 	return req, err
