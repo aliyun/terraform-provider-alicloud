@@ -14,6 +14,7 @@ type ServiceCode string
 const (
 	OosCode             = ServiceCode("OOS")
 	EcsCode             = ServiceCode("ECS")
+	NasCode             = ServiceCode("NAS")
 	EciCode             = ServiceCode("ECI")
 	DdoscooCode         = ServiceCode("DDOSCOO")
 	BssopenapiCode      = ServiceCode("BSSOPENAPI")
@@ -55,7 +56,6 @@ const (
 	DRDSCode            = ServiceCode("DRDS")
 	LOCATIONCode        = ServiceCode("LOCATION")
 	ELASTICSEARCHCode   = ServiceCode("ELASTICSEARCH")
-	NASCode             = ServiceCode("NAS")
 	ACTIONTRAILCode     = ServiceCode("ACTIONTRAIL")
 	BSSOPENAPICode      = ServiceCode("BSSOPENAPI")
 	DDOSCOOCode         = ServiceCode("DDOSCOO")
