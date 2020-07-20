@@ -195,6 +195,47 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
+			"worker_data_disks": {
+				Optional: true,
+				Type:     schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"size": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"category": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
+						},
+						"snapshot_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"device": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"kms_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"encrypted": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"auto_snapshot_policy_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"worker_instance_charge_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -351,6 +392,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						"disabled": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Default:  false,
 						},
 					},
 				},
@@ -419,6 +461,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"is_enterprise_security_group": {
+				Type:          schema.TypeBool,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"security_group_id"},
 			},
 			"nat_gateway_id": {
 				Type:     schema.TypeString,
@@ -685,6 +733,28 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 				args.WorkerPeriod = d.Get("worker_period").(int)
 				args.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
 			}
+		}
+
+		if d.HasChange("worker_data_disks") {
+			if dds, ok := d.GetOk("worker_data_disks"); ok {
+				disks := dds.([]interface{})
+				createDataDisks := make([]cs.DataDisk, 0, len(disks))
+				for _, e := range disks {
+					pack := e.(map[string]interface{})
+					dataDisk := cs.DataDisk{
+						Size:                 pack["size"].(string),
+						DiskName:             pack["name"].(string),
+						Category:             pack["category"].(string),
+						Device:               pack["device"].(string),
+						AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
+						KMSKeyId:             pack["kms_key_id"].(string),
+						Encrypted:            pack["encrypted"].(string),
+					}
+					createDataDisks = append(createDataDisks, dataDisk)
+				}
+				args.WorkerDataDisks = createDataDisks
+			}
+			d.SetPartial("worker_data_disks")
 		}
 
 		var resoponse interface{}
@@ -1073,18 +1143,38 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			VpcId:    vpcId,
 
 			// the params below is ok to be empty
-			KubernetesVersion:    d.Get("version").(string),
-			NodeCidrMask:         strconv.Itoa(d.Get("node_cidr_mask").(int)),
-			ImageId:              d.Get("image_id").(string),
-			KeyPair:              d.Get("key_name").(string),
-			ServiceCidr:          d.Get("service_cidr").(string),
-			CloudMonitorFlags:    d.Get("install_cloud_monitor").(bool),
-			SecurityGroupId:      d.Get("security_group_id").(string),
-			EndpointPublicAccess: d.Get("slb_internet_enabled").(bool),
-			SnatEntry:            d.Get("new_nat_gateway").(bool),
-			NodeNameMode:         d.Get("node_name_mode").(string),
-			Addons:               addons,
+			KubernetesVersion:         d.Get("version").(string),
+			NodeCidrMask:              strconv.Itoa(d.Get("node_cidr_mask").(int)),
+			ImageId:                   d.Get("image_id").(string),
+			KeyPair:                   d.Get("key_name").(string),
+			ServiceCidr:               d.Get("service_cidr").(string),
+			CloudMonitorFlags:         d.Get("install_cloud_monitor").(bool),
+			SecurityGroupId:           d.Get("security_group_id").(string),
+			IsEnterpriseSecurityGroup: d.Get("is_enterprise_security_group").(bool),
+			EndpointPublicAccess:      d.Get("slb_internet_enabled").(bool),
+			SnatEntry:                 d.Get("new_nat_gateway").(bool),
+			NodeNameMode:              d.Get("node_name_mode").(string),
+			Addons:                    addons,
 		},
+	}
+
+	if dds, ok := d.GetOk("worker_data_disks"); ok {
+		disks := dds.([]interface{})
+		createDataDisks := make([]cs.DataDisk, 0, len(disks))
+		for _, e := range disks {
+			pack := e.(map[string]interface{})
+			dataDisk := cs.DataDisk{
+				Size:                 pack["size"].(string),
+				DiskName:             pack["name"].(string),
+				Category:             pack["category"].(string),
+				Device:               pack["device"].(string),
+				AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
+				KMSKeyId:             pack["kms_key_id"].(string),
+				Encrypted:            pack["encrypted"].(string),
+			}
+			createDataDisks = append(createDataDisks, dataDisk)
+		}
+		creationArgs.WorkerDataDisks = createDataDisks
 	}
 
 	if v := d.Get("user_data").(string); v != "" {
