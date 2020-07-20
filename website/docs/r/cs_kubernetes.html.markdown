@@ -97,6 +97,16 @@ The following arguments are supported:
 * `user_data` - (Optional, Available in 1.81.0+) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
 * `exclude_autoscaler_nodes` - (Optional, Available in 1.88.0+) Exclude autoscaler nodes from `worker_nodes`. default: false 
 * `node_name_mode` - (Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test. 
+* `worker_data_disks` - (Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size. 
+  - category: the type of the data disks. Valid values:
+      + cloud: basic disks.
+      + cloud_efficiency: ultra disks.
+      + cloud_ssd: SSDs.
+  - size: the size of a data disk. Unit: GiB.
+  - encrypted: specifies whether to encrypt data disks. Valid values: true and false.
+* `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
+* `is_enterprise_security_group` - (Optional, Available in 1.91.0+) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
+
 
 #### Addons 
 It is a new field since 1.75.0. You can specific network plugin,log component,ingress component and so on.     

@@ -74,7 +74,7 @@ The following arguments are supported:
 * `name` - (Optional) The kubernetes cluster's name. It is the only in one Alicloud account.
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
 * `vpc_id` - (Required, ForceNew) The vpc where new kubernetes cluster will be located. Specify one vpc's id, if it is not specified, a new VPC  will be built.
-* `vswitch_id` - (Required, ForceNew) The vswitch where new kubernetes cluster will be located. Specify one vswitch's id, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
+* `vswitch_ids` - (Required, ForceNew) The vswitches where new kubernetes cluster will be located.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true.
 * `endpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
 * `private_zone` - (Optional, ForceNew) Enable Privatezone if you need to use the service discovery feature within the serverless cluster. Default to false.
@@ -87,6 +87,47 @@ The following arguments are supported:
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
+* `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
+
+
+#### Addons 
+It is a new field since 1.91.0. You can specific network plugin,log component,ingress component and so on.     
+ 
+```$xslt
+  main.tf
+   
+  dynamic "addons" {
+      for_each = var.cluster_addons
+      content {
+        name                    = lookup(addons.value, "name", var.cluster_addons)
+        config                  = lookup(addons.value, "config", var.cluster_addons)
+      }
+  }
+```
+```$xslt
+    varibales.tf 
+    
+    // Log
+    variable "cluster_addons" {
+        type = list(object({
+            name      = string
+            config    = string
+        }))
+    
+        default = [
+            {
+                "name"     = "logtail-ds",
+                "config"   = "{\"IngressDashboardEnabled\":\"true\",\"sls_project_name\":\"your-sls-project-name\"}",
+            }
+        ]
+    } 
+    
+  
+```
+* `logtail-ds` - You can specific `IngressDashboardEnabled` and `sls_project_name` in config. If you switch on `IngressDashboardEnabled` and `sls_project_name`,then logtail-ds would use `sls_project_name` as default log store.
+
+#### Removed params (Never Supported)
+* `vswitch_id` - (Deprecated from version 1.91.0)(Required, ForceNew) The vswitch where new kubernetes cluster will be located. Specify one vswitch's id, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
 
 
 ### Timeouts
