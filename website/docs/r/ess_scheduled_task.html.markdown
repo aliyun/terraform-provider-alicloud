@@ -109,7 +109,7 @@ The following arguments are supported:
 * `max_value` - (Optional, Available in 1.90.0+) The maximum number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group.
 * `desired_capacity` - (Optional, Available in 1.90.0+) The expected number of instances in a scaling group when the scaling method of the scheduled task is to specify the number of instances in a scaling group. **NOTE:** You must specify the `DesiredCapacity` parameter when you create the scaling group.
 * `description` - (Optional) Description of the scheduled task, which is 2-200 characters (English or Chinese) long.
-* `launch_time` - (Optional) The time at which the scheduled task is triggered. Specify the time in the ISO 8601 standard in the YYYY-MM-DDThh:mm:ssZ format. 
+* `launch_time` - (Optional) The time at which the scheduled task is triggered. Specify the time in the ISO 8601 standard in the YYYY-MM-DDThh:mmZ format. 
 The time must be in UTC. You cannot enter a time point later than 90 days from the date of scheduled task creation. 
 If the `recurrence_type` parameter is specified, the task is executed repeatedly at the time specified by LaunchTime. 
 Otherwise, the task is only executed once at the date and time specified by LaunchTime.
