@@ -71,12 +71,14 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 		request.ChildInstanceOwnerId = requests.Integer(v)
 	}
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		raw, err = client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.AttachCenChildInstance(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus", "InvalidOperation.ChildInstanceStatus", "Operation.Blocking", "OperationFailed.InvalidVpcStatus"}) {
+			if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus", "InvalidOperation.ChildInstanceStatus", "Operation.Blocking", "OperationFailed.InvalidVpcStatus", "Throttling.User"}) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
