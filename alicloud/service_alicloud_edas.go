@@ -362,16 +362,75 @@ func (e *EdasService) QueryK8sAppPackageType(appId string) (string, error) {
 	}
 
 	response, _ := raw.(*edas.GetApplicationResponse)
-	if len(response.Applcation.App.DeployType) > 0 {
-		if response.Applcation.App.ApplicationType == "Image" {
-			return "Image", nil
-		}
-		if response.Applcation.App.ApplicationType == "FatJar" {
-			return "JAR", nil
-		}
-		if response.Applcation.App.ApplicationType == "War" {
-			return "WAR", nil
-		}
+	if response.Code != 200 {
+		return "", WrapError(Error("get application for appId:" + appId + " failed:" + response.Message))
+	}
+	if len(response.Applcation.ApplicationType) > 0 {
+		return response.Applcation.ApplicationType, nil
 	}
 	return "", WrapError(Error("not package type for appId:" + appId))
+}
+
+func (e *EdasService) DescribeEdasK8sCluster(clusterId string) (*edas.Cluster, error) {
+	cluster := &edas.Cluster{}
+	regionId := e.client.RegionId
+
+	request := edas.CreateGetClusterRequest()
+	request.RegionId = regionId
+	request.ClusterId = clusterId
+
+	raw, err := e.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+		return edasClient.GetCluster(request)
+	})
+
+	if err != nil {
+		return cluster, WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	response, _ := raw.(*edas.GetClusterResponse)
+	if response.Code != 200 {
+		return cluster, WrapError(Error("create k8s cluster failed for " + response.Message))
+	}
+
+	v := response.Cluster
+
+	return &v, nil
+}
+
+func (e *EdasService) DescribeEdasK8sApplication(appId string) (*edas.Applcation, error) {
+	application := &edas.Applcation{}
+	regionId := e.client.RegionId
+
+	request := edas.CreateGetApplicationRequest()
+	request.RegionId = regionId
+	request.AppId = appId
+
+	raw, err := e.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+		return edasClient.GetApplication(request)
+	})
+	if err != nil {
+		return application, WrapError(err)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	response, _ := raw.(*edas.GetApplicationResponse)
+	if response.Code != 200 {
+		return application, WrapError(Error("get k8s application error :" + response.Message))
+	}
+
+	v := response.Applcation
+
+	return &v, nil
+}
+
+func (e *EdasService) DescribeEdasK8sApplicationDeployment(id string) (*edas.Applcation, error) {
+	application := &edas.Applcation{}
+	v := strings.Split(id, ":")
+	o, err := e.DescribeEdasApplication(v[0])
+	if err != nil {
+		return application, WrapError(err)
+	}
+
+	return o, nil
 }

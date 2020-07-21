@@ -200,22 +200,20 @@ func resourceAlicloudEdasK8sApplicationPackageAttachmentCreate(d *schema.Resourc
 	request := edas.CreateDeployK8sApplicationRequest()
 	request.RegionId = client.RegionId
 	request.AppId = appId
+	request.Replicas = requests.NewInteger(d.Get("replicas").(int))
 	packageType, err := edasService.QueryK8sAppPackageType(appId)
 	if err != nil {
 		return WrapError(err)
 	}
 	if strings.ToLower(packageType) == "image" {
 		var image string
-		var imageTag string
-		if v, ok := d.GetOk("image_url"); !ok {
+		if v, ok := d.GetOk("image_url"); ok {
 			image = v.(string)
 		}
-		if v, ok := d.GetOk("image_tag"); ok {
-			imageTag = v.(string)
+		if len(image) == 0 {
+			return WrapError(Error("image_url needed for image type application"))
 		}
-		if len(image) == 0 && len(imageTag) == 0 {
-			return WrapError(Error("image or image_tag needed for image type application"))
-		}
+		request.Image = image
 	} else {
 		if v, ok := d.GetOk("package_url"); !ok {
 			return WrapError(Error("package_url is needed for creating fatjar k8s application"))
@@ -223,7 +221,7 @@ func resourceAlicloudEdasK8sApplicationPackageAttachmentCreate(d *schema.Resourc
 			request.PackageUrl = v.(string)
 		}
 		if v, ok := d.GetOk("package_version"); !ok {
-			packageVersion = strconv.Itoa(time.Now().Second())
+			packageVersion = strconv.FormatInt(time.Now().Unix(), 10)
 		} else {
 			packageVersion = v.(string)
 		}
@@ -288,10 +286,6 @@ func resourceAlicloudEdasK8sApplicationPackageAttachmentCreate(d *schema.Resourc
 			return WrapError(err)
 		}
 		request.Args = commands
-	}
-
-	if v, ok := d.GetOk("replicas"); ok {
-		request.BatchWaitTime = requests.NewInteger(v.(int))
 	}
 
 	if v, ok := d.GetOk("limit_cpu"); ok {
@@ -411,5 +405,6 @@ func resourceAlicloudEdasK8sApplicationPackageAttachmentRead(d *schema.ResourceD
 }
 
 func resourceAlicloudEdasK8sApplicationPackageAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+	// do nothing
 	return nil
 }

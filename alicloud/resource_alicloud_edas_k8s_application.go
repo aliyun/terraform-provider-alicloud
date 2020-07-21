@@ -25,7 +25,7 @@ func resourceAlicloudEdasK8sApplication() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"app_name": {
+			"application_name": {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Required: true,
@@ -41,15 +41,16 @@ func resourceAlicloudEdasK8sApplication() *schema.Resource {
 				Required: true,
 			},
 			"image_url": {
-				Type:     schema.TypeString,
-				ForceNew: true,
-				Optional: true,
+				Type:          schema.TypeString,
+				ForceNew:      true,
+				Optional:      true,
+				ConflictsWith: []string{"package_url"},
 			},
 			"package_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"JAR", "WAR", "Image"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"FatJar", "War", "Image"}, false),
 			},
 			"intranet_target_port": {
 				Type:     schema.TypeInt,
@@ -188,9 +189,10 @@ func resourceAlicloudEdasK8sApplication() *schema.Resource {
 				ForceNew: true,
 			},
 			"package_url": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"image_url"},
 			},
 			"package_version": {
 				Type:     schema.TypeString,
@@ -243,7 +245,7 @@ func resourceAlicloudEdasK8sApplicationCreate(d *schema.ResourceData, meta inter
 
 	packageType := d.Get("package_type").(string)
 
-	request.AppName = d.Get("app_name").(string)
+	request.AppName = d.Get("application_name").(string)
 	request.RegionId = client.RegionId
 	request.PackageType = packageType
 	request.ClusterId = d.Get("cluster_id").(string)
@@ -264,7 +266,7 @@ func resourceAlicloudEdasK8sApplicationCreate(d *schema.ResourceData, meta inter
 			request.PackageUrl = v.(string)
 		}
 		if v, ok := d.GetOk("package_version"); !ok {
-			request.PackageVersion = strconv.Itoa(time.Now().Second())
+			request.PackageVersion = strconv.FormatInt(time.Now().Unix(), 10)
 		} else {
 			request.PackageVersion = v.(string)
 		}
@@ -451,14 +453,14 @@ func resourceAlicloudEdasK8sApplicationRead(d *schema.ResourceData, meta interfa
 	regionId := client.RegionId
 	appId := d.Id()
 
-	request := edas.CreateGetApplicationRequest()
+	request := edas.CreateGetK8sApplicationRequest()
 	request.RegionId = regionId
 	request.AppId = appId
 
 	wait := incrementalWait(1*time.Second, 2*time.Second)
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
-			return edasClient.GetApplication(request)
+			return edasClient.GetK8sApplication(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
@@ -468,26 +470,21 @@ func resourceAlicloudEdasK8sApplicationRead(d *schema.ResourceData, meta interfa
 			return resource.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-		response, _ := raw.(*edas.GetApplicationResponse)
-		d.Set("app_name", response.Applcation.Name)
-		d.Set("cluster_id", response.Applcation.ClusterId)
-		d.Set("application_descriotion", response.Applcation.Description)
-		if len(response.Applcation.App.DeployType) > 0 {
-			if response.Applcation.App.ApplicationType == "Image" {
-				d.Set("package_type", "Image")
-			}
-			if response.Applcation.App.ApplicationType == "FatJar" {
-				d.Set("package_type", "JAR")
-			}
-			if response.Applcation.App.ApplicationType == "War" {
-				d.Set("package_type", "WAR")
-			}
+		response, _ := raw.(*edas.GetK8sApplicationResponse)
+		d.Set("application_name", response.Applcation.App.ApplicationName)
+		d.Set("cluster_id", response.Applcation.App.ClusterId)
+		d.Set("replicas", response.Applcation.App.Instances)
+		if len(response.Applcation.App.ApplicationType) > 0 {
+			d.Set("package_type", response.Applcation.App.ApplicationType)
+		}
+		if d.Get("package_type") == "Image" {
+			d.Set("image_url", response.Applcation.ImageInfo.ImageUrl)
 		}
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_application", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_k8s_application", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
@@ -497,38 +494,14 @@ func resourceAlicloudEdasK8sApplicationDelete(d *schema.ResourceData, meta inter
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	regionId := client.RegionId
-	appId := d.Id()
-
-	request := edas.CreateStopApplicationRequest()
-	request.RegionId = regionId
-	request.AppId = appId
-
-	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
-		return edasClient.StopApplication(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-	response, _ := raw.(*edas.StopApplicationResponse)
-	changeOrderId := response.ChangeOrderId
-
-	if len(changeOrderId) > 0 {
-		stateConf := BuildStateConf([]string{"0", "1"}, []string{"2"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, edasService.EdasChangeOrderStatusRefreshFunc(changeOrderId, []string{"3", "6", "10"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-	}
-
-	req := edas.CreateDeleteK8sApplicationRequest()
-	req.RegionId = regionId
-	req.AppId = d.Id()
+	request := edas.CreateDeleteK8sApplicationRequest()
+	request.RegionId = client.RegionId
+	request.AppId = d.Id()
 
 	wait := incrementalWait(1*time.Second, 2*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
-			return edasClient.DeleteK8sApplication(req)
+			return edasClient.DeleteK8sApplication(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
@@ -537,16 +510,23 @@ func resourceAlicloudEdasK8sApplicationDelete(d *schema.ResourceData, meta inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(req.GetActionName(), raw, req.RoaRequest, req)
-		rsp := raw.(*edas.DeleteK8sApplicationResponse)
-		if rsp.Code == 601 && strings.Contains(rsp.Message, "Operation cannot be processed because there are running instances.") {
-			err = Error("Operation cannot be processed because there are running instances.")
-			return resource.RetryableError(err)
+		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+		response := raw.(*edas.DeleteK8sApplicationResponse)
+		if response.Code != 200 {
+			return resource.NonRetryableError(Error("delete k8s application failed for " + response.Message))
+		}
+		changeOrderId := response.ChangeOrderId
+
+		if len(changeOrderId) > 0 {
+			stateConf := BuildStateConf([]string{"0", "1"}, []string{"2"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, edasService.EdasChangeOrderStatusRefreshFunc(changeOrderId, []string{"3", "6", "10"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return resource.NonRetryableError(WrapErrorf(err, IdMsg, d.Id()))
+			}
 		}
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), req.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

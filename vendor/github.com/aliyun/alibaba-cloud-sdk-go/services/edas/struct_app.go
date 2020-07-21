@@ -18,7 +18,9 @@ package edas
 // App is a nested struct in edas response
 type App struct {
 	Name                 string  `json:"Name" xml:"Name"`
-	CmdArgs              string  `json:"CmdArgs" xml:"CmdArgs"`
+	ApplicationName		 string  `json:"ApplicationName" xml:"ApplicationName"`
+	CmdArgs              CmdArgs `json:"CmdArgs" xml:"CmdArgs"`
+	Instances              int      `json:"Instances" xml:"Instances"`
 	CreateTime           int64   `json:"CreateTime" xml:"CreateTime"`
 	DeployType           string  `json:"DeployType" xml:"DeployType"`
 	Dockerize            bool    `json:"Dockerize" xml:"Dockerize"`
