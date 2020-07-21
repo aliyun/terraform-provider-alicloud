@@ -582,7 +582,24 @@ func TestAccAlicloudOssBucketCheckSseRule(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"server_side_encryption_rule.0.sse_algorithm": "KMS",
+						"server_side_encryption_rule.0.sse_algorithm":     "KMS",
+						"server_side_encryption_rule.0.kms_master_key_id": "",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"server_side_encryption_rule": []map[string]interface{}{
+						{
+							"sse_algorithm":     "KMS",
+							"kms_master_key_id": "kms-id",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"server_side_encryption_rule.0.sse_algorithm":     "KMS",
+						"server_side_encryption_rule.0.kms_master_key_id": "kms-id",
 					}),
 				),
 			},
@@ -592,8 +609,9 @@ func TestAccAlicloudOssBucketCheckSseRule(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"server_side_encryption_rule.#":               "0",
-						"server_side_encryption_rule.0.sse_algorithm": REMOVEKEY,
+						"server_side_encryption_rule.#":                   "0",
+						"server_side_encryption_rule.0.sse_algorithm":     REMOVEKEY,
+						"server_side_encryption_rule.0.kms_master_key_id": REMOVEKEY,
 					}),
 				),
 			},

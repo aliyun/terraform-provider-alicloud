@@ -178,6 +178,16 @@ resource "alicloud_oss_bucket" "bucket-sserule" {
     sse_algorithm = "AES256"
   }
 }
+
+resource "alicloud_oss_bucket" "bucket-sserule" {
+  bucket = "bucket-170309-sserule"
+  acl    = "private"
+
+  server_side_encryption_rule {
+    sse_algorithm = "KMS"
+    kms_master_key_id = "your kms key id"
+  }
+}
 ```
 
 Set bucket tags 
@@ -305,6 +315,7 @@ The lifecycle_rule transitions object supports the following:
 The server-side encryption rule supports the following:
 
 * `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: `AES256` and `KMS`.
+* `kms_master_key_id` -  (optional, Available in 1.92.0+) The alibaba cloud KMS master key ID used for the SSE-KMS encryption. 
 
 #### Block versioning
 

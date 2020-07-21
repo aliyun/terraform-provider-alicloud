@@ -158,6 +158,58 @@ func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
 	ossBucketsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
 
+func TestAccAlicloudOssBucketsDataSource_sserule_with_kmsid(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_oss_buckets.default"
+
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testacc-bucket-%d", rand),
+		dataSourceOssBucketsConfigDependence_sserule_with_kmsid)
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_oss_bucket.default.bucket}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_oss_bucket.default.bucket}-fake",
+		}),
+	}
+	var existOssBucketsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"buckets.#":                   "1",
+			"names.#":                     "1",
+			"buckets.0.name":              fmt.Sprintf("tf-testacc-bucket-%d-default", rand),
+			"buckets.0.acl":               "public-read",
+			"buckets.0.extranet_endpoint": CHECKSET,
+			"buckets.0.intranet_endpoint": CHECKSET,
+			"buckets.0.location":          CHECKSET,
+			"buckets.0.owner":             CHECKSET,
+			"buckets.0.storage_class":     "Standard",
+			"buckets.0.creation_date":     CHECKSET,
+
+			"buckets.0.server_side_encryption_rule.0.sse_algorithm":     "KMS",
+			"buckets.0.server_side_encryption_rule.0.kms_master_key_id": "kms-id",
+		}
+	}
+
+	var fakeOssBucketsMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"buckets.#": "0",
+			"names.#":   "0",
+		}
+	}
+
+	var ossBucketsCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existOssBucketsMapFunc,
+		fakeMapFunc:  fakeOssBucketsMapFunc,
+	}
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.OssSseSupportedRegions)
+	}
+	ossBucketsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
+}
+
 func TestAccAlicloudOssBucketsDataSource_versioning(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_oss_buckets.default"
@@ -289,6 +341,24 @@ resource "alicloud_oss_bucket" "default" {
 
  	server_side_encryption_rule {
 		sse_algorithm = "AES256"
+	}
+}
+`, name)
+}
+
+func dataSourceOssBucketsConfigDependence_sserule_with_kmsid(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+resource "alicloud_oss_bucket" "default" {
+	bucket = "${var.name}-default"
+	acl = "public-read"
+
+ 	server_side_encryption_rule {
+		sse_algorithm = "KMS"
+		kms_master_key_id = "kms-id"
 	}
 }
 `, name)

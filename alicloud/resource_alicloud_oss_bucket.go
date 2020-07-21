@@ -268,6 +268,10 @@ func resourceAlicloudOssBucket() *schema.Resource {
 								ServerSideEncryptionKMS,
 							}, false),
 						},
+						"kms_master_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 				MaxItems: 1,
@@ -389,6 +393,9 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		if len(object.BucketInfo.SseRule.SSEAlgorithm) > 0 && object.BucketInfo.SseRule.SSEAlgorithm != "None" {
 			rule := make(map[string]interface{})
 			rule["sse_algorithm"] = object.BucketInfo.SseRule.SSEAlgorithm
+			if object.BucketInfo.SseRule.KMSMasterKeyID != "" {
+				rule["kms_master_key_id"] = object.BucketInfo.SseRule.KMSMasterKeyID
+			}
 			data := make([]map[string]interface{}, 0)
 			data = append(data, rule)
 			d.Set("server_side_encryption_rule", data)
@@ -1042,6 +1049,10 @@ func resourceAlicloudOssBucketEncryptionUpdate(client *connectivity.AliyunClient
 	c := encryption_rule[0].(map[string]interface{})
 	if v, ok := c["sse_algorithm"]; ok {
 		sseRule.SSEDefault.SSEAlgorithm = v.(string)
+	}
+
+	if v, ok := c["kms_master_key_id"]; ok {
+		sseRule.SSEDefault.KMSMasterKeyID = v.(string)
 	}
 
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
