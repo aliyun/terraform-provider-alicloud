@@ -57,6 +57,7 @@ var GpdbSupportedRegions = []Region{Beijing, Shenzhen, Hangzhou, Shanghai, Hongk
 // skipped here to avoid multi regions concurrency conflict.
 var RamNoSkipRegions = []Region{Hangzhou, EUCentral1, APSouth1}
 var CenNoSkipRegions = []Region{Shanghai, EUCentral1, APSouth1}
+var VpcFlowLogNoSkipRegions = []Region{Huhehaote, Shenzhen, APSouthEast3, APSouthEast5, APSouth1, EUWest1}
 var KmsSkippedRegions = []Region{Beijing, Shanghai}
 
 // Actiontrail only one can be owned by one account at the same time,

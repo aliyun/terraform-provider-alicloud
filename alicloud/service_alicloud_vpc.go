@@ -1216,3 +1216,53 @@ func (s *VpcService) tagsFromMap(m map[string]interface{}) []vpc.TagResourcesTag
 
 	return result
 }
+
+func (s *VpcService) DescribeVpcFlowLog(id string) (v vpc.FlowLog, err error) {
+
+	request := vpc.CreateDescribeFlowLogsRequest()
+	request.RegionId = s.client.RegionId
+	request.FlowLogId = id
+
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeFlowLogs(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*vpc.DescribeFlowLogsResponse)
+		if len(response.FlowLogs.FlowLog) == 0 ||
+			response.FlowLogs.FlowLog[0].FlowLogId != id {
+			return WrapErrorf(Error(GetNotFoundMessage("VpcFlowLog", id)), NotFoundMsg, ProviderERROR)
+		}
+		v = response.FlowLogs.FlowLog[0]
+		return nil
+	})
+	return
+}
+
+func (s *VpcService) WaitForVpcFlowLog(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		object, err := s.DescribeVpcFlowLog(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+			return WrapError(err)
+		}
+		if object.Status == string(status) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.FlowLogId, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+	return nil
+}
