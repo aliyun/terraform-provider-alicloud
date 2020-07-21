@@ -67,6 +67,10 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"redundancy_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"creation_date": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -323,6 +327,7 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			mapping["extranet_endpoint"] = response.BucketInfo.ExtranetEndpoint
 			mapping["intranet_endpoint"] = response.BucketInfo.IntranetEndpoint
 			mapping["owner"] = response.BucketInfo.Owner.ID
+			mapping["redundancy_type"] = response.BucketInfo.RedundancyType
 
 			//Add ServerSideEncryption information
 			var sseconfig []map[string]interface{}
