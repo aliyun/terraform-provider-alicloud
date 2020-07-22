@@ -134,6 +134,7 @@ func dataSourceEcsDedicatedHostsConfigDependence(name string) string {
 		  dedicated_host_type = "ddh.g5"
 		  description = "From_Terraform"
 		  dedicated_host_name = "%s"
+          action_on_maintenance = "Migrate"
           tags = {
 			Create = "TF"
     		For = "ddh-test",

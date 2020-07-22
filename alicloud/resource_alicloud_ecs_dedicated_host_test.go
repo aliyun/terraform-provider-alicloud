@@ -10,7 +10,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
+func TestAccAlicloudEcsDedicatedHost_basic(t *testing.T) {
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
@@ -125,6 +125,7 @@ func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 							"slb_udp_timeout": "60",
 						},
 					},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -134,6 +135,7 @@ func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 						"dedicated_host_name":  name,
 						"description":          "From_Terraform",
 						"network_attributes.#": "1",
+						"resource_group_id":    CHECKSET,
 					}),
 				),
 			},
