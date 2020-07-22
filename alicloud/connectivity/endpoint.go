@@ -13,6 +13,7 @@ type ServiceCode string
 
 const (
 	EcsCode             = ServiceCode("ECS")
+	NasCode             = ServiceCode("NAS")
 	EciCode             = ServiceCode("ECI")
 	DdoscooCode         = ServiceCode("DDOSCOO")
 	BssopenapiCode      = ServiceCode("BSSOPENAPI")

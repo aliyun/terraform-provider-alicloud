@@ -149,6 +149,7 @@ type AliyunClient struct {
 	cassandraConn                *cassandra.Client
 	eciConn                      *eci.Client
 	ecsConn                      *ecs.Client
+	nasConn                      *nas.Client
 }
 
 type ApiVersion string

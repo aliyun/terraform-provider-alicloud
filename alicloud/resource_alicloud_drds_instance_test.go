@@ -115,7 +115,7 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
 			testAccPreCheckWithRegions(t, false, connectivity.DrdsClassicNoSupportedRegions)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -129,6 +129,7 @@ func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
 					"instance_series":      "${var.instance_series}",
 					"instance_charge_type": "PostPaid",
 					"specification":        "drds.sn1.4c8g.8C16G",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -187,7 +188,7 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -200,7 +201,7 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
 					"instance_series":      "${var.instance_series}",
 					"instance_charge_type": "PostPaid",
-					"vswitch_id":           "${alicloud_vswitch.foo.id}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
 					"specification":        "drds.sn1.4c8g.8C16G",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -241,7 +242,7 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
 	var v *drds.DescribeDrdsInstanceResponse
 
-	resourceId := "alicloud_drds_instance.default.4"
+	resourceId := "alicloud_drds_instance.default.2"
 	ra := resourceAttrInit(resourceId, drdsInstancebasicMap)
 
 	serviceFunc := func() interface{} {
@@ -261,7 +262,7 @@ func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
 			testAccPreCheckWithRegions(t, false, connectivity.DrdsClassicNoSupportedRegions)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -270,16 +271,17 @@ func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":          "${var.name}-${count.index}",
+					"description":          "${var.name}",
 					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
 					"instance_series":      "${var.instance_series}",
 					"instance_charge_type": "PostPaid",
 					"specification":        "drds.sn1.4c8g.8C16G",
-					"count":                "5",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
+					"count":                "3",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": name + "-4",
+						"description": name,
 					}),
 				),
 			},
@@ -300,18 +302,10 @@ variable "instance_series" {
 	default = "drds.sn1.4c8g"
 }
 
-resource "alicloud_vpc" "foo" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
+data "alicloud_vswitches" "default" {
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
+  is_default = "true"
 }
-
-resource "alicloud_vswitch" "foo" {
- 	vpc_id = "${alicloud_vpc.foo.id}"
- 	cidr_block = "172.16.0.0/21"
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
- 	name = "${var.name}"
-}
-
 `, name)
 }
 

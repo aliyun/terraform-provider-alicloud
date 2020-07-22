@@ -27,24 +27,39 @@ resource "alicloud_nas_access_group" "foo" {
 
 }
 ```
+
+Example after v1.91.0
+
+```
+resource "alicloud_nas_access_group" "foo" {
+  access_group_name  = "CreateAccessGroup"
+  access_group_type  = "Vpc"
+  description        = "test_AccessG"
+  file_system_type   = "extreme"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
 
-* `name` - (Required, ForceNew) A Name of one Access Group.
-* `type` - (Required, ForceNew) A Type of one Access Group. Valid values: `Vpc` and `Classic`.
+* `name` - (Required, ForceNew, Deprecated in v1.91.0+) A Name of one Access Group.
+* `type` - (Required, ForceNew, Deprecated in v1.91.0+) A Type of one Access Group. Valid values: `Vpc` and `Classic`.
+* `access_group_name` - (Required, ForceNew, Available in v1.91.0+.) A Name of one Access Group.
+* `access_group_type` - (Required, ForceNew, Available in v1.91.0+.) A Type of one Access Group. Valid values: `Vpc` and `Classic`.
 * `description` - (Optional) The Access Group description.
+* `file_system_type` - (Optional, ForceNew, Available in v1.91.0+.) The type of file system. Valid values: `standard` and `extreme`. Default to `standard`. Note that the extreme only support Vpc Network.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the Access Group.
+* `id` - The ID of the Access Group. Value as `<access_group_name>`:`<file_system_type>`.
 
 ## Import
 
 Nas Access Group can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_nas_access_group.foo tf_testAccNasConfig
+$ terraform import alicloud_nas_access_group.foo tf_testAccNasConfig:standard
 ```
