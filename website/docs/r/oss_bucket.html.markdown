@@ -95,6 +95,15 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
       date = "2018-01-12"
     }
   }
+  lifecycle_rule {
+    id      = "rule-expired-oject"
+    prefix  = "path2/"
+    enable  = true
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
 }
 
 resource "alicloud_oss_bucket" "bucket-lifecycle" {
@@ -287,6 +296,7 @@ The lifecycle_rule expiration object supports the following:
 
 * `date` - (Optional) Specifies the date after which you want the corresponding action to take effect. The value obeys ISO8601 format like `2017-03-09`.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
+* `expired_object_delete_marker` - (Optional, Type: boolean) On a versioned bucket (versioning-enabled or versioning-suspended bucket), you can add this element in the lifecycle configuration to direct OSS to delete expired object delete markers.
 
 `NOTE`: One and only one of "date" and "days" can be specified in one expiration configuration.
 

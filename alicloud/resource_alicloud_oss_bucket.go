@@ -174,6 +174,11 @@ func resourceAlicloudOssBucket() *schema.Resource {
 										Type:     schema.TypeInt,
 										Optional: true,
 									},
+									"expired_object_delete_marker": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Default:  false,
+									},
 								},
 							},
 						},
@@ -535,6 +540,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 				e["date"] = t.Format("2006-01-02")
 			}
 			e["days"] = int(lifecycleRule.Expiration.Days)
+			e["expired_object_delete_marker"] = lifecycleRule.Expiration.ExpiredObjectDeleteMarker
 			rule["expiration"] = schema.NewSet(expirationHash, []interface{}{e})
 		}
 		// transitions
@@ -930,18 +936,16 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 		if len(expiration) > 0 {
 			e := expiration[0].(map[string]interface{})
 			i := oss.LifecycleExpiration{}
-			valDate, _ := e["date"].(string)
-			valDays, _ := e["days"].(int)
-
-			if (valDate != "" && valDays > 0) || (valDate == "" && valDays <= 0) {
-				return WrapError(Error("'date' conflicts with 'days'. One and only one of them can be specified in one expiration configuration."))
-			}
-
-			if valDate != "" {
-				i.Date = fmt.Sprintf("%sT00:00:00.000Z", valDate)
-			}
-			if valDays > 0 {
-				i.Days = valDays
+			if val, ok := e["date"].(string); ok && val != "" {
+				t, err := time.Parse(time.RFC3339, fmt.Sprintf("%sT00:00:00Z", val))
+				if err != nil {
+					return fmt.Errorf("Error Parsing OSS Bucket Lifecycle Expiration Date: %s", err.Error())
+				}
+				i.Date = fmt.Sprintf("%s", t)
+			} else if val, ok := e["days"].(int); ok && val > 0 {
+				i.Days = val
+			} else if val, ok := e["expired_object_delete_marker"].(bool); ok {
+				i.ExpiredObjectDeleteMarker = &val
 			}
 			rule.Expiration = &i
 		}

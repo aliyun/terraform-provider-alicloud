@@ -113,12 +113,14 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc-bucket-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketConfigDependence)
 	hashcode1 := strconv.Itoa(expirationHash(map[string]interface{}{
-		"days": 365,
-		"date": "",
+		"days":                         365,
+		"date":                         "",
+		"expired_object_delete_marker": false,
 	}))
 	hashcode2 := strconv.Itoa(expirationHash(map[string]interface{}{
-		"days": 0,
-		"date": "2018-01-12",
+		"days":                         0,
+		"date":                         "2018-01-12",
+		"expired_object_delete_marker": false,
 	}))
 	hashcode3 := strconv.Itoa(transitionsHash(map[string]interface{}{
 		"days":                3,
@@ -139,6 +141,11 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 		"days":                0,
 		"created_before_date": "2021-11-11",
 		"storage_class":       "Archive",
+	}))
+	hashcode7 := strconv.Itoa(expirationHash(map[string]interface{}{
+		"days":                         0,
+		"date":                         "",
+		"expired_object_delete_marker": true,
 	}))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -314,7 +321,7 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"lifecycle_rule.#":                                   "4",
+						"lifecycle_rule.#":                                   "5",
 						"lifecycle_rule.0.id":                                "rule1",
 						"lifecycle_rule.0.prefix":                            "path1/",
 						"lifecycle_rule.0.enabled":                           "true",
@@ -339,6 +346,11 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 						"lifecycle_rule.3.transitions." + hashcode5 + ".storage_class":       string(oss.StorageIA),
 						"lifecycle_rule.3.transitions." + hashcode6 + ".created_before_date": "2021-11-11",
 						"lifecycle_rule.3.transitions." + hashcode6 + ".storage_class":       string(oss.StorageArchive),
+
+						"lifecycle_rule.4.id":      "rule2",
+						"lifecycle_rule.4.prefix":  "path2/",
+						"lifecycle_rule.4.enabled": "true",
+						"lifecycle_rule.4.expiration." + hashcode7 + ".expired_object_delete_marker": "true",
 					}),
 				),
 			},
@@ -428,6 +440,11 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 						"lifecycle_rule.3.transitions." + hashcode5 + ".storage_class":       REMOVEKEY,
 						"lifecycle_rule.3.transitions." + hashcode6 + ".created_before_date": REMOVEKEY,
 						"lifecycle_rule.3.transitions." + hashcode6 + ".storage_class":       REMOVEKEY,
+
+						"lifecycle_rule.4.id":      REMOVEKEY,
+						"lifecycle_rule.4.prefix":  REMOVEKEY,
+						"lifecycle_rule.4.enabled": REMOVEKEY,
+						"lifecycle_rule.4.expiration." + hashcode7 + ".expired_object_delete_marker": REMOVEKEY,
 
 						"tags.%":           "0",
 						"tags.key1-update": REMOVEKEY,
