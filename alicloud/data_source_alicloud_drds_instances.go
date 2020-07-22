@@ -17,6 +17,12 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.ValidateRegexp,
+				Deprecated:   "Field 'name_regex' is deprecated and will be removed in a future release. Please use 'description_regex' instead.",
+			},
+			"description_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -83,10 +89,16 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 	request := drds.CreateDescribeDrdsInstancesRequest()
 	request.RegionId = client.RegionId
 	var dbi []drds.Instance
-	var nameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok {
-		if r, err := regexp.Compile(v.(string)); err == nil {
-			nameRegex = r
+	var regexString *regexp.Regexp
+	nameRegex, nameRegexGot := d.GetOk("name_regex")
+	descriptionRegex, descriptionRegexGot := d.GetOk("description_regex")
+	if nameRegexGot {
+		if r, err := regexp.Compile(nameRegex.(string)); err == nil {
+			regexString = r
+		}
+	} else if descriptionRegexGot {
+		if r, err := regexp.Compile(descriptionRegex.(string)); err == nil {
+			regexString = r
 		}
 	}
 
@@ -107,8 +119,8 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 	response, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 
 	for _, item := range response.Instances.Instance {
-		if nameRegex != nil {
-			if !nameRegex.MatchString(item.Description) {
+		if regexString != nil {
+			if !regexString.MatchString(item.Description) {
 				continue
 			}
 		}

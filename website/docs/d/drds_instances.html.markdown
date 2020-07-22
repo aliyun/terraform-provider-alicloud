@@ -19,10 +19,10 @@ Filters support regular expression for the instance name, searches by tags, and 
  ```
 data "alicloud_drds_instances" "drds_instances_ds" {
   name_regex = "drds-\\d+"
-  ids        = "drdsfacbz68g3299test"
+  ids        = ["drdsabc123456"]
 }
 output "first_db_instance_id" {
-  value = "${data.alicloud_drds_instances.drds_instances_ds.instances.0.drdsInstanceId}"
+  value = "${data.alicloud_drds_instances.drds_instances_ds.instances.0.id}"
 }
 ```
 
@@ -30,7 +30,8 @@ output "first_db_instance_id" {
 
 The following arguments are supported:
 
-* `name_regex` - A regex string to filter results by instance name.
+* `name_regex` - (Optional, Deprecated) A regex string to filter results by instance description. It is deprecated since v1.91.0 and will be removed in a future release, please use 'description_regex' instead.
+* `description_regex` - (Optional, Available in 1.91.0+) A regex string to filter results by instance description.
 * `ids` - (Optional) A list of DRDS instance IDs.
 
 ## Attributes Reference

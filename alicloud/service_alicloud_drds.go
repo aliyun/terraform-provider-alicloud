@@ -1,10 +1,10 @@
 package alicloud
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"time"
 )
 
 type DrdsService struct {
@@ -53,4 +53,35 @@ func (s *DrdsService) DrdsInstanceStateRefreshFunc(id string, failStates []strin
 
 		return object, object.Data.Status, nil
 	}
+}
+
+func (s *DrdsService) WaitDrdsInstanceConfigEffect(id string, item map[string]string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for {
+		effected := false
+		object, err := s.DescribeDrdsInstance(id)
+
+		if err != nil {
+			if NotFoundError(err) {
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
+			return WrapError(err)
+		}
+
+		if value, ok := item["description"]; ok {
+			if object.Data.Description == value {
+				effected = true
+			}
+		}
+
+		if effected {
+			break
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Data, item, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+
+	return nil
 }
