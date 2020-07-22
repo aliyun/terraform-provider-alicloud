@@ -48,10 +48,10 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				ForceNew: true,
 			},
 			"vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Removed:  "Field 'vswitch_id' has been removed from provider version 1.91.0. New field 'vswitch_ids' replace it.",
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Deprecated: "Field 'vswitch_id' has been deprecated from provider version 1.91.0. New field 'vswitch_ids' replace it.",
 			},
 			"vswitch_ids": {
 				Type:     schema.TypeList,
