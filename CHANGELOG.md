@@ -1,4 +1,26 @@
 ## 1.91.0 (Unreleased)
+
+- **New Resource:** `alicloud_ecs_ddh` [GH-2652]
+- **Data Source:** `alicloud_ecs_ddh` [GH-2652]
+
+IMPROVEMENTS:
+
+- update: add nat binded eip ipaddress [GH-2669]
+- correct log alert testcase name [GH-2663]
+- add example moudle for OSS bucket [GH-2661]
+- cs cluster support data disks [GH-2657]
+- drds support internation [GH-2654]
+- UPDATE CHANGELOG [GH-2649]
+- modify cen_instance [GH-2644]
+- add ability to enable ZRS on bucket creation [GH-2605]
+
+BUG FIXES:
+
+- fix ddh testcase [GH-2665]
+- fix dms instance [GH-2656]
+- fix_markdown_ess_scheduled_task [GH-2655]
+- fix slb_listener creates NewCommonRequest error handling [GH-2653]
+
 ## 1.90.1 (July 15, 2020)
 
 IMPROVEMENTS:
