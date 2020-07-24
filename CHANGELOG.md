@@ -1,10 +1,11 @@
 ## 1.91.0 (Unreleased)
 
-- **New Resource:** `alicloud_ecs_ddh` [GH-2652]
-- **Data Source:** `alicloud_ecs_ddh` [GH-2652]
+- **New Resource:** `alicloud_ecs_dedicated_host` [GH-2652]
+- **Data Source:** `alicloud_ecs_dedicated_hosts` [GH-2652]
 
 IMPROVEMENTS:
 
+- improve test case name [GH-2672]
 - update: add nat binded eip ipaddress [GH-2669]
 - correct log alert testcase name [GH-2663]
 - add example moudle for OSS bucket [GH-2661]

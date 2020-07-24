@@ -10,7 +10,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -106,8 +105,7 @@ func testSweepPolarDBClusters(region string) error {
 func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	var ips []map[string]interface{}
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testacc%sdnsrecordbasic%v.abc", defaultRegionToTest, rand)
+	name := "tf-testAccPolarDBClusterUpdate"
 	resourceId := "alicloud_polardb_cluster.default"
 	var basicMap = map[string]string{
 		"description":   CHECKSET,
@@ -161,11 +159,11 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "tf-testaccdnsrecordbasic",
+					"description": "tf-testaccPolarDBClusterUpdate",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "tf-testaccdnsrecordbasic",
+						"description": "tf-testaccPolarDBClusterUpdate",
 					}),
 				),
 			},
@@ -230,7 +228,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":   "tf-testaccdnsrecordbasic1",
+					"description":   "tf-testaccPolarDBClusterUpdate1",
 					"maintain_time": "02:00Z-03:00Z",
 					"db_node_class": "polar.mysql.x8.xlarge",
 					"modify_type":   "Upgrade",
@@ -238,7 +236,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":   "tf-testaccdnsrecordbasic1",
+						"description":   "tf-testaccPolarDBClusterUpdate1",
 						"maintain_time": "02:00Z-03:00Z",
 						"db_node_class": "polar.mysql.x8.xlarge",
 					}),
@@ -252,8 +250,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 
 func TestAccAlicloudPolarDBClusterMulti(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testacc%sdnsrecordbasic%v.abc", defaultRegionToTest, rand)
+	name := "tf-testaccPolarDBClusterMult"
 	resourceId := "alicloud_polardb_cluster.default.2"
 	var basicMap = map[string]string{
 		"description":   CHECKSET,
