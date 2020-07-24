@@ -1,26 +1,26 @@
-## 1.91.0 (Unreleased)
+## 1.91.0 (July 24, 2020)
 
-- **New Resource:** `alicloud_ecs_dedicated_host` [GH-2652]
-- **Data Source:** `alicloud_ecs_dedicated_hosts` [GH-2652]
+- **New Resource:** `alicloud_ecs_dedicated_host` ([#2652](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2652))
+- **Data Source:** `alicloud_ecs_dedicated_hosts` ([#2652](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2652))
 
 IMPROVEMENTS:
 
-- improve test case name [GH-2672]
-- update: add nat binded eip ipaddress [GH-2669]
-- correct log alert testcase name [GH-2663]
-- add example moudle for OSS bucket [GH-2661]
-- cs cluster support data disks [GH-2657]
-- drds support internation [GH-2654]
-- UPDATE CHANGELOG [GH-2649]
-- modify cen_instance [GH-2644]
-- add ability to enable ZRS on bucket creation [GH-2605]
+- improve test case name ([#2672](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2672))
+- update: add nat binded eip ipaddress ([#2669](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2669))
+- correct log alert testcase name ([#2663](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2663))
+- add example moudle for OSS bucket ([#2661](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2661))
+- cs cluster support data disks ([#2657](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2657))
+- drds support internation ([#2654](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2654))
+- UPDATE CHANGELOG ([#2649](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2649))
+- modify cen_instance ([#2644](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2644))
+- add ability to enable ZRS on bucket creation ([#2605](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2605))
 
 BUG FIXES:
 
-- fix ddh testcase [GH-2665]
-- fix dms instance [GH-2656]
-- fix_markdown_ess_scheduled_task [GH-2655]
-- fix slb_listener creates NewCommonRequest error handling [GH-2653]
+- fix ddh testcase ([#2665](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2665))
+- fix dms instance ([#2656](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2656))
+- fix_markdown_ess_scheduled_task ([#2655](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2655))
+- fix slb_listener creates NewCommonRequest error handling ([#2653](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2653))
 
 ## 1.90.1 (July 15, 2020)
 
