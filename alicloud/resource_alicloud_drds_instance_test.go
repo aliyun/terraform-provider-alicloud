@@ -92,80 +92,6 @@ func testSweepDRDSInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDRDSInstance_Basic(t *testing.T) {
-	var v *drds.DescribeDrdsInstanceResponse
-
-	resourceId := "alicloud_drds_instance.default"
-	ra := resourceAttrInit(resourceId, drdsInstancebasicMap)
-
-	serviceFunc := func() interface{} {
-		return &DrdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAcc%sDrdsdatabase-%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDRDSInstanceConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
-			testAccPreCheckWithRegions(t, false, connectivity.DrdsClassicNoSupportedRegions)
-			testAccPreCheckWithNoDefaultVpc(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description":          "${var.name}",
-					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
-					"instance_series":      "${var.instance_series}",
-					"instance_charge_type": "PostPaid",
-					"specification":        "drds.sn1.4c8g.8C16G",
-					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: false,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}_u",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_u",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name,
-					}),
-				),
-			},
-		},
-	})
-}
-
 func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 	var v *drds.DescribeDrdsInstanceResponse
 
@@ -306,6 +232,14 @@ data "alicloud_vswitches" "default" {
   zone_id = "${data.alicloud_zones.default.zones.0.id}"
   is_default = "true"
 }
+
+resource "alicloud_vswitch" "foo" {
+ 	vpc_id = "${alicloud_vpc.foo.id}"
+ 	cidr_block = "172.16.0.0/21"
+ 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+ 	name = "${var.name}"
+}
+
 `, name)
 }
 
