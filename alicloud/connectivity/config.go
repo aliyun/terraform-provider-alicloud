@@ -89,6 +89,7 @@ type Config struct {
 	AlidnsEndpoint          string
 	CassandraEndpoint       string
 	EciEndpoint             string
+	OosEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {
