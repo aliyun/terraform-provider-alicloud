@@ -72,6 +72,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/oos"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 )
 
@@ -149,6 +150,7 @@ type AliyunClient struct {
 	cassandraConn                *cassandra.Client
 	eciConn                      *eci.Client
 	ecsConn                      *ecs.Client
+	oosConn                      *oos.Client
 }
 
 type ApiVersion string
@@ -1886,4 +1888,29 @@ func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, err
 		client.eciConn = eciConn
 	}
 	return do(client.eciConn)
+}
+
+func (client *AliyunClient) WithOosClient(do func(*oos.Client) (interface{}, error)) (interface{}, error) {
+	if client.oosConn == nil {
+		endpoint := client.config.OosEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, OosCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(OosCode), endpoint)
+		}
+
+		oosConn, err := oos.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Oosclient: %#v", err)
+		}
+		oosConn.AppendUserAgent(Terraform, terraformVersion)
+		oosConn.AppendUserAgent(Provider, providerVersion)
+		oosConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.oosConn = oosConn
+	}
+	return do(client.oosConn)
 }

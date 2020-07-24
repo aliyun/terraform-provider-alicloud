@@ -23,5 +23,6 @@ type DBEndpoint struct {
 	ReadWriteMode   string    `json:"ReadWriteMode" xml:"ReadWriteMode"`
 	AutoAddNewNodes string    `json:"AutoAddNewNodes" xml:"AutoAddNewNodes"`
 	EndpointConfig  string    `json:"EndpointConfig" xml:"EndpointConfig"`
+	NodeWithRoles   string    `json:"NodeWithRoles" xml:"NodeWithRoles"`
 	AddressItems    []Address `json:"AddressItems" xml:"AddressItems"`
 }
