@@ -97,6 +97,7 @@ var existNatGatewaysMapFunc = func(rand int) map[string]string {
 		"gateways.0.forward_table_id": CHECKSET,
 		"gateways.0.snat_table_id":    CHECKSET,
 		"gateways.0.vpc_id":           CHECKSET,
+		"gateways.0.ip_lists":         CHECKSET,
 		"gateways.0.name":             fmt.Sprintf("tf-testAccNatGatewaysDatasource%d", rand),
 		"gateways.0.description":      fmt.Sprintf("tf-testAccNatGatewaysDatasource%d_decription", rand),
 	}
