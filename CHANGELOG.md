@@ -1,3 +1,4 @@
+## 1.92.0 (Unreleased)
 ## 1.91.0 (July 24, 2020)
 
 - **New Resource:** `alicloud_ecs_dedicated_host` ([#2652](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2652))
