@@ -547,6 +547,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dms_enterprise_user":                 resourceAlicloudDmsEnterpriseUser(),
 			"alicloud_ecs_dedicated_host":                  resourceAlicloudEcsDedicatedHost(),
 			"alicloud_oos_template":                        resourceAlicloudOosTemplate(),
+			"alicloud_edas_k8s_application":                resourceAlicloudEdasK8sApplication(),
+			"alicloud_edas_k8s_cluster":                    resourceAlicloudEdasK8sCluster(),
 		},
 
 		ConfigureFunc: providerConfigure,
