@@ -72,13 +72,14 @@ func testSweepEdasK8sCluster(region string) error {
 		deleteClusterRq.RegionId = region
 		deleteClusterRq.ClusterId = v.ClusterId
 
+		wait := incrementalWait(1*time.Second, 2*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 			raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 				return edasClient.DeleteCluster(deleteClusterRq)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{ThrottlingUser}) {
-					time.Sleep(10 * time.Second)
+					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -132,6 +133,7 @@ func TestAccAlicloudEdasK8sCluster_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"cluster_name": name,
 						"cluster_type": "5",
+						"cs_cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
 					}),
 				),
 			},

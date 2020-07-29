@@ -39,9 +39,13 @@ The following attributes are exported:
 * `cluster_name` - The name of the cluster that you want to create.
 * `cluster_type` - The type of the cluster that you want to create. Valid values only: 2: ECS cluster.
 * `network_mode` - The network type of the cluster that you want to create. Valid values: 1: classic network. 2: VPC.
-* `region_id` - (Optional, ForceNew) The ID of the region.
-* `vpc_id` - (Optional, ForceNew) The ID of the Virtual Private Cloud (VPC) for the cluster.
-* `cluster_import_status` - The import status of cluster, 1 for success, 2 for failed, 3 for importing, 4 for deleted.
+* `region_id` - The ID of the region.
+* `vpc_id` - The ID of the Virtual Private Cloud (VPC) for the cluster.
+* `cluster_import_status` - The import status of cluster: 
+    `1`: for success.
+    `2`: for failed.
+    `3`: for importing. 
+    `4`: for deleted.
 
 ## Import
 
