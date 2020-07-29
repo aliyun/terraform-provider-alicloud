@@ -32,32 +32,26 @@ func resourceAlicloudEdasK8sCluster() *schema.Resource {
 			"cluster_name": {
 				Type:     schema.TypeString,
 				Computed: true,
-				ForceNew: true,
 			},
 			"cluster_type": {
 				Type:     schema.TypeInt,
 				Computed: true,
-				ForceNew: true,
 			},
 			"network_mode": {
 				Type:     schema.TypeInt,
 				Computed: true,
-				ForceNew: true,
 			},
 			"region_id": {
 				Type:     schema.TypeString,
 				Computed: true,
-				ForceNew: true,
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Computed: true,
-				ForceNew: true,
 			},
 			"cluster_import_status": {
 				Type:     schema.TypeInt,
 				Computed: true,
-				ForceNew: true,
 			},
 		},
 	}
@@ -143,13 +137,13 @@ func resourceAlicloudEdasK8sClusterRead(d *schema.ResourceData, meta interface{}
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_k8s_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	response, _ := raw.(*edas.GetClusterResponse)
 	if response.Code != 200 {
-		return WrapError(Error("create cluster failed for " + response.Message))
+		return WrapError(Error("Import K8s cluster failed for " + response.Message))
 	}
 
 	d.Set("cluster_name", response.Cluster.ClusterName)
@@ -188,7 +182,7 @@ func resourceAlicloudEdasK8sClusterDelete(d *schema.ResourceData, meta interface
 			return resource.NonRetryableError(err)
 		}
 		if response.Code != 200 {
-			return resource.NonRetryableError(Error("delete cluster failed for " + response.Message))
+			return resource.NonRetryableError(Error("Delete EDAS K8s cluster failed for " + response.Message))
 		}
 
 		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
