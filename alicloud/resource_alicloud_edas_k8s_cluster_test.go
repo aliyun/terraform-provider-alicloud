@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"testing"
 	"time"
 
@@ -114,7 +115,7 @@ func TestAccAlicloudEdasK8sCluster_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-edask8sclusterbasic%v", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEdasK8sClusterConfigDependence)
-
+	region := os.Getenv("ALICLOUD_REGION")
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
@@ -128,12 +129,14 @@ func TestAccAlicloudEdasK8sCluster_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cs_cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
+					"namespace_id": region,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_name":  name,
 						"cluster_type":  "5",
 						"cs_cluster_id": CHECKSET,
+						"namespace_id": region,
 					}),
 				),
 			},
