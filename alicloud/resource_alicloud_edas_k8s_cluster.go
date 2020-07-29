@@ -41,10 +41,6 @@ func resourceAlicloudEdasK8sCluster() *schema.Resource {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
-			"region_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -150,7 +146,7 @@ func resourceAlicloudEdasK8sClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("cluster_type", response.Cluster.ClusterType)
 	d.Set("network_mode", response.Cluster.NetworkMode)
 	d.Set("vpc_id", response.Cluster.VpcId)
-	d.Set("region_id", response.Cluster.RegionId)
+	d.Set("namespace_id", response.Cluster.RegionId)
 	d.Set("cluster_import_status", response.Cluster.ClusterImportStatus)
 	d.Set("cs_cluster_id", response.Cluster.CsClusterId)
 
