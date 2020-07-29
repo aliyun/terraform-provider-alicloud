@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 
@@ -304,6 +305,126 @@ func (e *EdasService) DescribeEdasApplicationScale(id string) (*edas.Applcation,
 }
 
 func (e *EdasService) DescribeEdasSlbAttachment(id string) (*edas.Applcation, error) {
+	application := &edas.Applcation{}
+	v := strings.Split(id, ":")
+	o, err := e.DescribeEdasApplication(v[0])
+	if err != nil {
+		return application, WrapError(err)
+	}
+
+	return o, nil
+}
+
+type CommandArg struct {
+	argument string `json:"argument" xml:"argument"`
+}
+
+func (e *EdasService) GetK8sCommandArgs(args []interface{}) (string, error) {
+	aString := make([]CommandArg, len(args))
+	for i, v := range args {
+		aString[i].argument = v.(string)
+	}
+	b, err := json.Marshal(aString)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return string(b), nil
+}
+
+type K8sEnv struct {
+	name  string `json:"name" xml:"name"`
+	value string `json:"value" xml:"value"`
+}
+
+func (e *EdasService) GetK8sEnvs(envs map[string]interface{}) (string, error) {
+	k8sEnvs := make([]K8sEnv, 0)
+	for n, v := range envs {
+		k8sEnvs = append(k8sEnvs, K8sEnv{name: n, value: v.(string)})
+	}
+
+	b, err := json.Marshal(k8sEnvs)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return string(b), nil
+}
+
+func (e *EdasService) QueryK8sAppPackageType(appId string) (string, error) {
+	request := edas.CreateGetApplicationRequest()
+	request.RegionId = e.client.RegionId
+	request.AppId = appId
+	raw, err := e.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+		return edasClient.GetApplication(request)
+	})
+
+	if err != nil {
+		return "", WrapError(err)
+	}
+
+	response, _ := raw.(*edas.GetApplicationResponse)
+	if response.Code != 200 {
+		return "", WrapError(Error("get application for appId:" + appId + " failed:" + response.Message))
+	}
+	if len(response.Applcation.ApplicationType) > 0 {
+		return response.Applcation.ApplicationType, nil
+	}
+	return "", WrapError(Error("not package type for appId:" + appId))
+}
+
+func (e *EdasService) DescribeEdasK8sCluster(clusterId string) (*edas.Cluster, error) {
+	cluster := &edas.Cluster{}
+	regionId := e.client.RegionId
+
+	request := edas.CreateGetClusterRequest()
+	request.RegionId = regionId
+	request.ClusterId = clusterId
+
+	raw, err := e.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+		return edasClient.GetCluster(request)
+	})
+
+	if err != nil {
+		return cluster, WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	response, _ := raw.(*edas.GetClusterResponse)
+	if response.Code != 200 {
+		return cluster, WrapError(Error("create k8s cluster failed for " + response.Message))
+	}
+
+	v := response.Cluster
+
+	return &v, nil
+}
+
+func (e *EdasService) DescribeEdasK8sApplication(appId string) (*edas.Applcation, error) {
+	application := &edas.Applcation{}
+	regionId := e.client.RegionId
+
+	request := edas.CreateGetApplicationRequest()
+	request.RegionId = regionId
+	request.AppId = appId
+
+	raw, err := e.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+		return edasClient.GetApplication(request)
+	})
+	if err != nil {
+		return application, WrapError(err)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	response, _ := raw.(*edas.GetApplicationResponse)
+	if response.Code != 200 {
+		return application, WrapError(Error("get k8s application error :" + response.Message))
+	}
+
+	v := response.Applcation
+
+	return &v, nil
+}
+
+func (e *EdasService) DescribeEdasK8sApplicationDeployment(id string) (*edas.Applcation, error) {
 	application := &edas.Applcation{}
 	v := strings.Split(id, ":")
 	o, err := e.DescribeEdasApplication(v[0])
