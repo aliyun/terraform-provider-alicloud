@@ -129,14 +129,14 @@ func TestAccAlicloudEdasK8sCluster_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cs_cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
-					"namespace_id": region,
+					"namespace_id":  region,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_name":  name,
 						"cluster_type":  "5",
 						"cs_cluster_id": CHECKSET,
-						"namespace_id": region,
+						"namespace_id":  region,
 					}),
 				),
 			},
