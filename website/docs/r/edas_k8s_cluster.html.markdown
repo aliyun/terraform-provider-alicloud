@@ -37,7 +37,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `cluster_name` - The name of the cluster that you want to create.
-* `cluster_type` - The type of the cluster that you want to create. Valid values only: 2: ECS cluster.
+* `cluster_type` - The type of the cluster that you want to create. Valid values only: 5: K8s cluster. 
 * `network_mode` - The network type of the cluster that you want to create. Valid values: 1: classic network. 2: VPC.
 * `region_id` - The ID of the region.
 * `vpc_id` - The ID of the Virtual Private Cloud (VPC) for the cluster.
