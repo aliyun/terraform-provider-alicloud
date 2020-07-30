@@ -42,10 +42,10 @@ The following attributes are exported:
 * `region_id` - The ID of the region.
 * `vpc_id` - The ID of the Virtual Private Cloud (VPC) for the cluster.
 * `cluster_import_status` - The import status of cluster: 
-    `1`: for success.
-    `2`: for failed.
-    `3`: for importing. 
-    `4`: for deleted.
+    `1`: success.
+    `2`: failed.
+    `3`: importing. 
+    `4`: deleted.
 
 ## Import
 
