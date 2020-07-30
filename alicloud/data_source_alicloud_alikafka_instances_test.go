@@ -48,16 +48,17 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 
 	var existAlikafkaInstancesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                   "1",
-			"instances.#":             "1",
-			"instances.0.name":        fmt.Sprintf("tf-testacc-alikafkainstance%v", rand),
-			"instances.0.topic_quota": "50",
-			"instances.0.disk_type":   "1",
-			"instances.0.disk_size":   "500",
-			"instances.0.deploy_type": "5",
-			"instances.0.io_max":      "20",
-			"instances.0.paid_type":   "PostPaid",
-			"instances.0.spec_type":   "normal",
+			"ids.#":                      "1",
+			"instances.#":                "1",
+			"instances.0.name":           fmt.Sprintf("tf-testacc-alikafkainstance%v", rand),
+			"instances.0.topic_quota":    "50",
+			"instances.0.disk_type":      "1",
+			"instances.0.disk_size":      "500",
+			"instances.0.deploy_type":    "5",
+			"instances.0.io_max":         "20",
+			"instances.0.paid_type":      "PostPaid",
+			"instances.0.spec_type":      "normal",
+			"instances.0.security_group": CHECKSET,
 		}
 	}
 
@@ -90,6 +91,11 @@ func dataSourceAlikafkaInstancesConfigDependence(name string) string {
 		  is_default = "true"
 		}
 
+		resource "alicloud_security_group" "default" {
+		  name   = var.name
+		  vpc_id = "${data.alicloud_vswitches.default.vswitches.0.vpc_id}"
+		}
+
 		resource "alicloud_alikafka_instance" "default" {
           name = "${var.name}"
 		  topic_quota = "50"
@@ -98,6 +104,7 @@ func dataSourceAlikafkaInstancesConfigDependence(name string) string {
 		  deploy_type = "5"
 		  io_max = "20"
           vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
+          security_group = "${alicloud_security_group.default.id}"
 		}
 		`, name)
 }

@@ -168,6 +168,16 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"security_group": "${alicloud_security_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group": CHECKSET}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"topic_quota": "51",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -351,6 +361,11 @@ func resourceAlikafkaInstanceConfigDependence(name string) string {
 
 		data "alicloud_vswitches" "default" {
 		  is_default = true
+		}
+
+		resource "alicloud_security_group" "default" {
+		  name   = var.name
+		  vpc_id = "${data.alicloud_vswitches.default.vswitches.0.vpc_id}"
 		}
 		`, name)
 }

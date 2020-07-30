@@ -70,6 +70,11 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"security_group": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -172,6 +177,9 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("name"); ok {
 		startInstanceReq.Name = v.(string)
 	}
+	if v, ok := d.GetOk("security_group"); ok {
+		startInstanceReq.SecurityGroup = v.(string)
+	}
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
@@ -229,6 +237,7 @@ func resourceAlicloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("zone_id", object.ZoneId)
 	d.Set("paid_type", PostPaid)
 	d.Set("spec_type", object.SpecType)
+	d.Set("security_group", object.SecurityGroup)
 	if object.PaidType == 0 {
 		d.Set("paid_type", PrePaid)
 	}

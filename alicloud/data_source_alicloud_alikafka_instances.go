@@ -104,6 +104,10 @@ func dataSourceAlicloudAlikafkaInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"security_group": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -186,6 +190,7 @@ func alikafkaInstancesDecriptionAttributes(d *schema.ResourceData, instancesInfo
 			"paid_type":      paidType,
 			"spec_type":      item.SpecType,
 			"zone_id":        item.ZoneId,
+			"security_group": item.SecurityGroup,
 		}
 
 		ids = append(ids, item.InstanceId)
