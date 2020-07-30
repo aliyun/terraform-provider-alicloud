@@ -303,6 +303,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dms_enterprise_users":                  dataSourceAlicloudDmsEnterpriseUsers(),
 			"alicloud_ecs_dedicated_hosts":                   dataSourceAlicloudEcsDedicatedHosts(),
 			"alicloud_oos_templates":                         dataSourceAlicloudOosTemplates(),
+			"alicloud_oos_executions":                        dataSourceAlicloudOosExecutions(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -548,6 +549,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_dedicated_host":                  resourceAlicloudEcsDedicatedHost(),
 			"alicloud_oos_template":                        resourceAlicloudOosTemplate(),
 			"alicloud_edas_k8s_cluster":                    resourceAlicloudEdasK8sCluster(),
+			"alicloud_oos_execution":                       resourceAlicloudOosExecution(),
 		},
 
 		ConfigureFunc: providerConfigure,
