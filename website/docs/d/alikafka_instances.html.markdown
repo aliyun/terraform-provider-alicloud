@@ -83,4 +83,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `zone_id` - The ID of attaching zone to instance.
   * `paid_type` - The paid type of the instance.
   * `spec_type` - The spec type of the instance.
+  * `security_group` - The security group of the instance.
 
