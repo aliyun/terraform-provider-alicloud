@@ -1,19 +1,19 @@
-## 1.92.0 (Unreleased)
+## 1.92.0 (July 31, 2020)
 
-- **New Resource:** `alicloud_oos_template` [GH-2670]
-- **Data Source:** `alicloud_oos_template` [GH-2670]
+- **New Resource:** `alicloud_oos_template` ([#2670](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2670))
+- **Data Source:** `alicloud_oos_template` ([#2670](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2670))
 
 IMPROVEMENTS:
 
-- modify alicloud_cen_bandwidth_package_attachment [GH-2675]
-- UPDATE CHANGELOG [GH-2671]
-- upgrade resource of Nas AccessGroup [GH-2667]
-- Supports setting the kms id for oss bucket [GH-2662]
-- Support service_account_issuer and api_audiences in alicloud_cs_kubernetes and alicloud_cs_managed_kubernetes [GH-2573]
+- modify alicloud_cen_bandwidth_package_attachment ([#2675](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2675))
+- UPDATE CHANGELOG ([#2671](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2671))
+- upgrade resource of Nas AccessGroup ([#2667](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2667))
+- Supports setting the kms id for oss bucket ([#2662](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2662))
+- Support service_account_issuer and api_audiences in alicloud_cs_kubernetes and alicloud_cs_managed_kubernetes ([#2573](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2573))
 
 BUG FIXES:
 
-- Fix ess kms disk [GH-2668]
+- Fix ess kms disk ([#2668](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2668))
 
 ## 1.91.0 (July 24, 2020)
 
