@@ -45,9 +45,6 @@ func resourceAlicloudKeyPair() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("public_key").(string) != ""
-				},
 			},
 			"public_key": {
 				Type:     schema.TypeString,
@@ -93,6 +90,9 @@ func resourceAlicloudKeyPairCreate(d *schema.ResourceData, meta interface{}) err
 		request.RegionId = client.RegionId
 		request.KeyPairName = keyName
 		request.PublicKeyBody = publicKey.(string)
+		if rsg, ok := d.GetOk("resource_group_id"); ok && rsg.(string) != "" {
+			request.ResourceGroupId = rsg.(string)
+		}
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ImportKeyPair(request)
 		})
