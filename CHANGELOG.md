@@ -1,3 +1,4 @@
+## 1.93.0 (Unreleased)
 ## 1.92.0 (July 31, 2020)
 
 - **New Resource:** `alicloud_oos_template` ([#2670](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2670))
