@@ -84,7 +84,7 @@ func resourceAlicloudEdasK8sClusterCreate(d *schema.ResourceData, meta interface
 		return WrapError(Error("null cluster id after import k8s cluster"))
 	}
 	d.SetId(response.Data)
-	// 需要获取集群直到导入成功
+	// Wait until import succeed
 	req := edas.CreateGetClusterRequest()
 	req.ClusterId = response.Data
 	wait := incrementalWait(1*time.Second, 2*time.Second)
@@ -125,34 +125,22 @@ func resourceAlicloudEdasK8sClusterRead(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	clusterId := d.Id()
-	regionId := client.RegionId
-
-	request := edas.CreateGetClusterRequest()
-	request.RegionId = regionId
-	request.ClusterId = clusterId
-
-	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
-		return edasClient.GetCluster(request)
-	})
-
+	object, err := edasService.DescribeEdasK8sCluster(d.Id())
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_k8s_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-
-	response, _ := raw.(*edas.GetClusterResponse)
-	if response.Code != 200 {
-		return WrapError(Error("Import K8s cluster failed for " + response.Message))
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
 	}
 
-	d.Set("cluster_name", response.Cluster.ClusterName)
-	d.Set("cluster_type", response.Cluster.ClusterType)
-	d.Set("network_mode", response.Cluster.NetworkMode)
-	d.Set("vpc_id", response.Cluster.VpcId)
-	d.Set("namespace_id", response.Cluster.RegionId)
-	d.Set("cluster_import_status", response.Cluster.ClusterImportStatus)
-	d.Set("cs_cluster_id", response.Cluster.CsClusterId)
+	d.Set("cluster_name", object.ClusterName)
+	d.Set("cluster_type", object.ClusterType)
+	d.Set("network_mode", object.NetworkMode)
+	d.Set("vpc_id", object.VpcId)
+	d.Set("namespace_id", object.RegionId)
+	d.Set("cluster_import_status", object.ClusterImportStatus)
+	d.Set("cs_cluster_id", object.CsClusterId)
 
 	return nil
 }
@@ -192,7 +180,6 @@ func resourceAlicloudEdasK8sClusterDelete(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	//等待集群删除成功
 	reqGet := edas.CreateGetClusterRequest()
 	reqGet.RegionId = regionId
 	reqGet.ClusterId = clusterId
