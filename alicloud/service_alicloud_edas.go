@@ -390,6 +390,9 @@ func (e *EdasService) DescribeEdasK8sCluster(clusterId string) (*edas.Cluster, e
 
 	response, _ := raw.(*edas.GetClusterResponse)
 	if response.Code != 200 {
+		if strings.Contains(response.Message, "does not exist") {
+			return cluster, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return cluster, WrapError(Error("create k8s cluster failed for " + response.Message))
 	}
 
@@ -416,6 +419,9 @@ func (e *EdasService) DescribeEdasK8sApplication(appId string) (*edas.Applcation
 
 	response, _ := raw.(*edas.GetApplicationResponse)
 	if response.Code != 200 {
+		if strings.Contains(response.Message, "does not exist") {
+			return application, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return application, WrapError(Error("get k8s application error :" + response.Message))
 	}
 
