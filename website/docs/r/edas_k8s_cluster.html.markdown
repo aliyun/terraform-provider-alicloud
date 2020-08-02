@@ -11,7 +11,7 @@ description: |-
 
 Provides an EDAS K8s cluster resource. For information about EDAS K8s Cluster and how to use it, see[What is EDAS K8s Cluster](https://www.alibabacloud.com/help/en/doc-detail/85108.htm).
 
--> **NOTE:** Available in 1.92.0+
+-> **NOTE:** Available in 1.93.0+
 
 ## Example Usage
 
