@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -78,6 +79,7 @@ func resourceAliyunSnapshotPolicyRead(d *schema.ResourceData, meta interface{}) 
 	object, err := ecsService.DescribeSnapshotPolicy(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_snapshot_policy ecsService.DescribeSnapshotPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

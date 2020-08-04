@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -133,6 +134,7 @@ func resourceAliyunNetworkInterfaceRead(d *schema.ResourceData, meta interface{}
 	object, err := ecsService.DescribeNetworkInterface(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_network_interface ecsService.DescribeNetworkInterface Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

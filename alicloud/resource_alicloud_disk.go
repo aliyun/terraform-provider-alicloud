@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -184,6 +185,7 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_disk ecsService.DescribeDisk Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
