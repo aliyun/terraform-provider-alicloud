@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -76,6 +77,7 @@ func resourceAliyunNetworkInterfaceAttachmentRead(d *schema.ResourceData, meta i
 	object, err := ecsService.DescribeNetworkInterfaceAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_netWork_interface_attachment ecsService.DescribeNetworkInterfaceAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

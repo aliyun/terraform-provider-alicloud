@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -116,6 +117,7 @@ func resourceAliyunSecurityGroupRead(d *schema.ResourceData, meta interface{}) e
 	object, err := ecsService.DescribeSecurityGroup(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_security_group ecsService.DescribeSecurityGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

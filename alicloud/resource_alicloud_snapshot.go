@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -88,6 +89,7 @@ func resourceAliyunSnapshotRead(d *schema.ResourceData, meta interface{}) error 
 	snapshot, err := ecsService.DescribeSnapshot(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_snapshot ecsService.DescribeSnapshot Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

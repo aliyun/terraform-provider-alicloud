@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 
@@ -372,6 +373,7 @@ func resourceAliyunLaunchTemplateRead(d *schema.ResourceData, meta interface{}) 
 	object, err := ecsService.DescribeLaunchTemplate(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_launch_template ecsService.DescribeLaunchTemplate Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -380,6 +382,7 @@ func resourceAliyunLaunchTemplateRead(d *schema.ResourceData, meta interface{}) 
 	latestVersion, err := ecsService.DescribeLaunchTemplateVersion(d.Id(), int(object.LatestVersionNumber))
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_launch_template ecsService.DescribeLaunchTemplateVersion Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

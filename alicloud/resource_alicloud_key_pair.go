@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"io/ioutil"
+	"log"
 	"strings"
 	"time"
 
@@ -142,6 +143,7 @@ func resourceAlicloudKeyPairRead(d *schema.ResourceData, meta interface{}) error
 	keyPair, err := ecsService.DescribeKeyPair(d.Id())
 	if err != nil {
 		if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidKeyPair.NotFound"}) {
+			log.Printf("[DEBUG] Resource alicloud_key_pair ecsService.DescribeKeyPair Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

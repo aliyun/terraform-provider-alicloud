@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"strconv"
 	"time"
 
@@ -254,6 +255,7 @@ func resourceAliCloudImageRead(d *schema.ResourceData, meta interface{}) error {
 	object, err := ecsService.DescribeImageById(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_image ecsService.DescribeImageById Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

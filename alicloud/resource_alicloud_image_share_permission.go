@@ -4,6 +4,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"log"
 )
 
 func resourceAliCloudImageSharePermission() *schema.Resource {
@@ -56,6 +57,7 @@ func resourceAliCloudImageSharePermissionRead(d *schema.ResourceData, meta inter
 	object, err := ecsService.DescribeImageShareByImageId(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_image_share_permission ecsService.DescribeImageShareByImageId Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

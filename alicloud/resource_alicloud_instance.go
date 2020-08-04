@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -443,6 +444,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	instance, err := ecsService.DescribeInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_instance ecsService.DescribeInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
