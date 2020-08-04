@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -214,6 +215,7 @@ func resourceAlicloudCassandraClusterRead(d *schema.ResourceData, meta interface
 	object, err := cassandraService.DescribeCassandraCluster(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cassandra_cluster cassandraService.DescribeCassandraCluster Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

@@ -71,6 +71,10 @@ func (s *CassandraService) DescribeCassandraDataCenter(id string) (object cassan
 		return cassandraClient.DescribeDataCenter(request)
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("CassandraDataCenter", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}

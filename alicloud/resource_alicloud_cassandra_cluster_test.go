@@ -25,6 +25,7 @@ func TestAccAlicloudCassandraCluster_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -184,32 +185,33 @@ var CassandraClusterMap = map[string]string{
 
 func CassandraClusterBasicdependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-data "alicloud_cassandra_zones" "default" {
-}
-
-data "alicloud_vpcs" "default" {
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids[0]
-  zone_id = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)-1].id
-}
-
-resource "alicloud_security_group" "default" {
-  name = "terraform-test-group"
-  description = "New security group"
-  vpc_id = data.alicloud_vpcs.default.ids[0]
-}
-
-resource "alicloud_vswitch" "this" {
-  count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
-  name = "tf_testAccCassandra_vpc"
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-  availability_zone = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)-1].id
-  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)}"
-}
-`, name)
+		variable "name" {
+			default = "%s"
+		}
+		data "alicloud_cassandra_zones" "default" {
+		}
+		
+		data "alicloud_vpcs" "default" {
+			is_default = true
+		}
+		
+		data "alicloud_vswitches" "default" {
+		  vpc_id = data.alicloud_vpcs.default.ids[0]
+		  zone_id = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)-1].id
+		}
+		
+		resource "alicloud_security_group" "default" {
+		  name = "${var.name}"
+		  description = "New security group"
+		  vpc_id = data.alicloud_vpcs.default.ids[0]
+		}
+		
+		resource "alicloud_vswitch" "this" {
+		  count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
+		  name = "${var.name}"
+		  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+		  availability_zone = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)-1].id
+		  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)}"
+		}
+		`, name)
 }
