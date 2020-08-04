@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -185,6 +186,7 @@ func resourceAlicloudCassandraDataCenterRead(d *schema.ResourceData, meta interf
 	object, err := cassandraService.DescribeCassandraDataCenter(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cassandra_data_center cassandraService.DescribeCassandraDataCenter Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
