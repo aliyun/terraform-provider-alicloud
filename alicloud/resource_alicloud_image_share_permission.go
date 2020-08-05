@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"log"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
-	"log"
 )
 
 func resourceAliCloudImageSharePermission() *schema.Resource {
