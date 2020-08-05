@@ -323,6 +323,7 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -811,21 +812,19 @@ const testMongoDBShardingInstance_vpc_base = `
 data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
-resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+	is_default = true
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = "${data.alicloud_zones.default.zones.0.id"
 }
 variable "name" {
   default = "tf-testAccMongoDBShardingInstance_vpc"
 }
 resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = "${alicloud_vswitch.default.id}"
+  vswitch_id     = data.alicloud_vswitches.default.ids.0
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list {
@@ -848,21 +847,19 @@ const testMongoDBShardingInstance_vpc_name = `
 data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
-resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+	is_default = true
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
 }
 variable "name" {
   default = "tf-testAccMongoDBShardingInstance_vpc"
 }
 resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = "${alicloud_vswitch.default.id}"
+  vswitch_id     = data.alicloud_vswitches.default.ids.0
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list {
@@ -886,21 +883,19 @@ const testMongoDBShardingInstance_vpc_account_password = `
 data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
-resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+	is_default = true
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
 }
 variable "name" {
   default = "tf-testAccMongoDBShardingInstance_vpc"
 }
 resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = "${alicloud_vswitch.default.id}"
+  vswitch_id     = data.alicloud_vswitches.default.ids.0
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list {
@@ -925,21 +920,19 @@ const testMongoDBShardingInstance_vpc_mongos = `
 data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
-resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+	is_default = true
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
 }
 variable "name" {
   default = "tf-testAccMongoDBShardingInstance_vpc"
 }
 resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = "${alicloud_vswitch.default.id}"
+  vswitch_id     = data.alicloud_vswitches.default.ids.0
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list {
@@ -967,21 +960,19 @@ const testMongoDBShardingInstance_vpc_shard = `
 data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
-resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+	is_default = true
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
 }
 variable "name" {
   default = "tf-testAccMongoDBShardingInstance_vpc"
 }
 resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = "${alicloud_vswitch.default.id}"
+  vswitch_id     = data.alicloud_vswitches.default.ids.0
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list {
@@ -1013,21 +1004,19 @@ const testMongoDBShardingInstance_vpc_backup = `
 data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
-resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+	is_default = true
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
 }
 variable "name" {
   default = "tf-testAccMongoDBShardingInstance_vpc"
 }
 resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = "${alicloud_vswitch.default.id}"
+  vswitch_id     = data.alicloud_vswitches.default.ids.0
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list {
@@ -1061,21 +1050,20 @@ const testMongoDBShardingInstance_vpc_together = `
 data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
-resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+	is_default = true
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
 }
+
 variable "name" {
   default = "tf-testAccMongoDBShardingInstance_vpc"
 }
 resource "alicloud_mongodb_sharding_instance" "default" {
-  vswitch_id     = "${alicloud_vswitch.default.id}"
+  vswitch_id     = data.alicloud_vswitches.default.ids.0
   zone_id        = "${data.alicloud_zones.default.zones.0.id}"
   engine_version = "3.4"
   shard_list {
