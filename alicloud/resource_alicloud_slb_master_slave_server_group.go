@@ -73,6 +73,10 @@ func resourceAliyunSlbMasterSlaveServerGroup() *schema.Resource {
 							ValidateFunc: validation.IntInSlice([]int{0, 1}),
 							Removed:      "Field 'is_backup' has been removed from provider version 1.63.0.",
 						},
+						"server_ip": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 				MaxItems: 2,
@@ -132,6 +136,7 @@ func resourceAliyunSlbMasterSlaveServerGroupRead(d *schema.ResourceData, meta in
 	for _, server := range object.MasterSlaveBackendServers.MasterSlaveBackendServer {
 		s := map[string]interface{}{
 			"server_id":   server.ServerId,
+			"server_ip":   server.ServerIp,
 			"port":        server.Port,
 			"weight":      server.Weight,
 			"type":        server.Type,

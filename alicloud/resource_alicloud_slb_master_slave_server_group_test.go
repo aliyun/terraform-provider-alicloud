@@ -73,6 +73,70 @@ func TestAccAlicloudSlbMasterSlaveServerGroup_vpc(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSlbMasterSlaveServerGroup_eni(t *testing.T) {
+	var v *slb.DescribeMasterSlaveServerGroupAttributeResponse
+	resourceId := "alicloud_slb_master_slave_server_group.default"
+	ra := resourceAttrInit(resourceId, testAccSlbMasterSlaveServerGroupCheckMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccSlbMasterSlaveServerGroupVpc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMasterSlaveServerGroupConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		//module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				//Config: testAccSlbMasterSlaveServerGroupVpc,
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id": "${alicloud_slb.default.id}",
+					"name":             "${var.name}",
+					"servers": []map[string]interface{}{
+						{
+							"server_id":   "${alicloud_instance.default.1.id}",
+							"port":        "100",
+							"weight":      "100",
+							"server_type": "Master",
+						},
+						{
+							"server_id":   "${alicloud_network_interface.default.0.id}",
+							"port":        "100",
+							"weight":      "100",
+							"type":        "eni",
+							"server_type": "Slave",
+							"server_ip":   "${alicloud_network_interface.default.0.private_ip}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":      name,
+						"servers.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+		},
+	})
+}
+
 func TestAccAlicloudSlbMasterSlaveServerGroup_multi_vpc(t *testing.T) {
 	var v *slb.DescribeMasterSlaveServerGroupAttributeResponse
 	resourceId := "alicloud_slb_master_slave_server_group.default.1"
@@ -167,11 +231,6 @@ resource "alicloud_network_interface" "default" {
     security_groups = [ "${alicloud_security_group.default.id}" ]
 }
 
-resource "alicloud_network_interface_attachment" "default" {
-    count = 1
-    instance_id = "${alicloud_instance.default.0.id}"
-    network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
-}
 resource "alicloud_instance" "default" {
     image_id = "${data.alicloud_images.default.images.0.id}"
     instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
@@ -185,7 +244,15 @@ resource "alicloud_instance" "default" {
     system_disk_category = "cloud_efficiency"
     vswitch_id = "${alicloud_vswitch.default.id}"
 }
+
+resource "alicloud_network_interface_attachment" "default" {
+	count = 1
+    instance_id = "${alicloud_instance.default.0.id}"
+    network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
+}
+
 resource "alicloud_slb" "default" {
+	depends_on = [alicloud_network_interface_attachment.default]
     name = "${var.name}"
     vswitch_id = "${alicloud_vswitch.default.id}"
     specification  = "slb.s2.small"

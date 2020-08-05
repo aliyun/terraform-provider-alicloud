@@ -142,6 +142,7 @@ func expandMasterSlaveBackendServersToString(items []interface{}) string {
 		s := server.(map[string]interface{})
 
 		var serverId string
+		var serverIp string
 		var port, weight, isBackup int
 		var stype, serveType string
 		if v, ok := s["server_id"]; ok {
@@ -162,8 +163,17 @@ func expandMasterSlaveBackendServersToString(items []interface{}) string {
 		if v, ok := s["is_backup"]; ok {
 			isBackup = v.(int)
 		}
-		str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d', 'Type': '%s', 'ServerType': '%s', 'IsBackup':'%d'}", strings.Trim(serverId, " "), port, weight, strings.Trim(stype, " "), strings.Trim(serveType, " "), isBackup)
-		servers = append(servers, str)
+		if v, ok := s["server_ip"]; ok {
+			//serverIp = v.(string)
+			serverIp = strings.Trim(v.(string), " ")
+		}
+		if len(serverIp) > 0 {
+			str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d', 'Type': '%s', 'ServerType': '%s', 'IsBackup':'%d', 'ServerIp':'%s'}", strings.Trim(serverId, " "), port, weight, strings.Trim(stype, " "), strings.Trim(serveType, " "), isBackup, serverIp)
+			servers = append(servers, str)
+		} else {
+			str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d', 'Type': '%s', 'ServerType': '%s', 'IsBackup':'%d'}", strings.Trim(serverId, " "), port, weight, strings.Trim(stype, " "), strings.Trim(serveType, " "), isBackup)
+			servers = append(servers, str)
+		}
 
 	}
 	return fmt.Sprintf("[%s]", strings.Join(servers, COMMA_SEPARATED))
