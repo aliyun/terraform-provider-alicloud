@@ -28,6 +28,8 @@ func init() {
 			"alicloud_router_interface",
 			"alicloud_route_table",
 			"alicloud_cen_instance",
+			"alicloud_edas_cluster",
+			"alicloud_edas_k8s_cluster",
 		},
 	})
 }
