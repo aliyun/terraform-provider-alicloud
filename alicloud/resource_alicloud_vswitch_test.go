@@ -44,6 +44,7 @@ func init() {
 			"alicloud_emr_cluster",
 			"polardb_cluster",
 			"alicloud_hbase_instance",
+			"alicloud_cassandra_cluster",
 		},
 	})
 }

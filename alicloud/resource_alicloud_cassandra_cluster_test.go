@@ -2,13 +2,80 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cassandra_cluster", &resource.Sweeper{
+		Name: "alicloud_cassandra_cluster",
+		F:    testSweepCassandraCluster,
+	})
+}
+
+func testSweepCassandraCluster(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testacc",
+	}
+
+	request := cassandra.CreateDescribeClustersRequest()
+	request.PageSize = requests.NewInteger(PageSizeXLarge)
+	raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
+		return cassandraClient.DescribeClusters(request)
+	})
+	if err != nil {
+		log.Printf("[ERROR] Error retrieving Cassandra Clusters: %s", WrapError(err))
+	}
+	response, _ := raw.(*cassandra.DescribeClustersResponse)
+
+	sweeped := false
+	for _, v := range response.Clusters.Cluster {
+		id := v.ClusterId
+		name := v.ClusterName
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Cassandra Clusters: %s (%s)", name, id)
+			continue
+		}
+
+		sweeped = true
+		log.Printf("[INFO] Deleting Cassandra Clusters: %s (%s)", name, id)
+		req := cassandra.CreateDeleteClusterRequest()
+		req.ClusterId = id
+		_, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
+			return cassandraClient.DeleteCluster(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Cassandra Clusters (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		// Waiting 30 seconds to ensure these Cassandra Clusters have been deleted.
+		time.Sleep(30 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudCassandraCluster_basic(t *testing.T) {
 	var v cassandra.Cluster
