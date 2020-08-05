@@ -86,7 +86,7 @@ func testSweepEdasK8sCluster(region string) error {
 				return resource.NonRetryableError(err)
 			}
 			addDebug(deleteClusterRq.GetActionName(), raw, deleteClusterRq.RoaRequest, deleteClusterRq)
-			rsp := raw.(*edas.DeleteApplicationResponse)
+			rsp := raw.(*edas.DeleteClusterResponse)
 			if rsp.Code == 601 && strings.Contains(rsp.Message, "Operation cannot be processed because there are running instances.") {
 				err = Error("Operation cannot be processed because there are running instances.")
 				return resource.RetryableError(err)
