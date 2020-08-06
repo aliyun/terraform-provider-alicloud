@@ -79,6 +79,27 @@ func resourceAlicloudCenBandwidthPackage() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return PayType(d.Get("charge_type").(string)) == PrePaid
+				},
+			},
+
+			"auto_renew_duration": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      1,
+				ForceNew:     true,
+				ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 6, 12}),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return PayType(d.Get("charge_type").(string)) == PrePaid
+				},
+			},
 		},
 	}
 }
@@ -295,6 +316,12 @@ func buildAliCloudCenBandwidthPackageArgs(d *schema.ResourceData, meta interface
 		changeType = "PREPAY"
 		request.Period = requests.NewInteger(d.Get("period").(int))
 		request.PricingCycle = "Month"
+		if v, ok := d.GetOk("auto_renew"); ok {
+			request.AutoRenew = requests.NewBoolean(v.(bool))
+		}
+		if v, ok := d.GetOk("auto_renew_duration"); ok {
+			request.AutoRenewDuration = requests.NewInteger(v.(int))
+		}
 	}
 
 	request.BandwidthPackageChargeType = changeType
