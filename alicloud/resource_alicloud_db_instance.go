@@ -194,7 +194,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Enabled", "Disabled"}, false),
-				Default:      "Disabled",
+				Computed:     true,
 			},
 			"sql_collector_config_value": {
 				Type:         schema.TypeInt,
