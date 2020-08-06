@@ -110,7 +110,7 @@ The following arguments are supported:
     - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
     - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
 
-* `sql_collector_status` - (Optional, Available in 1.70.0+) The sql collector status of the instance. Valid values are `Enabled`, `Disabled`, Default to `Disabled`.
+* `sql_collector_status` - (Optional, Available in 1.70.0+) The sql collector status of the instance. Valid values are `Enabled`, `Disabled`.
 * `sql_collector_config_value` - (Optional, Available in 1.70.0+) The sql collector keep time of the instance. Valid values are `30`, `180`, `365`, `1095`, `1825`, Default to `30`.
     
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
