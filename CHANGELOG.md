@@ -1,4 +1,31 @@
 ## 1.93.0 (Unreleased)
+
+- **New Resource:** `alicloud_oos_execution` [GH-2679]
+- **New Resource:** `alicloud_edas_k8s_cluster` [GH-2678]
+- **Data Source:** `alicloud_oos_execution` [GH-2679]
+
+IMPROVEMENTS:
+
+- Add purge cluster api for cassandra sweeper [GH-2693]
+- Add default vpc for mongodb [GH-2689]
+- Add default vpc for kvstore [GH-2688]
+- Add sweeper for cassandra cluster [GH-2687]
+- Support 'resoruce_group_id' attribute for ImportKeyPair [GH-2683]
+- Support to get NotFound error in read method [GH-2682]
+- UPDATE CHANGELOG [GH-2681]
+- Support specify security group when create instance [GH-2680]
+- improve(slb) update slb_backend_server add parameter server_ip [GH-2651]
+
+BUG FIXES:
+
+- fix: create rds sql_collector_status bug [GH-2690]
+- fix(edas): improve sweeper test [GH-2686]
+- fix cassandra doc and add describe not found error [GH-2685]
+- fix doc: attach AliyunMNSNotificationRolePolicy to role [GH-2572]
+- docs: fix typos and grammar in Alicloud Provider [GH-2559]
+- fix_markdown_auto_provisioning_group [GH-2543]
+- fix_markdown_snapshot_policy [GH-2540]
+
 ## 1.92.0 (July 31, 2020)
 
 - **New Resource:** `alicloud_oos_template` ([#2670](https://github.com/terraform-providers/terraform-provider-alicloud/issues/2670))
