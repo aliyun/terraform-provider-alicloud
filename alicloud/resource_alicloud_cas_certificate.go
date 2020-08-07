@@ -67,7 +67,7 @@ func resourceAlicloudCasCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	addDebug(args.GetActionName(), raw, args.RpcRequest, args)
 	response, _ := raw.(*cas.CreateUserCertificateResponse)
-	d.SetId(strconv.Itoa(response.CertId))
+	d.SetId(strconv.FormatInt(response.CertId, 10))
 	return resourceAlicloudCasRead(d, meta)
 }
 

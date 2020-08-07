@@ -82,7 +82,7 @@ func testSweepCasCertificate(region string) error {
 			}
 			log.Printf("[INFO] Deleting Certificate: %s (%d)", name, id)
 			req := cas.CreateDeleteUserCertificateRequest()
-			req.CertId = requests.NewInteger(id)
+			req.CertId = requests.NewInteger(int(id))
 			_, err := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
 				return casClient.DeleteUserCertificate(req)
 			})

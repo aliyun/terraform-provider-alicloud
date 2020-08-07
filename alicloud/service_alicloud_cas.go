@@ -31,7 +31,7 @@ func (s *CasService) DescribeCas(id string) (*cas.Certificate, error) {
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		res, _ := raw.(*cas.DescribeUserCertificateListResponse)
 		for _, v := range res.CertificateList {
-			if id == strconv.Itoa(v.Id) {
+			if id == strconv.FormatInt(v.Id, 10) {
 				return &v, nil
 			}
 		}
