@@ -243,3 +243,37 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicyVersion(id string)
 	response, _ := raw.(*resourcemanager.GetPolicyVersionResponse)
 	return response.PolicyVersion, nil
 }
+
+func (s *ResourcemanagerService) DescribeResourceManagerPolicyAttachment(id string) (object resourcemanager.PolicyAttachment, err error) {
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := resourcemanager.CreateListPolicyAttachmentsRequest()
+	request.RegionId = s.client.RegionId
+	request.PolicyName = parts[0]
+	request.PolicyType = parts[1]
+	request.PrincipalName = parts[2]
+	request.PrincipalType = parts[3]
+
+	raw, err := s.client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
+		return resourcemanagerClient.ListPolicyAttachments(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Policy", "EntityNotExists.ResourceGroup"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicyAttachment", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*resourcemanager.ListPolicyAttachmentsResponse)
+
+	if len(response.PolicyAttachments.PolicyAttachment) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerPolicyAttachment", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+		return
+	}
+	return response.PolicyAttachments.PolicyAttachment[0], nil
+}
