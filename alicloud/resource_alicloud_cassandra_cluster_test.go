@@ -69,6 +69,15 @@ func testSweepCassandraCluster(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Cassandra Clusters (%s (%s)): %s", name, id, err)
 		}
+		log.Printf("[INFO] Purging Cassandra Clusters: %s (%s)", name, id)
+		reqPurge := cassandra.CreatePurgeClusterRequest()
+		reqPurge.ClusterId = id
+		_, errPurge := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
+			return cassandraClient.PurgeCluster(reqPurge)
+		})
+		if errPurge != nil {
+			log.Printf("[ERROR] Failed to purge Cassandra Clusters (%s (%s)): %s", name, id, err)
+		}
 	}
 	if sweeped {
 		// Waiting 30 seconds to ensure these Cassandra Clusters have been deleted.
