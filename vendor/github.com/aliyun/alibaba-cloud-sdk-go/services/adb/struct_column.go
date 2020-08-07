@@ -17,10 +17,11 @@ package adb
 
 // Column is a nested struct in adb response
 type Column struct {
-	ColumnName  string `json:"ColumnName" xml:"ColumnName"`
-	SchemaName  string `json:"SchemaName" xml:"SchemaName"`
-	TableName   string `json:"TableName" xml:"TableName"`
-	DBClusterId string `json:"DBClusterId" xml:"DBClusterId"`
-	PrimaryKey  bool   `json:"PrimaryKey" xml:"PrimaryKey"`
-	Type        string `json:"Type" xml:"Type"`
+	ColumnName          string `json:"ColumnName" xml:"ColumnName"`
+	SchemaName          string `json:"SchemaName" xml:"SchemaName"`
+	TableName           string `json:"TableName" xml:"TableName"`
+	DBClusterId         string `json:"DBClusterId" xml:"DBClusterId"`
+	AutoIncrementColumn bool   `json:"AutoIncrementColumn" xml:"AutoIncrementColumn"`
+	PrimaryKey          bool   `json:"PrimaryKey" xml:"PrimaryKey"`
+	Type                string `json:"Type" xml:"Type"`
 }

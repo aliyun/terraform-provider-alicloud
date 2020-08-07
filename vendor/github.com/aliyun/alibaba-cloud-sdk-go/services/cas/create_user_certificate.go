@@ -76,9 +76,9 @@ func (client *Client) CreateUserCertificateWithCallback(request *CreateUserCerti
 // CreateUserCertificateRequest is the request struct for api CreateUserCertificate
 type CreateUserCertificateRequest struct {
 	*requests.RpcRequest
+	Cert     string `position:"Query" name:"Cert"`
 	SourceIp string `position:"Query" name:"SourceIp"`
 	Name     string `position:"Query" name:"Name"`
-	Cert     string `position:"Query" name:"Cert"`
 	Lang     string `position:"Query" name:"Lang"`
 	Key      string `position:"Query" name:"Key"`
 }
@@ -87,7 +87,7 @@ type CreateUserCertificateRequest struct {
 type CreateUserCertificateResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
-	CertId    int    `json:"CertId" xml:"CertId"`
+	CertId    int64  `json:"CertId" xml:"CertId"`
 }
 
 // CreateCreateUserCertificateRequest creates a request to invoke CreateUserCertificate API
@@ -96,6 +96,7 @@ func CreateCreateUserCertificateRequest() (request *CreateUserCertificateRequest
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("cas", "2018-07-13", "CreateUserCertificate", "cas", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

@@ -99,6 +99,7 @@ func CreateDescribeDVOrderResultRequest() (request *DescribeDVOrderResultRequest
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("cas", "2018-07-13", "DescribeDVOrderResult", "cas", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

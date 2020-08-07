@@ -76,15 +76,15 @@ func (client *Client) CreateDVOrderAuditWithCallback(request *CreateDVOrderAudit
 // CreateDVOrderAuditRequest is the request struct for api CreateDVOrderAudit
 type CreateDVOrderAuditRequest struct {
 	*requests.RpcRequest
-	InstanceId       string `position:"Query" name:"InstanceId"`
+	City             string `position:"Query" name:"City"`
 	SourceIp         string `position:"Query" name:"SourceIp"`
 	Province         string `position:"Query" name:"Province"`
-	City             string `position:"Query" name:"City"`
-	Domain           string `position:"Query" name:"Domain"`
-	DomainVerifyType string `position:"Query" name:"DomainVerifyType"`
-	Mobile           string `position:"Query" name:"Mobile"`
 	Lang             string `position:"Query" name:"Lang"`
 	Email            string `position:"Query" name:"Email"`
+	Mobile           string `position:"Query" name:"Mobile"`
+	InstanceId       string `position:"Query" name:"InstanceId"`
+	Domain           string `position:"Query" name:"Domain"`
+	DomainVerifyType string `position:"Query" name:"DomainVerifyType"`
 	Username         string `position:"Query" name:"Username"`
 }
 
@@ -100,6 +100,7 @@ func CreateCreateDVOrderAuditRequest() (request *CreateDVOrderAuditRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("cas", "2018-07-13", "CreateDVOrderAudit", "cas", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

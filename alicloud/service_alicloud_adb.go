@@ -17,7 +17,7 @@ type AdbService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *AdbService) DescribeAdbCluster(id string) (instance *adb.DBCluster, err error) {
+func (s *AdbService) DescribeAdbCluster(id string) (instance *adb.DBClusterInDescribeDBClusters, err error) {
 	request := adb.CreateDescribeDBClustersRequest()
 	request.RegionId = s.client.RegionId
 	dbClusterIds := []string{}
