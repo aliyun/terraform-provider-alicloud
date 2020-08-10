@@ -1,4 +1,4 @@
-module github.com/terraform-providers/terraform-provider-alicloud
+module github.com/aliyun/terraform-provider-alicloud
 
 require (
 	github.com/Sirupsen/logrus v0.0.0-20181010200618-458213699411 // indirect

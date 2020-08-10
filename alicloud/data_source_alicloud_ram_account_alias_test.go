@@ -3,7 +3,7 @@ package alicloud
 import (
 	"testing"
 
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudRamAccountAliasDataSource(t *testing.T) {

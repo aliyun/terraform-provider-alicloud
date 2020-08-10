@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	waf_openapi "github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type Waf_openapiService struct {
