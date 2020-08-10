@@ -51,8 +51,8 @@ CURRENT_PATH=$(pwd)
 go version
 
 cd $GOPATH
-mkdir -p src/github.com/terraform-providers
-cd src/github.com/terraform-providers
+mkdir -p src/github.com/aliyun
+cd src/github.com/aliyun
 cp -rf $CURRENT_PATH/terraform-provider-alicloud ./
 cd terraform-provider-alicloud
 
