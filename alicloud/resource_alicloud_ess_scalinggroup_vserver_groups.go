@@ -116,6 +116,10 @@ func resourceAliyunEssVserverGroupsUpdate(d *schema.ResourceData, meta interface
 	d.Partial(true)
 	vserverGroupsMapFromScalingGroup := vserverGroupMapFromScalingGroup(object.VServerGroups.VServerGroup)
 	vserverGroupsMapFromConfig := vserverGroupMapFromConfig(d.Get("vserver_groups").(*schema.Set))
+	err = vserverGroupMapPreCheckLb(vserverGroupsMapFromConfig, meta.(*connectivity.AliyunClient))
+	if err != nil {
+		return WrapError(err)
+	}
 	attachMap, detachMap := attachOrDetachVserverGroupMap(vserverGroupsMapFromConfig, vserverGroupsMapFromScalingGroup)
 	v, ok := d.GetOkExists("force")
 	force := true
@@ -291,6 +295,18 @@ func detachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	}
+	return nil
+}
+
+func vserverGroupMapPreCheckLb(vserverGroupsMapFromConfig map[string]string, client *connectivity.AliyunClient) error {
+	slbService := SlbService{client}
+	for _, v := range vserverGroupsMapFromConfig {
+		attrs := strings.Split(v, "_")
+		loadbalancerID := attrs[0]
+		if err := slbService.WaitForSlb(loadbalancerID, Active, DefaultTimeout); err != nil {
+			return WrapError(err)
+		}
 	}
 	return nil
 }
