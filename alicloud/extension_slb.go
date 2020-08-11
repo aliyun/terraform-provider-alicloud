@@ -246,6 +246,7 @@ func getIdSetFromServers(items []interface{}) *schema.Set {
 	return schema.NewSet(schema.HashString, rmId)
 }
 
+
 func getIdPortSetFromServers(items []interface{}) *schema.Set {
 	rmIdPort := make([]interface{}, 0)
 	for _, item := range items {
