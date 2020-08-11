@@ -92,13 +92,14 @@ func testSweepEdasK8sApplication(region string) error {
 		deleteApplicationRequest.RegionId = region
 		deleteApplicationRequest.AppId = v.AppId
 
+		wait := incrementalWait(1*time.Second, 2*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 			raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 				return edasClient.DeleteApplication(deleteApplicationRequest)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{ThrottlingUser}) {
-					time.Sleep(10 * time.Second)
+					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
