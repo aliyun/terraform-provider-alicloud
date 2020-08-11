@@ -149,7 +149,7 @@ func TestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"application_name": "${var.name}",
-					"cluster_id":       "fa5e2c44-1668-41e9-9780-5ac28415a1e2",
+					"cluster_id":       "${alicloud_edas_k8s_cluster.default.id}",
 					"replicas":         "1",
 					"package_type":     "Image",
 					"image_url":        fmt.Sprintf("registry-vpc.%s.aliyuncs.com/edas-demo-image/consumer:1.0", region),
@@ -157,6 +157,7 @@ func TestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"application_name": name,
+						"replicas": "1",
 					}),
 				),
 			},
@@ -165,36 +166,6 @@ func TestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"application_name": fmt.Sprintf("tf-testacc-edask8sappch%v", rand),
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"application_name": fmt.Sprintf("tf-testacc-edask8sappch%v", rand)}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"replicas": "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"replicas": "2"}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"image_url": fmt.Sprintf("registry-vpc.%s.aliyuncs.com/edas-demo-image/provider:1.0", region),
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"image_url": fmt.Sprintf("registry-vpc.%s.aliyuncs.com/edas-demo-image/provider:1.0", region)}),
-				),
 			},
 		},
 	})
@@ -231,13 +202,15 @@ func TestAccAlicloudEdasK8sApplication_multi(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"count":            "2",
 					"application_name": "${var.name}-${count.index}",
-					"cluster_id":       "fa5e2c44-1668-41e9-9780-5ac28415a1e2",
+					"cluster_id":       "${alicloud_edas_k8s_cluster.default.id}",
 					"replicas":         "1",
 					"package_type":     "Image",
 					"image_url":        fmt.Sprintf("registry-vpc.%s.aliyuncs.com/edas-demo-image/consumer:1.0", region),
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"application_name": name,
+					}),
 				),
 			},
 		},
@@ -259,6 +232,49 @@ func resourceEdasK8sApplicationConfigDependence(name string) string {
 	return fmt.Sprintf(`
 		variable "name" {
 		  default = "%v"
+		}
+
+		data "alicloud_zones" default {
+		  available_resource_creation = "VSwitch"
+		}
+		
+		data "alicloud_instance_types" "default" {
+		  availability_zone = data.alicloud_zones.default.zones.0.id
+		  cpu_core_count = 2
+		  memory_size = 4
+		  kubernetes_node_role = "Worker"
+		}
+		
+		resource "alicloud_vpc" "default" {
+		  name = var.name
+		  cidr_block = "10.1.0.0/21"
+		}
+		
+		resource "alicloud_vswitch" "default" {
+		  name = var.name
+		  vpc_id = alicloud_vpc.default.id
+		  cidr_block = "10.1.1.0/24"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
+		}
+		
+		resource "alicloud_cs_managed_kubernetes" "default" {
+		  worker_instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
+		  name = var.name
+		  worker_vswitch_ids = [alicloud_vswitch.default.id]
+		  worker_number = "2"
+		  password =                    "Test12345"
+		  pod_cidr =                   "172.20.0.0/16"
+		  service_cidr =               "172.21.0.0/20"
+		  worker_disk_size =            "50"
+		  worker_disk_category =         "cloud_ssd"
+		  worker_data_disk_size =       "20"
+		  worker_data_disk_category =   "cloud_ssd"
+		  worker_instance_charge_type = "PostPaid"
+		  slb_internet_enabled =        "true"
+		}
+		
+		resource "alicloud_edas_k8s_cluster" "default" {
+		  cs_cluster_id = alicloud_cs_managed_kubernetes.default.id
 		}
 		`, name)
 }

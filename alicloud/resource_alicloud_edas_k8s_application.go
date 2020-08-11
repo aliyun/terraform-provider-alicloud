@@ -450,43 +450,25 @@ func resourceAlicloudEdasK8sApplicationRead(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
 
-	regionId := client.RegionId
-	appId := d.Id()
-
-	request := edas.CreateGetK8sApplicationRequest()
-	request.RegionId = regionId
-	request.AppId = appId
-
-	wait := incrementalWait(1*time.Second, 2*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
-			return edasClient.GetK8sApplication(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
-		response, _ := raw.(*edas.GetK8sApplicationResponse)
-		d.Set("application_name", response.Applcation.App.ApplicationName)
-		d.Set("cluster_id", response.Applcation.App.ClusterId)
-		d.Set("replicas", response.Applcation.App.Instances)
-		if len(response.Applcation.App.ApplicationType) > 0 {
-			d.Set("package_type", response.Applcation.App.ApplicationType)
-		}
-		if d.Get("package_type") == "Image" {
-			d.Set("image_url", response.Applcation.ImageInfo.ImageUrl)
-		}
-		return nil
-	})
-
+	response, err := edasService.DescribeEdasK8sApplication(d.Id())
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_k8s_application", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
 	}
 
+
+	d.Set("application_name", response.App.ApplicationName)
+	d.Set("cluster_id", response.App.ClusterId)
+	d.Set("replicas", response.App.Instances)
+	if len(response.App.ApplicationType) > 0 {
+		d.Set("package_type", response.App.ApplicationType)
+	}
+	if d.Get("package_type") == "Image" {
+		d.Set("image_url", response.ImageInfo.ImageUrl)
+	}
 	return nil
 }
 
