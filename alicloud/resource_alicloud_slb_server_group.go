@@ -2,16 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunSlbServerGroup() *schema.Resource {
@@ -44,10 +42,15 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"server_ids": {
-							Type:     schema.TypeList,
+							Type:       schema.TypeList,
+							Optional:   true,
+							Elem:       &schema.Schema{Type: schema.TypeString},
+							MinItems:   1,
+							Deprecated: "Field 'server_ids' has been deprecated from provider version 1.93.0. Use 'server_id' replaces it.",
+						},
+						"server_id": {
+							Type:     schema.TypeString,
 							Required: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-							MinItems: 1,
 						},
 						"port": {
 							Type:         schema.TypeInt,
@@ -65,6 +68,10 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 							Optional:     true,
 							Default:      string(ECS),
 							ValidateFunc: validation.StringInSlice([]string{"eni", "ecs"}, false),
+						},
+						"server_ip": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 					},
 				},
@@ -116,32 +123,13 @@ func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("load_balancer_id", object.LoadBalancerId)
 
 	servers := make([]map[string]interface{}, 0)
-	portAndWeight := make(map[string][]string)
 	for _, server := range object.BackendServers.BackendServer {
-		key := fmt.Sprintf("%d%s%d%s%s", server.Port, COLON_SEPARATED, server.Weight, COLON_SEPARATED, server.Type)
-		if v, ok := portAndWeight[key]; !ok {
-			portAndWeight[key] = []string{server.ServerId}
-		} else {
-			v = append(v, server.ServerId)
-			portAndWeight[key] = v
-		}
-	}
-	for key, value := range portAndWeight {
-		k := strings.Split(key, COLON_SEPARATED)
-		p, e := strconv.Atoi(k[0])
-		if e != nil {
-			return WrapError(e)
-		}
-		w, e := strconv.Atoi(k[1])
-		if e != nil {
-			return WrapError(e)
-		}
-		t := k[2]
 		s := map[string]interface{}{
-			"server_ids": value,
-			"port":       p,
-			"weight":     w,
-			"type":       t,
+			"server_id": server.ServerId,
+			"port":      server.Port,
+			"weight":    server.Weight,
+			"type":      server.Type,
+			"server_ip": server.ServerIp,
 		}
 		servers = append(servers, s)
 	}
@@ -175,20 +163,16 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 			rmservers := make([]interface{}, 0)
 			for _, rmserver := range remove {
 				rms := rmserver.(map[string]interface{})
-				if v, ok := rms["server_ids"]; ok {
-					server_ids := v.([]interface{})
-					for _, id := range server_ids {
-						idPort := fmt.Sprintf("%s:%d", id, rms["port"])
-						if removeserverSet.Contains(idPort) {
-							rmsm := map[string]interface{}{
-								"server_id": id,
-								"port":      rms["port"],
-								"type":      rms["type"],
-								"weight":    rms["weight"],
-							}
-							rmservers = append(rmservers, rmsm)
-						}
+				idPort := fmt.Sprintf("%s:%d", rms["server_id"], rms["port"])
+				if removeserverSet.Contains(idPort) {
+					rmsm := map[string]interface{}{
+						"server_id": rms["server_id"],
+						"port":      rms["port"],
+						"type":      rms["type"],
+						"weight":    rms["weight"],
+						"server_ip": rms["server_ip"],
 					}
+					rmservers = append(rmservers, rmsm)
 				}
 			}
 			request := slb.CreateRemoveVServerGroupBackendServersRequest()
@@ -216,20 +200,16 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 			addservers := make([]interface{}, 0)
 			for _, addserver := range add {
 				adds := addserver.(map[string]interface{})
-				if v, ok := adds["server_ids"]; ok {
-					server_ids := v.([]interface{})
-					for _, id := range server_ids {
-						idPort := fmt.Sprintf("%s:%d", id, adds["port"])
-						if addServerSet.Contains(idPort) {
-							addsm := map[string]interface{}{
-								"server_id": id,
-								"port":      adds["port"],
-								"type":      adds["type"],
-								"weight":    adds["weight"],
-							}
-							addservers = append(addservers, addsm)
-						}
+				idPort := fmt.Sprintf("%s:%d", adds["server_id"], adds["port"])
+				if addServerSet.Contains(idPort) {
+					addsm := map[string]interface{}{
+						"server_id": adds["server_id"],
+						"port":      adds["port"],
+						"type":      adds["type"],
+						"weight":    adds["weight"],
+						"server_ip": adds["server_ip"],
 					}
+					addservers = append(addservers, addsm)
 				}
 			}
 			request := slb.CreateAddVServerGroupBackendServersRequest()
@@ -272,20 +252,16 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 			servers := make([]interface{}, 0)
 			for _, server := range d.Get("servers").(*schema.Set).List() {
 				s := server.(map[string]interface{})
-				if v, ok := s["server_ids"]; ok {
-					server_ids := v.([]interface{})
-					for _, id := range server_ids {
-						idPort := fmt.Sprintf("%s:%d", id, s["port"])
-						if updateServerSet.Contains(idPort) {
-							sm := map[string]interface{}{
-								"server_id": id,
-								"port":      s["port"],
-								"type":      s["type"],
-								"weight":    s["weight"],
-							}
-							servers = append(servers, sm)
-						}
+				idPort := fmt.Sprintf("%s:%d", s["server_id"], s["port"])
+				if updateServerSet.Contains(idPort) {
+					sm := map[string]interface{}{
+						"server_id": s["server_id"],
+						"port":      s["port"],
+						"type":      s["type"],
+						"weight":    s["weight"],
+						"server_ip": s["server_ip"],
 					}
+					servers = append(servers, sm)
 				}
 			}
 			segs := len(servers)/step + 1

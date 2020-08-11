@@ -60,10 +60,11 @@ resource "alicloud_slb" "instance" {
 }
 
 resource "alicloud_network_interface" "default" {
-  count           = var.number
-  name            = var.name
-  vswitch_id      = alicloud_vswitch.main.id
-  security_groups = [alicloud_security_group.group.id]
+  count             = var.number
+  name              = var.name
+  vswitch_id        = alicloud_vswitch.main.id
+  security_groups   = [alicloud_security_group.group.id]
+  private_ips_count = 1
 }
 
 resource "alicloud_network_interface_attachment" "default" {
@@ -77,16 +78,17 @@ resource "alicloud_slb_server_group" "group" {
   name             = var.name
 
   servers {
-    server_ids = [alicloud_instance.instance[0].id, alicloud_instance.instance[1].id]
-    port       = 100
-    weight     = 10
+    server_id = alicloud_instance.instance[0].id
+    port      = 100
+    weight    = 10
   }
 
   servers {
-    server_ids = [alicloud_network_interface.default[0].id]
-    port       = 100
-    weight     = 10
-    type       = "eni"
+    server_id = alicloud_network_interface.default[0].id
+    port      = 100
+    weight    = 10
+    type      = "eni"
+    server_ip = alicloud_network_interface.default[0].private_ip
   }
   depends_on = [alicloud_network_interface_attachment.default]
 }

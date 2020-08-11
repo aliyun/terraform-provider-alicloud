@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
@@ -35,9 +35,9 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 					"load_balancer_id": "${alicloud_slb.default.id}",
 					"servers": []map[string]interface{}{
 						{
-							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port":       "100",
-							"weight":     "10",
+							"server_id": "${alicloud_instance.default.0.id}",
+							"port":      "100",
+							"weight":    "10",
 						},
 					},
 				}),
@@ -65,15 +65,16 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"servers": []map[string]interface{}{
 						{
-							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port":       "100",
-							"weight":     "10",
+							"server_id": "${alicloud_instance.default.0.id}",
+							"port":      "100",
+							"weight":    "10",
 						},
 						{
-							"server_ids": []string{"${alicloud_network_interface.default.0.id}"},
-							"port":       "70",
-							"weight":     "10",
-							"type":       "eni",
+							"server_id": "${alicloud_network_interface.default.0.id}",
+							"port":      "70",
+							"weight":    "10",
+							"type":      "eni",
+							"server_ip": "${alicloud_network_interface.default.0.private_ip}",
 						},
 					},
 				}),
@@ -98,9 +99,9 @@ func TestAccAlicloudSlbServerGroup_vpc(t *testing.T) {
 					"name": "${var.name}",
 					"servers": []map[string]interface{}{
 						{
-							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port":       "100",
-							"weight":     "10",
+							"server_id": "${alicloud_instance.default.0.id}",
+							"port":      "100",
+							"weight":    "10",
 						},
 					},
 				}),
@@ -142,14 +143,14 @@ func TestAccAlicloudSlbServerGroup_multi_vpc(t *testing.T) {
 					"count":            "10",
 					"servers": []map[string]interface{}{
 						{
-							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port":       "100",
-							"weight":     "10",
+							"server_id": "${alicloud_instance.default.0.id}",
+							"port":      "100",
+							"weight":    "10",
 						},
 						{
-							"server_ids": "${alicloud_instance.default.*.id}",
-							"port":       "80",
-							"weight":     "100",
+							"server_id": "${alicloud_instance.default.1.id}",
+							"port":      "80",
+							"weight":    "100",
 						},
 					},
 				}),
@@ -187,14 +188,14 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 					"load_balancer_id": "${alicloud_slb.default.id}",
 					"servers": []map[string]interface{}{
 						{
-							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port":       "100",
-							"weight":     "10",
+							"server_id": "${alicloud_instance.default.0.id}",
+							"port":      "100",
+							"weight":    "10",
 						},
 						{
-							"server_ids": "${alicloud_instance.default.*.id}",
-							"port":       "80",
-							"weight":     "100",
+							"server_id": "${alicloud_instance.default.1.id}",
+							"port":      "80",
+							"weight":    "100",
 						},
 					},
 				}),
@@ -222,9 +223,9 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"servers": []map[string]interface{}{
 						{
-							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port":       "100",
-							"weight":     "10",
+							"server_id": "${alicloud_instance.default.0.id}",
+							"port":      "100",
+							"weight":    "10",
 						},
 					},
 				}),
@@ -239,14 +240,14 @@ func TestAccAlicloudSlbServerGroup_classic(t *testing.T) {
 					"name": "${var.name}",
 					"servers": []map[string]interface{}{
 						{
-							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
-							"port":       "100",
-							"weight":     "10",
+							"server_id": "${alicloud_instance.default.0.id}",
+							"port":      "100",
+							"weight":    "10",
 						},
 						{
-							"server_ids": "${alicloud_instance.default.*.id}",
-							"port":       "80",
-							"weight":     "100",
+							"server_id": "${alicloud_instance.default.1.id}",
+							"port":      "80",
+							"weight":    "100",
 						},
 					},
 				}),
@@ -298,11 +299,12 @@ resource "alicloud_network_interface" "default" {
     vswitch_id = "${alicloud_vswitch.default.id}"
     security_groups = [ "${alicloud_security_group.default.id}" ]
 }
+
 resource "alicloud_instance" "default" {
   image_id = "${data.alicloud_images.default.images.0.id}"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
   instance_name = "${var.name}"
-  count = "21"
+  count = "18"
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
@@ -447,73 +449,73 @@ var serverGroupMultiClassicMap = map[string]string{
 
 var serversMap = []map[string]interface{}{
 	{
-		"server_ids": []string{"${alicloud_instance.default.0.id}"},
-		"port":       "1",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.0.id}",
+		"port":      "1",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.1.id}"},
-		"port":       "2",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.1.id}",
+		"port":      "2",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.2.id}"},
-		"port":       "3",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.2.id}",
+		"port":      "3",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.3.id}"},
-		"port":       "4",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.3.id}",
+		"port":      "4",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.4.id}"},
-		"port":       "5",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.4.id}",
+		"port":      "5",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.5.id}"},
-		"port":       "6",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.5.id}",
+		"port":      "6",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.6.id}"},
-		"port":       "7",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.6.id}",
+		"port":      "7",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.7.id}"},
-		"port":       "8",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.7.id}",
+		"port":      "8",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.8.id}"},
-		"port":       "9",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.8.id}",
+		"port":      "9",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.9.id}"},
-		"port":       "10",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.9.id}",
+		"port":      "10",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.10.id}"},
-		"port":       "11",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.10.id}",
+		"port":      "11",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.11.id}"},
-		"port":       "12",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.11.id}",
+		"port":      "12",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.12.id}"},
-		"port":       "13",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.12.id}",
+		"port":      "13",
+		"weight":    "10",
 	},
 	{
-		"server_ids": []string{"${alicloud_instance.default.13.id}"},
-		"port":       "14",
-		"weight":     "10",
+		"server_id": "${alicloud_instance.default.13.id}",
+		"port":      "14",
+		"weight":    "10",
 	},
 }
