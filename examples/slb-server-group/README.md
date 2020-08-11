@@ -14,7 +14,8 @@ The following arguments are supported:
 
 The servers mapping supports the following:
 
-* `server_ids` - (Required) A list backend server ID (ECS instance ID).
+* `server_ids` - (Deprecated) Field 'server_ids' has been deprecated from provider version 1.93.0. Use 'server_id' replaces it.
+* `server_id` - (Required, Available in 1.93.0+) Backend server ID (ECS instance ID).
 * `port` - (Required) The port used by the backend server. Valid value range: [1-65535].
 * `weight` - (Optional) Weight of the backend server. Valid value range: [0-100]. Default to 100.
 
