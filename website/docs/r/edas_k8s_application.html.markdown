@@ -130,7 +130,7 @@ The following attributes are exported:
 
 ## Import
 
-EDAS k8s application can be created as below, e.g.
+EDAS k8s application can be imported as below, e.g.
 
 ```
 $ terraform import alicloud_edas_k8s_application.new_k8s_application application_id
