@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 )
 
+var adbClusterConnectionStringRegexp = "am-[a-z-A-Z-0-9]+.[a-z]+.ads.aliyuncs.com"
+
 func TestAccAlicloudAdbCluster(t *testing.T) {
 	var v *adb.DBCluster
 	var ips []map[string]interface{}
@@ -60,7 +62,9 @@ func TestAccAlicloudAdbCluster(t *testing.T) {
 					"pay_type":            "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"connection_string": REGEXMATCH + adbClusterConnectionStringRegexp,
+					}),
 				),
 			},
 			{
@@ -225,7 +229,7 @@ func resourceAdbClusterConfigDependence(name string) string {
 	variable "creation" {
 		default = "ADB"
 	}
-
+	
 	variable "name" {
 		default = "%s"
 	}
