@@ -77,12 +77,12 @@ resource "alicloud_slb_server_group" "default" {
   load_balancer_id = "${alicloud_slb.default.id}"
   name             = "${var.name}"
   servers {
-    server_ids = ["${alicloud_instance.instance.0.id}", "${alicloud_instance.instance.1.id}"]
+    server_id = "${alicloud_instance.instance.0.id}"
     port       = 100
     weight     = 10
   }
   servers {
-    server_ids = ["${alicloud_instance.instance.*.id}"]
+    server_id  = "${alicloud_instance.instance.1.id}"
     port       = 80
     weight     = 100
   }
@@ -102,10 +102,12 @@ The following arguments are supported:
 
 The servers mapping supports the following:
 
-* `server_ids` - (Required) A list backend server ID (ECS instance ID).
+* `server_ids` - (Deprecated) Field 'server_ids' has been deprecated from provider version 1.93.0. Use 'server_id' replaces it.
+* `server_id` - (Required, Available in 1.93.0+) Backend server ID (ECS instance ID).
 * `port` - (Required) The port used by the backend server. Valid value range: [1-65535].
 * `weight` - (Optional) Weight of the backend server. Valid value range: [0-100]. Default to 100.
-* `type` - (Optional, Available in 1.51.0+) Type of the backend server. Valid value ecs, eni. Default to eni.
+* `type` - (Optional, Available in 1.51.0+) Type of the backend server. Valid value `ecs`, `eni`. Default to `ecs`.
+* `server_ip` - (Optional, Available in 1.93.0+) ServerIp of the backend server. This parameter can be specified when the type is `eni`. `ecs` type currently does not support adding `server_ip` parameter.
 
 ## Attributes Reference
 
