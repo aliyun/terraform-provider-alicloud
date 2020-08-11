@@ -105,7 +105,7 @@ func expandBackendServersWithPortToString(items []interface{}) string {
 
 		var serverIds []interface{}
 		var port, weight int
-		var serveType, serverId string
+		var serveType, serverId, serverIp string
 		if v, ok := s["port"]; ok {
 			port = v.(int)
 		}
@@ -115,9 +115,12 @@ func expandBackendServersWithPortToString(items []interface{}) string {
 		if v, ok := s["type"]; ok {
 			serveType = v.(string)
 		}
+		if v, ok := s["server_ip"]; ok {
+			serverIp = strings.Trim(v.(string), " ")
+		}
 		if v, ok := s["server_id"]; ok {
 			serverId = v.(string)
-			str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d', 'Type': '%s'}", strings.Trim(serverId, " "), port, weight, strings.Trim(serveType, " "))
+			str := fmt.Sprintf("{'ServerId':'%s','Port':'%d','Weight':'%d', 'Type': '%s', 'ServerIp': '%s'}", strings.Trim(serverId, " "), port, weight, strings.Trim(serveType, " "), serverIp)
 			servers = append(servers, str)
 		}
 		if v, ok := s["server_ids"]; ok {
@@ -179,43 +182,6 @@ func expandBackendServersInfoToString(items []interface{}) string {
 		s := server.(map[string]interface{})
 
 		var serverId string
-		var serverIp string
-		var weight int
-		var stype string
-		if v, ok := s["server_id"]; ok {
-			serverId = v.(string)
-		}
-		if v, ok := s["weight"]; ok {
-			weight = v.(int)
-		}
-		if v, ok := s["type"]; ok {
-			stype = v.(string)
-		}
-		if v, ok := s["server_ip"]; ok {
-			serverIp = strings.Trim(v.(string), " ")
-		}
-		if len(serverIp) > 0 {
-			str := fmt.Sprintf("{'ServerId':'%s','Weight':'%d', 'Type': '%s', 'ServerIp':'%s'}", strings.Trim(serverId, " "), weight, strings.Trim(stype, " "), serverIp)
-			servers = append(servers, str)
-		} else {
-			str := fmt.Sprintf("{'ServerId':'%s','Weight':'%d', 'Type': '%s'}", strings.Trim(serverId, " "), weight, strings.Trim(stype, " "))
-			servers = append(servers, str)
-		}
-
-	}
-	return fmt.Sprintf("[%s]", strings.Join(servers, COMMA_SEPARATED))
-}
-
-func expandBackendServersWithTypeToString(items []interface{}) string {
-
-	if len(items) < 1 {
-		return ""
-	}
-	var servers []string
-	for _, server := range items {
-		s := server.(map[string]interface{})
-
-		var serverId string
 		var weight int
 		var stype string
 		if v, ok := s["server_id"]; ok {
@@ -228,6 +194,30 @@ func expandBackendServersWithTypeToString(items []interface{}) string {
 			stype = v.(string)
 		}
 		str := fmt.Sprintf("{'ServerId':'%s','Weight':'%d', 'Type': '%s'}", strings.Trim(serverId, " "), weight, strings.Trim(stype, " "))
+		servers = append(servers, str)
+
+	}
+	return fmt.Sprintf("[%s]", strings.Join(servers, COMMA_SEPARATED))
+}
+
+func expandBackendServersWithoutTypeToString(items []interface{}) string {
+
+	if len(items) < 1 {
+		return ""
+	}
+	var servers []string
+	for _, server := range items {
+		s := server.(map[string]interface{})
+
+		var serverId string
+		var weight int
+		if v, ok := s["server_id"]; ok {
+			serverId = v.(string)
+		}
+		if v, ok := s["weight"]; ok {
+			weight = v.(int)
+		}
+		str := fmt.Sprintf("{'ServerId':'%s','Weight':'%d'}", strings.Trim(serverId, " "), weight)
 		servers = append(servers, str)
 
 	}
@@ -247,11 +237,8 @@ func getIdPortSetFromServers(items []interface{}) *schema.Set {
 	rmIdPort := make([]interface{}, 0)
 	for _, item := range items {
 		server := item.(map[string]interface{})
-		if v, ok := server["server_ids"]; ok {
-			serverIds := v.([]interface{})
-			for _, id := range serverIds {
-				rmIdPort = append(rmIdPort, fmt.Sprintf("%s:%d", id, server["port"]))
-			}
+		if v, ok := server["server_id"]; ok {
+			rmIdPort = append(rmIdPort, fmt.Sprintf("%s:%d", v.(string), server["port"]))
 		}
 	}
 	return schema.NewSet(schema.HashString, rmIdPort)
