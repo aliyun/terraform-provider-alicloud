@@ -15,6 +15,7 @@ func dataSourceAlicloudAdbZones() *schema.Resource {
 		Read: dataSourceAlicloudAdbZonesRead,
 
 		Schema: map[string]*schema.Schema{
+
 			"multi": {
 				Type:     schema.TypeBool,
 				Optional: true,
