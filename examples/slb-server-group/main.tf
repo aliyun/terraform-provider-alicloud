@@ -90,6 +90,7 @@ resource "alicloud_slb_server_group" "group" {
     type      = "eni"
     server_ip = alicloud_network_interface.default[0].private_ip
   }
+
   depends_on = [alicloud_network_interface_attachment.default]
 }
 
