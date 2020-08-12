@@ -23,6 +23,7 @@ const DefaultCenTimeoutLong = 180
 
 const ChildInstanceTypeVpc = "VPC"
 const ChildInstanceTypeVbr = "VBR"
+const ChildInstanceTypeCcn = "CCN"
 
 func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstance, error) {
 	c := &cbn.ChildInstance{}

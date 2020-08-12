@@ -756,8 +756,10 @@ func GetCenChildInstanceType(id string) (c string, e error) {
 		return ChildInstanceTypeVpc, nil
 	} else if strings.HasPrefix(id, "vbr") {
 		return ChildInstanceTypeVbr, nil
+	} else if strings.HasPrefix(id, "ccn") {
+		return ChildInstanceTypeCcn, nil
 	} else {
-		return c, fmt.Errorf("CEN child instance ID invalid. Now, it only supports VPC or VBR instance.")
+		return c, fmt.Errorf("CEN child instance ID invalid. Now, it only supports VPC or VBR or CCN instance.")
 	}
 }
 
