@@ -91,6 +91,7 @@ type Config struct {
 	EciEndpoint             string
 	OosEndpoint             string
 	DcdnEndpoint            string
+	MseEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {
