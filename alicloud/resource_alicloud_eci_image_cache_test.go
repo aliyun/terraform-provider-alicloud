@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -11,6 +12,55 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_eci_image_cache",
+		&resource.Sweeper{
+			Name: "alicloud_eci_image_cache",
+			F:    testSweepEciImageCache,
+		})
+}
+
+func testSweepEciImageCache(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapError(err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	queryRequest := eci.CreateDescribeImageCachesRequest()
+	var allCaches []eci.DescribeImageCachesImageCache0
+
+	raw, err := client.WithEciClient(func(eciClient *eci.Client) (interface{}, error) {
+		return eciClient.DescribeImageCaches(queryRequest)
+	})
+	if err != nil {
+		log.Printf("[ERROR] %s get an error %#v", queryRequest.GetActionName(), err)
+	}
+	addDebug(queryRequest.GetActionName(), raw)
+	response, _ := raw.(*eci.DescribeImageCachesResponse)
+	for _, cache := range response.ImageCaches {
+		if strings.HasPrefix(cache.ImageCacheName, "tf-testacc") {
+			allCaches = append(allCaches, cache)
+		} else {
+			log.Printf("Skip %#v", cache)
+		}
+	}
+
+	removeRequest := eci.CreateDeleteImageCacheRequest()
+	removeRequest.ImageCacheId = ""
+	for _, cache := range allCaches {
+		removeRequest.ImageCacheId = cache.ImageCacheId
+		raw, err := client.WithEciClient(func(eciClient *eci.Client) (interface{}, error) {
+			return eciClient.DeleteImageCache(removeRequest)
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s get an error %s", removeRequest.GetActionName(), err)
+		}
+		addDebug(removeRequest.GetActionName(), raw)
+	}
+	return nil
+}
 
 func TestAccAlicloudECIOpenAPIImageCache_basic(t *testing.T) {
 	var v eci.DescribeImageCachesImageCache0
