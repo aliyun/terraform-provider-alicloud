@@ -14,8 +14,29 @@ This data source provides the listeners related to a server load balancer of the
 ## Example Usage
 
 ```
+resource "alicloud_slb" "default" {
+  name                 = "tf-testAccSlbListenertcp"
+}
+resource "alicloud_slb_listener" "tcp" {
+  load_balancer_id          = alicloud_slb.default.id
+  backend_port              = "22"
+  frontend_port             = "22"
+  protocol                  = "tcp"
+  bandwidth                 = "10"
+  health_check_type         = "tcp"
+  persistence_timeout       = 3600
+  healthy_threshold         = 8
+  unhealthy_threshold       = 8
+  health_check_timeout      = 8
+  health_check_interval     = 5
+  health_check_http_code    = "http_2xx"
+  health_check_connect_port = 20
+  health_check_uri          = "/console"
+  established_timeout       = 600
+}
+
 data "alicloud_slb_listeners" "sample_ds" {
-  load_balancer_id = "${alicloud_slb.sample_slb.id}"
+  load_balancer_id = "${alicloud_slb.default.id}"
 }
 
 output "first_slb_listener_protocol" {
