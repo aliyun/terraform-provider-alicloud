@@ -113,9 +113,14 @@ func resourceAlicloudCenInstanceAttachmentRead(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 
+	childRegion := object.ChildInstanceRegionId
+	if "ccn" == childRegion[:3] {
+		childRegion = childRegion[4:]
+	}
+
 	d.Set("instance_id", object.CenId)
 	d.Set("child_instance_id", object.ChildInstanceId)
-	d.Set("child_instance_region_id", object.ChildInstanceRegionId)
+	d.Set("child_instance_region_id", childRegion)
 	d.Set("child_instance_owner_id", strconv.FormatInt(object.ChildInstanceOwnerId, 10))
 
 	return nil
