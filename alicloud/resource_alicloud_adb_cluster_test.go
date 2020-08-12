@@ -2,7 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 
@@ -13,6 +17,69 @@ import (
 )
 
 var adbClusterConnectionStringRegexp = "am-[a-z-A-Z-0-9]+.[a-z]+.ads.aliyuncs.com"
+
+func init() {
+	resource.AddTestSweepers("alicloud_adb_cluster", &resource.Sweeper{
+		Name: "alicloud_adb_cluster",
+		F:    testSweepAdbCluster,
+	})
+}
+
+func testSweepAdbCluster(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testacc",
+	}
+
+	request := adb.CreateDescribeDBClustersRequest()
+	request.PageSize = requests.NewInteger(PageSizeXLarge)
+	raw, err := client.WithAdbClient(func(AdbClient *adb.Client) (interface{}, error) {
+		return AdbClient.DescribeDBClusters(request)
+	})
+	if err != nil {
+		log.Printf("[ERROR] Error retrieving Adb Clusters: %s", WrapError(err))
+	}
+	response, _ := raw.(*adb.DescribeDBClustersResponse)
+
+	sweeped := false
+	for _, v := range response.Items.DBCluster {
+		id := v.DBClusterId
+		name := v.DBClusterDescription
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Abd Clusters: %s (%s)", name, id)
+			continue
+		}
+
+		sweeped = true
+		log.Printf("[INFO] Deleting Adb Clusters: %s (%s)", name, id)
+		req := adb.CreateDeleteDBClusterRequest()
+		req.DBClusterId = id
+		_, err := client.WithAdbClient(func(AdbClient *adb.Client) (interface{}, error) {
+			return AdbClient.DeleteDBCluster(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Adb Clusters (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		// Waiting 30 seconds to ensure these Adb Clusters have been deleted.
+		time.Sleep(30 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudAdbCluster(t *testing.T) {
 	var v *adb.DBCluster
