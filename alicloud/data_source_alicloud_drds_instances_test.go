@@ -103,11 +103,13 @@ func dataSourceDRDSInstancesConfigDependence(name string) string {
  	variable "name" {
 		default = "%s"
 	}
+	data "alicloud_vpcs" "default"	{
+        is_default = "true"
+	}
 	data "alicloud_vswitches" "default" {
 	  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-	  is_default = "true"
+	  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
 	}
-
  	resource "alicloud_drds_instance" "default" {
   		description = "${var.name}"
   		zone_id = "${data.alicloud_zones.default.zones.0.id}"
