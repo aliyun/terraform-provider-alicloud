@@ -217,29 +217,24 @@ func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
 
 func resourceDRDSInstanceConfigDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation = "VSwitch"
-}
-
-variable "instance_series" {
-	default = "drds.sn1.4c8g"
-}
-
-data "alicloud_vswitches" "default" {
-  zone_id = "${data.alicloud_zones.default.zones.0.id}"
-  is_default = "true"
-}
-
-resource "alicloud_vswitch" "foo" {
- 	vpc_id = "${alicloud_vpc.foo.id}"
- 	cidr_block = "172.16.0.0/21"
- 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
- 	name = "${var.name}"
-}
-
+	variable "name" {
+		default = "%s"
+	}
+	data "alicloud_zones" "default" {
+		available_resource_creation = "VSwitch"
+	}
+	
+	variable "instance_series" {
+		default = "drds.sn1.4c8g"
+	}
+	
+	data "alicloud_vpcs" "default"	{
+        is_default = "true"
+	}
+	data "alicloud_vswitches" "default" {
+	  zone_id = "${data.alicloud_zones.default.zones.0.id}"
+	  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+	}
 `, name)
 }
 
