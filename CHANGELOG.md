@@ -1,31 +1,37 @@
-## 1.93.0 (Unreleased)
+## 1.94.0 (Unreleased)
+## 1.93.0 (August 12, 2020)
 
-- **New Resource:** `alicloud_oos_execution` [GH-2679]
-- **New Resource:** `alicloud_edas_k8s_cluster` [GH-2678]
-- **Data Source:** `alicloud_oos_execution` [GH-2679]
+- **New Resource:** `alicloud_oos_execution` ([#2679](https://github.com/aliyun/terraform-provider-alicloud/issues/2679))
+- **New Resource:** `alicloud_edas_k8s_cluster` ([#2678](https://github.com/aliyun/terraform-provider-alicloud/issues/2678))
+- **Data Source:** `alicloud_oos_execution` ([#2679](https://github.com/aliyun/terraform-provider-alicloud/issues/2679))
 
 IMPROVEMENTS:
 
-- transfer terraform-provider-alicloud to aliyun from terraform-providers [GH-2697]
-- Add purge cluster api for cassandra sweeper [GH-2693]
-- Add default vpc for mongodb [GH-2689]
-- Add default vpc for kvstore [GH-2688]
-- Add sweeper for cassandra cluster [GH-2687]
-- Support 'resoruce_group_id' attribute for ImportKeyPair [GH-2683]
-- Support to get NotFound error in read method [GH-2682]
-- UPDATE CHANGELOG [GH-2681]
-- Support specify security group when create instance [GH-2680]
-- improve(slb) update slb_backend_server add parameter server_ip [GH-2651]
+- Add sweep func for adb cluster test ([#2716](https://github.com/aliyun/terraform-provider-alicloud/issues/2716))
+- Add default vpc for drds ([#2713](https://github.com/aliyun/terraform-provider-alicloud/issues/2713))
+- ADB MySQL output output connection string after creation ([#2699](https://github.com/aliyun/terraform-provider-alicloud/issues/2699))
+- add .goreleaser.yml ([#2698](https://github.com/aliyun/terraform-provider-alicloud/issues/2698))
+- transfer terraform-provider-alicloud to aliyun from terraform-providers ([#2697](https://github.com/aliyun/terraform-provider-alicloud/issues/2697))
+- Add purge cluster api for cassandra sweeper ([#2693](https://github.com/aliyun/terraform-provider-alicloud/issues/2693))
+- Add default vpc for mongodb ([#2689](https://github.com/aliyun/terraform-provider-alicloud/issues/2689))
+- Add default vpc for kvstore ([#2688](https://github.com/aliyun/terraform-provider-alicloud/issues/2688))
+- Add sweeper for cassandra cluster ([#2687](https://github.com/aliyun/terraform-provider-alicloud/issues/2687))
+- Support 'resoruce_group_id' attribute for ImportKeyPair ([#2683](https://github.com/aliyun/terraform-provider-alicloud/issues/2683))
+- Support to get NotFound error in read method ([#2682](https://github.com/aliyun/terraform-provider-alicloud/issues/2682))
+- UPDATE CHANGELOG ([#2681](https://github.com/aliyun/terraform-provider-alicloud/issues/2681))
+- Support specify security group when create instance ([#2680](https://github.com/aliyun/terraform-provider-alicloud/issues/2680))
+- improve(slb) update slb_backend_server add parameter server_ip ([#2651](https://github.com/aliyun/terraform-provider-alicloud/issues/2651))
 
 BUG FIXES:
 
-- fix: create rds sql_collector_status bug [GH-2690]
-- fix(edas): improve sweeper test [GH-2686]
-- fix cassandra doc and add describe not found error [GH-2685]
-- fix doc: attach AliyunMNSNotificationRolePolicy to role [GH-2572]
-- docs: fix typos and grammar in Alicloud Provider [GH-2559]
-- fix_markdown_auto_provisioning_group [GH-2543]
-- fix_markdown_snapshot_policy [GH-2540]
+- update: fix dnat query errror by only use forwardTableId ([#2712](https://github.com/aliyun/terraform-provider-alicloud/issues/2712))
+- fix: create rds sql_collector_status bug ([#2690](https://github.com/aliyun/terraform-provider-alicloud/issues/2690))
+- fix(edas): improve sweeper test ([#2686](https://github.com/aliyun/terraform-provider-alicloud/issues/2686))
+- fix cassandra doc and add describe not found error ([#2685](https://github.com/aliyun/terraform-provider-alicloud/issues/2685))
+- fix doc: attach AliyunMNSNotificationRolePolicy to role ([#2572](https://github.com/aliyun/terraform-provider-alicloud/issues/2572))
+- docs: fix typos and grammar in Alicloud Provider ([#2559](https://github.com/aliyun/terraform-provider-alicloud/issues/2559))
+- fix_markdown_auto_provisioning_group ([#2543](https://github.com/aliyun/terraform-provider-alicloud/issues/2543))
+- fix_markdown_snapshot_policy ([#2540](https://github.com/aliyun/terraform-provider-alicloud/issues/2540))
 
 ## 1.92.0 (July 31, 2020)
 
