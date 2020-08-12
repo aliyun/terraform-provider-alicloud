@@ -243,6 +243,7 @@ func (s *VpcService) DescribeForwardEntry(id string) (entry vpc.ForwardTableEntr
 	request := vpc.CreateDescribeForwardTableEntriesRequest()
 	request.RegionId = string(s.client.Region)
 	request.ForwardTableId = forwardTableId
+	request.ForwardEntryId = forwardEntryId
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
@@ -260,12 +261,11 @@ func (s *VpcService) DescribeForwardEntry(id string) (entry vpc.ForwardTableEntr
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeForwardTableEntriesResponse)
 
-		for _, forward := range response.ForwardTableEntries.ForwardTableEntry {
-			if forward.ForwardEntryId == forwardEntryId {
-				entry = forward
-				return nil
-			}
+		if len(response.ForwardTableEntries.ForwardTableEntry) > 0 {
+			entry = response.ForwardTableEntries.ForwardTableEntry[0]
+			return nil
 		}
+
 		return WrapErrorf(Error(GetNotFoundMessage("ForwardEntry", id)), NotFoundMsg, ProviderERROR)
 	})
 	return
