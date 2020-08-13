@@ -116,6 +116,7 @@ func TestAccAlicloudDdosbgpInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithTime(t, []int{-1})
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DdosbgpSupportedRegions)
 		},

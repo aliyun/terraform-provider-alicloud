@@ -38,7 +38,7 @@ func testSweepKVStoreInstances(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"testAcc",
+		"tf_testAcc",
 	}
 
 	var insts []r_kvstore.KVStoreInstance
