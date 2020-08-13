@@ -22,6 +22,7 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	
 	"github.com/aliyun/fc-go-sdk"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
