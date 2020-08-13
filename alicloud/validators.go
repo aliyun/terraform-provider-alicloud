@@ -268,7 +268,7 @@ func validateSslVpnPortValue(is []int) schema.SchemaValidateFunc {
 	}
 }
 
-// below copy/pasta from https://github.com/hashicorp/terraform/blob/master/helper/validation/validation.go
+// below copy/pasta from https://github.com/hashicorp/terraform-plugin-sdk/blob/master/helper/validation/validation.go
 // alicloud vendor contains very old version of Terraform which lacks this functions
 
 // IntBetween returns a SchemaValidateFunc which tests if the provided value

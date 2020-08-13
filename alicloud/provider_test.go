@@ -16,7 +16,7 @@ import (
 	"github.com/aliyun/fc-go-sdk"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"strings"
 

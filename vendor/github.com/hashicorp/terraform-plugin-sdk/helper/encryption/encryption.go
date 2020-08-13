@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/errwrap"
-	"github.com/hashicorp/vault/helper/pgpkeys"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/vault/helper/pgpkeys"
 )
 
 // RetrieveGPGKey returns the PGP key specified as the pgpKey parameter, or queries

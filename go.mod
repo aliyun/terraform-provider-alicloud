@@ -9,6 +9,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.2+incompatible
 	github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible
 	github.com/aliyun/fc-go-sdk v0.0.0-20190326033901-db3e654c23d6
+	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
 	github.com/denverdino/aliyungo v0.0.0-20200720072455-26fa39a46424
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -20,7 +21,6 @@ require (
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/hashicorp/terraform v0.12.9
 	github.com/hashicorp/terraform-plugin-sdk v1.4.0
 	github.com/hashicorp/vault v0.10.4
 	github.com/imdario/mergo v0.3.8 // indirect
@@ -29,13 +29,17 @@ require (
 	github.com/klauspost/compress v0.0.0-20180801095237-b50017755d44 // indirect
 	github.com/klauspost/cpuid v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pkg/errors v0.8.1
+	github.com/satori/go.uuid v1.2.0 // indirect
+	github.com/sirupsen/logrus v1.2.0 // indirect
 	github.com/valyala/bytebufferpool v0.0.0-20180905182247-cdfbe9377474 // indirect
 	github.com/valyala/fasthttp v0.0.0-20180927122258-761788a34bb6 // indirect
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/resty.v1 v1.12.0 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d

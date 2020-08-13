@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/hashicorp/go-uuid"
-	"github.com/hashicorp/terraform/helper/hashcode"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 
 	"strconv"
 
