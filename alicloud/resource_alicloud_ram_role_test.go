@@ -10,9 +10,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/terraform/helper/acctest"
 )
 
 func init() {
@@ -159,7 +159,7 @@ func TestAccAlicloudRamRole_basic(t *testing.T) {
 				Config: testAccRamRoleDocumentConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					// There is a bug when d.Set a set parameter. The new values can not overwrite the state
-					// when a parameter is a TypeSet and Computed. https://github.com/hashicorp/terraform/issues/20504
+					// when a parameter is a TypeSet and Computed. https://github.com/hashicorp/terraform-plugin-sdk/issues/20504
 					//testAccCheck(map[string]string{"services.#": "1"}),
 					testAccCheck(nil),
 				),

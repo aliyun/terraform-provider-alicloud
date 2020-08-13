@@ -2,18 +2,19 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"log"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/terraform/helper/acctest"
 )
 
 var adbClusterConnectionStringRegexp = "am-[a-z-A-Z-0-9]+.[a-z]+.ads.aliyuncs.com"

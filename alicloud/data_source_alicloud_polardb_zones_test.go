@@ -3,7 +3,7 @@ package alicloud
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudPolarDBZonesDataSource_basic(t *testing.T) {
