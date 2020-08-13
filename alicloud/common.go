@@ -26,6 +26,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
+
 	"gopkg.in/yaml.v2"
 
 	"math"
