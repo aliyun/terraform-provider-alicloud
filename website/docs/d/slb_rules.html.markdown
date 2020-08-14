@@ -14,13 +14,61 @@ This data source provides the rules associated with a server load balancer liste
 ## Example Usage
 
 ```
+variable "name" {
+  default = "slbrulebasicconfig"
+}
+
+data "alicloud_zones" "default" {
+  available_disk_category     = "cloud_efficiency"
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  name       = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = "172.16.0.0/16"
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  name              = var.name
+}
+
+resource "alicloud_slb" "default" {
+  name       = var.name
+  vswitch_id = alicloud_vswitch.default.id
+}
+
+resource "alicloud_slb_listener" "default" {
+  load_balancer_id          = alicloud_slb.default.id
+  backend_port              = 22
+  frontend_port             = 22
+  protocol                  = "http"
+  bandwidth                 = 5
+  health_check_connect_port = "20"
+}
+
+resource "alicloud_slb_server_group" "default" {
+  load_balancer_id = alicloud_slb.default.id
+}
+
+resource "alicloud_slb_rule" "default" {
+  load_balancer_id = alicloud_slb.default.id
+  frontend_port    = alicloud_slb_listener.default.frontend_port
+  name             = var.name
+  domain           = "*.aliyun.com"
+  url              = "/image"
+  server_group_id  = alicloud_slb_server_group.default.id
+}
+
 data "alicloud_slb_rules" "sample_ds" {
-  load_balancer_id = "${alicloud_slb.sample_slb.id}"
-  frontend_port    = 80
+  load_balancer_id = alicloud_slb.default.id
+  frontend_port    = 22
 }
 
 output "first_slb_rule_id" {
-  value = "${data.alicloud_slb_rules.sample_ds.slb_rules.0.id}"
+  value = data.alicloud_slb_rules.sample_ds.slb_rules.0.id
 }
 ```
 
