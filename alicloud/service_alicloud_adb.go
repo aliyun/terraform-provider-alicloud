@@ -8,16 +8,16 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type AdbService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *AdbService) DescribeAdbCluster(id string) (instance *adb.DBCluster, err error) {
+func (s *AdbService) DescribeAdbCluster(id string) (instance *adb.DBClusterInDescribeDBClusters, err error) {
 	request := adb.CreateDescribeDBClustersRequest()
 	request.RegionId = s.client.RegionId
 	dbClusterIds := []string{}

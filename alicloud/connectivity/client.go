@@ -91,7 +91,6 @@ type AliyunClient struct {
 	essconn                      *ess.Client
 	rdsconn                      *rds.Client
 	vpcconn                      *vpc.Client
-	nasconn                      *nas.Client
 	slbconn                      *slb.Client
 	onsconn                      *ons.Client
 	alikafkaconn                 *alikafka.Client
@@ -151,6 +150,7 @@ type AliyunClient struct {
 	eciConn                      *eci.Client
 	ecsConn                      *ecs.Client
 	oosConn                      *oos.Client
+	nasConn                      *nas.Client
 }
 
 type ApiVersion string
@@ -177,7 +177,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.91.0"
+var providerVersion = "1.93.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient
@@ -360,25 +360,25 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 
 func (client *AliyunClient) WithNasClient(do func(*nas.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the Nas client if necessary
-	if client.nasconn == nil {
+	if client.nasConn == nil {
 		endpoint := client.config.NasEndpoint
 		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, NASCode)
+			endpoint = loadEndpoint(client.config.RegionId, NasCode)
 		}
 		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(NASCode), endpoint)
+			endpoints.AddEndpointMapping(client.config.RegionId, string(NasCode), endpoint)
 		}
-		nasconn, err := nas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		nasConn, err := nas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the NAS client: %#v", err)
 		}
-		nasconn.AppendUserAgent(Terraform, terraformVersion)
-		nasconn.AppendUserAgent(Provider, providerVersion)
-		nasconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.nasconn = nasconn
+		nasConn.AppendUserAgent(Terraform, terraformVersion)
+		nasConn.AppendUserAgent(Provider, providerVersion)
+		nasConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.nasConn = nasConn
 	}
 
-	return do(client.nasconn)
+	return do(client.nasConn)
 }
 
 func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, error)) (interface{}, error) {

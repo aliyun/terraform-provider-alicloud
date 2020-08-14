@@ -16,13 +16,13 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/mutexkv"
 	"github.com/mitchellh/go-homedir"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 // Provider returns a schema.Provider for alicloud
@@ -303,6 +303,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dms_enterprise_users":                  dataSourceAlicloudDmsEnterpriseUsers(),
 			"alicloud_ecs_dedicated_hosts":                   dataSourceAlicloudEcsDedicatedHosts(),
 			"alicloud_oos_templates":                         dataSourceAlicloudOosTemplates(),
+			"alicloud_oos_executions":                        dataSourceAlicloudOosExecutions(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -549,6 +550,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oos_template":                        resourceAlicloudOosTemplate(),
 			"alicloud_edas_k8s_application":                resourceAlicloudEdasK8sApplication(),
 			"alicloud_edas_k8s_cluster":                    resourceAlicloudEdasK8sCluster(),
+			"alicloud_oos_execution":                       resourceAlicloudOosExecution(),
 		},
 
 		ConfigureFunc: providerConfigure,

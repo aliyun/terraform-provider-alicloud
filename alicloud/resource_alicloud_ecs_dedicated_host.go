@@ -2,14 +2,15 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudEcsDedicatedHost() *schema.Resource {
@@ -215,6 +216,7 @@ func resourceAlicloudEcsDedicatedHostRead(d *schema.ResourceData, meta interface
 	object, err := ecsService.DescribeEcsDedicatedHost(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ecs_dedicated_host ecsService.DescribeEcsDedicatedHost Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -281,6 +283,8 @@ func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), joinResourceGroupReq.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		// Wait two seconds for the `resource_group_id` attribute to take effect, otherwise get data from the cache. After the problem is solved, remove the wait.
+		time.Sleep(DefaultIntervalMini * time.Second)
 		d.SetPartial("resource_group_id")
 	}
 	update = false

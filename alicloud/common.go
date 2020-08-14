@@ -370,6 +370,19 @@ func convertMaptoJsonString(m map[string]interface{}) (string, error) {
 	}
 }
 
+func convertMapFloat64ToJsonString(m map[string]interface{}) (string, error) {
+	sm := make(map[string]float64, len(m))
+	for k, v := range m {
+		sm[k] = v.(float64)
+	}
+
+	if result, err := json.Marshal(sm); err != nil {
+		return "", err
+	} else {
+		return string(result), nil
+	}
+}
+
 func StringPointer(s string) *string {
 	return &s
 }

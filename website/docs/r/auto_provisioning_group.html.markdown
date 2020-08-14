@@ -68,8 +68,8 @@ The following arguments are supported:
 
 * `launch_template_id` - (Required) The ID of the instance launch template associated with the auto provisioning group.
 * `total_target_capacity` - (Required) The total target capacity of the auto provisioning group. The target capacity consists of the following three parts:PayAsYouGoTargetCapacity,SpotTargetCapacity and the supplemental capacity besides PayAsYouGoTargetCapacity and SpotTargetCapacity.
-* `auto_Provisioning_group_name` - (Optional) The name of the auto provisioning group to be created. It must be 2 to 128 characters in length. It must start with a letter but cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-)
-* `auto_Provisioning_group_type` - (Optional) The type of the auto provisioning group. Valid values:`request` and `maintain`,Default value: `maintain`.
+* `auto_provisioning_group_name` - (Optional) The name of the auto provisioning group to be created. It must be 2 to 128 characters in length. It must start with a letter but cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-)
+* `auto_provisioning_group_type` - (Optional) The type of the auto provisioning group. Valid values:`request` and `maintain`,Default value: `maintain`.
 * `spot_allocation_strategy` - (Optional) The scale-out policy for preemptible instances. Valid values:`lowest-price` and `diversified`,Default value: `lowest-price`.
 * `spot_target_capacity` - (Optional) The target capacity of preemptible instances in the auto provisioning group.
 * `spot_instance_interruption_behavior` - (Optional) The default behavior after preemptible instances are shut down. Value values: `stop` and `terminate`,Default value: `stop`.
@@ -104,6 +104,7 @@ The following attributes are exported:
 ## Import
 
 ECS auto provisioning group can be imported using the id, e.g.
+
 ```
 $ terraform import alicloud_auto_provisioning_group.example asg-abc123456
 ```

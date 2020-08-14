@@ -9,9 +9,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCasCertificate() *schema.Resource {
@@ -67,7 +67,7 @@ func resourceAlicloudCasCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	addDebug(args.GetActionName(), raw, args.RpcRequest, args)
 	response, _ := raw.(*cas.CreateUserCertificateResponse)
-	d.SetId(strconv.Itoa(response.CertId))
+	d.SetId(strconv.FormatInt(response.CertId, 10))
 	return resourceAlicloudCasRead(d, meta)
 }
 

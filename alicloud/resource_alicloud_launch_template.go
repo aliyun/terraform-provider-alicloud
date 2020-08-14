@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 
@@ -11,8 +12,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunLaunchTemplate() *schema.Resource {
@@ -372,6 +373,7 @@ func resourceAliyunLaunchTemplateRead(d *schema.ResourceData, meta interface{}) 
 	object, err := ecsService.DescribeLaunchTemplate(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_launch_template ecsService.DescribeLaunchTemplate Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -380,6 +382,7 @@ func resourceAliyunLaunchTemplateRead(d *schema.ResourceData, meta interface{}) 
 	latestVersion, err := ecsService.DescribeLaunchTemplateVersion(d.Id(), int(object.LatestVersionNumber))
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_launch_template ecsService.DescribeLaunchTemplateVersion Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

@@ -2,9 +2,9 @@ package alicloud
 
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 
 	"fmt"
 	"strings"

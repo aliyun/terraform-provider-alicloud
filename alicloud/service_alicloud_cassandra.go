@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type CassandraService struct {
@@ -71,6 +71,10 @@ func (s *CassandraService) DescribeCassandraDataCenter(id string) (object cassan
 		return cassandraClient.DescribeDataCenter(request)
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("CassandraDataCenter", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return
 	}

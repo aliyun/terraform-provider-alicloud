@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"testing"
 	"time"
 
@@ -12,8 +13,8 @@ import (
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -72,19 +73,20 @@ func testSweepEdasK8sCluster(region string) error {
 		deleteClusterRq.RegionId = region
 		deleteClusterRq.ClusterId = v.ClusterId
 
+		wait := incrementalWait(1*time.Second, 2*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 			raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 				return edasClient.DeleteCluster(deleteClusterRq)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{ThrottlingUser}) {
-					time.Sleep(10 * time.Second)
+					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
 			addDebug(deleteClusterRq.GetActionName(), raw, deleteClusterRq.RoaRequest, deleteClusterRq)
-			rsp := raw.(*edas.DeleteApplicationResponse)
+			rsp := raw.(*edas.DeleteClusterResponse)
 			if rsp.Code == 601 && strings.Contains(rsp.Message, "Operation cannot be processed because there are running instances.") {
 				err = Error("Operation cannot be processed because there are running instances.")
 				return resource.RetryableError(err)
@@ -113,7 +115,7 @@ func TestAccAlicloudEdasK8sCluster_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-edask8sclusterbasic%v", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEdasK8sClusterConfigDependence)
-
+	region := os.Getenv("ALICLOUD_REGION")
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
@@ -126,12 +128,15 @@ func TestAccAlicloudEdasK8sCluster_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cs_cluster_id": "c5609c16ff6014c1e9b0460c0a4ae2912",
+					"cs_cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
+					"namespace_id":  region,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_name": "shesheng-ask-for-terraform",
-						"cluster_type": "5",
+						"cluster_name":  name,
+						"cluster_type":  "5",
+						"cs_cluster_id": CHECKSET,
+						"namespace_id":  region,
 					}),
 				),
 			},
@@ -193,5 +198,50 @@ func resourceEdasK8sClusterConfigDependence(name string) string {
 		variable "name" {
 		  default = "%v"
 		}
+
+		data "alicloud_zones" default {
+		  available_resource_creation = "VSwitch"
+		}
+		
+		data "alicloud_instance_types" "default" {
+		  availability_zone = data.alicloud_zones.default.zones.0.id
+		  cpu_core_count = 2
+		  memory_size = 4
+		  kubernetes_node_role = "Worker"
+		}
+		
+		resource "alicloud_vpc" "default" {
+		  name = var.name
+		  cidr_block = "10.1.0.0/21"
+		}
+		
+		resource "alicloud_vswitch" "default" {
+		  name = var.name
+		  vpc_id = alicloud_vpc.default.id
+		  cidr_block = "10.1.1.0/24"
+		  availability_zone = data.alicloud_zones.default.zones.0.id
+		}
+		
+		resource "alicloud_log_project" "log" {
+		  name        = var.name
+		  description = "created by terraform for managedkubernetes cluster"
+		}
+		
+		resource "alicloud_cs_managed_kubernetes" "default" {
+		  worker_instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
+		  name = var.name
+		  worker_vswitch_ids = [alicloud_vswitch.default.id]
+		  worker_number = "2"
+		  password =                    "Test12345"
+		  pod_cidr =                   "172.20.0.0/16"
+		  service_cidr =               "172.21.0.0/20"
+		  worker_disk_size =            "50"
+		  worker_disk_category =         "cloud_ssd"
+		  worker_data_disk_size =       "20"
+		  worker_data_disk_category =   "cloud_ssd"
+		  worker_instance_charge_type = "PostPaid"
+		  slb_internet_enabled =        "true"
+		}
+
 		`, name)
 }

@@ -97,8 +97,8 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 			"ids":           `["${alicloud_kvstore_instance.default.id}"]`,
 			"status":        `"Normal"`,
 			"instance_type": `"Redis"`,
-			"vpc_id":        `"${alicloud_vpc.default.id}"`,
-			"vswitch_id":    `"${alicloud_vswitch.default.id}"`,
+			"vpc_id":        `"${data.alicloud_vpcs.default.ids.0}"`,
+			"vswitch_id":    `"${data.alicloud_vswitches.default.ids.0}"`,
 			"tags": `{
 				Created = "TF"
 				For 	= "acceptance test"
@@ -108,15 +108,17 @@ func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 			"ids":           `["${alicloud_kvstore_instance.default.id}"]`,
 			"status":        `"Normal"`,
 			"instance_type": `"Redis"`,
-			"vpc_id":        `"${alicloud_vpc.default.id}"`,
-			"vswitch_id":    `"${alicloud_vswitch.default.id}"`,
+			"vpc_id":        `"${data.alicloud_vpcs.default.ids.0}"`,
+			"vswitch_id":    `"${data.alicloud_vswitches.default.ids.0}"`,
 			"tags": `{
 				Created = "TF"
 				For 	= "acceptance test"
 			}`}),
 	}
-
-	kvstoreInstanceCheckInfo.dataSourceTestCheck(t, rand, KvstoreNameConf, KvstoreIdsConf, KvstoreStatusConf, KvstoreInstanceTypeConf, KvstoreVpcIdConf, KvstoreVswitchIdConf, KvstoreTagsConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithNoDefaultVpc(t)
+	}
+	kvstoreInstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, KvstoreNameConf, KvstoreIdsConf, KvstoreStatusConf, KvstoreInstanceTypeConf, KvstoreVpcIdConf, KvstoreVswitchIdConf, KvstoreTagsConf, allConf)
 }
 
 func testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand int, instanceType, instanceClass, engineVersion string, attrMap map[string]string) string {
@@ -139,8 +141,7 @@ func testAccCheckAlicloudKVStoreInstanceDataSourceConfig(rand int, instanceType,
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		engine_version = "%s"

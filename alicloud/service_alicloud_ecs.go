@@ -12,9 +12,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type EcsService struct {
@@ -133,7 +133,7 @@ func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err err
 		return
 	}
 	if len(response.Instances.Instance) < 1 {
-		return instance, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR)
+		return instance, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	}
 
 	return response.Instances.Instance[0], nil
@@ -152,7 +152,7 @@ func (s *EcsService) DescribeInstanceAttribute(id string) (instance ecs.Describe
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ecs.DescribeInstanceAttributeResponse)
 	if response.InstanceId != id {
-		return instance, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR)
+		return instance, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	}
 
 	return *response, nil
@@ -263,7 +263,7 @@ func (s *EcsService) DescribeSecurityGroup(id string) (group ecs.DescribeSecurit
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
 	if response.SecurityGroupId != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("Security Group", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("Security Group", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 
@@ -318,7 +318,7 @@ func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, 
 		}
 	}
 
-	return rule, WrapErrorf(Error(GetNotFoundMessage("Security Group Rule", id)), NotFoundMsg, ProviderERROR)
+	return rule, WrapErrorf(Error(GetNotFoundMessage("Security Group Rule", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 
 }
 
@@ -493,7 +493,7 @@ func (s *EcsService) DescribeKeyPair(id string) (keyPair ecs.KeyPair, err error)
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	object, _ := raw.(*ecs.DescribeKeyPairsResponse)
 	if len(object.KeyPairs.KeyPair) < 1 || object.KeyPairs.KeyPair[0].KeyPairName != id {
-		return keyPair, WrapErrorf(Error(GetNotFoundMessage("KeyPair", id)), NotFoundMsg, ProviderERROR)
+		return keyPair, WrapErrorf(Error(GetNotFoundMessage("KeyPair", id)), NotFoundMsg, ProviderERROR, object.RequestId)
 	}
 	return object.KeyPairs.KeyPair[0], nil
 
@@ -531,7 +531,7 @@ func (s *EcsService) DescribeDisk(id string) (disk ecs.Disk, err error) {
 	}
 	response, _ := raw.(*ecs.DescribeDisksResponse)
 	if len(response.Disks.Disk) < 1 || response.Disks.Disk[0].DiskId != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("Disk", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("Disk", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -709,7 +709,7 @@ func (s *EcsService) DescribeNetworkInterface(id string) (networkInterface ecs.N
 	response := raw.(*ecs.DescribeNetworkInterfacesResponse)
 	if len(response.NetworkInterfaceSets.NetworkInterfaceSet) < 1 ||
 		response.NetworkInterfaceSets.NetworkInterfaceSet[0].NetworkInterfaceId != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("NetworkInterface", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("NetworkInterface", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 
@@ -739,7 +739,7 @@ func (s *EcsService) DescribeNetworkInterfaceAttachment(id string) (networkInter
 	response := raw.(*ecs.DescribeNetworkInterfacesResponse)
 	if len(response.NetworkInterfaceSets.NetworkInterfaceSet) < 1 ||
 		response.NetworkInterfaceSets.NetworkInterfaceSet[0].NetworkInterfaceId != eniId {
-		err = WrapErrorf(Error(GetNotFoundMessage("NetworkInterfaceAttachment", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("NetworkInterfaceAttachment", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 
@@ -1136,7 +1136,7 @@ func (s *EcsService) DescribeSnapshot(id string) (*ecs.Snapshot, error) {
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response := raw.(*ecs.DescribeSnapshotsResponse)
 	if len(response.Snapshots.Snapshot) != 1 || response.Snapshots.Snapshot[0].SnapshotId != id {
-		return snapshot, WrapErrorf(Error(GetNotFoundMessage("Snapshot", id)), NotFoundMsg, ProviderERROR)
+		return snapshot, WrapErrorf(Error(GetNotFoundMessage("Snapshot", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	}
 	return &response.Snapshots.Snapshot[0], nil
 }
@@ -1157,7 +1157,7 @@ func (s *EcsService) DescribeSnapshotPolicy(id string) (*ecs.AutoSnapshotPolicy,
 	response := raw.(*ecs.DescribeAutoSnapshotPolicyExResponse)
 	if len(response.AutoSnapshotPolicies.AutoSnapshotPolicy) != 1 ||
 		response.AutoSnapshotPolicies.AutoSnapshotPolicy[0].AutoSnapshotPolicyId != id {
-		return policy, WrapErrorf(Error(GetNotFoundMessage("SnapshotPolicy", id)), NotFoundMsg, ProviderERROR)
+		return policy, WrapErrorf(Error(GetNotFoundMessage("SnapshotPolicy", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	}
 
 	return &response.AutoSnapshotPolicies.AutoSnapshotPolicy[0], nil
@@ -1250,7 +1250,7 @@ func (s *EcsService) DescribeLaunchTemplate(id string) (set ecs.LaunchTemplateSe
 	response := raw.(*ecs.DescribeLaunchTemplatesResponse)
 	if len(response.LaunchTemplateSets.LaunchTemplateSet) != 1 ||
 		response.LaunchTemplateSets.LaunchTemplateSet[0].LaunchTemplateId != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("LaunchTemplate", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("LaunchTemplate", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 
@@ -1279,7 +1279,7 @@ func (s *EcsService) DescribeLaunchTemplateVersion(id string, version int) (set 
 	response := raw.(*ecs.DescribeLaunchTemplateVersionsResponse)
 	if len(response.LaunchTemplateVersionSets.LaunchTemplateVersionSet) != 1 ||
 		response.LaunchTemplateVersionSets.LaunchTemplateVersionSet[0].LaunchTemplateId != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("LaunchTemplateVersion", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("LaunchTemplateVersion", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 
@@ -1331,7 +1331,7 @@ func (s *EcsService) DescribeImageShareByImageId(id string) (imageShare *ecs.Des
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ecs.DescribeImageSharePermissionResponse)
 	if len(resp.Accounts.Account) == 0 {
-		return imageShare, WrapErrorf(Error(GetNotFoundMessage("ModifyImageSharePermission", id)), NotFoundMsg, ProviderERROR)
+		return imageShare, WrapErrorf(Error(GetNotFoundMessage("ModifyImageSharePermission", id)), NotFoundMsg, ProviderERROR, resp.RequestId)
 	}
 	return resp, nil
 }
@@ -1379,7 +1379,7 @@ func (s *EcsService) DescribeAutoProvisioningGroup(id string) (group ecs.AutoPro
 			return v, nil
 		}
 	}
-	err = WrapErrorf(Error(GetNotFoundMessage("AutoProvisioningGroup", id)), NotFoundMsg, ProviderERROR)
+	err = WrapErrorf(Error(GetNotFoundMessage("AutoProvisioningGroup", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	return
 }
 
@@ -1463,6 +1463,7 @@ func (s *EcsService) DescribeEcsDedicatedHost(id string) (object ecs.DedicatedHo
 
 	request.PageNumber = requests.NewInteger(1)
 	request.PageSize = requests.NewInteger(20)
+	response := new(ecs.DescribeDedicatedHostsResponse)
 	for {
 
 		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
@@ -1477,10 +1478,10 @@ func (s *EcsService) DescribeEcsDedicatedHost(id string) (object ecs.DedicatedHo
 			return object, err
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*ecs.DescribeDedicatedHostsResponse)
+		response, _ = raw.(*ecs.DescribeDedicatedHostsResponse)
 
 		if len(response.DedicatedHosts.DedicatedHost) < 1 {
-			err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 			return object, err
 		}
 		for _, object := range response.DedicatedHosts.DedicatedHost {
@@ -1497,7 +1498,7 @@ func (s *EcsService) DescribeEcsDedicatedHost(id string) (object ecs.DedicatedHo
 			request.PageNumber = page
 		}
 	}
-	err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR)
+	err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	return
 }
 

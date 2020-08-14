@@ -12,9 +12,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -44,6 +44,7 @@ func init() {
 			"alicloud_emr_cluster",
 			"polardb_cluster",
 			"alicloud_hbase_instance",
+			"alicloud_cassandra_cluster",
 		},
 	})
 }

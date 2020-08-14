@@ -76,9 +76,9 @@ func (client *Client) DescribeUserCertificateListWithCallback(request *DescribeU
 // DescribeUserCertificateListRequest is the request struct for api DescribeUserCertificateList
 type DescribeUserCertificateListRequest struct {
 	*requests.RpcRequest
-	SourceIp    string           `position:"Query" name:"SourceIp"`
 	ShowSize    requests.Integer `position:"Query" name:"ShowSize"`
 	CurrentPage requests.Integer `position:"Query" name:"CurrentPage"`
+	SourceIp    string           `position:"Query" name:"SourceIp"`
 	Lang        string           `position:"Query" name:"Lang"`
 }
 
@@ -98,6 +98,7 @@ func CreateDescribeUserCertificateListRequest() (request *DescribeUserCertificat
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("cas", "2018-07-13", "DescribeUserCertificateList", "cas", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

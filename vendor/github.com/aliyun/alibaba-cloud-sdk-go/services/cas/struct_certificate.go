@@ -17,7 +17,7 @@ package cas
 
 // Certificate is a nested struct in cas response
 type Certificate struct {
-	Id          int    `json:"id" xml:"id"`
+	Id          int64  `json:"id" xml:"id"`
 	Name        string `json:"name" xml:"name"`
 	Common      string `json:"common" xml:"common"`
 	Fingerprint string `json:"fingerprint" xml:"fingerprint"`

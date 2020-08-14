@@ -5,9 +5,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudAdbClusters() *schema.Resource {
@@ -119,7 +119,7 @@ func dataSourceAlicloudAdbClustersRead(d *schema.ResourceData, meta interface{})
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 
-	var dbi []adb.DBCluster
+	var dbi []adb.DBClusterInDescribeDBClusters
 
 	var descriptionRegex *regexp.Regexp
 	if v, ok := d.GetOk("description_regex"); ok {
@@ -188,7 +188,7 @@ func dataSourceAlicloudAdbClustersRead(d *schema.ResourceData, meta interface{})
 	return adbClustersDescription(d, dbi)
 }
 
-func adbClustersDescription(d *schema.ResourceData, dbi []adb.DBCluster) error {
+func adbClustersDescription(d *schema.ResourceData, dbi []adb.DBClusterInDescribeDBClusters) error {
 	var ids []string
 	var descriptions []string
 	var s []map[string]interface{}

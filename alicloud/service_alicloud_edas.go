@@ -9,8 +9,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type EdasService struct {
@@ -390,6 +390,9 @@ func (e *EdasService) DescribeEdasK8sCluster(clusterId string) (*edas.Cluster, e
 
 	response, _ := raw.(*edas.GetClusterResponse)
 	if response.Code != 200 {
+		if strings.Contains(response.Message, "does not exist") {
+			return cluster, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return cluster, WrapError(Error("create k8s cluster failed for " + response.Message))
 	}
 
@@ -416,6 +419,9 @@ func (e *EdasService) DescribeEdasK8sApplication(appId string) (*edas.Applcation
 
 	response, _ := raw.(*edas.GetApplicationResponse)
 	if response.Code != 200 {
+		if strings.Contains(response.Message, "does not exist") {
+			return application, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return application, WrapError(Error("get k8s application error :" + response.Message))
 	}
 

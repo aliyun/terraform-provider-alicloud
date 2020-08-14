@@ -8,10 +8,10 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -82,7 +82,7 @@ func testSweepCasCertificate(region string) error {
 			}
 			log.Printf("[INFO] Deleting Certificate: %s (%d)", name, id)
 			req := cas.CreateDeleteUserCertificateRequest()
-			req.CertId = requests.NewInteger(id)
+			req.CertId = requests.NewInteger(int(id))
 			_, err := client.WithCasClient(func(casClient *cas.Client) (interface{}, error) {
 				return casClient.DeleteUserCertificate(req)
 			})
