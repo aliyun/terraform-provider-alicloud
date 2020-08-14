@@ -69,12 +69,14 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	if privateIPAddress, ok := d.GetOk("private_ip_address"); ok {
 		request.PrivateIpAddress = privateIPAddress.(string)
 	}
+	wait := incrementalWait(10*time.Second, 5*time.Second)
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.AssociateEipAddress(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict"}) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
