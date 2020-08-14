@@ -552,6 +552,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_edas_k8s_cluster":                    resourceAlicloudEdasK8sCluster(),
 			"alicloud_oos_execution":                       resourceAlicloudOosExecution(),
 			"alicloud_resource_manager_policy_attachment":  resourceAlicloudResourceManagerPolicyAttachment(),
+			"alicloud_bgp_group":                           resourceAliyunBgpGroup(),
+			"alicloud_bgp_peer":                            resourceAliyunBgpPeer(),
+			"alicloud_bgp_network":                         resourceAliyunBgpNetwork(),
 		},
 
 		ConfigureFunc: providerConfigure,
