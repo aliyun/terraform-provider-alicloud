@@ -134,6 +134,7 @@ func resourceAlicloudEdasK8sClusterRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
+	d.Set("id", d.Id())
 	d.Set("cluster_name", object.ClusterName)
 	d.Set("cluster_type", object.ClusterType)
 	d.Set("network_mode", object.NetworkMode)
