@@ -31,7 +31,7 @@ func resourceAlicloudEdasK8sCluster() *schema.Resource {
 			"namespace_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
+				Computed: true,
 			},
 			"cluster_name": {
 				Type:     schema.TypeString,
