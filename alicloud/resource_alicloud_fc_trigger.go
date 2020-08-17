@@ -115,6 +115,11 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{fc.TRIGGER_TYPE_HTTP, fc.TRIGGER_TYPE_LOG, fc.TRIGGER_TYPE_OSS, fc.TRIGGER_TYPE_TIMER, fc.TRIGGER_TYPE_MNS_TOPIC, fc.TRIGGER_TYPE_CDN_EVENTS, fc.TRIGGER_TYPE_EVENTBRIDGE}, false),
 			},
+			"qualifier": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(1, 64),
+			},
 
 			"last_modified": {
 				Type:     schema.TypeString,
@@ -163,6 +168,9 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 		TriggerType:    StringPointer(d.Get("type").(string)),
 		InvocationRole: StringPointer(d.Get("role").(string)),
 		TriggerConfig:  config,
+	}
+	if v, ok := d.GetOk("qualifier"); ok && v.(string) != "" {
+		object.Qualifier = StringPointer(v.(string))
 	}
 	if v, ok := d.GetOk("source_arn"); ok && v.(string) != "" {
 		object.SourceARN = StringPointer(v.(string))
@@ -220,6 +228,7 @@ func resourceAlicloudFCTriggerRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("name", trigger.TriggerName)
 	d.Set("trigger_id", trigger.TriggerID)
 	d.Set("role", trigger.InvocationRole)
+	d.Set("qualifier", trigger.Qualifier)
 	d.Set("source_arn", trigger.SourceARN)
 
 	data, err := trigger.RawTriggerConfig.MarshalJSON()
@@ -254,6 +263,9 @@ func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) e
 	updateInput.WithHeader(HeaderEnableEBTrigger, "enable")
 	if d.HasChange("role") {
 		updateInput.InvocationRole = StringPointer(d.Get("role").(string))
+	}
+	if d.HasChange("qualifier") {
+		updateInput.Qualifier = StringPointer(d.Get("qualifier").(string))
 	}
 	if d.HasChange("config") {
 		var config interface{}
