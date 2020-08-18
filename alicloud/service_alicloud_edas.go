@@ -384,7 +384,7 @@ func (e *EdasService) DescribeEdasK8sCluster(clusterId string) (*edas.Cluster, e
 	})
 
 	if err != nil {
-		return cluster, WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return cluster, WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_k8s_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
@@ -430,10 +430,10 @@ func (e *EdasService) DescribeEdasK8sApplication(appId string) (*edas.Applcation
 	return &v, nil
 }
 
-func (e *EdasService) DescribeEdasK8sApplicationDeployment(id string) (*edas.Applcation, error) {
+func (e *EdasService) DescribeEdasK8sApplicationPackageAttachment(id string) (*edas.Applcation, error) {
 	application := &edas.Applcation{}
 	v := strings.Split(id, ":")
-	o, err := e.DescribeEdasApplication(v[0])
+	o, err := e.DescribeEdasK8sApplication(v[0])
 	if err != nil {
 		return application, WrapError(err)
 	}
