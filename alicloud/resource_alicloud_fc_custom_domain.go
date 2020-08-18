@@ -1,10 +1,9 @@
 package alicloud
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -21,30 +20,32 @@ func resourceAlicloudFCCustomDomain() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+
 		Schema: map[string]*schema.Schema{
-			"domain_name": {
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 			"protocol": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTP,HTTPS"}, false),
 			},
 			"route_config": {
-				Type:     schema.TypeList,
-				Optional: true,
+				Type: schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"path": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringLenBetween(1, 1024),
+						},
+						"service": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"service_name": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"function_name": {
+						"function": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
@@ -52,49 +53,16 @@ func resourceAlicloudFCCustomDomain() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
-						"methods": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
 					},
 				},
-			},
-			"cert_config": {
-				Type:     schema.TypeList,
 				Optional: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"cert_name": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"private_key": {
-							Type:      schema.TypeString,
-							Required:  true,
-							Sensitive: true,
-						},
-						"certificate": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-					},
-				},
+				MinItems: 1,
 			},
-			"account_id": {
+			"create": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"api_version": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"created_time": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"last_modified_time": {
+			"last_modified": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -103,19 +71,25 @@ func resourceAlicloudFCCustomDomain() *schema.Resource {
 }
 
 func resourceAlicloudFCCustomDomainCreate(d *schema.ResourceData, meta interface{}) error {
+	// even after dns record creation completed, fc still can't resolve it, so sleep to wait for sync
+	time.Sleep(3 * time.Second)
 	client := meta.(*connectivity.AliyunClient)
 
-	name := d.Get("domain_name").(string)
+	domainName := d.Get("name").(string)
 
-	request := &fc.CreateCustomDomainInput{
-		DomainName: StringPointer(name),
-		Protocol:   StringPointer(d.Get("protocol").(string)),
+	var routeConfig *fc.RouteConfig
+
+	if routes := buildRoutes(d); len(routes) != 0 {
+		routeConfig = &fc.RouteConfig{
+			Routes: routes,
+		}
 	}
 
-	request.WithRouteConfig(parseRouteConfig(d))
-
-	request.WithCertConfig(parseCertConfig(d))
-
+	request := &fc.CreateCustomDomainInput{
+		DomainName:  StringPointer(domainName),
+		Protocol:    StringPointer(d.Get("protocol").(string)),
+		RouteConfig: routeConfig,
+	}
 	var response *fc.CreateCustomDomainOutput
 	var requestInfo *fc.Client
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
@@ -125,20 +99,16 @@ func resourceAlicloudFCCustomDomainCreate(d *schema.ResourceData, meta interface
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"AccessDenied"}) {
-				return resource.RetryableError(WrapError(err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(WrapError(err))
+			return resource.NonRetryableError(err)
 		}
-		addDebug("CreateCusomDomain", raw, requestInfo, request)
+		addDebug("CreateCustomDomain", raw, requestInfo, request)
 		response, _ = raw.(*fc.CreateCustomDomainOutput)
 		return nil
 
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_custom_domain", "CreateCustomDomain", FcGoSdk)
-	}
-
-	if response == nil {
-		return WrapError(Error("Creating function compute custom domain got a empty response"))
 	}
 
 	d.SetId(*response.DomainName)
@@ -150,60 +120,32 @@ func resourceAlicloudFCCustomDomainRead(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	fcService := FcService{client}
 
-	object, err := fcService.DescribeFcCustomDomain(d.Id())
+	customDomain, err := fcService.DescribeFcCustomDomain(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_fc_custom_domain fcService.DescribeFcCustomDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("domain_name", object.DomainName)
-	d.Set("account_id", object.AccountID)
-	d.Set("protocol", object.Protocol)
-	d.Set("api_version", object.APIVersion)
-	d.Set("created_time", object.CreatedTime)
-	d.Set("last_modified_time", object.LastModifiedTime)
+	d.Set("name", customDomain.DomainName)
+	d.Set("protocol", customDomain.Protocol)
+	d.Set("create", customDomain.CreatedTime)
+	d.Set("last_modified", customDomain.LastModifiedTime)
 
-	var routeConfig []map[string]interface{}
-	if object.RouteConfig != nil {
-		for _, v := range object.RouteConfig.Routes {
-			routeConfig = append(routeConfig, map[string]interface{}{
-				"path":          *v.Path,
-				"service_name":  *v.ServiceName,
-				"function_name": *v.FunctionName,
-				"qualifier":     *v.Qualifier,
-				"methods":       v.Methods,
+	var s []map[string]interface{}
+	if customDomain.RouteConfig != nil {
+		for _, pc := range customDomain.RouteConfig.Routes {
+			s = append(s, map[string]interface{}{
+				"path":      pc.Path,
+				"service":   pc.ServiceName,
+				"function":  pc.FunctionName,
+				"qualifier": pc.Qualifier,
 			})
 		}
 	}
-	if err := d.Set("route_config", routeConfig); err != nil {
-		return WrapError(err)
-	}
-
-	var certConfig []map[string]interface{}
-	if object.CertConfig != nil {
-		if object.CertConfig.CertName != nil && object.CertConfig.Certificate != nil {
-			oldConfig := d.Get("cert_config").([]interface{})
-			certConfig = append(certConfig, map[string]interface{}{
-				"cert_name":   *object.CertConfig.CertName,
-				"certificate": *object.CertConfig.Certificate,
-				// The FC service will not return private key crendential for security reason.
-				// Read it from the terraform file.
-				"private_key": oldConfig[0].(map[string]interface{})["private_key"],
-			})
-		} else if object.CertConfig.CertName == nil && object.CertConfig.Certificate == nil {
-			// Skip the null cert config.
-		} else {
-			b, _ := json.Marshal(object)
-			return WrapError(Error(fmt.Sprintf("Illegal cert config: %s", string(b))))
-		}
-	}
-	if err := d.Set("cert_config", certConfig); err != nil {
-		return WrapError(err)
-	}
+	d.Set("route_config", s)
 
 	return nil
 }
@@ -211,35 +153,34 @@ func resourceAlicloudFCCustomDomainRead(d *schema.ResourceData, meta interface{}
 func resourceAlicloudFCCustomDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	domainName := d.Id()
-	request := fc.NewUpdateCustomDomainInput(domainName)
+	updated := false
+	object := fc.UpdateCustomDomainObject{}
 
-	update := false
 	if d.HasChange("protocol") {
-		update = true
-		request.Protocol = StringPointer(d.Get("protocol").(string))
+		object.Protocol = StringPointer(d.Get("protocol").(string))
+		updated = true
 	}
-
 	if d.HasChange("route_config") {
-		update = true
-		request.WithRouteConfig(parseRouteConfig(d))
+		object.RouteConfig = &fc.RouteConfig{
+			Routes: buildRoutes(d),
+		}
+		updated = true
+	}
+	updateInput := &fc.UpdateCustomDomainInput{
+		DomainName:               StringPointer(d.Id()),
+		UpdateCustomDomainObject: object,
 	}
 
-	if d.HasChange("cert_config") {
-		update = true
-		request.WithCertConfig(parseCertConfig(d))
-	}
-
-	if update {
+	if updated {
 		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
-			return fcClient.UpdateCustomDomain(request)
+			return fcClient.UpdateCustomDomain(updateInput)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateCustomDomain", FcGoSdk)
 		}
-		addDebug("UpdateCustomDomain", raw, requestInfo, request)
+		addDebug("UpdateCustomDomain", raw, requestInfo, updateInput)
 	}
 
 	return resourceAlicloudFCCustomDomainRead(d, meta)
@@ -248,50 +189,39 @@ func resourceAlicloudFCCustomDomainUpdate(d *schema.ResourceData, meta interface
 func resourceAlicloudFCCustomDomainDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	fcService := FcService{client}
-	domainName := d.Id()
-	request := fc.NewDeleteCustomDomainInput(domainName)
+
+	request := &fc.DeleteCustomDomainInput{
+		DomainName: StringPointer(d.Id()),
+	}
 	var requestInfo *fc.Client
 	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 		requestInfo = fcClient
 		return fcClient.DeleteCustomDomain(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"DomainNameNotFound"}) {
+		if IsExpectedErrors(err, []string{"CustomDomainNotFound", "DomainNameNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, domainName, "DeleteCustomDomain", FcGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteCustomDomain", FcGoSdk)
 	}
 	addDebug("DeleteCustomDomain", raw, requestInfo, request)
-	return WrapError(fcService.WaitForFcCustomDomain(domainName, Deleted, DefaultTimeout))
+	return WrapError(fcService.WaitForFcCustomDomain(d.Id(), Deleted, DefaultTimeoutMedium))
 }
 
-func parseRouteConfig(d *schema.ResourceData) (config *fc.RouteConfig) {
-	if v, ok := d.GetOk("route_config"); ok {
-		routeList := v.([]interface{})
-		var pathConfigList []fc.PathConfig
-		for _, route := range routeList {
-			m := route.(map[string]interface{})
-			pathConfig := fc.NewPathConfig().
-				WithPath(m["path"].(string)).
-				WithServiceName(m["service_name"].(string)).
-				WithFunctionName(m["function_name"].(string)).
-				WithQualifier(m["qualifier"].(string)).
-				WithMethods(expandStringList(m["methods"].([]interface{})))
-			pathConfigList = append(pathConfigList, *pathConfig)
-		}
-		config = fc.NewRouteConfig().WithRoutes(pathConfigList)
-	}
-	return config
-}
-
-func parseCertConfig(d *schema.ResourceData) (config *fc.CertConfig) {
-	if v, ok := d.GetOk("cert_config"); ok {
-		m := v.([]interface{})[0].(map[string]interface{})
-		config = &fc.CertConfig{
-			CertName:    StringPointer(m["cert_name"].(string)),
-			PrivateKey:  StringPointer(m["private_key"].(string)),
-			Certificate: StringPointer(m["certificate"].(string)),
+func buildRoutes(d *schema.ResourceData) (result []fc.PathConfig) {
+	if routes, ok := d.GetOk("route_config"); ok {
+		for _, r := range routes.(*schema.Set).List() {
+			v := r.(map[string]interface{})
+			pathConfig := fc.PathConfig{
+				Path:         StringPointer(v["path"].(string)),
+				ServiceName:  StringPointer(v["service"].(string)),
+				FunctionName: StringPointer(v["function"].(string)),
+			}
+			if qualifier, ok := v["qualifier"]; ok {
+				pathConfig.Qualifier = StringPointer(qualifier.(string))
+			}
+			result = append(result, pathConfig)
 		}
 	}
-	return config
+	return
 }

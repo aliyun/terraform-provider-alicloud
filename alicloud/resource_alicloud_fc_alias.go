@@ -2,8 +2,9 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -22,37 +23,33 @@ func resourceAlicloudFCAlias() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"service_name": {
+			"service": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"alias_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+			"name": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringLenBetween(1, 128),
 			},
-			"service_version": {
+			"version_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(1, 128),
 			},
-			"routing_config": {
-				Type:     schema.TypeList,
-				Optional: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"additional_version_weights": {
-							Type:     schema.TypeMap,
-							Optional: true,
-							Elem:     &schema.Schema{Type: schema.TypeFloat},
-						},
-					},
+			"additional_weight": {
+				Type: schema.TypeMap,
+				Elem: &schema.Schema{
+					Type: schema.TypeFloat,
 				},
+				Optional: true,
 			},
 		},
 	}
@@ -61,23 +58,31 @@ func resourceAlicloudFCAlias() *schema.Resource {
 func resourceAlicloudFCAliasCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	serviceName := d.Get("service_name").(string)
-	aliasName := d.Get("alias_name").(string)
-	serviceVersion := d.Get("service_version").(string)
-
-	request := fc.NewCreateAliasInput(serviceName).
-		WithAliasName(aliasName).
-		WithVersionID(serviceVersion)
-
-	if description, ok := d.GetOk("description"); ok {
-		request = request.WithDescription(description.(string))
+	serviceName := d.Get("service").(string)
+	var name string
+	if v, ok := d.GetOk("name"); ok {
+		name = v.(string)
+	} else {
+		name = resource.UniqueId()
 	}
 
-	if routingConfig, ok := d.GetOk("routing_config"); ok {
-		v := expandFCAliasRoutingConfig(routingConfig.([]interface{}))
-		request = request.WithAdditionalVersionWeight(v)
+	object := fc.AliasCreateObject{
+		AliasName:               StringPointer(name),
+		VersionID:               StringPointer(d.Get("version_id").(string)),
+		AdditionalVersionWeight: make(map[string]float64),
 	}
-
+	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
+		object.Description = StringPointer(v.(string))
+	}
+	if v, ok := d.GetOk("additional_weight"); ok {
+		for version, weight := range v.(map[string]interface{}) {
+			object.AdditionalVersionWeight[version] = weight.(float64)
+		}
+	}
+	request := &fc.CreateAliasInput{
+		ServiceName:       StringPointer(serviceName),
+		AliasCreateObject: object,
+	}
 	var response *fc.CreateAliasOutput
 	var requestInfo *fc.Client
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
@@ -87,22 +92,19 @@ func resourceAlicloudFCAliasCreate(d *schema.ResourceData, meta interface{}) err
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"AccessDenied"}) {
-				return resource.RetryableError(WrapError(err))
+				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(WrapError(err))
+			return resource.NonRetryableError(err)
 		}
 		addDebug("CreateAlias", raw, requestInfo, request)
 		response, _ = raw.(*fc.CreateAliasOutput)
 		return nil
+
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_alias", "CreateAlias", FcGoSdk)
 	}
 
-	if response == nil {
-		return WrapError(Error("Creating function compute alias got an empty response"))
-	}
-
-	d.SetId(fmt.Sprintf("%s:%s", serviceName, *response.AliasName))
+	d.SetId(fmt.Sprintf("%s%s%s", serviceName, COLON_SEPARATED, *response.AliasName))
 
 	return resourceAlicloudFCAliasRead(d, meta)
 }
@@ -111,29 +113,24 @@ func resourceAlicloudFCAliasRead(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*connectivity.AliyunClient)
 	fcService := FcService{client}
 
-	id := d.Id()
-	response, err := fcService.DescribeFcAlias(id)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	alias, err := fcService.DescribeFcAlias(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_fc_alias fcService.DescribeFcAlias Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(id, 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	serviceName := parts[0]
-	d.Set("service_name", serviceName)
-	d.Set("alias_name", *response.AliasName)
-	d.Set("description", *response.Description)
-	d.Set("service_version", *response.VersionID)
 
-	if err := d.Set("routing_config", flattenFCAliasRoutingConfig(response.AdditionalVersionWeight)); err != nil {
-		return fmt.Errorf("error setting FC alias routing_config: %s", err)
-	}
+	d.Set("service", parts[0])
+	d.Set("name", alias.AliasName)
+	d.Set("version_id", alias.VersionID)
+	d.Set("description", alias.Description)
+	d.Set("additional_weight", alias.AdditionalVersionWeight)
 
 	return nil
 }
@@ -141,44 +138,43 @@ func resourceAlicloudFCAliasRead(d *schema.ResourceData, meta interface{}) error
 func resourceAlicloudFCAliasUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return err
+	updated := false
+	updateInput := &fc.UpdateAliasInput{}
+
+	if d.HasChange("version_id") {
+		updateInput.VersionID = StringPointer(d.Get("version_id").(string))
+		updated = true
 	}
-
-	serviceName := parts[0]
-	aliasName := parts[1]
-	update := false
-	request := fc.NewUpdateAliasInput(serviceName, aliasName)
-
-	if d.HasChange("service_version") {
-		update = true
-		request = request.WithVersionID(d.Get("service_version").(string))
-	}
-
 	if d.HasChange("description") {
-		update = true
-		request = request.WithDescription(d.Get("description").(string))
+		updateInput.Description = StringPointer(d.Get("description").(string))
+		updated = true
 	}
-
-	if d.HasChange("routing_config") {
-		update = true
-		if routingConfig, ok := d.GetOk("routing_config"); ok {
-			v := expandFCAliasRoutingConfig(routingConfig.([]interface{}))
-			request = request.WithAdditionalVersionWeight(v)
+	if d.HasChange("additional_weight") {
+		updateInput.AdditionalVersionWeight = make(map[string]float64)
+		if weights, ok := d.GetOk("additional_weight"); ok {
+			for version, weight := range weights.(map[string]interface{}) {
+				updateInput.AdditionalVersionWeight[version] = weight.(float64)
+			}
 		}
+		updated = true
 	}
 
-	if update {
+	if updated {
+		parts, err := ParseResourceId(d.Id(), 2)
+		if err != nil {
+			return WrapError(err)
+		}
+		updateInput.ServiceName = StringPointer(parts[0])
+		updateInput.AliasName = StringPointer(parts[1])
 		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
-			return fcClient.UpdateAlias(request)
+			return fcClient.UpdateAlias(updateInput)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateAlias", FcGoSdk)
 		}
-		addDebug("UpdateAlias", raw, requestInfo, request)
+		addDebug("UpdateAlias", raw, requestInfo, updateInput)
 	}
 
 	return resourceAlicloudFCAliasRead(d, meta)
@@ -186,58 +182,27 @@ func resourceAlicloudFCAliasUpdate(d *schema.ResourceData, meta interface{}) err
 
 func resourceAlicloudFCAliasDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	fcService := FcService{client}
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
-
-	serviceName := parts[0]
-	aliasName := parts[1]
-	request := fc.NewDeleteAliasInput(serviceName, aliasName)
+	request := &fc.DeleteAliasInput{
+		ServiceName: StringPointer(parts[0]),
+		AliasName:   StringPointer(parts[1]),
+	}
 	var requestInfo *fc.Client
 	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 		requestInfo = fcClient
 		return fcClient.DeleteAlias(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"AliasNotFound"}) {
+		if IsExpectedErrors(err, []string{"ServiceNotFound", "AliasNotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteAlias", FcGoSdk)
 	}
-	addDebug("DeleteCustomDomain", raw, requestInfo, request)
-	return nil
-}
-
-func expandFCAliasRoutingConfig(l []interface{}) map[string]float64 {
-	if len(l) > 0 && l[0] != nil {
-		m := l[0].(map[string]interface{})
-		if v, ok := m["additional_version_weights"]; ok {
-			additionalVersionWeigth := expandFloat64Map(v.(map[string]interface{}))
-			return additionalVersionWeigth
-		}
-	}
-
-	return nil
-}
-
-func expandFloat64Map(m map[string]interface{}) map[string]float64 {
-	float64Map := make(map[string]float64, len(m))
-	for k, v := range m {
-		float64Map[k] = v.(float64)
-	}
-	return float64Map
-}
-
-func flattenFCAliasRoutingConfig(additionalVersionWeights map[string]float64) []interface{} {
-	if additionalVersionWeights == nil {
-		return []interface{}{}
-	}
-
-	m := map[string]interface{}{
-		"additional_version_weights": additionalVersionWeights,
-	}
-
-	return []interface{}{m}
+	addDebug("DeleteAlias", raw, requestInfo, request)
+	return WrapError(fcService.WaitForFcAlias(d.Id(), Deleted, DefaultTimeoutMedium))
 }

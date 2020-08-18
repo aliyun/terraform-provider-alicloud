@@ -150,17 +150,76 @@ func (s *FcService) DescribeFcTrigger(id string) (*fc.GetTriggerOutput, error) {
 	return response, err
 }
 
+// there is no DescribeServiceVersion, so emulate with ListServiceVersion
+func (s *FcService) DescribeFcVersion(id string) (*fc.ListServiceVersionsOutput, error) {
+	response := &fc.ListServiceVersionsOutput{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return response, WrapError(err)
+	}
+	service, version := parts[0], parts[1]
+	request := &fc.ListServiceVersionsInput{
+		ServiceName: &service,
+		StartKey:    &version,
+		Limit:       Int32Pointer(1),
+	}
+	var requestInfo *fc.Client
+	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+		requestInfo = fcClient
+		return fcClient.ListServiceVersions(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ServiceNotFound", "VersionNotFound"}) {
+			err = WrapErrorf(err, NotFoundMsg, FcGoSdk)
+		} else {
+			err = WrapErrorf(err, DefaultErrorMsg, id, "FcVersion", FcGoSdk)
+		}
+		return response, err
+	}
+	addDebug("ListServiceVersions", raw, requestInfo, request)
+	response, _ = raw.(*fc.ListServiceVersionsOutput)
+	if len(response.Versions) != 1 || *response.Versions[0].VersionID != version {
+		err = WrapErrorf(Error(GetNotFoundMessage("FcVersion", version)), NotFoundMsg, ProviderERROR)
+	}
+	return response, err
+}
+
+func (s *FcService) WaitForFcVersion(id string, status Status, timeout int) error {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeFcVersion(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if *object.Versions[0].VersionID == parts[1] {
+			break
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, *object.Versions[0].VersionID, parts[1], ProviderERROR)
+		}
+	}
+	return nil
+}
+
 func (s *FcService) DescribeFcAlias(id string) (*fc.GetAliasOutput, error) {
 	response := &fc.GetAliasOutput{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return response, WrapError(err)
 	}
 	service, name := parts[0], parts[1]
-	request := &fc.GetAliasInput{
-		ServiceName: &service,
-		AliasName:   &name,
-	}
+	request := fc.NewGetAliasInput(service, name)
 	var requestInfo *fc.Client
 	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 		requestInfo = fcClient
@@ -170,16 +229,44 @@ func (s *FcService) DescribeFcAlias(id string) (*fc.GetAliasOutput, error) {
 		if IsExpectedErrors(err, []string{"ServiceNotFound", "AliasNotFound"}) {
 			err = WrapErrorf(err, NotFoundMsg, FcGoSdk)
 		} else {
-			err = WrapErrorf(err, DefaultErrorMsg, id, "GetAlias", FcGoSdk)
+			err = WrapErrorf(err, DefaultErrorMsg, id, "FcAlias", FcGoSdk)
 		}
 		return response, err
 	}
 	addDebug("GetAlias", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetAliasOutput)
-	if *response.AliasName == "" {
-		err = WrapErrorf(Error(GetNotFoundMessage("FcAlias", id)), NotFoundMsg, FcGoSdk)
+	if *response.AliasName != name {
+		err = WrapErrorf(Error(GetNotFoundMessage("FcAlias", name)), NotFoundMsg, ProviderERROR)
 	}
 	return response, err
+}
+
+func (s *FcService) WaitForFcAlias(id string, status Status, timeout int) error {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeFcAlias(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if *object.AliasName == parts[1] {
+			break
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, *object.AliasName, parts[1], ProviderERROR)
+		}
+	}
+	return nil
 }
 
 func jsonBytesEqual(b1, b2 []byte) bool {
