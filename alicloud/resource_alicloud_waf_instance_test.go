@@ -168,7 +168,7 @@ variable "name" {
 	default = "%s"
 }
 data "alicloud_resource_manager_resource_groups" "this" {
-  name_regex = "default"
+  name_regex = "^default$"
 }
 `, name)
 }

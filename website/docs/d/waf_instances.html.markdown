@@ -51,7 +51,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `instance_id` - The ID of WAF the instance.
   * `end_date` - The timestamp (in seconds) indicating when the WAF instance expires.
   * `in_debt` - Indicates whether the WAF instance has overdue payments.
-  * `region` - The region where the WAF instance is located.
   * `remain_day` - The number of days before the trial period of the WAF instance expires.
   * `trial` - Indicates whether this is a trial instance.
   * `status` - Indicates whether the WAF instance has expired.
