@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func resourceAlicloudEdasK8sApplicationPackageAttachment() *schema.Resource {
