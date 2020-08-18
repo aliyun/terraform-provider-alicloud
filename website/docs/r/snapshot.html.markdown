@@ -32,6 +32,7 @@ The following arguments are supported:
 
 * `disk_id` - (Required, ForceNew) The source disk ID.
 * `name` - (Optional, ForceNew) Name of the snapshot. This name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-", ".", "_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Default value is null.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.94.0+) The ID of the resource group.
 * `description` - (Optional, ForceNew) Description of the snapshot. This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
