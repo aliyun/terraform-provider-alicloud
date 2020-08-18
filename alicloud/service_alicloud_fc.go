@@ -2,12 +2,8 @@ package alicloud
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
-	"strings"
+	"reflect"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -186,128 +182,18 @@ func (s *FcService) DescribeFcAlias(id string) (*fc.GetAliasOutput, error) {
 	return response, err
 }
 
-func removeSpaceAndEnter(s string) string {
-	if Trim(s) == "" {
-		return Trim(s)
-	}
-	return strings.Replace(strings.Replace(strings.Replace(s, " ", "", -1), "\n", "", -1), "\t", "", -1)
-}
-
-func delEmptyPayloadIfExist(v string, k string) (string, error) {
-	if v == "" {
-		return v, nil
-	}
-	in := []byte(v)
-	var raw map[string]interface{}
-	if err := json.Unmarshal(in, &raw); err != nil {
-		log.Printf("[ERROR] %q contains an invalid JSON: %s", k, err)
-		return v, err
+func jsonBytesEqual(b1, b2 []byte) bool {
+	var o1 interface{}
+	if err := json.Unmarshal(b1, &o1); err != nil {
+		return false
 	}
 
-	if v, ok := raw["payload"]; ok {
-		if vStr, ok := v.(string); ok && vStr == "" {
-			delete(raw, "payload")
-		}
+	var o2 interface{}
+	if err := json.Unmarshal(b2, &o2); err != nil {
+		return false
 	}
 
-	out, err := json.Marshal(raw)
-	if err != nil {
-		log.Printf("[ERROR] %q contains an invalid JSON: %s", k, err)
-	}
-	return string(out), err
-}
-
-func ValidateFcTriggerConfig(v interface{}, k string) (ws []string, errors []error) {
-	if v == nil {
-		return
-	}
-	_, errors = validation.ValidateJsonString(v, k)
-	if errors != nil && len(errors) > 0 {
-		return
-	}
-	in := []byte(removeSpaceAndEnter(fmt.Sprint(v)))
-	var raw map[string]interface{}
-	if err := json.Unmarshal(in, &raw); err != nil {
-		errors = append(errors, fmt.Errorf("%q contains an invalid JSON: %s", k, err))
-		return
-	}
-
-	if _, err := json.Marshal(raw); err != nil {
-		errors = append(errors, fmt.Errorf("%q contains an invalid JSON: %s", k, err))
-	}
-
-	return
-}
-
-func resolveFcTriggerConfig(v string, k string) (string, error) {
-	if v == "" {
-		return v, nil
-	}
-	in := []byte(v)
-	var raw map[string]interface{}
-	if err := json.Unmarshal(in, &raw); err != nil {
-		log.Printf("[ERROR] %q contains an invalid JSON: %s", k, err)
-		return v, err
-	}
-
-	out, err := json.Marshal(raw)
-	if err != nil {
-		log.Printf("[ERROR] %q contains an invalid JSON: %s", k, err)
-	}
-	return string(out), err
-}
-
-func delNilEventSourceParams(v string, k string) (string, error) {
-	if v == "" {
-		return v, nil
-	}
-	in := []byte(v)
-	var raw map[string]interface{}
-	if err := json.Unmarshal(in, &raw); err != nil {
-		log.Printf("[ERROR] %q contains an invalid JSON: %s", k, err)
-		return v, err
-	}
-	if v, ok := raw["eventSourceConfig"]; ok {
-		if eventSourceConfig, ok := v.(map[string]interface{}); ok {
-			if v1, ok := eventSourceConfig["eventSourceParameters"]; ok {
-				if eventSourceParams, ok := v1.(map[string]interface{}); ok {
-					if vMNS, ok := eventSourceParams["sourceMNSParameters"]; ok {
-						if _, ok := vMNS.(map[string]interface{}); ok {
-
-						} else if vMNS == nil {
-							// sourceMNSParameters is nil
-							delete(eventSourceParams, "sourceMNSParameters")
-						}
-
-					}
-					if vRocketMQ, ok := eventSourceParams["sourceRocketMQParameters"]; ok {
-						if _, ok := vRocketMQ.(map[string]interface{}); ok {
-
-						} else if vRocketMQ == nil {
-							// sourceRocketMQParameters is nil
-							delete(eventSourceParams, "sourceRocketMQParameters")
-						}
-					}
-					if vRabbitMQ, ok := eventSourceParams["sourceRabbitMQParameters"]; ok {
-						if _, ok := vRabbitMQ.(map[string]interface{}); ok {
-
-						} else if vRabbitMQ == nil {
-							// sourceRabbitMQParameters is nil
-							delete(eventSourceParams, "sourceRabbitMQParameters")
-						}
-					}
-				} else if v1 == nil {
-					// eventSourceParams is nil
-					delete(eventSourceConfig, "eventSourceParameters")
-				}
-			}
-		}
-	}
-	out, err := json.Marshal(raw)
-	if err != nil {
-		log.Printf("[ERROR] %q contains an invalid JSON: %s", k, err)
-	}
-	return string(out), err
+	return reflect.DeepEqual(o1, o2)
 }
 
 func (s *FcService) WaitForFcTrigger(id string, status Status, timeout int) error {
