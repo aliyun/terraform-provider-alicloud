@@ -1,32 +1,30 @@
-dist: xenial
+dist: trusty
 sudo: required
 services:
   - docker
-
 language: go
 go:
   - "1.12.x"
   - "1.13.x"
   - "1.14.x"
 
-#install:
-#  - make tools
+go_import_path: github.com/aliyun/terraform-provider-alicloud
+
+install:
+# This script is used by the Travis build to install a cookie for
+# go.googlesource.com so rate limits are higher when using `go get` to fetch
+# packages that live there.
+# See: https://github.com/golang/go/issues/12933
+- bash scripts/gogetcookie.sh
 
 script:
-  - make test
-  - make vet
-#  - make website-test
+- make test
+- make vet
 
 branches:
   only:
-    - master
-
+  - master
 matrix:
   fast_finish: true
   allow_failures:
-    - go: tip
-
-env:
-  global:
-    - GOFLAGS=-mod=vendor
-    - GO111MODULE=on
+  - go: tip
