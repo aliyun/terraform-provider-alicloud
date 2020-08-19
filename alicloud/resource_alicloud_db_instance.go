@@ -25,6 +25,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 		Read:   resourceAlicloudDBInstanceRead,
 		Update: resourceAlicloudDBInstanceUpdate,
 		Delete: resourceAlicloudDBInstanceDelete,
+
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
