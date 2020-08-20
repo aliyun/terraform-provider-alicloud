@@ -74,6 +74,9 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `maintain_start_time` - (Optional, Available in v1.56.0+) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available in v1.56.0+) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `resource_group_id` - (Optional, ForceNew, Available in v1.86.0+) The ID of resource group which the resource belongs.
+* `enable_public` - (Optional, Available in v1.94.0+) Whether to open the public network. Default to: `false`.
+* `connection_string_prefix` - (Optional, Available in v1.94.0+) The prefix of the external network connection address.
+* `port` - (Optional, Available in v1.94.0+) The port of redis.
 
 -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
@@ -83,6 +86,7 @@ The following attributes are exported:
 
 * `id` - The KVStore instance ID.
 * `connection_domain` - Instance connection domain (only Intranet access supported).
+* `connection_string` - The connection address of the instance.
 
 ### Timeouts
 

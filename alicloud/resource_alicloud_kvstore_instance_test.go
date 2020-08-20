@@ -155,6 +155,24 @@ func TestAccAlicloudKVStoreRedisInstance_classictest(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"password"},
 			},
 			{
+				Config: testAccKVStoreInstance_classicAllocateConnection(string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_public":     "true",
+						"connection_string": "tf-testacc.redis.rds.aliyuncs.com",
+					}),
+				),
+			},
+			{
+				Config: testAccKVStoreInstance_classicReleasePublicConnection(string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_public":     "false",
+						"connection_string": "",
+					}),
+				),
+			},
+			{
 				Config: testAccKVStoreInstance_classicUpdateParameter(string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -708,6 +726,51 @@ func testAccKVStoreInstance_classic(instanceType, instanceClass, engineVersion s
 		instance_type = "%s"
 		instance_class = "%s"
 		engine_version = "%s"
+	}
+	`, instanceType, instanceClass, engineVersion)
+}
+
+func testAccKVStoreInstance_classicAllocateConnection(instanceType, instanceClass, engineVersion string) string {
+	return fmt.Sprintf(`
+	data "alicloud_zones" "default" {
+		available_resource_creation = "KVStore"
+	}
+	variable "name" {
+		default = "tf-testAccKVStoreInstance_classic"
+	}
+
+	resource "alicloud_kvstore_instance" "default" {
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+		instance_name  = "${var.name}"
+		security_ips = ["10.0.0.1"]
+		instance_type = "%s"
+		instance_class = "%s"
+		engine_version = "%s"
+		enable_public  = true
+		connection_string_prefix = "tf-testacc"
+		port = 3306
+	}
+	`, instanceType, instanceClass, engineVersion)
+}
+
+func testAccKVStoreInstance_classicReleasePublicConnection(instanceType, instanceClass, engineVersion string) string {
+	return fmt.Sprintf(`
+	data "alicloud_zones" "default" {
+		available_resource_creation = "KVStore"
+	}
+	variable "name" {
+		default = "tf-testAccKVStoreInstance_classic"
+	}
+
+	resource "alicloud_kvstore_instance" "default" {
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+		instance_name  = "${var.name}"
+		security_ips = ["10.0.0.1"]
+		instance_type = "%s"
+		instance_class = "%s"
+		engine_version = "%s"
+		enable_public = false
+		connection_string_prefix = "tf-testacc"
 	}
 	`, instanceType, instanceClass, engineVersion)
 }

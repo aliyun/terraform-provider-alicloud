@@ -188,6 +188,23 @@ func resourceAlicloudKVStoreInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"enable_public": {
+				Type:     schema.TypeBool,
+				Default:  false,
+				Optional: true,
+			},
+			"connection_string_prefix": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"port": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"connection_string": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -494,6 +511,40 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("password")
 	}
 
+	if d.HasChange("enable_public") {
+		prefix := d.Get("connection_string_prefix").(string)
+		port := d.Get("port").(string)
+		target := d.Get("enable_public").(bool)
+
+		if target {
+			request := r_kvstore.CreateAllocateInstancePublicConnectionRequest()
+			request.InstanceId = d.Id()
+			request.ConnectionStringPrefix = prefix
+			request.Port = port
+
+			raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+				return client.AllocateInstancePublicConnection(request)
+			})
+			addDebug(request.GetActionName(), raw)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+		} else {
+			request := r_kvstore.CreateReleaseInstancePublicConnectionRequest()
+			request.InstanceId = d.Id()
+			request.CurrentConnectionString = d.Get("connection_string").(string)
+
+			raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+				return client.ReleaseInstancePublicConnection(request)
+			})
+			addDebug(request.GetActionName(), raw)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+		}
+		d.SetPartial("enable_public")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudKVStoreInstanceRead(d, meta)
 }
@@ -531,6 +582,20 @@ func resourceAlicloudKVStoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("vpc_auth_mode", object.VpcAuthMode)
 	d.Set("maintain_start_time", object.MaintainStartTime)
 	d.Set("maintain_end_time", object.MaintainEndTime)
+	d.Set("enable_public", false)
+	d.Set("connection_string", "")
+	net, err := kvstoreService.DescribeDBInstanceNetInfo(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	for _, netInfo := range net.InstanceNetInfo {
+		// DBInstanceNetType is 0 means public network
+		if netInfo.DBInstanceNetType == "0" {
+			d.Set("enable_public", true)
+			d.Set("connection_string", netInfo.ConnectionString)
+			break
+		}
+	}
 	tags, err := kvstoreService.DescribeTags(d.Id(), TagResourceInstance)
 	if err != nil {
 		return WrapError(err)
