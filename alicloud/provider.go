@@ -305,6 +305,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oos_templates":                         dataSourceAlicloudOosTemplates(),
 			"alicloud_oos_executions":                        dataSourceAlicloudOosExecutions(),
 			"alicloud_resource_manager_policy_attachments":   dataSourceAlicloudResourceManagerPolicyAttachments(),
+			"alicloud_dcdn_domains":                          dataSourceAlicloudDcdnDomains(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -552,6 +553,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_edas_k8s_cluster":                    resourceAlicloudEdasK8sCluster(),
 			"alicloud_oos_execution":                       resourceAlicloudOosExecution(),
 			"alicloud_resource_manager_policy_attachment":  resourceAlicloudResourceManagerPolicyAttachment(),
+			"alicloud_dcdn_domain":                         resourceAlicloudDcdnDomain(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -686,6 +688,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ResourcemanagerEndpoint = strings.TrimSpace(endpoints["resourcemanager"].(string))
 		config.EciEndpoint = strings.TrimSpace(endpoints["eci"].(string))
 		config.OosEndpoint = strings.TrimSpace(endpoints["oos"].(string))
+		config.DcdnEndpoint = strings.TrimSpace(endpoints["dcdn"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -868,6 +871,8 @@ func init() {
 		"eci_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eci endpoints.",
 
 		"oos_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom oos endpoints.",
+
+		"dcdn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dcdn endpoints.",
 	}
 }
 
@@ -912,6 +917,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"dcdn": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["dcdn_endpoint"],
+				},
+
 				"oos": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1278,6 +1290,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cassandra"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["eci"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["oos"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["dcdn"].(string)))
 	return hashcode.String(buf.String())
 }
 
