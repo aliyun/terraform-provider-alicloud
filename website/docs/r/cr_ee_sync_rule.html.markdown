@@ -23,15 +23,15 @@ Basic Usage
 
 ```
 resource "alicloud_cr_ee_sync_rule" "default" {
-	instance_id = "my-source-instance-id"
-	namespace_name = "my-source-namespace"
-	name = "test-sync-rule"
-	target_region_id = "cn-hangzhou"
-	target_instance_id = "my-target-instance-id"
-	target_namespace_name = "my-target-namespace"
-	tag_filter = ".*"
-	repo_name = "my-source-repo"
-	target_repo_name = "my-target-repo"
+  instance_id           = "my-source-instance-id"
+  namespace_name        = "my-source-namespace"
+  name                  = "test-sync-rule"
+  target_region_id      = "cn-hangzhou"
+  target_instance_id    = "my-target-instance-id"
+  target_namespace_name = "my-target-namespace"
+  tag_filter            = ".*"
+  repo_name             = "my-source-repo"
+  target_repo_name      = "my-target-repo"
 }
 ```
 

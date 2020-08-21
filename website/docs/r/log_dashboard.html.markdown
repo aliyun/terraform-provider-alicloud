@@ -17,22 +17,21 @@ The dashboard is a real-time data analysis platform provided by the log service.
 
 Basic Usage
 
-```
-
+```terraform
 resource "alicloud_log_project" "default" {
-  name = "tf-project"
+  name        = "tf-project"
   description = "tf unit test"
 }
 resource "alicloud_log_store" "default" {
-  project = ""tf-project"
-  name = "tf-logstore"
+  project          = "tf-project"
+  name             = "tf-logstore"
   retention_period = "3000"
-  shard_count = 1
+  shard_count      = 1
 }
 resource "alicloud_log_dashboard" "example" {
-  project_name        = "tf-project"
+  project_name   = "tf-project"
   dashboard_name = "tf-dashboard"
-  char_list = <<EOF
+  char_list      = <<EOF
   [
     {
       "title":"new_title",

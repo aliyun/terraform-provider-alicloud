@@ -41,12 +41,12 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_polardb_cluster" "default" {
-  db_type = "MySQL"
-  db_version = "8.0"
-  pay_type = "PostPaid"
-  db_node_class    = "polar.mysql.x4.large"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  description = "${var.name}"
+  db_type       = "MySQL"
+  db_version    = "8.0"
+  pay_type      = "PostPaid"
+  db_node_class = "polar.mysql.x4.large"
+  vswitch_id    = "${alicloud_vswitch.default.id}"
+  description   = "${var.name}"
 }
 
 resource "alicloud_polardb_database" "db" {

@@ -52,7 +52,7 @@ resource "alicloud_polardb_cluster" "default" {
 
 resource "alicloud_polardb_endpoints" "endpoint" {
   db_cluster_id    = "${alicloud_polardb_cluster.default.id}"
-  endpoint_type     = "Custom"
+  endpoint_type    = "Custom"
 }
 ```
 

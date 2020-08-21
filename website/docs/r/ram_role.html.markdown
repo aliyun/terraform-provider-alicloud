@@ -15,7 +15,7 @@ Provides a RAM Role resource.
 
 ## Example Usage
 
-```
+```terraform
 # Create a new RAM Role.
 resource "alicloud_ram_role" "role" {
   name     = "testrole"
@@ -37,7 +37,7 @@ resource "alicloud_ram_role" "role" {
   }
   EOF
   description = "this is a role test."
-  force = true
+  force       = true
 }
 ```
 ## Argument Reference

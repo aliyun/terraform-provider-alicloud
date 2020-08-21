@@ -13,7 +13,7 @@ Provides a RAM role attachment resource to bind role for several ECS instances.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
@@ -92,11 +92,11 @@ resource "alicloud_ram_role" "role" {
   }
   EOF
   description = "this is a test"
-  force = true
+  force       = true
 }
 
 resource "alicloud_ram_role_attachment" "attach" {
-  role_name = "${alicloud_ram_role.role.name}"
+  role_name    = "${alicloud_ram_role.role.name}"
   instance_ids = ["${alicloud_instance.foo.*.id}"]
 }
 ```

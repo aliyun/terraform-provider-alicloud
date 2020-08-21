@@ -22,19 +22,19 @@ Cloud Bastionhost instance resource ("Yundun_bastionhost" is the short term of t
 Basic Usage
 
 ```
-  provider "alicloud" {
-    endpoints {
-        bssopenapi = "business.aliyuncs.com"
-        }
+provider "alicloud" {
+  endpoints {
+    bssopenapi = "business.aliyuncs.com"
   }
+}
 
-  resource "alicloud_yundun_bastionhost_instance" "default" {
-        description        = "Terraform-test"
-        plan_code          = "alpha.professional"
-        period             = "1"
-        vswitch_id         = "v-testVswitch"
-        security_group_ids = "sg-test"
-  }
+resource "alicloud_yundun_bastionhost_instance" "default" {
+  description        = "Terraform-test"
+  plan_code          = "alpha.professional"
+  period             = "1"
+  vswitch_id         = "v-testVswitch"
+  security_group_ids = "sg-test"
+}
 ```
 ## Argument Reference
 

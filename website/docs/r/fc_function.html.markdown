@@ -18,7 +18,7 @@ Provides a Alicloud Function Compute Function resource. Function allows you to t
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "alicloudfcfunctionconfig"
 }

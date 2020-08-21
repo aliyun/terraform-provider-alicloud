@@ -19,19 +19,19 @@ For information about WAF and how to use it, see [What is Alibaba Cloud WAF](htt
 
 ```
 resource "alicloud_waf_domain" "domain" {
-  domain = "www.aliyun.com"
-  instance_id = "waf-123455"
+  domain            = "www.aliyun.com"
+  instance_id       = "waf-123455"
   is_access_product = "On"
-  source_ips = ["1.1.1.1"]
-  cluster_type = "PhysicalCluster"
-  http2_port = [443]
-  http_port = [80]
-  https_port = [443]
-  http_to_user_ip = "Off"
-  https_redirect = "Off"
-  load_balancing = "IpHash"
+  source_ips        = ["1.1.1.1"]
+  cluster_type      = "PhysicalCluster"
+  http2_port        = [443]
+  http_port         = [80]
+  https_port        = [443]
+  http_to_user_ip   = "Off"
+  https_redirect    = "Off"
+  load_balancing    = "IpHash"
   log_headers {
-    key = "foo"
+    key   = "foo"
     value = "http"
   }
 }

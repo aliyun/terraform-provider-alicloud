@@ -54,44 +54,43 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_slb" "default" {
-  name = "${var.name}"
+  name       = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
 }
 
 resource "alicloud_slb_server_group" "default" {
   load_balancer_id = "${alicloud_slb.default.id}"
-  name = "test"
+  name             = "test"
 }
-	
+
 resource "alicloud_slb_listener" "default" {
-  count = 2
-  load_balancer_id = "${element(alicloud_slb.default.*.id, count.index)}"
-  backend_port = "22"
-  frontend_port = "22"
-  protocol = "tcp"
-  bandwidth = "10"
+  count             = 2
+  load_balancer_id  = "${element(alicloud_slb.default.*.id, count.index)}"
+  backend_port      = "22"
+  frontend_port     = "22"
+  protocol          = "tcp"
+  bandwidth         = "10"
   health_check_type = "tcp"
 }
 
 resource "alicloud_ess_scaling_group" "default" {
-  min_size = "2"
-  max_size = "2"
+  min_size           = "2"
+  max_size           = "2"
   scaling_group_name = "${var.name}"
-  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+  vswitch_ids        = ["${alicloud_vswitch.default.id}"]
 }
 
 resource "alicloud_ess_scalinggroup_vserver_groups" "default" {
   scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
   vserver_groups {
-  loadbalancer_id = "${alicloud_slb.default.id}"
-  vserver_attributes {
-    vserver_group_id = "${alicloud_slb_server_group.default.id}"
-    port = "100"
-    weight = "60"
+    loadbalancer_id = "${alicloud_slb.default.id}"
+    vserver_attributes {
+      vserver_group_id = "${alicloud_slb_server_group.default.id}"
+      port             = "100"
+      weight           = "60"
     }
   }
 }
-
 ```
 
 ## Argument Reference

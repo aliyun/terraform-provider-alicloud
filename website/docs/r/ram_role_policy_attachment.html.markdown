@@ -13,7 +13,7 @@ Provides a RAM Role attachment resource.
 
 ## Example Usage
 
-```
+```terraform
 # Create a RAM Role Policy attachment.
 resource "alicloud_ram_role" "role" {
   name     = "roleName"
@@ -68,6 +68,7 @@ resource "alicloud_ram_role_policy_attachment" "attach" {
   role_name   = "${alicloud_ram_role.role.name}"
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:

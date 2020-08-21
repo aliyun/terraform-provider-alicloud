@@ -184,7 +184,7 @@ resource "alicloud_oss_bucket" "bucket-sserule" {
   acl    = "private"
 
   server_side_encryption_rule {
-    sse_algorithm = "KMS"
+    sse_algorithm     = "KMS"
     kms_master_key_id = "your kms key id"
   }
 }
