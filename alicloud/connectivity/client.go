@@ -70,6 +70,7 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/oos"
@@ -151,6 +152,7 @@ type AliyunClient struct {
 	ecsConn                      *ecs.Client
 	oosConn                      *oos.Client
 	nasConn                      *nas.Client
+	dcdnConn                     *dcdn.Client
 }
 
 type ApiVersion string
@@ -1913,4 +1915,29 @@ func (client *AliyunClient) WithOosClient(do func(*oos.Client) (interface{}, err
 		client.oosConn = oosConn
 	}
 	return do(client.oosConn)
+}
+
+func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, error)) (interface{}, error) {
+	if client.dcdnConn == nil {
+		endpoint := client.config.DcdnEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, DcdnCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(DcdnCode), endpoint)
+		}
+
+		dcdnConn, err := dcdn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Dcdnclient: %#v", err)
+		}
+		dcdnConn.AppendUserAgent(Terraform, terraformVersion)
+		dcdnConn.AppendUserAgent(Provider, providerVersion)
+		dcdnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.dcdnConn = dcdnConn
+	}
+	return do(client.dcdnConn)
 }

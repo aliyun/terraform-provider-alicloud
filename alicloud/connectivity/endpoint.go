@@ -12,6 +12,7 @@ import (
 type ServiceCode string
 
 const (
+	DcdnCode            = ServiceCode("DCDN")
 	OosCode             = ServiceCode("OOS")
 	EcsCode             = ServiceCode("ECS")
 	NasCode             = ServiceCode("NAS")

@@ -3,6 +3,8 @@ package alicloud
 import (
 	"fmt"
 
+	"log"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	waf_openapi "github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -35,10 +37,20 @@ func resourceAlicloudWafDomain() *schema.Resource {
 				Optional: true,
 				Default:  5,
 			},
+			"domain_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"domain"},
+			},
 			"domain": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				Deprecated:    "Field 'domain' has been deprecated from version 1.94.0. Use 'domain_name' instead.",
+				ConflictsWith: []string{"domain_name"},
 			},
 			"http2_port": {
 				Type:     schema.TypeSet,
@@ -113,8 +125,8 @@ func resourceAlicloudWafDomain() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"source_ips": {
 				Type:     schema.TypeSet,
@@ -122,10 +134,6 @@ func resourceAlicloudWafDomain() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-			},
-			"status": {
-				Type:     schema.TypeInt,
-				Computed: true,
 			},
 			"write_time": {
 				Type:     schema.TypeInt,
@@ -144,30 +152,45 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("cluster_type"); ok {
 		request.ClusterType = requests.NewInteger(convertClusterTypeRequest(v.(string)))
 	}
+
 	if v, ok := d.GetOk("connection_time"); ok {
 		request.ConnectionTime = requests.NewInteger(v.(int))
 	}
-	request.Domain = d.Get("domain").(string)
+
+	if v, ok := d.GetOk("domain_name"); ok {
+		request.Domain = v.(string)
+	} else if v, ok := d.GetOk("domain"); ok {
+		request.Domain = v.(string)
+	} else {
+		return WrapError(Error(`[ERROR] Argument "domain" or "domain_name" must be set one!`))
+	}
+
 	if v, ok := d.GetOk("http2_port"); ok {
 		request.Http2Port = convertListToJsonString(v.(*schema.Set).List())
 	}
+
 	if v, ok := d.GetOk("http_port"); ok {
 		request.HttpPort = convertListToJsonString(v.(*schema.Set).List())
 	}
+
 	if v, ok := d.GetOk("http_to_user_ip"); ok {
 		request.HttpToUserIp = requests.NewInteger(convertHttpToUserIpRequest(v.(string)))
 	}
+
 	if v, ok := d.GetOk("https_port"); ok {
 		request.HttpsPort = convertListToJsonString(v.(*schema.Set).List())
 	}
+
 	if v, ok := d.GetOk("https_redirect"); ok {
 		request.HttpsRedirect = requests.NewInteger(convertHttpsRedirectRequest(v.(string)))
 	}
+
 	request.InstanceId = d.Get("instance_id").(string)
 	request.IsAccessProduct = requests.NewInteger(convertIsAccessProductRequest(d.Get("is_access_product").(string)))
 	if v, ok := d.GetOk("load_balancing"); ok {
 		request.LoadBalancing = requests.NewInteger(convertLoadBalancingRequest(v.(string)))
 	}
+
 	if v, ok := d.GetOk("log_headers"); ok {
 		logHeaders, err := waf_openapiService.convertLogHeadersToString(v.(*schema.Set).List())
 		if err != nil {
@@ -175,16 +198,20 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 		}
 		request.LogHeaders = logHeaders
 	}
+
 	if v, ok := d.GetOk("read_time"); ok {
 		request.ReadTime = requests.NewInteger(v.(int))
 	}
+
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request.ResourceGroupId = v.(string)
 	}
+
 	request.SourceIps = convertListToJsonString(d.Get("source_ips").(*schema.Set).List())
 	if v, ok := d.GetOk("write_time"); ok {
 		request.WriteTime = requests.NewInteger(v.(int))
 	}
+
 	raw, err := client.WithWafOpenapiClient(func(waf_openapiClient *waf_openapi.Client) (interface{}, error) {
 		return waf_openapiClient.CreateDomain(request)
 	})
@@ -202,6 +229,7 @@ func resourceAlicloudWafDomainRead(d *schema.ResourceData, meta interface{}) err
 	object, err := waf_openapiService.DescribeWafDomain(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_waf_domain waf_openapiService.DescribeWafDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -211,6 +239,7 @@ func resourceAlicloudWafDomainRead(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapError(err)
 	}
+	d.Set("domain_name", parts[1])
 	d.Set("domain", parts[1])
 	d.Set("instance_id", parts[0])
 	d.Set("cluster_type", convertClusterTypeResponse(object.ClusterType))

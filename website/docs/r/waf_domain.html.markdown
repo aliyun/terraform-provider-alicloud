@@ -24,9 +24,9 @@ resource "alicloud_waf_domain" "domain" {
   is_access_product = "On"
   source_ips = ["1.1.1.1"]
   cluster_type = "PhysicalCluster"
-  http2_port = 443
-  http_port = 80
-  https_port = 443
+  http2_port = [443]
+  http_port = [80]
+  https_port = [443]
   http_to_user_ip = "Off"
   https_redirect = "Off"
   load_balancing = "IpHash"
@@ -40,18 +40,19 @@ resource "alicloud_waf_domain" "domain" {
 
 The following arguments are supported:
 
-* `cluster_type` - (Optional) The type of the WAF cluster. Valid values: "PhysicalCluster" and "VirtualCluster". Default to "PhysicalCluster".
+* `cluster_type` - (Optional) The type of the WAF cluster. Valid values: `PhysicalCluster` and `VirtualCluster`. Default to `PhysicalCluster`.
 * `connection_time` - (Optional) The connection timeout for WAF exclusive clusters. Unit: seconds.
-* `domain` - (Required, ForceNew) The domain that you want to add to WAF.
+* `domain` - (Required, ForceNew, Deprecated in v1.94.0+)  Field `domain` has been deprecated from version 1.94.0. Use `domain_name` instead.
+* `domain_name` - (Required, ForceNew, Available in v1.94.0+) The domain that you want to add to WAF.
 * `http2_port` - (Optional) List of the HTTP 2.0 ports.
-* `http_port` - (Optional) List of the HTTP ports
+* `http_port` - (Optional) List of the HTTP ports.
 * `http_to_user_ip` - (Optional) Specifies whether to enable the HTTP back-to-origin feature. After this feature is enabled, the WAF instance can use HTTP to forward HTTPS requests to the origin server. 
-By default, port 80 is used to forward the requests to the origin server. Valid values: "On" and "Off". Default to "Off".
-* `https_port` - (Optional) List of the HTTPS ports
-* `https_redirect` - (Optional) Specifies whether to redirect HTTP requests as HTTPS requests. Valid values: "On" and "Off". Default to "Off".
+By default, port 80 is used to forward the requests to the origin server. Valid values: `On` and `Off`. Default to `Off`.
+* `https_port` - (Optional) List of the HTTPS ports.
+* `https_redirect` - (Optional) Specifies whether to redirect HTTP requests as HTTPS requests. Valid values: "On" and `Off`. Default to `Off`.
 * `instance_id` - (Required, ForceNew) The ID of the WAF instance.
-* `is_access_product` - (Required) Specifies whether to configure a Layer-7 proxy, such as Anti-DDoS Pro or CDN, to filter the inbound traffic before it is forwarded to WAF. Valid values: "On" and "Off". Default to "Off".
-* `load_balancing` - (Optional) The load balancing algorithm that is used to forward requests to the origin. Valid values: "IpHash" and "RoundRobin". Default to "IpHash".
+* `is_access_product` - (Required) Specifies whether to configure a Layer-7 proxy, such as Anti-DDoS Pro or CDN, to filter the inbound traffic before it is forwarded to WAF. Valid values: `On` and `Off`. Default to `Off`.
+* `load_balancing` - (Optional) The load balancing algorithm that is used to forward requests to the origin. Valid values: `IpHash` and `RoundRobin`. Default to `IpHash`.
 * `log_headers` - (Optional) The key-value pair that is used to mark the traffic that flows through WAF to the domain. Each item contains two field:
    * key: The key of label
    * value: The value of label

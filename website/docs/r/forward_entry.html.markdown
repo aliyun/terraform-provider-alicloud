@@ -79,3 +79,11 @@ The following attributes are exported:
 
 * `id` - The ID of the forward entry. The value formats as `<forward_table_id>:<forward_entry_id>`
 * `forward_entry_id` - The id of the forward entry on the server.
+
+## Import
+
+Forward Entry can be imported using the id, e.g.
+
+```
+$ terraform import alicloud_forward_entry.foo ftb-1aece3:fwd-232ce2
+```
