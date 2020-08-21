@@ -229,7 +229,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_drds_instances":                        dataSourceAlicloudDRDSInstances(),
 			"alicloud_nas_access_groups":                     dataSourceAlicloudAccessGroups(),
 			"alicloud_nas_access_rules":                      dataSourceAlicloudAccessRules(),
-			"alicloud_nas_mount_targets":                     dataSourceAlicloudMountTargets(),
+			"alicloud_nas_mount_targets":                     dataSourceAlicloudNasMountTargets(),
 			"alicloud_nas_file_systems":                      dataSourceAlicloudFileSystems(),
 			"alicloud_nas_protocols":                         dataSourceAlicloudNasProtocols(),
 			"alicloud_cas_certificates":                      dataSourceAlicloudCasCertificates(),
