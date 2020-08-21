@@ -1,59 +1,83 @@
 package alicloud
 
 import (
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudMountTargets() *schema.Resource {
+func dataSourceAlicloudNasMountTargets() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudMountTargetRead,
-
+		Read: dataSourceAlicloudNasMountTargetsRead,
 		Schema: map[string]*schema.Schema{
-			"file_system_id": {
-				Type:     schema.TypeString,
-				ForceNew: true,
-				Required: true,
-			},
 			"access_group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-			},
-			"type": {
-				Type:     schema.TypeString,
-				Optional: true,
+				ForceNew: true,
 			},
 			"mount_target_domain": {
 				Type:       schema.TypeString,
 				Optional:   true,
+				ForceNew:   true,
 				Deprecated: "Field 'mount_target_domain' has been deprecated from provider version 1.53.0. New field 'ids' replaces it.",
+			},
+			"type": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Deprecated: "Field 'type' has been deprecated from provider version 1.94.0. New field 'network_type' replaces it.",
+			},
+			"network_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
+			},
+			"file_system_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
+				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Active", "Inactive", "Pending"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			// mount_gatgets values
 			"targets": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"access_group_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -62,7 +86,15 @@ func dataSourceAlicloudMountTargets() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"network_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -74,10 +106,6 @@ func dataSourceAlicloudMountTargets() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"access_group_name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 					},
 				},
 			},
@@ -85,16 +113,17 @@ func dataSourceAlicloudMountTargets() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudMountTargetRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudNasMountTargetsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := nas.CreateDescribeMountTargetsRequest()
-	request.RegionId = string(client.Region)
+	if v, ok := d.GetOk("file_system_id"); ok {
+		request.FileSystemId = v.(string)
+	}
+	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-	request.FileSystemId = d.Get("file_system_id").(string)
-
-	var allMt []nas.DescribeMountTargetsMountTarget1
+	var objects []nas.DescribeMountTargetsMountTarget1
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
@@ -102,84 +131,96 @@ func dataSourceAlicloudMountTargetRead(d *schema.ResourceData, meta interface{})
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	invoker := NewInvoker()
+	status, statusOk := d.GetOk("status")
+	var response *nas.DescribeMountTargetsResponse
 	for {
-		var raw interface{}
-		if err := invoker.Run(func() error {
-			rsp, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			raw, err := client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 				return nasClient.DescribeMountTargets(request)
 			})
-			raw = rsp
-			return err
-		}); err != nil {
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ServiceUnavailable", "Throttling"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw)
+			response, _ = raw.(*nas.DescribeMountTargetsResponse)
+			return nil
+		})
+		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_mount_targets", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		resp, _ := raw.(*nas.DescribeMountTargetsResponse)
 
-		if resp == nil || len(resp.MountTargets.MountTarget) < 1 {
-			break
-		}
-		for _, mt := range resp.MountTargets.MountTarget {
-			if v, ok := d.GetOk("type"); ok && mt.NetworkType != v.(string) {
+		for _, item := range response.MountTargets.MountTarget {
+			if v, ok := d.GetOk("access_group_name"); ok && v.(string) != "" && item.AccessGroup != v.(string) {
 				continue
 			}
-			if v, ok := d.GetOk("vpc_id"); ok && mt.VpcId != v.(string) {
+			if v, ok := d.GetOk("mount_target_domain"); ok && v.(string) != "" && item.MountTargetDomain != v.(string) {
 				continue
 			}
-			if v, ok := d.GetOk("vswitch_id"); ok && mt.VswId != v.(string) {
+			if v, ok := d.GetOk("type"); ok && v.(string) != "" && item.NetworkType != v.(string) {
 				continue
 			}
-			if v, ok := d.GetOk("access_group_name"); ok && mt.AccessGroup != v.(string) {
+			if v, ok := d.GetOk("network_type"); ok && v.(string) != "" && item.NetworkType != v.(string) {
 				continue
 			}
-			if v, ok := d.GetOk("mount_target_domain"); ok && mt.MountTargetDomain != v.(string) {
+			if v, ok := d.GetOk("vpc_id"); ok && v.(string) != "" && item.VpcId != v.(string) {
+				continue
+			}
+			if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" && item.VswId != v.(string) {
 				continue
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[mt.MountTargetDomain]; !ok {
+				if _, ok := idsMap[item.MountTargetDomain]; !ok {
 					continue
 				}
 			}
-			allMt = append(allMt, mt)
+			if statusOk && status != "" && status != item.Status {
+				continue
+			}
+			objects = append(objects, item)
 		}
-		if len(resp.MountTargets.MountTarget) < PageSizeLarge {
+		if len(response.MountTargets.MountTarget) < PageSizeLarge {
 			break
 		}
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
-		} else {
-			request.PageNumber = page
-		}
-	}
-	return MountTargetDescriptionAttributes(d, allMt, meta)
-}
 
-func MountTargetDescriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.DescribeMountTargetsMountTarget1, meta interface{}) error {
-	var ids []string
-	var s []map[string]interface{}
-	for _, mt := range nasSetTypes {
-		mapping := map[string]interface{}{
-			"id":                  mt.MountTargetDomain,
-			"type":                mt.NetworkType,
-			"vpc_id":              mt.VpcId,
-			"vswitch_id":          mt.VswId,
-			"access_group_name":   mt.AccessGroup,
-			"mount_target_domain": mt.MountTargetDomain,
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
+			return WrapError(err)
 		}
-		ids = append(ids, mt.MountTargetDomain)
+		request.PageNumber = page
+	}
+	ids := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"access_group_name":   object.AccessGroup,
+			"id":                  object.MountTargetDomain,
+			"mount_target_domain": object.MountTargetDomain,
+			"network_type":        object.NetworkType,
+			"type":                object.NetworkType,
+			"status":              object.Status,
+			"vpc_id":              object.VpcId,
+			"vswitch_id":          object.VswId,
+		}
+		ids = append(ids, object.MountTargetDomain)
 		s = append(s, mapping)
 	}
+
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("targets", s); err != nil {
-		return WrapError(err)
-	}
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
-	// create a json file in current directory and write data source to it.
+
+	if err := d.Set("targets", s); err != nil {
+		return WrapError(err)
+	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
+
 	return nil
 }
