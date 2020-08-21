@@ -51,7 +51,7 @@ resource "alicloud_polardb_cluster" "default" {
 
 
 resource "alicloud_polardb_backup_policy" "policy" {
-  db_cluster_id    = "${alicloud_polardb_cluster.default.id}"
+  db_cluster_id           = "${alicloud_polardb_cluster.default.id}"
   preferred_backup_period = "Tuesday,Wednesday"
   preferred_backup_time   = "10:00Z-11:00Z"
 }

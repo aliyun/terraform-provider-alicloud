@@ -29,9 +29,9 @@ resource "alicloud_image_import" "this" {
   os_type      = "linux"
   disk_device_mapping {
     disk_image_size = 5
-      oss_bucket = "testimportimage"
-      oss_object = "root.img"
-    }
+    oss_bucket      = "testimportimage"
+    oss_object      = "root.img"
+  }
 }
 ```
 

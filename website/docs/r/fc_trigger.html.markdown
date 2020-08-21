@@ -18,7 +18,7 @@ Provides an Alicloud Function Compute Trigger resource. Based on trigger, execut
 
 Basic Usage
 
-```
+```terraform
 variable "region" {
   default = "cn-hangzhou"
 }
@@ -63,8 +63,8 @@ resource "alicloud_fc_trigger" "foo" {
 }
 
 resource "alicloud_ram_role" "foo" {
-  name = "${var.name}-trigger"
-  document = <<EOF
+  name        = "${var.name}-trigger"
+  document    = <<EOF
   {
     "Statement": [
       {
@@ -94,7 +94,7 @@ resource "alicloud_ram_role_policy_attachment" "foo" {
 
 MNS topic trigger:
 
-```
+```terraform
 variable "name" {
   default = "fctriggermnstopic"
 }
@@ -131,22 +131,22 @@ resource "alicloud_oss_bucket" "foo" {
 }
 # If you upload the function by OSS Bucket, you need to specify path can't upload by content.
 resource "alicloud_oss_bucket_object" "foo" {
-  bucket  = "${alicloud_oss_bucket.foo.id}"
-  key     = "fc/hello.zip"
-  source  = "./hello.zip"
+  bucket = "${alicloud_oss_bucket.foo.id}"
+  key    = "fc/hello.zip"
+  source = "./hello.zip"
 }
 resource "alicloud_fc_function" "foo" {
-  service = "${alicloud_fc_service.foo.name}"
-  name = "${var.name}"
-  oss_bucket = "${alicloud_oss_bucket.foo.id}"
-  oss_key = "${alicloud_oss_bucket_object.foo.key}"
+  service     = "${alicloud_fc_service.foo.name}"
+  name        = "${var.name}"
+  oss_bucket  = "${alicloud_oss_bucket.foo.id}"
+  oss_key     = "${alicloud_oss_bucket_object.foo.key}"
   memory_size = 512
-  runtime = "python2.7"
-  handler = "hello.handler"
+  runtime     = "python2.7"
+  handler     = "hello.handler"
 }
 resource "alicloud_ram_role" "foo" {
-  name = "${var.name}-trigger"
-  document = <<EOF
+  name        = "${var.name}-trigger"
+  document    = <<EOF
   {
     "Statement": [
       {
@@ -166,17 +166,17 @@ resource "alicloud_ram_role" "foo" {
   force       = true
 }
 resource "alicloud_ram_role_policy_attachment" "foo" {
-  role_name = "${alicloud_ram_role.foo.name}"
-  policy_name = "AliyunMNSNotificationRolePolicy" 
-  policy_type = "System" 
+  role_name   = "${alicloud_ram_role.foo.name}"
+  policy_name = "AliyunMNSNotificationRolePolicy"
+  policy_type = "System"
 }
 resource "alicloud_fc_trigger" "foo" {
-  service = "${alicloud_fc_service.foo.name}"
-  function = "${alicloud_fc_function.foo.name}"
-  name = "${var.name}"
-  role = "${alicloud_ram_role.foo.arn}"
+  service    = "${alicloud_fc_service.foo.name}"
+  function   = "${alicloud_fc_function.foo.name}"
+  name       = "${var.name}"
+  role       = "${alicloud_ram_role.foo.arn}"
   source_arn = "acs:mns:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:/topics/${alicloud_mns_topic.foo.name}"
-  type = "mns_topic"
+  type       = "mns_topic"
   config_mns = <<EOF
   {
     "filterTag":"testTag",
@@ -190,52 +190,52 @@ resource "alicloud_fc_trigger" "foo" {
 
 CDN events trigger:
 
-```
+```terraform
 variable "name" {
-    default = "fctriggercdneventsconfig"
+  default = "fctriggercdneventsconfig"
 }
 
 data "alicloud_account" "current" {
 }
 
 resource "alicloud_cdn_domain_new" "domain" {
-    domain_name = "${var.name}.tf.com"
-    cdn_type    = "web"
-    scope       = "overseas"
-    sources {
-      content  = "1.1.1.1"
-      type     = "ipaddr"
-      priority = 20
-      port     = 80
-      weight   = 10
-    }
+  domain_name = "${var.name}.tf.com"
+  cdn_type    = "web"
+  scope       = "overseas"
+  sources {
+    content  = "1.1.1.1"
+    type     = "ipaddr"
+    priority = 20
+    port     = 80
+    weight   = 10
+  }
 }
 
 resource "alicloud_fc_service" "foo" {
-    name = "${var.name}"
-    internet_access = false
+  name            = "${var.name}"
+  internet_access = false
 }
 resource "alicloud_oss_bucket" "foo" {
-    bucket = "${var.name}"
+  bucket = "${var.name}"
 }
 # If you upload the function by OSS Bucket, you need to specify path can't upload by content.
 resource "alicloud_oss_bucket_object" "foo" {
-    bucket = "${alicloud_oss_bucket.foo.id}"
-    key = "fc/hello.zip"
-    source  = "./hello.zip"
+  bucket = "${alicloud_oss_bucket.foo.id}"
+  key    = "fc/hello.zip"
+  source = "./hello.zip"
 }
 resource "alicloud_fc_function" "foo" {
-    service = "${alicloud_fc_service.foo.name}"
-    name = "${var.name}"
-    oss_bucket = "${alicloud_oss_bucket.foo.id}"
-    oss_key = "${alicloud_oss_bucket_object.foo.key}"
-    memory_size = 512
-    runtime = "python2.7"
-    handler = "hello.handler"
+  service     = "${alicloud_fc_service.foo.name}"
+  name        = "${var.name}"
+  oss_bucket  = "${alicloud_oss_bucket.foo.id}"
+  oss_key     = "${alicloud_oss_bucket_object.foo.key}"
+  memory_size = 512
+  runtime     = "python2.7"
+  handler     = "hello.handler"
 }
 resource "alicloud_ram_role" "foo" {
-    name = "${var.name}-trigger"
-    document = <<EOF
+  name        = "${var.name}-trigger"
+  document    = <<EOF
     {
         "Version": "1",
         "Statement": [
@@ -244,20 +244,20 @@ resource "alicloud_ram_role" "foo" {
                 "Resource": "*",
                 "Effect": "Allow",
 		        "Principal": {
-                "Service": 
+                "Service":
                     ["log.aliyuncs.com"]
                 }
             }
         ]
     }
     EOF
-    description = "this is a test"
-    force = true
+  description = "this is a test"
+  force       = true
 }
 
 resource "alicloud_ram_policy" "foo" {
-    name = "${var.name}-trigger"
-    document = <<EOF
+  name        = "${var.name}-trigger"
+  document    = <<EOF
     {
         "Version": "1",
         "Statement": [
@@ -274,30 +274,31 @@ resource "alicloud_ram_policy" "foo" {
         ]
     }
     EOF
-    description = "this is a test"
-    force = true
+  description = "this is a test"
+  force       = true
 }
 resource "alicloud_ram_role_policy_attachment" "foo" {
-    role_name = "${alicloud_ram_role.foo.name}"
-    policy_name = "${alicloud_ram_policy.foo.name}"
-    policy_type = "Custom"
+  role_name   = "${alicloud_ram_role.foo.name}"
+  policy_name = "${alicloud_ram_policy.foo.name}"
+  policy_type = "Custom"
 }
 resource "alicloud_fc_trigger" "default" {
-    service = "${alicloud_fc_service.foo.name}"
-    function = "${alicloud_fc_function.foo.name}"
-    name = "${var.name}"
-    role = "${alicloud_ram_role.foo.arn}"
-    source_arn = "acs:cdn:*:${data.alicloud_account.current.id}"
-    type = "cdn_events"
-    config = <<EOF
-    {"eventName":"LogFileCreated",
+  service    = "${alicloud_fc_service.foo.name}"
+  function   = "${alicloud_fc_function.foo.name}"
+  name       = "${var.name}"
+  role       = "${alicloud_ram_role.foo.arn}"
+  source_arn = "acs:cdn:*:${data.alicloud_account.current.id}"
+  type       = "cdn_events"
+  config     = <<EOF
+      {"eventName":"LogFileCreated",
      "eventVersion":"1.0.0",
      "notes":"cdn events trigger",
      "filter":{
         "domain": ["${alicloud_cdn_domain_new.domain.domain_name}"]
         }
-    }EOF
-    depends_on = ["alicloud_ram_role_policy_attachment.foo"]
+    }
+EOF
+  depends_on = ["alicloud_ram_role_policy_attachment.foo"]
 }
 ```
 

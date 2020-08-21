@@ -62,9 +62,9 @@ resource "alicloud_logtail_config" "test" {
 	DEFINITION
 }
 resource "alicloud_logtail_attachment" "test" {
-  project = "${alicloud_log_project.test.name}"
+  project             = "${alicloud_log_project.test.name}"
   logtail_config_name = "${alicloud_logtail_config.test.name}"
-  machine_group_name = "${alicloud_log_machine_group.test.name}"
+  machine_group_name  = "${alicloud_log_machine_group.test.name}"
 }
 ```
 

@@ -21,7 +21,6 @@ Basic Usage
 resource "alicloud_edas_k8s_cluster" "default" {
   cs_cluster_id = "xxxx-xxx-xxx"
 }
-
 ```
 
 ## Argument Reference

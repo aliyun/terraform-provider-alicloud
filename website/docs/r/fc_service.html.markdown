@@ -24,7 +24,7 @@ For more details supported regions, see [Service endpoints](https://www.alibabac
 
 Basic Usage
 
-```
+```terrraform
 variable "name" {
   default = "tf-testaccalicloudfcservice"
 }
@@ -39,8 +39,8 @@ resource "alicloud_log_store" "foo" {
 }
 
 resource "alicloud_ram_role" "role" {
-  name     = "${var.name}"
-  document = <<DEFINITION
+  name        = "${var.name}"
+  document    = <<DEFINITION
   {
   "Statement": [
     {
@@ -57,20 +57,20 @@ resource "alicloud_ram_role" "role" {
 }
   DEFINITION
   description = "this is a test"
-  force = true
+  force       = true
 }
 
 resource "alicloud_ram_role_policy_attachment" "attac" {
-  role_name = "${alicloud_ram_role.role.name}"
+  role_name   = "${alicloud_ram_role.role.name}"
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }
 
 resource "alicloud_fc_service" "foo" {
-  name = "${var.name}"
+  name        = "${var.name}"
   description = "tf unit test"
-  role = "${alicloud_ram_role.role.arn}"
-  depends_on = ["alicloud_ram_role_policy_attachment.attac"]
+  role        = "${alicloud_ram_role.role.arn}"
+  depends_on  = ["alicloud_ram_role_policy_attachment.attac"]
 }
 ```
 

@@ -39,9 +39,9 @@ resource "alicloud_security_group" "group" {
 }
 
 resource "alicloud_kms_key" "key" {
-        description             = "Hello KMS"
-        pending_window_in_days  = "7"
-        key_state               = "Enabled"
+  description            = "Hello KMS"
+  pending_window_in_days = "7"
+  key_state              = "Enabled"
 }
 
 data "alicloud_zones" "default" {
@@ -81,13 +81,13 @@ resource "alicloud_instance" "instance" {
   vswitch_id                 = "${alicloud_vswitch.vswitch.id}"
   internet_max_bandwidth_out = 10
   data_disks {
-     name =       "disk2"
-     size =       20
-     category =   "cloud_efficiency"
-     description = "disk2"
-     encrypted =   true
-     kms_key_id =  "${alicloud_kms_key.key.id}"
-    }
+    name        = "disk2"
+    size        = 20
+    category    = "cloud_efficiency"
+    description = "disk2"
+    encrypted   = true
+    kms_key_id  = "${alicloud_kms_key.key.id}"
+  }
 }
 
 ```

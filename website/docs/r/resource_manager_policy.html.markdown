@@ -18,7 +18,7 @@ For information about Resource Manager Policy and how to use it, see [What is Re
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_resource_manager_policy" "example" {
   policy_name     = "abc12345"
   policy_document = <<EOF

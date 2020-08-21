@@ -55,10 +55,10 @@ data "alicloud_polardb_endpoints" "default" {
 }
 
 resource "alicloud_polardb_endpoint_address" "endpoint" {
-  db_cluster_id    = "${alicloud_polardb_cluster.default.id}"
-  db_endpoint_id  = "${data.alicloud_polardb_endpoints.default.endpoints[0].db_endpoint_id}"
+  db_cluster_id     = "${alicloud_polardb_cluster.default.id}"
+  db_endpoint_id    = "${data.alicloud_polardb_endpoints.default.endpoints[0].db_endpoint_id}"
   connection_prefix = "testpolardbconn"
-  net_type     = "Public"
+  net_type          = "Public"
 }
 ```
 

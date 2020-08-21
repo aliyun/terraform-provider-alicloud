@@ -22,18 +22,18 @@ Cloud DBaudit instance resource ("Yundun_dbaudit" is the short term of this prod
 Basic Usage
 
 ```
-  provider "alicloud" {
-    endpoints {
-        bssopenapi = "business.aliyuncs.com"
-        }
+provider "alicloud" {
+  endpoints {
+    bssopenapi = "business.aliyuncs.com"
   }
+}
 
-  resource "alicloud_yundun_dbaudit_instance" "default" {
-        description       = "Terraform-test"
-        plan_code         = "alpha.professional"
-        period            = "1"
-        vswitch_id        = "v-testVswitch"
-  }
+resource "alicloud_yundun_dbaudit_instance" "default" {
+  description       = "Terraform-test"
+  plan_code         = "alpha.professional"
+  period            = "1"
+  vswitch_id        = "v-testVswitch"
+}
 ```
 ## Argument Reference
 

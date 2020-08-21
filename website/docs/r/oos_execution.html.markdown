@@ -15,9 +15,9 @@ Provides a OOS Execution resource. For information about Alicloud OOS Execution 
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_oos_template" "default" {
-  content= <<EOF
+  content       = <<EOF
   {
     "FormatVersion": "OOS-2019-06-01",
     "Description": "Update Describe instances of given status",
@@ -42,21 +42,20 @@ resource "alicloud_oos_template" "default" {
   }
   EOF
   template_name = "test-name"
-  version_name = "test"
+  version_name  = "test"
   tags = {
     "Created" = "TF",
-    "For" = "acceptance Test"
+    "For"     = "acceptance Test"
   }
 }
 
 resource "alicloud_oos_execution" "example" {
   template_name = alicloud_oos_template.default.template_name
-  description = "From TF Test"
-  parameters = <<EOF
+  description   = "From TF Test"
+  parameters    = <<EOF
 				{"Status":"Running"}
 		  	EOF
 }
-
 ```
 
 ## Argument Reference

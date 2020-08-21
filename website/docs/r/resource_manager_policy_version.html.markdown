@@ -20,7 +20,7 @@ For information about Resource Manager Policy Version and how to use it, see [Wh
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_resource_manager_policy" "example" {
   policy_name = "tftest"
   policy_document = <<EOF
@@ -48,7 +48,6 @@ resource "alicloud_resource_manager_policy_version" "example" {
 		}
     EOF
 }
-
 ```
 ## Argument Reference
 
