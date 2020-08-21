@@ -18,6 +18,9 @@ func resourceAliyunForwardEntry() *schema.Resource {
 		Read:   resourceAliyunForwardEntryRead,
 		Update: resourceAliyunForwardEntryUpdate,
 		Delete: resourceAliyunForwardEntryDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"forward_table_id": {

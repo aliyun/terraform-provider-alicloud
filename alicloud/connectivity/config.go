@@ -90,6 +90,7 @@ type Config struct {
 	CassandraEndpoint       string
 	EciEndpoint             string
 	OosEndpoint             string
+	DcdnEndpoint            string
 }
 
 func (c *Config) loadAndValidate() error {
