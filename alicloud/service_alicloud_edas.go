@@ -405,19 +405,19 @@ func (e *EdasService) DescribeEdasK8sApplication(appId string) (*edas.Applcation
 	application := &edas.Applcation{}
 	regionId := e.client.RegionId
 
-	request := edas.CreateGetApplicationRequest()
+	request := edas.CreateGetK8sApplicationRequest()
 	request.RegionId = regionId
 	request.AppId = appId
 
 	raw, err := e.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
-		return edasClient.GetApplication(request)
+		return edasClient.GetK8sApplication(request)
 	})
 	if err != nil {
 		return application, WrapError(err)
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
-	response, _ := raw.(*edas.GetApplicationResponse)
+	response, _ := raw.(*edas.GetK8sApplicationResponse)
 	if response.Code != 200 {
 		if strings.Contains(response.Message, "does not exist") {
 			return application, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
