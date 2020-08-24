@@ -30,12 +30,12 @@ resource "alicloud_cr_ee_namespace" "my-namespace" {
 }
 
 resource "alicloud_cr_ee_repo" "my-repo" {
-  instance_id   = "${alicloud_cr_ee_namespace.my-namespace.instance_id}"
-  namespace     = "${alicloud_cr_ee_namespace.my-namespace.name}"
-  name          = "my-repo"
-  summary       = "this is summary of my new repo"
-  repo_type     = "PUBLIC"
-  detail        = "this is a public repo"
+  instance_id = alicloud_cr_ee_namespace.my-namespace.instance_id
+  namespace   = alicloud_cr_ee_namespace.my-namespace.name
+  name        = "my-repo"
+  summary     = "this is summary of my new repo"
+  repo_type   = "PUBLIC"
+  detail      = "this is a public repo"
 }
 ```
 

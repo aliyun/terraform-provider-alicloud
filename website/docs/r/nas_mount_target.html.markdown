@@ -31,6 +31,7 @@ resource "alicloud_nas_file_system" "example" {
   description       = "test file system"
 }
 
+
 resource "alicloud_nas_access_group" "example" {
   access_group_name        = "test_name"
   access_group_type        = "Classic"

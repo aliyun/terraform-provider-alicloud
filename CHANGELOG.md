@@ -1,4 +1,35 @@
-## 1.94.0 (Unreleased)
+## 1.95.0 (Unreleased)
+## 1.94.0 (August 24, 2020)
+
+- **New Resource:** `alicloud_dcdn_domain` ([#2744](https://github.com/aliyun/terraform-provider-alicloud/issues/2744))
+- **New Resource:** `alicloud_mse_cluster` ([#2733](https://github.com/aliyun/terraform-provider-alicloud/issues/2733))
+- **New Resource:** `alicloud_resource_manager_policy_attachment` ([#2696](https://github.com/aliyun/terraform-provider-alicloud/issues/2696))
+- **Data Source:** `alicloud_dcdn_domains` ([#2744](https://github.com/aliyun/terraform-provider-alicloud/issues/2744))
+- **Data Source:** `alicloud_mse_clusters` ([#2733](https://github.com/aliyun/terraform-provider-alicloud/issues/2733))
+- **Data Source:** `alicloud_resource_manager_policy_attachments` ([#2696](https://github.com/aliyun/terraform-provider-alicloud/issues/2696))
+
+IMPROVEMENTS:
+
+- Support allocate and release public connection for redis ([#2748](https://github.com/aliyun/terraform-provider-alicloud/issues/2748))
+- Support to set warn and info level alarm ([#2743](https://github.com/aliyun/terraform-provider-alicloud/issues/2743))
+- waf domain support setting resource_group_id and more attributes ([#2740](https://github.com/aliyun/terraform-provider-alicloud/issues/2740))
+- resource dnat supports "import" feature ([#2735](https://github.com/aliyun/terraform-provider-alicloud/issues/2735))
+- Add func sweep and Change testcase frequency ([#2726](https://github.com/aliyun/terraform-provider-alicloud/issues/2726))
+- Correct provider docs order ([#2723](https://github.com/aliyun/terraform-provider-alicloud/issues/2723))
+- Remove github.com/hashicorp/terraform import and use terraform-plugin-sdk instead ([#2722](https://github.com/aliyun/terraform-provider-alicloud/issues/2722))
+- Add test sweep for eci_image_cache ([#2720](https://github.com/aliyun/terraform-provider-alicloud/issues/2720))
+- modify alicloud_cen_instance_attachment ([#2714](https://github.com/aliyun/terraform-provider-alicloud/issues/2714))
+
+BUG FIXES:
+
+- fix the bug of create emr kafka cluster error ([#2754](https://github.com/aliyun/terraform-provider-alicloud/issues/2754))
+- fix common bandwidth package idempotent issue when Adding and Removeing instance ([#2750](https://github.com/aliyun/terraform-provider-alicloud/issues/2750))
+- fix website document error using `terraform` tag ([#2749](https://github.com/aliyun/terraform-provider-alicloud/issues/2749))
+- Fix registry rendering of page ([#2747](https://github.com/aliyun/terraform-provider-alicloud/issues/2747))
+- fix ci test website-test error ([#2742](https://github.com/aliyun/terraform-provider-alicloud/issues/2742))
+- fix datasource for ResourceManager for Policy Attachment ([#2730](https://github.com/aliyun/terraform-provider-alicloud/issues/2730))
+- fix_ecs_snapshot ([#2709](https://github.com/aliyun/terraform-provider-alicloud/issues/2709))
+
 ## 1.93.0 (August 12, 2020)
 
 - **New Resource:** `alicloud_oos_execution` ([#2679](https://github.com/aliyun/terraform-provider-alicloud/issues/2679))

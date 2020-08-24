@@ -23,7 +23,8 @@ resource "alicloud_cen_bandwidth_package" "foo" {
   bandwidth = 5
   geographic_region_ids = [
     "China",
-  "Asia-Pacific"]
+    "Asia-Pacific",
+  ]
 }
 ```
 ## Argument Reference

@@ -244,7 +244,7 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 		request.SecurityGroupId = securityGroupId.(string)
 	}
 
-	if publicIp, ok := d.GetOk("is_open_public_ip"); ok {
+	if publicIp, ok := d.GetOkExists("is_open_public_ip"); ok {
 		request.IsOpenPublicIp = requests.NewBoolean(publicIp.(bool))
 	}
 
@@ -252,7 +252,7 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 		request.UserDefinedEmrEcsRole = userDefinedRole.(string)
 	}
 
-	if sshEnable, ok := d.GetOk("ssh_enable"); ok {
+	if sshEnable, ok := d.GetOkExists("ssh_enable"); ok {
 		request.SshEnable = requests.NewBoolean(sshEnable.(bool))
 	}
 
@@ -272,15 +272,15 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 		request.DepositType = depositType.(string)
 	}
 
-	if ha, ok := d.GetOk("high_availability_enable"); ok {
+	if ha, ok := d.GetOkExists("high_availability_enable"); ok {
 		request.HighAvailabilityEnable = requests.NewBoolean(ha.(bool))
 	}
 
-	if eas, ok := d.GetOk("eas_enable"); ok {
+	if eas, ok := d.GetOkExists("eas_enable"); ok {
 		request.EasEnable = requests.NewBoolean(eas.(bool))
 	}
 
-	if localMeta, ok := d.GetOk("use_local_metadb"); ok {
+	if localMeta, ok := d.GetOkExists("use_local_metadb"); ok {
 		request.UseLocalMetaDb = requests.NewBoolean(localMeta.(bool))
 	}
 
@@ -326,6 +326,10 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 
 			if v, ok := kv["period"]; ok {
 				hostGroup.Period = strconv.Itoa(v.(int))
+			}
+			// PostPaid emr cluster, period must be null
+			if hostGroup.Period == "0" {
+				hostGroup.Period = "null"
 			}
 
 			if v, ok := kv["sys_disk_capacity"]; ok {

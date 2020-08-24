@@ -73,6 +73,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/mse"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/oos"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 )
@@ -153,6 +154,7 @@ type AliyunClient struct {
 	oosConn                      *oos.Client
 	nasConn                      *nas.Client
 	dcdnConn                     *dcdn.Client
+	mseConn                      *mse.Client
 }
 
 type ApiVersion string
@@ -179,7 +181,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.93.0"
+var providerVersion = "1.94.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient
@@ -1940,4 +1942,29 @@ func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, e
 		client.dcdnConn = dcdnConn
 	}
 	return do(client.dcdnConn)
+}
+
+func (client *AliyunClient) WithMseClient(do func(*mse.Client) (interface{}, error)) (interface{}, error) {
+	if client.mseConn == nil {
+		endpoint := client.config.MseEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, MseCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(MseCode), endpoint)
+		}
+
+		mseConn, err := mse.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Mseclient: %#v", err)
+		}
+		mseConn.AppendUserAgent(Terraform, terraformVersion)
+		mseConn.AppendUserAgent(Provider, providerVersion)
+		mseConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.mseConn = mseConn
+	}
+	return do(client.mseConn)
 }

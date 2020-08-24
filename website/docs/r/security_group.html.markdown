@@ -30,7 +30,7 @@ Basic usage for vpc
 ```
 resource "alicloud_security_group" "group" {
   name   = "new-group"
-  vpc_id = "${alicloud_vpc.vpc.id}"
+  vpc_id = alicloud_vpc.vpc.id
 }
 
 resource "alicloud_vpc" "vpc" {
