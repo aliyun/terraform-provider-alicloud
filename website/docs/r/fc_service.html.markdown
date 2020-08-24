@@ -30,17 +30,17 @@ variable "name" {
 }
 
 resource "alicloud_log_project" "foo" {
-  name = "${var.name}"
+  name = var.name
 }
 
 resource "alicloud_log_store" "foo" {
-  project = "${alicloud_log_project.foo.name}"
-  name    = "${var.name}"
+  project = alicloud_log_project.foo.name
+  name    = var.name
 }
 
 resource "alicloud_ram_role" "role" {
-  name        = "${var.name}"
-  document    = <<DEFINITION
+  name     = var.name
+  document = <<DEFINITION
   {
   "Statement": [
     {
@@ -55,22 +55,23 @@ resource "alicloud_ram_role" "role" {
   ],
   "Version": "1"
 }
-  DEFINITION
+  
+DEFINITION
   description = "this is a test"
   force       = true
 }
 
 resource "alicloud_ram_role_policy_attachment" "attac" {
-  role_name   = "${alicloud_ram_role.role.name}"
+  role_name   = alicloud_ram_role.role.name
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }
 
 resource "alicloud_fc_service" "foo" {
-  name        = "${var.name}"
+  name        = var.name
   description = "tf unit test"
-  role        = "${alicloud_ram_role.role.arn}"
-  depends_on  = ["alicloud_ram_role_policy_attachment.attac"]
+  role        = alicloud_ram_role.role.arn
+  depends_on  = [alicloud_ram_role_policy_attachment.attac]
 }
 ```
 

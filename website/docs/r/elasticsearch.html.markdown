@@ -32,8 +32,8 @@ resource "alicloud_elasticsearch_instance" "instance" {
   description          = "description"
   zone_count           = "2"
   tags = {
-    "key1":"value1",
-    "key2":"value2",
+    "key1" = "value1"
+    "key2" = "value2"
   }
 }
 ```

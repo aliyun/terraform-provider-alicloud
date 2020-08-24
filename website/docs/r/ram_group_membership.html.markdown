@@ -40,8 +40,8 @@ resource "alicloud_ram_user" "user1" {
 }
 
 resource "alicloud_ram_group_membership" "membership" {
-  group_name = "${alicloud_ram_group.group.name}"
-  user_names = ["${alicloud_ram_user.user.name}", "${alicloud_ram_user.user1.name}"]
+  group_name = alicloud_ram_group.group.name
+  user_names = [alicloud_ram_user.user.name, alicloud_ram_user.user1.name]
 }
 ```
 ## Argument Reference

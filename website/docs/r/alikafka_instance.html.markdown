@@ -26,30 +26,31 @@ Basic Usage
 
 ```
 variable "instance_name" {
- default = "alikafkaInstanceName"
+  default = "alikafkaInstanceName"
 }
 
 data "alicloud_zones" "default" {
-    available_resource_creation= "VSwitch"
+  available_resource_creation = "VSwitch"
 }
+
 resource "alicloud_vpc" "default" {
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name = "${var.instance_name}"
+  name        = var.instance_name
   topic_quota = "50"
-  disk_type = "1"
-  disk_size = "500"
+  disk_type   = "1"
+  disk_size   = "500"
   deploy_type = "4"
-  io_max = "20"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  io_max      = "20"
+  vswitch_id  = alicloud_vswitch.default.id
 }
 ```
 
