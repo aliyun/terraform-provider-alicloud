@@ -1,4 +1,34 @@
 ## 1.94.0 (Unreleased)
+
+- **New Resource:** `alicloud_dcdn_domain` [GH-2744]
+- **New Resource:** `alicloud_mse_cluster` [GH-2733]
+- **New Resource:** `alicloud_resource_manager_policy_attachment` [GH-2696]
+- **Data Source:** `alicloud_dcdn_domains` [GH-2744]
+- **Data Source:** `alicloud_mse_clusters` [GH-2733]
+- **Data Source:** `alicloud_resource_manager_policy_attachments` [GH-2696]
+
+IMPROVEMENTS:
+
+- Support allocate and release public connection for redis [GH-2748]
+- Support to set warn and info level alarm [GH-2743]
+- waf domain support setting resource_group_id and more attributes [GH-2740]
+- resource dnat supports "import" feature [GH-2735]
+- Add func sweep and Change testcase frequency [GH-2726]
+- Correct provider docs order [GH-2723]
+- Remove github.com/hashicorp/terraform import and use terraform-plugin-sdk instead [GH-2722]
+- Add test sweep for eci_image_cache [GH-2720]
+- modify alicloud_cen_instance_attachment [GH-2714]
+
+BUG FIXES:
+
+- fix the bug of create emr kafka cluster error [GH-2754]
+- fix common bandwidth package idempotent issue when Adding and Removeing instance [GH-2750]
+- fix website document error using `terraform` tag [GH-2749]
+- Fix registry rendering of page [GH-2747]
+- fix ci test website-test error [GH-2742]
+- fix datasource for ResourceManager for Policy Attachment [GH-2730]
+- fix_ecs_snapshot [GH-2709]
+
 ## 1.93.0 (August 12, 2020)
 
 - **New Resource:** `alicloud_oos_execution` ([#2679](https://github.com/aliyun/terraform-provider-alicloud/issues/2679))
