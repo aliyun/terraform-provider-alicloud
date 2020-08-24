@@ -27,7 +27,7 @@ resource "alicloud_ram_user" "user" {
 }
 
 resource "alicloud_ram_access_key" "ak" {
-  user_name   = "${alicloud_ram_user.user.name}"
+  user_name   = alicloud_ram_user.user.name
   secret_file = "/xxx/xxx/xxx.txt"
 }
 ```

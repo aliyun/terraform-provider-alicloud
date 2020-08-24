@@ -36,31 +36,30 @@ variable "name" {
 }
 
 resource "alicloud_cen_instance" "cen" {
-  provider = "alicloud.account2"
-  name     = "${var.name}"
+  provider = alicloud.account2
+  name     = var.name
 }
 
 resource "alicloud_vpc" "vpc" {
-  provider   = "alicloud.account1"
-  name       = "${var.name}"
+  provider   = alicloud.account1
+  name       = var.name
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_cen_instance_grant" "foo" {
-  provider          = "alicloud.account1"
-  cen_id            = "${alicloud_cen_instance.cen.id}"
-  child_instance_id = "${alicloud_vpc.vpc.id}"
+  provider          = alicloud.account1
+  cen_id            = alicloud_cen_instance.cen.id
+  child_instance_id = alicloud_vpc.vpc.id
   cen_owner_id      = "uid2"
 }
 
 resource "alicloud_cen_instance_attachment" "foo" {
-  provider                 = "alicloud.account2"
-  instance_id              = "${alicloud_cen_instance.cen.id}"
-  child_instance_id        = "${alicloud_vpc.vpc.id}"
+  provider                 = alicloud.account2
+  instance_id              = alicloud_cen_instance.cen.id
+  child_instance_id        = alicloud_vpc.vpc.id
   child_instance_region_id = "cn-qingdao"
   child_instance_owner_id  = "uid1"
-  depends_on = [
-  "alicloud_cen_instance_grant.foo"]
+  depends_on               = [alicloud_cen_instance_grant.foo]
 }
 ```
 ## Argument Reference

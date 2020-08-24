@@ -22,20 +22,21 @@ Basic Usage
 variable "region" {
   default = "cn-hangzhou"
 }
+
 variable "account" {
   default = "12345"
 }
 
 provider "alicloud" {
-  account_id = "${var.account}"
-  region     = "${var.region}"
+  account_id = var.account
+  region     = var.region
 }
 
 resource "alicloud_fc_trigger" "foo" {
   service    = "my-fc-service"
   function   = "hello-world"
   name       = "hello-trigger"
-  role       = "${alicloud_ram_role.foo.arn}"
+  role       = alicloud_ram_role.foo.arn
   source_arn = "acs:log:${var.region}:${var.account}:project/${alicloud_log_project.foo.name}"
   type       = "log"
   config     = <<EOF
@@ -58,13 +59,16 @@ resource "alicloud_fc_trigger" "foo" {
         },
         "enable": true
     }
-  EOF
-  depends_on = ["alicloud_ram_role_policy_attachment.foo"]
+  
+EOF
+
+
+  depends_on = [alicloud_ram_role_policy_attachment.foo]
 }
 
 resource "alicloud_ram_role" "foo" {
-  name        = "${var.name}-trigger"
-  document    = <<EOF
+  name     = "${var.name}-trigger"
+  document = <<EOF
   {
     "Statement": [
       {
@@ -79,17 +83,19 @@ resource "alicloud_ram_role" "foo" {
     ],
     "Version": "1"
   }
-  EOF
+  
+EOF
+
+
   description = "this is a test"
   force       = true
 }
 
 resource "alicloud_ram_role_policy_attachment" "foo" {
-  role_name   = "${alicloud_ram_role.foo.name}"
+  role_name   = alicloud_ram_role.foo.name
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
 }
-
 ```
 
 MNS topic trigger:

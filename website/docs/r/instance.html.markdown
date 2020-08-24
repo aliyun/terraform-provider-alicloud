@@ -35,7 +35,7 @@ variable "name" {
 resource "alicloud_security_group" "group" {
   name        = "tf_test_foo"
   description = "foo"
-  vpc_id      = "${alicloud_vpc.vpc.id}"
+  vpc_id      = alicloud_vpc.vpc.id
 }
 
 resource "alicloud_kms_key" "key" {
@@ -49,36 +49,35 @@ data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-
 # Create a new ECS instance for VPC
 resource "alicloud_vpc" "vpc" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  vpc_id            = "${alicloud_vpc.vpc.id}"
+  vpc_id            = alicloud_vpc.vpc.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones[0].id
+  name              = var.name
 }
 
 resource "alicloud_slb" "slb" {
   name       = "test-slb-tf"
-  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  vswitch_id = alicloud_vswitch.vswitch.id
 }
 
 resource "alicloud_instance" "instance" {
   # cn-beijing
   availability_zone = "cn-beijing-b"
-  security_groups   = "${alicloud_security_group.group.*.id}"
+  security_groups   = alicloud_security_group.group.*.id
 
   # series III
   instance_type              = "ecs.n4.large"
   system_disk_category       = "cloud_efficiency"
   image_id                   = "ubuntu_18_04_64_20G_alibase_20190624.vhd"
   instance_name              = "test_foo"
-  vswitch_id                 = "${alicloud_vswitch.vswitch.id}"
+  vswitch_id                 = alicloud_vswitch.vswitch.id
   internet_max_bandwidth_out = 10
   data_disks {
     name        = "disk2"
@@ -86,10 +85,9 @@ resource "alicloud_instance" "instance" {
     category    = "cloud_efficiency"
     description = "disk2"
     encrypted   = true
-    kms_key_id  = "${alicloud_kms_key.key.id}"
+    kms_key_id  = alicloud_kms_key.key.id
   }
 }
-
 ```
 
 ## Module Support

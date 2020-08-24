@@ -27,12 +27,12 @@ Basic Usage
 resource "alicloud_dcdn_domain" "example" {
   domain_name = "example.com"
   sources {
-    content = "1.1.1.1"
-    port = "80"
+    content  = "1.1.1.1"
+    port     = "80"
     priority = "20"
-    type = "ipaddr"
+    type     = "ipaddr"
   }
-  scope  = "overseas"
+  scope = "overseas"
 }
 ```
 ## Argument Reference
