@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -103,7 +104,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.xiaozhu.com", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, strconv.Itoa(rand), resourceCdnDomainDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -122,7 +123,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 					"sources": []map[string]interface{}{
 						{
-							"content": "www.aliyuntest.com",
+							"content": "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
 							"type":    "oss",
 						},
 					},
@@ -131,6 +132,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"scope":             "domestic",
 						"resource_group_id": CHECKSET,
+						"sources.0.content": CHECKSET,
 					}),
 				),
 			},
@@ -145,7 +147,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"sources": []map[string]interface{}{
 						{
-							"content":  "www.aliyuntest.com",
+							"content":  "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
 							"type":     "oss",
 							"priority": "20",
 							"port":     "80",
@@ -155,7 +157,8 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sources.0.weight": "30",
+						"sources.0.weight":  "30",
+						"sources.0.content": CHECKSET,
 					}),
 				),
 			},
@@ -347,7 +350,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 					"certificate_config": REMOVEKEY,
 					"sources": []map[string]interface{}{
 						{
-							"content": "www.aliyuntest.com",
+							"content": "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
 							"type":    "oss",
 						},
 					},
@@ -356,7 +359,7 @@ func TestAccAlicloudCdnDomainNew_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"scope":              REMOVEKEY,
-						"sources.0.content":  "www.aliyuntest.com",
+						"sources.0.content":  CHECKSET,
 						"sources.0.type":     "oss",
 						"sources.0.priority": "20",
 						"sources.0.weight":   "10",
@@ -393,7 +396,7 @@ func TestAccAlicloudCdnDomainNew_scope(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.xiaozhu.com", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, strconv.Itoa(rand), resourceCdnDomainDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -411,14 +414,15 @@ func TestAccAlicloudCdnDomainNew_scope(t *testing.T) {
 					"scope":       "overseas",
 					"sources": []map[string]interface{}{
 						{
-							"content": "www.aliyuntest.com",
+							"content": "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
 							"type":    "oss",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"scope": "overseas",
+						"scope":             "overseas",
+						"sources.0.content": CHECKSET,
 					}),
 				),
 			},
@@ -431,7 +435,7 @@ func TestAccAlicloudCdnDomainNew_scope(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"sources": []map[string]interface{}{
 						{
-							"content":  "www.aliyuntest.com",
+							"content":  "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
 							"type":     "oss",
 							"priority": "20",
 							"port":     "80",
@@ -441,7 +445,8 @@ func TestAccAlicloudCdnDomainNew_scope(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sources.0.weight": "30",
+						"sources.0.weight":  "30",
+						"sources.0.content": CHECKSET,
 					}),
 				),
 			},
@@ -450,7 +455,10 @@ func TestAccAlicloudCdnDomainNew_scope(t *testing.T) {
 }
 
 func resourceCdnDomainDependence(name string) string {
-	return ""
+	return fmt.Sprintf(`
+	resource "alicloud_oss_bucket" "default" {
+	  bucket = "test-cdn-%s"
+	}`, name)
 }
 
 var cdnDomainBasicMap = map[string]string{
@@ -464,5 +472,5 @@ var cdnDomainBasicMap = map[string]string{
 	"sources.0.port":     "80",
 }
 
-const testServerCertificate = `-----BEGIN CERTIFICATE-----\nMIICrDCCAZQCCQDApyXUTYDE+DANBgkqhkiG9w0BAQsFADAYMRYwFAYDVQQDDA0q\nLnhpYW96aHUuY29tMB4XDTE4MTIzMTEwMDY1OVoXDTE5MTIzMTEwMDY1OVowGDEW\nMBQGA1UEAwwNKi54aWFvemh1LmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC\nAQoCggEBAM51j0hM0dqY/gHed5LhsSbTShXmw2Sqg18avBpHup/C8YzvpVddvRUe\ndE54idcCfdCVhoWEtcNFXIkKpWDpImFtovoupdNdC2XoBHEC42or9ZA+wVsaCih+\nSRuB3r+yNzXHh+rmUa0FLeij/x0gUovmznUsk7UMMzwJLZwmuyi8LCuiTIlQzQ9R\nTdaYo2t4OuGVkdQiJzsYiRRNPOqCKtYvYcEBLalLFOcVn0aG/I9Fn0P3rc8fK9BE\nHaoYRunmusUCdCcKpisHHKYdtmd3Zgz+Z+PBkjARtufO6kOXSov6u7azLQxZgZJm\neagNkqQ4/R+9b4GQ6crj0Pi655QWZVECAwEAATANBgkqhkiG9w0BAQsFAAOCAQEA\nJAWcQb7942jWDWjFqW5C4eyJBuJxK8dsTsYpOa0ccpp/A2cVCTNMzV/sMCGROy2B\nuhrTMG4q3QawFwV+K4nQX8yJUJp57zyUfdit+yOD4hDzPyF5MOlOwzdqeg9Y9ODL\nSc2O6J3tFsx2332Hb7RXFlYodEk1uFezrj4YLVrAgk1QojaBHpuFiA/O3eCmErjW\nc88bcil60qMvlhBhCWaZzivji6oc3y/6qWRZ3apxp9/6sjOvlm5Q+wwoLHXaU+L6\nw7TZptw6upuSrAS+N4Rwqgn5TfPvbGkdRG0X0TDzE1+F+w377kE71nV8lmi8F786\nbqloD1gWJER071WRz1coHQ==\n-----END CERTIFICATE-----\n`
-const testPrivateKey = `-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDOdY9ITNHamP4B\n3neS4bEm00oV5sNkqoNfGrwaR7qfwvGM76VXXb0VHnROeInXAn3QlYaFhLXDRVyJ\nCqVg6SJhbaL6LqXTXQtl6ARxAuNqK/WQPsFbGgoofkkbgd6/sjc1x4fq5lGtBS3o\no/8dIFKL5s51LJO1DDM8CS2cJrsovCwrokyJUM0PUU3WmKNreDrhlZHUIic7GIkU\nTTzqgirWL2HBAS2pSxTnFZ9GhvyPRZ9D963PHyvQRB2qGEbp5rrFAnQnCqYrBxym\nHbZnd2YM/mfjwZIwEbbnzupDl0qL+ru2sy0MWYGSZnmoDZKkOP0fvW+BkOnK49D4\nuueUFmVRAgMBAAECggEAGFrP2zSMsN/JXwkSS/Zpwm28WJcPR6nBs49gzyzU/BGw\nEvMWKxc4vewIxlT71axKkTeCVe/QzUc6YkQqPCNkVd/sEN093JAmTxAurfIsR5MF\n9c0hXBDXT+2NzDvmvfBVCPgPtYsT6Xgp8T6fUp1Ef5JrmnD2v62/wX5Hrhr3ixdp\nFoEJ92/FJN+Dt/Duri481+RYqUUbNqiZAuEMsny/hM+aijtpQgZK8FqnVfjIOo0l\np4TwfDoxtTwkj0QeJxelX/sNSD+iQ5xVmnxQ9Q1qmKMk0M1Wl8318ovcrXDTN3RZ\nR/Fp+lNw0aC4OLuOJDc7A13l5unHmex4Ka1kbjOZwQKBgQD8w0hJiVVmiojJ3/YX\n06rG3ufGlKXu4qvRL6eXNqnDp8AnKXpjKiDV5lGz+vK0pcAyF5AhpddDN20Un+nR\n4VU7NslNJdBfjQxfEKJRkGBP22C+pdlxOBDgdgouN9q7TTr9StaQC0KF+HUcF8fO\nsYpEp1R+27iHie+F6uS78ur0mQKBgQDRGnbv8acTDTBW8nll1wTRa0+iVR2yxglS\nndC97HzYHOFb+caVmaM18QzHaaRvAhQ0bZXOjFV0QVv1nytlmHxsMlG/N6LDz5jA\nNLGvbrzDzki+RUk0TWJuYpvdevsnwaCxMwyY6CQ5MKhKAvwgE8AhdAq5MGcE+6U/\noAOZNyOxeQKBgQCiCB2i5mLUpSIjJ2r+wzXK3sH9zvTAOpaiNsZcbTJOto67jB9k\nynDaLhdaJRjJLSgT9H700vc3o6RNgGXHoYedufU5e3AkkKrJlkQ3vTHAf4V5MaA+\nsA5BlenYzv1s7IlQLlV1aYJvl2Kba7MukSlt8UZ9PCUC3i2pz3Zp9cMgoQKBgQCK\nGkR7bMq/1nIausJa9IwGFC3gNP8MV6dInVqEVXCO+2QL7wetPm+A7NdXzPoBJwpZ\nJhdO93ho89Hcg2eSDgf/HazH8eLaGH32U9cW2rhpShDZOcGDfaiI5y+yM8s1Erki\nz2h+hLOH4g8D8ry6ItE+RvneHY2syNb3EqPNyZEVYQKBgGeC4KiyTpW+SqmkDRU/\n/FxIAlZE2vWmtJptAUkmLEVoBi0/GvJoYYJR4Jhj4gS9tJcrI860X0j05NZHvIX8\nUJ/vZZeiFRiatXYUtKbD/ngoOXTF92ew2J3eCwNHH5OKwEO3aejaYwD9m0QM4kTl\nVLWIf79+G3NrxIeqPnqv+l3J\n-----END PRIVATE KEY-----`
+const testServerCertificate = `-----BEGIN CERTIFICATE-----\nMIICQTCCAaoCCQCFfdyqahygLzANBgkqhkiG9w0BAQUFADBlMQswCQYDVQQGEwJj\nbjEQMA4GA1UECAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzERMA8GA1UECgwI\nYWxpY2xvdWQxEDAOBgNVBAsMB2FsaWJhYmExDTALBgNVBAMMBHRlc3QwHhcNMjAw\nODA2MTAwMDAyWhcNMzAwODA0MTAwMDAyWjBlMQswCQYDVQQGEwJjbjEQMA4GA1UE\nCAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzERMA8GA1UECgwIYWxpY2xvdWQx\nEDAOBgNVBAsMB2FsaWJhYmExDTALBgNVBAMMBHRlc3QwgZ8wDQYJKoZIhvcNAQEB\nBQADgY0AMIGJAoGBAL7t2CmRCJ8irM5Too2QVGNm0xk6g3v+KE1/8Gthw+EtBKRw\n859SxM/+q8fS73rkadgWICgre5YZCj1oIG6hrBEUo0Fr1mklXJVtqYFZMFD8XGx+\niur2Mk1Hs5YDd/G8PGDDISS/SqyeHXNo6SPJSXEVjAOIXFnX9EcCP9IAEK5tAgMB\nAAEwDQYJKoZIhvcNAQEFBQADgYEAavYdM9s5jLFP9/ZPCrsRuRsjSJpe5y9VZL+1\n+Ebbw16V0xMYaqODyFH1meLRW/A4xUs15Ny2vLYOW15Mriif7Sixty3HUedBFa4l\ny6/gQ+mBEeZYzMaTTFgyzEZDMsfZxwV9GKfhOzAmK3jZ2LDpHIhnlJN4WwVf0lME\npCPDN7g=\n-----END CERTIFICATE-----\n`
+const testPrivateKey = `-----BEGIN RSA PRIVATE KEY-----\nMIICXAIBAAKBgQC+7dgpkQifIqzOU6KNkFRjZtMZOoN7/ihNf/BrYcPhLQSkcPOf\nUsTP/qvH0u965GnYFiAoK3uWGQo9aCBuoawRFKNBa9ZpJVyVbamBWTBQ/Fxsforq\n9jJNR7OWA3fxvDxgwyEkv0qsnh1zaOkjyUlxFYwDiFxZ1/RHAj/SABCubQIDAQAB\nAoGADiobBUprN1MdOtldj98LQ6yXMKH0qzg5yTYaofzIyWXLmF+A02sSitO77sEp\nXxae+5b4n8JKEuKcrd2RumNoHmN47iLQ0M2eodjUQ96kzm5Esq6nln62/NF5KLuK\nJDw63nTsg6K0O+gQZv4SYjZAL3cswSmeQmvmcoNgArfcaoECQQDgYy6S91ZIUsLx\n6BB3tW+x7APYnvKysYbcKUEP8AutZSo4hdMfPQkOD0LwP5dWsrNippDWjNDiPZmt\nVKuZDoDdAkEA2dPxy1eQeJsRYTZmTWIuh3UY9xlL3G9skcSOM4LbFidroHWW9UDJ\nJDSSEMH2+/4quYTdPr28cj7RCjqL0brC0QJABXDCL1QJ5oUDLwRWaeCfTawQR89K\nySRexbXGWxGR5uleBbLQ9J/xOUMLd3HDRJnemZS6TElrwyCFOlukMXjVjQJBALr5\nQC0opmu/vzVQepOl2QaQrrM7VXCLfAfLTbxNcD0d7TY4eTFfQMgBD/euZpB65LWF\npFs8hcsSvGApTObjhmECQEydB1zzjU6kH171XlXCtRFnbORu2IB7rMsDP2CBPHyR\ntYBjBNVHIUGcmrMVFX4LeMuvvmUyzwfgLmLchHxbDP8=\n-----END RSA PRIVATE KEY-----\n`
