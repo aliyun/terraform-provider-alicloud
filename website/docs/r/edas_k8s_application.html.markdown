@@ -76,7 +76,7 @@ The following arguments are supported:
 * `application_name` - (Required, ForceNew) The name of the application you want to create. Must start with character,supports numbers, letters and dashes (-), supports up to 36 characters
 * `cluster_id` - (Required, ForceNew) The ID of the alicloud container service kubernetes cluster that you want to import to. You can call the ListCluster operation to query.
 * `package_type` - (Required, ForceNew) Application package type. Optional parameter values include: FatJar, WAR and Image.
-* `replicas` - (Optional, Computed) Number of application instances.
+* `replicas` - (Required, Computed) Number of application instances.
 * `image_url` - (Optional, ForceNew) Mirror address. When the package_type is set to 'Image', this parameter item is required.
 * `repo_id` - (Optional, ForceNew) The repository id of Image
 * `application_descriotion` - (Optional, ForceNew) The description of the application

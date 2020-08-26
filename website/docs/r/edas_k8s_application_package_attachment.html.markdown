@@ -99,7 +99,7 @@ The following arguments are supported:
 * `liveness` - (Optional, ForceNew) Container survival status monitoring, format such as: {"failureThreshold": 3,"initialDelaySeconds": 5,"successThreshold": 1,"timeoutSeconds": 1,"tcpSocket":{"host":"", "port":8080} }.
 * `readiness` - (Optional, ForceNew) Container service status check. If the check fails, the traffic passing through K8s Service will not be transferred to the container. The format is: {"failureThreshold": 3,"initialDelaySeconds": 5,"successThreshold": 1,"timeoutSeconds": 1, "httpGet": {"path": "/consumer","port": 8080,"scheme": "HTTP","httpHeaders": [{"name": "test","value": "testvalue"} ]}}.
 * `args` - (Optional, ForceNew) The container start Args command parameter, the format must conform to the JSON array ["parameter 1", "parameter 2"], where the key is a string, and the empty JSON array must be set to an empty JSON array "[]".
-* `replicas` - (Required, ForceNew) Number of application instances.
+* `replicas` - (Optional, ForceNew) Number of application instances.
 * `package_type` - (Required, ForceNew) Application package type. Optional parameter values include: FatJar, WAR and Image.
 * `image_url` - (Optional, ForceNew) Mirror address. When the package_type is set to 'Image', this parameter item is required.
 * `repo_id` - (Optional, ForceNew) The repository id of Image
