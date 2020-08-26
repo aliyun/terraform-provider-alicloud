@@ -1,15 +1,15 @@
 ---
-subcategory: "DNS"
+subcategory: "ALIDNS"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_dns_domain"
-sidebar_current: "docs-alicloud-resource-dns-domain"
+page_title: "Alicloud: alicloud_alidns_domain"
+sidebar_current: "docs-alicloud-resource-alidns-domain"
 description: |-
-  Provides a DNS domain resource.
+  Provides a ALIDNS domain resource.
 ---
 
-# alicloud\_dns\_domain
+# alicloud\_alidns\_domain
 
-Provides a DNS domain resource.
+Provides a ALIDNS domain resource.
 
 -> **NOTE:** The domain name which you want to add must be already registered and had not added by another account. Every domain name can only exist in a unique group.
 
@@ -17,9 +17,9 @@ Provides a DNS domain resource.
 
 ## Example Usage
 
-```
+```terraform
 # Add a new Domain.
-resource "alicloud_dns_domain" "dns" {
+resource "alicloud_alidns_domain" "alidns" {
   domain_name = "starmove.com"
   group_id    = "85ab8713-4a30-4de4-9d20-155ff830****"
   tags = {
@@ -34,7 +34,7 @@ The following arguments are supported:
 
 * `domain_name` - (Required, ForceNew) Name of the domain. This name without suffix can have a string of 1 to 63 characters(domain name subject, excluding suffix), must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
 * `group_id` - (Optional) Id of the group in which the domain will add. If not supplied, then use default group.
-* `resource_group_id` - (Optional, ForceNew) The Id of resource group which the dns domain belongs.
+* `resource_group_id` - (Optional, ForceNew) The Id of resource group which the alidns domain belongs.
 * `lang` - (Optional) User language.
 * `remark` - (Optional) Remarks information for your domain name.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
@@ -47,12 +47,12 @@ The following attributes are exported:
 
 * `id` - This ID of this resource. The value is set to `domain_name`.
 * `domain_id` - The domain ID.
-* `dns_server` - A list of the dns server name.
+* `dns_server` - A list of the alidns server name.
 
 ## Import
 
-DNS domain can be imported using the id or domain name, e.g.
+ALIDNS domain can be imported using the id or domain name, e.g.
 
 ```
-$ terraform import alicloud_dns_domain.example aliyun.com
+$ terraform import alicloud_alidns_domain.example aliyun.com
 ```

@@ -1,26 +1,26 @@
 ---
-subcategory: "DNS"
+subcategory: "ALIDNS"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_dns_instances"
-sidebar_current: "docs-alicloud-datasource-dns-instances"
+page_title: "Alicloud: alicloud_alidns_instances"
+sidebar_current: "docs-alicloud-datasource-alidns-instances"
 description: |-
-    Provides a list of instances available to the DNS.
+    Provides a list of instances available to the ALIDNS.
 ---
 
-# alicloud\_dns\_instances
+# alicloud\_alidns\_instances
 
-This data source provides a list of DNS instances in an Alibaba Cloud account according to the specified filters.
+This data source provides a list of ALIDNS instances in an Alibaba Cloud account according to the specified filters.
 
 -> **NOTE:**  Available in 1.84.0+.
 
 ## Example Usage
 
-```
-data "alicloud_dns_instances" "example" {
+```terraform
+data "alicloud_alidns_instances" "example" {
   ids = ["dns-cn-oew1npk****"]
 }
 output "first_instance_id" {
-  value = "${data.alicloud_dns_instances.example.instances.0.id}"
+  value = data.alicloud_alidns_instances.example.instances.0.id
 }
 ```
 
@@ -39,7 +39,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `instances` - A list of instances. Each element contains the following attributes:
   * `id` - Id of the instance.
   * `domain_numbers` - Number of domain names bound.
-  * `dns_security` - DNS security level.
+  * `dns_security` - ALIDNS security level.
   * `instance_id` - Id of the instance resource.
   * `version_code` - Paid package version.
   * `version_name` - Paid package version name.

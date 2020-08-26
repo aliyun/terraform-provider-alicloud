@@ -21,11 +21,11 @@ func init() {
 		"alicloud_dns_domain",
 		&resource.Sweeper{
 			Name: "alicloud_dns_domain",
-			F:    testSweepDnsDomain,
+			F:    testSweepAlidnsDomain,
 		})
 }
 
-func testSweepDnsDomain(region string) error {
+func testSweepAlidnsDomain(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return WrapError(err)
@@ -79,19 +79,18 @@ func testSweepDnsDomain(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDnsDomain_basic(t *testing.T) {
-	resourceId := "alicloud_dns_domain.default"
+func TestAccAlicloudAlidnsDomain_basic(t *testing.T) {
+	resourceId := "alicloud_alidns_domain.default"
 	randInt := acctest.RandIntRange(10000, 99999)
 	var v alidns.DescribeDomainInfoResponse
 	ra := resourceAttrInit(resourceId, map[string]string{})
-	serviceFunc := func() interface{} {
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	}, "DescribeDnsDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 
-	testAccConfig := resourceTestAccConfigFunc(resourceId, strconv.FormatInt(int64(randInt), 10), resourceDnsDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, strconv.FormatInt(int64(randInt), 10), resourceAlidnsDomainConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -180,7 +179,7 @@ func TestAccAlicloudDnsDomain_basic(t *testing.T) {
 	})
 }
 
-func resourceDnsDomainConfigDependence(name string) string {
+func resourceAlidnsDomainConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "dnsName"{
 	default = "tf-testacc%sdnsbasic%s.abc"

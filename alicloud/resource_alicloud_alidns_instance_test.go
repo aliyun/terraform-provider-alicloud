@@ -11,7 +11,7 @@ import (
 func SkipTestAccAlicloudAlidnsInstance_basic(t *testing.T) {
 	var v alidns.DescribeDnsProductInstanceResponse
 
-	resourceId := "alicloud_dns_instance.default"
+	resourceId := "alicloud_alidns_instance.default"
 	ra := resourceAttrInit(resourceId, AlidnsInstanceBasicMap)
 
 	serviceFunc := func() interface{} {

@@ -9,9 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func dataSourceAlicloudDnsInstances() *schema.Resource {
+func dataSourceAlicloudAlidnsInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudDnsInstancesRead,
+		Read: dataSourceAlicloudAlidnsInstancesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -60,7 +60,7 @@ func dataSourceAlicloudDnsInstances() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudDnsInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudAlidnsInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := alidns.CreateDescribeDnsProductInstancesRequest()
@@ -78,7 +78,7 @@ func dataSourceAlicloudDnsInstancesRead(d *schema.ResourceData, meta interface{}
 			return alidnsClient.DescribeDnsProductInstances(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dns_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alidns_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*alidns.DescribeDnsProductInstancesResponse)
@@ -106,7 +106,7 @@ func dataSourceAlicloudDnsInstancesRead(d *schema.ResourceData, meta interface{}
 
 	for i, object := range objects {
 		mapping := map[string]interface{}{
-			"dns_security":   convertDnsSecurityResponse(object.DnsSecurity),
+			"dns_security":   convertAlidnsSecurityResponse(object.DnsSecurity),
 			"domain_numbers": strconv.FormatInt(object.BindDomainCount, 10),
 			"id":             object.InstanceId,
 			"instance_id":    object.InstanceId,

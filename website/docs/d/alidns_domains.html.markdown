@@ -1,26 +1,26 @@
 ---
-subcategory: "DNS"
+subcategory: "ALIDNS"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_dns_domains"
-sidebar_current: "docs-alicloud-datasource-dns-domains"
+page_title: "Alicloud: alicloud_alidns_domains"
+sidebar_current: "docs-alicloud-datasource-alidns-domains"
 description: |-
     Provides a list of domains available to the user.
 ---
 
-# alicloud\_dns\_domains
+# alicloud\_alidns\_domains
 
-This data source provides a list of DNS Domains in an Alibaba Cloud account according to the specified filters.
+This data source provides a list of ALIDNS Domains in an Alibaba Cloud account according to the specified filters.
 
 ## Example Usage
 
-```
-data "alicloud_dns_domains" "domains_ds" {
+```terraform
+data "alicloud_alidns_domains" "domains_ds" {
   domain_name_regex = "^hegu"
   output_file       = "domains.txt"
 }
 
 output "first_domain_id" {
-  value = "${data.alicloud_dns_domains.domains_ds.domains.0.domain_id}"
+  value = data.alicloud_alidns_domains.domains_ds.domains.0.domain_id
 }
 ```
 
@@ -35,7 +35,7 @@ The following arguments are supported:
 * `version_code` - (Optional) Cloud analysis version code.
 * `ids` (Optional, Available in 1.53.0+) - A list of domain IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, ForceNew, Available in 1.59.0+) The Id of resource group which the dns belongs.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.59.0+) The Id of resource group which the alidns belongs.
 * `group_id` - (Optional, ForceNew, Available in 1.87.0+) Domain group ID, if not filled, the default is all groups.
 * `key_word` - (Optional, ForceNew, Available in 1.87.0+) The keywords are searched according to the `%KeyWord%` mode, which is not case sensitive.
 * `lang` - (Optional, ForceNew, Available in 1.87.0+) User language.
@@ -58,9 +58,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `instance_id` - Cloud analysis product ID of the domain.
   * `version_code` - Cloud analysis version code of the domain.
   * `puny_code` - Punycode of the Chinese domain.
-  * `dns_servers` - DNS list of the domain in the analysis system.
-  * `resource_group_id` - The Id of resource group which the dns belongs.
-  * `dns_servers` - DNS list of domain names in the resolution system.
+  * `dns_servers` - ALIDNS list of the domain in the analysis system.
+  * `resource_group_id` - The Id of resource group which the alidns belongs.
+  * `dns_servers` - ALIDNS list of domain names in the resolution system.
   * `id` - The Id of resource.
   * `in_black_hole` - Whether it is in black hole.
   * `in_clean` - Whether it is cleaning.
@@ -68,5 +68,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `version_code` - Cloud resolution version ID.
   * `record_line_tree_json` - Tree-like analytical line list.
   * `region_lines` - Whether it is a regional route.
-  * `remark` - The Id of resource group which the dns belongs.
-  * `slave_dns` - Whether to allow auxiliary dns.
+  * `remark` - The Id of resource group which the alidns belongs.
+  * `slave_dns` - Whether to allow auxiliary alidns.

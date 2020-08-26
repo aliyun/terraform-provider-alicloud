@@ -1,15 +1,15 @@
 ---
-subcategory: "DNS"
+subcategory: "ALIDNS"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_dns_instance"
-sidebar_current: "docs-alicloud-resource-dns-instance"
+page_title: "Alicloud: alicloud_alidns_instance"
+sidebar_current: "docs-alicloud-resource-alidns-instance"
 description: |-
-  Provides a Alicloud DNS Instance resource.
+  Provides a Alicloud ALIDNS Instance resource.
 ---
 
-# alicloud\_dns\_instance
+# alicloud\_alidns\_instance
 
-Create an DNS Instance resource.
+Create an ALIDNS Instance resource.
 
 -> **NOTE:** Available in v1.80.0+.
 
@@ -17,8 +17,8 @@ Create an DNS Instance resource.
 
 Basic Usage
 
-```
-resource "alicloud_dns_instance" "this" {
+```terraform
+resource "alicloud_alidns_instance" "this" {
     dns_security   = "no"
     domain_numbers = "2"
     period         = 1
@@ -33,7 +33,7 @@ resource "alicloud_dns_instance" "this" {
 
 The following arguments are supported:
 
-* `dns_security` - (Required, ForceNew) DNS security level. Valid values: `no`, `basic`, `advanced`.
+* `dns_security` - (Required, ForceNew) ALIDNS security level. Valid values: `no`, `basic`, `advanced`.
 * `domain_numbers` - (Required, ForceNew) Number of domain names bound.
 * `period` - (Optional, ForceNew) Creating a pre-paid instance, it must be set, the unit is month, please enter an integer multiple of 12 for annually paid products.
 * `renew_period` - (Optional, ForceNew) Automatic renewal period, the unit is month. When setting RenewalStatus to AutoRenewal, it must be set.
@@ -42,13 +42,13 @@ The following arguments are supported:
 
 ## Attributes Reference
 
-* `id` - ID of the DNS instance.
+* `id` - ID of the ALIDNS instance.
 * `version_name` - Paid package version name.
 
 ## Import
 
-DNS instance be imported using the id, e.g.
+ALIDNS instance be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_dns_instance.example dns-cn-v0h1ldjhfff
+$ terraform import alicloud_alidns_instance.example dns-cn-v0h1ldjhfff
 ```

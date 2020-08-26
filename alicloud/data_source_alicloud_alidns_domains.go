@@ -10,9 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudDnsDomains() *schema.Resource {
+func dataSourceAlicloudAlidnsDomains() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudDnsDomainsRead,
+		Read: dataSourceAlicloudAlidnsDomainsRead,
 		Schema: map[string]*schema.Schema{
 			"ali_domain": {
 				Type:     schema.TypeBool,
@@ -181,7 +181,7 @@ func dataSourceAlicloudDnsDomains() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudAlidnsDomainsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := alidns.CreateDescribeDomainsRequest()
@@ -238,7 +238,7 @@ func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) 
 			return alidnsClient.DescribeDomains(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dns_domains", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alidns_domains", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*alidns.DescribeDomainsResponse)
@@ -306,7 +306,7 @@ func dataSourceAlicloudDnsDomainsRead(d *schema.ResourceData, meta interface{}) 
 			return alidnsClient.DescribeDomainInfo(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dns_domains", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alidns_domains", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*alidns.DescribeDomainInfoResponse)

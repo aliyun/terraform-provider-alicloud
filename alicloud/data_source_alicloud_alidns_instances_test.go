@@ -7,21 +7,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func SkipTestAccAlicloudDnsInstancesDataSource(t *testing.T) {
+func SkipTestAccAlicloudAlidnsInstancesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
-	resourceId := "data.alicloud_dns_instances.default"
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceDnsInstancesConfigDependence)
+	resourceId := "data.alicloud_alidns_instances.default"
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceAlidnsInstancesConfigDependence)
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_dns_instance.default.id}"},
+			"ids": []string{"${alicloud_alidns_instance.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"ids": []string{"${alicloud_dns_instance.default.id}-fake"},
+			"ids": []string{"${alicloud_alidns_instance.default.id}-fake"},
 		}),
 	}
 
-	var existDnsInstancesMapCheck = func(rand int) map[string]string {
+	var existAlidnsInstancesMapCheck = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                      "1",
 			"ids.0":                      CHECKSET,
@@ -34,25 +34,25 @@ func SkipTestAccAlicloudDnsInstancesDataSource(t *testing.T) {
 		}
 	}
 
-	var fakeDnsInstancesMapCheck = func(rand int) map[string]string {
+	var fakeAlidnsInstancesMapCheck = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":       "0",
 			"instances.#": "0",
 		}
 	}
 
-	var dnsInstancesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_dns_instances.default",
-		existMapFunc: existDnsInstancesMapCheck,
-		fakeMapFunc:  fakeDnsInstancesMapCheck,
+	var alidnsInstancesCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_alidns_instances.default",
+		existMapFunc: existAlidnsInstancesMapCheck,
+		fakeMapFunc:  fakeAlidnsInstancesMapCheck,
 	}
 
-	dnsInstancesCheckInfo.dataSourceTestCheck(t, rand, idsConf)
+	alidnsInstancesCheckInfo.dataSourceTestCheck(t, rand, idsConf)
 }
 
-func dataSourceDnsInstancesConfigDependence(name string) string {
+func dataSourceAlidnsInstancesConfigDependence(name string) string {
 	return fmt.Sprintf(`
-resource "alicloud_dns_instance" "default" {
+resource "alicloud_alidns_instance" "default" {
    dns_security   = "no"
    domain_numbers = "4"
    period         = 1

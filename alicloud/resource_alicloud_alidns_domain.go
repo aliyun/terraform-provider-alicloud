@@ -6,12 +6,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudDnsDomain() *schema.Resource {
+func resourceAlicloudAlidnsDomain() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDnsDomainCreate,
-		Read:   resourceAlicloudDnsDomainRead,
-		Update: resourceAlicloudDnsDomainUpdate,
-		Delete: resourceAlicloudDnsDomainDelete,
+		Create: resourceAlicloudAlidnsDomainCreate,
+		Read:   resourceAlicloudAlidnsDomainRead,
+		Update: resourceAlicloudAlidnsDomainUpdate,
+		Delete: resourceAlicloudAlidnsDomainDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -54,7 +54,7 @@ func resourceAlicloudDnsDomain() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDnsDomainCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlidnsDomainCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := alidns.CreateAddDomainRequest()
@@ -72,15 +72,15 @@ func resourceAlicloudDnsDomainCreate(d *schema.ResourceData, meta interface{}) e
 		return alidnsClient.AddDomain(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dns_domain", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alidns_domain", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*alidns.AddDomainResponse)
 	d.SetId(response.DomainName)
 
-	return resourceAlicloudDnsDomainUpdate(d, meta)
+	return resourceAlicloudAlidnsDomainUpdate(d, meta)
 }
-func resourceAlicloudDnsDomainRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlidnsDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dnsService := DnsService{client}
 	object, err := dnsService.DescribeDnsDomain(d.Id())
@@ -110,7 +110,7 @@ func resourceAlicloudDnsDomainRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("tags", tags)
 	return nil
 }
-func resourceAlicloudDnsDomainUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlidnsDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dnsService := DnsService{client}
 	d.Partial(true)
@@ -162,9 +162,9 @@ func resourceAlicloudDnsDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("tags")
 	}
 	d.Partial(false)
-	return resourceAlicloudDnsDomainRead(d, meta)
+	return resourceAlicloudAlidnsDomainRead(d, meta)
 }
-func resourceAlicloudDnsDomainDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlidnsDomainDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := alidns.CreateDeleteDomainRequest()
 	request.DomainName = d.Id()

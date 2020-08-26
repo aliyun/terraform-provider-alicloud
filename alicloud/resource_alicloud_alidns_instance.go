@@ -11,11 +11,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudDnsInstance() *schema.Resource {
+func resourceAlicloudAlidnsInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDnsInstanceCreate,
-		Read:   resourceAlicloudDnsInstanceRead,
-		Delete: resourceAlicloudDnsInstanceDelete,
+		Create: resourceAlicloudAlidnsInstanceCreate,
+		Read:   resourceAlicloudAlidnsInstanceRead,
+		Delete: resourceAlicloudAlidnsInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -59,7 +59,7 @@ func resourceAlicloudDnsInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDnsInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlidnsInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := bssopenapi.CreateCreateInstanceRequest()
@@ -93,15 +93,15 @@ func resourceAlicloudDnsInstanceCreate(d *schema.ResourceData, meta interface{})
 		return bssopenapiClient.CreateInstance(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dns_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alidns_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
 	response, _ := raw.(*bssopenapi.CreateInstanceResponse)
 	d.SetId(response.Data.InstanceId)
 
-	return resourceAlicloudDnsInstanceRead(d, meta)
+	return resourceAlicloudAlidnsInstanceRead(d, meta)
 }
-func resourceAlicloudDnsInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlidnsInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dnsService := DnsService{client}
 	object, err := dnsService.DescribeDnsInstance(d.Id())
@@ -113,17 +113,17 @@ func resourceAlicloudDnsInstanceRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	d.Set("dns_security", convertDnsSecurityResponse(object.DnsSecurity))
+	d.Set("dns_security", convertAlidnsSecurityResponse(object.DnsSecurity))
 	d.Set("domain_numbers", strconv.FormatInt(object.BindDomainCount, 10))
 	d.Set("version_code", object.VersionCode)
 	d.Set("version_name", object.VersionName)
 	return nil
 }
-func resourceAlicloudDnsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudDnsInstance. Terraform will remove this resource from the state file, however resources may remain.")
+func resourceAlicloudAlidnsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resourceAlicloudAlidnsInstance. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
-func convertDnsSecurityResponse(input string) string {
+func convertAlidnsSecurityResponse(input string) string {
 	switch input {
 	case "DNS Anti-DDoS Advanced":
 		return "advanced"
