@@ -12,9 +12,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCmsAlarm() *schema.Resource {
@@ -53,28 +53,132 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Optional: true,
 				Default:  300,
 			},
+			"escalations_critical": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"statistics": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      Average,
+							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum}, false),
+						},
+						"comparison_operator": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  Equal,
+							ValidateFunc: validation.StringInSlice([]string{
+								MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual,
+							}, false),
+						},
+						"threshold": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"times": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  3,
+						},
+					},
+				},
+				DiffSuppressFunc: cmsClientCriticalSuppressFunc,
+				MaxItems:         1,
+			},
+			"escalations_warn": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"statistics": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      Average,
+							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum}, false),
+						},
+						"comparison_operator": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  Equal,
+							ValidateFunc: validation.StringInSlice([]string{
+								MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual,
+							}, false),
+						},
+						"threshold": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"times": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  3,
+						},
+					},
+				},
+				DiffSuppressFunc: cmsClientWarnSuppressFunc,
+				MaxItems:         1,
+			},
+			"escalations_info": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"statistics": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      Average,
+							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum}, false),
+						},
+						"comparison_operator": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  Equal,
+							ValidateFunc: validation.StringInSlice([]string{
+								MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual,
+							}, false),
+						},
+						"threshold": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"times": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  3,
+						},
+					},
+				},
+				DiffSuppressFunc: cmsClientInfoSuppressFunc,
+				MaxItems:         1,
+			},
 			"statistics": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      Average,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum}, false),
+				Deprecated:   "Field 'statistics' has been deprecated from provider version 1.94.0. New field 'escalations_critical.statistics' instead.",
 			},
 			"operator": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  Equal,
+				Computed: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, Equal, NotEqual,
 				}, false),
+				Deprecated: "Field 'operator' has been deprecated from provider version 1.94.0. New field 'escalations_critical.comparison_operator' instead.",
 			},
 			"threshold": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'threshold' has been deprecated from provider version 1.94.0. New field 'escalations_critical.threshold' instead.",
 			},
 			"triggered_count": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  3,
+				Type:       schema.TypeInt,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'triggered_count' has been deprecated from provider version 1.94.0. New field 'escalations_critical.times' instead.",
 			},
 			"contact_groups": {
 				Type:     schema.TypeList,
@@ -159,6 +263,7 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 	} else {
 		d.Set("period", period)
 	}
+
 	d.Set("statistics", alarm.Escalations.Critical.Statistics)
 	oper := convertOperator(alarm.Escalations.Critical.ComparisonOperator)
 	if oper == MoreThan && d.Get("operator").(string) == Equal {
@@ -173,6 +278,55 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 			d.Set("triggered_count", count)
 		}
 	}
+
+	escalationsCritical := make([]map[string]interface{}, 1)
+	if alarm.Escalations.Critical.Times != "" {
+		if count, err := strconv.Atoi(alarm.Escalations.Critical.Times); err != nil {
+			return WrapError(err)
+		} else {
+			mapping := map[string]interface{}{
+				"statistics":          alarm.Escalations.Critical.Statistics,
+				"comparison_operator": convertOperator(alarm.Escalations.Critical.ComparisonOperator),
+				"threshold":           alarm.Escalations.Critical.Threshold,
+				"times":               count,
+			}
+			escalationsCritical[0] = mapping
+			d.Set("escalations_critical", escalationsCritical)
+		}
+	}
+
+	escalationsWarn := make([]map[string]interface{}, 1)
+	if alarm.Escalations.Warn.Times != "" {
+		if count, err := strconv.Atoi(alarm.Escalations.Warn.Times); err != nil {
+			return WrapError(err)
+		} else {
+			mappingWarn := map[string]interface{}{
+				"statistics":          alarm.Escalations.Warn.Statistics,
+				"comparison_operator": convertOperator(alarm.Escalations.Warn.ComparisonOperator),
+				"threshold":           alarm.Escalations.Warn.Threshold,
+				"times":               count,
+			}
+			escalationsWarn[0] = mappingWarn
+			d.Set("escalations_warn", escalationsWarn)
+		}
+	}
+
+	escalationsInfo := make([]map[string]interface{}, 1)
+	if alarm.Escalations.Info.Times != "" {
+		if count, err := strconv.Atoi(alarm.Escalations.Info.Times); err != nil {
+			return WrapError(err)
+		} else {
+			mappingInfo := map[string]interface{}{
+				"statistics":          alarm.Escalations.Info.Statistics,
+				"comparison_operator": convertOperator(alarm.Escalations.Info.ComparisonOperator),
+				"threshold":           alarm.Escalations.Info.Threshold,
+				"times":               count,
+			}
+			escalationsInfo[0] = mappingInfo
+			d.Set("escalations_info", escalationsInfo)
+		}
+	}
+
 	d.Set("effective_interval", alarm.EffectiveInterval)
 	//d.Set("start_time", parts[0])
 	//d.Set("end_time", parts[1])
@@ -208,11 +362,49 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 	request.Namespace = d.Get("project").(string)
 	request.MetricName = d.Get("metric").(string)
 	request.Period = strconv.Itoa(d.Get("period").(int))
+	request.ContactGroups = strings.Join(expandStringList(d.Get("contact_groups").([]interface{})), ",")
+
+	// 兼容弃用参数
 	request.EscalationsCriticalStatistics = d.Get("statistics").(string)
 	request.EscalationsCriticalComparisonOperator = convertOperator(d.Get("operator").(string))
+	if v, ok := d.GetOk("threshold"); ok && v.(string) != "" {
+		request.EscalationsCriticalThreshold = v.(string)
+	}
 	request.EscalationsCriticalThreshold = d.Get("threshold").(string)
 	request.EscalationsCriticalTimes = requests.NewInteger(d.Get("triggered_count").(int))
-	request.ContactGroups = strings.Join(expandStringList(d.Get("contact_groups").([]interface{})), ",")
+
+	// Critical
+	if v, ok := d.GetOk("escalations_critical"); ok && len(v.([]interface{})) != 0 {
+		for _, val := range v.([]interface{}) {
+			val := val.(map[string]interface{})
+			request.EscalationsCriticalStatistics = val["statistics"].(string)
+			request.EscalationsCriticalComparisonOperator = convertOperator(val["comparison_operator"].(string))
+			request.EscalationsCriticalThreshold = val["threshold"].(string)
+			request.EscalationsCriticalTimes = requests.NewInteger(val["times"].(int))
+		}
+	}
+	// Warn
+	if v, ok := d.GetOk("escalations_warn"); ok && len(v.([]interface{})) != 0 {
+		for _, val := range v.([]interface{}) {
+			val := val.(map[string]interface{})
+			request.EscalationsWarnStatistics = val["statistics"].(string)
+			request.EscalationsWarnComparisonOperator = convertOperator(val["comparison_operator"].(string))
+			request.EscalationsWarnThreshold = val["threshold"].(string)
+			request.EscalationsWarnTimes = requests.NewInteger(val["times"].(int))
+		}
+	}
+	// Info
+	if v, ok := d.GetOk("escalations_info"); ok && len(v.([]interface{})) != 0 {
+		for _, val := range v.([]interface{}) {
+			val := val.(map[string]interface{})
+			request.EscalationsInfoStatistics = val["statistics"].(string)
+			request.EscalationsInfoComparisonOperator = convertOperator(val["comparison_operator"].(string))
+			request.EscalationsInfoThreshold = val["threshold"].(string)
+			request.EscalationsInfoTimes = requests.NewInteger(val["times"].(int))
+
+		}
+	}
+
 	if v, ok := d.GetOk("effective_interval"); ok && v.(string) != "" {
 		request.EffectiveInterval = v.(string)
 	} else {

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudSlbBackendServers_vpc(t *testing.T) {
@@ -75,6 +75,24 @@ func TestAccAlicloudSlbBackendServers_vpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backend_servers.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id": "${alicloud_slb.default.id}",
+					"backend_servers": []map[string]interface{}{
+						{
+							"server_id": "${alicloud_network_interface.default.0.id}",
+							"weight":    "80",
+							"type":      "eni",
+							"server_ip": "${alicloud_network_interface.default.0.private_ip}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backend_servers.#": "1",
 					}),
 				),
 			},

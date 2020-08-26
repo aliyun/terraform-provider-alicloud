@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudOssBuckets() *schema.Resource {
@@ -64,6 +64,10 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 							Computed: true,
 						},
 						"storage_class": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"redundancy_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -213,6 +217,10 @@ func dataSourceAlicloudOssBuckets() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									"kms_master_key_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
 								},
 							},
 							MaxItems: 1,
@@ -323,6 +331,7 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 			mapping["extranet_endpoint"] = response.BucketInfo.ExtranetEndpoint
 			mapping["intranet_endpoint"] = response.BucketInfo.IntranetEndpoint
 			mapping["owner"] = response.BucketInfo.Owner.ID
+			mapping["redundancy_type"] = response.BucketInfo.RedundancyType
 
 			//Add ServerSideEncryption information
 			var sseconfig []map[string]interface{}
@@ -330,6 +339,9 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 				if len(response.BucketInfo.SseRule.SSEAlgorithm) > 0 && response.BucketInfo.SseRule.SSEAlgorithm != "None" {
 					data := map[string]interface{}{
 						"sse_algorithm": response.BucketInfo.SseRule.SSEAlgorithm,
+					}
+					if response.BucketInfo.SseRule.KMSMasterKeyID != "" {
+						data["kms_master_key_id"] = response.BucketInfo.SseRule.KMSMasterKeyID
 					}
 					sseconfig = make([]map[string]interface{}, 0)
 					sseconfig = append(sseconfig, data)

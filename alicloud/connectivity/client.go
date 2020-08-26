@@ -70,7 +70,11 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/mse"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/oos"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 )
 
@@ -89,7 +93,6 @@ type AliyunClient struct {
 	essconn                      *ess.Client
 	rdsconn                      *rds.Client
 	vpcconn                      *vpc.Client
-	nasconn                      *nas.Client
 	slbconn                      *slb.Client
 	onsconn                      *ons.Client
 	alikafkaconn                 *alikafka.Client
@@ -146,6 +149,12 @@ type AliyunClient struct {
 	alidnsConn                   *alidns.Client
 	ddoscooConn                  *ddoscoo.Client
 	cassandraConn                *cassandra.Client
+	eciConn                      *eci.Client
+	ecsConn                      *ecs.Client
+	oosConn                      *oos.Client
+	nasConn                      *nas.Client
+	dcdnConn                     *dcdn.Client
+	mseConn                      *mse.Client
 }
 
 type ApiVersion string
@@ -172,7 +181,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.88.0"
+var providerVersion = "1.94.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient
@@ -355,25 +364,25 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 
 func (client *AliyunClient) WithNasClient(do func(*nas.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the Nas client if necessary
-	if client.nasconn == nil {
+	if client.nasConn == nil {
 		endpoint := client.config.NasEndpoint
 		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, NASCode)
+			endpoint = loadEndpoint(client.config.RegionId, NasCode)
 		}
 		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(NASCode), endpoint)
+			endpoints.AddEndpointMapping(client.config.RegionId, string(NasCode), endpoint)
 		}
-		nasconn, err := nas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		nasConn, err := nas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the NAS client: %#v", err)
 		}
-		nasconn.AppendUserAgent(Terraform, terraformVersion)
-		nasconn.AppendUserAgent(Provider, providerVersion)
-		nasconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.nasconn = nasconn
+		nasConn.AppendUserAgent(Terraform, terraformVersion)
+		nasConn.AppendUserAgent(Provider, providerVersion)
+		nasConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.nasConn = nasConn
 	}
 
-	return do(client.nasconn)
+	return do(client.nasConn)
 }
 
 func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, error)) (interface{}, error) {
@@ -459,9 +468,15 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 
 		clientOptions := []oss.ClientOption{oss.UserAgent(client.getUserAgent()),
 			oss.SecurityToken(client.config.SecurityToken)}
-		proxyUrl := client.getHttpProxyUrl()
-		if proxyUrl != nil {
-			clientOptions = append(clientOptions, oss.Proxy(proxyUrl.String()))
+		proxy, err := client.getHttpProxy()
+		if proxy != nil {
+			skip, err := client.skipProxy(endpoint)
+			if err != nil {
+				return nil, err
+			}
+			if !skip {
+				clientOptions = append(clientOptions, oss.Proxy(proxy.String()))
+			}
 		}
 
 		ossconn, err := oss.New(endpoint, client.config.AccessKey, client.config.SecretKey, clientOptions...)
@@ -1048,7 +1063,16 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 		mnsUrl := fmt.Sprintf("https://%s.mns.%s", accountId, endpoint)
 
 		mnsClient := ali_mns.NewAliMNSClientWithToken(mnsUrl, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken)
-
+		proxy, err := client.getHttpProxy()
+		if proxy != nil {
+			skip, err := client.skipProxy(endpoint)
+			if err != nil {
+				return nil, err
+			}
+			if !skip {
+				mnsClient.SetProxy(proxy.String())
+			}
+		}
 		client.mnsconn = &mnsClient
 	}
 
@@ -1217,29 +1241,46 @@ func (client *AliyunClient) getTransport() *http.Transport {
 	transport := &http.Transport{}
 	transport.TLSHandshakeTimeout = time.Duration(handshakeTimeout) * time.Second
 
-	// After building a new transport and it need to set http proxy to support proxy.
-	proxyUrl := client.getHttpProxyUrl()
-	if proxyUrl != nil {
-		transport.Proxy = http.ProxyURL(proxyUrl)
-	}
 	return transport
 }
 
-func (client *AliyunClient) getHttpProxyUrl() *url.URL {
-	for _, v := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"} {
-		value := strings.Trim(os.Getenv(v), " ")
-		if value != "" {
-			if !regexp.MustCompile(`^http(s)?://`).MatchString(value) {
-				value = fmt.Sprintf("https://%s", value)
-			}
-			proxyUrl, err := url.Parse(value)
-			if err == nil {
-				return proxyUrl
-			}
-			break
+func (client *AliyunClient) getHttpProxy() (proxy *url.URL, err error) {
+	if client.config.Protocol == "HTTPS" {
+		if rawurl := os.Getenv("HTTPS_PROXY"); rawurl != "" {
+			proxy, err = url.Parse(rawurl)
+		} else if rawurl := os.Getenv("https_proxy"); rawurl != "" {
+			proxy, err = url.Parse(rawurl)
+		}
+	} else {
+		if rawurl := os.Getenv("HTTP_PROXY"); rawurl != "" {
+			proxy, err = url.Parse(rawurl)
+		} else if rawurl := os.Getenv("http_proxy"); rawurl != "" {
+			proxy, err = url.Parse(rawurl)
 		}
 	}
-	return nil
+	return proxy, err
+}
+
+func (client *AliyunClient) skipProxy(endpoint string) (bool, error) {
+	var urls []string
+	if rawurl := os.Getenv("NO_PROXY"); rawurl != "" {
+		urls = strings.Split(rawurl, ",")
+	} else if rawurl := os.Getenv("no_proxy"); rawurl != "" {
+		urls = strings.Split(rawurl, ",")
+	}
+	for _, value := range urls {
+		if strings.HasPrefix(value, "*") {
+			value = fmt.Sprintf(".%s", value)
+		}
+		noProxyReg, err := regexp.Compile(value)
+		if err != nil {
+			return false, err
+		}
+		if noProxyReg.MatchString(endpoint) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (client *AliyunClient) describeEndpointForService(serviceCode string) (*location.Endpoint, error) {
@@ -1826,4 +1867,104 @@ func (client *AliyunClient) WithCassandraClient(do func(*cassandra.Client) (inte
 		client.cassandraConn = cassandraConn
 	}
 	return do(client.cassandraConn)
+}
+
+func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, error)) (interface{}, error) {
+	if client.eciConn == nil {
+		endpoint := client.config.EciEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, EciCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(EciCode), endpoint)
+		}
+
+		eciConn, err := eci.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Eciclient: %#v", err)
+		}
+		eciConn.AppendUserAgent(Terraform, terraformVersion)
+		eciConn.AppendUserAgent(Provider, providerVersion)
+		eciConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.eciConn = eciConn
+	}
+	return do(client.eciConn)
+}
+
+func (client *AliyunClient) WithOosClient(do func(*oos.Client) (interface{}, error)) (interface{}, error) {
+	if client.oosConn == nil {
+		endpoint := client.config.OosEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, OosCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(OosCode), endpoint)
+		}
+
+		oosConn, err := oos.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Oosclient: %#v", err)
+		}
+		oosConn.AppendUserAgent(Terraform, terraformVersion)
+		oosConn.AppendUserAgent(Provider, providerVersion)
+		oosConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.oosConn = oosConn
+	}
+	return do(client.oosConn)
+}
+
+func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, error)) (interface{}, error) {
+	if client.dcdnConn == nil {
+		endpoint := client.config.DcdnEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, DcdnCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(DcdnCode), endpoint)
+		}
+
+		dcdnConn, err := dcdn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Dcdnclient: %#v", err)
+		}
+		dcdnConn.AppendUserAgent(Terraform, terraformVersion)
+		dcdnConn.AppendUserAgent(Provider, providerVersion)
+		dcdnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.dcdnConn = dcdnConn
+	}
+	return do(client.dcdnConn)
+}
+
+func (client *AliyunClient) WithMseClient(do func(*mse.Client) (interface{}, error)) (interface{}, error) {
+	if client.mseConn == nil {
+		endpoint := client.config.MseEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, MseCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(MseCode), endpoint)
+		}
+
+		mseConn, err := mse.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Mseclient: %#v", err)
+		}
+		mseConn.AppendUserAgent(Terraform, terraformVersion)
+		mseConn.AppendUserAgent(Provider, providerVersion)
+		mseConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.mseConn = mseConn
+	}
+	return do(client.mseConn)
 }

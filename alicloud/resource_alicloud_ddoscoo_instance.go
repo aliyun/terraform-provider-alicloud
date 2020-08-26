@@ -7,8 +7,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudDdoscooInstance() *schema.Resource {
@@ -181,23 +182,23 @@ func resourceAlicloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudDdoscooInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	//client := meta.(*connectivity.AliyunClient)
-	//
-	//request := ddoscoo.CreateReleaseInstanceRequest()
-	//request.RegionId = client.RegionId
-	//request.InstanceId = d.Id()
-	//
-	//raw, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-	//	return ddoscooClient.ReleaseInstance(request)
-	//})
-	//if err != nil {
-	//	if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
-	//		return nil
-	//	}
-	//
-	//	return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	//}
-	//addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	client := meta.(*connectivity.AliyunClient)
+
+	request := ddoscoo.CreateReleaseInstanceRequest()
+	request.RegionId = client.RegionId
+	request.InstanceId = d.Id()
+
+	raw, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
+		return ddoscooClient.ReleaseInstance(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
+			return nil
+		}
+
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 

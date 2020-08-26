@@ -297,6 +297,10 @@ func WrapErrorf(cause error, msg string, args ...interface{}) error {
 	if len(parts) > 3 {
 		filepath = strings.Join(parts[len(parts)-3:], "/")
 	}
+	// The second parameter of args is requestId, if the error message is NotFoundMsg the requestId need to be returned.
+	if msg == NotFoundMsg && len(args) == 2 {
+		msg += RequestIdMsg
+	}
 	return WrapComplexError(cause, fmt.Errorf(msg, args...), filepath, line)
 }
 
@@ -311,6 +315,7 @@ func WrapComplexError(cause, err error, filepath string, fileline int) error {
 
 // A default message of ComplexError's Err. It is format to Resource <resource-id> <operation> Failed!!! <error source>
 const DefaultErrorMsg = "Resource %s %s Failed!!! %s"
+const RequestIdMsg = "RequestId: %s"
 const NotFoundMsg = ResourceNotfound + "!!! %s"
 const DefaultTimeoutMsg = "Resource %s %s Timeout!!! %s"
 const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"

@@ -12,6 +12,12 @@ import (
 type ServiceCode string
 
 const (
+	DcdnCode            = ServiceCode("DCDN")
+	MseCode             = ServiceCode("MSE")
+	OosCode             = ServiceCode("OOS")
+	EcsCode             = ServiceCode("ECS")
+	NasCode             = ServiceCode("NAS")
+	EciCode             = ServiceCode("ECI")
 	DdoscooCode         = ServiceCode("DDOSCOO")
 	BssopenapiCode      = ServiceCode("BSSOPENAPI")
 	AlidnsCode          = ServiceCode("ALIDNS")
@@ -52,7 +58,6 @@ const (
 	DRDSCode            = ServiceCode("DRDS")
 	LOCATIONCode        = ServiceCode("LOCATION")
 	ELASTICSEARCHCode   = ServiceCode("ELASTICSEARCH")
-	NASCode             = ServiceCode("NAS")
 	ACTIONTRAILCode     = ServiceCode("ACTIONTRAIL")
 	BSSOPENAPICode      = ServiceCode("BSSOPENAPI")
 	DDOSCOOCode         = ServiceCode("DDOSCOO")

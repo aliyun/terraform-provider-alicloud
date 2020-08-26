@@ -20,8 +20,8 @@ Provides a DNS domain resource.
 ```
 # Add a new Domain.
 resource "alicloud_dns_domain" "dns" {
-  domain_name     = "starmove.com"
-  group_id        = "85ab8713-4a30-4de4-9d20-155ff830****"
+  domain_name = "starmove.com"
+  group_id    = "85ab8713-4a30-4de4-9d20-155ff830****"
   tags = {
     Created     = "Terraform"
     Environment = "test"
@@ -40,7 +40,6 @@ The following arguments are supported:
 * `tags` - (Optional) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-
 
 ## Attributes Reference
 

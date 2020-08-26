@@ -11,7 +11,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type CenService struct {
@@ -23,6 +23,7 @@ const DefaultCenTimeoutLong = 180
 
 const ChildInstanceTypeVpc = "VPC"
 const ChildInstanceTypeVbr = "VBR"
+const ChildInstanceTypeCcn = "CCN"
 
 func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstance, error) {
 	c := &cbn.ChildInstance{}

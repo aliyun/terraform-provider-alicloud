@@ -78,7 +78,6 @@ type ApplyInvoiceRequest struct {
 	*requests.RpcRequest
 	InvoicingType   requests.Integer `position:"Query" name:"InvoicingType"`
 	ProcessWay      requests.Integer `position:"Query" name:"ProcessWay"`
-	CallerBid       requests.Integer `position:"Query" name:"callerBid"`
 	OwnerId         requests.Integer `position:"Query" name:"OwnerId"`
 	InvoiceAmount   requests.Integer `position:"Query" name:"InvoiceAmount"`
 	AddressId       requests.Integer `position:"Query" name:"AddressId"`
@@ -86,7 +85,6 @@ type ApplyInvoiceRequest struct {
 	InvoiceByAmount requests.Boolean `position:"Query" name:"InvoiceByAmount"`
 	CustomerId      requests.Integer `position:"Query" name:"CustomerId"`
 	SelectedIds     *[]string        `position:"Query" name:"SelectedIds"  type:"Repeated"`
-	CallerUid       requests.Integer `position:"Query" name:"callerUid"`
 }
 
 // ApplyInvoiceResponse is the response struct for api ApplyInvoice
@@ -105,6 +103,7 @@ func CreateApplyInvoiceRequest() (request *ApplyInvoiceRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "ApplyInvoice", "", "")
+	request.Method = requests.POST
 	return
 }
 

@@ -11,9 +11,9 @@ import (
 	"strconv"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -582,7 +582,24 @@ func TestAccAlicloudOssBucketCheckSseRule(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"server_side_encryption_rule.0.sse_algorithm": "KMS",
+						"server_side_encryption_rule.0.sse_algorithm":     "KMS",
+						"server_side_encryption_rule.0.kms_master_key_id": "",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"server_side_encryption_rule": []map[string]interface{}{
+						{
+							"sse_algorithm":     "KMS",
+							"kms_master_key_id": "kms-id",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"server_side_encryption_rule.0.sse_algorithm":     "KMS",
+						"server_side_encryption_rule.0.kms_master_key_id": "kms-id",
 					}),
 				),
 			},
@@ -592,8 +609,9 @@ func TestAccAlicloudOssBucketCheckSseRule(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"server_side_encryption_rule.#":               "0",
-						"server_side_encryption_rule.0.sse_algorithm": REMOVEKEY,
+						"server_side_encryption_rule.#":                   "0",
+						"server_side_encryption_rule.0.sse_algorithm":     REMOVEKEY,
+						"server_side_encryption_rule.0.kms_master_key_id": REMOVEKEY,
 					}),
 				),
 			},

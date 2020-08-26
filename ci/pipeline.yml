@@ -12,6 +12,7 @@ groups:
       - NetworkInterface
       - Snapshot
       - LaunchTemplate
+      - EcsDedicatedHost
       # ESS
       - Ess
       # Container Service
@@ -121,6 +122,7 @@ groups:
       - NetworkInterface
       - Snapshot
       - LaunchTemplate
+      - EcsDedicatedHost
       # ESS
       - Ess
       # Container Service
@@ -1298,6 +1300,19 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "ResourceManager"
 
+  - name: EcsDedicatedHost
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0730
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "EcsDedicatedHost"
+
   - name: SweeperAfter
     plan:
       - get: terraform-provider-alicloud
@@ -1321,7 +1336,7 @@ resources:
 - name: terraform-provider-alicloud
   type: git
   source:
-    uri: https://github.com/terraform-providers/terraform-provider-alicloud.git
+    uri: https://github.com/aliyun/terraform-provider-alicloud.git
     branch: master
 
 - name: aliyun-cli

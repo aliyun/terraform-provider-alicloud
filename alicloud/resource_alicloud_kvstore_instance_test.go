@@ -10,9 +10,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 var redisInstanceConnectionDomainRegexp = "^r-[a-z0-9]+.redis[.a-z-0-9]*.rds.aliyuncs.com"
@@ -38,7 +38,7 @@ func testSweepKVStoreInstances(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"testAcc",
+		"tf_testAcc",
 	}
 
 	var insts []r_kvstore.KVStoreInstance
@@ -101,7 +101,7 @@ func testSweepKVStoreInstances(region string) error {
 		}
 	}
 	if sweeped {
-		// Waiting 30 seconds to eusure these KVStore instances have been deleted.
+		// Waiting 30 seconds to ensure these KVStore instances have been deleted.
 		time.Sleep(30 * time.Second)
 	}
 	return nil
@@ -153,6 +153,24 @@ func TestAccAlicloudKVStoreRedisInstance_classictest(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"password"},
+			},
+			{
+				Config: testAccKVStoreInstance_classicAllocateConnection(string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_public":     "true",
+						"connection_string": "tf-testacc.redis.rds.aliyuncs.com",
+					}),
+				),
+			},
+			{
+				Config: testAccKVStoreInstance_classicReleasePublicConnection(string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_public":     "false",
+						"connection_string": "",
+					}),
+				),
 			},
 			{
 				Config: testAccKVStoreInstance_classicUpdateParameter(string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
@@ -369,6 +387,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name
@@ -391,7 +410,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"vswitch_id":           CHECKSET,
 						"engine_version":       string(KVStore4Dot0),
 						"connection_domain":    REGEXMATCH + redisInstanceConnectionDomainRegexp,
-						"private_ip":           "172.16.0.10",
+						"private_ip":           CHECKSET,
 						"backup_id":            NOSET,
 						"security_ips.#":       "1",
 					}),
@@ -488,6 +507,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name
@@ -510,7 +530,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 						"vswitch_id":           CHECKSET,
 						"engine_version":       string(KVStore2Dot8),
 						"connection_domain":    REGEXMATCH + memcacheInstanceConnectionDomainRegexp,
-						"private_ip":           "172.16.0.10",
+						"private_ip":           CHECKSET,
 						"backup_id":            NOSET,
 						"security_ips.#":       "1",
 					}),
@@ -591,6 +611,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpcmulti(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name
@@ -705,6 +726,51 @@ func testAccKVStoreInstance_classic(instanceType, instanceClass, engineVersion s
 		instance_type = "%s"
 		instance_class = "%s"
 		engine_version = "%s"
+	}
+	`, instanceType, instanceClass, engineVersion)
+}
+
+func testAccKVStoreInstance_classicAllocateConnection(instanceType, instanceClass, engineVersion string) string {
+	return fmt.Sprintf(`
+	data "alicloud_zones" "default" {
+		available_resource_creation = "KVStore"
+	}
+	variable "name" {
+		default = "tf-testAccKVStoreInstance_classic"
+	}
+
+	resource "alicloud_kvstore_instance" "default" {
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+		instance_name  = "${var.name}"
+		security_ips = ["10.0.0.1"]
+		instance_type = "%s"
+		instance_class = "%s"
+		engine_version = "%s"
+		enable_public  = true
+		connection_string_prefix = "tf-testacc"
+		port = 3306
+	}
+	`, instanceType, instanceClass, engineVersion)
+}
+
+func testAccKVStoreInstance_classicReleasePublicConnection(instanceType, instanceClass, engineVersion string) string {
+	return fmt.Sprintf(`
+	data "alicloud_zones" "default" {
+		available_resource_creation = "KVStore"
+	}
+	variable "name" {
+		default = "tf-testAccKVStoreInstance_classic"
+	}
+
+	resource "alicloud_kvstore_instance" "default" {
+		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+		instance_name  = "${var.name}"
+		security_ips = ["10.0.0.1"]
+		instance_type = "%s"
+		instance_class = "%s"
+		engine_version = "%s"
+		enable_public = false
+		connection_string_prefix = "tf-testacc"
 	}
 	`, instanceType, instanceClass, engineVersion)
 }
@@ -926,8 +992,7 @@ func testAccKVStoreInstance_vpc(common, instanceClass, instanceType, engineVersi
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		engine_version = "%s"
@@ -946,8 +1011,7 @@ func testAccKVStoreInstance_vpcUpdateSecurityIps(common, instanceClass, instance
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		instance_type = "%s"
 		engine_version = "%s"
@@ -969,8 +1033,7 @@ func testAccKVStoreInstance_vpcUpdateSecurityGroupIds(common, instanceClass, ins
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		instance_type = "%s"
 		engine_version = "%s"
@@ -991,9 +1054,8 @@ func testAccKVStoreInstance_vpcUpdateVpcAuthMode(common, instanceClass, instance
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		vpc_auth_mode = "Close"
-		private_ip     = "172.16.0.10"
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		instance_type = "%s"
 		engine_version = "%s"
@@ -1013,8 +1075,7 @@ func testAccKVStoreInstance_vpcUpdateParameter(common, instanceClass, instanceTy
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		parameters {
 			  name = "maxmemory-policy"
@@ -1038,8 +1099,7 @@ func testAccKVStoreInstance_vpcAddParameter(common, instanceClass, instanceType,
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		parameters {
 			  name = "maxmemory-policy"
@@ -1067,8 +1127,7 @@ func testAccKVStoreInstance_vpcDeleteParameter(common, instanceClass, instanceTy
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		parameters {
 				name = "slowlog-max-len"
@@ -1092,8 +1151,7 @@ func testAccKVStoreInstance_vpcUpdateClass(common, instanceClass, instanceType, 
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.3", "10.0.0.2"]
 		instance_type = "%s"
 		engine_version = "%s"
@@ -1113,8 +1171,7 @@ func testAccKVStoreInstance_vpcUpdateAll(common, instanceClass, instanceType, en
 		instance_class = "%s"
 		instance_name  = "${var.name}"
 		password       = "Yourpassword1234"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		engine_version = "%s"
@@ -1136,7 +1193,7 @@ func testAccKVStoreInstance_vpcmulti(common, instanceClass, instanceType, engine
 		instance_class = "%s"
 		instance_name  = "${var.name}"
 		password       = "Yourpassword1234"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips   = ["10.0.0.1"]
 		instance_type  = "%s"
 		engine_version = "%s"

@@ -21,7 +21,6 @@ type SystemEvent struct {
 	Product      string `json:"Product" xml:"Product"`
 	Name         string `json:"Name" xml:"Name"`
 	GroupId      string `json:"GroupId" xml:"GroupId"`
-	Num          int64  `json:"Num" xml:"Num"`
 	Level        string `json:"Level" xml:"Level"`
 	Status       string `json:"Status" xml:"Status"`
 	ResourceId   string `json:"ResourceId" xml:"ResourceId"`

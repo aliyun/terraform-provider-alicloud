@@ -7,9 +7,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCenInstanceAttachment() *schema.Resource {
@@ -71,12 +71,14 @@ func resourceAlicloudCenInstanceAttachmentCreate(d *schema.ResourceData, meta in
 		request.ChildInstanceOwnerId = requests.Integer(v)
 	}
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		raw, err = client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.AttachCenChildInstance(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus", "InvalidOperation.ChildInstanceStatus", "Operation.Blocking", "OperationFailed.InvalidVpcStatus"}) {
+			if IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus", "InvalidOperation.ChildInstanceStatus", "Operation.Blocking", "OperationFailed.InvalidVpcStatus", "Throttling.User"}) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -111,9 +113,14 @@ func resourceAlicloudCenInstanceAttachmentRead(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 
+	childRegion := object.ChildInstanceRegionId
+	if "ccn" == childRegion[:3] {
+		childRegion = childRegion[4:]
+	}
+
 	d.Set("instance_id", object.CenId)
 	d.Set("child_instance_id", object.ChildInstanceId)
-	d.Set("child_instance_region_id", object.ChildInstanceRegionId)
+	d.Set("child_instance_region_id", childRegion)
 	d.Set("child_instance_owner_id", strconv.FormatInt(object.ChildInstanceOwnerId, 10))
 
 	return nil

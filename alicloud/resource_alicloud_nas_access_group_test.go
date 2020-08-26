@@ -8,10 +8,10 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -91,6 +91,59 @@ func testSweepNasAccessGroup(region string) error {
 		}
 	}
 	return nil
+}
+
+func TestAccAlicloudNas_AccessGroup_Upgrade(t *testing.T) {
+	var v nas.DescribeAccessGroupsAccessGroup1
+	rand := acctest.RandIntRange(10000, 999999)
+	resourceID := "alicloud_nas_access_group.default"
+	ra := resourceAttrInit(resourceID, map[string]string{})
+	serviceFunc := func() interface{} {
+		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceID, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.NasClassicSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceID,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckAccessGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNasAccessGroupUpgradeConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_group_type": "Vpc",
+						"description":       "tf-testAccNasConfigDescription",
+						"access_group_name": fmt.Sprintf("tf-testAccNasConfigName-%d", rand),
+						"file_system_type":  "extreme",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceID,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccNasAccessGroupUpgradeConfigUpdate(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_group_type": "Vpc",
+						"description":       "tf-testAccNasConfigDescriptionUpdate",
+						"access_group_name": fmt.Sprintf("tf-testAccNasConfigName-%d", rand),
+						"file_system_type":  "extreme",
+					}),
+				),
+			},
+		},
+	})
+
 }
 
 func TestAccAlicloudNas_AccessGroup_update(t *testing.T) {
@@ -293,6 +346,26 @@ func testAccNasAccessGroupConfig(rand int) string {
 		name = "tf-testAccNasConfigName-%d"
 		type = "Classic"
 		description = "tf-testAccNasConfigDescription"
+	}`, rand)
+}
+
+func testAccNasAccessGroupUpgradeConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_nas_access_group" "default" {
+		access_group_name = "tf-testAccNasConfigName-%d"
+		access_group_type = "Vpc"
+		description = "tf-testAccNasConfigDescription"
+		file_system_type="extreme"
+	}`, rand)
+}
+
+func testAccNasAccessGroupUpgradeConfigUpdate(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_nas_access_group" "default" {
+		access_group_name = "tf-testAccNasConfigName-%d"
+		access_group_type = "Vpc"
+		description = "tf-testAccNasConfigDescriptionUpdate"
+		file_system_type="extreme"
 	}`, rand)
 }
 

@@ -4,9 +4,9 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCenBandwidthPackageAttachment() *schema.Resource {
@@ -49,7 +49,7 @@ func resourceAlicloudCenBandwidthPackageAttachmentCreate(d *schema.ResourceData,
 			return cbnClient.AssociateCenBandwidthPackage(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidOperation.BwpInstanceStatus", "InvalidOperation.BwpBusinessStatus", "InvalidOperation.CenInstanceStatus"}) {
+			if IsExpectedErrors(err, []string{"InvalidOperation.BwpInstanceStatus", "InvalidOperation.BwpBusinessStatus", "InvalidOperation.CenInstanceStatus", "Operation.Blocking"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -103,7 +103,7 @@ func resourceAlicloudCenBandwidthPackageAttachmentDelete(d *schema.ResourceData,
 			return cbnClient.UnassociateCenBandwidthPackage(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidOperation.BwpInstanceStatus", "InvalidOperation.BwpBusinessStatus", "InvalidOperation.CenInstanceStatus"}) {
+			if IsExpectedErrors(err, []string{"InvalidOperation.BwpInstanceStatus", "InvalidOperation.BwpBusinessStatus", "InvalidOperation.CenInstanceStatus", "Operation.Blocking"}) {
 				return resource.RetryableError(err)
 			}
 

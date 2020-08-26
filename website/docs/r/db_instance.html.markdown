@@ -21,30 +21,35 @@ databases.
 variable "name" {
   default = "dbInstanceconfig"
 }
+
 variable "creation" {
   default = "Rds"
 }
+
 data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+  available_resource_creation = var.creation
 }
+
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
+
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones[0].id
+  name              = var.name
 }
+
 resource "alicloud_db_instance" "default" {
   engine               = "MySQL"
   engine_version       = "5.6"
   instance_type        = "rds.mysql.s2.large"
   instance_storage     = "30"
   instance_charge_type = "Postpaid"
-  instance_name        = "${var.name}"
-  vswitch_id           = "${alicloud_vswitch.default.id}"
+  instance_name        = var.name
+  vswitch_id           = alicloud_vswitch.default.id
   monitoring_period    = "60"
 }
 ```
@@ -143,6 +148,9 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
    
    Default to "Manual". See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
 
+* `ssl_action` - (Optional, Available in v1.90.0+) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26254.htm).
+* `tde_status` - (Optional, ForceNew, Available in 1.90.0+) The TDE(Transparent Data Encryption) status. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26256.htm).
+
 -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
 ## Attributes Reference
@@ -152,6 +160,8 @@ The following attributes are exported:
 * `id` - The RDS instance ID.
 * `port` - RDS database connection port.
 * `connection_string` - RDS database connection string.
+* `ssl_status` - Status of the SSL feature. `Yes`: SSL is turned on; `No`: SSL is turned off.
+
 
 ### Timeouts
 

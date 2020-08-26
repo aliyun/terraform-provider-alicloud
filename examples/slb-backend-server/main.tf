@@ -79,6 +79,7 @@ resource "alicloud_slb_backend_server" "group" {
     server_id = alicloud_network_interface.default[0].id
     weight    = 100
     type      = "eni"
+    server_ip = alicloud_network_interface.default[0].private_ip
   }
 
   backend_servers {

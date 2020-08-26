@@ -88,6 +88,10 @@ type Config struct {
 	BssopenapiEndpoint      string
 	AlidnsEndpoint          string
 	CassandraEndpoint       string
+	EciEndpoint             string
+	OosEndpoint             string
+	DcdnEndpoint            string
+	MseEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {
@@ -134,7 +138,7 @@ func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {
 // Actually, the job should be done by sdk, but currently not all resources and products support alibaba-cloud-sdk-go,
 // and their go sdk does support ecs role name.
 // This method is a temporary solution and it should be removed after all go sdk support ecs role name
-// The related PR: https://github.com/terraform-providers/terraform-provider-alicloud/pull/731
+// The related PR: https://github.com/aliyun/terraform-provider-alicloud/pull/731
 func (c *Config) getAuthCredentialByEcsRoleName() (accessKey, secretKey, token string, err error) {
 	if c.AccessKey != "" {
 		return c.AccessKey, c.SecretKey, c.SecurityToken, nil

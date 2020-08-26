@@ -23,7 +23,8 @@ resource "alicloud_cen_bandwidth_package" "foo" {
   bandwidth = 5
   geographic_region_ids = [
     "China",
-  "Asia-Pacific"]
+    "Asia-Pacific",
+  ]
 }
 ```
 ## Argument Reference
@@ -31,7 +32,7 @@ resource "alicloud_cen_bandwidth_package" "foo" {
 The following arguments are supported:
 
 * `bandwidth` - (Required) The bandwidth in Mbps of the bandwidth package. Cannot be less than 2Mbps.
-* `geographic_region_ids` - (Required) List of the two areas to connect. Valid value: China | North-America | Asia-Pacific | Europe | Middle-East.
+* `geographic_region_ids` - (Required) List of the two areas to connect. Valid value: China | North-America | Asia-Pacific | Europe | Middle-East | Australia.
 * `name` - (Optional) The name of the bandwidth package. Defaults to null.
 * `description` - (Optional) The description of the bandwidth package. Default to null.
 * `charge_type` - (Optional) The billing method. Valid value: PostPaid | PrePaid. Default to PostPaid. If set to PrePaid, the bandwidth package can't be deleted before expired time.

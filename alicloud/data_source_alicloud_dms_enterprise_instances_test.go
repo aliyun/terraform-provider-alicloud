@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudDmsEnterprisesDataSource(t *testing.T) {
@@ -16,24 +17,24 @@ func TestAccAlicloudDmsEnterprisesDataSource(t *testing.T) {
 
 	searchkeyConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"search_key": name,
+			"search_key": "${alicloud_dms_enterprise_instance.default.host}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"search_key": name + "fake",
+			"search_key": "${alicloud_dms_enterprise_instance.default.host}-fake",
 		}),
 	}
 	instancealiasRegexConfConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"net_type":             "CLASSIC",
-			"instance_type":        "mysql",
+			"net_type":             "VPC",
+			"instance_type":        "${alicloud_dms_enterprise_instance.default.instance_type}",
 			"env_type":             "test",
-			"instance_alias_regex": "tf_testAcc",
+			"instance_alias_regex": name,
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"net_type":             "CLASSIC",
-			"instance_type":        "mysql",
+			"net_type":             "VPC",
+			"instance_type":        "${alicloud_dms_enterprise_instance.default.instance_type}",
 			"env_type":             "test",
-			"instance_alias_regex": "tf_testAcc-fake",
+			"instance_alias_regex": name + "fake",
 		}),
 	}
 	var existDmsEnterpriseInstancesMapFunc = func(rand int) map[string]string {
@@ -46,7 +47,7 @@ func TestAccAlicloudDmsEnterprisesDataSource(t *testing.T) {
 			"instances.0.dba_nick_name":     CHECKSET,
 			"instances.0.ddl_online":        "0",
 			"instances.0.ecs_instance_id":   "",
-			"instances.0.ecs_region":        "cn-hangzhou",
+			"instances.0.ecs_region":        os.Getenv("ALICLOUD_REGION"),
 			"instances.0.env_type":          "test",
 			"instances.0.export_timeout":    CHECKSET,
 			"instances.0.host":              CHECKSET,
@@ -81,70 +82,58 @@ func TestAccAlicloudDmsEnterprisesDataSource(t *testing.T) {
 
 func dataSourceDmsEnterpriseInstancesConfigDependence(name string) string {
 	return fmt.Sprintf(`
-		variable "creation" {
-		  default = "Rds"
-		}
-		data "alicloud_account" "current"{
-		}
-		variable "name" {
-		  default = "dbconnectionbasic"
-		}
+	data "alicloud_account" "current" {
+	}
 	
-		data "alicloud_zones" "default" {
-		  available_resource_creation = var.creation
-		}
+	data "alicloud_vpcs" "default" {
+	is_default = true
+	}
+	data "alicloud_vswitches" "default" {
+	ids = [
+	  data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
+	}
 	
-		resource "alicloud_vpc" "default" {
-		  name       = var.name
-		  cidr_block = "172.16.0.0/16"
-		}
+	resource "alicloud_security_group" "default" {
+	name = "%[1]s"
+	vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+	}
 	
-		resource "alicloud_vswitch" "default" {
-		  vpc_id            = alicloud_vpc.default.id
-		  cidr_block        = "172.16.0.0/24"
-		  availability_zone = data.alicloud_zones.default.zones[0].id
-		  name              = var.name
-		}
-		resource "alicloud_security_group" "default" {
-		  name   = var.name
-		  vpc_id = alicloud_vpc.default.id
-		}
-		resource "alicloud_db_instance" "instance" {
-		  engine           = "MySQL"
-		  engine_version   = "5.7"
-		  instance_type    = "rds.mysql.t1.small"
-		  instance_storage = "10"
-		  vswitch_id       = alicloud_vswitch.default.id
-		  instance_name    = var.name
-		  security_ips     = ["100.104.5.0/24","192.168.0.6"]
-		}
+	resource "alicloud_db_instance" "instance" {
+	engine           = "MySQL"
+	engine_version   = "5.7"
+	instance_type    = "rds.mysql.t1.small"
+	instance_storage = "10"
+	vswitch_id       = "${data.alicloud_vswitches.default.ids.0}"
+	instance_name    = "%[1]s"
+	security_ips     = ["100.104.5.0/24","192.168.0.6"]
+	}
 	
-		resource "alicloud_db_account" "account" {
-		  instance_id = alicloud_db_instance.instance.id
-		  name        = "tftestnormal"
-		  password    = "Test12345"
-		  type        = "Normal"
-		}
-	
-		resource "alicloud_dms_enterprise_instance" "default" {
-		  dba_uid           =  tonumber(data.alicloud_account.current.id)
-		  host              =  alicloud_db_instance.instance.connection_string
-		  port              =  "3306"
-		  network_type      =	 "VPC"
-		  safe_rule         =	"自由操作"
-		  tid               =  "13429"
-		  instance_type     =	 "mysql"
-		  instance_source   =	 "RDS"
-		  env_type          =	 "test"
-		  database_user     =	 alicloud_db_account.account.name
-		  database_password =	 alicloud_db_account.account.password
-		  instance_alias    =	 %s
-		  query_timeout     =	 "70"
-		  export_timeout    =	 "2000"
-		  ecs_region        =	 "cn-hangzhou"
-		  ddl_online        =	 "0"
-		  use_dsql          =	 "0"
-		  data_link_name    =	 ""
-		}
-	`, name)
+	resource "alicloud_db_account" "account" {
+	instance_id = "${alicloud_db_instance.instance.id}"
+	name        = "tftestnormal"
+	password    = "Test12345"
+	type        = "Normal"
+	}
+
+	resource "alicloud_dms_enterprise_instance" "default" {
+	  dba_uid           =  tonumber(data.alicloud_account.current.id)
+	  host              =  "${alicloud_db_instance.instance.connection_string}"
+	  port              =  "3306"
+	  network_type      =	 "VPC"
+	  safe_rule         =	"自由操作"
+	  tid               =  "13429"
+	  instance_type     =	 "mysql"
+	  instance_source   =	 "RDS"
+	  env_type          =	 "test"
+	  database_user     =	 alicloud_db_account.account.name
+	  database_password =	 alicloud_db_account.account.password
+	  instance_alias    =	 "%[1]s"
+	  query_timeout     =	 "70"
+	  export_timeout    =	 "2000"
+	  ecs_region        =	 "%[2]s"
+	  ddl_online        =	 "0"
+	  use_dsql          =	 "0"
+	  data_link_name    =	 ""
+	}
+`, name, os.Getenv("ALICLOUD_REGION"))
 }

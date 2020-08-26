@@ -15,6 +15,7 @@ const (
 	Huhehaote   = Region("cn-huhehaote")
 	ChengDu     = Region("cn-chengdu")
 	HeYuan      = Region("cn-heyuan")
+	WuLanChaBu  = Region("cn-wulanchabu")
 
 	APSouthEast1 = Region("ap-southeast-1")
 	APNorthEast1 = Region("ap-northeast-1")
@@ -37,7 +38,7 @@ const (
 )
 
 var ValidRegions = []Region{
-	Hangzhou, Qingdao, Beijing, Shenzhen, Hongkong, Shanghai, Zhangjiakou, Huhehaote, ChengDu, HeYuan,
+	Hangzhou, Qingdao, Beijing, Shenzhen, Hongkong, Shanghai, Zhangjiakou, Huhehaote, ChengDu, HeYuan, WuLanChaBu,
 	USWest1, USEast1,
 	APNorthEast1, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5,
 	APSouth1,
@@ -48,7 +49,7 @@ var ValidRegions = []Region{
 var EcsClassicSupportedRegions = []Region{Shenzhen, Shanghai, Beijing, Qingdao, Hangzhou, Hongkong, USWest1, APSouthEast1}
 var EcsSpotNoSupportedRegions = []Region{APSouth1}
 var SlbGuaranteedSupportedRegions = []Region{Qingdao, Beijing, Hangzhou, Shanghai, Shenzhen, Zhangjiakou, Huhehaote, APSouthEast1, USEast1}
-var DrdsSupportedRegions = []Region{Beijing, Shenzhen, Hangzhou, Qingdao, Hongkong, Shanghai, Huhehaote, Zhangjiakou}
+var DrdsSupportedRegions = []Region{Beijing, Shenzhen, Hangzhou, Qingdao, Hongkong, Shanghai, Huhehaote, Zhangjiakou, APSouthEast1}
 var DrdsClassicNoSupportedRegions = []Region{Hongkong}
 var GpdbSupportedRegions = []Region{Beijing, Shenzhen, Hangzhou, Shanghai, Hongkong}
 

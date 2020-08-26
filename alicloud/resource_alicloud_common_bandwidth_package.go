@@ -9,8 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunCommonBandwidthPackage() *schema.Resource {
@@ -58,6 +58,11 @@ func resourceAliyunCommonBandwidthPackage() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			"isp": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "BGP",
+			},
 		},
 	}
 }
@@ -70,11 +75,19 @@ func resourceAliyunCommonBandwidthPackageCreate(d *schema.ResourceData, meta int
 	request.RegionId = client.RegionId
 
 	request.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
-	request.Name = d.Get("name").(string)
-	request.Description = d.Get("description").(string)
 	request.ResourceGroupId = d.Get("resource_group_id").(string)
 	request.InternetChargeType = d.Get("internet_charge_type").(string)
 	request.Ratio = requests.NewInteger(d.Get("ratio").(int))
+
+	if v, ok := d.GetOk("isp"); ok && v.(string) != "" {
+		request.ISP = v.(string)
+	}
+	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
+		request.Name = v.(string)
+	}
+	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
+		request.Description = v.(string)
+	}
 
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
@@ -86,7 +99,6 @@ func resourceAliyunCommonBandwidthPackageCreate(d *schema.ResourceData, meta int
 			if IsExpectedErrors(err, []string{"BandwidthPackageOperation.conflict", Throttling}) {
 				wait()
 				return resource.RetryableError(err)
-
 			}
 			return resource.NonRetryableError(err)
 		}
@@ -128,6 +140,7 @@ func resourceAliyunCommonBandwidthPackageRead(d *schema.ResourceData, meta inter
 	d.Set("internet_charge_type", object.InternetChargeType)
 	d.Set("ratio", object.Ratio)
 	d.Set("resource_group_id", object.ResourceGroupId)
+	d.Set("isp", object.ISP)
 	return nil
 }
 

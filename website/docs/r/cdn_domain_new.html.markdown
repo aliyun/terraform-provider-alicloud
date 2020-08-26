@@ -33,7 +33,6 @@ resource "alicloud_cdn_domain_new" "domain" {
     weight   = 10
   }
 }
-
 ```
 ## Argument Reference
 
@@ -73,6 +72,7 @@ The `certificate_config` block supports the following:
 The following attributes are exported:
 
 * `id` - The cdn domain id. The value is same as the domain name.
+* `cname` - (Available in v1.90.0+) The CNAME of the CDN domain.
 
 ## Import
 

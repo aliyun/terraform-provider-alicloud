@@ -17,7 +17,7 @@ Basic Usage
 
 - BLob Topic
 
-  ```
+```
 resource "alicloud_datahub_topic" "example" {
   name         = "tf_datahub_topic"
   project_name = "tf_datahub_project"
@@ -26,10 +26,10 @@ resource "alicloud_datahub_topic" "example" {
   life_cycle   = 7
   comment      = "created by terraform"
 }
-  ```
+```
 - Tuple Topic
 
-  ```
+```
 resource "alicloud_datahub_topic" "example" {
   name         = "tf_datahub_topic"
   project_name = "tf_datahub_project"
@@ -45,7 +45,7 @@ resource "alicloud_datahub_topic" "example" {
   life_cycle  = 7
   comment     = "created by terraform"
 }
-  ```
+```
 
 ## Argument Reference
 

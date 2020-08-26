@@ -26,30 +26,31 @@ Basic Usage
 
 ```
 variable "instance_name" {
- default = "alikafkaInstanceName"
+  default = "alikafkaInstanceName"
 }
 
 data "alicloud_zones" "default" {
-    available_resource_creation= "VSwitch"
+  available_resource_creation = "VSwitch"
 }
+
 resource "alicloud_vpc" "default" {
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name = "${var.instance_name}"
+  name        = var.instance_name
   topic_quota = "50"
-  disk_type = "1"
-  disk_size = "500"
+  disk_type   = "1"
+  disk_size   = "500"
   deploy_type = "4"
-  io_max = "20"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  io_max      = "20"
+  vswitch_id  = alicloud_vswitch.default.id
 }
 ```
 
@@ -67,6 +68,7 @@ The following arguments are supported:
 * `paid_type` - (Optional) The paid type of the instance. Support two type, "PrePaid": pre paid type instance, "PostPaid": post paid type instance. Default is PostPaid. When modify this value, it only support adjust from post pay to pre pay. 
 * `spec_type` - (Optional) The spec type of the instance. Support two type, "normal": normal version instance, "professional": professional version instance. Default is normal. When modify this value, it only support adjust from normal to professional. Note only pre paid type instance support professional specific type.
 * `vswitch_id` - (Required, ForceNew) The ID of attaching vswitch to instance.
+* `security_group` - （Optional, ForceNew, Available in v1.93.0+） The ID of security group for this instance. If the security group is empty, system will create a default one.
 * `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
 
 -> **NOTE:** Arguments io_max, disk_size, topic_quota, eip_max should follow the following constraints.

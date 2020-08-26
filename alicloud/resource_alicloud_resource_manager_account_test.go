@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
@@ -22,7 +22,7 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-%d", rand)
+	name := fmt.Sprintf("tf-testAcc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ResourceManagerAccountBasicdependence)
 
 	resource.Test(t, resource.TestCase{
@@ -55,11 +55,11 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"display_name": "tf-1233",
+					"display_name": fmt.Sprintf("%s1", name),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"display_name": "tf-1233",
+						"display_name": fmt.Sprintf("%s1", name),
 					}),
 				),
 			},

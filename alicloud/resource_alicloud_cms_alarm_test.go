@@ -13,9 +13,9 @@ import (
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 var cmsContactGroup = os.Getenv("ALICLOUD_CMS_CONTACT_GROUP")
@@ -121,6 +121,9 @@ func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "name", "tf-testAccCmsAlarm_basic"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "dimensions.%", "2"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "dimensions.device", "/dev/vda1,/dev/vdb1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_critical.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_warn.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_info.#", "1"),
 				),
 			},
 			{
@@ -271,6 +274,27 @@ func testAccCmsAlarm_basic(group string) string {
 	  operator = "<="
 	  threshold = 35
 	  triggered_count = 2
+
+	  escalations_critical {
+		statistics = "Average"
+		comparison_operator = "<="
+		threshold = 35
+		times = 2
+	  }
+	
+	  escalations_warn {
+		statistics = "Average"
+		comparison_operator = "<="
+		threshold = 35
+		times = 2
+	  }
+	
+	  escalations_info {
+		statistics = "Average"
+		comparison_operator = "<="
+		threshold = 35
+		times = 2
+	  }
 	  contact_groups = ["%s"]
       effective_interval = "06:00-20:00"
 	}

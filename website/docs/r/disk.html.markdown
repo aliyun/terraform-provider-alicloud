@@ -24,7 +24,8 @@ resource "alicloud_disk" "ecs_disk" {
   description       = "Hello ecs disk."
   category          = "cloud_efficiency"
   size              = "30"
-
+  encrypted         = true
+  kms_key_id        = "2a6767f0-a16c-4679-a60f-13bf*****"
   tags = {
     Name = "TerraformTest"
   }
@@ -40,6 +41,7 @@ The following arguments are supported:
 * `category` - (Optional, ForceNew) Category of the disk. Valid values are `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`. Default is `cloud_efficiency`.
 * `size` - (Required) The size of the disk in GiBs. When resize the disk, the new size must be greater than the former value, or you would get an error `InvalidDiskSize.TooSmall`.
 * `snapshot_id` - (Optional) A snapshot to base the disk off of. If the disk size required by snapshot is greater than `size`, the `size` will be ignored, conflict with `encrypted`.
+* `kms_key_id` - (Optional, Available in 1.89.0+) The ID of the KMS key corresponding to the data disk, The specified parameter `Encrypted` must be `true` when KmsKeyId is not empty.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `encrypted` - (Optional, ForceNew) If true, the disk will be encrypted, conflict with `snapshot_id`.
 * `delete_auto_snapshot` - (Optional Available in 1.53.0+) Indicates whether the automatic snapshot is deleted when the disk is released. Default value: false.

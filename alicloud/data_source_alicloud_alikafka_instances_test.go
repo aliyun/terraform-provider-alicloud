@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
@@ -48,16 +48,17 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 
 	var existAlikafkaInstancesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                   "1",
-			"instances.#":             "1",
-			"instances.0.name":        fmt.Sprintf("tf-testacc-alikafkainstance%v", rand),
-			"instances.0.topic_quota": "50",
-			"instances.0.disk_type":   "1",
-			"instances.0.disk_size":   "500",
-			"instances.0.deploy_type": "5",
-			"instances.0.io_max":      "20",
-			"instances.0.paid_type":   "PostPaid",
-			"instances.0.spec_type":   "normal",
+			"ids.#":                      "1",
+			"instances.#":                "1",
+			"instances.0.name":           fmt.Sprintf("tf-testacc-alikafkainstance%v", rand),
+			"instances.0.topic_quota":    "50",
+			"instances.0.disk_type":      "1",
+			"instances.0.disk_size":      "500",
+			"instances.0.deploy_type":    "5",
+			"instances.0.io_max":         "20",
+			"instances.0.paid_type":      "PostPaid",
+			"instances.0.spec_type":      "normal",
+			"instances.0.security_group": CHECKSET,
 		}
 	}
 
@@ -75,6 +76,7 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 	}
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
+		testAccPreCheckWithNoDefaultVswitch(t)
 	}
 	alikafkaInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
@@ -85,19 +87,13 @@ func dataSourceAlikafkaInstancesConfigDependence(name string) string {
 		 default = "%v"
 		}
 
-		data "alicloud_zones" "default" {
-			available_resource_creation= "VSwitch"
+        data "alicloud_vswitches" "default" {
+		  is_default = "true"
 		}
-		resource "alicloud_vpc" "default" {
-		  cidr_block = "172.16.0.0/12"
-		  name       = "${var.name}"
-		}
-		
-		resource "alicloud_vswitch" "default" {
-		  vpc_id = "${alicloud_vpc.default.id}"
-		  cidr_block = "172.16.0.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name       = "${var.name}"
+
+		resource "alicloud_security_group" "default" {
+		  name   = var.name
+		  vpc_id = "${data.alicloud_vswitches.default.vswitches.0.vpc_id}"
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
@@ -107,7 +103,8 @@ func dataSourceAlikafkaInstancesConfigDependence(name string) string {
 		  disk_size = "500"
 		  deploy_type = "5"
 		  io_max = "20"
-          vswitch_id = "${alicloud_vswitch.default.id}"
+          vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
+          security_group = "${alicloud_security_group.default.id}"
 		}
 		`, name)
 }

@@ -26,16 +26,19 @@ For information about listener and how to use it, to see the following:
 variable "name" {
   default = "testcreatehttplistener"
 }
+
 variable "ip_version" {
   default = "ipv4"
 }
+
 resource "alicloud_slb" "default" {
   name                 = "tf-testAccSlbListenerHttp"
   internet_charge_type = "PayByTraffic"
   internet             = true
 }
+
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id          = "${alicloud_slb.default.id}"
+  load_balancer_id          = alicloud_slb.default.id
   backend_port              = 80
   frontend_port             = 80
   protocol                  = "http"
@@ -59,13 +62,14 @@ resource "alicloud_slb_listener" "default" {
   }
   acl_status      = "on"
   acl_type        = "white"
-  acl_id          = "${alicloud_slb_acl.default.id}"
+  acl_id          = alicloud_slb_acl.default.id
   request_timeout = 80
   idle_timeout    = 30
 }
+
 resource "alicloud_slb_acl" "default" {
-  name       = "${var.name}"
-  ip_version = "${var.ip_version}"
+  name       = var.name
+  ip_version = var.ip_version
   entry_list {
     entry   = "10.10.10.0/24"
     comment = "first"

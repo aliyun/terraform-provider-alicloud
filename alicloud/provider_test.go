@@ -16,14 +16,14 @@ import (
 	"github.com/aliyun/fc-go-sdk"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"strings"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 var testAccProviders map[string]terraform.ResourceProvider
@@ -70,6 +70,13 @@ func testAccPreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
 	}
 	if defaultAccount != string(account) {
 		t.Skipf("Skipping unsupported account type %s-Site. It only supports %s-Site.", defaultAccount, account)
+		t.Skipped()
+	}
+}
+
+func testAccPreCheckPrePaidResources(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ENABLE_CHECKING_PRE_PAID")); v != "true" {
+		t.Skip("Skipping testing PrePaid resources, otherwise setting environment parameter 'ENABLE_CHECKING_PRE_PAID'.")
 		t.Skipped()
 	}
 }
@@ -199,9 +206,16 @@ func testAccPreCheckWithSmartAccessGatewayAppSetting(t *testing.T) {
 	}
 }
 
-func testAccPreCheckWithTime(t *testing.T) {
-	if time.Now().Day() != 1 {
-		t.Skipf("Skipping the test case with not the 1st of every month")
+func testAccPreCheckWithTime(t *testing.T, days []int) {
+	skipped := true
+	for _, d := range days {
+		if time.Now().Day() == d {
+			skipped = false
+			break
+		}
+	}
+	if skipped {
+		t.Skipf("Skipping the test case when not in specified days %#v of every month", days)
 		t.Skipped()
 	}
 }

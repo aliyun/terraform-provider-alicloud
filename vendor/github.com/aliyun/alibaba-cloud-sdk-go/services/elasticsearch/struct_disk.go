@@ -17,9 +17,10 @@ package elasticsearch
 
 // Disk is a nested struct in elasticsearch response
 type Disk struct {
-	MaxSize       int      `json:"maxSize" xml:"maxSize"`
-	ScaleLimit    int      `json:"scaleLimit" xml:"scaleLimit"`
-	DiskType      string   `json:"diskType" xml:"diskType"`
-	MinSize       int      `json:"minSize" xml:"minSize"`
-	ValueLimitSet []string `json:"valueLimitSet" xml:"valueLimitSet"`
+	MaxSize        int      `json:"maxSize" xml:"maxSize"`
+	DiskEncryption bool     `json:"diskEncryption" xml:"diskEncryption"`
+	ScaleLimit     int      `json:"scaleLimit" xml:"scaleLimit"`
+	DiskType       string   `json:"diskType" xml:"diskType"`
+	MinSize        int      `json:"minSize" xml:"minSize"`
+	ValueLimitSet  []string `json:"valueLimitSet" xml:"valueLimitSet"`
 }

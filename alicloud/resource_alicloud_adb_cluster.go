@@ -10,9 +10,9 @@ import (
 
 	"strconv"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudAdbCluster() *schema.Resource {
@@ -115,6 +115,10 @@ func resourceAlicloudAdbCluster() *schema.Resource {
 				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 			"tags": tagsSchema(),
+			"connection_string": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -303,6 +307,7 @@ func resourceAlicloudAdbClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("db_version", clusterAttribute.DBVersion)
 	d.Set("maintain_time", clusterAttribute.MaintainTime)
 	d.Set("zone_id", clusterAttribute.ZoneId)
+	d.Set("connection_string", clusterAttribute.ConnectionString)
 	d.Set("db_node_class", cluster.DBNodeClass)
 	d.Set("db_node_count", cluster.DBNodeCount)
 	d.Set("db_node_storage", cluster.DBNodeStorage)

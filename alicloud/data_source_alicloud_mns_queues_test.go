@@ -5,7 +5,7 @@ import (
 
 	"fmt"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudMnsQueueDataSource(t *testing.T) {

@@ -9,11 +9,11 @@ import (
 
 	"fmt"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 // # Generate a CA cert pair.
@@ -95,7 +95,7 @@ KKXMFi8uMDIellyOaUOsiPhAWnm4GqERwQuc4U4i3Z5k/eiKReWT
 -----END RSA PRIVATE KEY-----`
 
 func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
-	var v cs.KubernetesCluster
+	var v *cs.KubernetesClusterDetail
 
 	resourceId := "alicloud_cs_kubernetes.default"
 	ra := resourceAttrInit(resourceId, csKubernetesBasicMap)
@@ -124,11 +124,12 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name_prefix":           name,
-					"vswitch_ids":           []string{"${alicloud_vswitch.default.id}"},
-					"master_instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"name":                  name,
+					"master_vswitch_ids":    []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default.id}", "${alicloud_vswitch.default.id}"},
+					"worker_vswitch_ids":    []string{"${alicloud_vswitch.default.id}"},
+					"master_instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"worker_instance_types": []string{"${data.alicloud_instance_types.default1.instance_types.0.id}"},
-					"worker_numbers":        []string{"1"},
+					"worker_number":         "1",
 					"master_disk_category":  "cloud_ssd",
 					"worker_disk_size":      "50",
 					"password":              "Yourpassword1234",
@@ -136,12 +137,11 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"service_cidr":          "192.168.2.0/24",
 					"enable_ssh":            "true",
 					"install_cloud_monitor": "true",
-					"force_update":          "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name_prefix":           name,
-						"worker_numbers.0":      "1",
+						"name":                  name,
+						"worker_number":         "1",
 						"master_disk_category":  "cloud_ssd",
 						"worker_disk_size":      "50",
 						"password":              "Yourpassword1234",
@@ -149,7 +149,6 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 						"service_cidr":          "192.168.2.0/24",
 						"enable_ssh":            "true",
 						"install_cloud_monitor": "true",
-						"force_update":          "true",
 					}),
 				),
 			},
@@ -157,12 +156,12 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
+				ImportStateVerifyIgnore: []string{"name", "new_nat_gateway", "pod_cidr",
 					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca", "force_update",
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types",
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
-					"worker_instance_charge_type", "worker_instance_types", "worker_numbers", "log_config",
-					"worker_data_disk_category", "worker_data_disk_size"},
+					"worker_instance_charge_type", "worker_instance_types", "log_config",
+					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -187,14 +186,14 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"new_nat_gateway":       REMOVEKEY,
-					"worker_numbers":        []string{"3"},
+					"worker_number":         "3",
 					"install_cloud_monitor": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"new_nat_gateway":       "true",
-						"worker_numbers.0":      "3",
-						"install_cloud_monitor": "false",
+						"worker_number":         "3",
+						"install_cloud_monitor": "true",
 					}),
 				),
 			},
@@ -213,7 +212,7 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var v cs.KubernetesCluster
+	var v *cs.KubernetesClusterDetail
 
 	resourceId := "alicloud_cs_kubernetes.default"
 	ra := resourceAttrInit(resourceId, csKubernetesBasicMap)
@@ -242,11 +241,12 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name_prefix":           name,
-					"vswitch_ids":           []string{"${alicloud_vswitch.default.id}"},
-					"master_instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"name":                  name,
+					"master_vswitch_ids":    []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.default.id}", "${alicloud_vswitch.default.id}"},
+					"worker_vswitch_ids":    []string{"${alicloud_vswitch.default.id}"},
+					"master_instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"worker_instance_types": []string{"${data.alicloud_instance_types.default1.instance_types.0.id}"},
-					"worker_numbers":        []string{"1"},
+					"worker_number":         "1",
 					"master_disk_category":  "cloud_ssd",
 					"worker_disk_size":      "50",
 					"password":              "Yourpassword1234",
@@ -255,13 +255,12 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 					"enable_ssh":            "true",
 					"install_cloud_monitor": "true",
 					"user_ca":               tmpFile.Name(),
-					"force_update":          "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckUserCA(resourceId, &v),
+					testAccCheckUserCA(resourceId, v),
 					testAccCheck(map[string]string{
-						"name_prefix":           name,
-						"worker_numbers.0":      "1",
+						"name":                  name,
+						"worker_number":         "1",
 						"master_disk_category":  "cloud_ssd",
 						"worker_disk_size":      "50",
 						"password":              "Yourpassword1234",
@@ -269,7 +268,6 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 						"service_cidr":          "192.168.2.0/24",
 						"enable_ssh":            "true",
 						"install_cloud_monitor": "true",
-						"force_update":          "true",
 					}),
 				),
 			},
@@ -277,12 +275,12 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
+				ImportStateVerifyIgnore: []string{"name", "new_nat_gateway", "pod_cidr",
 					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca", "force_update",
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types",
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
-					"worker_instance_charge_type", "worker_instance_types", "worker_numbers", "log_config",
-					"worker_data_disk_category", "worker_data_disk_size"},
+					"worker_instance_charge_type", "worker_instance_types", "log_config",
+					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -307,134 +305,14 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"new_nat_gateway":       REMOVEKEY,
-					"worker_numbers":        []string{"3"},
+					"worker_number":         "3",
 					"install_cloud_monitor": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"new_nat_gateway":       "true",
-						"worker_numbers.0":      "3",
-						"install_cloud_monitor": "false",
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudCSKubernetes_multiAZ(t *testing.T) {
-	var v cs.KubernetesCluster
-
-	resourceId := "alicloud_cs_kubernetes.default"
-	ra := resourceAttrInit(resourceId, csKubernetesBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacckubernetes-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSKubernetesConfigDependence_multiAZ)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name_prefix":               name,
-					"vswitch_ids":               []string{"${alicloud_vswitch.default1.id}", "${alicloud_vswitch.default2.id}", "${alicloud_vswitch.default3.id}"},
-					"master_instance_types":     []string{"${data.alicloud_instance_types.default_m1.instance_types.0.id}", "${data.alicloud_instance_types.default_m2.instance_types.0.id}", "${data.alicloud_instance_types.default_m3.instance_types.0.id}"},
-					"worker_instance_types":     []string{"${data.alicloud_instance_types.default_w1.instance_types.0.id}", "${data.alicloud_instance_types.default_w2.instance_types.0.id}", "${data.alicloud_instance_types.default_w3.instance_types.0.id}"},
-					"worker_numbers":            []string{"1", "2", "3"},
-					"master_disk_category":      "cloud_ssd",
-					"worker_disk_size":          "50",
-					"worker_data_disk_category": "cloud_ssd",
-					"worker_data_disk_size":     "50",
-					"password":                  "Yourpassword1234",
-					"pod_cidr":                  "172.16.0.0/18",
-					"service_cidr":              "172.20.1.0/24",
-					"enable_ssh":                "true",
-					"install_cloud_monitor":     "true",
-					"force_update":              "true",
-					"slb_internet_enabled":      "false",
-					"node_cidr_mask":            "25",
-					"log_config": []map[string]interface{}{
-						{
-							"type":    "SLS",
-							"project": "${alicloud_log_project.default.name}",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name_prefix":           name,
-						"worker_numbers.0":      "1",
-						"master_disk_category":  "cloud_ssd",
-						"worker_disk_size":      "50",
-						"password":              "Yourpassword1234",
-						"pod_cidr":              "172.16.0.0/18",
-						"service_cidr":          "172.20.1.0/24",
-						"enable_ssh":            "true",
+						"worker_number":         "3",
 						"install_cloud_monitor": "true",
-						"force_update":          "true",
-						"slb_internet_enabled":  "false",
-						"node_cidr_mask":        "25",
-						"log_config.0.type":     "SLS",
-						"log_config.0.project":  name,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr",
-					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca", "force_update",
-					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types",
-					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
-					"worker_instance_charge_type", "worker_instance_types", "worker_numbers", "log_config",
-					"worker_data_disk_category", "worker_data_disk_size"},
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"new_nat_gateway": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"install_cloud_monitor": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"install_cloud_monitor": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway":       REMOVEKEY,
-					"install_cloud_monitor": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"new_nat_gateway":       "true",
-						"install_cloud_monitor": "false",
 					}),
 				),
 			},
@@ -596,7 +474,7 @@ var csKubernetesBasicMap = map[string]string{
 	"name": CHECKSET,
 }
 
-func testAccCheckUserCA(n string, d *cs.KubernetesCluster) resource.TestCheckFunc {
+func testAccCheckUserCA(n string, d *cs.KubernetesClusterDetail) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		cluster, ok := s.RootModule().Resources[n]
 		if !ok {

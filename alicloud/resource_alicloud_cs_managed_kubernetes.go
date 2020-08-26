@@ -6,10 +6,10 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 const (
@@ -107,6 +107,47 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				ValidateFunc:     validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				Default:          PostPaid,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
+			},
+			"worker_data_disks": {
+				Optional: true,
+				Type:     schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"size": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"category": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
+						},
+						"snapshot_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"device": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"kms_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"encrypted": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"auto_snapshot_policy_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
 			},
 			"worker_period_unit": {
 				Type:             schema.TypeString,
@@ -256,8 +297,9 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 							Optional: true,
 						},
 						"disabled": {
-							Type:     schema.TypeString,
+							Type:     schema.TypeBool,
 							Optional: true,
+							Default:  false,
 						},
 					},
 				},
@@ -324,7 +366,14 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+			},
+			"is_enterprise_security_group": {
+				Type:          schema.TypeBool,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"security_group_id"},
 			},
 			"nat_gateway_id": {
 				Type:     schema.TypeString,
@@ -430,6 +479,28 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"node_name_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^customized,[a-z0-9]([-a-z0-9\.])*,([5-9]|[1][0-2]),([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`), "Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test."),
+			},
+			"worker_ram_role_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"service_account_issuer": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"api_audiences": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -468,7 +539,7 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 	cluster, _ := response.(*cs.ClusterCommonResponse)
 	d.SetId(cluster.ClusterID)
 
-	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsManagedKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())

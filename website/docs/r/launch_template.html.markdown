@@ -26,11 +26,11 @@ data "alicloud_instances" "instances" {
 resource "alicloud_launch_template" "template" {
   name                          = "tf-test-template"
   description                   = "test1"
-  image_id                      = "${data.alicloud_images.images.images.0.id}"
+  image_id                      = data.alicloud_images.images.images[0].id
   host_name                     = "tf-test-host"
   instance_charge_type          = "PrePaid"
   instance_name                 = "tf-instance-name"
-  instance_type                 = "${data.alicloud_instances.instances.instances.0.instance_type}"
+  instance_type                 = data.alicloud_instances.instances.instances[0].instance_type
   internet_charge_type          = "PayByBandwidth"
   internet_max_bandwidth_in     = 5
   internet_max_bandwidth_out    = 0
@@ -78,7 +78,7 @@ resource "alicloud_launch_template" "template" {
 
 The following arguments are supported:
 
-* `name` - (Optional, ForceNew) Instance launch template name. Can contain [2, 128] characters in length. It must start with an English letter (uppercase or lowercase) and can contain numbers, periods (.), colons (:), underscores (_), and hyphens (-). It cannot start with "http://" or "https://".
+* `name` - (Required, ForceNew) Instance launch template name. Can contain [2, 128] characters in length. It must start with an English letter or Chinese, can contain numbers, periods (.), colons (:), underscores (_), and hyphens (-). It cannot start with "http://" or "https://".
 * `description` - (Optional) Description of instance launch template version 1. It can be [2, 256] characters in length. It cannot start with "http://" or "https://". The default value is null.
 * `host_name` - (Optional) Instance host name.It cannot start or end with a period (.) or a hyphen (-) and it cannot have two or more consecutive periods (.) or hyphens (-).For Windows: The host name can be [2, 15] characters in length. It can contain A-Z, a-z, numbers, periods (.), and hyphens (-). It cannot only contain numbers. For other operating systems: The host name can be [2, 64] characters in length. It can be segments separated by periods (.). It can contain A-Z, a-z, numbers, and hyphens (-).
 * `image_id` - (Optional) Image ID.
@@ -90,7 +90,7 @@ The following arguments are supported:
     Default value: PostPaid.
 * `instance_type` - (Optional) Instance type. For more information, call resource_alicloud_instances to obtain the latest instance type list.
 * `auto_release_time` - (Optional) Instance auto release time. The time is presented using the ISO8601 standard and in UTC time. The format is  YYYY-MM-DDTHH:MM:SSZ.
-* `internet_charge_type` - (Optional) Internet bandwidth billing method. Optional values: PayByTraffic.
+* `internet_charge_type` - (Optional) Internet bandwidth billing method. Optional values: `PayByTraffic` | `PayByBandwidth`.
 * `internet_max_bandwidth_in` - (Optional) The maximum inbound bandwidth from the Internet network, measured in Mbit/s. Value range: [1, 200].
 * `internet_max_bandwidth_out` - (Optional) Maximum outbound bandwidth from the Internet, its unit of measurement is Mbit/s. Value range: [0, 100].
 * `io_optimized` - (Optional) Whether it is an I/O-optimized instance or not. Optional values:
@@ -99,7 +99,7 @@ The following arguments are supported:
 * `key_pair_name` - (Optional) The name of the key pair.
     - Ignore this parameter for Windows instances. It is null by default. Even if you enter this parameter, only the  Password content is used.
     - The password logon method for Linux instances is set to forbidden upon initialization.
-* `network_type` - (Optional) Network type of the instance. Value options: Classic | VPC.
+* `network_type` - (Optional) Network type of the instance. Value options: `classic` | `vpc`.
 * `ram_role_name` - (Optional) The RAM role name of the instance. You can use the RAM API ListRoles to query instance RAM role names.
 * `security_enhancement_strategy` - (Optional) Whether or not to activate the security enhancement feature and install network security software free of charge. Optional values: Active | Deactive.
 * `security_group_id` - (Optional) The security group ID.

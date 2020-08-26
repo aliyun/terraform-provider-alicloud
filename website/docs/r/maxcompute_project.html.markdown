@@ -18,9 +18,9 @@ Basic Usage
 
 ```
 resource "alicloud_maxcompute_project" "example" {
-  name      = "tf_maxcompute_project"
+  name               = "tf_maxcompute_project"
   specification_type = "OdpsStandard"
-  order_type = "PayAsYouGo"
+  order_type         = "PayAsYouGo"
 }
 ```
 ## Argument Reference

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudDdoscooInstanceDataSource_basic(t *testing.T) {
@@ -73,6 +73,7 @@ func TestAccAlicloudDdoscooInstanceDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeDdoscooInstanceMapFunc,
 	}
 	preCheck := func() {
+		testAccPreCheckWithTime(t, []int{1, 15})
 		testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 
 	}

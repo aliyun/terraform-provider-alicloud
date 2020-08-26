@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudCenPrivateZonesDataSource(t *testing.T) {
@@ -100,7 +100,7 @@ func testAccCheckAlicloudCenPrivateZonesSourceConfig(rand int, attrMap map[strin
 	}
 	config := fmt.Sprintf(`
 variable "name" {
-  default = "test_%d"
+  default = "tf-testAccCenPrivateZones-%d"
 }
 resource "alicloud_cen_instance" "default" {
   name = var.name

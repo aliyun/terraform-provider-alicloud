@@ -20,40 +20,47 @@ Provides a ECS auto provisioning group resource which is a solution that uses pr
 variable "name" {
   default = "auto_provisioning_group"
 }
+
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
 }
+
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
+
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones[0].id
+  name              = var.name
 }
+
 resource "alicloud_auto_provisioning_group" "default" {
-  launch_template_id     = "${alicloud_launch_template.template.id}"
-  total_target_capacity = "4"
+  launch_template_id            = alicloud_launch_template.template.id
+  total_target_capacity         = "4"
   pay_as_you_go_target_capacity = "1"
-  spot_target_capacity = "2"
-  launch_template_config  {
+  spot_target_capacity          = "2"
+  launch_template_config {
     instance_type = "ecs.n1.small"
-    vswitch_id = "${alicloud_vswitch.default.id}"   
+    vswitch_id    = alicloud_vswitch.default.id
+  }
 }
-}
+
 resource "alicloud_launch_template" "template" {
-  name                          = "${var.name}"
-  image_id                      = "${data.alicloud_images.default.images.0.id}"
-  instance_type                 = "ecs.n1.tiny"
-  security_group_id             = "${alicloud_security_group.default.id}"
+  name              = var.name
+  image_id          = data.alicloud_images.default.images[0].id
+  instance_type     = "ecs.n1.tiny"
+  security_group_id = alicloud_security_group.default.id
 }
+
 resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
+
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu_18.*64"
   most_recent = true
@@ -68,8 +75,8 @@ The following arguments are supported:
 
 * `launch_template_id` - (Required) The ID of the instance launch template associated with the auto provisioning group.
 * `total_target_capacity` - (Required) The total target capacity of the auto provisioning group. The target capacity consists of the following three parts:PayAsYouGoTargetCapacity,SpotTargetCapacity and the supplemental capacity besides PayAsYouGoTargetCapacity and SpotTargetCapacity.
-* `auto_Provisioning_group_name` - (Optional) The name of the auto provisioning group to be created. It must be 2 to 128 characters in length. It must start with a letter but cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-)
-* `auto_Provisioning_group_type` - (Optional) The type of the auto provisioning group. Valid values:`request` and `maintain`,Default value: `maintain`.
+* `auto_provisioning_group_name` - (Optional) The name of the auto provisioning group to be created. It must be 2 to 128 characters in length. It must start with a letter but cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-)
+* `auto_provisioning_group_type` - (Optional) The type of the auto provisioning group. Valid values:`request` and `maintain`,Default value: `maintain`.
 * `spot_allocation_strategy` - (Optional) The scale-out policy for preemptible instances. Valid values:`lowest-price` and `diversified`,Default value: `lowest-price`.
 * `spot_target_capacity` - (Optional) The target capacity of preemptible instances in the auto provisioning group.
 * `spot_instance_interruption_behavior` - (Optional) The default behavior after preemptible instances are shut down. Value values: `stop` and `terminate`,Default value: `stop`.
@@ -104,6 +111,7 @@ The following attributes are exported:
 ## Import
 
 ECS auto provisioning group can be imported using the id, e.g.
+
 ```
 $ terraform import alicloud_auto_provisioning_group.example asg-abc123456
 ```

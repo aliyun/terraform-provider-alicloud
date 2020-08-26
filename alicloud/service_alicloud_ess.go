@@ -8,8 +8,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type EssService struct {
@@ -240,11 +240,16 @@ func (s *EssService) flattenDataDiskMappings(list []ess.DataDisk) []map[string]i
 	result := make([]map[string]interface{}, 0, len(list))
 	for _, i := range list {
 		l := map[string]interface{}{
-			"size":                 i.Size,
-			"category":             i.Category,
-			"snapshot_id":          i.SnapshotId,
-			"device":               i.Device,
-			"delete_with_instance": i.DeleteWithInstance,
+			"size":                    i.Size,
+			"category":                i.Category,
+			"snapshot_id":             i.SnapshotId,
+			"device":                  i.Device,
+			"delete_with_instance":    i.DeleteWithInstance,
+			"encrypted":               i.Encrypted,
+			"kms_key_id":              i.KMSKeyId,
+			"disk_name":               i.DiskName,
+			"description":             i.Description,
+			"auto_snapshot_policy_id": i.AutoSnapshotPolicyId,
 		}
 		result = append(result, l)
 	}

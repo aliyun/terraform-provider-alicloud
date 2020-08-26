@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudCenRouteMapsDataSource(t *testing.T) {
@@ -129,7 +129,7 @@ func testAccCheckAlicloudCenRouteMapsSourceConfig(rand int, attrMap map[string]s
 	}
 	config := fmt.Sprintf(`
 variable "name" {
-  default = "test_%d"
+  default = "tf-testAccCenRouteMaps-%d"
 }
 
 variable "child_region" {

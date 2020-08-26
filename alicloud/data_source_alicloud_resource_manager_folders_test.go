@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudResourceManagerFoldersDataSource(t *testing.T) {
@@ -89,7 +89,7 @@ func testAccCheckAlicloudResourceManagerFoldersSourceConfig(rand int, attrMap ma
 	}
 	config := fmt.Sprintf(`
 resource "alicloud_resource_manager_folder" "example"{
-	folder_name = "tf-%d"
+	folder_name = "tf-testAcc-%d"
 }
 
 data "alicloud_resource_manager_folders" "example"{

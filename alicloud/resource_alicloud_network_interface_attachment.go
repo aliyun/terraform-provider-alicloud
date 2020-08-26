@@ -1,12 +1,13 @@
 package alicloud
 
 import (
+	"log"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunNetworkInterfaceAttachment() *schema.Resource {
@@ -76,6 +77,7 @@ func resourceAliyunNetworkInterfaceAttachmentRead(d *schema.ResourceData, meta i
 	object, err := ecsService.DescribeNetworkInterfaceAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_netWork_interface_attachment ecsService.DescribeNetworkInterfaceAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

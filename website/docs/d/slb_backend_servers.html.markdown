@@ -16,12 +16,12 @@ This data source provides the server load balancer backend servers related to a 
 ## Example Usage
 
 ```
-data "alicloud_slb_beckend_servers" "sample_ds" {
+data "alicloud_slb_backend_servers" "sample_ds" {
   load_balancer_id = "${alicloud_slb.sample_slb.id}"
 }
 
 output "first_slb_backend_server_id" {
-  value = "${data.alicloud_slb_beckend_servers.sample_ds.backend_servers.0.id}"
+  value = "${data.alicloud_slb_backend_servers.sample_ds.backend_servers.0.id}"
 }
 ```
 

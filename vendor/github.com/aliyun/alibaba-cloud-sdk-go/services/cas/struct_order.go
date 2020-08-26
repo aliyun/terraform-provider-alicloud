@@ -17,7 +17,7 @@ package cas
 
 // Order is a nested struct in cas response
 type Order struct {
-	Id         int    `json:"Id" xml:"Id"`
+	Id         int64  `json:"Id" xml:"Id"`
 	InstanceId string `json:"InstanceId" xml:"InstanceId"`
 	Source     string `json:"Source" xml:"Source"`
 	Status     string `json:"Status" xml:"Status"`

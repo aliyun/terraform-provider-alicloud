@@ -26,8 +26,9 @@ resource "alicloud_log_project" "test" {
   name        = "test-tf2"
   description = "create by terraform"
 }
+
 resource "alicloud_log_store" "test" {
-  project               = "${alicloud_log_project.test.name}"
+  project               = alicloud_log_project.test.name
   name                  = "tf-test-logstore"
   retention_period      = 3650
   shard_count           = 3
@@ -35,15 +36,17 @@ resource "alicloud_log_store" "test" {
   max_split_shard_count = 60
   append_meta           = true
 }
+
 resource "alicloud_log_machine_group" "test" {
-  project       = "${alicloud_log_project.test.name}"
+  project       = alicloud_log_project.test.name
   name          = "tf-log-machine-group"
   topic         = "terraform"
   identify_list = ["10.0.0.1", "10.0.0.3", "10.0.0.2"]
 }
+
 resource "alicloud_logtail_config" "test" {
-  project      = "${alicloud_log_project.test.name}"
-  logstore     = "${alicloud_log_store.test.name}"
+  project      = alicloud_log_project.test.name
+  logstore     = alicloud_log_store.test.name
   input_type   = "file"
   log_sample   = "test"
   name         = "tf-log-config"
@@ -59,12 +62,15 @@ resource "alicloud_logtail_config" "test" {
 		"fileEncoding": "gbk",
 		"maxDepth": 10
 	}
-	DEFINITION
+	
+DEFINITION
+
 }
+
 resource "alicloud_logtail_attachment" "test" {
-  project = "${alicloud_log_project.test.name}"
-  logtail_config_name = "${alicloud_logtail_config.test.name}"
-  machine_group_name = "${alicloud_log_machine_group.test.name}"
+  project             = alicloud_log_project.test.name
+  logtail_config_name = alicloud_logtail_config.test.name
+  machine_group_name  = alicloud_log_machine_group.test.name
 }
 ```
 

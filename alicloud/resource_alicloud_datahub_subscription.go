@@ -9,9 +9,9 @@ import (
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudDatahubSubscription() *schema.Resource {

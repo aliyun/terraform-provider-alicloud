@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
@@ -26,6 +26,15 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 		}),
 	}
 
+	descriptionRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"description_regex": "${alicloud_drds_instance.default.description}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"description_regex": "${alicloud_drds_instance.default.description}-fake",
+		}),
+	}
+
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_drds_instance.default.id}"},
@@ -37,12 +46,14 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_drds_instance.default.description}",
-			"ids":        []string{"${alicloud_drds_instance.default.id}"},
+			"name_regex":        "${alicloud_drds_instance.default.description}",
+			"description_regex": "${alicloud_drds_instance.default.description}",
+			"ids":               []string{"${alicloud_drds_instance.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_drds_instance.default.description}-fake",
-			"ids":        []string{"${alicloud_drds_instance.default.id}-fake"},
+			"name_regex":        "${alicloud_drds_instance.default.description}-fake",
+			"description_regex": "${alicloud_drds_instance.default.description}-fake",
+			"ids":               []string{"${alicloud_drds_instance.default.id}-fake"},
 		}),
 	}
 
@@ -78,10 +89,10 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
-		testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		testAccPreCheckWithNoDefaultVpc(t)
 	}
 
-	drdsInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+	drdsInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, descriptionRegexConf, idsConf, allConf)
 }
 
 func dataSourceDRDSInstancesConfigDependence(name string) string {
@@ -92,23 +103,19 @@ func dataSourceDRDSInstancesConfigDependence(name string) string {
  	variable "name" {
 		default = "%s"
 	}
- 	resource "alicloud_vpc" "default" {
-		name = "${var.name}"
-		cidr_block = "172.16.0.0/12"
+	data "alicloud_vpcs" "default"	{
+        is_default = "true"
 	}
- 	resource "alicloud_vswitch" "default" {
- 		vpc_id = "${alicloud_vpc.default.id}"
- 		cidr_block = "172.16.0.0/21"
- 		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
- 		name = "${var.name}"
+	data "alicloud_vswitches" "default" {
+	  zone_id = "${data.alicloud_zones.default.zones.0.id}"
+	  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
 	}
-
  	resource "alicloud_drds_instance" "default" {
   		description = "${var.name}"
   		zone_id = "${data.alicloud_zones.default.zones.0.id}"
   		instance_series = "drds.sn1.4c8g"
   		instance_charge_type = "PostPaid"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		vswitch_id = "${data.alicloud_vswitches.default.ids[0]}"
   		specification = "drds.sn1.4c8g.8C16G"
 }
  `, name)

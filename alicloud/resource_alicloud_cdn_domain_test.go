@@ -7,11 +7,11 @@ import (
 
 	"strings"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cdn"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -83,7 +83,7 @@ func testSweepCdnDomains(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCdnDomain_basic(t *testing.T) {
+func SkipTestAccAlicloudCdnDomain_basic(t *testing.T) {
 	var v cdn.DomainDetail
 	rand := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
@@ -144,7 +144,7 @@ func SkipTestAccAlicloudCdnDomain_https(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCdnDomain_domestic(t *testing.T) {
+func SkipTestAccAlicloudCdnDomain_domestic(t *testing.T) {
 	var v cdn.DomainDetail
 	rand := acctest.RandInt()
 

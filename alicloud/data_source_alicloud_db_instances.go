@@ -6,9 +6,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudDBInstances() *schema.Resource {
@@ -213,7 +213,7 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 
-	var dbi []rds.DBInstanceInDescribeDBInstances
+	var dbi []rds.DBInstance
 
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -274,7 +274,7 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 	return rdsInstancesDescription(d, meta, dbi)
 }
 
-func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, dbi []rds.DBInstanceInDescribeDBInstances) error {
+func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, dbi []rds.DBInstance) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 

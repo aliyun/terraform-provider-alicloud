@@ -88,6 +88,7 @@ type ModifyForwardEntryRequest struct {
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	InternalPort         string           `position:"Query" name:"InternalPort"`
+	PortBreak            requests.Boolean `position:"Query" name:"PortBreak"`
 	ExternalPort         string           `position:"Query" name:"ExternalPort"`
 }
 
@@ -102,7 +103,8 @@ func CreateModifyForwardEntryRequest() (request *ModifyForwardEntryRequest) {
 	request = &ModifyForwardEntryRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Vpc", "2016-04-28", "ModifyForwardEntry", "Vpc", "openAPI")
+	request.InitWithApiInfo("Vpc", "2016-04-28", "ModifyForwardEntry", "vpc", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

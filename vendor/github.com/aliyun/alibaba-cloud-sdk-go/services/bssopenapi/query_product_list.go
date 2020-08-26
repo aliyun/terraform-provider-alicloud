@@ -97,6 +97,7 @@ func CreateQueryProductListRequest() (request *QueryProductListRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "QueryProductList", "", "")
+	request.Method = requests.POST
 	return
 }
 

@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudCenRouteMap_basic_child_instance_same_region(t *testing.T) {
@@ -70,13 +70,11 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_same_region(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "",
-					"map_result":  "Deny",
+					"map_result": "Deny",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "",
-						"map_result":  "Deny",
+						"map_result": "Deny",
 					}),
 				),
 			},
@@ -203,13 +201,11 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_different_region(t *testing
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "",
-					"map_result":  "Deny",
+					"map_result": "Deny",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "",
-						"map_result":  "Deny",
+						"map_result": "Deny",
 					}),
 				),
 			},

@@ -76,8 +76,8 @@ func (client *Client) DeleteUserCertificateWithCallback(request *DeleteUserCerti
 // DeleteUserCertificateRequest is the request struct for api DeleteUserCertificate
 type DeleteUserCertificateRequest struct {
 	*requests.RpcRequest
-	SourceIp string           `position:"Query" name:"SourceIp"`
 	CertId   requests.Integer `position:"Query" name:"CertId"`
+	SourceIp string           `position:"Query" name:"SourceIp"`
 	Lang     string           `position:"Query" name:"Lang"`
 }
 
@@ -93,6 +93,7 @@ func CreateDeleteUserCertificateRequest() (request *DeleteUserCertificateRequest
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("cas", "2018-07-13", "DeleteUserCertificate", "cas", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

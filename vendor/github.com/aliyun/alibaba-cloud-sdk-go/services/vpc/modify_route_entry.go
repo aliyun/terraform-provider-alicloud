@@ -76,7 +76,9 @@ func (client *Client) ModifyRouteEntryWithCallback(request *ModifyRouteEntryRequ
 // ModifyRouteEntryRequest is the request struct for api ModifyRouteEntry
 type ModifyRouteEntryRequest struct {
 	*requests.RpcRequest
+	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	RouteEntryName       string           `position:"Query" name:"RouteEntryName"`
+	Description          string           `position:"Query" name:"Description"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -94,7 +96,8 @@ func CreateModifyRouteEntryRequest() (request *ModifyRouteEntryRequest) {
 	request = &ModifyRouteEntryRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Vpc", "2016-04-28", "ModifyRouteEntry", "Vpc", "openAPI")
+	request.InitWithApiInfo("Vpc", "2016-04-28", "ModifyRouteEntry", "vpc", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

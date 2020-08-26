@@ -19,18 +19,18 @@ For information about WAF and how to use it, see [What is Alibaba Cloud WAF](htt
 
 ```
 resource "alicloud_waf_instance" "default" {
-  big_screen = "0"
+  big_screen           = "0"
   exclusive_ip_package = "1"
-  ext_bandwidth = "50"
-  ext_domain_package = "1"
-  package_code = "version_3"
+  ext_bandwidth        = "50"
+  ext_domain_package   = "1"
+  package_code         = "version_3"
   prefessional_service = "false"
-  subscription_type = "Subscription"
-  period = 1
-  waf_log = "false"
-  log_storage = "3"
-  log_time = "180"
-  resource_group_id = "rs-abc12345"
+  subscription_type    = "Subscription"
+  period               = 1
+  waf_log              = "false"
+  log_storage          = "3"
+  log_time             = "180"
+  resource_group_id    = "rs-abc12345"
 }
 ```
 ## Argument Reference

@@ -95,6 +95,7 @@ func CreateDescribeOrderInstanceListRequest() (request *DescribeOrderInstanceLis
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("cas", "2018-07-13", "DescribeOrderInstanceList", "cas", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

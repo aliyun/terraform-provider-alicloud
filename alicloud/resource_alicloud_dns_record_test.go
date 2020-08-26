@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDnsRecord_basic(t *testing.T) {
@@ -161,14 +161,15 @@ func TestAccAlicloudDnsRecord_multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":        "${alicloud_dns.default.name}",
-					"host_record": "alimail",
+					"host_record": "alimail${count.index}",
 					"type":        "CNAME",
 					"value":       "mail.mxhichina${count.index}.com",
 					"count":       "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"value": "mail.mxhichina9.com",
+						"host_record": "alimail9",
+						"value":       "mail.mxhichina9.com",
 					}),
 				),
 			},

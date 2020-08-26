@@ -14,7 +14,7 @@ Requirements
 ------------
 
 -	[Terraform](https://www.terraform.io/downloads.html) 0.12.x
--	[Go](https://golang.org/doc/install) 1.11 (to build the provider plugin)
+-	[Go](https://golang.org/doc/install) 1.13 (to build the provider plugin)
 -   [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports):
     ```
     go get golang.org/x/tools/cmd/goimports
@@ -23,17 +23,17 @@ Requirements
 Building The Provider
 ---------------------
 
-Clone repository to: `$GOPATH/src/github.com/terraform-providers/terraform-provider-alicloud`
+Clone repository to: `$GOPATH/src/github.com/aliyun/terraform-provider-alicloud`
 
 ```sh
-$ mkdir -p $GOPATH/src/github.com/terraform-providers; cd $GOPATH/src/github.com/terraform-providers
-$ git clone git@github.com:terraform-providers/terraform-provider-alicloud
+$ mkdir -p $GOPATH/src/github.com/aliyun; cd $GOPATH/src/github.com/aliyun
+$ git clone git@github.com:aliyun/terraform-provider-alicloud
 ```
 
 Enter the provider directory and build the provider
 
 ```sh
-$ cd $GOPATH/src/github.com/terraform-providers/terraform-provider-alicloud
+$ cd $GOPATH/src/github.com/aliyun/terraform-provider-alicloud
 $ make build
 ```
 
@@ -76,7 +76,7 @@ $ make testacc
 Before making a release, the resources and data sources are tested automatically with acceptance tests (the tests are located in the alicloud/*_test.go files).
 You can run them by entering the following instructions in a terminal:
 ```
-cd $GOPATH/src/github.com/terraform-providers/terraform-provider-alicloud
+cd $GOPATH/src/github.com/aliyun/terraform-provider-alicloud
 export ALICLOUD_ACCESS_KEY=xxx
 export ALICLOUD_SECRET_KEY=xxx
 export ALICLOUD_REGION=xxx

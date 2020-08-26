@@ -11,9 +11,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -47,7 +47,7 @@ func testSweepDnsDomain(region string) error {
 		response, _ := raw.(*alidns.DescribeDomainsResponse)
 		domains := response.Domains.Domain
 		for _, domain := range domains {
-			if strings.HasPrefix(domain.DomainName, "tf-testacc"+defaultRegionToTest) {
+			if strings.HasPrefix(domain.DomainName, "tf-testacc") {
 				allDomains = append(allDomains, domain)
 			} else {
 				log.Printf("Skip %#v", domain)
@@ -63,19 +63,18 @@ func testSweepDnsDomain(region string) error {
 		} else {
 			queryRequest.PageNumber = page
 		}
-
-		removeRequest := alidns.CreateDeleteDomainRequest()
-		removeRequest.DomainName = ""
-		for _, domain := range allDomains {
-			removeRequest.DomainName = domain.DomainName
-			raw, err := client.WithDnsClient(func(dnsClietn *alidns.Client) (interface{}, error) {
-				return dnsClietn.DeleteDomain(removeRequest)
-			})
-			if err != nil {
-				log.Printf("[ERROR] %s get an error %s", removeRequest.GetActionName(), err)
-			}
-			addDebug(removeRequest.GetActionName(), raw)
+	}
+	removeRequest := alidns.CreateDeleteDomainRequest()
+	removeRequest.DomainName = ""
+	for _, domain := range allDomains {
+		removeRequest.DomainName = domain.DomainName
+		raw, err := client.WithDnsClient(func(dnsClietn *alidns.Client) (interface{}, error) {
+			return dnsClietn.DeleteDomain(removeRequest)
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s get an error %s", removeRequest.GetActionName(), err)
 		}
+		addDebug(removeRequest.GetActionName(), raw)
 	}
 	return nil
 }

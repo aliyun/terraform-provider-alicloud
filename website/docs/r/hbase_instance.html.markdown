@@ -27,16 +27,16 @@ the official website mark  more regions. or you can call [DescribeRegions](https
 
 ```
 resource "alicloud_hbase_instance" "default" {
-  name = "tf_testAccHBase_classic"
-  zone_id = "cn-shenzhen-b"
-  engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
+  name                   = "tf_testAccHBase_classic"
+  zone_id                = "cn-shenzhen-b"
+  engine_version         = "2.0"
+  master_instance_type   = "hbase.sn1.large"
+  core_instance_type     = "hbase.sn1.large"
   core_instance_quantity = 2
-  core_disk_type = "cloud_efficiency"
-  core_disk_size = 400
-  pay_type = "PostPaid"
-  cold_storage_size = 0
+  core_disk_type         = "cloud_efficiency"
+  core_disk_size         = 400
+  pay_type               = "PostPaid"
+  cold_storage_size      = 0
 }
 ```
 

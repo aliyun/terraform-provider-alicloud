@@ -10,9 +10,9 @@ import (
 	"log"
 	"strings"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -116,6 +116,7 @@ func TestAccAlicloudDdosbgpInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithTime(t, []int{-1})
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DdosbgpSupportedRegions)
 		},

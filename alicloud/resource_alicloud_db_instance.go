@@ -8,15 +8,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/hashicorp/go-uuid"
-	"github.com/hashicorp/terraform/helper/hashcode"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudDBInstance() *schema.Resource {
@@ -194,7 +194,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Enabled", "Disabled"}, false),
-				Default:      "Disabled",
+				Computed:     true,
 			},
 			"sql_collector_config_value": {
 				Type:         schema.TypeInt,
@@ -206,6 +206,22 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
+			},
+			"ssl_action": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Open", "Close", "Update"}, false),
+				Optional:     true,
+				Computed:     true,
+			},
+			"tde_status": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Enabled"}, false),
+				Optional:     true,
+				ForceNew:     true,
+			},
+			"ssl_status": {
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 		},
@@ -250,7 +266,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	d.Partial(true)
-	stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging", "CONFIG_ENCRYPTING", "SSL_MODIFYING"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 
 	if d.HasChange("parameters") {
 		if err := rdsService.ModifyParameters(d, "parameters"); err != nil {
@@ -424,6 +440,67 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("sql_collector_config_value")
+	}
+
+	if d.HasChange("ssl_action") {
+		request := rds.CreateModifyDBInstanceSSLRequest()
+		request.DBInstanceId = d.Id()
+		request.RegionId = client.RegionId
+		sslAction := d.Get("ssl_action").(string)
+		if sslAction == "Close" {
+			request.SSLEnabled = requests.NewInteger(0)
+		}
+		if sslAction == "Open" {
+			request.SSLEnabled = requests.NewInteger(1)
+		}
+		if sslAction == "Update" {
+			request.SSLEnabled = requests.NewInteger(2)
+		}
+
+		instance, err := rdsService.DescribeDBInstance(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				d.SetId("")
+				return nil
+			}
+			return WrapError(err)
+		}
+		request.ConnectionString = instance.ConnectionString
+
+		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+			return rdsClient.ModifyDBInstanceSSL(request)
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("ssl_action")
+
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	if d.HasChange("tde_status") {
+		request := rds.CreateModifyDBInstanceTDERequest()
+		request.RegionId = client.RegionId
+		request.DBInstanceId = d.Id()
+		request.TDEStatus = d.Get("tde_status").(string)
+		raw, err := client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
+			return client.ModifyDBInstanceTDE(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("tde_status")
+
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
 	if d.IsNewResource() {
@@ -624,6 +701,19 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("security_group_id", strings.Join(groups, COMMA_SEPARATED))
 	d.Set("security_group_ids", groups)
+
+	sslAction, err := rdsService.DescribeDBInstanceSSL(d.Id())
+	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
+		return WrapError(err)
+	}
+	d.Set("ssl_status", sslAction.RequireUpdate)
+	d.Set("ssl_action", d.Get("ssl_action"))
+
+	tdeInfo, err := rdsService.DescribeRdsTDEInfo(d.Id())
+	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
+		return WrapError(err)
+	}
+	d.Set("tde_Status", tdeInfo.TDEStatus)
 
 	return nil
 }

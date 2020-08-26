@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudKVStoreRedisBackupPolicy_classic(t *testing.T) {
@@ -152,6 +152,7 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name
@@ -216,6 +217,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name
@@ -407,8 +409,7 @@ func testAccKVStoreBackupPolicy_vpc(common, instanceType, instanceClass, engineV
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		engine_version = "%s"
@@ -436,8 +437,7 @@ func testAccKVStoreBackupPolicy_vpcUpdatePeriod(common, instanceType, instanceCl
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		engine_version = "%s"
@@ -464,8 +464,7 @@ func testAccKVStoreBackupPolicy_vpcUpdateTime(common, instanceType, instanceClas
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		engine_version = "%s"
@@ -492,8 +491,7 @@ func testAccKVStoreBackupPolicy_vpcUpdateAll(common, instanceType, instanceClass
 	resource "alicloud_kvstore_instance" "default" {
 		instance_class = "%s"
 		instance_name  = "${var.name}"
-		vswitch_id     = "${alicloud_vswitch.default.id}"
-		private_ip     = "172.16.0.10"
+		vswitch_id     = data.alicloud_vswitches.default.ids.0
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
 		engine_version = "%s"
