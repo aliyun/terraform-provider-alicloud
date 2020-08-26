@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"strconv"
 	"time"
 
@@ -23,7 +24,10 @@ func resourceAlicloudEdasK8sApplication() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"application_name": {
 				Type:     schema.TypeString,
@@ -32,11 +36,6 @@ func resourceAlicloudEdasK8sApplication() *schema.Resource {
 			},
 			"cluster_id": {
 				Type:     schema.TypeString,
-				ForceNew: true,
-				Required: true,
-			},
-			"replicas": {
-				Type:     schema.TypeInt,
 				ForceNew: true,
 				Required: true,
 			},
@@ -51,6 +50,11 @@ func resourceAlicloudEdasK8sApplication() *schema.Resource {
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"FatJar", "War", "Image"}, false),
+			},
+			"replicas": {
+				Type:     schema.TypeInt,
+				ForceNew: true,
+				Required: true,
 			},
 			"intranet_target_port": {
 				Type:     schema.TypeInt,
@@ -249,7 +253,7 @@ func resourceAlicloudEdasK8sApplicationCreate(d *schema.ResourceData, meta inter
 	request.RegionId = client.RegionId
 	request.PackageType = packageType
 	request.ClusterId = d.Get("cluster_id").(string)
-	request.Replicas = requests.NewInteger(d.Get("replicas").(int))
+
 	if strings.ToLower(packageType) == "image" {
 		if v, ok := d.GetOk("image_url"); !ok {
 			return WrapError(Error("image_url is needed for creating image k8s application"))
@@ -291,6 +295,8 @@ func resourceAlicloudEdasK8sApplicationCreate(d *schema.ResourceData, meta inter
 			request.EdasContainerVersion = edasContainer
 		}
 	}
+
+	request.Replicas = requests.NewInteger(d.Get("replicas").(int))
 
 	if v, ok := d.GetOk("intranet_target_port"); ok {
 		request.IntranetTargetPort = requests.NewInteger(v.(int))
@@ -453,6 +459,7 @@ func resourceAlicloudEdasK8sApplicationRead(d *schema.ResourceData, meta interfa
 	response, err := edasService.DescribeEdasK8sApplication(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_edas_k8s_application ecsService.DescribeEdasK8sApplication Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -479,7 +486,7 @@ func resourceAlicloudEdasK8sApplicationDelete(d *schema.ResourceData, meta inter
 	request.AppId = d.Id()
 
 	wait := incrementalWait(1*time.Second, 2*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.DeleteK8sApplication(request)
 		})

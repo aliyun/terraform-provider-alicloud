@@ -42,7 +42,6 @@ func TestAccAlicloudEdasK8sApplicationPackageAttachment_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"app_id":    "${alicloud_edas_k8s_application.default.id}",
-					"replicas":  "1",
 					"image_url": fmt.Sprintf("registry-vpc.%s.aliyuncs.com/edas-demo-image/consumer:1.0", region),
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -59,7 +58,6 @@ func testEdasCheckK8sDeploymentDestroy(s *terraform.State) error {
 
 var edasK8sAPAttachmentBasicMap = map[string]string{
 	"app_id":    CHECKSET,
-	"replicas":  CHECKSET,
 	"image_url": CHECKSET,
 }
 
@@ -94,11 +92,12 @@ func resourceEdasK8sAPAttachmentDependence(name string) string {
 		  availability_zone = data.alicloud_zones.default.zones.0.id
 		}
 		
+
 		resource "alicloud_cs_managed_kubernetes" "default" {
 		  worker_instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
 		  name = var.name
 		  worker_vswitch_ids = [alicloud_vswitch.default.id]
-		  worker_number = "2"
+		  worker_number = "6"
 		  password =                    "Test12345"
 		  pod_cidr =                   "172.20.0.0/16"
 		  service_cidr =               "172.21.0.0/20"
@@ -117,9 +116,9 @@ func resourceEdasK8sAPAttachmentDependence(name string) string {
 		resource "alicloud_edas_k8s_application" "default" {
 		  application_name = var.name
 		  cluster_id = alicloud_edas_k8s_cluster.default.id
-		  replicas = "1"
 		  package_type = "Image"
 		  image_url = "%v"
+		  replicas = 3
 		}
 
 		`, name, img)

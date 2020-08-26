@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"strconv"
 	"time"
 
@@ -21,7 +22,9 @@ func resourceAlicloudEdasK8sApplicationPackageAttachment() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(60 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"app_id": {
 				Type:     schema.TypeString,
@@ -79,7 +82,7 @@ func resourceAlicloudEdasK8sApplicationPackageAttachment() *schema.Resource {
 			},
 			"replicas": {
 				Type:     schema.TypeInt,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 			"image_url": {
@@ -200,7 +203,7 @@ func resourceAlicloudEdasK8sApplicationPackageAttachmentCreate(d *schema.Resourc
 	request := edas.CreateDeployK8sApplicationRequest()
 	request.RegionId = client.RegionId
 	request.AppId = appId
-	request.Replicas = requests.NewInteger(d.Get("replicas").(int))
+
 	packageType, err := edasService.QueryK8sAppPackageType(appId)
 	if err != nil {
 		return WrapError(err)
@@ -258,6 +261,10 @@ func resourceAlicloudEdasK8sApplicationPackageAttachmentCreate(d *schema.Resourc
 			return WrapError(err)
 		}
 		request.Envs = envs
+	}
+
+	if v, ok := d.GetOk("replicas"); ok {
+		request.Replicas = requests.NewInteger(v.(int))
 	}
 
 	if v, ok := d.GetOk("batch_wait_time"); ok {
@@ -405,6 +412,7 @@ func resourceAlicloudEdasK8sApplicationPackageAttachmentRead(d *schema.ResourceD
 }
 
 func resourceAlicloudEdasK8sApplicationPackageAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resourceAlicloudEdasApplicationPackageAttachment. Terraform will remove this resource from the state file, however resources may remain.")
 	// do nothing
 	return nil
 }

@@ -9,9 +9,9 @@ description: |-
 
 # alicloud\_edas\_k8s\_application
 
-Create an EDAS k8s application.
+Create an EDAS k8s application.For information about EDAS K8s Application and how to use it, see [What is EDAS K8s Application](https://www.alibabacloud.com/help/doc-detail/85029.htm). 
 
--> **NOTE:** Available in 1.92.0+
+-> **NOTE:** Available in 1.94.0+
 
 ## Example Usage
 
@@ -19,54 +19,53 @@ Basic Usage
 
 ```
 resource "alicloud_edas_k8s_application" "default" {
-  package_type = var.package_type
-  application_name = var.application_name
-  application_descriotion = var.application_descriotion
-  cluster_id = var.cluster_id
+  package_type              = var.package_type
+  application_name          = var.application_name
+  application_descriotion   = var.application_descriotion
+  cluster_id                = var.cluster_id
   replicas = var.replicas
     
   // set 'image_url' and 'repo_id' when package_type is 'image'
-  image_url = var.image_url
-  repo_id = var.repo_id
+  image_url                 = var.image_url
+  repo_id                   = var.repo_id
 
   // set 'package_url','package_version' and 'jdk' when package_type is not 'image'
-  package_url = var.package_url
-  package_version = var.package_version
+  package_url               = var.package_url
+  package_version           = var.package_version
   jdk = var.jdk
 
   // set 'web_container' and 'edas_container' when package_type is 'war'
-  web_container = var.web_container
-  edas_container_version = var.edas_container_version
+  web_container             = var.web_container
+  edas_container_version    = var.edas_container_version
 
-  intranet_target_port = var.intranet_target_port
-  intranet_slb_port = var.intranet_slb_port
-  intranet_slb_protocol = var.intranet_slb_protocol
-  intranet_slb_id = var.intranet_slb_id
-  
-  internet_target_port = var.internet_target_port
-  internet_slb_port = var.internet_slb_port
-  internet_slb_protocol = var.internet_slb_protocol
-  internet_slb_id = var.internet_slb_id
-  limit_cpu = var.limit_cpu
-  limit_mem = var.limit_mem
-  requests_cpu = var.requests_cpu
-  requests_mem = var.requests_mem
-  requests_m_cpu = var.requests_m_cpu
-  limit_m_cpu = var.limit_m_cpu
-  command = var.command
-  command_args = var.command_args
-  envs = var.envs
-  pre_stop = var.pre_stop
-  post_start = var.post_start
-  liveness = var.liveness
-  readiness = var.readiness
-  nas_id = var.nas_id
-  mount_descs = var.mount_descs
-  local_volume = var.local_volume
-  namespace = var.namespace
-  logical_region_id = var.logical_region_id
-  uri_encoding = var.uri_encoding
-  use_body_encoding = var.use_body_encoding
+  intranet_target_port      = var.intranet_target_port
+  intranet_slb_port         = var.intranet_slb_port
+  intranet_slb_protocol     = var.intranet_slb_protocol
+  intranet_slb_id           = var.intranet_slb_id
+  internet_target_port      = var.internet_target_port
+  internet_slb_port         = var.internet_slb_port
+  internet_slb_protocol     = var.internet_slb_protocol
+  internet_slb_id           = var.internet_slb_id
+  limit_cpu                 = var.limit_cpu
+  limit_mem                 = var.limit_mem
+  requests_cpu              = var.requests_cpu
+  requests_mem              = var.requests_mem
+  requests_m_cpu            = var.requests_m_cpu
+  limit_m_cpu               = var.limit_m_cpu
+  command                   = var.command
+  command_args              = var.command_args
+  envs                      = var.envs
+  pre_stop                  = var.pre_stop
+  post_start                = var.post_start
+  liveness                  = var.liveness
+  readiness                 = var.readiness
+  nas_id                    = var.nas_id
+  mount_descs               = var.mount_descs
+  local_volume              = var.local_volume
+  namespace                 = var.namespace
+  logical_region_id         = var.logical_region_id
+  uri_encoding              = var.uri_encoding
+  use_body_encoding         = var.use_body_encoding
 }
 ```
 
@@ -76,8 +75,8 @@ The following arguments are supported:
 
 * `application_name` - (Required, ForceNew) The name of the application you want to create. Must start with character,supports numbers, letters and dashes (-), supports up to 36 characters
 * `cluster_id` - (Required, ForceNew) The ID of the alicloud container service kubernetes cluster that you want to import to. You can call the ListCluster operation to query.
-* `replicas` - (Required, ForceNew) Number of application instances.
 * `package_type` - (Required, ForceNew) Application package type. Optional parameter values include: FatJar, WAR and Image.
+* `replicas` - (Optional, Computed) Number of application instances.
 * `image_url` - (Optional, ForceNew) Mirror address. When the package_type is set to 'Image', this parameter item is required.
 * `repo_id` - (Optional, ForceNew) The repository id of Image
 * `application_descriotion` - (Optional, ForceNew) The description of the application
