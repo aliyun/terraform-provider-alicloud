@@ -52,6 +52,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:     true,
 				Default:      "Upgrade",
 			},
+			"db_node_count": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(2, 16),
+				Default:      2,
+			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -136,6 +142,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 }
 
 func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 	polarDBService := PolarDBService{client}
 
@@ -238,6 +245,67 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("security_ips")
 	}
 
+	if d.HasChange("db_node_count") {
+		cluster, err := polarDBService.DescribePolarDBCluster(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		currentDbNodeCount := len(cluster.DBNodes.DBNode)
+		expectDbNodeCount := d.Get("db_node_count").(int)
+		if expectDbNodeCount > currentDbNodeCount {
+			//create node
+			expandDbNodes := &[]polardb.CreateDBNodesDBNode{
+				{
+					TargetClass: cluster.DBNodeClass,
+				},
+			}
+			request := polardb.CreateCreateDBNodesRequest()
+			request.RegionId = client.RegionId
+			request.DBClusterId = d.Id()
+			request.DBNode = expandDbNodes
+			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+				return polarDBClient.CreateDBNodes(request)
+			})
+
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			if err != nil {
+				return WrapErrorf(
+					err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			response, _ := raw.(*polardb.CreateDBNodesResponse)
+			// wait cluster status change from DBNodeCreating to running
+			stateConf := BuildStateConf([]string{"DBNodeCreating"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(response.DBClusterId, []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, response.DBClusterId)
+			}
+		} else {
+			//delete node
+			deleteDbNodeId := ""
+			for _, dbNode := range cluster.DBNodes.DBNode {
+				if dbNode.DBNodeRole == "Reader" {
+					deleteDbNodeId = dbNode.DBNodeId
+				}
+			}
+			request := polardb.CreateDeleteDBNodesRequest()
+			request.RegionId = client.RegionId
+			request.DBClusterId = d.Id()
+			request.DBNodeId = &[]string{
+				deleteDbNodeId,
+			}
+
+			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+				return polarDBClient.DeleteDBNodes(request)
+			})
+
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			stateConf := BuildStateConf([]string{"DBNodeDeleting"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err = stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudPolarDBClusterRead(d, meta)
@@ -338,6 +406,7 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("maintain_time", clusterAttribute.MaintainTime)
 	d.Set("zone_ids", clusterAttribute.ZoneIds)
 	d.Set("db_node_class", cluster.DBNodeClass)
+	d.Set("db_node_count", len(clusterAttribute.DBNodes))
 	tags, err := polarDBService.DescribeTags(d.Id(), "cluster")
 	if err != nil {
 		return WrapError(err)

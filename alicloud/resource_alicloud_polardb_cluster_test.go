@@ -179,11 +179,23 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"db_node_count": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_node_count": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_count": "2",
 					"db_node_class": "polar.mysql.x4.large",
 					"modify_type":   "Upgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"db_node_count": "2",
 						"db_node_class": "polar.mysql.x4.large",
 					}),
 				),
