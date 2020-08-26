@@ -479,3 +479,33 @@ func sagClientUserPasswordSuppressFunc(k, old, new string, d *schema.ResourceDat
 	}
 	return false
 }
+
+func cmsClientInfoSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	for _, v := range d.Get("escalations_info").([]interface{}) {
+		mapping := v.(map[string]interface{})
+		if mapping["statistics"] == "" || mapping["comparison_operator"] == "" || mapping["threshold"] == "" || mapping["times"] == "" {
+			return true
+		}
+	}
+	return false
+}
+
+func cmsClientWarnSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	for _, v := range d.Get("escalations_warn").([]interface{}) {
+		mapping := v.(map[string]interface{})
+		if mapping["statistics"] == "" || mapping["comparison_operator"] == "" || mapping["threshold"] == "" || mapping["times"] == "" {
+			return true
+		}
+	}
+	return false
+}
+
+func cmsClientCriticalSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	for _, v := range d.Get("escalations_critical").([]interface{}) {
+		mapping := v.(map[string]interface{})
+		if mapping["statistics"] == "" || mapping["comparison_operator"] == "" || mapping["threshold"] == "" || mapping["times"] == "" {
+			return true
+		}
+	}
+	return false
+}

@@ -40,7 +40,7 @@ resource "alicloud_ram_policy" "policy" {
   }
   EOF
   description = "this is a policy test"
-  force = true
+  force       = true
 }
 ```
 ## Argument Reference

@@ -26,35 +26,34 @@ variable "creation" {
 }
 
 data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+  available_resource_creation = var.creation
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones[0].id
+  name              = var.name
 }
 
 resource "alicloud_adb_cluster" "default" {
-  db_cluster_version      = "3.0"
-  db_cluster_category     = "Cluster"
-  db_node_class           = "C8"
-  db_node_count           = 2
-  db_node_storage         = 200
-  pay_type                = "PostPaid"
-  description             = "${var.name}"
-  vswitch_id              = "vsw-t4nq4tr8wcuj7397rbws2"
+  db_cluster_version  = "3.0"
+  db_cluster_category = "Cluster"
+  db_node_class       = "C8"
+  db_node_count       = 2
+  db_node_storage     = 200
+  pay_type            = "PostPaid"
+  description         = var.name
+  vswitch_id          = "vsw-t4nq4tr8wcuj7397rbws2"
 }
 
-
 resource "alicloud_adb_backup_policy" "policy" {
-  db_cluster_id    = "${alicloud_adb_cluster.default.id}"
+  db_cluster_id           = alicloud_adb_cluster.default.id
   preferred_backup_period = ["Tuesday", "Thursday", "Saturday"]
   preferred_backup_time   = "10:00Z-11:00Z"
 }

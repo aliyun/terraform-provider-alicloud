@@ -306,6 +306,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oos_executions":                        dataSourceAlicloudOosExecutions(),
 			"alicloud_resource_manager_policy_attachments":   dataSourceAlicloudResourceManagerPolicyAttachments(),
 			"alicloud_dcdn_domains":                          dataSourceAlicloudDcdnDomains(),
+			"alicloud_mse_clusters":                          dataSourceAlicloudMseClusters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -554,6 +555,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oos_execution":                           resourceAlicloudOosExecution(),
 			"alicloud_resource_manager_policy_attachment":      resourceAlicloudResourceManagerPolicyAttachment(),
 			"alicloud_dcdn_domain":                             resourceAlicloudDcdnDomain(),
+			"alicloud_mse_cluster":                             resourceAlicloudMseCluster(),
 			"alicloud_edas_k8s_application":                    resourceAlicloudEdasK8sApplication(),
 			"alicloud_edas_k8s_application_package_attachment": resourceAlicloudEdasK8sApplicationPackageAttachment(),
 		},
@@ -691,6 +693,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EciEndpoint = strings.TrimSpace(endpoints["eci"].(string))
 		config.OosEndpoint = strings.TrimSpace(endpoints["oos"].(string))
 		config.DcdnEndpoint = strings.TrimSpace(endpoints["dcdn"].(string))
+		config.MseEndpoint = strings.TrimSpace(endpoints["mse"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -875,6 +878,8 @@ func init() {
 		"oos_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom oos endpoints.",
 
 		"dcdn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dcdn endpoints.",
+
+		"mse_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom mse endpoints.",
 	}
 }
 
@@ -924,6 +929,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["dcdn_endpoint"],
+				},
+
+				"mse": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["mse_endpoint"],
 				},
 
 				"oos": {
@@ -1293,6 +1305,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["eci"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["oos"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dcdn"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["mse"].(string)))
 	return hashcode.String(buf.String())
 }
 

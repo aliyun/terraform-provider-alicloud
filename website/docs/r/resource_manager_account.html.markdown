@@ -24,7 +24,7 @@ resource "alicloud_resource_manager_folder" "f1" {
 
 resource "alicloud_resource_manager_account" "example" {
   display_name = "RDAccount"
-  folder_id = alicloud_resource_manager_folder.f1.id
+  folder_id    = alicloud_resource_manager_folder.f1.id
 }
 ```
 ## Argument Reference

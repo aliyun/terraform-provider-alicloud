@@ -16,10 +16,10 @@ For information about Resource Manager role and how to use it, see [What is Reso
 
 ## Example Usage
 
-```
+```terraform
 # Add a Resource Manager role.
 resource "alicloud_resource_manager_role" "example" {
-  role_name = "testrd"
+  role_name                   = "testrd"
   assume_role_policy_document = <<EOF
      {
           "Statement": [

@@ -83,7 +83,7 @@ func testSweepCdnDomains(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCdnDomain_basic(t *testing.T) {
+func SkipTestAccAlicloudCdnDomain_basic(t *testing.T) {
 	var v cdn.DomainDetail
 	rand := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
@@ -144,7 +144,7 @@ func SkipTestAccAlicloudCdnDomain_https(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCdnDomain_domestic(t *testing.T) {
+func SkipTestAccAlicloudCdnDomain_domestic(t *testing.T) {
 	var v cdn.DomainDetail
 	rand := acctest.RandInt()
 
