@@ -25,7 +25,7 @@ the official website mark  more regions. or you can call [DescribeRegions](https
 
 ### Create a hbase instance
 
-```
+```terraform
 resource "alicloud_hbase_instance" "default" {
   name                   = "tf_testAccHBase_classic"
   zone_id                = "cn-shenzhen-b"
@@ -48,7 +48,7 @@ The following arguments are supported:
 
 * `name` - (Required) HBase instance name. Length must be 2-128 characters long. Only Chinese characters, English letters, numbers, period (.), underline (_), or dash (-) are permitted. 
 * `zone_id` - (Optional, ForceNew) The Zone to launch the HBase instance. if vswitch_id is not empty, this zone_id can be "" or consistent.
-* `hbase` - (Optional, ForceNew) "hbase/hbaseue/bds", The following types are supported after v1.73.0: `hbaseue` and `bds ` 
+* `engine` - (Optional, ForceNew) "hbase/hbaseue/bds", The following types are supported after v1.73.0: `hbaseue` and `bds ` 
 * `engine_version` - (Required, ForceNew) hbase major version. hbase:1.1/2.0, hbaseue:2.0, bds:1.0, unsupport other engine temporarily. Value options can refer to the latest docs [CreateInstance](https://help.aliyun.com/document_detail/144607.html).
 * `master_instance_type`、`core_instance_type` - (Required, ForceNew) Instance specification. see [Instance specifications](https://help.aliyun.com/document_detail/53532.html). or you can call describeInstanceType api.
 * `core_instance_quantity`- (Optional. ForceNew) default=2. if core_instance_quantity > 1,this is cluster's instance.  if core_instance_quantity = 1,this is a single instance. 
