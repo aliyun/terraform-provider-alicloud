@@ -125,7 +125,6 @@ type AliyunClient struct {
 	csprojectconnByKey           map[string]*cs.ProjectClient
 	drdsconn                     *drds.Client
 	elasticsearchconn            *elasticsearch.Client
-	actiontrailconn              *actiontrail.Client
 	casconn                      *cas.Client
 	ddoscooconn                  *ddoscoo.Client
 	ddosbgpconn                  *ddosbgp.Client
@@ -155,6 +154,7 @@ type AliyunClient struct {
 	nasConn                      *nas.Client
 	dcdnConn                     *dcdn.Client
 	mseConn                      *mse.Client
+	actiontrailConn              *actiontrail.Client
 }
 
 type ApiVersion string
@@ -1346,29 +1346,6 @@ func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse,
 	return identity, err
 }
 
-func (client *AliyunClient) WithActionTrailClient(do func(*actiontrail.Client) (interface{}, error)) (interface{}, error) {
-	if client.actiontrailconn == nil {
-		endpoint := client.config.ActionTrailEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, ACTIONTRAILCode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(ACTIONTRAILCode), endpoint)
-		}
-		actiontrailconn, err := actiontrail.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ACTIONTRAIL client: %#v", err)
-		}
-
-		actiontrailconn.AppendUserAgent(Terraform, terraformVersion)
-		actiontrailconn.AppendUserAgent(Provider, providerVersion)
-		actiontrailconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.actiontrailconn = actiontrailconn
-	}
-
-	return do(client.actiontrailconn)
-}
-
 func (client *AliyunClient) WithCasClient(do func(*cas.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the CAS client if necessary
 	if client.casconn == nil {
@@ -1967,4 +1944,29 @@ func (client *AliyunClient) WithMseClient(do func(*mse.Client) (interface{}, err
 		client.mseConn = mseConn
 	}
 	return do(client.mseConn)
+}
+
+func (client *AliyunClient) WithActiontrailClient(do func(*actiontrail.Client) (interface{}, error)) (interface{}, error) {
+	if client.actiontrailConn == nil {
+		endpoint := client.config.ActiontrailEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, ActiontrailCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(ActiontrailCode), endpoint)
+		}
+
+		actiontrailConn, err := actiontrail.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Actiontrailclient: %#v", err)
+		}
+		actiontrailConn.AppendUserAgent(Terraform, terraformVersion)
+		actiontrailConn.AppendUserAgent(Provider, providerVersion)
+		actiontrailConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.actiontrailConn = actiontrailConn
+	}
+	return do(client.actiontrailConn)
 }
