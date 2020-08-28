@@ -9,7 +9,8 @@ description: |-
 
 # alicloud_yundun_bastionhost_instance
 
-Cloud Bastionhost instance resource ("Yundun_bastionhost" is the short term of this product).
+Cloud Bastionhost instance resource ("Yundun_bastionhost" is the short term of this product). 
+For information about Resource Manager Resource Directory and how to use it, see [What is Bastionhost](https://www.alibabacloud.com/help/en/doc-detail/52922.htm).
 
 -> **NOTE:** The endpoint of bssopenapi used only support "business.aliyuncs.com" at present.
 
@@ -21,7 +22,7 @@ Cloud Bastionhost instance resource ("Yundun_bastionhost" is the short term of t
 
 Basic Usage
 
-```
+```terraform
 provider "alicloud" {
   endpoints {
     bssopenapi = "business.aliyuncs.com"
@@ -30,7 +31,7 @@ provider "alicloud" {
 
 resource "alicloud_yundun_bastionhost_instance" "default" {
   description        = "Terraform-test"
-  plan_code          = "alpha.professional"
+  license_code       = "bhah_ent_50_asset"
   period             = "1"
   vswitch_id         = "v-testVswitch"
   security_group_ids = "sg-test"
@@ -40,11 +41,11 @@ resource "alicloud_yundun_bastionhost_instance" "default" {
 
 The following arguments are supported:
 
-* `plan_code` - (Required) Plan code of the Cloud Bastionhost to produce. (alpha.professional, alpha.basic, alpha.premium) 
+* `license_code` - (Required)  The package type of Cloud Bastionhost instance. You can query more supported types through the [DescribePricingModule](https://help.aliyun.com/document_detail/96469.html).
 * `description` - (Required) Description of the instance. This name can have a string of 1 to 63 characters.
 * `period` - (ForceNew) Duration for initially producing the instance. Valid values: [1~9], 12, 24, 36. Default to 1. At present, the provider does not support modify "period".
-* `vswitch_id` - (Required, ForceNew) vSwtich ID configured to bastionhost
-* `security_group_ids` - (Required) security group IDs configured to bastionhost
+* `vswitch_id` - (Required, ForceNew) VSwitch ID configured to Bastionhost.
+* `security_group_ids` - (Required) security group IDs configured to Bastionhost.
 * `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional, Available in v1.87.0+) The Id of resource group which the Bastionhost Instance belongs. If not set, the resource is created in the default resource group.
 
