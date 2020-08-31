@@ -291,12 +291,12 @@ func resourceEdasK8sApplicationConfigDependence(name string) string {
 		  worker_instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
 		  name = var.name
 		  worker_vswitch_ids = [alicloud_vswitch.default.id]
-		  worker_number = "2"
+		  worker_number = 				"6"
 		  password =                    "Test12345"
-		  pod_cidr =                   "172.20.0.0/16"
-		  service_cidr =               "172.21.0.0/20"
+		  pod_cidr =                   	"172.20.0.0/16"
+		  service_cidr =               	"172.21.0.0/20"
 		  worker_disk_size =            "50"
-		  worker_disk_category =         "cloud_ssd"
+		  worker_disk_category =        "cloud_ssd"
 		  worker_data_disk_size =       "20"
 		  worker_data_disk_category =   "cloud_ssd"
 		  worker_instance_charge_type = "PostPaid"
