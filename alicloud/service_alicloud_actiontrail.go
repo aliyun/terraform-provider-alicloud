@@ -1,69 +1,54 @@
 package alicloud
 
 import (
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/actiontrail"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-type ActionTrailService struct {
+type ActiontrailService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *ActionTrailService) DescribeActionTrail(id string) (trail actiontrail.TrailListItem, err error) {
+func (s *ActiontrailService) DescribeActiontrailTrail(id string) (object actiontrail.TrailListItem, err error) {
 	request := actiontrail.CreateDescribeTrailsRequest()
 	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
+
+	request.NameList = id
+
+	raw, err := s.client.WithActiontrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
 		return actiontrailClient.DescribeTrails(request)
 	})
 	if err != nil {
-		return trail, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*actiontrail.DescribeTrailsResponse)
-	for _, item := range response.TrailList {
-		if item.Name == id {
-			return item, nil
-		}
-	}
 
-	return trail, WrapErrorf(Error(GetNotFoundMessage("ActionTrail", id)), NotFoundMsg, ProviderERROR)
+	if len(response.TrailList) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("ActiontrailTrail", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+		return
+	}
+	return response.TrailList[0], nil
 }
 
-func (s *ActionTrailService) startActionTrail(id string) (err error) {
-	request := actiontrail.CreateStartLoggingRequest()
-	request.RegionId = s.client.RegionId
-	request.Name = id
-	request.Method = "GET"
-	raw, err := s.client.WithActionTrailClient(func(actiontrailClient *actiontrail.Client) (interface{}, error) {
-		return actiontrailClient.StartLogging(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return nil
-}
-
-func (s *ActionTrailService) WaitForActionTrail(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeActionTrail(id)
+func (s *ActiontrailService) ActiontrailTrailStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeActiontrailTrail(id)
 		if err != nil {
 			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
 			}
 		}
-		if object.Status == string(status) {
-			return nil
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, status, ProviderERROR)
-		}
+		return object, object.Status, nil
 	}
 }

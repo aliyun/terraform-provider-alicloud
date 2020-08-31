@@ -43,36 +43,45 @@ func (s *NasService) DescribeNasFileSystem(id string) (fs nas.DescribeFileSystem
 	return fs, WrapError(err)
 }
 
-func (s *NasService) DescribeNasMountTarget(id string) (fs nas.DescribeMountTargetsMountTarget1, err error) {
-
+func (s *NasService) DescribeNasMountTarget(id string) (object nas.DescribeMountTargetsMountTarget1, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
 	request := nas.CreateDescribeMountTargetsRequest()
-	request.RegionId = string(s.client.Region)
-	split := strings.Split(id, "-")
-	request.FileSystemId = split[0]
+	request.RegionId = s.client.RegionId
+	request.FileSystemId = parts[0]
+	request.MountTargetDomain = parts[1]
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithNasClient(func(nasClient *nas.Client) (interface{}, error) {
 			return nasClient.DescribeMountTargets(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ServiceUnavailable, Throttling}) {
+			if IsExpectedErrors(err, []string{"ServiceUnavailable", "Throttling"}) {
+				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, NasNotFound) {
-				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+			if IsExpectedErrors(err, []string{"Forbidden.NasNotFound", "InvalidFileSystem.NotFound", "InvalidLBid.NotFound", "InvalidMountTarget.NotFound", "VolumeUnavailable"}) {
+				err = WrapErrorf(Error(GetNotFoundMessage("NasMountTarget", id)), NotFoundMsg, ProviderERROR)
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return resource.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*nas.DescribeMountTargetsResponse)
-		for _, mountTarget := range response.MountTargets.MountTarget {
-			if id == mountTarget.MountTargetDomain {
-				fs = mountTarget
-				return nil
-			}
+
+		if len(response.MountTargets.MountTarget) < 1 {
+			err = WrapErrorf(Error(GetNotFoundMessage("NasMountTarget", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+			return resource.NonRetryableError(err)
 		}
-		return resource.NonRetryableError(WrapErrorf(Error(GetNotFoundMessage("NasMountTarget", id)), NotFoundMsg, ProviderERROR))
+		object = response.MountTargets.MountTarget[0]
+		return nil
 	})
-	return fs, WrapError(err)
+	return object, WrapError(err)
 }
 
 func (s *NasService) DescribeNasAccessGroup(id string) (object nas.DescribeAccessGroupsAccessGroup1, err error) {
@@ -265,4 +274,24 @@ func (s *NasService) WaitForNasAccessGroup(id string, status Status, timeout int
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 	return nil
+}
+
+func (s *NasService) NasMountTargetStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeNasMountTarget(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+		return object, object.Status, nil
+	}
 }

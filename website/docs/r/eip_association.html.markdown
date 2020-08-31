@@ -87,6 +87,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForcesNew) The ID of the ECS or SLB instance or Nat Gateway.
 * `instance_type` - (Optional, ForceNew, Available in 1.46.0+) The type of cloud product that the eip instance to bind.
 * `private_ip_address` - (Optional, ForceNew, Available in 1.52.2+) The private IP address in the network segment of the vswitch which has been assigned.
+* `force` - (Optional, Available in 1.95.0+) When EIP is bound to a NAT gateway, and the NAT gateway adds a DNAT or SNAT entry, set it for `true` can unassociation any way. Default to `false`.
 
 
 ## Attributes Reference

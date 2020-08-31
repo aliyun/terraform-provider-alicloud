@@ -227,13 +227,12 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_elasticsearch_instances":               dataSourceAlicloudElasticsearch(),
 			"alicloud_elasticsearch_zones":                   dataSourceAlicloudElaticsearchZones(),
 			"alicloud_drds_instances":                        dataSourceAlicloudDRDSInstances(),
-			"alicloud_nas_access_groups":                     dataSourceAlicloudAccessGroups(),
+			"alicloud_nas_access_groups":                     dataSourceAlicloudNasAccessGroups(),
 			"alicloud_nas_access_rules":                      dataSourceAlicloudAccessRules(),
-			"alicloud_nas_mount_targets":                     dataSourceAlicloudMountTargets(),
+			"alicloud_nas_mount_targets":                     dataSourceAlicloudNasMountTargets(),
 			"alicloud_nas_file_systems":                      dataSourceAlicloudFileSystems(),
 			"alicloud_nas_protocols":                         dataSourceAlicloudNasProtocols(),
 			"alicloud_cas_certificates":                      dataSourceAlicloudCasCertificates(),
-			"alicloud_actiontrails":                          dataSourceAlicloudActiontrails(),
 			"alicloud_common_bandwidth_packages":             dataSourceAlicloudCommonBandwidthPackages(),
 			"alicloud_route_tables":                          dataSourceAlicloudRouteTables(),
 			"alicloud_route_entries":                         dataSourceAlicloudRouteEntries(),
@@ -307,6 +306,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_policy_attachments":   dataSourceAlicloudResourceManagerPolicyAttachments(),
 			"alicloud_dcdn_domains":                          dataSourceAlicloudDcdnDomains(),
 			"alicloud_mse_clusters":                          dataSourceAlicloudMseClusters(),
+			"alicloud_actiontrail_trails":                    dataSourceAlicloudActiontrailTrails(),
+			"alicloud_actiontrails":                          dataSourceAlicloudActiontrailTrails(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -478,7 +479,6 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_common_bandwidth_package_attachment": resourceAliyunCommonBandwidthPackageAttachment(),
 			"alicloud_drds_instance":                       resourceAlicloudDRDSInstance(),
 			"alicloud_elasticsearch_instance":              resourceAlicloudElasticsearch(),
-			"alicloud_actiontrail":                         resourceAlicloudActiontrail(),
 			"alicloud_cas_certificate":                     resourceAlicloudCasCertificate(),
 			"alicloud_ddoscoo_instance":                    resourceAlicloudDdoscooInstance(),
 			"alicloud_ddosbgp_instance":                    resourceAlicloudDdosbgpInstance(),
@@ -556,6 +556,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_policy_attachment":  resourceAlicloudResourceManagerPolicyAttachment(),
 			"alicloud_dcdn_domain":                         resourceAlicloudDcdnDomain(),
 			"alicloud_mse_cluster":                         resourceAlicloudMseCluster(),
+			"alicloud_actiontrail_trail":                   resourceAlicloudActiontrailTrail(),
+			"alicloud_actiontrail":                         resourceAlicloudActiontrailTrail(),
 			"alicloud_edas_k8s_application":                resourceAlicloudEdasK8sApplication(),
 		},
 
@@ -676,7 +678,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.LocationEndpoint = strings.TrimSpace(endpoints["location"].(string))
 		config.ElasticsearchEndpoint = strings.TrimSpace(endpoints["elasticsearch"].(string))
 		config.NasEndpoint = strings.TrimSpace(endpoints["nas"].(string))
-		config.ActionTrailEndpoint = strings.TrimSpace(endpoints["actiontrail"].(string))
+		config.ActiontrailEndpoint = strings.TrimSpace(endpoints["actiontrail"].(string))
 		config.BssOpenApiEndpoint = strings.TrimSpace(endpoints["bssopenapi"].(string))
 		config.DdoscooEndpoint = strings.TrimSpace(endpoints["ddoscoo"].(string))
 		config.DdosbgpEndpoint = strings.TrimSpace(endpoints["ddosbgp"].(string))
