@@ -135,7 +135,8 @@ func TestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc-edask8sappb%v", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEdasK8sApplicationConfigDependence)
 	region := os.Getenv("ALICLOUD_REGION")
-
+	image := fmt.Sprintf("registry-vpc.%s.aliyuncs.com/edas-demo-image/consumer:1.0", region)
+	updateImg := fmt.Sprintf("registry-vpc.%s.aliyuncs.com/edas-demo-image/provider:1.0", region)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
@@ -151,14 +152,14 @@ func TestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"application_name": "${var.name}",
 					"cluster_id":       "${alicloud_edas_k8s_cluster.default.id}",
-					"replicas":         "1",
 					"package_type":     "Image",
-					"image_url":        fmt.Sprintf("registry-vpc.%s.aliyuncs.com/edas-demo-image/consumer:1.0", region),
+					"image_url":        image,
+					"replicas":         "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"application_name": name,
-						"replicas":         "1",
+						"image_url": image,
+						"replicas":  "2",
 					}),
 				),
 			},
@@ -167,6 +168,19 @@ func TestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replicas":  "3",
+					"image_url": updateImg,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_url": updateImg,
+						"replicas":  "3",
+					}),
+				),
 			},
 		},
 	})
@@ -187,7 +201,8 @@ func TestAccAlicloudEdasK8sApplication_multi(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc-edask8sappm%v", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEdasK8sApplicationConfigDependence)
 	region := os.Getenv("ALICLOUD_REGION")
-
+	image := fmt.Sprintf("registry-vpc.%s.aliyuncs.com/edas-demo-image/consumer:1.0", region)
+	updateImg := fmt.Sprintf("registry-vpc.%s.aliyuncs.com/edas-demo-image/provider:1.0", region)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
@@ -206,13 +221,25 @@ func TestAccAlicloudEdasK8sApplication_multi(t *testing.T) {
 					"cluster_id":       "${alicloud_edas_k8s_cluster.default.id}",
 					"replicas":         "1",
 					"package_type":     "Image",
-					"image_url":        fmt.Sprintf("registry-vpc.%s.aliyuncs.com/edas-demo-image/consumer:1.0", region),
+					"image_url":        image,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"application_name": CHECKSET,
 						"replicas":         "1",
 						"image_url":        CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replicas":  "3",
+					"image_url": updateImg,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_url": updateImg,
+						"replicas":  "3",
 					}),
 				),
 			},
@@ -230,6 +257,7 @@ var edasK8sApplicationBasicMap = map[string]string{
 func testAccCheckEdasK8sApplicationDestroy(s *terraform.State) error {
 	return nil
 }
+
 
 func resourceEdasK8sApplicationConfigDependence(name string) string {
 	return fmt.Sprintf(`
