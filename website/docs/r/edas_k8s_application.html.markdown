@@ -11,22 +11,23 @@ description: |-
 
 Create an EDAS k8s application.For information about EDAS K8s Application and how to use it, see [What is EDAS K8s Application](https://www.alibabacloud.com/help/doc-detail/85029.htm). 
 
--> **NOTE:** Available in 1.94.0+
+-> **NOTE:** Available in 1.95.0+
 
 ## Example Usage
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_edas_k8s_application" "default" {
-  package_type              = var.package_type
-  application_name          = var.application_name
-  application_descriotion   = var.application_descriotion
+  // package type is Image / FatJar / War
+  package_type              = "Image"
+  application_name          = "DemoApplication"
+  application_descriotion   = "This is description of application"
   cluster_id                = var.cluster_id
-  replicas = var.replicas
+  replicas                  = 2
     
   // set 'image_url' and 'repo_id' when package_type is 'image'
-  image_url                 = var.image_url
+  image_url                 = "registry-vpc.cn-beijing.aliyuncs.com/edas-demo-image/consumer:1.0"
   repo_id                   = var.repo_id
 
   // set 'package_url','package_version' and 'jdk' when package_type is not 'image'
@@ -46,26 +47,26 @@ resource "alicloud_edas_k8s_application" "default" {
   internet_slb_port         = var.internet_slb_port
   internet_slb_protocol     = var.internet_slb_protocol
   internet_slb_id           = var.internet_slb_id
-  limit_cpu                 = var.limit_cpu
-  limit_mem                 = var.limit_mem
-  requests_cpu              = var.requests_cpu
-  requests_mem              = var.requests_mem
-  requests_m_cpu            = var.requests_m_cpu
-  limit_m_cpu               = var.limit_m_cpu
+  limit_cpu                 = 4
+  limit_mem                 = 2048
+  requests_cpu              = 0
+  requests_mem              = 0
+  requests_m_cpu            = 0
+  limit_m_cpu               = 4000
   command                   = var.command
   command_args              = var.command_args
   envs                      = var.envs
-  pre_stop                  = var.pre_stop
-  post_start                = var.post_start
+  pre_stop                  = "{\"exec\":{\"command\":[\"ls\",\"/\"]}}"
+  post_start                = "{\"exec\":{\"command\":[\"ls\",\"/\"]}}"
   liveness                  = var.liveness
   readiness                 = var.readiness
   nas_id                    = var.nas_id
   mount_descs               = var.mount_descs
   local_volume              = var.local_volume
-  namespace                 = var.namespace
-  logical_region_id         = var.logical_region_id
-  uri_encoding              = var.uri_encoding
-  use_body_encoding         = var.use_body_encoding
+  namespace                 = "default"
+  logical_region_id         = cn-beijing
+  uri_encoding              = "UTF-8"
+  use_body_encoding         = false
 }
 ```
 
