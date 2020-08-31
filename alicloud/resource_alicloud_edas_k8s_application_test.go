@@ -258,7 +258,6 @@ func testAccCheckEdasK8sApplicationDestroy(s *terraform.State) error {
 	return nil
 }
 
-
 func resourceEdasK8sApplicationConfigDependence(name string) string {
 	return fmt.Sprintf(`
 		variable "name" {
