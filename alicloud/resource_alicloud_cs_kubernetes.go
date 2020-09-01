@@ -1178,25 +1178,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		},
 	}
 
-	if dds, ok := d.GetOk("worker_data_disks"); ok {
-		disks := dds.([]interface{})
-		createDataDisks := make([]cs.DataDisk, 0, len(disks))
-		for _, e := range disks {
-			pack := e.(map[string]interface{})
-			dataDisk := cs.DataDisk{
-				Size:                 pack["size"].(string),
-				DiskName:             pack["name"].(string),
-				Category:             pack["category"].(string),
-				Device:               pack["device"].(string),
-				AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
-				KMSKeyId:             pack["kms_key_id"].(string),
-				Encrypted:            pack["encrypted"].(string),
-			}
-			createDataDisks = append(createDataDisks, dataDisk)
-		}
-		creationArgs.WorkerDataDisks = createDataDisks
-	}
-
 	if v := d.Get("user_data").(string); v != "" {
 		_, base64DecodeError := base64.StdEncoding.DecodeString(v)
 		if base64DecodeError == nil {
@@ -1271,6 +1252,25 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		WorkerSystemDiskCategory: d.Get("worker_disk_category").(string),
 		WorkerSystemDiskSize:     int64(d.Get("worker_disk_size").(int)),
 		// TODO support other params
+	}
+
+	if dds, ok := d.GetOk("worker_data_disks"); ok {
+		disks := dds.([]interface{})
+		createDataDisks := make([]cs.DataDisk, 0, len(disks))
+		for _, e := range disks {
+			pack := e.(map[string]interface{})
+			dataDisk := cs.DataDisk{
+				Size:                 pack["size"].(string),
+				DiskName:             pack["name"].(string),
+				Category:             pack["category"].(string),
+				Device:               pack["device"].(string),
+				AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
+				KMSKeyId:             pack["kms_key_id"].(string),
+				Encrypted:            pack["encrypted"].(string),
+			}
+			createDataDisks = append(createDataDisks, dataDisk)
+		}
+		creationArgs.WorkerDataDisks = createDataDisks
 	}
 
 	if v, ok := d.GetOk("worker_instance_charge_type"); ok {

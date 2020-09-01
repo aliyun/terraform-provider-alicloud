@@ -15,6 +15,7 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
+	"github.com/denverdino/aliyungo/common"
 )
 
 type CsService struct {
@@ -177,6 +178,41 @@ func (s *CsService) DescribeCsKubernetes(id string) (cluster *cs.KubernetesClust
 	return
 }
 
+func (s *CsService) DescribeCsKubernetesNodePool(clusterId, nodePoolId string) (nodePool *cs.NodePoolDetail, err error) {
+	invoker := NewInvoker()
+	var requestInfo *cs.Client
+	var response interface{}
+
+	if err := invoker.Run(func() error {
+		raw, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			requestInfo = csClient
+			return csClient.DescribeNodePoolDetail(clusterId, nodePoolId)
+		})
+		response = raw
+		return err
+	}); err != nil {
+		if e, ok := err.(*common.Error); ok {
+			for _, code := range []int{400} {
+				if e.StatusCode == code{
+					return nil, WrapErrorf(err, NotFoundMsg, DenverdinoAliyungo)
+				}
+			}
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, nodePoolId, "DescribeNodePool", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = clusterId
+		requestMap["NodePoolId"] = nodePoolId
+		addDebug("DescribeNodepool", response, requestInfo, requestMap)
+	}
+	nodePool, _ = response.(*cs.NodePoolDetail)
+	if nodePool.NodePoolId != nodePoolId {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("CsNodePool", nodePoolId)), NotFoundMsg, ProviderERROR)
+	}
+	return
+}
+
 func (s *CsService) WaitForCsKubernetes(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
@@ -261,6 +297,26 @@ func (s *CsService) WaitForCSManagedKubernetes(id string, status Status, timeout
 func (s *CsService) CsKubernetesInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCsKubernetes(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if string(object.State) == failState {
+				return object, string(object.State), WrapError(Error(FailedToReachTargetStatus, string(object.State)))
+			}
+		}
+		return object, string(object.State), nil
+	}
+}
+
+func (s *CsService) CsKubernetesNodePoolStateRefreshFunc(clusterId, nodePoolId string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCsKubernetesNodePool(clusterId, nodePoolId)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
