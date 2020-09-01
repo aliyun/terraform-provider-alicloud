@@ -11,13 +11,15 @@ description: |-
 
 Create an DNS Instance resource.
 
+-> DEPRECATED: This resource has been renamed to [alicloud_alidns_instance](https://www.terraform.io/docs/providers/alicloud/r/alidns_instance.html) from version 1.95.0.
+
 -> **NOTE:** Available in v1.80.0+.
 
 ## Example Usage
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_dns_instance" "this" {
     dns_security   = "no"
     domain_numbers = "2"
