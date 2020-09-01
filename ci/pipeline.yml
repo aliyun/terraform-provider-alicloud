@@ -57,6 +57,8 @@ groups:
       - Datahub
       # Cdn
       - Cdn
+      # Dcdn
+      - Dcdn
       # Api Gateway
       - ApiGateway
       # Mns
@@ -76,7 +78,7 @@ groups:
       # ActionTrail
       - ActionTrail
       # SSL Certificate
-      - Cas
+      - CasCertificate
       # MongoDB
       - MongoDB
       # Ddoscoo
@@ -95,6 +97,7 @@ groups:
       - Market
       - PolarDB
       - HBase
+      - Cassandra
       - Adb
       - Maxcompute
       - Dms
@@ -166,6 +169,7 @@ groups:
       - Gpdb
       - PolarDB
       - HBase
+      - Cassandra
       - Adb
       - Dms
       - Sweeper-1
@@ -277,7 +281,7 @@ groups:
   - name: Security
     jobs:
       # SSL Certificate
-      - Cas
+      - CasCertificate
       # Ddoscoo
       - Ddoscoo
       - Ddosbgp
@@ -976,7 +980,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "ActionTrail"
 
-  - name: Cas
+  - name: CasCertificate
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -987,7 +991,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Cas"
+          TEST_CASE_CODE: "CasCertificate"
 
   - name: MongoDB
     plan:
@@ -1312,6 +1316,32 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "EcsDedicatedHost"
+
+  - name: Dcdn
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0830
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Dcdn"
+
+  - name: Cassandra
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0930
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Cassandra"
 
   - name: SweeperAfter
     plan:
