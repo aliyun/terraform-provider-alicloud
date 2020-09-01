@@ -84,6 +84,7 @@ type QueryBillRequest struct {
 	Type                   string           `position:"Query" name:"Type"`
 	OwnerId                requests.Integer `position:"Query" name:"OwnerId"`
 	PageNum                requests.Integer `position:"Query" name:"PageNum"`
+	BillOwnerId            requests.Integer `position:"Query" name:"BillOwnerId"`
 	ProductType            string           `position:"Query" name:"ProductType"`
 	PageSize               requests.Integer `position:"Query" name:"PageSize"`
 }

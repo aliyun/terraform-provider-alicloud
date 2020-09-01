@@ -17,6 +17,6 @@ package hbase
 
 // SupportedCategoriesItem is a nested struct in hbase response
 type SupportedCategoriesItem struct {
-	Category              string                `json:"Category" xml:"Category"`
-	SupportedStorageTypes SupportedStorageTypes `json:"SupportedStorageTypes" xml:"SupportedStorageTypes"`
+	Category              string                                           `json:"Category" xml:"Category"`
+	SupportedStorageTypes SupportedStorageTypesInDescribeAvailableResource `json:"SupportedStorageTypes" xml:"SupportedStorageTypes"`
 }
