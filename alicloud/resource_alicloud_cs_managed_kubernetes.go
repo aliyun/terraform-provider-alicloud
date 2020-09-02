@@ -501,6 +501,22 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				},
 				ForceNew: true,
 			},
+			"tags": {
+				Optional: true,
+				Type:     schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }

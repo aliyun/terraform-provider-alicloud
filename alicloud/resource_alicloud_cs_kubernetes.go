@@ -397,6 +397,22 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					},
 				},
 			},
+			"tags": {
+				Optional: true,
+				Type:     schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"slb_internet_enabled": {
 				Type:             schema.TypeBool,
 				Optional:         true,
@@ -770,6 +786,13 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			d.SetPartial("worker_data_disks")
 		}
 
+		if d.HasChange("tags") && !d.IsNewResource() {
+			if tags, err := ConvertCsTags(d); err == nil {
+				args.Tags = tags
+			}
+			d.SetPartial("tags")
+		}
+
 		var resoponse interface{}
 		if err := invoker.Run(func() error {
 			var err error
@@ -848,6 +871,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("security_group_id", object.SecurityGroupId)
 	d.Set("version", object.CurrentVersion)
 	d.Set("worker_ram_role_name", object.WorkerRamRoleName)
+	d.Set("tags", object.Tags)
 
 	var masterNodes []map[string]interface{}
 	var workerNodes []map[string]interface{}
@@ -1205,6 +1229,10 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		creationArgs.LoginPassword = password
 	} else {
 		creationArgs.LoginPassword = password
+	}
+
+	if tags, err := ConvertCsTags(d); err == nil {
+		creationArgs.Tags = tags
 	}
 
 	// CA default is empty

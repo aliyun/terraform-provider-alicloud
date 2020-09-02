@@ -14,8 +14,8 @@ import (
 	"encoding/json"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/common"
+	"github.com/denverdino/aliyungo/cs"
 )
 
 type CsService struct {
@@ -193,7 +193,7 @@ func (s *CsService) DescribeCsKubernetesNodePool(clusterId, nodePoolId string) (
 	}); err != nil {
 		if e, ok := err.(*common.Error); ok {
 			for _, code := range []int{400} {
-				if e.StatusCode == code{
+				if e.StatusCode == code {
 					return nil, WrapErrorf(err, NotFoundMsg, DenverdinoAliyungo)
 				}
 			}

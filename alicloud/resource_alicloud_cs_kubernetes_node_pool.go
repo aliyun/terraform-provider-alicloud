@@ -230,7 +230,7 @@ func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta int
 
 	if err = invoker.Run(func() error {
 		raw, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return csClient.CreateNodePool(args, d.Get("cluster_id").(string), )
+			return csClient.CreateNodePool(args, d.Get("cluster_id").(string))
 		})
 		return err
 	}); err != nil {
@@ -252,7 +252,7 @@ func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta int
 	d.SetId(nodePool.NodePoolID)
 
 	// reset interval to 10s
-	stateConf := BuildStateConf([]string{"initial"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Get("cluster_id").(string), d.Id(), []string{"deleting", "failed"}))
+	stateConf := BuildStateConf([]string{"initial", "scaling"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Get("cluster_id").(string), d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -485,6 +485,9 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("system_disk_size", object.SystemDiskSize)
 	d.Set("image_id", object.ImageId)
 	d.Set("data_disks", object.DataDisks)
+	d.Set("tags", object.Tags)
+	d.Set("labels", object.Labels)
+	d.Set("taints", object.Taints)
 	d.Set("node_name_mode", object.NodeNameMode)
 	d.Set("user_data", object.UserData)
 	if sg, ok := d.GetOk("max"); ok && sg.(string) != "" {
@@ -622,13 +625,29 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 	return creationArgs, nil
 }
 
+func ConvertCsTags(d *schema.ResourceData) ([]cs.Tag, error) {
+	tags := make([]cs.Tag, 0)
+	if v, ok := d.GetOk("tags"); ok {
+		vl := v.([]interface{})
+		for _, i := range vl {
+			if m, ok := i.(map[string]interface{}); ok {
+				tags = append(tags, cs.Tag{
+					Key:   m["key"].(string),
+					Value: m["value"].(string),
+				})
+			}
+
+		}
+	}
+
+	return tags, nil
+}
+
 func setNodePoolTags(scalingGroup *cs.ScalingGroup, d *schema.ResourceData) error {
 	if v, ok := d.GetOk("tags"); ok && len(v.([]interface{})) > 0 {
-		tags, ok := v.([]cs.Tag)
-		if !ok {
-			return fmt.Errorf("failed to convert nodepool tags: %++v", v)
+		if tags, err := ConvertCsTags(d); err == nil {
+			scalingGroup.Tags = tags
 		}
-		scalingGroup.Tags = tags
 	}
 
 	return nil
@@ -636,9 +655,16 @@ func setNodePoolTags(scalingGroup *cs.ScalingGroup, d *schema.ResourceData) erro
 
 func setNodePoolLabels(config *cs.KubernetesConfig, d *schema.ResourceData) error {
 	if v, ok := d.GetOk("labels"); ok && len(v.([]interface{})) > 0 {
-		labels, ok := v.([]cs.Label)
-		if !ok {
-			return fmt.Errorf("failed to convert nodepool labels: %++v", v)
+		vl := v.([]interface{})
+		labels := make([]cs.Label, 0)
+		for _, i := range vl {
+			if m, ok := i.(map[string]interface{}); ok {
+				labels = append(labels, cs.Label{
+					Key:   m["key"].(string),
+					Value: m["value"].(string),
+				})
+			}
+
 		}
 		config.Labels = labels
 	}
@@ -671,9 +697,16 @@ func setNodePoolDataDisks(scalingGroup *cs.ScalingGroup, d *schema.ResourceData)
 
 func setNodePoolTaints(config *cs.KubernetesConfig, d *schema.ResourceData) error {
 	if v, ok := d.GetOk("taints"); ok && len(v.([]interface{})) > 0 {
-		taints, ok := v.([]cs.Taint)
-		if !ok {
-			return fmt.Errorf("failed to convert nodepool taints: %++v", v)
+		vl := v.([]interface{})
+		taints := make([]cs.Taint, 0)
+		for _, i := range vl {
+			if m, ok := i.(map[string]interface{}); ok {
+				taints = append(taints, cs.Taint{
+					Key:   m["key"].(string),
+					Value: m["value"].(string),
+				})
+			}
+
 		}
 		config.Taints = taints
 	}
