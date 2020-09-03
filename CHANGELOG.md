@@ -1,4 +1,31 @@
 ## 1.95.0 (Unreleased)
+
+- **New Resource:** `alicloud_actiontrail_trail` [GH-2758]
+- **Data Source:** `alicloud_actiontrail_trails` [GH-2758]
+
+IMPROVEMENTS:
+
+- remove the useless files in archives [GH-2784]
+- resource alicloud_disk supports setting performance_level [GH-2783]
+- add more ci test flag [GH-2782]
+- dns_instance and dns_domain renamed to alidns_instance, alidns_domain [GH-2776]
+- add force Unassociate for eip [GH-2772]
+- improve(alicloud_images): supports more filters [GH-2771]
+- Adjust the datasource testcase name [GH-2762]
+- upgrade resource and datasource for NAS MountTarget [GH-2759]
+- update resource markdown grammar [GH-2757]
+- upgrade datasource for NAS AccessGroup [GH-2746]
+- PolarDB support add or remove read-only nodes [GH-2745]
+- UPDATE CHANGELOG [GH-2731]
+- improve(slb) update docs [GH-2719]
+
+BUG FIXES:
+
+- Fix the managed_kubernetes docs [GH-2785]
+- fix document of Hbase and Bastionhost [GH-2777]
+- fix dcdn_domain sources parameter for update method [GH-2773]
+- Fix cdn test case [GH-2760]
+
 ## 1.94.0 (August 24, 2020)
 
 - **New Resource:** `alicloud_dcdn_domain` ([#2744](https://github.com/aliyun/terraform-provider-alicloud/issues/2744))
