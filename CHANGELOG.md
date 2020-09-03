@@ -1,30 +1,31 @@
-## 1.95.0 (Unreleased)
+## 1.96.0 (Unreleased)
+## 1.95.0 (September 03, 2020)
 
-- **New Resource:** `alicloud_actiontrail_trail` [GH-2758]
-- **Data Source:** `alicloud_actiontrail_trails` [GH-2758]
+- **New Resource:** `alicloud_actiontrail_trail` ([#2758](https://github.com/aliyun/terraform-provider-alicloud/issues/2758))
+- **Data Source:** `alicloud_actiontrail_trails` ([#2758](https://github.com/aliyun/terraform-provider-alicloud/issues/2758))
 
 IMPROVEMENTS:
 
-- remove the useless files in archives [GH-2784]
-- resource alicloud_disk supports setting performance_level [GH-2783]
-- add more ci test flag [GH-2782]
-- dns_instance and dns_domain renamed to alidns_instance, alidns_domain [GH-2776]
-- add force Unassociate for eip [GH-2772]
-- improve(alicloud_images): supports more filters [GH-2771]
-- Adjust the datasource testcase name [GH-2762]
-- upgrade resource and datasource for NAS MountTarget [GH-2759]
-- update resource markdown grammar [GH-2757]
-- upgrade datasource for NAS AccessGroup [GH-2746]
-- PolarDB support add or remove read-only nodes [GH-2745]
-- UPDATE CHANGELOG [GH-2731]
-- improve(slb) update docs [GH-2719]
+- remove the useless files in archives ([#2784](https://github.com/aliyun/terraform-provider-alicloud/issues/2784))
+- resource alicloud_disk supports setting performance_level ([#2783](https://github.com/aliyun/terraform-provider-alicloud/issues/2783))
+- add more ci test flag ([#2782](https://github.com/aliyun/terraform-provider-alicloud/issues/2782))
+- dns_instance and dns_domain renamed to alidns_instance, alidns_domain ([#2776](https://github.com/aliyun/terraform-provider-alicloud/issues/2776))
+- add force Unassociate for eip ([#2772](https://github.com/aliyun/terraform-provider-alicloud/issues/2772))
+- improve(alicloud_images): supports more filters ([#2771](https://github.com/aliyun/terraform-provider-alicloud/issues/2771))
+- Adjust the datasource testcase name ([#2762](https://github.com/aliyun/terraform-provider-alicloud/issues/2762))
+- upgrade resource and datasource for NAS MountTarget ([#2759](https://github.com/aliyun/terraform-provider-alicloud/issues/2759))
+- update resource markdown grammar ([#2757](https://github.com/aliyun/terraform-provider-alicloud/issues/2757))
+- upgrade datasource for NAS AccessGroup ([#2746](https://github.com/aliyun/terraform-provider-alicloud/issues/2746))
+- PolarDB support add or remove read-only nodes ([#2745](https://github.com/aliyun/terraform-provider-alicloud/issues/2745))
+- UPDATE CHANGELOG ([#2731](https://github.com/aliyun/terraform-provider-alicloud/issues/2731))
+- improve(slb) update docs ([#2719](https://github.com/aliyun/terraform-provider-alicloud/issues/2719))
 
 BUG FIXES:
 
-- Fix the managed_kubernetes docs [GH-2785]
-- fix document of Hbase and Bastionhost [GH-2777]
-- fix dcdn_domain sources parameter for update method [GH-2773]
-- Fix cdn test case [GH-2760]
+- Fix the managed_kubernetes docs ([#2785](https://github.com/aliyun/terraform-provider-alicloud/issues/2785))
+- fix document of Hbase and Bastionhost ([#2777](https://github.com/aliyun/terraform-provider-alicloud/issues/2777))
+- fix dcdn_domain sources parameter for update method ([#2773](https://github.com/aliyun/terraform-provider-alicloud/issues/2773))
+- Fix cdn test case ([#2760](https://github.com/aliyun/terraform-provider-alicloud/issues/2760))
 
 ## 1.94.0 (August 24, 2020)
 
