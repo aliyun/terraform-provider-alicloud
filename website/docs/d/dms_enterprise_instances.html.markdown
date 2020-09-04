@@ -1,5 +1,5 @@
 ---
-subcategory: "DMS"
+subcategory: "DMS Enterprise"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dms_enterprise_instances"
 sidebar_current: "docs-alicloud-datasource-dms-enterprise-instances"
