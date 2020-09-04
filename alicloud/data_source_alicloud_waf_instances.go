@@ -61,10 +61,6 @@ func dataSourceAlicloudWafInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"region": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"remain_day": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -128,22 +124,21 @@ func dataSourceAlicloudWafInstancesRead(d *schema.ResourceData, meta interface{}
 		}
 		objects = append(objects, item)
 	}
-	ids := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-	for i, object := range objects {
+	ids := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
 			"end_date":          object.EndDate,
 			"in_debt":           object.InDebt,
 			"id":                object.InstanceId,
 			"instance_id":       object.InstanceId,
-			"region":            object.Region,
 			"remain_day":        object.RemainDay,
 			"status":            object.Status,
 			"subscription_type": object.SubscriptionType,
 			"trial":             object.Trial,
 		}
-		ids[i] = object.InstanceId
-		s[i] = mapping
+		ids = append(ids, object.InstanceId)
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))

@@ -32,7 +32,7 @@ resource "alicloud_oss_bucket" "example" {
 }
 
 resource "alicloud_oss_bucket_object" "object-content" {
-  bucket  = "${alicloud_oss_bucket.example.bucket}"
+  bucket  = alicloud_oss_bucket.example.bucket
   key     = "new_object_key"
   content = "the content that you want to upload."
 }

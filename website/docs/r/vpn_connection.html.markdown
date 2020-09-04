@@ -36,8 +36,8 @@ resource "alicloud_vpn_customer_gateway" "foo" {
 
 resource "alicloud_vpn_connection" "foo" {
   name                = "tf-vco_test1"
-  vpn_gateway_id      = "${alicloud_vpn_gateway.foo.id}"
-  customer_gateway_id = "${alicloud_vpn_customer_gateway.foo.id}"
+  vpn_gateway_id      = alicloud_vpn_gateway.foo.id
+  customer_gateway_id = alicloud_vpn_customer_gateway.foo.id
   local_subnet        = ["172.16.0.0/24", "172.16.1.0/24"]
   remote_subnet       = ["10.0.0.0/24", "10.0.1.0/24"]
   effect_immediately  = true
@@ -51,7 +51,7 @@ resource "alicloud_vpn_connection" "foo" {
     ike_pfs       = "group1"
     ike_remote_id = "testbob2"
     ike_local_id  = "testalice2"
-    }
+  }
   ipsec_config {
     ipsec_pfs      = "group5"
     ipsec_enc_alg  = "des"

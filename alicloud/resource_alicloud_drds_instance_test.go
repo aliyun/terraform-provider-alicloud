@@ -86,7 +86,7 @@ func testSweepDRDSInstances(region string) error {
 		}
 	}
 	if sweeped {
-		// Waiting 30 seconds to eusure these DB instances have been deleted.
+		// Waiting 30 seconds to ensure these DB instances have been deleted.
 		time.Sleep(30 * time.Second)
 	}
 	return nil

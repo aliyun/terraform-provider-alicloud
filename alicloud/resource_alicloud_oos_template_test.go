@@ -2,13 +2,78 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/oos"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_oos_template", &resource.Sweeper{
+		Name: "alicloud_oos_template",
+		F:    testSweepOosTemplate,
+	})
+}
+
+func testSweepOosTemplate(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	request := oos.CreateListTemplatesRequest()
+	raw, err := client.WithOosClient(func(OosClient *oos.Client) (interface{}, error) {
+		return OosClient.ListTemplates(request)
+	})
+	if err != nil {
+		log.Printf("[ERROR] Error retrieving Oos Templates: %s", WrapError(err))
+	}
+	response, _ := raw.(*oos.ListTemplatesResponse)
+
+	sweeped := false
+	for _, v := range response.Templates {
+		id := v.TemplateId
+		name := v.TemplateName
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Oos Templates: %s (%s)", name, id)
+			continue
+		}
+
+		sweeped = true
+		log.Printf("[INFO] Deleting Oos Templates: %s (%s)", name, id)
+		req := oos.CreateDeleteTemplateRequest()
+		req.TemplateName = name
+		_, err := client.WithOosClient(func(OosClient *oos.Client) (interface{}, error) {
+			return OosClient.DeleteTemplate(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Oos Templates (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		// Waiting 30 seconds to ensure these Oos Templates have been deleted.
+		time.Sleep(10 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudOOSTemplate_basic(t *testing.T) {
 	var v oos.Template

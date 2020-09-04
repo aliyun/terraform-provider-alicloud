@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
@@ -27,6 +28,7 @@ func TestAccAlicloudNas_MountTarget_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.NasNoSupportedRegions)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceID,
 		Providers:     testAccProviders,
@@ -44,9 +46,10 @@ func TestAccAlicloudNas_MountTarget_update(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceID,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceID,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_group_id"},
 			},
 			{
 				Config: testAccNasMountTargetConfigUpdateAccessGroup(rand1, rand2),
@@ -101,6 +104,7 @@ func TestAccAlicloudNas_MountTarget_updateT(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceID,
 		Providers:     testAccProviders,
@@ -118,9 +122,10 @@ func TestAccAlicloudNas_MountTarget_updateT(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceID,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceID,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_group_id"},
 			},
 			{
 				Config: testAccNasMountTargetConfigUpdateAccessGroupT(rand1, rand2),
@@ -185,24 +190,18 @@ func testAccNasMountTargetVpcConfig(rand1 int, rand2 int) string {
 	variable "name" {
 		default = "tf-testAccVswitch"
 	}
-	data "alicloud_zones" "default" {
-		available_resource_creation = "VSwitch"
-	}
-	resource "alicloud_vpc" "default" {
-		name = "${var.name}"
-		cidr_block = "172.16.0.0/12"
-	}
-	resource "alicloud_vswitch" "default" {
-		vpc_id = "${alicloud_vpc.default.id}"
-		cidr_block = "172.16.0.0/24"
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		name = "${var.name}-1"
-	}
 	variable "storage_type" {
   		default = "Performance"
 	}
 	data "alicloud_nas_protocols" "default" {
         	type = "${var.storage_type}"
+	}
+	data "alicloud_vpcs" "default" {
+			is_default = true
+	}
+	resource "alicloud_security_group" "default" {
+		  name = var.name
+		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
 	}
 	resource "alicloud_nas_file_system" "default" {
 	        protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
@@ -210,19 +209,20 @@ func testAccNasMountTargetVpcConfig(rand1 int, rand2 int) string {
 	        description = "tf-testAccNasConfigUpdateName"
 	}
 	resource "alicloud_nas_access_group" "default" {
-                name = "tf-testAccNasConfig-%d"
-              	type = "Vpc"
-	        description = "tf-testAccNasConfig"
+                access_group_name = "tf-testAccNasConfig-%d"
+              	access_group_type = "Vpc"
+	        	description = "tf-testAccNasConfig"
 	}
 	resource "alicloud_nas_access_group" "bar" {
-        	        name = "tf-testAccNasConfig-2-%d"
-                	type = "Vpc"
-	                description = "tf-testAccNasConfig-2"
+				access_group_name = "tf-testAccNasConfig-2-%d"
+				access_group_type = "Vpc"
+				description = "tf-testAccNasConfig-2"
 	}
 	resource "alicloud_nas_mount_target" "default" {
 		file_system_id = "${alicloud_nas_file_system.default.id}"
-		access_group_name = "${alicloud_nas_access_group.default.id}"
-		vswitch_id = "${alicloud_vswitch.default.id}"               
+		access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
+		vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
+  		security_group_id = "${alicloud_security_group.default.id}"
 	}
 `, rand1, rand2)
 }
@@ -232,18 +232,13 @@ func testAccNasMountTargetConfigUpdateAccessGroup(rand1 int, rand2 int) string {
 	variable "name" {
                 default = "tf-testAccVswitch"
 	}
-	data "alicloud_zones" "default" {
-		available_resource_creation = "VSwitch"
+
+	data "alicloud_vpcs" "default" {
+			is_default = true
 	}
-	resource "alicloud_vpc" "default" {
-                name = "${var.name}"
-               	cidr_block = "172.16.0.0/12"
-	}
-	resource "alicloud_vswitch" "default" {
-                vpc_id = "${alicloud_vpc.default.id}"
-               	cidr_block = "172.16.0.0/24"
-	        availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-                name = "${var.name}-1"
+	resource "alicloud_security_group" "default" {
+		  name = var.name
+		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
 	}
 	variable "storage_type" {
   		default = "Performance"
@@ -257,19 +252,20 @@ func testAccNasMountTargetConfigUpdateAccessGroup(rand1 int, rand2 int) string {
 	        description = "tf-testAccNasConfigUpdateName"
 	}
 	resource "alicloud_nas_access_group" "default" {
-                name = "tf-testAccNasConfig-%d"
-               	type = "Vpc"
-	        description = "tf-testAccNasConfig"
+                access_group_name = "tf-testAccNasConfig-%d"
+               	access_group_type = "Vpc"
+	        	description = "tf-testAccNasConfig"
 	}
 	resource "alicloud_nas_access_group" "bar" {
-        	        name = "tf-testAccNasConfig-2-%d"
-                	type = "Vpc"
+        	        access_group_name = "tf-testAccNasConfig-2-%d"
+                	access_group_type = "Vpc"
 	                description = "tf-testAccNasConfig-2"
 	}
 	resource "alicloud_nas_mount_target" "default" {
 		file_system_id = "${alicloud_nas_file_system.default.id}"
-		access_group_name = "${alicloud_nas_access_group.bar.id}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		access_group_name = "${alicloud_nas_access_group.bar.access_group_name}"
+		vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
+  		security_group_id = "${alicloud_security_group.default.id}"
 	}`, rand1, rand2)
 }
 
@@ -278,18 +274,12 @@ func testAccNasMountTargetConfigUpdateStatus(rand1 int, rand2 int) string {
 	variable "name" {
                 default = "tf-testAccVswitch"
 	}
-	data "alicloud_zones" "default" {
-		available_resource_creation = "VSwitch"
+		data "alicloud_vpcs" "default" {
+			is_default = true
 	}
-	resource "alicloud_vpc" "default" {
-                name = "${var.name}"
-               	cidr_block = "172.16.0.0/12"
-	}
-	resource "alicloud_vswitch" "default" {
-                vpc_id = "${alicloud_vpc.default.id}"
-               	cidr_block = "172.16.0.0/24"
-	        availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-                name = "${var.name}-1"
+	resource "alicloud_security_group" "default" {
+		  name = var.name
+		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
 	}
 	variable "storage_type" {
   		default = "Performance"
@@ -303,20 +293,21 @@ func testAccNasMountTargetConfigUpdateStatus(rand1 int, rand2 int) string {
 	        description = "tf-testAccNasConfigUpdateName"
 	}
 	resource "alicloud_nas_access_group" "default" {
-                name = "tf-testAccNasConfig-%d"
-               	type = "Vpc"
-	        description = "tf-testAccNasConfig"
+                access_group_name = "tf-testAccNasConfig-%d"
+               	access_group_type = "Vpc"
+	        	description = "tf-testAccNasConfig"
 	}
 	resource "alicloud_nas_access_group" "bar" {
-                name = "tf-testAccNasConfig-2-%d"
-               	type = "Vpc"
-	        description = "tf-testAccNasConfig-2"
+                access_group_name = "tf-testAccNasConfig-2-%d"
+               	access_group_type = "Vpc"
+	        	description = "tf-testAccNasConfig-2"
 	}
 	resource "alicloud_nas_mount_target" "default" {
-		file_system_id = "${alicloud_nas_file_system.default.id}"
-               	access_group_name = "${alicloud_nas_access_group.bar.id}"
+			file_system_id = "${alicloud_nas_file_system.default.id}"
+			access_group_name = "${alicloud_nas_access_group.bar.access_group_name}"
 	        status = "Inactive"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
+  			security_group_id = "${alicloud_security_group.default.id}"
 	}`, rand1, rand2)
 }
 
@@ -325,18 +316,12 @@ func testAccNasMountTargetConfigUpdateAll(rand1 int, rand2 int) string {
 	variable "name" {
                 default = "tf-testAccVswitch"
 	}
-	data "alicloud_zones" "default" {
-		available_resource_creation = "VSwitch"
+		data "alicloud_vpcs" "default" {
+			is_default = true
 	}
-	resource "alicloud_vpc" "default" {
-                name = "${var.name}"
-               	cidr_block = "172.16.0.0/12"
-	}
-	resource "alicloud_vswitch" "default" {
-                vpc_id = "${alicloud_vpc.default.id}"
-               	cidr_block = "172.16.0.0/24"
-	        availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-                name = "${var.name}-1"
+	resource "alicloud_security_group" "default" {
+		  name = var.name
+		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
 	}
 	variable "storage_type" {
   		default = "Performance"
@@ -350,20 +335,21 @@ func testAccNasMountTargetConfigUpdateAll(rand1 int, rand2 int) string {
 	        description = "tf-testAccNasConfigUpdateName"
 	}
 	resource "alicloud_nas_access_group" "default" {
-                name = "tf-testAccNasConfig-%d"
-               	type = "Vpc"
-	        description = "tf-testAccNasConfig"
+                access_group_name = "tf-testAccNasConfig-%d"
+               	access_group_type = "Vpc"
+	        	description = "tf-testAccNasConfig"
 	}
 	resource "alicloud_nas_access_group" "bar" {
-                name = "tf-testAccNasConfig-2-%d"
-	        type = "Vpc"
+                access_group_name = "tf-testAccNasConfig-2-%d"
+	        	access_group_type = "Vpc"
                 description = "tf-testAccNasConfig-2"
 	}
 	resource "alicloud_nas_mount_target" "default" {
-                file_system_id = "${alicloud_nas_file_system.default.id}"
-               	access_group_name = "${alicloud_nas_access_group.default.id}"
+			file_system_id = "${alicloud_nas_file_system.default.id}"
+			access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
 	        status = "Active"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
+  			security_group_id = "${alicloud_security_group.default.id}"
 	}`, rand1, rand2)
 }
 
@@ -372,18 +358,12 @@ func testAccNasMountTargetVpcConfigT(rand1 int, rand2 int) string {
 	variable "name" {
 		default = "tf-testAccVswitch"
 	}
-	data "alicloud_zones" "default" {
-		available_resource_creation = "VSwitch"
+		data "alicloud_vpcs" "default" {
+			is_default = true
 	}
-	resource "alicloud_vpc" "default" {
-		name = "${var.name}"
-		cidr_block = "172.16.0.0/12"
-	}
-	resource "alicloud_vswitch" "default" {
-		vpc_id = "${alicloud_vpc.default.id}"
-		cidr_block = "172.16.0.0/24"
-		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		name = "${var.name}-1"
+	resource "alicloud_security_group" "default" {
+		  name = var.name
+		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
 	}
 	variable "storage_type" {
   		default = "Capacity"
@@ -397,19 +377,20 @@ func testAccNasMountTargetVpcConfigT(rand1 int, rand2 int) string {
         	description = "tf-testAccNasConfigUpdateName"
 	}
 	resource "alicloud_nas_access_group" "default" {
-        	name = "tf-testAccNasConfig-%d"
-                type = "Vpc"
+        	access_group_name = "tf-testAccNasConfig-%d"
+			access_group_type = "Vpc"
 	        description = "tf-testAccNasConfig"
 	}
 	resource "alicloud_nas_access_group" "bar" {
-		name = "tf-testAccNasConfig-2-%d"
-		type = "Vpc"
+		access_group_name = "tf-testAccNasConfig-2-%d"
+		access_group_type = "Vpc"
 		description = "tf-testAccNasConfig-2"
 	}
 	resource "alicloud_nas_mount_target" "default" {
 		file_system_id = "${alicloud_nas_file_system.default.id}"
-		access_group_name = "${alicloud_nas_access_group.default.id}"
-		vswitch_id = "${alicloud_vswitch.default.id}"               
+		access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
+			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
+  			security_group_id = "${alicloud_security_group.default.id}"              
 	}
 `, rand1, rand2)
 }
@@ -419,18 +400,12 @@ func testAccNasMountTargetConfigUpdateAccessGroupT(rand1 int, rand2 int) string 
 	variable "name" {
         	default = "tf-testAccVswitch"
 	}
-	data "alicloud_zones" "default" {
-		available_resource_creation = "VSwitch"
+		data "alicloud_vpcs" "default" {
+			is_default = true
 	}
-	resource "alicloud_vpc" "default" {
-                name = "${var.name}"
-               	cidr_block = "172.16.0.0/12"
-	}
-	resource "alicloud_vswitch" "default" {
-                vpc_id = "${alicloud_vpc.default.id}"
-               	cidr_block = "172.16.0.0/24"
-	        availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-                name = "${var.name}-1"
+	resource "alicloud_security_group" "default" {
+		  name = var.name
+		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
 	}
 	variable "storage_type" {
   		default = "Capacity"
@@ -444,19 +419,20 @@ func testAccNasMountTargetConfigUpdateAccessGroupT(rand1 int, rand2 int) string 
 	        description = "tf-testAccNasConfigUpdateName"
 	}
 	resource "alicloud_nas_access_group" "default" {
-                name = "tf-testAccNasConfig-%d"
-               	type = "Vpc"
-	        description = "tf-testAccNasConfig"
+                access_group_name = "tf-testAccNasConfig-%d"
+               	access_group_type = "Vpc"
+	        	description = "tf-testAccNasConfig"
 	}
 	resource "alicloud_nas_access_group" "bar" {
-                name = "tf-testAccNasConfig-2-%d"
-               	type = "Vpc"
-	        description = "tf-testAccNasConfig-2"
+                access_group_name = "tf-testAccNasConfig-2-%d"
+               	access_group_type = "Vpc"
+	        	description = "tf-testAccNasConfig-2"
 	}
 	resource "alicloud_nas_mount_target" "default" {
 		file_system_id = "${alicloud_nas_file_system.default.id}"
-		access_group_name = "${alicloud_nas_access_group.bar.id}"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+		access_group_name = "${alicloud_nas_access_group.bar.access_group_name}"
+			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
+  			security_group_id = "${alicloud_security_group.default.id}"
 	}`, rand1, rand2)
 }
 
@@ -465,18 +441,12 @@ func testAccNasMountTargetConfigUpdateStatusT(rand1 int, rand2 int) string {
 	variable "name" {
                 default = "tf-testAccVswitch"
 	}
-	data "alicloud_zones" "default" {
-		available_resource_creation = "VSwitch"
+		data "alicloud_vpcs" "default" {
+			is_default = true
 	}
-	resource "alicloud_vpc" "default" {
-                name = "${var.name}"
-               	cidr_block = "172.16.0.0/12"
-	}
-	resource "alicloud_vswitch" "default" {
-                vpc_id = "${alicloud_vpc.default.id}"
-               	cidr_block = "172.16.0.0/24"
-	        availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-                name = "${var.name}-1"
+	resource "alicloud_security_group" "default" {
+		  name = var.name
+		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
 	}
 	variable "storage_type" {
   		default = "Capacity"
@@ -490,20 +460,21 @@ func testAccNasMountTargetConfigUpdateStatusT(rand1 int, rand2 int) string {
 	        description = "tf-testAccNasConfigUpdateName"
 	}
 	resource "alicloud_nas_access_group" "default" {
-                name = "tf-testAccNasConfig-%d"
-               	type = "Vpc"
-	        description = "tf-testAccNasConfig"
+                access_group_name = "tf-testAccNasConfig-%d"
+               	access_group_type = "Vpc"
+	        	description = "tf-testAccNasConfig"
 	}
 	resource "alicloud_nas_access_group" "bar" {
-                name = "tf-testAccNasConfig-2-%d"
-               	type = "Vpc"
-	        description = "tf-testAccNasConfig-2"
+                access_group_name = "tf-testAccNasConfig-2-%d"
+               	access_group_type = "Vpc"
+	        	description = "tf-testAccNasConfig-2"
 	}
 	resource "alicloud_nas_mount_target" "default" {
 		file_system_id = "${alicloud_nas_file_system.default.id}"
-               	access_group_name = "${alicloud_nas_access_group.bar.id}"
+               	access_group_name = "${alicloud_nas_access_group.bar.access_group_name}"
 	        status = "Inactive"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
+  			security_group_id = "${alicloud_security_group.default.id}"
 	}`, rand1, rand2)
 }
 
@@ -512,18 +483,12 @@ func testAccNasMountTargetConfigUpdateAllT(rand1 int, rand2 int) string {
 	variable "name" {
                 default = "tf-testAccVswitch"
 	}
-	data "alicloud_zones" "default" {
-		available_resource_creation = "VSwitch"
+		data "alicloud_vpcs" "default" {
+			is_default = true
 	}
-	resource "alicloud_vpc" "default" {
-                name = "${var.name}"
-               	cidr_block = "172.16.0.0/12"
-	}
-	resource "alicloud_vswitch" "default" {
-                vpc_id = "${alicloud_vpc.default.id}"
-               	cidr_block = "172.16.0.0/24"
-	        availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-                name = "${var.name}-1"
+	resource "alicloud_security_group" "default" {
+		  name = var.name
+		  vpc_id = "${data.alicloud_vpcs.default.vpcs.0.id}"
 	}
 	variable "storage_type" {
   		default = "Capacity"
@@ -537,19 +502,20 @@ func testAccNasMountTargetConfigUpdateAllT(rand1 int, rand2 int) string {
 	        description = "tf-testAccNasConfigUpdateName"
 	}
 	resource "alicloud_nas_access_group" "default" {
-                name = "tf-testAccNasConfig-%d"
-	        type = "Vpc"
+                access_group_name = "tf-testAccNasConfig-%d"
+	        	access_group_type = "Vpc"
                 description = "tf-testAccNasConfig"
 	}
 	resource "alicloud_nas_access_group" "bar" {
-                name = "tf-testAccNasConfig-2-%d"
-	        type = "Vpc"
+                access_group_name = "tf-testAccNasConfig-2-%d"
+	        	access_group_type = "Vpc"
                 description = "tf-testAccNasConfig-2"
 	}
 	resource "alicloud_nas_mount_target" "default" {
                 file_system_id = "${alicloud_nas_file_system.default.id}"
-               	access_group_name = "${alicloud_nas_access_group.default.id}"
+               	access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
 	        status = "Active"
-		vswitch_id = "${alicloud_vswitch.default.id}"
+			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
+  			security_group_id = "${alicloud_security_group.default.id}"
 	}`, rand1, rand2)
 }

@@ -43,6 +43,20 @@ func resourceAliyunCommonBandwidthPackageAttachmentCreate(d *schema.ResourceData
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.AddCommonBandwidthPackageIp(request)
 	})
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.AddCommonBandwidthPackageIp(request)
+		})
+		//Waiting for unassociate the common bandwidth package
+		if err != nil && !IsExpectedErrors(err, []string{"IpInstanceId.AlreadyInBandwidthPackage"}) {
+			if IsExpectedErrors(err, []string{"TaskConflict"}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_common_bandwidth_package_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -97,7 +111,7 @@ func resourceAliyunCommonBandwidthPackageAttachmentDelete(d *schema.ResourceData
 		})
 		//Waiting for unassociate the common bandwidth package
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict"}) {
+			if IsExpectedErrors(err, []string{"TaskConflict", "OperationConflict"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -106,6 +120,9 @@ func resourceAliyunCommonBandwidthPackageAttachmentDelete(d *schema.ResourceData
 		return nil
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"OperationUnsupported.IpNotInCbwp"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	return WrapError(vpcService.WaitForCommonBandwidthPackageAttachment(d.Id(), Deleted, DefaultTimeoutMedium))

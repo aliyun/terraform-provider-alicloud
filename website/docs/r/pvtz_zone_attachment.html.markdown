@@ -54,7 +54,7 @@ resource "alicloud_vpc" "second" {
 }
 
 resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
-  zone_id = "${alicloud_pvtz_zone.zone.id}"
+  zone_id = alicloud_pvtz_zone.zone.id
   vpcs {
     vpc_id = alicloud_vpc.first.id
   }
@@ -93,7 +93,7 @@ resource "alicloud_vpc" "third" {
 }
 
 resource "alicloud_pvtz_zone_attachment" "zone-attachment" {
-  zone_id = "${alicloud_pvtz_zone.zone.id}"
+  zone_id = alicloud_pvtz_zone.zone.id
   vpcs {
     vpc_id = alicloud_vpc.first.id
   }

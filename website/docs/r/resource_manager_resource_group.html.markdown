@@ -20,8 +20,8 @@ Basic Usage
 
 ```
 resource "alicloud_resource_manager_resource_group" "example" {
-        name         = "testrd"
-        display_name = "testrd" 
+  name         = "testrd"
+  display_name = "testrd"
 }
 ```
 ## Argument Reference

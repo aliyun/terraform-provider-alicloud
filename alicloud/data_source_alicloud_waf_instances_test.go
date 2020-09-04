@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -12,7 +13,7 @@ func TestAccAlicloudWafInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudWafInstanceDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_waf_instance.default.id}"]`,
+			"ids": fmt.Sprintf(`["%s"]`, os.Getenv("ALICLOUD_WAF_INSTANCE_ID")),
 		}),
 		fakeConfig: testAccCheckAlicloudWafInstanceDataSourceConfig(rand, map[string]string{
 			"ids": `["fake"]`,
@@ -50,7 +51,7 @@ func TestAccAlicloudWafInstancesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudWafInstanceDataSourceConfig(rand, map[string]string{
-			"ids":               `["${alicloud_waf_instance.default.id}"]`,
+			"ids":               fmt.Sprintf(`["%s"]`, os.Getenv("ALICLOUD_WAF_INSTANCE_ID")),
 			"status":            `"1"`,
 			"instance_source":   `"waf-cloud"`,
 			"resource_group_id": "data.alicloud_resource_manager_resource_groups.default.groups.0.id",
@@ -71,7 +72,6 @@ func TestAccAlicloudWafInstancesDataSource(t *testing.T) {
 			"instances.0.instance_id":       CHECKSET,
 			"instances.0.end_date":          CHECKSET,
 			"instances.0.in_debt":           CHECKSET,
-			"instances.0.region":            "cn",
 			"instances.0.remain_day":        CHECKSET,
 			"instances.0.status":            "1",
 			"instances.0.subscription_type": "Subscription",
@@ -109,22 +109,7 @@ func testAccCheckAlicloudWafInstanceDataSourceConfig(rand int, attrMap map[strin
 
 	config := fmt.Sprintf(`
 data "alicloud_resource_manager_resource_groups" "default"{
-	name_regex = "default"
-}
-
-resource "alicloud_waf_instance" "default" {
-  big_screen = "0"
-  exclusive_ip_package = "1"
-  ext_bandwidth = "50"
-  ext_domain_package = "1"
-  package_code = "version_3"
-  prefessional_service = "false"
-  subscription_type = "Subscription"
-  period = 1
-  waf_log = "false"
-  log_storage = "3"
-  log_time = "180"
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+	name_regex = "^default$"
 }
 
 data "alicloud_waf_instances" "default" {

@@ -20,19 +20,19 @@ Basic Usage
 ```
 resource "alicloud_ddoscoo_scheduler_rule" "example" {
   rule_name = "tf-testacc7929727******"
-  rule_type =3
-  rules{
-    priority = "100"
-    region_id = "cn-hangzhou"
-    type = "A"
-    value="170.33.2.125"
+  rule_type = 3
+  rules {
+    priority   = "100"
+    region_id  = "cn-hangzhou"
+    type       = "A"
+    value      = "170.33.2.125"
     value_type = "3"
   }
-  rules{
-    priority = "50"
-    region_id = "cn-hangzhou"
-    type = "A"
-    value= "170.33.14.193"
+  rules {
+    priority   = "50"
+    region_id  = "cn-hangzhou"
+    type       = "A"
+    value      = "170.33.14.193"
     value_type = "1"
   }
 }

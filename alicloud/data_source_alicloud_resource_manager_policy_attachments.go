@@ -106,19 +106,18 @@ func dataSourceAlicloudResourceManagerPolicyAttachmentsRead(d *schema.ResourceDa
 	if v, ok := d.GetOk("language"); ok {
 		request.Language = v.(string)
 	}
-
 	if v, ok := d.GetOk("policy_name"); ok {
 		request.PolicyName = v.(string)
 	}
-
+	if v, ok := d.GetOk("policy_type"); ok {
+		request.PolicyType = v.(string)
+	}
 	if v, ok := d.GetOk("principal_name"); ok {
 		request.PrincipalName = v.(string)
 	}
-
 	if v, ok := d.GetOk("principal_type"); ok {
 		request.PrincipalType = v.(string)
 	}
-
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request.ResourceGroupId = v.(string)
 	}

@@ -24,7 +24,7 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_network_acl" "default" {
-  vpc_id      = "${alicloud_vpc.default.id}"
+  vpc_id      = alicloud_vpc.default.id
   name        = "network_acl"
   description = "network_acl"
 }

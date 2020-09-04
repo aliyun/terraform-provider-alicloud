@@ -114,6 +114,8 @@ The following arguments are supported:
 
 #### Addons 
 It is a new field since 1.75.0. You can specific network plugin,log component,ingress component and so on.     
+
+-> **NOTE:** If you want to upgrade provider to 1.90.0+, you need to pay attention to the disabled value. If the value is `""`, you need to modify it to `"false"`, and then run `terraform apply` to make it effect. After that, you can modify the provider version to upgrade smoothly. Otherwise, there will throw an error: `Error: a bool is required`.
  
 ```$xslt
   main.tf
@@ -238,7 +240,7 @@ It is a new field since 1.75.0. You can specific network plugin,log component,in
             {
                 "name"     = "nginx-ingress-controller",
                 "config"   = "",
-                "disabled": true,
+                "disabled" = "false",
             }
         ]
     } 

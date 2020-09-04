@@ -19,26 +19,31 @@ Basic Usage
 variable "creation" {
   default = "KVStore"
 }
+
 variable "name" {
   default = "kvstoreinstancevpc"
 }
+
 data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+  available_resource_creation = var.creation
 }
+
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
+
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones[0].id
+  name              = var.name
 }
+
 resource "alicloud_kvstore_instance" "default" {
   instance_class = "redis.master.small.default"
-  instance_name  = "${var.name}"
-  vswitch_id     = "${alicloud_vswitch.default.id}"
+  instance_name  = var.name
+  vswitch_id     = alicloud_vswitch.default.id
   private_ip     = "172.16.0.10"
   security_ips   = ["10.0.0.1"]
   instance_type  = "Redis"
@@ -74,6 +79,9 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `maintain_start_time` - (Optional, Available in v1.56.0+) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available in v1.56.0+) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `resource_group_id` - (Optional, ForceNew, Available in v1.86.0+) The ID of resource group which the resource belongs.
+* `enable_public` - (Optional, Available in v1.94.0+) Whether to open the public network. Default to: `false`.
+* `connection_string_prefix` - (Optional, Available in v1.94.0+) The prefix of the external network connection address.
+* `port` - (Optional, Available in v1.94.0+) The port of redis.
 
 -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
@@ -83,6 +91,7 @@ The following attributes are exported:
 
 * `id` - The KVStore instance ID.
 * `connection_domain` - Instance connection domain (only Intranet access supported).
+* `connection_string` - The connection address of the instance.
 
 ### Timeouts
 

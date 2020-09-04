@@ -10,7 +10,7 @@ cloud.google.com/go/compute/metadata
 github.com/Sirupsen/logrus
 # github.com/agext/levenshtein v1.2.2
 github.com/agext/levenshtein
-# github.com/aliyun/alibaba-cloud-sdk-go v1.61.382
+# github.com/aliyun/alibaba-cloud-sdk-go v1.61.453
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses
@@ -28,6 +28,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/cms
 github.com/aliyun/alibaba-cloud-sdk-go/services/cr
 github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee
 github.com/aliyun/alibaba-cloud-sdk-go/services/cs
+github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn
 github.com/aliyun/alibaba-cloud-sdk-go/services/ddosbgp
 github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo
 github.com/aliyun/alibaba-cloud-sdk-go/services/dds
@@ -44,6 +45,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/hbase
 github.com/aliyun/alibaba-cloud-sdk-go/services/kms
 github.com/aliyun/alibaba-cloud-sdk-go/services/market
 github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute
+github.com/aliyun/alibaba-cloud-sdk-go/services/mse
 github.com/aliyun/alibaba-cloud-sdk-go/services/nas
 github.com/aliyun/alibaba-cloud-sdk-go/services/ons
 github.com/aliyun/alibaba-cloud-sdk-go/services/oos

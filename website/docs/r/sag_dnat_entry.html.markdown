@@ -23,12 +23,12 @@ Basic Usage
 
 ```
 resource "alicloud_sag_dnat_entry" "default" {
-  sag_id = "sag-3rb1t3iagy3w0zgwy9"
-  type = "Intranet"
-  ip_protocol = "tcp"
-  external_ip = "1.0.0.2"
+  sag_id        = "sag-3rb1t3iagy3w0zgwy9"
+  type          = "Intranet"
+  ip_protocol   = "tcp"
+  external_ip   = "1.0.0.2"
   external_port = "1"
-  internal_ip = "10.0.0.2"
+  internal_ip   = "10.0.0.2"
   internal_port = "20"
 }
 ```

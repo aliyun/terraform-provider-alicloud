@@ -9,13 +9,15 @@ description: |-
 
 # alicloud\_dns\_instances
 
+-> **DEPRECATED:**  This resource has been renamed to `[alicloud_alidns_instances](https://www.terraform.io/docs/providers/alicloud/d/alidns_instances.html)` from version 1.95.0. 
+
 This data source provides a list of DNS instances in an Alibaba Cloud account according to the specified filters.
 
 -> **NOTE:**  Available in 1.84.0+.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_dns_instances" "example" {
   ids = ["dns-cn-oew1npk****"]
 }

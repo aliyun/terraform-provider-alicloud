@@ -15,9 +15,9 @@ Provides a OOS Template resource. For information about Alicloud OOS Template an
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_oos_template" "example" {
-  content= <<EOF
+  content       = <<EOF
   {
     "FormatVersion": "OOS-2019-06-01",
     "Description": "Update Describe instances of given status",
@@ -42,12 +42,13 @@ resource "alicloud_oos_template" "example" {
   }
   EOF
   template_name = "test-name"
-  version_name = "test"
+  version_name  = "test"
   tags = {
     "Created" = "TF",
-    "For" = "acceptance Test"
+    "For"     = "acceptance Test"
   }
 }
+
 ```
 
 ## Argument Reference

@@ -40,6 +40,7 @@ func testSweepCRNamespace(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
+		"tf_testAcc",
 	}
 
 	req := cr.CreateGetNamespaceListRequest()

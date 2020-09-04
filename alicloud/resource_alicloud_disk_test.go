@@ -157,6 +157,14 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccDiskConfig_performance_level(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"performance_level": "PL2",
+					}),
+				),
+			},
+			{
 				Config: testAccDiskConfig_kms_key_id(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -295,6 +303,23 @@ data "alicloud_zones" "default" {
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   	size = "70"
+	resource_group_id = "%s"
+}
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
+
+func testAccDiskConfig_performance_level() string {
+	return fmt.Sprintf(`
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
+}
+
+
+resource "alicloud_disk" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	size = "70"
+    category = "cloud_essd"
+    performance_level = "PL2"
 	resource_group_id = "%s"
 }
 `, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))

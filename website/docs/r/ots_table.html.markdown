@@ -20,9 +20,10 @@ you should use resource alicloud_ots_table's new field 'instance_name' and 'tabl
 variable "name" {
   default = "terraformtest"
 }
+
 resource "alicloud_ots_instance" "foo" {
-  name        = "${var.name}"
-  description = "${var.name}"
+  name        = var.name
+  description = var.name
   accessed_by = "Any"
   tags = {
     Created = "TF"
@@ -31,20 +32,20 @@ resource "alicloud_ots_instance" "foo" {
 }
 
 resource "alicloud_ots_table" "basic" {
-  instance_name = "${alicloud_ots_instance.foo.name}"
-  table_name    = "${var.name}"
+  instance_name = alicloud_ots_instance.foo.name
+  table_name    = var.name
   primary_key {
-      name = "pk1"
-      type = "Integer"
-    }
+    name = "pk1"
+    type = "Integer"
+  }
   primary_key {
-      name = "pk2"
-      type = "String"
-    }
+    name = "pk2"
+    type = "String"
+  }
   primary_key {
-      name = "pk3"
-      type = "Binary"
-    }
+    name = "pk3"
+    type = "Binary"
+  }
 
   time_to_live                  = -1
   max_version                   = 1
