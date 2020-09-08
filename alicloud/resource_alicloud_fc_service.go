@@ -93,6 +93,39 @@ func resourceAlicloudFCService() *schema.Resource {
 					},
 				},
 			},
+			"nas_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"user_id": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"group_id": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"mount_points": {
+							Type:     schema.TypeList,
+							Required: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"server_addr": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"mount_dir": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"last_modified": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -131,16 +164,25 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 			Logstore: StringPointer(logstore),
 		},
 	}
-	vpcconfig, err := parseVpcConfig(d, meta)
+	vpcConfig, err := parseVpcConfig(d, meta)
 	if err != nil {
 		return WrapError(err)
 	}
-	request.VPCConfig = vpcconfig
+	request.VPCConfig = vpcConfig
+	nasConfig, err := parseNasConfig(d)
+	if err != nil {
+		return WrapError(err)
+	}
+	request.NASConfig = nasConfig
 	var requestInfo *fc.Client
 	var response *fc.CreateServiceOutput
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
+			//b, _ := json.Marshal(request)
+			//fmt.Println("=============create===============")
+			//fmt.Println(string(b))
+			//fmt.Println("==================================")
 			return fcClient.CreateService(request)
 		})
 		if err != nil {
@@ -200,6 +242,25 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 	if err := d.Set("vpc_config", vpcConfigs); err != nil {
 		return WrapError(err)
 	}
+	var nasConfigs []map[string]interface{}
+	if cfg := object.NASConfig; cfg != nil && len(cfg.MountPoints) != 0 {
+		dstCfg := make(map[string]interface{})
+		dstCfg["user_id"] = cfg.UserID
+		dstCfg["group_id"] = cfg.GroupID
+		var mps []map[string]interface{}
+		for _, v := range cfg.MountPoints {
+			mps = append(mps, map[string]interface{}{
+				"server_addr": v.ServerAddr,
+				"mount_dir":   v.MountDir,
+			})
+		}
+		dstCfg["mount_points"] = mps
+
+		nasConfigs = append(nasConfigs, dstCfg)
+	}
+	if err := d.Set("nas_config", nasConfigs); err != nil {
+		return WrapError(err)
+	}
 	d.Set("last_modified", object.LastModifiedTime)
 
 	return nil
@@ -236,12 +297,21 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if d.HasChange("vpc_config") {
-		vpcconfig, err := parseVpcConfig(d, meta)
+		vpcConfig, err := parseVpcConfig(d, meta)
 		if err != nil {
 			return WrapError(err)
 		}
-		request.VPCConfig = vpcconfig
+		request.VPCConfig = vpcConfig
 		d.SetPartial("vpc_config")
+	}
+
+	if d.HasChange("nas_config") {
+		nasConfig, err := parseNasConfig(d)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.NASConfig = nasConfig
+		d.SetPartial("nas_config")
 	}
 
 	if request != nil {
@@ -249,6 +319,10 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
+			//b, _ := json.Marshal(request)
+			//fmt.Println("==============update===============")
+			//fmt.Println(string(b))
+			//fmt.Println("===================================")
 			return fcClient.UpdateService(request)
 		})
 		if err != nil {
@@ -368,6 +442,30 @@ func parseLogConfig(d *schema.ResourceData, meta interface{}) (project, logstore
 			addDebug("CheckLogstoreExist", raw)
 			return nil
 		})
+	}
+	return
+}
+
+func parseNasConfig(d *schema.ResourceData) (config *fc.NASConfig, err error) {
+	if v, ok := d.GetOk("nas_config"); ok {
+		config = fc.NewNASConfig()
+		c, ok := v.([]interface{})[0].(map[string]interface{})
+		if !ok {
+			return nil, Error("Failed to parse nas config.")
+		}
+		config.UserID = Int32Pointer(int32(c["user_id"].(int)))
+		config.GroupID = Int32Pointer(int32(c["group_id"].(int)))
+		if mps, ok := c["mount_points"].([]interface{}); ok {
+			for _, mp := range mps {
+				m := mp.(map[string]interface{})
+				config.MountPoints = append(config.MountPoints, fc.NASMountConfig{
+					ServerAddr: m["server_addr"].(string),
+					MountDir:   m["mount_dir"].(string),
+				})
+			}
+		} else {
+			return nil, Error("Failed to parse mount points.")
+		}
 	}
 	return
 }

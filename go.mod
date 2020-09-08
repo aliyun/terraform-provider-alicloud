@@ -8,7 +8,7 @@ require (
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20191115025756-088ba95470f4
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.2+incompatible
 	github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible
-	github.com/aliyun/fc-go-sdk v0.0.0-20190326033901-db3e654c23d6
+	github.com/aliyun/fc-go-sdk v0.0.0-20200619091938-0882be48e49f
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
 	github.com/denverdino/aliyungo v0.0.0-20200720072455-26fa39a46424
