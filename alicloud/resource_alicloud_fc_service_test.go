@@ -264,7 +264,7 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudFCServiceVpcUpdate(t *testing.T) {
+func TestAccAlicloudFCServiceVpcAndNasUpdate(t *testing.T) {
 	var v *fc.GetServiceOutput
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", defaultRegionToTest, rand)
@@ -272,6 +272,7 @@ func TestAccAlicloudFCServiceVpcUpdate(t *testing.T) {
 		"name":          name,
 		"role":          CHECKSET,
 		"vpc_config.#":  "1",
+		"nas_config.#":  "1",
 		"last_modified": CHECKSET,
 	}
 	resourceId := "alicloud_fc_service.default"
@@ -297,6 +298,18 @@ func TestAccAlicloudFCServiceVpcUpdate(t *testing.T) {
 						{
 							"vswitch_ids":       "${alicloud_vswitch.default.*.id}",
 							"security_group_id": "${alicloud_security_group.default.id}",
+						},
+					},
+					"nas_config": []map[string]interface{}{
+						{
+							"user_id":  "9527",
+							"group_id": "9528",
+							"mount_points": []map[string]interface{}{
+								{
+									"server_addr": "x-nas.aliyuncs.com:/workspace/docs",
+									"mount_dir":   "/mnt/nas",
+								},
+							},
 						},
 					},
 					"depends_on": []string{"alicloud_ram_role_policy_attachment.default", "alicloud_ram_role_policy_attachment.default1"},
@@ -359,6 +372,60 @@ func TestAccAlicloudFCServiceVpcUpdate(t *testing.T) {
 						"log_config.0.logstore": REMOVEKEY,
 						"internet_access":       REMOVEKEY,
 						"description":           REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"nas_config": []map[string]interface{}{
+						{
+							"user_id":  "9527",
+							"group_id": "9528",
+							"mount_points": []map[string]interface{}{
+								{
+									"server_addr": "${var.nas_mount_points.0.server_addr}",
+									"mount_dir":   "${var.nas_mount_points.0.mount_dir}",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"nas_config.0.user_id":                    "9527",
+						"nas_config.0.group_id":                   "9528",
+						"nas_config.0.mount_points.0.server_addr": "${var.nas_mount_points.0.server_addr}",
+						"nas_config.0.mount_points.0.mount_dir":   "${var.nas_mount_points.0.mount_dir}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"nas_config": []map[string]interface{}{
+						{
+							"user_id":  "9627",
+							"group_id": "9628",
+							"mount_points": []map[string]interface{}{
+								{
+									"server_addr": "x-nas.aliyuncs.com:/workspace/docs",
+									"mount_dir":   "/mnt/nas",
+								},
+								{
+									"server_addr": "x-nas.aliyuncs.com:/workspace",
+									"mount_dir":   "/home/nas",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"nas_config.0.user_id":                    "9627",
+						"nas_config.0.group_id":                   "9628",
+						"nas_config.0.mount_points.0.server_addr": "x-nas.aliyuncs.com:/workspace/docs",
+						"nas_config.0.mount_points.0.mount_dir":   "/mnt/nas",
+						"nas_config.0.mount_points.1.server_addr": "x-nas.aliyuncs.com:/workspace",
+						"nas_config.0.mount_points.1.mount_dir":   "/home/nas",
 					}),
 				),
 			},
