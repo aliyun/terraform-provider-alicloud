@@ -466,8 +466,20 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		request := cms.CreateEnableMetricRulesRequest()
 		request.RuleId = &[]string{d.Id()}
 
-		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.EnableMetricRules(request)
+		wait := incrementalWait(1*time.Second, 2*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+				return cmsClient.EnableMetricRules(request)
+			})
+
+			if err != nil {
+				if IsExpectedErrors(err, []string{ThrottlingUser}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(fmt.Errorf("Enabling alarm got an error: %#v", err))
+			}
+			return nil
 		})
 		if err != nil {
 			return fmt.Errorf("Enabling alarm got an error: %#v", err)
@@ -476,8 +488,20 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		request := cms.CreateDisableMetricRulesRequest()
 		request.RuleId = &[]string{d.Id()}
 
-		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DisableMetricRules(request)
+		wait := incrementalWait(1*time.Second, 2*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+				return cmsClient.DisableMetricRules(request)
+			})
+
+			if err != nil {
+				if IsExpectedErrors(err, []string{ThrottlingUser}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(fmt.Errorf("Disableing alarm got an error: %#v", err))
+			}
+			return nil
 		})
 		if err != nil {
 			return fmt.Errorf("Disableing alarm got an error: %#v", err)
