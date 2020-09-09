@@ -9,11 +9,13 @@ description: |-
 
 # alicloud\_dns\_domains
 
+-> **DEPRECATED:**  This resource has been renamed to `[alicloud_alidns_domains](https://www.terraform.io/docs/providers/alicloud/d/alidns_domains.html)` from version 1.95.0. 
+
 This data source provides a list of DNS Domains in an Alibaba Cloud account according to the specified filters.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_dns_domains" "domains_ds" {
   domain_name_regex = "^hegu"
   output_file       = "domains.txt"

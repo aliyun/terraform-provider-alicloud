@@ -246,12 +246,12 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if !d.IsNewResource() && d.HasChange("sources") {
 		update = true
+		sources, err := dcdnService.convertSourcesToString(d.Get("sources").(*schema.Set).List())
+		if err != nil {
+			return WrapError(err)
+		}
+		request.Sources = sources
 	}
-	sources, err := dcdnService.convertSourcesToString(d.Get("sources").(*schema.Set).List())
-	if err != nil {
-		return WrapError(err)
-	}
-	request.Sources = sources
 	if !d.IsNewResource() && d.HasChange("top_level_domain") {
 		update = true
 		request.TopLevelDomain = d.Get("top_level_domain").(string)

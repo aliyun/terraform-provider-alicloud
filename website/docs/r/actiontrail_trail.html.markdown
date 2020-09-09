@@ -1,5 +1,5 @@
 ---
-subcategory: "ActionTrail"
+subcategory: "Actiontrail"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_actiontrail_trail"
 sidebar_current: "docs-alicloud-resource-actiontrail-trail"
