@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 type CmsService struct {
@@ -32,17 +33,29 @@ func (s *CmsService) BuildCmsAlarmRequest(id string) *requests.CommonRequest {
 }
 
 func (s *CmsService) DescribeAlarm(id string) (alarm cms.Alarm, err error) {
-
 	request := cms.CreateDescribeMetricRuleListRequest()
-
 	request.RuleIds = id
-	raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.DescribeMetricRuleList(request)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var response *cms.DescribeMetricRuleListResponse
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.DescribeMetricRuleList(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*cms.DescribeMetricRuleListResponse)
+		return nil
 	})
 	if err != nil {
 		return alarm, err
 	}
-	response, _ := raw.(*cms.DescribeMetricRuleListResponse)
 
 	if len(response.Alarms.Alarm) < 1 {
 		return alarm, GetNotFoundErrorFromString(GetNotFoundMessage("Alarm Rule", id))

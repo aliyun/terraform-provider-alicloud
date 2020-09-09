@@ -25,14 +25,21 @@ resource "alicloud_cms_alarm" "basic" {
     instanceId = "i-bp1247,i-bp11gd"
     device     = "/dev/vda1,/dev/vdb1"
   }
-  statistics         = "Average"
+  escalations_warn {
+    statistics = "Average"
+    comparison_operator = "<="
+    threshold = 102400
+    times = 1
+  }
+  escalations_critical {
+    statistics = "Average"
+    comparison_operator = "<="
+    threshold = 35
+    times = 2
+  }
   period             = 900
-  operator           = "<="
-  threshold          = 35
-  triggered_count    = 2
   contact_groups     = ["test-group"]
   effective_interval = "0:00-2:00"
-  notify_type        = 1
   webhook            = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
 }
 ```
