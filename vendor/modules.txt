@@ -82,7 +82,7 @@ github.com/aliyun/aliyun-oss-go-sdk/oss
 github.com/aliyun/aliyun-tablestore-go-sdk/tablestore
 github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/otsprotocol
 github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search
-# github.com/aliyun/fc-go-sdk v0.0.0-20190326033901-db3e654c23d6
+# github.com/aliyun/fc-go-sdk v0.0.0-20200619091938-0882be48e49f
 github.com/aliyun/fc-go-sdk
 # github.com/apparentlymart/go-cidr v1.0.1
 github.com/apparentlymart/go-cidr/cidr

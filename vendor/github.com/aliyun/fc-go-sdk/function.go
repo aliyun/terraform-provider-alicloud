@@ -76,6 +76,32 @@ func (c *Code) WithFiles(files ...string) *Code {
 	return c
 }
 
+// CustomContainerConfig defines the code docker image
+type CustomContainerConfig struct {
+	Image   *string `json:"image"`
+	Command *string `json:"command"`
+	Args    *string `json:"args"`
+}
+
+func NewCustomContainerConfig() *CustomContainerConfig {
+	return &CustomContainerConfig{}
+}
+
+func (c *CustomContainerConfig) WithImage(image string) *CustomContainerConfig {
+	c.Image = &image
+	return c
+}
+
+func (c *CustomContainerConfig) WithCommand(cmd string) *CustomContainerConfig {
+	c.Command = &cmd
+	return c
+}
+
+func (c *CustomContainerConfig) WithArgs(args string) *CustomContainerConfig {
+	c.Args = &args
+	return c
+}
+
 // CreateFunctionInput defines function creation input
 type CreateFunctionInput struct {
 	ServiceName *string
@@ -83,16 +109,20 @@ type CreateFunctionInput struct {
 }
 
 type FunctionCreateObject struct {
-	FunctionName          *string           `json:"functionName"`
-	Description           *string           `json:"description"`
-	Runtime               *string           `json:"runtime"`
-	Handler               *string           `json:"handler"`
-	Timeout               *int32            `json:"timeout"`
-	MemorySize            *int32            `json:"memorySize"`
-	Code                  *Code             `json:"code"`
-	EnvironmentVariables  map[string]string `json:"environmentVariables"`
-	Initializer           *string           `json:"initializer"`
-	InitializationTimeout *int32            `json:"initializationTimeout"`
+	FunctionName          *string                `json:"functionName"`
+	Description           *string                `json:"description"`
+	Runtime               *string                `json:"runtime"`
+	Handler               *string                `json:"handler"`
+	Initializer           *string                `json:"initializer"`
+	Timeout               *int32                 `json:"timeout"`
+	InitializationTimeout *int32                 `json:"initializationTimeout"`
+	MemorySize            *int32                 `json:"memorySize"`
+	InstanceConcurrency   *int32                 `json:"instanceConcurrency"`
+	Code                  *Code                  `json:"code"`
+	EnvironmentVariables  map[string]string      `json:"environmentVariables"`
+	CustomContainerConfig *CustomContainerConfig `json:"customContainerConfig"`
+	CAPort                *int32                 `json:"caPort"`
+	InstanceType          *string                `json:"instanceType"`
 
 	err error `json:"-"`
 }
@@ -131,6 +161,11 @@ func (i *CreateFunctionInput) WithMemorySize(memory int32) *CreateFunctionInput 
 	return i
 }
 
+func (i *CreateFunctionInput) WithInstanceConcurrency(concurrency int32) *CreateFunctionInput {
+	i.InstanceConcurrency = &concurrency
+	return i
+}
+
 func (i *CreateFunctionInput) WithCode(code *Code) *CreateFunctionInput {
 	if code != nil && code.err != nil {
 		i.err = code.err
@@ -152,6 +187,23 @@ func (i *CreateFunctionInput) WithInitializer(initializer string) *CreateFunctio
 
 func (i *CreateFunctionInput) WithInitializationTimeout(initializationTimeout int32) *CreateFunctionInput {
 	i.InitializationTimeout = &initializationTimeout
+	return i
+}
+
+func (i *CreateFunctionInput) WithCustomContainerConfig(customContainerConfig *CustomContainerConfig) *CreateFunctionInput {
+	if customContainerConfig != nil {
+		i.CustomContainerConfig = customContainerConfig
+	}
+	return i
+}
+
+func (i *CreateFunctionInput) WithCAPort(caPort int32) *CreateFunctionInput {
+	i.CAPort = &caPort
+	return i
+}
+
+func (i *CreateFunctionInput) WithInstanceType(instanceType string) *CreateFunctionInput {
+	i.InstanceType = &instanceType
 	return i
 }
 
@@ -205,15 +257,19 @@ func (o CreateFunctionOutput) String() string {
 
 // FunctionUpdateObject defines update fields in Function
 type FunctionUpdateObject struct {
-	Description           *string           `json:"description"`
-	Runtime               *string           `json:"runtime"`
-	Handler               *string           `json:"handler"`
-	Timeout               *int32            `json:"timeout"`
-	MemorySize            *int32            `json:"memorySize"`
-	Code                  *Code             `json:"code"`
-	EnvironmentVariables  map[string]string `json:"environmentVariables"`
-	Initializer           *string           `json:"initializer"`
-	InitializationTimeout *int32            `json:"initializationTimeout"`
+	Description           *string                `json:"description"`
+	Runtime               *string                `json:"runtime"`
+	Handler               *string                `json:"handler"`
+	Initializer           *string                `json:"initializer"`
+	Timeout               *int32                 `json:"timeout"`
+	InitializationTimeout *int32                 `json:"initializationTimeout"`
+	MemorySize            *int32                 `json:"memorySize"`
+	InstanceConcurrency   *int32                 `json:"instanceConcurrency"`
+	Code                  *Code                  `json:"code"`
+	EnvironmentVariables  map[string]string      `json:"environmentVariables"`
+	CustomContainerConfig *CustomContainerConfig `json:"customContainerConfig"`
+	CAPort                *int32                 `json:"caPort"`
+	InstanceType          *string                `json:"instanceType"`
 
 	err error `json:"-"`
 }
@@ -257,6 +313,11 @@ func (i *UpdateFunctionInput) WithMemorySize(memory int32) *UpdateFunctionInput 
 	return i
 }
 
+func (i *UpdateFunctionInput) WithInstanceConcurrency(limit int32) *UpdateFunctionInput {
+	i.InstanceConcurrency = &limit
+	return i
+}
+
 func (i *UpdateFunctionInput) WithCode(code *Code) *UpdateFunctionInput {
 	if code != nil && code.err != nil {
 		i.err = code.err
@@ -271,6 +332,11 @@ func (i *UpdateFunctionInput) WithEnvironmentVariables(env map[string]string) *U
 	return i
 }
 
+func (s *UpdateFunctionInput) WithIfMatch(ifMatch string) *UpdateFunctionInput {
+	s.IfMatch = &ifMatch
+	return s
+}
+
 func (i *UpdateFunctionInput) WithInitializer(initializer string) *UpdateFunctionInput {
 	i.Initializer = &initializer
 	return i
@@ -281,9 +347,21 @@ func (i *UpdateFunctionInput) WithInitializationTimeout(initializationTimeout in
 	return i
 }
 
-func (s *UpdateFunctionInput) WithIfMatch(ifMatch string) *UpdateFunctionInput {
-	s.IfMatch = &ifMatch
-	return s
+func (i *UpdateFunctionInput) WithCustomContainerConfig(customContainerConfig *CustomContainerConfig) *UpdateFunctionInput {
+	if customContainerConfig != nil {
+		i.CustomContainerConfig = customContainerConfig
+	}
+	return i
+}
+
+func (i *UpdateFunctionInput) WithCAPort(caPort int32) *UpdateFunctionInput {
+	i.CAPort = &caPort
+	return i
+}
+
+func (i *UpdateFunctionInput) WithInstanceType(instanceType string) *UpdateFunctionInput {
+	i.InstanceType = &instanceType
+	return i
 }
 
 func (i *UpdateFunctionInput) GetQueryParams() url.Values {
@@ -414,20 +492,24 @@ func (o GetFunctionOutput) String() string {
 
 // functionMetadata define the function metadata
 type functionMetadata struct {
-	FunctionID            *string           `json:"functionId"`
-	FunctionName          *string           `json:"functionName"`
-	Description           *string           `json:"description"`
-	Runtime               *string           `json:"runtime"`
-	Handler               *string           `json:"handler"`
-	Timeout               *int32            `json:"timeout"`
-	MemorySize            *int32            `json:"memorySize"`
-	CodeSize              *int64            `json:"codeSize"`
-	CodeChecksum          *string           `json:"codeChecksum"`
-	EnvironmentVariables  map[string]string `json:"environmentVariables"`
-	CreatedTime           *string           `json:"createdTime"`
-	LastModifiedTime      *string           `json:"lastModifiedTime"`
-	Initializer           *string           `json:"initializer"`
-	InitializationTimeout *int32            `json:"initializationTimeout"`
+	FunctionID            *string                `json:"functionId"`
+	FunctionName          *string                `json:"functionName"`
+	Description           *string                `json:"description"`
+	Runtime               *string                `json:"runtime"`
+	Handler               *string                `json:"handler"`
+	Initializer           *string                `json:"initializer"`
+	Timeout               *int32                 `json:"timeout"`
+	InitializationTimeout *int32                 `json:"initializationTimeout"`
+	MemorySize            *int32                 `json:"memorySize"`
+	InstanceConcurrency   *int32                 `json:"instanceConcurrency"`
+	CodeSize              *int64                 `json:"codeSize"`
+	CodeChecksum          *string                `json:"codeChecksum"`
+	EnvironmentVariables  map[string]string      `json:"environmentVariables"`
+	CustomContainerConfig *CustomContainerConfig `json:"customContainerConfig"`
+	CAPort                *int32                 `json:"caPort"`
+	CreatedTime           *string                `json:"createdTime"`
+	LastModifiedTime      *string                `json:"lastModifiedTime"`
+	InstanceType          *string                `json:"instanceType"`
 }
 
 // GetFunctionCodeInput ...
@@ -512,11 +594,6 @@ func NewListFunctionsInput(serviceName string) *ListFunctionsInput {
 	return &ListFunctionsInput{ServiceName: &serviceName}
 }
 
-func (i *ListFunctionsInput) WithQualifier(qualifier string) *ListFunctionsInput {
-	i.Qualifier = &qualifier
-	return i
-}
-
 func (i *ListFunctionsInput) WithPrefix(prefix string) *ListFunctionsInput {
 	i.Prefix = &prefix
 	return i
@@ -534,6 +611,11 @@ func (i *ListFunctionsInput) WithNextToken(nextToken string) *ListFunctionsInput
 
 func (i *ListFunctionsInput) WithLimit(limit int32) *ListFunctionsInput {
 	i.Limit = &limit
+	return i
+}
+
+func (i *ListFunctionsInput) WithQualifier(qualifier string) *ListFunctionsInput {
+	i.Qualifier = &qualifier
 	return i
 }
 
@@ -654,11 +736,6 @@ type InvokeFunctionInput struct {
 	headers      Header
 }
 
-func (i *InvokeFunctionInput) WithQualifier(qualifier string) *InvokeFunctionInput {
-	i.Qualifier = &qualifier
-	return i
-}
-
 func NewInvokeFunctionInput(serviceName string, functionName string) *InvokeFunctionInput {
 	return &InvokeFunctionInput{
 		ServiceName:  &serviceName,
@@ -693,6 +770,11 @@ func (i *InvokeFunctionInput) WithAsyncInvocation() *InvokeFunctionInput {
 
 func (i *InvokeFunctionInput) WithSyncInvocation() *InvokeFunctionInput {
 	return i.WithInvocationType(invocationTypeSync)
+}
+
+func (i *InvokeFunctionInput) WithQualifier(qualifier string) *InvokeFunctionInput {
+	i.Qualifier = &qualifier
+	return i
 }
 
 func (i *InvokeFunctionInput) GetQueryParams() url.Values {

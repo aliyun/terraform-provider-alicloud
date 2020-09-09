@@ -293,6 +293,33 @@ func main() {
 	} else {
 		fmt.Printf("DeleteService response: %s \n", deleteServiceOutput)
 	}
+
+	// PutProvisionConfig
+    fmt.Println("Putting provision config")
+    putProvisionConfigOutput, err := client.PutProvisionConfig(fc.NewPutProvisionConfigInput(serviceName, "testAliasName", "testFunctionName").WithTarget(int64(100))
+    if err != nil {
+        fmt.Fprintln(os.Stderr, err)
+    } else {
+        fmt.Printf("PutProvisionConfig response: %s \n", putProvisionConfigOutput)
+    }
+
+    // GetProvisionConfig
+    fmt.Println("Getting provision config")
+    getProvisionConfigOutput, err := client.GetProvisionConfig(fc.NewGetProvisionConfigInput(serviceName, "testAliasName", "testFunctionName"))
+    if err != nil {
+        fmt.Fprintln(os.Stderr, err)
+    } else {
+        fmt.Printf("GetProvisionConfig response: %s \n", getProvisionConfigOutput)
+    }
+
+    // ListProvisionConfigs
+    fmt.Println("Listing provision configs")
+    listProvisionConfigsOutput, err := client.ListProvisionConfigs(fc.NewListProvisionConfigsInput())
+    if err != nil {
+        fmt.Fprintln(os.Stderr, err)
+    } else {
+        fmt.Printf("ListProvisionConfigs response: %s \n", listProvisionConfigsOutput)
+    }
 }
 
 ```

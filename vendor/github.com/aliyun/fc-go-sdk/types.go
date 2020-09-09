@@ -7,4 +7,5 @@ type Query struct {
 	StartKey  *string
 	NextToken *string
 	Limit     *int32
+	Tags      map[string]string
 }
