@@ -91,6 +91,7 @@ The following arguments are supported:
 * `role` - (Optional) RAM role arn attached to the Function Compute service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
 * `log_config` - (Optional) Provide this to store your FC service logs. Fields documented below. See [Create a Service](https://www.alibabacloud.com/help/doc-detail/51924.htm).
 * `vpc_config` - (Optional) Provide this to allow your FC service to access your VPC. Fields documented below. See [Function Compute Service in VPC](https://www.alibabacloud.com/help/faq-detail/72959.htm).
+* `nas_config` - (Optional, available in 1.96.0+) Provide [NAS configuration](https://www.alibabacloud.com/help/doc-detail/87401.htm) to allow FC service to access your NAS resources.
 
 **log_config** requires the following:
 
@@ -105,6 +106,14 @@ The following arguments are supported:
 * `security_group_id` - (Required) A security group ID associated with the FC service.
 
 -> **NOTE:** If both `vswitch_ids` and `security_group_id` are empty, vpc_config is considered to be empty or unset.
+
+**nas_config** requires the following:
+
+* `user_id` - (Required) The user id of your NAS file system.
+* `group_id` - (Required) The group id of your NAS file system.
+* `mount_points` - (Required) Config the NAS mount points, including following attributes:
+  * `server_addr` - (Required) The address of the remote NAS directory.
+  * `mount_dir` - (Required) The local address where to mount your remote NAS directory.
 
 ## Attributes Reference
 
