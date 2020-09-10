@@ -252,12 +252,12 @@ func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta int
 	d.SetId(nodePool.NodePoolID)
 
 	// reset interval to 10s
-	stateConf := BuildStateConf([]string{"initial", "scaling"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Get("cluster_id").(string), d.Id(), []string{"deleting", "failed"}))
+	stateConf := BuildStateConf([]string{"initial", "scaling"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Get("cluster_id").(string), d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCSNodePoolUpdate(d, meta)
+	return resourceAlicloudCSNodePoolRead(d, meta)
 }
 
 func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -265,7 +265,6 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 	csService := CsService{client}
 	vpcService := VpcService{client}
 	d.Partial(true)
-	update := false
 	invoker := NewInvoker()
 	args := &cs.UpdateNodePoolRequest{
 		RegionId:         common.Region(client.RegionId),
@@ -274,8 +273,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		KubernetesConfig: cs.KubernetesConfig{},
 		AutoScaling:      cs.AutoScaling{},
 	}
-	if d.HasChange("node_count") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("node_count") {
 		oldV, newV := d.GetChange("node_count")
 
 		oldValue, ok := oldV.(int)
@@ -291,16 +289,12 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(fmt.Errorf("node_count can not be less than before"), "scaleOutFailed %d:%d", newValue, oldValue)
 		}
 		args.Count = int64(newValue) - int64(oldValue)
-		d.SetPartial("node_count")
 	}
 	args.NodePoolInfo.Name = d.Get("name").(string)
-	if d.HasChange("name") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("name") {
 		args.NodePoolInfo.Name = d.Get("name").(string)
-		d.SetPartial("name")
 	}
-	if d.HasChange("vswitch_ids") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("vswitch_ids") {
 		var vswitchID string
 		if list := expandStringList(d.Get("vswitch_ids").([]interface{})); len(list) > 0 {
 			vswitchID = list[0]
@@ -319,85 +313,59 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.ScalingGroup.VpcId = vpcId
 		args.ScalingGroup.VswitchIds = expandStringList(d.Get("vswitch_ids").([]interface{}))
 		d.SetPartial("vpc_id")
-		d.SetPartial("vswitch_ids")
 	}
-	if d.HasChange("instance_types") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("instance_types") {
 		args.ScalingGroup.InstanceTypes = expandStringList(d.Get("instance_types").([]interface{}))
-		d.SetPartial("instance_types")
 	}
 
 	// password is required by update method
 	args.ScalingGroup.LoginPassword = d.Get("password").(string)
-	if d.HasChange("password") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("password") {
 		args.ScalingGroup.LoginPassword = d.Get("password").(string)
-		d.SetPartial("password")
 	}
 
 	args.ScalingGroup.KeyPair = d.Get("key_name").(string)
-	if d.HasChange("key_name") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("key_name") {
 		args.ScalingGroup.KeyPair = d.Get("key_name").(string)
-		d.SetPartial("key_name")
 	}
 
-	if d.HasChange("security_group_id") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("security_group_id") {
 		args.ScalingGroup.SecurityGroupId = d.Get("security_group_id").(string)
-		d.SetPartial("security_group_id")
 	}
 
-	if d.HasChange("system_disk_category") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("system_disk_category") {
 		args.ScalingGroup.SystemDiskCategory = d.Get("system_disk_category").(string)
-		d.SetPartial("system_disk_category")
 	}
 
-	if d.HasChange("system_disk_size") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("system_disk_size") {
 		args.ScalingGroup.SystemDiskSize = int64(d.Get("system_disk_size").(int))
-		d.SetPartial("system_disk_size")
 	}
 
-	if d.HasChange("image_id") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("image_id") {
 		args.ScalingGroup.ImageId = d.Get("image_id").(string)
-		d.SetPartial("image_id")
 	}
 
-	if d.HasChange("data_disks") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("data_disks") {
 		setNodePoolDataDisks(&args.ScalingGroup, d)
-		d.SetPartial("data_disks")
 	}
 
-	if d.HasChange("tags") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("tags") {
 		setNodePoolTags(&args.ScalingGroup, d)
-		d.SetPartial("tags")
 	}
 
-	if d.HasChange("labels") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("labels") {
 		setNodePoolLabels(&args.KubernetesConfig, d)
-		d.SetPartial("labels")
 	}
 
-	if d.HasChange("taints") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("taints") {
 		setNodePoolTaints(&args.KubernetesConfig, d)
-		d.SetPartial("taints")
 	}
 
-	if d.HasChange("node_name_mode") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("node_name_mode") {
 		args.KubernetesConfig.NodeNameMode = d.Get("node_name_mode").(string)
-		d.SetPartial("node_name_mode")
 	}
 
-	if d.HasChange("user_data") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("user_data") {
 		if v := d.Get("user_data").(string); v != "" {
 			_, base64DecodeError := base64.StdEncoding.DecodeString(v)
 			if base64DecodeError == nil {
@@ -405,57 +373,46 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 			} else {
 				args.KubernetesConfig.UserData = base64.StdEncoding.EncodeToString([]byte(v))
 			}
-			d.SetPartial("user_data")
 		}
 	}
 
-	if d.HasChange("enable_auto_scaling") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("enable_auto_scaling") {
 		args.AutoScaling.EnableAutoScaling = d.Get("enable_auto_scaling").(bool)
-		d.SetPartial("enable_auto_scaling")
 	}
 
-	if d.HasChange("max") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("max") {
 		args.AutoScaling.MaxInstance = d.Get("max").(int64)
-		d.SetPartial("max")
 	}
 
-	if d.HasChange("min") && !d.IsNewResource() {
-		update = true
+	if d.HasChange("min") {
 		args.AutoScaling.MinInstance = d.Get("min").(int64)
-		d.SetPartial("min")
 	}
 
-	if update && !d.IsNewResource() {
-
-		var resoponse interface{}
-		if err := invoker.Run(func() error {
-			var err error
-			resoponse, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				resp, err := csClient.UpdateNodePool(d.Get("cluster_id").(string), d.Id(), args)
-				return resp, err
-			})
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateKubernetesNodePool", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			resizeRequestMap := make(map[string]interface{})
-			resizeRequestMap["ClusterId"] = d.Get("cluster_id").(string)
-			resizeRequestMap["NodePoolId"] = d.Id()
-			resizeRequestMap["Args"] = args
-			addDebug("UpdateKubernetesNodePool", resoponse, resizeRequestMap)
-		}
-
-		stateConf := BuildStateConf([]string{"scaling"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Get("cluster_id").(string), d.Id(), []string{"deleting", "failed"}))
-
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
+	var resoponse interface{}
+	if err := invoker.Run(func() error {
+		var err error
+		resoponse, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			resp, err := csClient.UpdateNodePool(d.Get("cluster_id").(string), d.Id(), args)
+			return resp, err
+		})
+		return err
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateKubernetesNodePool", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		resizeRequestMap := make(map[string]interface{})
+		resizeRequestMap["ClusterId"] = d.Get("cluster_id").(string)
+		resizeRequestMap["NodePoolId"] = d.Id()
+		resizeRequestMap["Args"] = args
+		addDebug("UpdateKubernetesNodePool", resoponse, resizeRequestMap)
 	}
 
-	update = false
+	stateConf := BuildStateConf([]string{"scaling"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Get("cluster_id").(string), d.Id(), []string{"deleting", "failed"}))
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	d.Partial(false)
 	return resourceAlicloudCSNodePoolRead(d, meta)
 }
@@ -478,7 +435,6 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("vpc_id", object.VpcId)
 	d.Set("vswitch_ids", object.VswitchIds)
 	d.Set("instance_types", object.InstanceTypes)
-	//d.Set("password", object.LoginPassword)
 	d.Set("key_name", object.KeyPair)
 	d.Set("security_group_id", object.SecurityGroupId)
 	d.Set("system_disk_category", object.SystemDiskCategory)

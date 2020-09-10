@@ -11,13 +11,13 @@ description: |-
 
 This resource will help you to manager node pool in Kubernetes Cluster. 
 
--> **NOTE:** Available in 1.94.0+.
+-> **NOTE:** Available in 1.96.0+.
 
 ## Example Usage
 
 node_pool in Kubernetes Cluster
 
-```
+```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
   cluster_id              = "${var.cluster_id}"
   name                    = "my-node-pool"
