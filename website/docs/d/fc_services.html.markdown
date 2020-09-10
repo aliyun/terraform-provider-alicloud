@@ -52,3 +52,9 @@ The following attributes are exported in addition to the arguments listed above:
     * `vpc_id` - Associated VPC ID.
     * `vswitch_ids` - Associated VSwitch IDs.
     * `security_group_id` - Associated security group ID.
+  * `nas_config` - A list of one element about the nas configuration.
+    * `user_id` - The user id of the NAS file system.
+    * `group_id` - The group id of the NAS file system.
+    * `mount_points` - The mount points configuration, including following attributes:
+      * `server_addr` - The address of the remote NAS directory.
+      * `mount_dir` - The local address where to mount your remote NAS directory.
