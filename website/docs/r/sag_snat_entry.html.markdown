@@ -23,9 +23,9 @@ Basic Usage
 
 ```
 resource "alicloud_sag_snat_entry" "default" {
-  sag_id = "sag-3rb1t3iagy3w0zgwy9"
+  sag_id     = "sag-3rb1t3iagy3w0zgwy9"
   cidr_block = "192.168.7.0/24"
-  snat_ip = "192.0.0.2"
+  snat_ip    = "192.0.0.2"
 }
 ```
 ## Argument Reference

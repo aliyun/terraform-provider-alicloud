@@ -43,6 +43,11 @@ func TestAccAlicloudForwardBasic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccForwardEntryConfig_external_ip(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),

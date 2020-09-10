@@ -70,8 +70,10 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/mse"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/oos"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 )
@@ -123,7 +125,6 @@ type AliyunClient struct {
 	csprojectconnByKey           map[string]*cs.ProjectClient
 	drdsconn                     *drds.Client
 	elasticsearchconn            *elasticsearch.Client
-	actiontrailconn              *actiontrail.Client
 	casconn                      *cas.Client
 	ddoscooconn                  *ddoscoo.Client
 	ddosbgpconn                  *ddosbgp.Client
@@ -151,6 +152,9 @@ type AliyunClient struct {
 	ecsConn                      *ecs.Client
 	oosConn                      *oos.Client
 	nasConn                      *nas.Client
+	dcdnConn                     *dcdn.Client
+	mseConn                      *mse.Client
+	actiontrailConn              *actiontrail.Client
 }
 
 type ApiVersion string
@@ -177,7 +181,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.93.0"
+var providerVersion = "1.95.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient
@@ -1342,29 +1346,6 @@ func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse,
 	return identity, err
 }
 
-func (client *AliyunClient) WithActionTrailClient(do func(*actiontrail.Client) (interface{}, error)) (interface{}, error) {
-	if client.actiontrailconn == nil {
-		endpoint := client.config.ActionTrailEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, ACTIONTRAILCode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(ACTIONTRAILCode), endpoint)
-		}
-		actiontrailconn, err := actiontrail.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ACTIONTRAIL client: %#v", err)
-		}
-
-		actiontrailconn.AppendUserAgent(Terraform, terraformVersion)
-		actiontrailconn.AppendUserAgent(Provider, providerVersion)
-		actiontrailconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.actiontrailconn = actiontrailconn
-	}
-
-	return do(client.actiontrailconn)
-}
-
 func (client *AliyunClient) WithCasClient(do func(*cas.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the CAS client if necessary
 	if client.casconn == nil {
@@ -1913,4 +1894,79 @@ func (client *AliyunClient) WithOosClient(do func(*oos.Client) (interface{}, err
 		client.oosConn = oosConn
 	}
 	return do(client.oosConn)
+}
+
+func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, error)) (interface{}, error) {
+	if client.dcdnConn == nil {
+		endpoint := client.config.DcdnEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, DcdnCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(DcdnCode), endpoint)
+		}
+
+		dcdnConn, err := dcdn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Dcdnclient: %#v", err)
+		}
+		dcdnConn.AppendUserAgent(Terraform, terraformVersion)
+		dcdnConn.AppendUserAgent(Provider, providerVersion)
+		dcdnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.dcdnConn = dcdnConn
+	}
+	return do(client.dcdnConn)
+}
+
+func (client *AliyunClient) WithMseClient(do func(*mse.Client) (interface{}, error)) (interface{}, error) {
+	if client.mseConn == nil {
+		endpoint := client.config.MseEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, MseCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(MseCode), endpoint)
+		}
+
+		mseConn, err := mse.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Mseclient: %#v", err)
+		}
+		mseConn.AppendUserAgent(Terraform, terraformVersion)
+		mseConn.AppendUserAgent(Provider, providerVersion)
+		mseConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.mseConn = mseConn
+	}
+	return do(client.mseConn)
+}
+
+func (client *AliyunClient) WithActiontrailClient(do func(*actiontrail.Client) (interface{}, error)) (interface{}, error) {
+	if client.actiontrailConn == nil {
+		endpoint := client.config.ActiontrailEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, ActiontrailCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(ActiontrailCode), endpoint)
+		}
+
+		actiontrailConn, err := actiontrail.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the Actiontrailclient: %#v", err)
+		}
+		actiontrailConn.AppendUserAgent(Terraform, terraformVersion)
+		actiontrailConn.AppendUserAgent(Provider, providerVersion)
+		actiontrailConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.actiontrailConn = actiontrailConn
+	}
+	return do(client.actiontrailConn)
 }

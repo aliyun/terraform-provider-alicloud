@@ -114,7 +114,7 @@ func TestAccAlicloudDdoscooInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithTime(t, []int{1, 15})
+			testAccPreCheckWithTime(t, []int{-1})
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 		},
@@ -247,7 +247,7 @@ func TestAccAlicloudDdoscooInstance_multi(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithTime(t, []int{1})
+			testAccPreCheckWithTime(t, []int{-1})
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 		},

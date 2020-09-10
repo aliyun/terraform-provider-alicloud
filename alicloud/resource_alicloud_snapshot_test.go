@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -103,11 +104,12 @@ func TestAccAlicloudSnapshotBasic(t *testing.T) {
 	rand := acctest.RandInt()
 	name := fmt.Sprintf("tf-testAccSnapshotBasic%d", rand)
 	ra := resourceAttrInit(resourceId, map[string]string{
-		"disk_id":      CHECKSET,
-		"name":         name,
-		"description":  name,
-		"tags.%":       "1",
-		"tags.version": "1.0",
+		"disk_id":           CHECKSET,
+		"resource_group_id": CHECKSET,
+		"name":              name,
+		"description":       name,
+		"tags.%":            "1",
+		"tags.version":      "1.0",
 	})
 
 	serviceFunc := func() interface{} {
@@ -133,9 +135,10 @@ func TestAccAlicloudSnapshotBasic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"disk_id":     "${alicloud_disk_attachment.default.0.disk_id}",
-					"name":        "${var.name}",
-					"description": "${var.name}",
+					"disk_id":           "${alicloud_disk_attachment.default.0.disk_id}",
+					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+					"name":              "${var.name}",
+					"description":       "${var.name}",
 					"tags": map[string]string{
 						"version": "1.0",
 					},

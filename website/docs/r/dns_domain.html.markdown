@@ -11,17 +11,19 @@ description: |-
 
 Provides a DNS domain resource.
 
+-> DEPRECATED: This resource has been renamed to [alicloud_alidns_domain](https://www.terraform.io/docs/providers/alicloud/r/alidns_domain.html) from version 1.95.0.
+
 -> **NOTE:** The domain name which you want to add must be already registered and had not added by another account. Every domain name can only exist in a unique group.
 
 -> **NOTE:** Available in v1.81.0+.
 
 ## Example Usage
 
-```
+```terraform 
 # Add a new Domain.
 resource "alicloud_dns_domain" "dns" {
-  domain_name     = "starmove.com"
-  group_id        = "85ab8713-4a30-4de4-9d20-155ff830****"
+  domain_name = "starmove.com"
+  group_id    = "85ab8713-4a30-4de4-9d20-155ff830****"
   tags = {
     Created     = "Terraform"
     Environment = "test"
@@ -40,7 +42,6 @@ The following arguments are supported:
 * `tags` - (Optional) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-
 
 ## Attributes Reference
 

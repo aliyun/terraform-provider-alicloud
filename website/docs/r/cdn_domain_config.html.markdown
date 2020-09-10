@@ -33,15 +33,15 @@ resource "alicloud_cdn_domain_new" "domain" {
     weight   = "15"
   }
 }
+
 resource "alicloud_cdn_domain_config" "config" {
-  domain_name   = "${alicloud_cdn_domain_new.domain.domain_name}"
+  domain_name   = alicloud_cdn_domain_new.domain.domain_name
   function_name = "ip_allow_list_set"
   function_args {
     arg_name  = "ip_list"
     arg_value = "110.110.110.110"
   }
 }
-
 ```
 ## Argument Reference
 

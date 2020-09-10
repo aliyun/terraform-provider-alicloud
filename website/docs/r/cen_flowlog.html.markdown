@@ -23,7 +23,6 @@ Basic Usage
 
 ```
 # Create a cen flowlog resource and use it to publish a route entry pointing to an ECS.
-
 resource "alicloud_cen_instance" "default" {
     name = "my-cen"
 }
@@ -47,7 +46,6 @@ resource "alicloud_cen_flowlog" "default" {
   project_name   = alicloud_log_project.default.name
   log_store_name = alicloud_log_store.default.name
 }
-
 ```
 ## Argument Reference
 

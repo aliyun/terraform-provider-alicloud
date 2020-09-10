@@ -23,28 +23,32 @@ Basic Usage
 
 ```
 # Create a cen Private Zone resource and use it.
-
 resource "alicloud_cen_instance" "default" {
-	name = "test_name"
-}
-resource "alicloud_vpc" "default" {
-	name = "test_name"
-	cidr_block = "172.16.0.0/12"
-}
-resource "alicloud_cen_instance_attachment" "default" {
-	instance_id = "${alicloud_cen_instance.default.id}"
-	child_instance_id = "${alicloud_vpc.default.id}"
-	child_instance_region_id = "cn-hangzhou"
-  	depends_on = ["alicloud_cen_instance.default", "alicloud_vpc.default"]
-}
-resource "alicloud_cen_private_zone" "default" {
-	access_region_id = "cn-hangzhou"
-	cen_id = "${alicloud_cen_instance.default.id}"
-	host_region_id = "cn-hangzhou"
-	host_vpc_id = "${alicloud_vpc.default.id}"
-  	depends_on = ["alicloud_cen_instance_attachment.default"]
+  name = "test_name"
 }
 
+resource "alicloud_vpc" "default" {
+  name       = "test_name"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_cen_instance_attachment" "default" {
+  instance_id              = alicloud_cen_instance.default.id
+  child_instance_id        = alicloud_vpc.default.id
+  child_instance_region_id = "cn-hangzhou"
+  depends_on = [
+    alicloud_cen_instance.default,
+    alicloud_vpc.default,
+  ]
+}
+
+resource "alicloud_cen_private_zone" "default" {
+  access_region_id = "cn-hangzhou"
+  cen_id           = alicloud_cen_instance.default.id
+  host_region_id   = "cn-hangzhou"
+  host_vpc_id      = alicloud_vpc.default.id
+  depends_on       = [alicloud_cen_instance_attachment.default]
+}
 ```
 ## Argument Reference
 

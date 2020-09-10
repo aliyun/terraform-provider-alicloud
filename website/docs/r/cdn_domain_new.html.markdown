@@ -33,7 +33,6 @@ resource "alicloud_cdn_domain_new" "domain" {
     weight   = 10
   }
 }
-
 ```
 ## Argument Reference
 

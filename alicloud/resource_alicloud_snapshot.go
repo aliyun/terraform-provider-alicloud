@@ -37,6 +37,11 @@ func resourceAliyunSnapshot() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -56,6 +61,9 @@ func resourceAliyunSnapshotCreate(d *schema.ResourceData, meta interface{}) erro
 	request.ClientToken = buildClientToken(request.GetActionName())
 	if name, ok := d.GetOk("name"); ok {
 		request.SnapshotName = name.(string)
+	}
+	if id, ok := d.GetOk("resource_group_id"); ok {
+		request.ResourceGroupId = id.(string)
 	}
 	if description, ok := d.GetOk("description"); ok {
 		request.Description = description.(string)
@@ -97,6 +105,7 @@ func resourceAliyunSnapshotRead(d *schema.ResourceData, meta interface{}) error 
 	}
 	d.Set("name", snapshot.SnapshotName)
 	d.Set("disk_id", snapshot.SourceDiskId)
+	d.Set("resource_group_id", snapshot.ResourceGroupId)
 	d.Set("description", snapshot.Description)
 
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceSnapshot)

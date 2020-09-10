@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
@@ -98,15 +99,19 @@ func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("period"); ok {
 		request.Period = requests.NewInteger(v.(int))
 	}
+
 	request.ProductCode = "waf"
 	request.ProductType = "waf"
 	if v, ok := d.GetOk("renew_period"); ok {
 		request.RenewPeriod = requests.NewInteger(v.(int))
 	}
+
 	if v, ok := d.GetOk("renewal_status"); ok {
 		request.RenewalStatus = v.(string)
 	}
+
 	request.SubscriptionType = d.Get("subscription_type").(string)
+
 	request.Parameter = &[]bssopenapi.CreateInstanceParameter{
 		{
 			Code:  "BigScreen",
@@ -170,6 +175,7 @@ func resourceAlicloudWafInstanceRead(d *schema.ResourceData, meta interface{}) e
 	object, err := waf_openapiService.DescribeWafInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_waf_instance waf_openapiService.DescribeWafInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

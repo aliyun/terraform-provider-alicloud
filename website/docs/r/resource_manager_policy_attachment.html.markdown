@@ -18,7 +18,7 @@ For information about Resource Manager Policy Attachment and how to use it, see 
 
 Basic Usage
 
-```
+```terraform
 # Create a RAM user
 resource "alicloud_ram_user" "example" {
   name = "tf-testaccramuser"

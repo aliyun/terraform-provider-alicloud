@@ -17,10 +17,10 @@ Provides a DMS Enterprise User resource. For information about Alidms Enterprise
 
 ```
 resource "alicloud_dms_enterprise_user" "example" {
-  uid = "uid"
-  nick_name = "tf-test"
+  uid        = "uid"
+  nick_name  = "tf-test"
   role_names = ["DBA"]
-  mobile = "1591066xxxx"
+  mobile     = "1591066xxxx"
 }
 ```
 

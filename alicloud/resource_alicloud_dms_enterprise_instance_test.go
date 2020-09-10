@@ -2,14 +2,84 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_dms_enterprise_instance", &resource.Sweeper{
+		Name: "alicloud_dms_enterprise_instance",
+		F:    testSweepDMSEnterpriseInstances,
+	})
+}
+
+func testSweepDMSEnterpriseInstances(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	request := dms_enterprise.CreateListInstancesRequest()
+	request.PageSize = requests.NewInteger(PageSizeXLarge)
+	raw, err := client.WithDmsEnterpriseClient(func(dms_enterprise *dms_enterprise.Client) (interface{}, error) {
+		return dms_enterprise.ListInstances(request)
+	})
+	if err != nil {
+		log.Printf("[ERROR] Error retrieving DMS Enterprise Instances: %s", WrapError(err))
+	}
+	response, _ := raw.(*dms_enterprise.ListInstancesResponse)
+
+	sweeped := false
+	for _, v := range response.InstanceList.Instance {
+		name := v.InstanceAlias
+		id := v.Host + ":" + strconv.Itoa(v.Port)
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping DMS Enterprise Instances: %s (%s)", name, id)
+			continue
+		}
+
+		sweeped = true
+		log.Printf("[INFO] Deleting DMS Enterprise Instances: %s (%s)", name, id)
+		req := dms_enterprise.CreateDeleteInstanceRequest()
+		req.Host = v.Host
+		req.Port = requests.NewInteger(v.Port)
+		_, err := client.WithDmsEnterpriseClient(func(dms_enterprise *dms_enterprise.Client) (interface{}, error) {
+			return dms_enterprise.DeleteInstance(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete DMS Enterprise Instances (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		// Waiting 30 seconds to ensure these DMS Enterprise Instances have been deleted.
+		time.Sleep(30 * time.Second)
+	}
+	return nil
+}
 
 func TestAccAlicloudDmsEnterprise(t *testing.T) {
 	resourceId := "alicloud_dms_enterprise_instance.default"
