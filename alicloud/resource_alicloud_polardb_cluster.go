@@ -118,6 +118,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 			"parameters": {
 				Type: schema.TypeSet,
 				Elem: &schema.Resource{
@@ -407,6 +413,7 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("zone_ids", clusterAttribute.ZoneIds)
 	d.Set("db_node_class", cluster.DBNodeClass)
 	d.Set("db_node_count", len(clusterAttribute.DBNodes))
+	d.Set("resource_group_id", clusterAttribute.ResourceGroupId)
 	tags, err := polarDBService.DescribeTags(d.Id(), "cluster")
 	if err != nil {
 		return WrapError(err)
@@ -501,6 +508,10 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (*polar
 	request.DBNodeClass = d.Get("db_node_class").(string)
 	request.DBClusterDescription = d.Get("description").(string)
 	request.ClientToken = buildClientToken(request.GetActionName())
+
+	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+		request.ResourceGroupId = v.(string)
+	}
 
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
 		request.ZoneId = Trim(zone.(string))
