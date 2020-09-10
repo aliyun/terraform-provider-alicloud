@@ -406,6 +406,40 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("maintain_end_time")
 	}
 
+	if d.HasChange("enable_public") {
+		prefix := d.Get("connection_string_prefix").(string)
+		port := d.Get("port").(string)
+		target := d.Get("enable_public").(bool)
+
+		if target {
+			request := r_kvstore.CreateAllocateInstancePublicConnectionRequest()
+			request.InstanceId = d.Id()
+			request.ConnectionStringPrefix = prefix
+			request.Port = port
+
+			raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+				return client.AllocateInstancePublicConnection(request)
+			})
+			addDebug(request.GetActionName(), raw)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+		} else {
+			request := r_kvstore.CreateReleaseInstancePublicConnectionRequest()
+			request.InstanceId = d.Id()
+			request.CurrentConnectionString = d.Get("connection_string").(string)
+
+			raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+				return client.ReleaseInstancePublicConnection(request)
+			})
+			addDebug(request.GetActionName(), raw)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+		}
+		d.SetPartial("enable_public")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudKVStoreInstanceRead(d, meta)
@@ -509,40 +543,6 @@ func resourceAlicloudKVStoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		d.SetPartial("instance_name")
 		d.SetPartial("password")
-	}
-
-	if d.HasChange("enable_public") {
-		prefix := d.Get("connection_string_prefix").(string)
-		port := d.Get("port").(string)
-		target := d.Get("enable_public").(bool)
-
-		if target {
-			request := r_kvstore.CreateAllocateInstancePublicConnectionRequest()
-			request.InstanceId = d.Id()
-			request.ConnectionStringPrefix = prefix
-			request.Port = port
-
-			raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
-				return client.AllocateInstancePublicConnection(request)
-			})
-			addDebug(request.GetActionName(), raw)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
-		} else {
-			request := r_kvstore.CreateReleaseInstancePublicConnectionRequest()
-			request.InstanceId = d.Id()
-			request.CurrentConnectionString = d.Get("connection_string").(string)
-
-			raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
-				return client.ReleaseInstancePublicConnection(request)
-			})
-			addDebug(request.GetActionName(), raw)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
-		}
-		d.SetPartial("enable_public")
 	}
 
 	d.Partial(false)
