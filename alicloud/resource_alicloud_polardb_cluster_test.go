@@ -138,16 +138,18 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_type":       "MySQL",
-					"db_version":    "8.0",
-					"pay_type":      "PostPaid",
-					"db_node_class": "polar.mysql.x4.medium",
-					"vswitch_id":    "${data.alicloud_vswitches.default.ids.0}",
-					"description":   "${var.name}",
+					"db_type":           "MySQL",
+					"db_version":        "8.0",
+					"pay_type":          "PostPaid",
+					"db_node_class":     "polar.mysql.x4.medium",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"description":       "${var.name}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"connection_string": "",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -334,5 +336,8 @@ func resourcePolarDBClusterConfigDependence(name string) string {
 		default = "%s"
 	}
 
+	data "alicloud_resource_manager_resource_groups" "default" {
+		status = "OK"
+	}
 `, PolarDBCommonTestCase, name)
 }
