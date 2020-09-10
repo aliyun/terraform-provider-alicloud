@@ -223,7 +223,7 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 	if !d.IsNewResource() && d.HasChange("scope") {
 		request := dcdn.CreateModifyDCdnDomainSchdmByPropertyRequest()
 		request.DomainName = d.Id()
-		request.Property = d.Get("scope").(string)
+		request.Property = fmt.Sprintf(`{"coverage":"%s"}`, d.Get("scope").(string))
 		raw, err := client.WithDcdnClient(func(dcdnClient *dcdn.Client) (interface{}, error) {
 			return dcdnClient.ModifyDCdnDomainSchdmByProperty(request)
 		})
