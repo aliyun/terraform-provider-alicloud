@@ -2,12 +2,15 @@ module github.com/aliyun/terraform-provider-alicloud
 
 require (
 	github.com/Sirupsen/logrus v0.0.0-20181010200618-458213699411 // indirect
+	github.com/alibabacloud-go/tea-rpc v1.1.6
+	github.com/alibabacloud-go/tea-utils v1.3.4
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.453
 	github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
 	github.com/aliyun/aliyun-log-go-sdk v0.1.6
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20191115025756-088ba95470f4
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.2+incompatible
 	github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible
+	github.com/aliyun/credentials-go v1.1.2
 	github.com/aliyun/fc-go-sdk v0.0.0-20200619091938-0882be48e49f
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
@@ -35,8 +38,7 @@ require (
 	github.com/sirupsen/logrus v1.2.0 // indirect
 	github.com/valyala/bytebufferpool v0.0.0-20180905182247-cdfbe9377474 // indirect
 	github.com/valyala/fasthttp v0.0.0-20180927122258-761788a34bb6 // indirect
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
-	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
+	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/resty.v1 v1.12.0 // indirect

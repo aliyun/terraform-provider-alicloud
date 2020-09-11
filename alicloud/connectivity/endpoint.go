@@ -4,8 +4,15 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
 	"strings"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
+	"github.com/yalp/jsonpath"
+
+	"encoding/json"
 )
 
 // ServiceCode Load endpoints from endpoints.xml or environment variables to meet specified application scenario, like private cloud.
@@ -148,3 +155,146 @@ func loadEndpoint(region string, serviceCode ServiceCode) string {
 
 	return ""
 }
+
+func (client *AliyunClient) loadEndpoint(productCode string) (string, error) {
+	productCodeUp := strings.ToUpper(productCode)
+	productCodeLow := strings.ToLower(productCode)
+	config := client.config
+	if config.Endpoints[productCodeLow] != nil && config.Endpoints[productCodeLow].(string) != "" {
+		return config.Endpoints[productCodeLow].(string), nil
+	}
+	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", productCodeUp)))
+	if endpoint != "" {
+		config.Endpoints[productCodeLow] = endpoint
+		return endpoint, nil
+	}
+
+	// Load current path endpoint file endpoints.xml, if failed, it will load from environment variables TF_ENDPOINT_PATH
+	if loadLocalEndpoint {
+		data, err := ioutil.ReadFile(localEndpointPath)
+		if err != nil || len(data) <= 0 {
+			d, e := ioutil.ReadFile(os.Getenv(localEndpointPathEnv))
+			if e != nil {
+				return "", e
+			}
+			data = d
+		}
+		var endpoints Endpoints
+		err = xml.Unmarshal(data, &endpoints)
+		if err != nil {
+			return "", err
+		}
+		for _, endpoint := range endpoints.Endpoint {
+			if endpoint.RegionIds.RegionId == string(config.RegionId) {
+				for _, product := range endpoint.Products.Product {
+					if strings.ToLower(product.ProductName) == productCodeLow {
+						config.Endpoints[productCodeLow] = strings.TrimSpace(product.DomainName)
+						return strings.TrimSpace(product.DomainName), nil
+					}
+				}
+			}
+		}
+	}
+
+	// if not, get an endpoint by regional rule
+	endpoint, err := loadEndpointFromSdk(client.config, productCodeLow)
+	if err != nil {
+		log.Fatalf("[ERROR] loadEndpoint from Sdk api got an error:%s", err)
+		serviceCode := serviceCodeMapping[productCodeLow]
+		if serviceCode == "" {
+			serviceCode = productCodeLow
+		}
+		endpoint, err = client.describeEndpointForService(serviceCode)
+		if err != nil {
+			return "", err
+		}
+	}
+	client.config.Endpoints[productCodeLow] = endpoint
+	return endpoint, nil
+}
+
+func loadEndpointFromSdk(config *Config, productCode string) (string, error) {
+	response, err := http.Post(fmt.Sprintf("http://sdk.aliyun-inc.com/api/get/release/endpoint/info?product_id=%s", productCode), "", nil)
+	if err != nil {
+		log.Fatalf("[ERROR] http.post got an error: %s", err)
+		return "", err
+	}
+	defer response.Body.Close()
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Fatalf("[ERROR] read http.post response got an error: %s", err)
+		return "", err
+	}
+
+	var jsonBody interface{}
+	if err := json.Unmarshal(body, &jsonBody); err != nil {
+		log.Fatalf("[ERROR] json.Unmarshal http.post response body: %s got an error: %s", body, err)
+		return "", err
+	}
+	ok, err := jsonpath.Read(jsonBody, "$.ok")
+	if err != nil {
+		return "", err
+	}
+	if ok.(bool) {
+		endpointRegional, err := jsonpath.Read(jsonBody, "$.data.endpoint_regional")
+		if err != nil {
+			return "", err
+		}
+		if endpointRegional == "regional" {
+			var err error
+			for _, pathKey := range []string{"endpoint_map", "standard"} {
+				endpoint, e := jsonpath.Read(jsonBody, fmt.Sprintf("$.data.endpoint_data.%s[\"%s\"]", pathKey, config.RegionId))
+				if e != nil {
+					log.Fatalf("[ERROR] jsonpath.Read endpoint got an error: %s", e)
+					err = e
+				}
+				if endpoint != nil && endpoint.(string) != "" {
+					return endpoint.(string), nil
+				}
+			}
+			return "", err
+		}
+	}
+	return "", nil
+}
+func (client *AliyunClient) describeEndpointForService(serviceCode string) (string, error) {
+	args := location.CreateDescribeEndpointsRequest()
+	args.ServiceCode = serviceCode
+	args.Id = client.config.RegionId
+	args.Domain = client.config.LocationEndpoint
+	if args.Domain == "" {
+		args.Domain = loadEndpoint(client.RegionId, LOCATIONCode)
+	}
+	if args.Domain == "" {
+		args.Domain = "location-readonly.aliyuncs.com"
+	}
+
+	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+	if err != nil {
+		return "", fmt.Errorf("Unable to initialize the location client: %#v", err)
+
+	}
+	locationClient.AppendUserAgent(Terraform, terraformVersion)
+	locationClient.AppendUserAgent(Provider, providerVersion)
+	locationClient.AppendUserAgent(Module, client.config.ConfigurationSource)
+	endpointsResponse, err := locationClient.DescribeEndpoints(args)
+	if err != nil {
+		return "", fmt.Errorf("Describe %s endpoint using region: %#v got an error: %#v.", serviceCode, client.RegionId, err)
+	}
+	if endpointsResponse != nil && len(endpointsResponse.Endpoints.Endpoint) > 0 {
+		for _, e := range endpointsResponse.Endpoints.Endpoint {
+			if e.Type == "openAPI" {
+				return e.Endpoint, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("There is no any available endpoint for %s in region %s.", serviceCode, client.RegionId)
+}
+
+var serviceCodeMapping = map[string]string{
+	"cloudapi": "apigateway",
+}
+
+const (
+	OpenApiGatewayService = "apigateway.aliyuncs.com"
+)

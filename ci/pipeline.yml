@@ -75,8 +75,8 @@ groups:
       - Kms
       # Sls
       - Log
-      # ActionTrail
-      - ActionTrail
+      # Actiontrail
+      - Actiontrail
       # SSL Certificate
       - CasCertificate
       # MongoDB
@@ -239,8 +239,8 @@ groups:
       - Ram
       # Kms
       - Kms
-      # ActionTrail
-      - ActionTrail
+      # Actiontrail
+      - Actiontrail
       # Cms
       - Cms
       - ResourceManager
@@ -967,7 +967,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Nas"
 
-  - name: ActionTrail
+  - name: Actiontrail
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -978,7 +978,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "ActionTrail"
+          TEST_CASE_CODE: "Actiontrail"
 
   - name: CasCertificate
     plan:
