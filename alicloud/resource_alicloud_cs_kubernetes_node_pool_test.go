@@ -69,6 +69,11 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"system_disk_size": "80",
 					"tags":             []map[string]string{{"key": "test-tag-key", "value": "test-tag-value"}, {"key": "new-tag-key", "value": "new-tag-value"}},
@@ -89,11 +94,6 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"data_disks.1.category": "cloud_efficiency",
 					}),
 				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
 			},
 		},
 	})

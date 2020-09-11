@@ -316,7 +316,6 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		args.ScalingGroup.VpcId = vpcId
 		args.ScalingGroup.VswitchIds = expandStringList(d.Get("vswitch_ids").([]interface{}))
-		d.SetPartial("vpc_id")
 	}
 	if d.HasChange("instance_types") {
 		update = true
