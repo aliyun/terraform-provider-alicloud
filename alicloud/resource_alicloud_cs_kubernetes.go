@@ -400,7 +400,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
-				ForceNew: true,
 			},
 			"slb_internet_enabled": {
 				Type:             schema.TypeBool,
