@@ -90,6 +90,11 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }

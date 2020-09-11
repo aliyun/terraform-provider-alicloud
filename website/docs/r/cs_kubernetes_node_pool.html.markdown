@@ -19,11 +19,11 @@ node_pool in Kubernetes Cluster
 
 ```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  cluster_id              = "${var.cluster_id}"
+  cluster_id              = var.cluster_id
   name                    = "my-node-pool"
-  vswitch_ids             = ["${alicloud_vswitch.default.id}"]
-  instance_types          = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  cool_down_duration      = "${var.cool_down_duration}"
+  vswitch_ids             = ["alicloud_vswitch.default.id"]
+  instance_types          = ["data.alicloud_instance_types.default.instance_types.0.id"]
+  cool_down_duration      = "var.cool_down_duration"
   node_count              = 2
 }
 ```
