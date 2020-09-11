@@ -42,8 +42,8 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                 name,
-					"cluster_id":           "c9c9866ff0a914d8ba77a6569bfb36a7f",
-					"vswitch_ids":          []string{"vsw-j6c8b2s5p4jq22mlij816"},
+					"cluster_id":           "",
+					"vswitch_ids":          []string{""},
 					"instance_types":       []string{"ecs.g6.large"},
 					"node_count":           "0",
 					"password":             "Test12345",

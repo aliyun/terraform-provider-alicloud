@@ -606,16 +606,17 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 
 func ConvertCsTags(d *schema.ResourceData) ([]cs.Tag, error) {
 	tags := make([]cs.Tag, 0)
-	if v, ok := d.GetOk("tags"); ok {
-		vl := v.([]interface{})
-		for _, i := range vl {
-			if m, ok := i.(map[string]interface{}); ok {
-				tags = append(tags, cs.Tag{
-					Key:   m["key"].(string),
-					Value: m["value"].(string),
-				})
+	tagsMap, ok := d.Get("tags").(map[string]interface{})
+	if ok {
+		for key, value := range tagsMap {
+			if value != nil {
+				if v, ok := value.(string); ok {
+					tags = append(tags, cs.Tag{
+						Key:   key,
+						Value: v,
+					})
+				}
 			}
-
 		}
 	}
 
