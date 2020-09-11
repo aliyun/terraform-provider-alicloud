@@ -1,4 +1,20 @@
-## 1.96.0 (Unreleased)
+## 1.95.1 (Unreleased)
+
+IMPROVEMENTS:
+
+- improve resource alicloud_ess_scaling_rule docs [GH-2795]
+- Add retry and wait for cms api EnableMetricRules DisableMetricRules [GH-2794]
+- Add wait and retry for flow control [GH-2793]
+- PolarDB cluster support setting resource_group_id [GH-2792]
+- Support FC new features: custom container, new instance type and NAS integration [GH-2791]
+- update action trail docs subcategory [GH-2788]
+- UPDATE CHANGELOG [GH-2774]
+
+BUG FIXES:
+
+- fix dcdn_domain the input parameter form of the scope attribute [GH-2797]
+- fix redis allocate public network [GH-2796]
+
 ## 1.95.0 (September 03, 2020)
 
 - **New Resource:** `alicloud_actiontrail_trail` ([#2758](https://github.com/aliyun/terraform-provider-alicloud/issues/2758))
