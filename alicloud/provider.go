@@ -221,6 +221,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mns_queues":                            dataSourceAlicloudMNSQueues(),
 			"alicloud_mns_topics":                            dataSourceAlicloudMNSTopics(),
 			"alicloud_mns_topic_subscriptions":               dataSourceAlicloudMNSTopicSubscriptions(),
+			"alicloud_api_gateway_service":                   dataSourceAlicloudApiGatewayService(),
 			"alicloud_api_gateway_apis":                      dataSourceAlicloudApiGatewayApis(),
 			"alicloud_api_gateway_groups":                    dataSourceAlicloudApiGatewayGroups(),
 			"alicloud_api_gateway_apps":                      dataSourceAlicloudApiGatewayApps(),
@@ -646,9 +647,12 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	endpointsSet := d.Get("endpoints").(*schema.Set)
+	endpointInit := make(map[string]interface{})
+	config.Endpoints = endpointInit
 
 	for _, endpointsSetI := range endpointsSet.List() {
 		endpoints := endpointsSetI.(map[string]interface{})
+		config.Endpoints = endpoints
 		config.EcsEndpoint = strings.TrimSpace(endpoints["ecs"].(string))
 		config.RdsEndpoint = strings.TrimSpace(endpoints["rds"].(string))
 		config.SlbEndpoint = strings.TrimSpace(endpoints["slb"].(string))

@@ -1,6 +1,7 @@
 package connectivity
 
 import (
+	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/endpoints"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -29,7 +30,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/nas"
@@ -121,6 +121,7 @@ type AliyunClient struct {
 	dhconn                       *datahub.DataHub
 	mnsconn                      *ali_mns.MNSClient
 	cloudapiconn                 *cloudapi.Client
+	teaConn                      *rpc.Client
 	tablestoreconnByInstanceName map[string]*tablestore.TableStoreClient
 	csprojectconnByKey           map[string]*cs.ProjectClient
 	drdsconn                     *drds.Client
@@ -439,26 +440,17 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 
 	// Initialize the OSS client if necessary
 	if client.ossconn == nil {
-		schma := "https"
+		schma := client.config.Protocol
 		endpoint := client.config.OssEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, OSSCode)
 		}
 		if endpoint == "" {
-			endpointItem, _ := client.describeEndpointForService(strings.ToLower(string(OSSCode)))
-			if endpointItem != nil {
-				if len(endpointItem.Protocols.Protocols) > 0 {
-					// HTTP or HTTPS
-					schma = strings.ToLower(endpointItem.Protocols.Protocols[0])
-					for _, p := range endpointItem.Protocols.Protocols {
-						if strings.ToLower(p) == "https" {
-							schma = strings.ToLower(p)
-							break
-						}
-					}
-				}
-				endpoint = endpointItem.Endpoint
-			} else {
+			endpoint, err := client.describeEndpointForService(strings.ToLower(string(OSSCode)))
+			if err != nil {
+				return nil, err
+			}
+			if endpoint == "" {
 				endpoint = fmt.Sprintf("oss-%s.aliyuncs.com", client.RegionId)
 			}
 		}
@@ -1007,6 +999,54 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 	return do(client.cloudapiconn)
 }
 
+func (client *AliyunClient) NewTeaCommonClient(productCode string, do func(*rpc.Client) (map[string]interface{}, error)) (map[string]interface{}, error) {
+	// Initialize the Tea client using region
+	if client.teaConn == nil {
+		endpoint, err := client.loadEndpoint(productCode)
+		if err != nil {
+			return nil, fmt.Errorf("[ERROR] loading endpoint got an error: %s", err)
+		}
+		if endpoint == "" {
+			return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+		}
+
+		sdkConfig, err := client.config.getTeaDslSdkConfig(true)
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the sdk config: %#v", err)
+		}
+		sdkConfig.SetProtocol(client.config.Protocol)
+		sdkConfig.SetEndpoint(endpoint)
+
+		conn, err := rpc.NewClient(&sdkConfig)
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the tea client: %#v", err)
+		}
+		client.teaConn = conn
+	}
+
+	return do(client.teaConn)
+}
+
+func (client *AliyunClient) NewTeaCommonClientWithEndpoint(endpoint string, do func(*rpc.Client) (map[string]interface{}, error)) (map[string]interface{}, error) {
+	// Initialize the Tea client using endpoint
+	if client.teaConn == nil {
+		sdkConfig, err := client.config.getTeaDslSdkConfig(true)
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the sdk config: %#v", err)
+		}
+		sdkConfig.SetProtocol(client.config.Protocol)
+		sdkConfig.SetEndpoint(endpoint)
+
+		conn, err := rpc.NewClient(&sdkConfig)
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the tea client: %#v", err)
+		}
+		client.teaConn = conn
+	}
+
+	return do(client.teaConn)
+}
+
 func (client *AliyunClient) WithDataHubClient(do func(*datahub.DataHub) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
@@ -1178,9 +1218,7 @@ func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string
 		if err != nil {
 			return nil, fmt.Errorf("describeEndpointForService got an error: %#v.", err)
 		}
-		if endpointItem != nil {
-			endpoint = endpointItem.Endpoint
-		}
+		endpoint = endpointItem
 	}
 	// Use product code to find product domain
 	if endpoint != "" {
@@ -1281,40 +1319,6 @@ func (client *AliyunClient) skipProxy(endpoint string) (bool, error) {
 		}
 	}
 	return false, nil
-}
-
-func (client *AliyunClient) describeEndpointForService(serviceCode string) (*location.Endpoint, error) {
-	args := location.CreateDescribeEndpointsRequest()
-	args.ServiceCode = serviceCode
-	args.Id = client.config.RegionId
-	args.Domain = client.config.LocationEndpoint
-	if args.Domain == "" {
-		args.Domain = loadEndpoint(client.RegionId, LOCATIONCode)
-	}
-	if args.Domain == "" {
-		args.Domain = "location-readonly.aliyuncs.com"
-	}
-
-	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-	if err != nil {
-		return nil, fmt.Errorf("Unable to initialize the location client: %#v", err)
-
-	}
-	locationClient.AppendUserAgent(Terraform, terraformVersion)
-	locationClient.AppendUserAgent(Provider, providerVersion)
-	locationClient.AppendUserAgent(Module, client.config.ConfigurationSource)
-	endpointsResponse, err := locationClient.DescribeEndpoints(args)
-	if err != nil {
-		return nil, fmt.Errorf("Describe %s endpoint using region: %#v got an error: %#v.", serviceCode, client.RegionId, err)
-	}
-	if endpointsResponse != nil && len(endpointsResponse.Endpoints.Endpoint) > 0 {
-		for _, e := range endpointsResponse.Endpoints.Endpoint {
-			if e.Type == "openAPI" {
-				return &e, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("There is no any available endpoint for %s in region %s.", serviceCode, client.RegionId)
 }
 
 func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse, error) {
