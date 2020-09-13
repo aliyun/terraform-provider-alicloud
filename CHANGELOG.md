@@ -1,23 +1,24 @@
-## 1.96.0 (Unreleased)
+## 1.97.0 (Unreleased)
+## 1.96.0 (September 13, 2020)
 
-- **Data Source:** `alicloud_log_service` [GH-2804]
-- **Data Source:** `alicloud_api_gateway_service` [GH-2801]
+- **Data Source:** `alicloud_log_service` ([#2804](https://github.com/aliyun/terraform-provider-alicloud/issues/2804))
+- **Data Source:** `alicloud_api_gateway_service` ([#2801](https://github.com/aliyun/terraform-provider-alicloud/issues/2801))
 
 IMPROVEMENTS:
 
-- improve resource alicloud_ess_scaling_rule docs [GH-2795]
-- Add retry and wait for cms api EnableMetricRules DisableMetricRules [GH-2794]
-- Add wait and retry for flow control [GH-2793]
-- PolarDB cluster support setting resource_group_id [GH-2792]
-- Support FC new features: custom container, new instance type and NAS integration [GH-2791]
-- update action trail docs subcategory [GH-2788]
-- UPDATE CHANGELOG [GH-2774]
+- improve resource alicloud_ess_scaling_rule docs ([#2795](https://github.com/aliyun/terraform-provider-alicloud/issues/2795))
+- Add retry and wait for cms api EnableMetricRules DisableMetricRules ([#2794](https://github.com/aliyun/terraform-provider-alicloud/issues/2794))
+- Add wait and retry for flow control ([#2793](https://github.com/aliyun/terraform-provider-alicloud/issues/2793))
+- PolarDB cluster support setting resource_group_id ([#2792](https://github.com/aliyun/terraform-provider-alicloud/issues/2792))
+- Support FC new features: custom container, new instance type and NAS integration ([#2791](https://github.com/aliyun/terraform-provider-alicloud/issues/2791))
+- update action trail docs subcategory ([#2788](https://github.com/aliyun/terraform-provider-alicloud/issues/2788))
+- UPDATE CHANGELOG ([#2774](https://github.com/aliyun/terraform-provider-alicloud/issues/2774))
 
 BUG FIXES:
 
-- cms resource suppots assume role [GH-2803]
-- fix dcdn_domain the input parameter form of the scope attribute [GH-2797]
-- fix redis allocate public network [GH-2796]
+- cms resource suppots assume role ([#2803](https://github.com/aliyun/terraform-provider-alicloud/issues/2803))
+- fix dcdn_domain the input parameter form of the scope attribute ([#2797](https://github.com/aliyun/terraform-provider-alicloud/issues/2797))
+- fix redis allocate public network ([#2796](https://github.com/aliyun/terraform-provider-alicloud/issues/2796))
 
 ## 1.95.0 (September 03, 2020)
 
