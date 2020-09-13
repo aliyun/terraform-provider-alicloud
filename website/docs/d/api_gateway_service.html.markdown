@@ -11,6 +11,10 @@ description: |-
 
 Using this data source can open API gateway service automatically. If the service has been opened, it will return opened.
 
+For information about API Gateway and how to use it, see [What is API Gateway](https://www.alibabacloud.com/help/product/29462.htm).
+
+-> **NOTE:** Available in v1.96.0+
+
 ## Example Usage
 
 ```

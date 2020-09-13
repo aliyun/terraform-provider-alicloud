@@ -42,7 +42,6 @@ func dataSourceAlicloudApigatewayServiceRead(d *schema.ResourceData, meta interf
 	})
 	addDebug("OpenApiGatewayService", response, nil)
 	if err != nil {
-		fmt.Println(err)
 		if IsExpectedErrors(err, []string{"ORDER.OPEND"}) {
 			d.SetId("ApiGatewayServicHasBeenOpened")
 			d.Set("status", "Opened")
