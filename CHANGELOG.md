@@ -1,4 +1,7 @@
-## 1.95.1 (Unreleased)
+## 1.96.0 (Unreleased)
+
+- **Data Source:** `alicloud_log_service` [GH-2804]
+- **Data Source:** `alicloud_api_gateway_service` [GH-2801]
 
 IMPROVEMENTS:
 
@@ -12,6 +15,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- cms resource suppots assume role [GH-2803]
 - fix dcdn_domain the input parameter form of the scope attribute [GH-2797]
 - fix redis allocate public network [GH-2796]
 
