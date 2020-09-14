@@ -148,6 +148,11 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 					},
 				},
 			},
+			"version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -207,6 +212,7 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		NatGateway:           d.Get("new_nat_gateway").(bool),
 		SecurityGroupId:      d.Get("security_group_id").(string),
 		Addons:               addons,
+		KubernetesVersion:    d.Get("version").(string),
 		DeletionProtection:   d.Get("deletion_protection").(bool),
 	}
 
@@ -272,6 +278,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	_ = d.Set("security_group_id", object.SecurityGroupId)
 	_ = d.Set("deletion_protection", object.DeletionProtection)
 	_ = d.Set("tags", object.Tags)
+	_ = d.Set("version", object.CurrentVersion)
 
 	var requestInfo *cs.Client
 	var response interface{}

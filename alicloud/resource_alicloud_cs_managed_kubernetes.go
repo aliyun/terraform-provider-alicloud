@@ -501,6 +501,10 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				},
 				ForceNew: true,
 			},
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
 		},
 	}
 }
