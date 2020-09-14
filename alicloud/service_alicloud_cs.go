@@ -178,10 +178,17 @@ func (s *CsService) DescribeCsKubernetes(id string) (cluster *cs.KubernetesClust
 	return
 }
 
-func (s *CsService) DescribeCsKubernetesNodePool(clusterId, nodePoolId string) (nodePool *cs.NodePoolDetail, err error) {
+func (s *CsService) DescribeCsKubernetesNodePool(id string) (nodePool *cs.NodePoolDetail, err error) {
 	invoker := NewInvoker()
 	var requestInfo *cs.Client
 	var response interface{}
+
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	clusterId := parts[0]
+	nodePoolId := parts[1]
 
 	if err := invoker.Run(func() error {
 		raw, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
@@ -314,9 +321,9 @@ func (s *CsService) CsKubernetesInstanceStateRefreshFunc(id string, failStates [
 	}
 }
 
-func (s *CsService) CsKubernetesNodePoolStateRefreshFunc(clusterId, nodePoolId string, failStates []string) resource.StateRefreshFunc {
+func (s *CsService) CsKubernetesNodePoolStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCsKubernetesNodePool(clusterId, nodePoolId)
+		object, err := s.DescribeCsKubernetesNodePool(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.

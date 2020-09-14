@@ -52,8 +52,7 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Type:     schema.TypeList,
 				Required: true,
 				Elem: &schema.Schema{
-					Type:         schema.TypeString,
-					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
+					Type: schema.TypeString,
 				},
 				MinItems: 1,
 			},
@@ -241,7 +240,7 @@ func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta int
 	d.SetId(fmt.Sprintf("%s%s%s", clusterId, COLON_SEPARATED, nodePool.NodePoolID))
 
 	// reset interval to 10s
-	stateConf := BuildStateConf([]string{"initial", "scaling"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(clusterId, nodePool.NodePoolID, []string{"deleting", "failed"}))
+	stateConf := BuildStateConf([]string{"initial", "scaling"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -423,7 +422,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 			addDebug("UpdateKubernetesNodePool", resoponse, resizeRequestMap)
 		}
 
-		stateConf := BuildStateConf([]string{"scaling"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(parts[0], parts[1], []string{"deleting", "failed"}))
+		stateConf := BuildStateConf([]string{"scaling"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -439,12 +438,7 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	csService := CsService{client}
 
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-
-	object, err := csService.DescribeCsKubernetesNodePool(parts[0], parts[1])
+	object, err := csService.DescribeCsKubernetesNodePool(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -519,7 +513,7 @@ func resourceAlicloudCSNodePoolDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteClusterNodePool", DenverdinoAliyungo)
 	}
 
-	stateConf := BuildStateConf([]string{"active", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(parts[0], parts[1], []string{}))
+	stateConf := BuildStateConf([]string{"active", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

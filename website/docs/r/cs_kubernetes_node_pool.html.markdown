@@ -11,7 +11,7 @@ description: |-
 
 This resource will help you to manager node pool in Kubernetes Cluster. 
 
--> **NOTE:** Available in 1.96.0+.
+-> **NOTE:** Available in 1.97.0+.
 
 ## Example Usage
 
