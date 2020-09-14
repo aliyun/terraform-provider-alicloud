@@ -250,6 +250,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ess_lifecycle_hooks":                   dataSourceAlicloudEssLifecycleHooks(),
 			"alicloud_ess_scheduled_tasks":                   dataSourceAlicloudEssScheduledTasks(),
 			"alicloud_ots_instances":                         dataSourceAlicloudOtsInstances(),
+			"alicloud_ots_service":                           dataSourceAlicloudOtsService(),
 			"alicloud_ots_instance_attachments":              dataSourceAlicloudOtsInstanceAttachments(),
 			"alicloud_ots_tables":                            dataSourceAlicloudOtsTables(),
 			"alicloud_cloud_connect_networks":                dataSourceAlicloudCloudConnectNetworks(),

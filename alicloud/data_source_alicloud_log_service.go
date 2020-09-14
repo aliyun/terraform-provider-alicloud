@@ -18,7 +18,7 @@ func dataSourceAlicloudLogService() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"enable": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"On"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"On", "Off"}, false),
 				Optional:     true,
 			},
 			"status": {
