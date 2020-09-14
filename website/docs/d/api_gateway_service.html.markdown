@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_api\_gateway\_service
 
-Using this data source can open API gateway service automatically. If the service has been opened, it will return opened.
+Using this data source can enable API gateway service automatically. If the service has been enabled, it will return `Opened`.
 
 For information about API Gateway and how to use it, see [What is API Gateway](https://www.alibabacloud.com/help/product/29462.htm).
 
@@ -27,7 +27,7 @@ data "alicloud_api_gateway_service" "open" {
 
 The following arguments are supported:
 
-* `enable` - (Optional) Setting the value to `On` to enable the service. If has been opened, return the result.
+* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: "On" or "Off".
 
 ## Attributes Reference
 

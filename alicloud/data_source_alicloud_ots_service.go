@@ -11,9 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudApiGatewayService() *schema.Resource {
+func dataSourceAlicloudOtsService() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudApigatewayServiceRead,
+		Read: dataSourceAlicloudOtsServiceRead,
 
 		Schema: map[string]*schema.Schema{
 			"enable": {
@@ -28,26 +28,26 @@ func dataSourceAlicloudApiGatewayService() *schema.Resource {
 		},
 	}
 }
-func dataSourceAlicloudApigatewayServiceRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudOtsServiceRead(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("enable"); !ok || v.(string) != "On" {
-		d.SetId("ApiGatewayServicHasNotBeenOpened")
+		d.SetId("OtsServicHasNotBeenOpened")
 		d.Set("status", "")
 		return nil
 	}
 
 	client := meta.(*connectivity.AliyunClient)
 
-	response, err := client.NewTeaCommonClientWithEndpoint(connectivity.OpenApiGatewayService, func(teaClient *rpc.Client) (map[string]interface{}, error) {
-		return teaClient.DoRequest(StringPointer("OpenApiGatewayService"), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
+	response, err := client.NewTeaCommonClientWithEndpoint(connectivity.OpenOtsService, func(teaClient *rpc.Client) (map[string]interface{}, error) {
+		return teaClient.DoRequest(StringPointer("OpenOtsService"), nil, StringPointer("POST"), StringPointer("2016-06-20"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
 	})
-	addDebug("OpenApiGatewayService", response, nil)
+	addDebug("OpenOtsService", response, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ORDER.OPEND"}) {
-			d.SetId("ApiGatewayServicHasBeenOpened")
+			d.SetId("OtsServicHasBeenOpened")
 			d.Set("status", "Opened")
 			return nil
 		}
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_api_gateway_service", "OpenApiGatewayService", AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ots_service", "OpenOtsService", AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v", response["OrderId"]))
