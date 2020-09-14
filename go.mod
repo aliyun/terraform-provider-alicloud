@@ -14,7 +14,7 @@ require (
 	github.com/aliyun/fc-go-sdk v0.0.0-20200619091938-0882be48e49f
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
-	github.com/denverdino/aliyungo v0.0.0-20200720072455-26fa39a46424
+	github.com/denverdino/aliyungo v0.0.0-20200902071702-b5d3e9ff6492
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/gogap/errors v0.0.0-20160523102334-149c546090d0 // indirect
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
