@@ -149,20 +149,8 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				},
 			},
 			"tags": {
+				Type:     schema.TypeMap,
 				Optional: true,
-				Type:     schema.TypeList,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"key": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"value": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
 			},
 			"labels": {
 				Optional: true,
@@ -624,7 +612,7 @@ func ConvertCsTags(d *schema.ResourceData) ([]cs.Tag, error) {
 }
 
 func setNodePoolTags(scalingGroup *cs.ScalingGroup, d *schema.ResourceData) error {
-	if v, ok := d.GetOk("tags"); ok && len(v.([]interface{})) > 0 {
+	if _, ok := d.GetOk("tags"); ok {
 		if tags, err := ConvertCsTags(d); err == nil {
 			scalingGroup.Tags = tags
 		}
