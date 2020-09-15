@@ -14,6 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+const TimeFormat = "2006-01-02T15:04Z"
+
 type PolarDBService struct {
 	client *connectivity.AliyunClient
 }
@@ -292,6 +294,83 @@ func (s *PolarDBService) DescribePolarDBAccountPrivilege(id string) (account *po
 		return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccountPrivilege", id)), NotFoundMsg, ProviderERROR)
 	}
 	return &response.Accounts[0], nil
+}
+
+func (s *PolarDBService) DescribePolarDBBackup(id string) (backup *polardb.Backup, err error) {
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	dbClusterId := parts[0]
+	backupStartTime := parts[1]
+	backupId := parts[2]
+	backupEndTime := parts[3]
+
+	request := polardb.CreateDescribeBackupsRequest()
+	request.DBClusterId = dbClusterId
+
+	splitTime := strings.Split(backupStartTime, "T")
+	startTime := splitTime[0] + "T" + strings.ReplaceAll(splitTime[1], "-", ":")
+	request.StartTime = timeFormatWithoutSecond(startTime)
+
+	splitTime = strings.Split(backupEndTime, "T")
+	// Add 1 minute to the end time to avoid the same situation as the start time.
+	endTime, _ := time.Parse(TimeFormat, splitTime[0]+"T"+strings.ReplaceAll(splitTime[1], "-", ":"))
+	oneMinute, _ := time.ParseDuration("1m")
+	request.EndTime = endTime.Add(oneMinute).Format(TimeFormat)
+
+	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+		return polarDBClient.DescribeBackups(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, dbClusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	response, _ := raw.(*polardb.DescribeBackupsResponse)
+	for _, object := range response.Items.Backup {
+		if object.BackupId == backupId {
+			return &object, nil
+		}
+	}
+	return nil, WrapErrorf(err, NotFoundMsg, ProviderERROR)
+}
+
+func (s *PolarDBService) WaitForPolarDBBackupFinished(id, backupStartTime string, timeout int) (backupId string, err error) {
+	request := polardb.CreateDescribeBackupsRequest()
+	request.DBClusterId = id
+	request.StartTime = timeFormatWithoutSecond(backupStartTime)
+	request.EndTime = "2099-01-01T12:00Z"
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.DescribeBackups(request)
+		})
+		if err != nil {
+			if NotFoundError(err) {
+				return "", WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
+			return "", WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		response, _ := raw.(*polardb.DescribeBackupsResponse)
+		if len(response.Items.Backup) > 0 {
+			for _, object := range response.Items.Backup {
+				if object.BackupStartTime >= backupStartTime && object.BackupMode == "Manual" {
+					backupId = object.BackupId
+					if object.BackupStatus == "Success" {
+						return backupId, nil
+					} else {
+						return "", WrapErrorf(err, DefaultErrorMsg, id+":"+backupId, "backup", ProviderERROR)
+					}
+				}
+			}
+		}
+		if time.Now().After(deadline) {
+			return "", WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, "", "Got a backup record which start time is "+backupStartTime, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalMedium * time.Second)
+	}
 }
 
 func (s *PolarDBService) WaitForPolarDBConnection(id string, status Status, timeout int) error {
@@ -1135,4 +1214,15 @@ func (s *PolarDBService) WaitForPolarDBParameter(clusterId string, timeout int, 
 		}
 	}
 	return nil
+}
+
+func timeFormatWithoutSecond(timeString string) string {
+	var newFormatTime string
+	splitTime := strings.Split(timeString, ":")
+	if len(splitTime) > 2 {
+		newFormatTime = splitTime[0] + ":" + splitTime[1] + "Z"
+	} else {
+		newFormatTime = timeString
+	}
+	return newFormatTime
 }
