@@ -1,5 +1,5 @@
 ---
-subcategory: "Alidns"
+subcategory: "DNS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alidns_record"
 sidebar_current: "docs-alicloud-resource-alidns-record"
@@ -17,7 +17,7 @@ Provides a Alidns Record resource. For information about Alidns Domain Record an
 
 ## Example Usage
 
-```
+```terraform
 # Create a new Domain Record
 resource "alicloud_alidns_record" "record" {
   domain_name = "domainname"
