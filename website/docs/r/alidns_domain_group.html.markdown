@@ -1,5 +1,5 @@
 ---
-subcategory: "Alidns"
+subcategory: "DNS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alidns_domain_group"
 sidebar_current: "docs-alicloud-resource-alidns-domain-group"
@@ -15,7 +15,7 @@ Provides a Alidns Domain Group resource. For information about Alidns Domain Gro
 
 ## Example Usage
 
-```
+```terraform
 # Add a new Alinds Domain Group.
 resource "alicloud_alidns_domain_group" "example" {
   group_name = "tf-testDG"

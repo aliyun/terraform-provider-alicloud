@@ -1,5 +1,5 @@
 ---
-subcategory: "Alidns"
+subcategory: "DNS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alidns_records"
 sidebar_current: "docs-alicloud-datasource-alidns-records"
@@ -15,7 +15,7 @@ This data source provides a list of Alidns Domain Records in an Alibaba Cloud ac
 
 ## Example Usage
 
-```
+```terraform 
 data "alicloud_alidns_records" "records_ds" {
   domain_name       = "xiaozhu.top"
   ids               = [1978593525779****]
