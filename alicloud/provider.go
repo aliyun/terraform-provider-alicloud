@@ -314,6 +314,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_instances":                      dataSourceAlicloudAlidnsInstances(),
 			"alicloud_alidns_domains":                        dataSourceAlicloudAlidnsDomains(),
 			"alicloud_log_service":                           dataSourceAlicloudLogService(),
+			"alicloud_cen_instance_attachments":              dataSourceAlicloudCenInstanceAttachments(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
