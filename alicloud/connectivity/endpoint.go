@@ -299,4 +299,6 @@ const (
 	OpenApiGatewayService = "apigateway.cn-hangzhou.aliyuncs.com"
 	OpenSlsService        = "sls.aliyuncs.com"
 	OpenOtsService        = "ots.cn-hangzhou.aliyuncs.com"
+	OpenOssService        = "oss-admin.aliyuncs.com"
+	OpenNasService        = "nas.cn-hangzhou.aliyuncs.com"
 )

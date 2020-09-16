@@ -171,6 +171,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_slb_zones":                             dataSourceAlicloudSlbZones(),
 			"alicloud_oss_bucket_objects":                    dataSourceAlicloudOssBucketObjects(),
 			"alicloud_oss_buckets":                           dataSourceAlicloudOssBuckets(),
+			"alicloud_oss_service":                           dataSourceAlicloudOssService(),
 			"alicloud_ons_instances":                         dataSourceAlicloudOnsInstances(),
 			"alicloud_ons_topics":                            dataSourceAlicloudOnsTopics(),
 			"alicloud_ons_groups":                            dataSourceAlicloudOnsGroups(),

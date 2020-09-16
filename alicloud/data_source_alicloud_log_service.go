@@ -30,7 +30,7 @@ func dataSourceAlicloudLogService() *schema.Resource {
 }
 func dataSourceAlicloudLogServiceRead(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("enable"); !ok || v.(string) != "On" {
-		d.SetId("LogServicHasNotBeenOpened")
+		d.SetId("LogServiceHasNotBeenOpened")
 		d.Set("status", "")
 		return nil
 	}
@@ -49,7 +49,7 @@ func dataSourceAlicloudLogServiceRead(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(fmt.Errorf("%s", response), DataDefaultErrorMsg, "alicloud_log_service", "GetLogService", AlibabaCloudSdkGoERROR)
 	}
 	if response["Enabled"] != nil && response["Enabled"].(bool) {
-		d.SetId("LogServicHasBeenOpened")
+		d.SetId("LogServiceHasBeenOpened")
 		d.Set("status", "Opened")
 		return nil
 	}
@@ -65,7 +65,7 @@ func dataSourceAlicloudLogServiceRead(d *schema.ResourceData, meta interface{}) 
 	if response["Success"] != nil && !response["Success"].(bool) {
 		return WrapErrorf(fmt.Errorf("%s", response), DataDefaultErrorMsg, "alicloud_log_service", "OpenLogService", AlibabaCloudSdkGoERROR)
 	}
-	d.SetId("LogServicHasBeenOpened")
+	d.SetId("LogServiceHasBeenOpened")
 	d.Set("status", "Opened")
 
 	return nil
