@@ -326,3 +326,63 @@ func (s *CbnService) CenInstanceAttachmentStateRefreshFunc(id string, failStates
 		return object, object.Status, nil
 	}
 }
+
+func (s *CbnService) DescribeCenBandwidthPackage(id string) (object cbn.CenBandwidthPackage, err error) {
+	request := cbn.CreateDescribeCenBandwidthPackagesRequest()
+	request.RegionId = s.client.RegionId
+	filters := make([]cbn.DescribeCenBandwidthPackagesFilter, 0)
+	filters = append(filters, cbn.DescribeCenBandwidthPackagesFilter{
+		Key:   "CenBandwidthPackageId",
+		Value: &[]string{id},
+	})
+	request.Filter = &filters
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(11*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.DescribeCenBandwidthPackages(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"AliyunGoClientFailure", "ServiceUnavailable", "Throttling", "Throttling.User"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
+				err = WrapErrorf(Error(GetNotFoundMessage("CenBandwidthPackage", id)), NotFoundMsg, ProviderERROR)
+				return resource.NonRetryableError(err)
+			}
+			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*cbn.DescribeCenBandwidthPackagesResponse)
+
+		if len(response.CenBandwidthPackages.CenBandwidthPackage) < 1 {
+			err = WrapErrorf(Error(GetNotFoundMessage("CenBandwidthPackage", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+			return resource.NonRetryableError(err)
+		}
+		object = response.CenBandwidthPackages.CenBandwidthPackage[0]
+		return nil
+	})
+	return object, WrapError(err)
+}
+
+func (s *CbnService) CenBandwidthPackageStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenBandwidthPackage(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+		return object, object.Status, nil
+	}
+}
