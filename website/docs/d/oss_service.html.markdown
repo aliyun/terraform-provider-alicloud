@@ -7,7 +7,7 @@ description: |-
     Provides a datasource to open the OSS service automatically.
 ---
 
-# alicloud\_api\_gateway\_service
+# alicloud\_oss\_service
 
 Using this data source can enable OSS service automatically. If the service has been enabled, it will return `Opened`.
 
