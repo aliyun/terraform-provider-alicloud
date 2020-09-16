@@ -6,10 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
@@ -84,41 +83,33 @@ func testSweepOnsInstance(region string) error {
 }
 
 func TestAccAlicloudOnsInstance_basic(t *testing.T) {
-	var v *ons.OnsInstanceBaseInfoResponse
+	var v ons.InstanceBaseInfo
 	resourceId := "alicloud_ons_instance.default"
-	ra := resourceAttrInit(resourceId, nil)
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, OnsInstanceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &OnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	}, "DescribeOnsInstance")
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(1000000, 9999999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc%sonsinstancebasic%v.abc", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOnsInstanceConfigDependence)
-
-	var onsInstanceBasicMap = map[string]string{
-		"name":   fmt.Sprintf("tf-testacc%sonsinstancebasic%v.abc", defaultRegionToTest, rand),
-		"remark": "default remark",
-	}
-
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sOnsInstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, OnsInstanceBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		// module name
+
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.name}",
+					"instance_name": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf-testacc%sonsinstancebasic%v.abc", defaultRegionToTest, rand),
+						"instance_name": name,
 					}),
 				),
 			},
@@ -129,40 +120,50 @@ func TestAccAlicloudOnsInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "tf-testacc-instance-name-change",
+					"instance_name": name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"name": "tf-testacc-instance-name-change"}),
+					testAccCheck(map[string]string{
+						"instance_name": name + "update",
+					}),
 				),
 			},
-
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"remark": "updated remark",
+					"remark": "Test-Remark",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"remark": "updated remark"}),
+					testAccCheck(map[string]string{
+						"remark": "Test-Remark",
+					}),
 				),
 			},
-
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":   "${var.name}",
-					"remark": "default remark",
+					"instance_name": "${var.name}",
+					"remark":        "Test-Remark",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(onsInstanceBasicMap),
+					testAccCheck(map[string]string{
+						"instance_name": name,
+						"remark":        "Test-Remark",
+					}),
 				),
 			},
 		},
 	})
-
 }
 
-func resourceOnsInstanceConfigDependence(name string) string {
+var OnsInstanceMap = map[string]string{
+	"instance_type": CHECKSET,
+	"release_time":  CHECKSET,
+	"status":        CHECKSET,
+}
+
+func OnsInstanceBasicdependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
- default = "%v"
+	default = "%s"
 }
 `, name)
 }
