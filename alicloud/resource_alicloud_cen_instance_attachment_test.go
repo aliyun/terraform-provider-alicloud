@@ -14,7 +14,7 @@ import (
 )
 
 func TestAccAlicloudCenInstanceAttachment_basic(t *testing.T) {
-	var v *cbn.ChildInstance
+	var v *cbn.DescribeCenAttachedChildInstanceAttributeResponse
 	resourceId := "alicloud_cen_instance_attachment.default"
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
@@ -50,7 +50,7 @@ func TestAccAlicloudCenInstanceAttachment_basic(t *testing.T) {
 	})
 }
 func TestAccAlicloudCenInstanceAttachment_multi_same_region(t *testing.T) {
-	var v *cbn.ChildInstance
+	var v *cbn.DescribeCenAttachedChildInstanceAttributeResponse
 	resourceId := "alicloud_cen_instance_attachment.default"
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
@@ -87,7 +87,7 @@ func TestAccAlicloudCenInstanceAttachment_multi_same_region(t *testing.T) {
 }
 
 func TestAccAlicloudCenInstanceAttachment_multi_different_region(t *testing.T) {
-	var v *cbn.ChildInstance
+	var v *cbn.DescribeCenAttachedChildInstanceAttributeResponse
 	resourceId := "alicloud_cen_instance_attachment.default"
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
@@ -147,6 +147,7 @@ func testAccCenInstanceAttachmentBasic(rand int, region string) string {
 	resource "alicloud_cen_instance_attachment" "default" {
 	    instance_id = "${alicloud_cen_instance.default.id}"
 	    child_instance_id = "${alicloud_vpc.default.id}"
+	    child_instance_type = "VPC"
 	    child_instance_region_id = "%s"
 	}
 	`, region, rand, region)
@@ -175,12 +176,14 @@ func testAccCenInstanceAttachmentMultiSameRegion(rand int, region string) string
 	resource "alicloud_cen_instance_attachment" "default" {
 	    instance_id = "${alicloud_cen_instance.default.id}"
 	    child_instance_id = "${alicloud_vpc.default.id}"
+	    child_instance_type = "VPC"
 	    child_instance_region_id = "%s"
 	}
 
 	resource "alicloud_cen_instance_attachment" "default1" {
 	    instance_id = "${alicloud_cen_instance.default.id}"
 	    child_instance_id = "${alicloud_vpc.default1.id}"
+	    child_instance_type = "VPC"
 	    child_instance_region_id = "%s"
 	}
 	`, region, rand, region, region)
@@ -223,19 +226,21 @@ resource "alicloud_cen_instance" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default.id}"
+	child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default1.id}"
+	child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
 `, region, rand)
 
 }
 
-func testAccCheckCenInstanceAttachmentExistsWithProviders(n string, instance *cbn.ChildInstance, providers *[]*schema.Provider) resource.TestCheckFunc {
+func testAccCheckCenInstanceAttachmentExistsWithProviders(n string, instance *cbn.DescribeCenAttachedChildInstanceAttributeResponse, providers *[]*schema.Provider) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -252,23 +257,17 @@ func testAccCheckCenInstanceAttachmentExistsWithProviders(n string, instance *cb
 			}
 
 			client := provider.Meta().(*connectivity.AliyunClient)
-			cenService := CenService{client}
-
-			cenId, instanceId, err := cenService.GetCenIdAndAnotherId(rs.Primary.ID)
-			if err != nil {
-				return err
-			}
-
-			childInstance, err := cenService.DescribeCenInstanceAttachment(rs.Primary.ID)
+			cbnService := CbnService{client}
+			childInstance, err := cbnService.DescribeCenInstanceAttachment(rs.Primary.ID)
 			if err != nil {
 				return err
 			}
 
 			if childInstance.Status != "Attached" {
-				return fmt.Errorf("CEN id %s instance id %s status error", cenId, instanceId)
+				return fmt.Errorf("CEN id %s instance id %s status error", childInstance.CenId, childInstance.ChildInstanceId)
 			}
 
-			instance = childInstance
+			instance = &childInstance
 			return nil
 		}
 		return fmt.Errorf("Cen Child Instance not found")
@@ -291,14 +290,14 @@ func testAccCheckCenInstanceAttachmentDestroyWithProviders(providers *[]*schema.
 
 func testAccCheckCenInstanceAttachmentDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
 	client := provider.Meta().(*connectivity.AliyunClient)
-	cenService := CenService{client}
+	cbnService := CbnService{client}
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_instance_attachment" {
 			continue
 		}
 
-		instance, err := cenService.DescribeCenInstanceAttachment(rs.Primary.ID)
+		instance, err := cbnService.DescribeCenInstanceAttachment(rs.Primary.ID)
 		if err != nil {
 			if NotFoundError(err) {
 				continue

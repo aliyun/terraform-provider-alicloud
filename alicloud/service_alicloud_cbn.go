@@ -277,3 +277,52 @@ func (s *CbnService) DescribeCenVbrHealthCheck(id string) (object cbn.VbrHealthC
 	}
 	return response.VbrHealthChecks.VbrHealthCheck[0], nil
 }
+
+func (s *CbnService) DescribeCenInstanceAttachment(id string) (object cbn.DescribeCenAttachedChildInstanceAttributeResponse, err error) {
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := cbn.CreateDescribeCenAttachedChildInstanceAttributeRequest()
+	request.RegionId = s.client.RegionId
+	request.ChildInstanceId = parts[1]
+	request.ChildInstanceRegionId = parts[3]
+	request.ChildInstanceType = parts[2]
+	request.CenId = parts[0]
+
+	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		return cbnClient.DescribeCenAttachedChildInstanceAttribute(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId", "ParameterError", "ParameterInstanceId"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("CenInstanceAttachment", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*cbn.DescribeCenAttachedChildInstanceAttributeResponse)
+	return *response, nil
+}
+
+func (s *CbnService) CenInstanceAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenInstanceAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+		return object, object.Status, nil
+	}
+}
