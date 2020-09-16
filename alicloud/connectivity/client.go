@@ -156,6 +156,7 @@ type AliyunClient struct {
 	dcdnConn                     *dcdn.Client
 	mseConn                      *mse.Client
 	actiontrailConn              *actiontrail.Client
+	onsConn                      *ons.Client
 }
 
 type ApiVersion string
