@@ -32,14 +32,52 @@ func TestAccAlicloudOnsInstancesDataSource(t *testing.T) {
 		}),
 	}
 
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":    []string{"${alicloud_ons_instance.default.id}"},
+			"status": "5",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":    []string{"${alicloud_ons_instance.default.id}"},
+			"status": "0",
+		}),
+	}
+
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_ons_instance.default.id}"},
+			"tags": map[string]interface{}{
+				"Created": "TF",
+				"For":     "acceptance test",
+			},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_ons_instance.default.id}"},
+			"tags": map[string]interface{}{
+				"Created": "TF-fake",
+				"For":     "acceptance test",
+			},
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"${alicloud_ons_instance.default.id}"},
 			"name_regex": "${alicloud_ons_instance.default.name}",
+			"status":     "5",
+			"tags": map[string]interface{}{
+				"Created": "TF",
+				"For":     "acceptance test",
+			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"${alicloud_ons_instance.default.id}_fake"},
 			"name_regex": "${alicloud_ons_instance.default.name}",
+			"status":     "0",
+			"tags": map[string]interface{}{
+				"Created": "TF-fake",
+				"For":     "acceptance test",
+			},
 		}),
 	}
 
@@ -49,7 +87,8 @@ func TestAccAlicloudOnsInstancesDataSource(t *testing.T) {
 			"instances.#":                 "1",
 			"names.#":                     "1",
 			"instances.0.instance_status": "5",
-			"instances.0.release_time":    "0",
+			"instances.0.status":          "5",
+			"instances.0.release_time":    CHECKSET,
 			"instances.0.instance_type":   "1",
 			"instances.0.instance_name":   fmt.Sprintf("tf-testacc%sonsinstance%v", defaultRegionToTest, rand),
 		}
@@ -69,7 +108,10 @@ func TestAccAlicloudOnsInstancesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeOnsInstancesMapFunc,
 	}
 
-	onsRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
+	preCheck := func() {
+		testAccPreCheck(t)
+	}
+	onsRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, statusConf, tagsConf, allConf)
 }
 
 func dataSourceOnsInstancesConfigDependence(name string) string {
@@ -79,8 +121,12 @@ variable "name" {
 }
 
 resource "alicloud_ons_instance" "default" {
-  name = "${var.name}"
+  name   = "${var.name}"
   remark = "default-remark"
+  tags 	 = {
+	Created = "TF"
+	For 	= "acceptance test"
+  }
 }
 
 `, name)
