@@ -171,13 +171,6 @@ func edasApplicationAttributes(d *schema.ResourceData, apps []edas.Application) 
 			"build_package_id":       app.BuildPackageId,
 			"cluster_id":             app.ClusterId,
 			"cluster_type":           app.ClusterType,
-			"instance_count":         app.InstanceCount,
-			"running_instance_count": app.RunningInstanceCount,
-			"health_check_url":       app.HealthCheckUrl,
-			"create_time":            app.CreateTime,
-			"slb_id":                 app.SlbId,
-			"slb_ip":                 app.SlbIp,
-			"slb_port":               app.SlbPort,
 			"region_id":              app.RegionId,
 		}
 		appIds = append(appIds, app.AppId)
