@@ -3,9 +3,11 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -17,6 +19,9 @@ func resourceAlicloudAlidnsDomain() *schema.Resource {
 		Delete: resourceAlicloudAlidnsDomainDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Delete: schema.DefaultTimeout(6 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"dns_servers": {
@@ -193,10 +198,21 @@ func resourceAlicloudAlidnsDomainDelete(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("lang"); ok {
 		request.Lang = v.(string)
 	}
-	raw, err := client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
-		return alidnsClient.DeleteDomain(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		raw, err := client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
+			return alidnsClient.DeleteDomain(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"RecordForbidden.DNSChange", "DnsSystemBusyness", "InternalError"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
-	addDebug(request.GetActionName(), raw)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomainName.NoExist"}) {
 			return nil
