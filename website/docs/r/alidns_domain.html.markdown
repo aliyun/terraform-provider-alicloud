@@ -51,6 +51,14 @@ The following attributes are exported:
 * `group_name` - Domain name group name.
 * `puny_code` - Only return punycode codes for Chinese domain names.
 
+### Timeouts
+
+-> **NOTE:** Available in 1.97.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `delete` - (Defaults to 6 mins) Used when terminating the Alidns domain instance.  
+
 ## Import
 
 Alidns domain can be imported using the id or domain name, e.g.
