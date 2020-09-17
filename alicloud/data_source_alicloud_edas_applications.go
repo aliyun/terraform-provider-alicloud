@@ -137,13 +137,13 @@ func edasApplicationAttributes(d *schema.ResourceData, apps []edas.Application) 
 
 	for _, app := range apps {
 		mapping := map[string]interface{}{
-			"app_name":               app.Name,
-			"app_id":                 app.AppId,
-			"application_type":       app.ApplicationType,
-			"build_package_id":       app.BuildPackageId,
-			"cluster_id":             app.ClusterId,
-			"cluster_type":           app.ClusterType,
-			"region_id":              app.RegionId,
+			"app_name":         app.Name,
+			"app_id":           app.AppId,
+			"application_type": app.ApplicationType,
+			"build_package_id": app.BuildPackageId,
+			"cluster_id":       app.ClusterId,
+			"cluster_type":     app.ClusterType,
+			"region_id":        app.RegionId,
 		}
 		appIds = append(appIds, app.AppId)
 		names = append(names, app.Name)
