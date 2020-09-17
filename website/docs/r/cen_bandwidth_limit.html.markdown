@@ -67,12 +67,14 @@ resource "alicloud_cen_bandwidth_package_attachment" "bwp_attach" {
 resource "alicloud_cen_instance_attachment" "vpc_attach_1" {
   instance_id              = alicloud_cen_instance.cen.id
   child_instance_id        = alicloud_vpc.vpc1.id
+  child_instance_type      = "VPC"
   child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "vpc_attach_2" {
   instance_id              = alicloud_cen_instance.cen.id
   child_instance_id        = alicloud_vpc.vpc2.id
+  child_instance_type      = "VPC"
   child_instance_region_id = "cn-shanghai"
 }
 

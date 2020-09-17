@@ -255,12 +255,14 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
 
@@ -327,12 +329,14 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
 
@@ -409,18 +413,21 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
 
 resource "alicloud_cen_instance_attachment" "default2" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default2.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "cn-hangzhou"
 }
 

@@ -29,6 +29,7 @@ resource "alicloud_cen_instance" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
   instance_id              = alicloud_cen_instance.default.id
   child_instance_id        = "vbr-xxxxx"
+  child_instance_type      = "VBR"
   child_instance_region_id = "cn-hangzhou"
 }
 
