@@ -21,7 +21,6 @@ import (
 )
 
 // GetContainerConfiguration invokes the edas.GetContainerConfiguration API synchronously
-// api document: https://help.aliyun.com/api/edas/getcontainerconfiguration.html
 func (client *Client) GetContainerConfiguration(request *GetContainerConfigurationRequest) (response *GetContainerConfigurationResponse, err error) {
 	response = CreateGetContainerConfigurationResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) GetContainerConfiguration(request *GetContainerConfigurati
 }
 
 // GetContainerConfigurationWithChan invokes the edas.GetContainerConfiguration API asynchronously
-// api document: https://help.aliyun.com/api/edas/getcontainerconfiguration.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) GetContainerConfigurationWithChan(request *GetContainerConfigurationRequest) (<-chan *GetContainerConfigurationResponse, <-chan error) {
 	responseChan := make(chan *GetContainerConfigurationResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) GetContainerConfigurationWithChan(request *GetContainerCon
 }
 
 // GetContainerConfigurationWithCallback invokes the edas.GetContainerConfiguration API asynchronously
-// api document: https://help.aliyun.com/api/edas/getcontainerconfiguration.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) GetContainerConfigurationWithCallback(request *GetContainerConfigurationRequest, callback func(response *GetContainerConfigurationResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

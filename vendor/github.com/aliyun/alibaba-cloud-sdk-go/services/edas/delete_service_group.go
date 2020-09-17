@@ -21,7 +21,6 @@ import (
 )
 
 // DeleteServiceGroup invokes the edas.DeleteServiceGroup API synchronously
-// api document: https://help.aliyun.com/api/edas/deleteservicegroup.html
 func (client *Client) DeleteServiceGroup(request *DeleteServiceGroupRequest) (response *DeleteServiceGroupResponse, err error) {
 	response = CreateDeleteServiceGroupResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DeleteServiceGroup(request *DeleteServiceGroupRequest) (re
 }
 
 // DeleteServiceGroupWithChan invokes the edas.DeleteServiceGroup API asynchronously
-// api document: https://help.aliyun.com/api/edas/deleteservicegroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteServiceGroupWithChan(request *DeleteServiceGroupRequest) (<-chan *DeleteServiceGroupResponse, <-chan error) {
 	responseChan := make(chan *DeleteServiceGroupResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DeleteServiceGroupWithChan(request *DeleteServiceGroupRequ
 }
 
 // DeleteServiceGroupWithCallback invokes the edas.DeleteServiceGroup API asynchronously
-// api document: https://help.aliyun.com/api/edas/deleteservicegroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteServiceGroupWithCallback(request *DeleteServiceGroupRequest, callback func(response *DeleteServiceGroupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
