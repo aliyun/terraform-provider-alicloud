@@ -19,7 +19,7 @@ For more information about how to use it, see [RocketMQ Topic Management API](ht
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "onsInstanceName"
 }
@@ -34,7 +34,7 @@ resource "alicloud_ons_instance" "default" {
 }
 
 resource "alicloud_ons_topic" "default" {
-  topic        = var.topic
+  topic_name   = var.topic
   instance_id  = alicloud_ons_instance.default.id
   message_type = 0
   remark       = "dafault_ons_topic_remark"
@@ -46,10 +46,14 @@ resource "alicloud_ons_topic" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Required) ID of the ONS Instance that owns the topics.
-* `topic` - (Required) Name of the topic. Two topics on a single instance cannot have the same name and the name cannot start with 'GID' or 'CID'. The length cannot exceed 64 characters.
+* `topic` - (Required, Deprecated in v1.97.0+) Replaced by `topic_name` after version 1.97.0.
+* `topic_name` - (Required, Available in v1.97.0+) Name of the topic. Two topics on a single instance cannot have the same name and the name cannot start with 'GID' or 'CID'. The length cannot exceed 64 characters.
 * `message_type` - (Required) The type of the message. Read [Ons Topic Create](https://www.alibabacloud.com/help/doc-detail/29591.html) for further details.
 * `remark` - (Optional) This attribute is a concise description of topic. The length cannot exceed 128.
 * `perm` - (Optional) This attribute is used to set the read-write mode for the topic. Read [Request parameters](https://www.alibabacloud.com/help/doc-detail/56880.html) for further details.
+* `tags` - (Optional, Available in v1.97.0+) A mapping of tags to assign to the resource.
+    - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
+    - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 
 ## Attributes Reference
 
