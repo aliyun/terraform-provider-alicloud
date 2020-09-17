@@ -223,9 +223,6 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
-			//b, _ := json.Marshal(request)
-			//fmt.Println("============ faint create ===========")
-			//fmt.Println(string(b))
 			return fcClient.CreateFunction(request)
 		})
 		if err != nil {
@@ -383,9 +380,6 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
-			//b, _ := json.Marshal(request)
-			//fmt.Println("============ faint update ===========")
-			//fmt.Println(string(b))
 			return fcClient.UpdateFunction(request)
 		})
 		if err != nil {

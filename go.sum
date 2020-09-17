@@ -45,6 +45,8 @@ github.com/aliyun/credentials-go v1.1.2 h1:qU1vwGIBb3UJ8BwunHDRFtAhS6jnQLnde/yk0
 github.com/aliyun/credentials-go v1.1.2/go.mod h1:ozcZaMR5kLM7pwtCMEpVmQ242suV6qTJya2bDq4X1Tw=
 github.com/aliyun/fc-go-sdk v0.0.0-20200619091938-0882be48e49f h1:8ZIQHvhYUGGmS8qlipiooanGBESy6JJKTZ9/vPmh0UE=
 github.com/aliyun/fc-go-sdk v0.0.0-20200619091938-0882be48e49f/go.mod h1:X4Pc3TFz4LRXaQPhyzBU4Ec8pL/QvaJ36CFtLJsroIM=
+github.com/aliyun/fc-go-sdk v0.0.0-20200912233156-b6ca4b7c8f56 h1:qhSM5kIkcD1LkqyT4mpzTX1xps1UWcWwEtpQmca1dFQ=
+github.com/aliyun/fc-go-sdk v0.0.0-20200912233156-b6ca4b7c8f56/go.mod h1:X4Pc3TFz4LRXaQPhyzBU4Ec8pL/QvaJ36CFtLJsroIM=
 github.com/apparentlymart/go-cidr v1.0.1 h1:NmIwLZ/KdsjIUlhf+/Np40atNXm/+lZ5txfTJ/SpF+U=
 github.com/apparentlymart/go-cidr v1.0.1/go.mod h1:EBcsNrHc3zQeuaeCeCtQruQm+n9/YjEn/vI25Lg7Gwc=
 github.com/apparentlymart/go-dump v0.0.0-20180507223929-23540a00eaa3/go.mod h1:oL81AME2rN47vu18xqj1S1jPIPuN7afo62yKTNn3XMM=
