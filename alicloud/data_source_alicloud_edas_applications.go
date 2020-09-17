@@ -66,34 +66,6 @@ func dataSourceAlicloudEdasApplications() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
-						"instance_count": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"running_instance_count": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"health_check_url": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"create_time": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"slb_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"slb_ip": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"slb_port": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
 						"region_id": {
 							Type:     schema.TypeString,
 							Computed: true,
