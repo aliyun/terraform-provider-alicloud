@@ -105,7 +105,7 @@ func (s *ElasticsearchService) TriggerNetwork(d *schema.ResourceData, content ma
 
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InternalServerError"}
 	raw, err := s.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.TriggerNetwork(request)
 	})
@@ -189,7 +189,9 @@ func (s *ElasticsearchService) DescribeElasticsearchTags(id string) (tags map[st
 func (s *ElasticsearchService) tagsToMap(tagSet []elasticsearch.TagResourceItem) (tags map[string]string) {
 	result := make(map[string]string)
 	for _, t := range tagSet {
-		result[t.TagKey] = t.TagValue
+		if !elasticsearchTagIgnored(t.TagKey, t.TagValue) {
+			result[t.TagKey] = t.TagValue
+		}
 	}
 
 	return result
