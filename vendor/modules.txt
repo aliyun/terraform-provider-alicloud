@@ -100,7 +100,7 @@ github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/request
 github.com/aliyun/credentials-go/credentials/response
 github.com/aliyun/credentials-go/credentials/utils
-# github.com/aliyun/fc-go-sdk v0.0.0-20200619091938-0882be48e49f
+# github.com/aliyun/fc-go-sdk v0.0.0-20200912233156-b6ca4b7c8f56
 github.com/aliyun/fc-go-sdk
 # github.com/apparentlymart/go-cidr v1.0.1
 github.com/apparentlymart/go-cidr/cidr

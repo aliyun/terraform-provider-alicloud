@@ -31,8 +31,8 @@ func init() {
 }
 
 func testSweepFcFunction(region string) error {
-	if testSweepPreCheckWithRegions(region, false, connectivity.ApiGatewayNoSupportedRegions) {
-		log.Printf("[INFO] Skipping API Gateway unsupported region: %s", region)
+	if testSweepPreCheckWithRegions(region, false, connectivity.FcNoSupportedRegions) {
+		log.Printf("[INFO] Skipping FC unsupported region: %s", region)
 		return nil
 	}
 	rawClient, err := sharedClientForRegion(region)

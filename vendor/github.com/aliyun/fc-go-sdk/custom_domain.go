@@ -19,6 +19,7 @@ type customDomainMetadata struct {
 	Protocol         *string      `json:"protocol"`
 	APIVersion       *string      `json:"apiVersion"`
 	RouteConfig      *RouteConfig `json:"routeConfig"`
+	CertConfig       *CertConfig  `json:"certConfig"`
 	CreatedTime      string       `json:"createdTime"`
 	LastModifiedTime string       `json:"lastModifiedTime"`
 }
@@ -28,6 +29,7 @@ type CreateCustomDomainInput struct {
 	DomainName  *string      `json:"domainName"`
 	Protocol    *string      `json:"protocol"`
 	RouteConfig *RouteConfig `json:"routeConfig"`
+	CertConfig  *CertConfig  `json:"certConfig"`
 }
 
 // NewCreateCustomDomainInput...
@@ -47,6 +49,11 @@ func (c *CreateCustomDomainInput) WithProtocol(protocol string) *CreateCustomDom
 
 func (c *CreateCustomDomainInput) WithRouteConfig(routeConfig *RouteConfig) *CreateCustomDomainInput {
 	c.RouteConfig = routeConfig
+	return c
+}
+
+func (c *CreateCustomDomainInput) WithCertConfig(certConfig *CertConfig) *CreateCustomDomainInput {
+	c.CertConfig = certConfig
 	return c
 }
 
@@ -87,10 +94,11 @@ func (r *RouteConfig) WithRoutes(pathConfig []PathConfig) *RouteConfig {
 
 // PathConfig represents path-function mapping
 type PathConfig struct {
-	Path         *string `json:"path" `
-	ServiceName  *string `json:"serviceName" `
-	FunctionName *string `json:"functionName" `
-	Qualifier    *string `json:"qualifier" `
+	Path         *string  `json:"path" `
+	ServiceName  *string  `json:"serviceName" `
+	FunctionName *string  `json:"functionName" `
+	Qualifier    *string  `json:"qualifier" `
+	Methods      []string `json:"methods"`
 }
 
 func NewPathConfig() *PathConfig {
@@ -117,6 +125,32 @@ func (p *PathConfig) WithQualifier(qualifier string) *PathConfig {
 	return p
 }
 
+func (p *PathConfig) WithMethods(methods []string) *PathConfig {
+	p.Methods = methods
+	return p
+}
+
+type CertConfig struct {
+	CertName    *string `json:certName`
+	PrivateKey  *string `json:privateKey`
+	Certificate *string `json:certificate`
+}
+
+func (c *CertConfig) WithCertName(certName string) *CertConfig {
+	c.CertName = &certName
+	return c
+}
+
+func (c *CertConfig) WithPrivateKey(privateKey string) *CertConfig {
+	c.PrivateKey = &privateKey
+	return c
+}
+
+func (c *CertConfig) WithCertificate(certificate string) *CertConfig {
+	c.Certificate = &certificate
+	return c
+}
+
 // CreateCustomDomainOutput define create custom domain response
 type CreateCustomDomainOutput struct {
 	Header http.Header
@@ -139,6 +173,7 @@ func (o CreateCustomDomainOutput) GetRequestID() string {
 type UpdateCustomDomainObject struct {
 	Protocol    *string      `json:"protocol"`
 	RouteConfig *RouteConfig `json:"routeConfig"`
+	CertConfig  *CertConfig  `json:"certConfig"`
 }
 
 type UpdateCustomDomainInput struct {
@@ -157,6 +192,11 @@ func (c *UpdateCustomDomainInput) WithProtocol(protocol string) *UpdateCustomDom
 
 func (c *UpdateCustomDomainInput) WithRouteConfig(routeConfig *RouteConfig) *UpdateCustomDomainInput {
 	c.RouteConfig = routeConfig
+	return c
+}
+
+func (c *UpdateCustomDomainInput) WithCertConfig(certConfig *CertConfig) *UpdateCustomDomainInput {
+	c.CertConfig = certConfig
 	return c
 }
 
