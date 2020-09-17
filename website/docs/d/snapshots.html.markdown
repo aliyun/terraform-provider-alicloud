@@ -30,32 +30,21 @@ The following arguments are supported:
 
 * `instance_id` - (Optional) The specified instance ID.
 * `disk_id` - (Optional) The specified disk ID.
-* `encrypted` - (Optional) Queries the encrypted snapshots. Optional values:
-  * true: Encrypted snapshots.
-  * false: No encryption attribute limit.
-  
-  Default value: false.
+* `encrypted` - (Optional) Queries the encrypted snapshots. Optional values: `true`: Encrypted snapshots. `false`: No encryption attribute limit. Default value: `false`.
 * `ids` - (Optional)  A list of snapshot IDs.
 * `name_regex` - (Optional) A regex string to filter results by snapshot name.
-* `status` - (Optional) The specified snapshot status.
-  * The snapshot status. Optional values:
+* `status` - (Optional) The specified snapshot status. Default value: `all`. Optional values:
   * progressing: The snapshots are being created.
   * accomplished: The snapshots are ready to use.
   * failed: The snapshot creation failed.
   * all: All status.
-  
-  Default value: all.
-
-* `type` - (Optional) The snapshot category. Optional values:
+* `type` - (Optional) The snapshot category. Default value: `all`. Optional values:
   * auto: Auto snapshots.
   * user: Manual snapshots.
   * all: Auto and manual snapshots.
-  
-  Default value: all.
 * `source_disk_type` - (Optional) The type of source disk:
   * System: The snapshots are created for system disks.
   * Data: The snapshots are created for data disks.
-  
 * `usage` - (Optional) The usage of the snapshot:
   * image: The snapshots are used to create custom images.
   * disk: The snapshots are used to CreateDisk.
@@ -78,20 +67,11 @@ The following attributes are exported in addition to the arguments listed above:
     * `progress` - Progress of snapshot creation, presented in percentage.
     * `source_disk_id` - Source disk ID, which is retained after the source disk of the snapshot is deleted.
     * `source_disk_size` - Size of the source disk, measured in GB.
-    * `source_disk_type` - Source disk attribute. Value range:
-      * System
-      * Data
+    * `source_disk_type` - Source disk attribute. Value range: `System`,`Data`.
     * `product_code` - Product code on the image market place.
     * `retention_days` - The number of days that an automatic snapshot retains in the console for your instance.
     * `remain_time` - The remaining time of a snapshot creation task, in seconds.
     * `creation_time` - Creation time. Time of creation. It is represented according to ISO8601, and UTC time is used. Format: YYYY-MM-DDThh:mmZ.
-    * `status` - The snapshot status. Value range:
-      * progressing
-      * accomplished
-      * failed
-    * `usage` - Whether the snapshots are used to create resources or not. Value range:
-      * image
-      * disk
-      * image_disk
-      * none
+    * `status` - The snapshot status. Value range: `progressing`, `accomplished` and `failed`.
+    * `usage` - Whether the snapshots are used to create resources or not. Value range: `image`, `disk`, `image_disk` and `none`.
     * `tags` - A map of tags assigned to the snapshot.

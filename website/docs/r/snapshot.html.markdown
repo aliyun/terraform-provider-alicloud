@@ -31,7 +31,8 @@ resource "alicloud_snapshot" "snapshot" {
 The following arguments are supported:
 
 * `disk_id` - (Required, ForceNew) The source disk ID.
-* `name` - (Optional, ForceNew) Name of the snapshot. This name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-", ".", "_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Default value is null.
+* `name` - (Optional, ForceNew) The name of the snapshot to be created. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-).
+It cannot start with auto, because snapshot names starting with auto are recognized as automatic snapshots.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.94.0+) The ID of the resource group.
 * `description` - (Optional, ForceNew) Description of the snapshot. This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
