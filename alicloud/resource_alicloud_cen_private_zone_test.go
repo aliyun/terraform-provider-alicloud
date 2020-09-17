@@ -76,6 +76,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
 	instance_id = "${alicloud_cen_instance.default.id}"
 	child_instance_id = "${alicloud_vpc.default.id}"
+	child_instance_type = "VPC"
 	child_instance_region_id = "%s"
   	depends_on = [
 		"alicloud_cen_instance.default",

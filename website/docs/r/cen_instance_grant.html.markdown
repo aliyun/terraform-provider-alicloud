@@ -57,6 +57,7 @@ resource "alicloud_cen_instance_attachment" "foo" {
   provider                 = alicloud.account2
   instance_id              = alicloud_cen_instance.cen.id
   child_instance_id        = alicloud_vpc.vpc.id
+  child_instance_type      = "VPC"
   child_instance_region_id = "cn-qingdao"
   child_instance_owner_id  = "uid1"
   depends_on               = [alicloud_cen_instance_grant.foo]
