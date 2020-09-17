@@ -12,9 +12,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudEssScalingConfiguration() *schema.Resource {
@@ -44,7 +44,11 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			},
 			"image_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+			},
+			"image_name": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"instance_type": {
 				Type:          schema.TypeString,
@@ -116,6 +120,18 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.IntBetween(20, 500),
 			},
+			"system_disk_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"system_disk_description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"system_disk_auto_snapshot_policy_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"data_disk": {
 				Optional: true,
 				Type:     schema.TypeList,
@@ -143,6 +159,27 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 							Default:  true,
+						},
+						"encrypted": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"kms_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"auto_snapshot_policy_id": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 					},
 				},
@@ -338,6 +375,11 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		d.SetPartial("image_id")
 	}
 
+	if d.HasChange("image_name") || d.Get("override").(bool) {
+		request.ImageName = d.Get("image_name").(string)
+		d.SetPartial("image_name")
+	}
+
 	hasChangeInstanceType := d.HasChange("instance_type")
 	hasChangeInstanceTypes := d.HasChange("instance_types")
 	if hasChangeInstanceType || hasChangeInstanceTypes || d.Get("override").(bool) {
@@ -399,6 +441,21 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		d.SetPartial("system_disk_size")
 	}
 
+	if d.HasChange("system_disk_name") {
+		request.SystemDiskDiskName = d.Get("system_disk_name").(string)
+		d.SetPartial("system_disk_name")
+	}
+
+	if d.HasChange("system_disk_description") {
+		request.SystemDiskDescription = d.Get("system_disk_description").(string)
+		d.SetPartial("system_disk_description")
+	}
+
+	if d.HasChange("system_disk_auto_snapshot_policy_id") {
+		request.SystemDiskAutoSnapshotPolicyId = d.Get("system_disk_auto_snapshot_policy_id").(string)
+		d.SetPartial("system_disk_auto_snapshot_policy_id")
+	}
+
 	if d.HasChange("user_data") {
 		if v, ok := d.GetOk("user_data"); ok && v.(string) != "" {
 			_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
@@ -445,10 +502,16 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 			for _, e := range disks {
 				pack := e.(map[string]interface{})
 				dataDisk := ess.ModifyScalingConfigurationDataDisk{
-					Size:               strconv.Itoa(pack["size"].(int)),
-					Category:           pack["category"].(string),
-					SnapshotId:         pack["snapshot_id"].(string),
-					DeleteWithInstance: strconv.FormatBool(pack["delete_with_instance"].(bool)),
+					Size:                 strconv.Itoa(pack["size"].(int)),
+					Category:             pack["category"].(string),
+					SnapshotId:           pack["snapshot_id"].(string),
+					DeleteWithInstance:   strconv.FormatBool(pack["delete_with_instance"].(bool)),
+					Device:               pack["device"].(string),
+					Encrypted:            strconv.FormatBool(pack["encrypted"].(bool)),
+					KMSKeyId:             pack["kms_key_id"].(string),
+					DiskName:             pack["name"].(string),
+					Description:          pack["description"].(string),
+					AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
 				}
 				createDataDisks = append(createDataDisks, dataDisk)
 			}
@@ -559,12 +622,16 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("scaling_group_id", object.ScalingGroupId)
 	d.Set("active", object.LifecycleState == string(Active))
 	d.Set("image_id", object.ImageId)
+	d.Set("image_name", object.ImageName)
 	d.Set("scaling_configuration_name", object.ScalingConfigurationName)
 	d.Set("internet_charge_type", object.InternetChargeType)
 	d.Set("internet_max_bandwidth_in", object.InternetMaxBandwidthIn)
 	d.Set("internet_max_bandwidth_out", object.InternetMaxBandwidthOut)
 	d.Set("system_disk_category", object.SystemDiskCategory)
 	d.Set("system_disk_size", object.SystemDiskSize)
+	d.Set("system_disk_name", object.SystemDiskName)
+	d.Set("system_disk_description", object.SystemDiskDescription)
+	d.Set("system_disk_auto_snapshot_policy_id", object.SystemDiskAutoSnapshotPolicyId)
 	d.Set("data_disk", essService.flattenDataDiskMappings(object.DataDisks.DataDisk))
 	d.Set("role_name", object.RamRoleName)
 	d.Set("key_name", object.KeyPairName)
@@ -741,6 +808,10 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 		request.ScalingConfigurationName = v
 	}
 
+	if v := d.Get("image_name").(string); v != "" {
+		request.ImageName = v
+	}
+
 	if v := d.Get("internet_charge_type").(string); v != "" {
 		request.InternetChargeType = v
 	}
@@ -759,6 +830,18 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 		request.SystemDiskSize = requests.NewInteger(v)
 	}
 
+	if v := d.Get("system_disk_name").(string); v != "" {
+		request.SystemDiskDiskName = v
+	}
+
+	if v := d.Get("system_disk_description").(string); v != "" {
+		request.SystemDiskDescription = v
+	}
+
+	if v := d.Get("system_disk_auto_snapshot_policy_id").(string); v != "" {
+		request.SystemDiskAutoSnapshotPolicyId = v
+	}
+
 	dds, ok := d.GetOk("data_disk")
 	if ok {
 		disks := dds.([]interface{})
@@ -766,10 +849,16 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 		for _, e := range disks {
 			pack := e.(map[string]interface{})
 			dataDisk := ess.CreateScalingConfigurationDataDisk{
-				Size:               strconv.Itoa(pack["size"].(int)),
-				Category:           pack["category"].(string),
-				SnapshotId:         pack["snapshot_id"].(string),
-				DeleteWithInstance: strconv.FormatBool(pack["delete_with_instance"].(bool)),
+				Size:                 strconv.Itoa(pack["size"].(int)),
+				Category:             pack["category"].(string),
+				SnapshotId:           pack["snapshot_id"].(string),
+				DeleteWithInstance:   strconv.FormatBool(pack["delete_with_instance"].(bool)),
+				Device:               pack["device"].(string),
+				Encrypted:            strconv.FormatBool(pack["encrypted"].(bool)),
+				KMSKeyId:             pack["kms_key_id"].(string),
+				DiskName:             pack["name"].(string),
+				Description:          pack["description"].(string),
+				AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
 			}
 			createDataDisks = append(createDataDisks, dataDisk)
 		}

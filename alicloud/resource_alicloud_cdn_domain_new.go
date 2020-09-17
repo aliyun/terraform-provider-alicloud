@@ -9,9 +9,9 @@ import (
 	cdn2 "github.com/denverdino/aliyungo/cdn"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCdnDomainNew() *schema.Resource {
@@ -136,6 +136,10 @@ func resourceAlicloudCdnDomainNew() *schema.Resource {
 				ValidateFunc: validation.StringInSlice(cdn2.Scopes, false),
 			},
 			"tags": tagsSchema(),
+			"cname": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -284,6 +288,7 @@ func resourceAlicloudCdnDomainReadNew(d *schema.ResourceData, meta interface{}) 
 	d.Set("cdn_type", object.CdnType)
 	d.Set("scope", object.Scope)
 	d.Set("resource_group_id", object.ResourceGroupId)
+	d.Set("cname", object.Cname)
 
 	certInfo, err := cdnService.DescribeDomainCertificateInfo(d.Id())
 	if err != nil {

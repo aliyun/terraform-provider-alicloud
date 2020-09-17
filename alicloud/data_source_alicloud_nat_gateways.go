@@ -5,9 +5,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudNatGateways() *schema.Resource {
@@ -84,6 +84,11 @@ func dataSourceAlicloudNatGateways() *schema.Resource {
 						"vpc_id": {
 							Type:     schema.TypeString,
 							Computed: true,
+						},
+						"ip_lists": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 					},
 				},
@@ -166,6 +171,10 @@ func NatGatewaysDecriptionAttributes(d *schema.ResourceData, gateways []vpc.NatG
 	var names []string
 	var s []map[string]interface{}
 	for _, gateway := range gateways {
+		var ips []string
+		for _, ip := range gateway.IpLists.IpList {
+			ips = append(ips, ip.IpAddress)
+		}
 		mapping := map[string]interface{}{
 			"id":               gateway.NatGatewayId,
 			"spec":             gateway.Spec,
@@ -176,6 +185,7 @@ func NatGatewaysDecriptionAttributes(d *schema.ResourceData, gateways []vpc.NatG
 			"snat_table_id":    gateway.SnatTableIds.SnatTableId[0],
 			"forward_table_id": gateway.ForwardTableIds.ForwardTableId[0],
 			"vpc_id":           gateway.VpcId,
+			"ip_lists":         ips,
 		}
 		names = append(names, gateway.Name)
 		ids = append(ids, gateway.NatGatewayId)

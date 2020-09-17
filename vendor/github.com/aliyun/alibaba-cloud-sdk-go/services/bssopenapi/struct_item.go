@@ -21,16 +21,19 @@ type Item struct {
 	PreviousBillingCycleBalance float64 `json:"PreviousBillingCycleBalance" xml:"PreviousBillingCycleBalance"`
 	PayerAccount                string  `json:"PayerAccount" xml:"PayerAccount"`
 	UsageStartTime              string  `json:"UsageStartTime" xml:"UsageStartTime"`
+	CommodityCode               string  `json:"CommodityCode" xml:"CommodityCode"`
 	SuborderID                  string  `json:"SuborderID" xml:"SuborderID"`
 	SolutionCode                string  `json:"SolutionCode" xml:"SolutionCode"`
 	ProductDetail               string  `json:"ProductDetail" xml:"ProductDetail"`
 	Promotion                   string  `json:"Promotion" xml:"Promotion"`
 	Usage                       string  `json:"Usage" xml:"Usage"`
 	Seller                      string  `json:"Seller" xml:"Seller"`
+	ServicePeriodUnit           string  `json:"ServicePeriodUnit" xml:"ServicePeriodUnit"`
 	PretaxAmountLocal           float64 `json:"PretaxAmountLocal" xml:"PretaxAmountLocal"`
 	OwnerName                   string  `json:"OwnerName" xml:"OwnerName"`
 	OutstandingAmount           float64 `json:"OutstandingAmount" xml:"OutstandingAmount"`
 	DeductedByResourcePackage   string  `json:"DeductedByResourcePackage" xml:"DeductedByResourcePackage"`
+	PipCode                     string  `json:"PipCode" xml:"PipCode"`
 	ProductCode                 string  `json:"ProductCode" xml:"ProductCode"`
 	ListPrice                   string  `json:"ListPrice" xml:"ListPrice"`
 	Quantity                    string  `json:"Quantity" xml:"Quantity"`
@@ -39,6 +42,7 @@ type Item struct {
 	MybankPaymentAmount         float64 `json:"MybankPaymentAmount" xml:"MybankPaymentAmount"`
 	PretaxGrossAmount           float64 `json:"PretaxGrossAmount" xml:"PretaxGrossAmount"`
 	InstanceID                  string  `json:"InstanceID" xml:"InstanceID"`
+	SplitItemName               string  `json:"SplitItemName" xml:"SplitItemName"`
 	SubscribeBucket             string  `json:"SubscribeBucket" xml:"SubscribeBucket"`
 	RecordID                    string  `json:"RecordID" xml:"RecordID"`
 	Config                      string  `json:"Config" xml:"Config"`
@@ -77,6 +81,7 @@ type Item struct {
 	ListPriceUnit               string  `json:"ListPriceUnit" xml:"ListPriceUnit"`
 	PaymentCurrency             string  `json:"PaymentCurrency" xml:"PaymentCurrency"`
 	UsageUnit                   string  `json:"UsageUnit" xml:"UsageUnit"`
+	SplitItemID                 string  `json:"SplitItemID" xml:"SplitItemID"`
 	SubscribeType               string  `json:"SubscribeType" xml:"SubscribeType"`
 	SubscribeLanguage           string  `json:"SubscribeLanguage" xml:"SubscribeLanguage"`
 	ProductType                 string  `json:"ProductType" xml:"ProductType"`

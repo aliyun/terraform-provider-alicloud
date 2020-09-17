@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
@@ -124,10 +124,34 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"system_disk_name": "kms",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_name": "kms",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_description": "kms",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_description": "kms",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"data_disk": []map[string]string{{
 						"size":                 "20",
 						"category":             "cloud_ssd",
 						"delete_with_instance": "false",
+						"encrypted":            "true",
+						"kms_key_id":           "${alicloud_kms_key.key.id}",
+						"name":                 "kms",
+						"description":          "kms",
 					},
 					},
 				}),
@@ -137,6 +161,10 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 						"data_disk.0.size":                 "20",
 						"data_disk.0.category":             "cloud_ssd",
 						"data_disk.0.delete_with_instance": "false",
+						"data_disk.0.encrypted":            "true",
+						"data_disk.0.kms_key_id":           CHECKSET,
+						"data_disk.0.name":                 "kms",
+						"data_disk.0.description":          "kms",
 					}),
 				),
 			},
@@ -258,6 +286,8 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 					"override":                   "true",
 					"system_disk_size":           "100",
 					"password_inherit":           "false",
+					"system_disk_name":           REMOVEKEY,
+					"system_disk_description":    REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -273,10 +303,16 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 						"data_disk.0.delete_with_instance": REMOVEKEY,
 						"data_disk.0.size":                 REMOVEKEY,
 						"data_disk.0.category":             REMOVEKEY,
+						"data_disk.0.name":                 REMOVEKEY,
+						"data_disk.0.encrypted":            REMOVEKEY,
+						"data_disk.0.description":          REMOVEKEY,
+						"data_disk.0.kms_key_id":           REMOVEKEY,
 						"tags.name":                        REMOVEKEY,
 						"user_data":                        REMOVEKEY,
 						"scaling_configuration_name":       REMOVEKEY,
 						"system_disk_size":                 "100",
+						"system_disk_name":                 REMOVEKEY,
+						"system_disk_description":          REMOVEKEY,
 						"scaling_group_id":                 CHECKSET,
 						"instance_type":                    CHECKSET,
 						"security_group_id":                CHECKSET,
@@ -383,7 +419,11 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
   		most_recent = true
   		owners      = "system"
 	}
-
+	resource "alicloud_kms_key" "key" {
+		description             = "Hello KMS"
+		pending_window_in_days  = "7"
+		key_state               = "Enabled"
+	}
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1

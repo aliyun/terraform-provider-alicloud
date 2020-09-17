@@ -88,6 +88,7 @@ type AllocateCostUnitResourceResourceInstanceList struct {
 	ResourceId     string `name:"ResourceId"`
 	CommodityCode  string `name:"CommodityCode"`
 	ResourceUserId string `name:"ResourceUserId"`
+	ApportionCode  string `name:"ApportionCode"`
 }
 
 // AllocateCostUnitResourceResponse is the response struct for api AllocateCostUnitResource
@@ -106,6 +107,7 @@ func CreateAllocateCostUnitResourceRequest() (request *AllocateCostUnitResourceR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "AllocateCostUnitResource", "", "")
+	request.Method = requests.POST
 	return
 }
 

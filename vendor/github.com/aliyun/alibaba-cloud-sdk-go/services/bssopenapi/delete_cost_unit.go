@@ -96,6 +96,7 @@ func CreateDeleteCostUnitRequest() (request *DeleteCostUnitRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "DeleteCostUnit", "", "")
+	request.Method = requests.POST
 	return
 }
 

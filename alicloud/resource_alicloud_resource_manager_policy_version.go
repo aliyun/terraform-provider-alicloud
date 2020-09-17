@@ -6,8 +6,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudResourceManagerPolicyVersion() *schema.Resource {
@@ -25,9 +25,10 @@ func resourceAlicloudResourceManagerPolicyVersion() *schema.Resource {
 				Computed: true,
 			},
 			"is_default_version": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Default:    false,
+				Deprecated: "Field 'is_default_version' has been deprecated from provider version 1.90.0",
 			},
 			"policy_document": {
 				Type:     schema.TypeString,
@@ -57,6 +58,7 @@ func resourceAlicloudResourceManagerPolicyVersionCreate(d *schema.ResourceData, 
 	}
 	request.PolicyDocument = d.Get("policy_document").(string)
 	request.PolicyName = d.Get("policy_name").(string)
+
 	raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
 		return resourcemanagerClient.CreatePolicyVersion(request)
 	})

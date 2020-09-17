@@ -9,9 +9,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -157,6 +157,22 @@ func TestAccAlicloudDisk_basic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccDiskConfig_performance_level(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"performance_level": "PL2",
+					}),
+				),
+			},
+			{
+				Config: testAccDiskConfig_kms_key_id(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kms_key_id": CHECKSET,
+					}),
+				),
+			},
+			{
 				Config: testAccDiskConfig_name(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -287,6 +303,45 @@ data "alicloud_zones" "default" {
 resource "alicloud_disk" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   	size = "70"
+	resource_group_id = "%s"
+}
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
+
+func testAccDiskConfig_performance_level() string {
+	return fmt.Sprintf(`
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
+}
+
+
+resource "alicloud_disk" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	size = "70"
+    category = "cloud_essd"
+    performance_level = "PL2"
+	resource_group_id = "%s"
+}
+`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))
+}
+
+func testAccDiskConfig_kms_key_id() string {
+	return fmt.Sprintf(`
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
+}
+
+resource "alicloud_kms_key" "key" {
+	description             = "Hello KMS"
+	pending_window_in_days  = "7"
+	key_state               = "Enabled"
+}
+
+resource "alicloud_disk" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	size = "70"
+	encrypted = true
+	kms_key_id = "${alicloud_kms_key.key.id}"
 	resource_group_id = "%s"
 }
 `, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"))

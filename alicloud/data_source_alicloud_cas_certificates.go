@@ -6,8 +6,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func dataSourceAlicloudCasCertificates() *schema.Resource {
@@ -149,7 +149,7 @@ func dataSourceAlicloudCascertsRead(d *schema.ResourceData, meta interface{}) er
 		}
 
 		if len(idsMap) > 0 {
-			if _, ok := idsMap[strconv.Itoa(cert.Id)]; !ok {
+			if _, ok := idsMap[strconv.FormatInt(cert.Id, 10)]; !ok {
 				continue
 			}
 		}
@@ -171,7 +171,7 @@ func dataSourceAlicloudCascertsRead(d *schema.ResourceData, meta interface{}) er
 			"buy_in_aliyun": cert.BuyInAliyun,
 		}
 		s = append(s, mapping)
-		ids = append(ids, strconv.Itoa(cert.Id))
+		ids = append(ids, strconv.FormatInt(cert.Id, 10))
 		names = append(names, cert.Name)
 	}
 

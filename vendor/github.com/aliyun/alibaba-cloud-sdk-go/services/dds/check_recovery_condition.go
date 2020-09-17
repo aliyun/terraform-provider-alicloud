@@ -77,6 +77,7 @@ func (client *Client) CheckRecoveryConditionWithCallback(request *CheckRecoveryC
 type CheckRecoveryConditionRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	DatabaseNames        string           `position:"Query" name:"DatabaseNames"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	RestoreTime          string           `position:"Query" name:"RestoreTime"`
@@ -100,7 +101,8 @@ func CreateCheckRecoveryConditionRequest() (request *CheckRecoveryConditionReque
 	request = &CheckRecoveryConditionRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Dds", "2015-12-01", "CheckRecoveryCondition", "dds", "openAPI")
+	request.InitWithApiInfo("Dds", "2015-12-01", "CheckRecoveryCondition", "Dds", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_actiontrail
 
+-> **DEPRECATED:**  This resource has been renamed to [alicloud_actiontrail_trail](https://www.terraform.io/docs/providers/alicloud/r/actiontrail_trail.html) from version 1.95.0. 
+
 Provides a new resource to manage [Action Trail](https://www.alibabacloud.com/help/doc-detail/28804.htm).
 
 -> **NOTE:** Available in 1.35.0+
@@ -20,8 +22,8 @@ Provides a new resource to manage [Action Trail](https://www.alibabacloud.com/he
 resource "alicloud_actiontrail" "foo" {
   name            = "action-trail"
   event_rw        = "Write-test"
-  oss_bucket_name = "${alicloud_oss_bucket.bucket.id}"
-  role_name       = "${alicloud_ram_role_policy_attachment.attach.role_name}"
+  oss_bucket_name = alicloud_oss_bucket.bucket.id
+  role_name       = alicloud_ram_role_policy_attachment.attach.role_name
   oss_key_prefix  = "at-product-account-audit-B"
 }
 ```

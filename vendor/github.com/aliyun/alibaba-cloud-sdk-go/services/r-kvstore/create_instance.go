@@ -84,6 +84,7 @@ type CreateInstanceRequest struct {
 	Password             string           `position:"Query" name:"Password"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	BusinessInfo         string           `position:"Query" name:"BusinessInfo"`
+	ShardCount           requests.Integer `position:"Query" name:"ShardCount"`
 	AutoRenewPeriod      string           `position:"Query" name:"AutoRenewPeriod"`
 	Period               string           `position:"Query" name:"Period"`
 	BackupId             string           `position:"Query" name:"BackupId"`
@@ -98,11 +99,14 @@ type CreateInstanceRequest struct {
 	InstanceClass        string           `position:"Query" name:"InstanceClass"`
 	Capacity             requests.Integer `position:"Query" name:"Capacity"`
 	InstanceType         string           `position:"Query" name:"InstanceType"`
+	DedicatedHostGroupId string           `position:"Query" name:"DedicatedHostGroupId"`
 	RestoreTime          string           `position:"Query" name:"RestoreTime"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	SrcDBInstanceId      string           `position:"Query" name:"SrcDBInstanceId"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
+	GlobalInstance       requests.Boolean `position:"Query" name:"GlobalInstance"`
 	Token                string           `position:"Query" name:"Token"`
+	GlobalInstanceId     string           `position:"Query" name:"GlobalInstanceId"`
 	VpcId                string           `position:"Query" name:"VpcId"`
 	ChargeType           string           `position:"Query" name:"ChargeType"`
 	Config               string           `position:"Query" name:"Config"`
@@ -140,6 +144,7 @@ func CreateCreateInstanceRequest() (request *CreateInstanceRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("R-kvstore", "2015-01-01", "CreateInstance", "redisa", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

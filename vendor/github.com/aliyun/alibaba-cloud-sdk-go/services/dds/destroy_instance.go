@@ -78,6 +78,7 @@ type DestroyInstanceRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ClientToken          string           `position:"Query" name:"ClientToken"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
@@ -97,7 +98,8 @@ func CreateDestroyInstanceRequest() (request *DestroyInstanceRequest) {
 	request = &DestroyInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Dds", "2015-12-01", "DestroyInstance", "dds", "openAPI")
+	request.InitWithApiInfo("Dds", "2015-12-01", "DestroyInstance", "Dds", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

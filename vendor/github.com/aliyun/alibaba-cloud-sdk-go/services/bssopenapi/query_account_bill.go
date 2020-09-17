@@ -80,6 +80,7 @@ type QueryAccountBillRequest struct {
 	BillingCycle     string           `position:"Query" name:"BillingCycle"`
 	PageNum          requests.Integer `position:"Query" name:"PageNum"`
 	OwnerID          requests.Integer `position:"Query" name:"OwnerID"`
+	BillOwnerId      requests.Integer `position:"Query" name:"BillOwnerId"`
 	IsGroupByProduct requests.Boolean `position:"Query" name:"IsGroupByProduct"`
 	PageSize         requests.Integer `position:"Query" name:"PageSize"`
 }
@@ -100,6 +101,7 @@ func CreateQueryAccountBillRequest() (request *QueryAccountBillRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "QueryAccountBill", "", "")
+	request.Method = requests.POST
 	return
 }
 

@@ -86,6 +86,7 @@ type DescribeStorageCapacityUnitsRequest struct {
 	OwnerId               requests.Integer `position:"Query" name:"OwnerId"`
 	Name                  string           `position:"Query" name:"Name"`
 	Status                *[]string        `position:"Query" name:"Status"  type:"Repeated"`
+	AllocationType        string           `position:"Query" name:"AllocationType"`
 }
 
 // DescribeStorageCapacityUnitsResponse is the response struct for api DescribeStorageCapacityUnits
@@ -104,6 +105,7 @@ func CreateDescribeStorageCapacityUnitsRequest() (request *DescribeStorageCapaci
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Ecs", "2014-05-26", "DescribeStorageCapacityUnits", "ecs", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

@@ -78,6 +78,7 @@ type DescribeBackupDBsRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 	RestoreTime          string           `position:"Query" name:"RestoreTime"`
@@ -103,7 +104,8 @@ func CreateDescribeBackupDBsRequest() (request *DescribeBackupDBsRequest) {
 	request = &DescribeBackupDBsRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Dds", "2015-12-01", "DescribeBackupDBs", "dds", "openAPI")
+	request.InitWithApiInfo("Dds", "2015-12-01", "DescribeBackupDBs", "Dds", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

@@ -4,9 +4,9 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type CbnService struct {
@@ -233,6 +233,83 @@ func (s *CbnService) DescribeCenPrivateZone(id string) (object cbn.PrivateZoneIn
 func (s *CbnService) CenPrivateZoneStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenPrivateZone(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+		return object, object.Status, nil
+	}
+}
+
+func (s *CbnService) DescribeCenVbrHealthCheck(id string) (object cbn.VbrHealthCheck, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := cbn.CreateDescribeCenVbrHealthCheckRequest()
+	request.RegionId = s.client.RegionId
+	request.VbrInstanceId = parts[0]
+	request.VbrInstanceRegionId = parts[1]
+
+	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		return cbnClient.DescribeCenVbrHealthCheck(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*cbn.DescribeCenVbrHealthCheckResponse)
+
+	if len(response.VbrHealthChecks.VbrHealthCheck) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("CenVbrHealthCheck", id)), NotFoundMsg, ProviderERROR)
+		return
+	}
+	return response.VbrHealthChecks.VbrHealthCheck[0], nil
+}
+
+func (s *CbnService) DescribeCenInstanceAttachment(id string) (object cbn.DescribeCenAttachedChildInstanceAttributeResponse, err error) {
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := cbn.CreateDescribeCenAttachedChildInstanceAttributeRequest()
+	request.RegionId = s.client.RegionId
+	request.ChildInstanceId = parts[1]
+	request.ChildInstanceRegionId = parts[3]
+	request.ChildInstanceType = parts[2]
+	request.CenId = parts[0]
+
+	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		return cbnClient.DescribeCenAttachedChildInstanceAttribute(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId", "ParameterError", "ParameterInstanceId"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("CenInstanceAttachment", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*cbn.DescribeCenAttachedChildInstanceAttributeResponse)
+	return *response, nil
+}
+
+func (s *CbnService) CenInstanceAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenInstanceAttachment(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.

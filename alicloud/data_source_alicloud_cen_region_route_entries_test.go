@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudCenRegionRouteEntriesDataSource(t *testing.T) {
@@ -61,6 +61,7 @@ func testAccCheckCenRegionRouteEntriesDataSourceConfig(rand int, attrMap map[str
 	resource "alicloud_cen_instance_attachment" "default" {
 	    instance_id = "${alicloud_cen_instance.default.id}"
 	    child_instance_id = "${alicloud_vpc.default.id}"
+	    child_instance_type = "VPC"
 	    child_instance_region_id = "%s"
 	    depends_on = [
 	        "alicloud_vswitch.default"]

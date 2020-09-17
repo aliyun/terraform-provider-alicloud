@@ -23,29 +23,34 @@ databases.
 variable "name" {
   default = "polardbClusterconfig"
 }
+
 variable "creation" {
   default = "PolarDB"
 }
+
 data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+  available_resource_creation = var.creation
 }
+
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
+
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones[0].id
+  name              = var.name
 }
+
 resource "alicloud_polardb_cluster" "default" {
-  db_type               = "MySQL"
-  db_version            = "5.6"
-  db_node_class         = "rds.mysql.s2.large"
-  pay_type              = "PostPaid"
-  description           = "${var.name}"
-  vswitch_id            = "${alicloud_vswitch.default.id}"
+  db_type       = "MySQL"
+  db_version    = "5.6"
+  db_node_class = "rds.mysql.s2.large"
+  pay_type      = "PostPaid"
+  description   = var.name
+  vswitch_id    = alicloud_vswitch.default.id
 }
 ```
 
@@ -56,13 +61,16 @@ The following arguments are supported:
 * `db_type` - (Required,ForceNew) Database type. Value options: MySQL, Oracle, PostgreSQL.
 * `db_version` - (Required,ForceNew) Database version. Value options can refer to the latest docs [CreateDBCluster](https://help.aliyun.com/document_detail/98169.html) `DBVersion`.
 * `db_node_class` - (Required) The db_node_class of cluster node.
-* `modify_type` - (Optional, Available in 1.71.2+) Use as `db_node_class` change class , define upgrade or downgrade.  Valid values are `Upgrade`, `Downgrade`, Default to `Upgrade`.
+* `modify_type` - (Optional, Available in 1.71.2+) Use as `db_node_class` change class, define upgrade or downgrade. Valid values are `Upgrade`, `Downgrade`, Default to `Upgrade`.
+* `db_node_count` - (Optional, Available in 1.95.0+)Number of the PolarDB cluster nodes, default is 2(Each cluster must contain at least a primary node and a read-only node). Add/remove nodes by modifying this parameter, valid values: [2~16].
+    **NOTE:** To avoid adding or removing multiple read-only nodes by mistake, the system allows you to add or remove one read-only node at a time.
 * `zone_id` - (Optional) The Zone to launch the DB cluster. it supports multiple zone.
 * `pay_type` - (Optional,ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`. Currently, the resource can not supports change pay type.
 * `renewal_status` - (Optional) Valid values are `AutoRenewal`, `Normal`, `NotRenewal`, Default to `NotRenewal`.
 * `auto_renew_period` - (Optional) Auto-renewal period of an cluster, in the unit of the month. It is valid when pay_type is `PrePaid`. Valid value:1, 2, 3, 6, 12, 24, 36, Default to 1.
 * `period` - (Optional) The duration that you will buy DB cluster (in month). It is valid when pay_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of an cluster. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
+* `resource_group_id` (Optional, ForceNew, Computed, Available in 1.96.0+) The ID of resource group which the PolarDB cluster belongs. If not specified, then it belongs to the default resource group.
 * `vswitch_id` - (Optional) The virtual switch ID to launch DB instances in one VPC.
 * `maintain_time` - (Optional) Maintainable time period format of the instance: HH:MMZ-HH:MMZ (UTC time)
 * `description` - (Optional) The description of cluster.

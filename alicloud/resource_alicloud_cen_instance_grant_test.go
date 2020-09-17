@@ -5,13 +5,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudCenInstanceGrant_basic(t *testing.T) {
@@ -171,6 +171,7 @@ func testAccCenInstanceGrantBasic(access, secret, uid1, uid2 string, rand int) s
         provider = "alicloud.account2"
         instance_id = "${alicloud_cen_instance.cen.id}"
         child_instance_id = "${alicloud_vpc.vpc.id}"
+	    child_instance_type = "VPC"
         child_instance_region_id = "cn-qingdao"
         child_instance_owner_id = "%s"
         depends_on = [

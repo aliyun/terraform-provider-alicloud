@@ -79,6 +79,7 @@ type CreateDiagnosticReportRequest struct {
 	EndTime      string `position:"Query" name:"EndTime"`
 	StartTime    string `position:"Query" name:"StartTime"`
 	DBInstanceId string `position:"Query" name:"DBInstanceId"`
+	Category     string `position:"Query" name:"Category"`
 }
 
 // CreateDiagnosticReportResponse is the response struct for api CreateDiagnosticReport
@@ -94,6 +95,7 @@ func CreateCreateDiagnosticReportRequest() (request *CreateDiagnosticReportReque
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Rds", "2014-08-15", "CreateDiagnosticReport", "rds", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

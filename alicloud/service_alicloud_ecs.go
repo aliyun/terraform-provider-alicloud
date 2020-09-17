@@ -12,9 +12,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type EcsService struct {
@@ -133,7 +133,7 @@ func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err err
 		return
 	}
 	if len(response.Instances.Instance) < 1 {
-		return instance, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR)
+		return instance, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	}
 
 	return response.Instances.Instance[0], nil
@@ -152,7 +152,7 @@ func (s *EcsService) DescribeInstanceAttribute(id string) (instance ecs.Describe
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ecs.DescribeInstanceAttributeResponse)
 	if response.InstanceId != id {
-		return instance, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR)
+		return instance, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	}
 
 	return *response, nil
@@ -163,7 +163,8 @@ func (s *EcsService) DescribeInstanceSystemDisk(id, rg string) (disk ecs.Disk, e
 	request.InstanceId = id
 	request.DiskType = string(DiskTypeSystem)
 	request.RegionId = s.client.RegionId
-	request.ResourceGroupId = rg
+	// resource_group_id may cause failure to query the system disk of the instance, because the newly created instance may fail to query through the resource_group_id parameter, so temporarily remove this parameter.
+	// request.ResourceGroupId = rg
 	var response *ecs.DescribeDisksResponse
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
@@ -186,7 +187,7 @@ func (s *EcsService) DescribeInstanceSystemDisk(id, rg string) (disk ecs.Disk, e
 		return disk, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	if len(response.Disks.Disk) < 1 || response.Disks.Disk[0].InstanceId != id {
-		return disk, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR)
+		return disk, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	}
 	return response.Disks.Disk[0], nil
 }
@@ -262,7 +263,7 @@ func (s *EcsService) DescribeSecurityGroup(id string) (group ecs.DescribeSecurit
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
 	if response.SecurityGroupId != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("Security Group", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("Security Group", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 
@@ -317,7 +318,7 @@ func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, 
 		}
 	}
 
-	return rule, WrapErrorf(Error(GetNotFoundMessage("Security Group Rule", id)), NotFoundMsg, ProviderERROR)
+	return rule, WrapErrorf(Error(GetNotFoundMessage("Security Group Rule", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 
 }
 
@@ -492,7 +493,7 @@ func (s *EcsService) DescribeKeyPair(id string) (keyPair ecs.KeyPair, err error)
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	object, _ := raw.(*ecs.DescribeKeyPairsResponse)
 	if len(object.KeyPairs.KeyPair) < 1 || object.KeyPairs.KeyPair[0].KeyPairName != id {
-		return keyPair, WrapErrorf(Error(GetNotFoundMessage("KeyPair", id)), NotFoundMsg, ProviderERROR)
+		return keyPair, WrapErrorf(Error(GetNotFoundMessage("KeyPair", id)), NotFoundMsg, ProviderERROR, object.RequestId)
 	}
 	return object.KeyPairs.KeyPair[0], nil
 
@@ -530,7 +531,7 @@ func (s *EcsService) DescribeDisk(id string) (disk ecs.Disk, err error) {
 	}
 	response, _ := raw.(*ecs.DescribeDisksResponse)
 	if len(response.Disks.Disk) < 1 || response.Disks.Disk[0].DiskId != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("Disk", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("Disk", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -708,7 +709,7 @@ func (s *EcsService) DescribeNetworkInterface(id string) (networkInterface ecs.N
 	response := raw.(*ecs.DescribeNetworkInterfacesResponse)
 	if len(response.NetworkInterfaceSets.NetworkInterfaceSet) < 1 ||
 		response.NetworkInterfaceSets.NetworkInterfaceSet[0].NetworkInterfaceId != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("NetworkInterface", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("NetworkInterface", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 
@@ -738,7 +739,7 @@ func (s *EcsService) DescribeNetworkInterfaceAttachment(id string) (networkInter
 	response := raw.(*ecs.DescribeNetworkInterfacesResponse)
 	if len(response.NetworkInterfaceSets.NetworkInterfaceSet) < 1 ||
 		response.NetworkInterfaceSets.NetworkInterfaceSet[0].NetworkInterfaceId != eniId {
-		err = WrapErrorf(Error(GetNotFoundMessage("NetworkInterfaceAttachment", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("NetworkInterfaceAttachment", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 
@@ -1135,7 +1136,7 @@ func (s *EcsService) DescribeSnapshot(id string) (*ecs.Snapshot, error) {
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response := raw.(*ecs.DescribeSnapshotsResponse)
 	if len(response.Snapshots.Snapshot) != 1 || response.Snapshots.Snapshot[0].SnapshotId != id {
-		return snapshot, WrapErrorf(Error(GetNotFoundMessage("Snapshot", id)), NotFoundMsg, ProviderERROR)
+		return snapshot, WrapErrorf(Error(GetNotFoundMessage("Snapshot", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	}
 	return &response.Snapshots.Snapshot[0], nil
 }
@@ -1156,7 +1157,7 @@ func (s *EcsService) DescribeSnapshotPolicy(id string) (*ecs.AutoSnapshotPolicy,
 	response := raw.(*ecs.DescribeAutoSnapshotPolicyExResponse)
 	if len(response.AutoSnapshotPolicies.AutoSnapshotPolicy) != 1 ||
 		response.AutoSnapshotPolicies.AutoSnapshotPolicy[0].AutoSnapshotPolicyId != id {
-		return policy, WrapErrorf(Error(GetNotFoundMessage("SnapshotPolicy", id)), NotFoundMsg, ProviderERROR)
+		return policy, WrapErrorf(Error(GetNotFoundMessage("SnapshotPolicy", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	}
 
 	return &response.AutoSnapshotPolicies.AutoSnapshotPolicy[0], nil
@@ -1249,7 +1250,7 @@ func (s *EcsService) DescribeLaunchTemplate(id string) (set ecs.LaunchTemplateSe
 	response := raw.(*ecs.DescribeLaunchTemplatesResponse)
 	if len(response.LaunchTemplateSets.LaunchTemplateSet) != 1 ||
 		response.LaunchTemplateSets.LaunchTemplateSet[0].LaunchTemplateId != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("LaunchTemplate", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("LaunchTemplate", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 
@@ -1278,7 +1279,7 @@ func (s *EcsService) DescribeLaunchTemplateVersion(id string, version int) (set 
 	response := raw.(*ecs.DescribeLaunchTemplateVersionsResponse)
 	if len(response.LaunchTemplateVersionSets.LaunchTemplateVersionSet) != 1 ||
 		response.LaunchTemplateVersionSets.LaunchTemplateVersionSet[0].LaunchTemplateId != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("LaunchTemplateVersion", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("LaunchTemplateVersion", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 
@@ -1330,7 +1331,7 @@ func (s *EcsService) DescribeImageShareByImageId(id string) (imageShare *ecs.Des
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ecs.DescribeImageSharePermissionResponse)
 	if len(resp.Accounts.Account) == 0 {
-		return imageShare, WrapErrorf(Error(GetNotFoundMessage("ModifyImageSharePermission", id)), NotFoundMsg, ProviderERROR)
+		return imageShare, WrapErrorf(Error(GetNotFoundMessage("ModifyImageSharePermission", id)), NotFoundMsg, ProviderERROR, resp.RequestId)
 	}
 	return resp, nil
 }
@@ -1378,7 +1379,7 @@ func (s *EcsService) DescribeAutoProvisioningGroup(id string) (group ecs.AutoPro
 			return v, nil
 		}
 	}
-	err = WrapErrorf(Error(GetNotFoundMessage("AutoProvisioningGroup", id)), NotFoundMsg, ProviderERROR)
+	err = WrapErrorf(Error(GetNotFoundMessage("AutoProvisioningGroup", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	return
 }
 
@@ -1404,4 +1405,119 @@ func (s *EcsService) ecsTagIgnored(t ecs.Tag) bool {
 		}
 	}
 	return false
+}
+
+func (s *EcsService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+	oldItems, newItems := d.GetChange("tags")
+	added := make([]ecs.TagResourcesTag, 0)
+	for key, value := range newItems.(map[string]interface{}) {
+		added = append(added, ecs.TagResourcesTag{
+			Key:   key,
+			Value: value.(string),
+		})
+	}
+	removed := make([]string, 0)
+	for key, _ := range oldItems.(map[string]interface{}) {
+		removed = append(removed, key)
+	}
+	if len(removed) > 0 {
+		request := ecs.CreateUntagResourcesRequest()
+		request.RegionId = s.client.RegionId
+		request.ResourceId = &[]string{d.Id()}
+		request.ResourceType = resourceType
+		request.TagKey = &removed
+		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.UntagResources(request)
+		})
+		addDebug(request.GetActionName(), raw)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidRegionId.NotFound", "InvalidResourceId.NotFound", "InvalidResourceType.NotFound", "MissingParameter.RegionId", "MissingParameter.ResourceIds", "MissingParameter.ResourceType", "MissingParameter.TagOwnerBid", "MissingParameter.TagOwnerUid", "MissingParameter.Tags"}) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+	}
+	if len(added) > 0 {
+		request := ecs.CreateTagResourcesRequest()
+		request.RegionId = s.client.RegionId
+		request.ResourceId = &[]string{d.Id()}
+		request.ResourceType = resourceType
+		request.Tag = &added
+		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.TagResources(request)
+		})
+		addDebug(request.GetActionName(), raw)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidRegionId.NotFound", "InvalidResourceId.NotFound", "InvalidResourceType.NotFound", "MissingParameter.RegionId", "MissingParameter.ResourceIds", "MissingParameter.ResourceType", "MissingParameter.TagOwnerBid", "MissingParameter.TagOwnerUid", "MissingParameter.Tags"}) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+	}
+	return nil
+}
+
+func (s *EcsService) DescribeEcsDedicatedHost(id string) (object ecs.DedicatedHost, err error) {
+	request := ecs.CreateDescribeDedicatedHostsRequest()
+	request.RegionId = s.client.RegionId
+
+	request.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(20)
+	response := new(ecs.DescribeDedicatedHostsResponse)
+	for {
+
+		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeDedicatedHosts(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidLockReason.NotFound"}) {
+				err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR)
+				return object, err
+			}
+			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return object, err
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*ecs.DescribeDedicatedHostsResponse)
+
+		if len(response.DedicatedHosts.DedicatedHost) < 1 {
+			err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+			return object, err
+		}
+		for _, object := range response.DedicatedHosts.DedicatedHost {
+			if object.DedicatedHostId == id {
+				return object, nil
+			}
+		}
+		if len(response.DedicatedHosts.DedicatedHost) < PageSizeMedium {
+			break
+		}
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return object, WrapError(err)
+		} else {
+			request.PageNumber = page
+		}
+	}
+	err = WrapErrorf(Error(GetNotFoundMessage("EcsDedicatedHost", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+	return
+}
+
+func (s *EcsService) EcsDedicatedHostStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEcsDedicatedHost(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+		return object, object.Status, nil
+	}
 }

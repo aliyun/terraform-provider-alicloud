@@ -15,7 +15,7 @@ transparent read/write splitting, and distributed transactions, providing O&M ca
 
 For information about DRDS and how to use it, see [What is DRDS](https://www.alibabacloud.com/help/doc-detail/29659.htm).
 
--> **NOTE:** At present, DRDS instance only can be supported in the regions: cn-shenzhen, cn-beijing, cn-hangzhou, cn-hongkong, cn-qingdao.
+-> **NOTE:** At present, DRDS instance only can be supported in the regions: cn-shenzhen, cn-beijing, cn-hangzhou, cn-hongkong, cn-qingdao, ap-southeast-1.
 
 -> **NOTE:** Currently, this resource only support `Domestic Site Account`.
 
@@ -37,9 +37,9 @@ resource "alicloud_drds_instance" "default" {
 The following arguments are supported:
 
 * `description` - (Required) Description of the DRDS instance, This description can have a string of 2 to 256 characters.
-* `zone_id` - (Optional, ForceNew) The Zone to launch the DRDS instance.
+* `zone_id` - (Required from v1.91.0, ForceNew) The Zone to launch the DRDS instance.
 * `instance_charge_type` -  (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
-* `vswitch_id` - (Optional, ForceNew) The VSwitch ID to launch in.
+* `vswitch_id` - (Required from v1.91.0, ForceNew) The VSwitch ID to launch in.
 * `instance_series` - (Required, ForceNew) User-defined DRDS instance node spec. Value range:
     - `drds.sn1.4c8g` for DRDS instance Starter version;
     - `drds.sn1.8c16g` for DRDS instance Standard edition;

@@ -5,7 +5,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cas"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type CasService struct {
@@ -31,7 +31,7 @@ func (s *CasService) DescribeCas(id string) (*cas.Certificate, error) {
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		res, _ := raw.(*cas.DescribeUserCertificateListResponse)
 		for _, v := range res.CertificateList {
-			if id == strconv.Itoa(v.Id) {
+			if id == strconv.FormatInt(v.Id, 10) {
 				return &v, nil
 			}
 		}

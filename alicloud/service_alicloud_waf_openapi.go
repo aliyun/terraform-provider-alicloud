@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	waf_openapi "github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type Waf_openapiService struct {
@@ -42,7 +42,7 @@ func (s *Waf_openapiService) DescribeWafDomain(id string) (object waf_openapi.Do
 		return waf_openapiClient.DescribeDomain(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"DomainNotExist"}) {
+		if IsExpectedErrors(err, []string{"ComboError", "DomainNotExist"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("WafDomain", id)), NotFoundMsg, ProviderERROR)
 			return
 		}
@@ -70,7 +70,7 @@ func (s *Waf_openapiService) DescribeWafInstance(id string) (object waf_openapi.
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*waf_openapi.DescribeInstanceInfoResponse)
 	if response != nil && response.InstanceInfo.InstanceId != id {
-		err = WrapErrorf(Error(GetNotFoundMessage("WafInstance", id)), NotFoundMsg, ProviderERROR)
+		err = WrapErrorf(Error(GetNotFoundMessage("WafInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
 	return *response, nil

@@ -1,19 +1,23 @@
 package alicloud
 
 import (
+	"log"
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunEipAssociation() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunEipAssociationCreate,
 		Read:   resourceAliyunEipAssociationRead,
+		Update: resourceAliyunEipAssociationUpdate,
 		Delete: resourceAliyunEipAssociationDelete,
 
 		Schema: map[string]*schema.Schema{
@@ -34,6 +38,12 @@ func resourceAliyunEipAssociation() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
+			},
+
+			"force": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 
 			"private_ip_address": {
@@ -113,6 +123,12 @@ func resourceAliyunEipAssociationRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("instance_id", object.InstanceId)
 	d.Set("allocation_id", object.AllocationId)
 	d.Set("instance_type", object.InstanceType)
+	d.Set("force", d.Get("force").(bool))
+	return nil
+}
+
+func resourceAliyunEipAssociationUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] The update method is used to ensure that the force parameter does not need to add forcenew.")
 	return nil
 }
 
@@ -133,6 +149,7 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 	request.AllocationId = allocationId
 	request.InstanceId = instanceId
 	request.InstanceType = EcsInstance
+	request.Force = requests.NewBoolean(d.Get("force").(bool))
 	request.ClientToken = buildClientToken(request.GetActionName())
 
 	if strings.HasPrefix(instanceId, "lb-") {

@@ -26,7 +26,7 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones[0].id
   cpu_core_count    = 2
   memory_size       = 4
 }
@@ -38,20 +38,20 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "${var.name}"
+  name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+  vpc_id            = alicloud_vpc.default.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name              = "${var.name}"
+  availability_zone = data.alicloud_zones.default.zones[0].id
+  name              = var.name
 }
 
 resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -61,27 +61,26 @@ resource "alicloud_security_group_rule" "default" {
   policy            = "accept"
   port_range        = "22/22"
   priority          = 1
-  security_group_id = "${alicloud_security_group.default.id}"
+  security_group_id = alicloud_security_group.default.id
   cidr_ip           = "172.16.0.0/24"
 }
 
 resource "alicloud_ess_scaling_group" "default" {
   min_size           = 1
   max_size           = 1
-  scaling_group_name = "${var.name}"
+  scaling_group_name = var.name
   removal_policies   = ["OldestInstance", "NewestInstance"]
-  vswitch_ids        = ["${alicloud_vswitch.default.id}"]
+  vswitch_ids        = [alicloud_vswitch.default.id]
 }
 
 resource "alicloud_ess_scaling_configuration" "default" {
-  scaling_group_id  = "${alicloud_ess_scaling_group.default.id}"
-  image_id          = "${data.alicloud_images.default.images.0.id}"
-  instance_type     = "${data.alicloud_instance_types.default.instance_types.0.id}"
-  security_group_id = "${alicloud_security_group.default.id}"
+  scaling_group_id  = alicloud_ess_scaling_group.default.id
+  image_id          = data.alicloud_images.default.images[0].id
+  instance_type     = data.alicloud_instance_types.default.instance_types[0].id
+  security_group_id = alicloud_security_group.default.id
   force_delete      = true
   active            = true
 }
-
 ```
 
 ## Module Support
@@ -94,7 +93,8 @@ to create a configuration, scaling group and lifecycle hook one-click.
 The following arguments are supported:
 
 * `scaling_group_id` - (Required, ForceNew) ID of the scaling group of a scaling configuration.
-* `image_id` - (Required) ID of an image file, indicating the image resource selected when an instance is enabled.
+* `image_id` - (Optional) ID of an image file, indicating the image resource selected when an instance is enabled.
+* `image_name` - (Optional, Available in 1.92.0+) Name of an image file, indicating the image resource selected when an instance is enabled.
 * `instance_type` - (Optional) Resource type of an ECS instance.
 * `instance_types` - (Optional, Available in 1.46.0+) Resource types of an ECS instance.
 * `instance_name` - (Optional) Name of an ECS instance. Default to "ESS-Instance". It is valid from version 1.7.1.
@@ -108,6 +108,9 @@ The following arguments are supported:
 * `internet_max_bandwidth_out` - (Optional) Maximum outgoing bandwidth from the public network, measured in Mbps (Mega bit per second). The value range for PayByBandwidth is [0,100].
 * `system_disk_category` - (Optional) Category of the system disk. The parameter value options are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd` and `cloud`. `cloud` only is used to some no I/O optimized instance. Default to `cloud_efficiency`.
 * `system_disk_size` - (Optional) Size of system disk, in GiB. Optional values: cloud: 20-500, cloud_efficiency: 20-500, cloud_ssd: 20-500, ephemeral_ssd: 20-500 The default value is max{40, ImageSize}. If this parameter is set, the system disk size must be greater than or equal to max{40, ImageSize}.
+* `system_disk_name` - (Optional, Available in 1.92.0+) The name of the system disk. It must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-). Default value: null.
+* `system_disk_description` - (Optional, Available in 1.92.0+) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
+* `system_disk_auto_snapshot_policy_id` - (Optional, Available in 1.92.0+) The id of auto snapshot policy for system disk.
 * `enable` - (Optional) Whether enable the specified scaling group(make it active) to which the current scaling configuration belongs.
 * `active` - (Optional) Whether active current scaling configuration in the specified scaling group. Default to `false`.
 * `substitute` - (Optional) The another scaling configuration which will be active automatically and replace current configuration when setting `active` to 'false'. It is invalid when `active` is 'true'.
@@ -146,9 +149,15 @@ The following arguments are supported:
 The datadisk mapping supports the following:
 
 * `size` - (Optional) Size of data disk, in GB. The value ranges [5,2000] for a cloud disk, [5,1024] for an ephemeral disk, [5,800] for an ephemeral_ssd disk, [20,32768] for cloud_efficiency, cloud_ssd, cloud_essd disk. 
+* `device` - (Optional, Available in 1.92.0+) The mount point of data disk N. Valid values of N: 1 to 16. If this parameter is not specified, the system automatically allocates a mount point to created ECS instances. The name of the mount point ranges from /dev/xvdb to /dev/xvdz in alphabetical order.
 * `category` - (Optional) Category of data disk. The parameter value options are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd` and `cloud`.
 * `snapshot_id` - (Optional) Snapshot used for creating the data disk. If this parameter is specified, the size parameter is neglected, and the size of the created disk is the size of the snapshot. 
 * `delete_with_instance` - (Optional) Whether to delete data disks attached on ecs when release ecs instance. Optional value: `true` or `false`, default to `true`.
+* `encrypted` - (Optional, Available in 1.92.0+) Specifies whether data disk N is to be encrypted. Valid values of N: 1 to 16. Valid values: `true`: encrypted, `false`: not encrypted. Default value: `false`.
+* `kms_key_id` - (Optional, Available in 1.92.0+) The CMK ID for data disk N. Valid values of N: 1 to 16.
+* `name` - (Optional, Available in 1.92.0+) The name of data disk N. Valid values of N: 1 to 16. It must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-). Default value: null.
+* `description` - (Optional, Available in 1.92.0+) The description of data disk N. Valid values of N: 1 to 16. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
+* `auto_snapshot_policy_id` - (Optional, Available in 1.92.0+) The id of auto snapshot policy for data disk.
 
 ## Attributes Reference
 
@@ -165,3 +174,4 @@ $ terraform import alicloud_ess_scaling_configuration.example asg-abc123456
 ```
 
 -> **NOTE:** Available in 1.46.0+
+

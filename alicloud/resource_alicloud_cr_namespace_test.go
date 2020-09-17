@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -40,6 +40,7 @@ func testSweepCRNamespace(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
+		"tf_testAcc",
 	}
 
 	req := cr.CreateGetNamespaceListRequest()

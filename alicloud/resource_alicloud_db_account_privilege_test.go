@@ -4,18 +4,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDBAccountPrivilege_mysql(t *testing.T) {
 
 	var v *rds.DBInstanceAccount
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testacc%sdnsrecordbasic%v.abc", defaultRegionToTest, rand)
+	name := "tf-testAccDBAccountPrivilege_mysql"
 	resourceId := "alicloud_db_account_privilege.default"
 	var basicMap = map[string]string{
 		"instance_id":  CHECKSET,
@@ -94,8 +91,7 @@ func TestAccAlicloudDBAccountPrivilege_mysql(t *testing.T) {
 func TestAccAlicloudDBAccountPrivilege_PostgreSql(t *testing.T) {
 
 	var v *rds.DBInstanceAccount
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testacc%sdnsrecordbasic%v.abc", defaultRegionToTest, rand)
+	name := "tf-testAccDBAccountPrivilege_PostgreSql"
 	resourceId := "alicloud_db_account_privilege.default"
 	var basicMap = map[string]string{
 		"instance_id":  CHECKSET,

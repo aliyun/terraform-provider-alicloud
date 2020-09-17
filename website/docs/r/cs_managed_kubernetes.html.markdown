@@ -98,10 +98,25 @@ The following arguments are supported:
 * `proxy_mode` - Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
 * `image_id` - Custom Image support. Must based on CentOS7 or AliyunLinux2.
 * `user_data` - (Optional, Available in 1.81.0+) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
-
+* `exclude_autoscaler_nodes` - (Optional, Available in 1.88.0+) Exclude autoscaler nodes from `worker_nodes`. default: false 
+* `node_name_mode` - (Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test. 
+* `worker_data_disks` - (Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size. 
+  - category: the type of the data disks. Valid values:
+      + cloud: basic disks.
+      + cloud_efficiency: ultra disks.
+      + cloud_ssd: SSDs.
+  - size: the size of a data disk. Unit: GiB.
+  - encrypted: specifies whether to encrypt data disks. Valid values: true and false.
+* `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
+* `is_enterprise_security_group` - (Optional, Available in 1.91.0+) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
+* `service_account_issuer` - (Optional, ForceNew, Available in 1.92.0+) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `kubernetes.default.svc` to enable the Token Volume Projection feature.
+* `api_audiences` - (Optional, ForceNew, Available in 1.92.0+) A list of API audiences for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm). Set this to `["kubernetes.default.svc"]` if you want to enable the Token Volume Projection feature.
+* `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster .
 
 #### Addons 
 It is a new field since 1.75.0. You can specific network plugin,log component,ingress component and so on.     
+
+-> **NOTE:** If you want to upgrade provider to 1.90.0+, you need to pay attention to the disabled value. If the value is `""`, you need to modify it to `"false"`, and then run `terraform apply` to make it effect. After that, you can modify the provider version to upgrade smoothly. Otherwise, there will throw an error: `Error: a bool is required`.
  
 ```$xslt
   main.tf
@@ -117,7 +132,7 @@ It is a new field since 1.75.0. You can specific network plugin,log component,in
 ```$xslt
     varibales.tf 
     
-    // Flannel 
+    // Network-flannel 
     variable "cluster_addons" {
         description = "Addon components in kubernetes cluster"
     
@@ -130,28 +145,12 @@ It is a new field since 1.75.0. You can specific network plugin,log component,in
             {
                 "name"     = "flannel",
                 "config"   = "",
-            },
-            {
-                "name"     = "flexvolume",
-                "config"   = "",
-            },
-            {
-                "name"     = "alicloud-disk-controller",
-                "config"   = "",
-            },
-            {
-                "name"     = "logtail-ds",
-                "config"   = "{\"IngressDashboardEnabled\":\"true\"}",
-            },
-            {
-                "name"     = "nginx-ingress-controller",
-                "config"   = "{\"IngressSlbNetworkType\":\"internet\"}",
-            },
+            }
         ]
     }
        
     
-    // Terway 
+    // Network-terway 
     variable "cluster_addons" {
         type = list(object({
             name      = string
@@ -162,25 +161,90 @@ It is a new field since 1.75.0. You can specific network plugin,log component,in
             {
                 "name"     = "terway-eniip",
                 "config"   = "",
+            }
+        ]
+    }
+    
+    // Storage-csi
+    variable "cluster_addons" {
+        type = list(object({
+            name      = string
+            config    = string
+        }))
+    
+        default = [
+            {
+                "name"     = "csi-plugin",
+                "config"   = "",
             },
+            {
+                "name"     = "csi-provisioner",
+                "config"   = "",
+            }
+        ]
+    } 
+    
+    // Storage-flexvolume
+    variable "cluster_addons" {
+        type = list(object({
+            name      = string
+            config    = string
+        }))
+    
+        default = [
             {
                 "name"     = "flexvolume",
                 "config"   = "",
-            },
-            {
-                "name"     = "alicloud-disk-controller",
-                "config"   = "",
-            },
+            }
+        ]
+    } 
+    
+    // Log
+    variable "cluster_addons" {
+        type = list(object({
+            name      = string
+            config    = string
+        }))
+    
+        default = [
             {
                 "name"     = "logtail-ds",
-                "config"   = "{\"IngressDashboardEnabled\":\"true\"}",
-            },
+                "config"   = "{\"IngressDashboardEnabled\":\"true\",\"sls_project_name\":\"your-sls-project-name\"}",
+            }
+        ]
+    } 
+    
+    // Ingress
+    variable "cluster_addons" {
+        type = list(object({
+            name      = string
+            config    = string
+        }))
+    
+        default = [
             {
                 "name"     = "nginx-ingress-controller",
                 "config"   = "{\"IngressSlbNetworkType\":\"internet\"}",
             }
         ]
-    }
+    } 
+    
+    // Ingress-Disable
+    variable "cluster_addons" {
+        type = list(object({
+            name      = string
+            config    = string
+            disabled  = bool
+        }))
+    
+        default = [
+            {
+                "name"     = "nginx-ingress-controller",
+                "config"   = "",
+                "disabled" = "false",
+            }
+        ]
+    } 
   
 ```
 * `logtail-ds` - You can specific `IngressDashboardEnabled` and `sls_project_name` in config. If you switch on `IngressDashboardEnabled` and `sls_project_name`,then logtail-ds would use `sls_project_name` as default log store.
@@ -253,6 +317,7 @@ The following attributes are exported:
 * `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
 * `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
 * `version` - The Kubernetes server version for the cluster.
+* `worker_ram_role_name` - The RamRole Name attached to worker node.
 
 ### Block Nodes
 * `id` - ID of the node.

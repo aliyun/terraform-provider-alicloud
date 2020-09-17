@@ -14,11 +14,15 @@ type ServerlessCreationArgs struct {
 	RegionId             string                `json:"region_id"`
 	VpcId                string                `json:"vpc_id"`
 	VSwitchId            string                `json:"vswitch_id"`
+	VswitchIds           []string              `json:"vswitch_ids"`
 	EndpointPublicAccess bool                  `json:"public_slb"`
 	PrivateZone          bool                  `json:"private_zone"`
 	NatGateway           bool                  `json:"nat_gateway"`
+	KubernetesVersion    string                `json:"kubernetes_version"`
 	DeletionProtection   bool                  `json:"deletion_protection"`
+	SecurityGroupId      string                `json:"security_group_id"`
 	Tags                 []Tag                 `json:"tags"`
+	Addons               []Addon               `json:"addons"`
 }
 
 type ServerlessClusterResponse struct {
@@ -45,8 +49,8 @@ type Tag struct {
 }
 
 func (this *ServerlessCreationArgs) Validate() error {
-	if this.Name == "" || this.RegionId == "" || this.VpcId == "" || this.VSwitchId == "" {
-		return common.GetCustomError("InvalidParameters", "The name,region_id,vpc_id,vswitch_id not allowed empty")
+	if this.Name == "" || this.RegionId == "" || this.VpcId == "" {
+		return common.GetCustomError("InvalidParameters", "The name,region_id,vpc_id not allowed empty")
 	}
 	return nil
 }

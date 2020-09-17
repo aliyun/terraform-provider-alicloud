@@ -2,12 +2,15 @@ package alicloud
 
 import (
 	"strconv"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	dms_enterprise "github.com/aliyun/alibaba-cloud-sdk-go/services/dms-enterprise"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudDmsEnterpriseInstance() *schema.Resource {
@@ -180,13 +183,25 @@ func resourceAlicloudDmsEnterpriseInstanceCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request.VpcId = v.(string)
 	}
-	raw, err := client.WithDmsEnterpriseClient(func(dms_enterpriseClient *dms_enterprise.Client) (interface{}, error) {
-		return dms_enterpriseClient.RegisterInstance(request)
+
+	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithDmsEnterpriseClient(func(dms_enterpriseClient *dms_enterprise.Client) (interface{}, error) {
+			return dms_enterpriseClient.RegisterInstance(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"RegisterInstanceFailure"}) {
+				time.Sleep(2 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dms_enterprise_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
 	d.SetId(d.Get("host").(string) + ":" + strconv.Itoa(d.Get("port").(int)))
 
 	return resourceAlicloudDmsEnterpriseInstanceUpdate(d, meta)

@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/aliyun/fc-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -264,7 +264,7 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudFCServiceVpcUpdate(t *testing.T) {
+func TestAccAlicloudFCServiceVpcAndNasUpdate(t *testing.T) {
 	var v *fc.GetServiceOutput
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", defaultRegionToTest, rand)
@@ -272,6 +272,7 @@ func TestAccAlicloudFCServiceVpcUpdate(t *testing.T) {
 		"name":          name,
 		"role":          CHECKSET,
 		"vpc_config.#":  "1",
+		"nas_config.#":  "1",
 		"last_modified": CHECKSET,
 	}
 	resourceId := "alicloud_fc_service.default"
@@ -295,8 +296,20 @@ func TestAccAlicloudFCServiceVpcUpdate(t *testing.T) {
 					"role": "${alicloud_ram_role.default.arn}",
 					"vpc_config": []map[string]interface{}{
 						{
-							"vswitch_ids":       "${alicloud_vswitch.default.*.id}",
+							"vswitch_ids":       []string{"${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"},
 							"security_group_id": "${alicloud_security_group.default.id}",
+						},
+					},
+					"nas_config": []map[string]interface{}{
+						{
+							"user_id":  "9527",
+							"group_id": "9528",
+							"mount_points": []map[string]interface{}{
+								{
+									"server_addr": "${local.mount_target_domain}",
+									"mount_dir":   "/mnt/nas",
+								},
+							},
 						},
 					},
 					"depends_on": []string{"alicloud_ram_role_policy_attachment.default", "alicloud_ram_role_policy_attachment.default1"},
@@ -359,6 +372,60 @@ func TestAccAlicloudFCServiceVpcUpdate(t *testing.T) {
 						"log_config.0.logstore": REMOVEKEY,
 						"internet_access":       REMOVEKEY,
 						"description":           REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"nas_config": []map[string]interface{}{
+						{
+							"user_id":  "9527",
+							"group_id": "9528",
+							"mount_points": []map[string]interface{}{
+								{
+									"server_addr": "${local.mount_target_domain1}",
+									"mount_dir":   "/mnt/nas",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"nas_config.0.user_id":                    "9527",
+						"nas_config.0.group_id":                   "9528",
+						"nas_config.0.mount_points.0.server_addr": CHECKSET,
+						"nas_config.0.mount_points.0.mount_dir":   CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"nas_config": []map[string]interface{}{
+						{
+							"user_id":  "9627",
+							"group_id": "9628",
+							"mount_points": []map[string]interface{}{
+								{
+									"server_addr": "${local.mount_target_domain}",
+									"mount_dir":   "/mnt/nas",
+								},
+								{
+									"server_addr": "${local.mount_target_domain1}",
+									"mount_dir":   "/home/nas",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"nas_config.0.user_id":                    "9627",
+						"nas_config.0.group_id":                   "9628",
+						"nas_config.0.mount_points.0.server_addr": CHECKSET,
+						"nas_config.0.mount_points.0.mount_dir":   CHECKSET,
+						"nas_config.0.mount_points.1.server_addr": CHECKSET,
+						"nas_config.0.mount_points.1.mount_dir":   CHECKSET,
 					}),
 				),
 			},
@@ -451,24 +518,35 @@ resource "alicloud_log_store" "default" {
     name = "${var.name}"
 }
 
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+  is_default = true
 }
 
-data "alicloud_zones" "default" {
-    available_resource_creation = "FunctionCompute"
-}
-
-resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  vpc_id = "${alicloud_vpc.default.id}"
-}
 resource "alicloud_security_group" "default" {
   name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+}
+
+resource "alicloud_nas_file_system" "this" {
+  protocol_type = "NFS"
+  storage_type = "Performance"
+}
+
+resource "alicloud_nas_access_group" "this" {
+  access_group_name = "${var.name}"
+  access_group_type = "Vpc"
+}
+
+resource "alicloud_nas_mount_target" "this" {
+  count = 2
+  access_group_name = alicloud_nas_access_group.this.access_group_name
+  file_system_id = alicloud_nas_file_system.this.id
+  vswitch_id = data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0
+}
+
+locals {
+  mount_target_domain = format("%%s://mnt",split(":",alicloud_nas_mount_target.this[0].id)[1])
+  mount_target_domain1 = format("%%s://mnt",split(":",alicloud_nas_mount_target.this[1].id)[1])
 }
 
 resource "alicloud_ram_role" "default" {

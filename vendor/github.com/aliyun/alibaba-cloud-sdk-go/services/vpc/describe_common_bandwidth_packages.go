@@ -82,6 +82,7 @@ type DescribeCommonBandwidthPackagesRequest struct {
 	ResourceGroupId        string           `position:"Query" name:"ResourceGroupId"`
 	PageSize               requests.Integer `position:"Query" name:"PageSize"`
 	BandwidthPackageId     string           `position:"Query" name:"BandwidthPackageId"`
+	DryRun                 requests.Boolean `position:"Query" name:"DryRun"`
 	ResourceOwnerAccount   string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount           string           `position:"Query" name:"OwnerAccount"`
 	OwnerId                requests.Integer `position:"Query" name:"OwnerId"`
@@ -103,7 +104,8 @@ func CreateDescribeCommonBandwidthPackagesRequest() (request *DescribeCommonBand
 	request = &DescribeCommonBandwidthPackagesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Vpc", "2016-04-28", "DescribeCommonBandwidthPackages", "Vpc", "openAPI")
+	request.InitWithApiInfo("Vpc", "2016-04-28", "DescribeCommonBandwidthPackages", "vpc", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudResourceManagerPolicyVersion_basic(t *testing.T) {
@@ -20,7 +20,7 @@ func TestAccAlicloudResourceManagerPolicyVersion_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-%d", rand)
+	name := fmt.Sprintf("tf-testAccResourceManagerPolicyVersion-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ResourceManagerPolicyVersionBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

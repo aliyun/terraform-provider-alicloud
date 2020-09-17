@@ -27,7 +27,7 @@ resource "alicloud_vpc" "foo" {
 }
 
 resource "alicloud_route_table" "foo" {
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = alicloud_vpc.foo.id
   name        = "route-table-example-name"
   description = "route-table-example-description"
 }

@@ -10,9 +10,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -163,6 +163,16 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name": fmt.Sprintf("tf-testacc-alikafkainstancechange%v", rand)}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group": "${alicloud_security_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group": CHECKSET}),
 				),
 			},
 
@@ -351,6 +361,11 @@ func resourceAlikafkaInstanceConfigDependence(name string) string {
 
 		data "alicloud_vswitches" "default" {
 		  is_default = true
+		}
+
+		resource "alicloud_security_group" "default" {
+		  name   = var.name
+		  vpc_id = "${data.alicloud_vswitches.default.vswitches.0.vpc_id}"
 		}
 		`, name)
 }

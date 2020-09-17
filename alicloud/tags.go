@@ -21,9 +21,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func String(v string) *string {
@@ -355,7 +355,9 @@ func tagsToMap(tags []ecs.Tag) map[string]string {
 func elasticsearchTagsToMap(tags []elasticsearch.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
-		result[t.TagKey] = t.TagValue
+		if !elasticsearchTagIgnored(t.TagKey, t.TagValue) {
+			result[t.TagKey] = t.TagValue
+		}
 	}
 
 	return result
@@ -504,6 +506,19 @@ func slbTagIgnored(t slb.TagResource) bool {
 		ok, _ := regexp.MatchString(v, t.TagKey)
 		if ok {
 			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
+}
+
+func elasticsearchTagIgnored(tagKey, tagValue string) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, tagKey)
+		ok, _ := regexp.MatchString(v, tagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", tagKey, tagValue)
 			return true
 		}
 	}

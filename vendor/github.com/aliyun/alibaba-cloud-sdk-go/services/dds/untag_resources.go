@@ -77,6 +77,7 @@ func (client *Client) UntagResourcesWithCallback(request *UntagResourcesRequest,
 type UntagResourcesRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	All                  requests.Boolean `position:"Query" name:"All"`
 	ResourceId           *[]string        `position:"Query" name:"ResourceId"  type:"Repeated"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
@@ -97,7 +98,8 @@ func CreateUntagResourcesRequest() (request *UntagResourcesRequest) {
 	request = &UntagResourcesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Dds", "2015-12-01", "UntagResources", "dds", "openAPI")
+	request.InitWithApiInfo("Dds", "2015-12-01", "UntagResources", "Dds", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

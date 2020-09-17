@@ -43,6 +43,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `location` - Region of the data center where the bucket is located.
   * `owner` - Bucket owner.
   * `storage_class` - Object storage type. Possible values: `Standard`, `IA` and `Archive`.
+  * `redundancy_type` - Redundancy type. Possible values: `LRS`, and `ZRS`.
   * `creation_date` - Bucket creation date.
   * `cors_rules` - A list of CORS rule configurations. Each element contains the following attributes:
     * `allowed_origins` - The origins allowed for cross-domain requests. Multiple elements can be used to specify multiple allowed origins. Each rule allows up to one wildcard "\*". If "\*" is specified, cross-domain requests of all origins are allowed.
@@ -68,6 +69,7 @@ The following attributes are exported in addition to the arguments listed above:
       * `days` - Indicate the number of days after the last object update until the rules take effect.
   * `server_side_encryption_rule` - A configuration of default encryption for a bucket. It contains the following attributes:
     * `sse_algorithm` - The server-side encryption algorithm to use.
+    * `kms_master_key_id` -  The alibaba cloud KMS master key ID used for the SSE-KMS encryption. 
   * `tags` - A mapping of tags.
   * `versioning` - If present , the versioning state has been set on the bucket. It contains the following attribute.
       * `status` - A bucket versioning state. Possible values:`Enabled` and `Suspended`.

@@ -50,7 +50,7 @@ resource "alicloud_oss_bucket" "bucket-logging" {
   bucket = "bucket-170309-logging"
 
   logging {
-    target_bucket = "${alicloud_oss_bucket.bucket-target.id}"
+    target_bucket = alicloud_oss_bucket.bucket-target.id
     target_prefix = "log/"
   }
 }
@@ -178,6 +178,16 @@ resource "alicloud_oss_bucket" "bucket-sserule" {
     sse_algorithm = "AES256"
   }
 }
+
+resource "alicloud_oss_bucket" "bucket-sserule" {
+  bucket = "bucket-170309-sserule"
+  acl    = "private"
+
+  server_side_encryption_rule {
+    sse_algorithm     = "KMS"
+    kms_master_key_id = "your kms key id"
+  }
+}
 ```
 
 Set bucket tags 
@@ -206,6 +216,18 @@ resource "alicloud_oss_bucket" "bucket-versioning" {
   }
 }
 ```
+
+Set bucket redundancy type
+
+```
+resource "alicloud_oss_bucket" "bucket-redundancytype" {
+  bucket          = "bucket_name"
+  redundancy_type = "ZRS"
+
+  # ... other configuration ...
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -220,6 +242,7 @@ The following arguments are supported:
 * `lifecycle_rule` - (Optional) A configuration of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm) (documented below).
 * `policy` - (Optional, Available in 1.41.0) Json format text of bucket policy [bucket policy management](https://www.alibabacloud.com/help/doc-detail/100680.htm).
 * `storage_class` - (Optional, ForceNew) The [storage class](https://www.alibabacloud.com/help/doc-detail/51374.htm) to apply. Can be "Standard", "IA" and "Archive". Defaults to "Standard".
+* `redundancy_type` - (Optional, ForceNew, Available in 1.91.0) The [redundancy type](https://www.alibabacloud.com/help/doc-detail/90589.htm) to enable. Can be "LRS", and "ZRS". Defaults to "LRS".
 * `server_side_encryption_rule` - (Optional, Available in 1.45.0+) A configuration of server-side encryption (documented below).
 * `tags` - (Optional, Available in 1.45.0+) A mapping of tags to assign to the bucket. The items are no more than 10 for a bucket.
 * `versioning` - (Optional, Available in 1.45.0+) A state of versioning (documented below).
@@ -261,7 +284,7 @@ The referer configuration supports the following:
 The lifecycle_rule object supports the following:
 
 * `id` - (Optional) Unique identifier for the rule. If omitted, OSS bucket will assign a unique name.
-* `prefix` - (Required) Object key prefix identifying one or more objects to which the rule applies.
+* `prefix` - (Optional, Available in v1.90.0+) Object key prefix identifying one or more objects to which the rule applies. Default value is null, the rule applies to all objects in a bucket.
 * `enabled` - (Required, Type: bool) Specifies lifecycle rule status.
 * `expiration` - (Optional, Type: set) Specifies a period in the object's expire (documented below).
 * `transitions` - (Optional, Type: set, Available in 1.62.1+) Specifies the time when an object is converted to the IA or archive storage class during a valid life cycle. (documented below).
@@ -292,6 +315,7 @@ The lifecycle_rule transitions object supports the following:
 The server-side encryption rule supports the following:
 
 * `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: `AES256` and `KMS`.
+* `kms_master_key_id` -  (optional, Available in 1.92.0+) The alibaba cloud KMS master key ID used for the SSE-KMS encryption. 
 
 #### Block versioning
 

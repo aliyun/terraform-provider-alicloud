@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type KvstoreService struct {
@@ -360,4 +360,24 @@ func (s *KvstoreService) DescribeKVstoreSecurityGroupId(id string) (*r_kvstore.D
 	response, _ = raw.(*r_kvstore.DescribeSecurityGroupConfigurationResponse)
 
 	return response, nil
+}
+
+func (s *KvstoreService) DescribeDBInstanceNetInfo(id string) (*r_kvstore.NetInfoItemsInDescribeDBInstanceNetInfo, error) {
+	response := &r_kvstore.DescribeDBInstanceNetInfoResponse{}
+	request := r_kvstore.CreateDescribeDBInstanceNetInfoRequest()
+	request.RegionId = s.client.RegionId
+	request.InstanceId = id
+	if err := s.WaitForKVstoreInstance(id, Normal, DefaultLongTimeout); err != nil {
+		return &response.NetInfoItems, WrapError(err)
+	}
+	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+		return rkvClient.DescribeDBInstanceNetInfo(request)
+	})
+	if err != nil {
+		return &response.NetInfoItems, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ = raw.(*r_kvstore.DescribeDBInstanceNetInfoResponse)
+
+	return &response.NetInfoItems, nil
 }

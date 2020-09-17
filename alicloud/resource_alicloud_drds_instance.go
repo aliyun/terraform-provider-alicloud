@@ -1,13 +1,14 @@
 package alicloud
 
 import (
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudDRDSInstance() *schema.Resource {
@@ -22,6 +23,7 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 
@@ -33,7 +35,7 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"specification": {
@@ -50,7 +52,7 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"instance_series": {
@@ -89,12 +91,18 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 		request.VpcId = vsw.VpcId
 	}
 	request.ClientToken = buildClientToken(request.GetActionName())
-	if request.PayType == string(PostPaid) {
+
+	if request.PayType == string(PostPaid) && strings.HasPrefix(request.ZoneId, "cn") && !strings.Contains(request.ZoneId, "hongkong") {
 		request.PayType = "drdsPost"
+	} else if request.PayType == string(PostPaid) && (strings.Contains(request.ZoneId, "hongkong") || !strings.HasPrefix(request.ZoneId, "cn")) {
+		request.PayType = "drdsPost_intl"
 	}
-	if request.PayType == string(PrePaid) {
+	if request.PayType == string(PrePaid) && strings.HasPrefix(request.ZoneId, "cn") && !strings.Contains(request.ZoneId, "hongkong") {
 		request.PayType = "drdsPre"
+	} else if request.PayType == string(PrePaid) && (strings.Contains(request.ZoneId, "hongkong") || !strings.HasPrefix(request.ZoneId, "cn")) {
+		request.PayType = "drdsPre_intl"
 	}
+
 	raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.CreateDrdsInstance(request)
 	})
@@ -105,12 +113,11 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	response, _ := raw.(*drds.CreateDrdsInstanceResponse)
 	idList := response.Data.DrdsInstanceIdList.DrdsInstanceIdList
 	if len(idList) != 1 {
-		return WrapError(Error("failed to get DRDS instance id and response DrdsInstanceIdList is %#v", idList))
+		return WrapError(Error("failed to get DRDS instance id and response. DrdsInstanceIdList is %#v", idList))
 	}
 	d.SetId(idList[0])
 
-	// wait instance status change from Creating to running
-	//0 -> running for drds,1->creating,2->exception,3->expire,4->release,5->locked
+	// wait instance status change from DO_CREATE to RUN
 	stateConf := BuildStateConf([]string{"DO_CREATE"}, []string{"RUN"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, drdsService.DrdsInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -121,11 +128,15 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	drdsService := DrdsService{client}
 
+	configItem := make(map[string]string)
 	if d.HasChange("description") {
 		request := drds.CreateModifyDrdsInstanceDescriptionRequest()
 		request.DrdsInstanceId = d.Id()
 		request.Description = d.Get("description").(string)
+		configItem["description"] = request.Description
 		client := meta.(*connectivity.AliyunClient)
 		request.RegionId = client.RegionId
 		raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
@@ -136,6 +147,17 @@ func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
+
+	//wait for update effected and instance status returning to run
+	if err := drdsService.WaitDrdsInstanceConfigEffect(
+		d.Id(), configItem, d.Timeout(schema.TimeoutUpdate)); err != nil {
+		return WrapError(err)
+	}
+	stateConf := BuildStateConf([]string{}, []string{"RUN"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, drdsService.DrdsInstanceStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return resourceAliCloudDRDSInstanceRead(d, meta)
 }
 
@@ -165,6 +187,7 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 	request := drds.CreateRemoveDrdsInstanceRequest()
 	request.RegionId = client.RegionId
 	request.DrdsInstanceId = d.Id()
+
 	raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.RemoveDrdsInstance(request)
 	})
@@ -176,6 +199,7 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*drds.RemoveDrdsInstanceResponse)
+
 	if !response.Success {
 		return WrapError(Error("failed to delete instance timeout "+"and got an error: %#v", err))
 	}

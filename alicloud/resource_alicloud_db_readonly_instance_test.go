@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudDBReadonlyInstance_update(t *testing.T) {
-	var instance *rds.DBInstanceAttributeInDescribeDBInstanceAttribute
+	var instance *rds.DBInstanceAttribute
 	resourceId := "alicloud_db_readonly_instance.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccDBInstance_vpc_%d", rand)
@@ -147,7 +147,7 @@ func TestAccAlicloudDBReadonlyInstance_update(t *testing.T) {
 }
 
 func TestAccAlicloudDBReadonlyInstance_multi(t *testing.T) {
-	var instance *rds.DBInstanceAttributeInDescribeDBInstanceAttribute
+	var instance *rds.DBInstanceAttribute
 	resourceId := "alicloud_db_readonly_instance.default.1"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccDBInstance_vpc_%d", rand)

@@ -14,11 +14,13 @@ For information about Resource Manager Policy Version and how to use it, see [Wh
 
 -> **NOTE:** Available in v1.84.0+.
 
+-> **NOTE:** It is not recommended to use this resource management policy version, it is recommended to directly use the policy resource to manage your policy. Please refer to the link for usage [resource_manager_policy](https://www.terraform.io/docs/providers/alicloud/r/resource_manager_policy.html).
+
 ## Example Usage
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_resource_manager_policy" "example" {
   policy_name = "tftest"
   policy_document = <<EOF
@@ -46,14 +48,14 @@ resource "alicloud_resource_manager_policy_version" "example" {
 		}
     EOF
 }
-
 ```
 ## Argument Reference
 
 The following arguments are supported:
+
 * `policy_name` - (Required, ForceNew) The name of the policy. Name must be 1 to 128 characters in length and can contain letters, digits, and hyphens (-).
 * `policy_document` - (Required, ForceNew) The content of the policy. The content must be 1 to 2,048 characters in length.
-* `is_default_version` - (Optional) Specifies whether to set the policy version as the default version. Default to `false`. 
+* `is_default_version` - (Optional, Deprecated from version 1.90.0) Specifies whether to set the policy version as the default version. Default to `false`. 
 
 -> **NOTE:** If set to default version, the resource cannot be deleted. You need to set the other version as the default version in policy before you delete this resource.
 

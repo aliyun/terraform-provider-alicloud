@@ -22,7 +22,7 @@ resource "alicloud_vpc" "vpc" {
 }
 
 resource "alicloud_vswitch" "vsw" {
-  vpc_id            = "${alicloud_vpc.vpc.id}"
+  vpc_id            = alicloud_vpc.vpc.id
   cidr_block        = "172.16.0.0/21"
   availability_zone = "cn-beijing-b"
 }

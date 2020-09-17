@@ -82,6 +82,7 @@ type DescribeCrossRegionBackupsRequest struct {
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	BackupId             requests.Integer `position:"Query" name:"BackupId"`
 	EndTime              string           `position:"Query" name:"EndTime"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	CrossBackupRegion    string           `position:"Query" name:"CrossBackupRegion"`
@@ -107,6 +108,7 @@ func CreateDescribeCrossRegionBackupsRequest() (request *DescribeCrossRegionBack
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeCrossRegionBackups", "rds", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

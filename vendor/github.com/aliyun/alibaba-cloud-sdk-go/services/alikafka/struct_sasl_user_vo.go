@@ -19,4 +19,5 @@ package alikafka
 type SaslUserVO struct {
 	Username string `json:"Username" xml:"Username"`
 	Password string `json:"Password" xml:"Password"`
+	Type     string `json:"Type" xml:"Type"`
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudImagesDataSource_basic(t *testing.T) {
@@ -21,6 +21,17 @@ func TestAccAlicloudImagesDataSource_basic(t *testing.T) {
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "^win.*-fake",
+		}),
+	}
+
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"owners": "system",
+			"status": "Available",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"owners": "system",
+			"status": "UnAvailable",
 		}),
 	}
 
@@ -107,7 +118,7 @@ func TestAccAlicloudImagesDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeImagesMapFunc,
 	}
 
-	imagesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, ownerConf, recentNameRegexconf, ownerNameRegexConf, ownerRecentConf, allConf)
+	imagesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, statusConf, ownerConf, recentNameRegexconf, ownerNameRegexConf, ownerRecentConf, allConf)
 }
 
 func TestAccAlicloudImagesDataSource_win(t *testing.T) {

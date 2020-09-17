@@ -5,97 +5,137 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudNasAccessGroupDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100000, 999999)
 	vpcTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
-			"name_regex": `"testAccAccessGroupsdatasource*"`,
-			"type":       `"${alicloud_nas_access_group.default.type}"`,
+			"name_regex":        `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"access_group_type": `"${alicloud_nas_access_group.default.access_group_type}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
-			"name_regex": `"testAccAccessGroupsdatasource*"`,
-			"type":       `"${alicloud_nas_access_group.default.type}_fake"`,
+			"name_regex":        `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"access_group_type": `"${alicloud_nas_access_group.default.access_group_type}_fake"`,
 		}),
 	}
 	descriptionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
-			"name_regex":  `"testAccAccessGroupsdatasource*"`,
+			"name_regex":  `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"description": `"${alicloud_nas_access_group.default.description}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
-			"name_regex":  `"testAccAccessGroupsdatasource*"`,
+			"name_regex":  `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"description": `"${alicloud_nas_access_group.default.description}_fake"`,
 		}),
 	}
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_nas_access_group.default.access_group_name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
+			"name_regex": `"fake"`,
+		}),
+	}
+
 	accessGroupNameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_nas_access_group.default.name}"`,
+			"name_regex":        `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"file_system_type":  `"standard"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_nas_access_group.default.name}_fake"`,
+			"name_regex":        `"fake"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"file_system_type":  `"standard"`,
 		}),
 	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
-			"name_regex":  `"testAccAccessGroupsdatasource*"`,
-			"type":        `"${alicloud_nas_access_group.default.type}"`,
-			"description": `"${alicloud_nas_access_group.default.description}"`,
+			"name_regex":        `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"access_group_type": `"${alicloud_nas_access_group.default.access_group_type}"`,
+			"description":       `"${alicloud_nas_access_group.default.description}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"file_system_type":  `"standard"`,
+			"useutc_date_time":  `true`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceConfig(rand, map[string]string{
-			"name_regex":  `"testAccAccessGroupsdatasource*"`,
-			"type":        `"${alicloud_nas_access_group.default.type}_fake"`,
-			"description": `"${alicloud_nas_access_group.default.description}_fake"`,
+			"name_regex":        `"fake"`,
+			"access_group_type": `"${alicloud_nas_access_group.default.access_group_type}"`,
+			"description":       `"${alicloud_nas_access_group.default.description}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"file_system_type":  `"standard"`,
+			"useutc_date_time":  `true`,
 		}),
 	}
-	accessGroupCheckInfo.dataSourceTestCheck(t, rand, vpcTypeConf, descriptionConf, accessGroupNameConf, allConf)
+	accessGroupCheckInfo.dataSourceTestCheck(t, rand, vpcTypeConf, descriptionConf, nameRegexConf, accessGroupNameConf, allConf)
 }
 
 func TestAccAlicloudNasAccessGroupDataSourceClassic(t *testing.T) {
 	rand := acctest.RandIntRange(100000, 999999)
 	classicTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
-			"name_regex": `"testAccAccessGroupsdatasource*"`,
-			"type":       `"${alicloud_nas_access_group.default.type}"`,
+			"name_regex":        `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"access_group_type": `"${alicloud_nas_access_group.default.access_group_type}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
-			"name_regex": `"testAccAccessGroupsdatasource*"`,
-			"type":       `"${alicloud_nas_access_group.default.type}_fake"`,
+			"name_regex":        `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"access_group_type": `"${alicloud_nas_access_group.default.access_group_type}_fake"`,
 		}),
 	}
 	descriptionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
-			"name_regex":  `"testAccAccessGroupsdatasource*"`,
+			"name_regex":  `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"description": `"${alicloud_nas_access_group.default.description}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
-			"name_regex":  `"testAccAccessGroupsdatasource*"`,
+			"name_regex":  `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"description": `"${alicloud_nas_access_group.default.description}_fake"`,
 		}),
 	}
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_nas_access_group.default.access_group_name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
+			"name_regex": `"fake"`,
+		}),
+	}
+
 	accessGroupNameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_nas_access_group.default.name}"`,
+			"name_regex":        `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"file_system_type":  `"standard"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_nas_access_group.default.name}_fake"`,
+			"name_regex":        `"fake"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"file_system_type":  `"standard"`,
 		}),
 	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
-			"name_regex":  `"testAccAccessGroupsdatasource*"`,
-			"type":        `"${alicloud_nas_access_group.default.type}"`,
-			"description": `"${alicloud_nas_access_group.default.description}"`,
+			"name_regex":        `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"access_group_type": `"${alicloud_nas_access_group.default.access_group_type}"`,
+			"description":       `"${alicloud_nas_access_group.default.description}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"file_system_type":  `"standard"`,
+			"useutc_date_time":  `true`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessGroupDataSourceClassicConfig(rand, map[string]string{
-			"name_regex":  `"testAccAccessGroupsdatasource*"`,
-			"type":        `"${alicloud_nas_access_group.default.type}_fake"`,
-			"description": `"${alicloud_nas_access_group.default.description}_fake"`,
+			"name_regex":        `"fake"`,
+			"access_group_type": `"${alicloud_nas_access_group.default.access_group_type}"`,
+			"description":       `"${alicloud_nas_access_group.default.description}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"file_system_type":  `"standard"`,
+			"useutc_date_time":  `true`,
 		}),
 	}
-	accessGroupCheckClassicInfo.dataSourceTestCheck(t, rand, classicTypeConf, descriptionConf, accessGroupNameConf, allConf)
+	accessGroupCheckClassicInfo.dataSourceTestCheck(t, rand, classicTypeConf, descriptionConf, nameRegexConf, accessGroupNameConf, allConf)
 }
 
 func testAccCheckAlicloudAccessGroupDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -108,8 +148,8 @@ variable "name" {
 		default = "tf-testAccAccessGroupsdatasource-%d"
 }
 resource "alicloud_nas_access_group" "default" {
-		name = "${var.name}"
-		type = "Vpc"
+		access_group_name = "${var.name}"
+		access_group_type = "Vpc"
 		description = "tf-testAccAccessGroupsdatasource"
 }
 data "alicloud_nas_access_groups" "default" {
@@ -128,8 +168,8 @@ variable "name" {
 		default = "tf-testAccAccessGroupsdatasource-%d"
 }
 resource "alicloud_nas_access_group" "default" {
-		name = "${var.name}"
-		type = "Classic"
+		access_group_name = "${var.name}"
+		access_group_type = "Classic"
 		description = "tf-testAccAccessGroupsdatasource"
 }
 data "alicloud_nas_access_groups" "default" {
@@ -142,9 +182,11 @@ var existAccessGroupMapCheck = func(rand int) map[string]string {
 	return map[string]string{
 		"groups.#":                    "1",
 		"groups.0.rule_count":         CHECKSET,
+		"groups.0.access_group_type":  "Vpc",
 		"groups.0.type":               "Vpc",
 		"groups.0.description":        "tf-testAccAccessGroupsdatasource",
-		"groups.0.id":                 fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d", rand),
+		"groups.0.access_group_name":  fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d", rand),
+		"groups.0.id":                 fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d:standard", rand),
 		"groups.0.mount_target_count": CHECKSET,
 		"names.#":                     "1",
 		"names.0":                     fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d", rand),
@@ -155,9 +197,11 @@ var existAccessGroupClassicMapCheck = func(rand int) map[string]string {
 	return map[string]string{
 		"groups.#":                    "1",
 		"groups.0.rule_count":         CHECKSET,
+		"groups.0.access_group_type":  "Classic",
 		"groups.0.type":               "Classic",
 		"groups.0.description":        "tf-testAccAccessGroupsdatasource",
-		"groups.0.id":                 fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d", rand),
+		"groups.0.access_group_name":  fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d", rand),
+		"groups.0.id":                 fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d:standard", rand),
 		"groups.0.mount_target_count": CHECKSET,
 		"names.#":                     "1",
 		"names.0":                     fmt.Sprintf("tf-testAccAccessGroupsdatasource-%d", rand),

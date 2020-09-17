@@ -27,40 +27,66 @@ Provides a ECS instance resource.
 ## Example Usage
 
 ```
+variable "name" {
+  default = "auto_provisioning_group"
+}
+
 # Create a new ECS instance for a VPC
 resource "alicloud_security_group" "group" {
   name        = "tf_test_foo"
   description = "foo"
-  vpc_id      = "${alicloud_vpc.vpc.id}"
+  vpc_id      = alicloud_vpc.vpc.id
+}
+
+resource "alicloud_kms_key" "key" {
+  description            = "Hello KMS"
+  pending_window_in_days = "7"
+  key_state              = "Enabled"
+}
+
+data "alicloud_zones" "default" {
+  available_disk_category     = "cloud_efficiency"
+  available_resource_creation = "VSwitch"
+}
+
+# Create a new ECS instance for VPC
+resource "alicloud_vpc" "vpc" {
+  name       = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  vpc_id            = alicloud_vpc.vpc.id
+  cidr_block        = "172.16.0.0/24"
+  availability_zone = data.alicloud_zones.default.zones[0].id
+  name              = var.name
+}
+
+resource "alicloud_slb" "slb" {
+  name       = "test-slb-tf"
+  vswitch_id = alicloud_vswitch.vswitch.id
 }
 
 resource "alicloud_instance" "instance" {
   # cn-beijing
   availability_zone = "cn-beijing-b"
-  security_groups   = "${alicloud_security_group.group.*.id}"
+  security_groups   = alicloud_security_group.group.*.id
 
   # series III
   instance_type              = "ecs.n4.large"
   system_disk_category       = "cloud_efficiency"
   image_id                   = "ubuntu_18_04_64_20G_alibase_20190624.vhd"
   instance_name              = "test_foo"
-  vswitch_id                 = "${alicloud_vswitch.vswitch.id}"
+  vswitch_id                 = alicloud_vswitch.vswitch.id
   internet_max_bandwidth_out = 10
-}
-
-# Create a new ECS instance for VPC
-resource "alicloud_vpc" "vpc" {
-  # Other parameters...
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  vpc_id = "${alicloud_vpc.vpc.id}"
-  # Other parameters...
-}
-
-resource "alicloud_slb" "slb" {
-  name       = "test-slb-tf"
-  vswitch_id = "${alicloud_vswitch.vswitch.id}"
+  data_disks {
+    name        = "disk2"
+    size        = 20
+    category    = "cloud_efficiency"
+    description = "disk2"
+    encrypted   = true
+    kms_key_id  = alicloud_kms_key.key.id
+  }
 }
 ```
 
@@ -73,7 +99,7 @@ to create several ECS instances one-click.
 
 The following arguments are supported:
 
-* `image_id` - (Required) The Image to use for the instance. ECS instance's image can be replaced via changing 'image_id'. When it is changed, the instance will reboot to make the change take effect.
+* `image_id` - (Required) The Image to use for the instance. ECS instance's image can be replaced via changing `image_id`. When it is changed, the instance will reboot to make the change take effect.
 * `instance_type` - (Required) The type of instance to start. When it is changed, the instance will reboot to make the change take effect.
 * `io_optimized` - (Deprecated) It has been deprecated on instance resource. All the launched alicloud instances will be I/O optimized.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
@@ -83,7 +109,7 @@ The following arguments are supported:
 Terraform will autogenerate a default name is `ECS-Instance`.
 * `allocate_public_ip` - (Deprecated) It has been deprecated from version "1.7.0". Setting "internet_max_bandwidth_out" larger than 0 can allocate a public ip address for an instance.
 * `system_disk_category` - (Optional,ForceNew) Valid values are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud`. `cloud` only is used to some none I/O optimized instance. Default to `cloud_efficiency`.
-* `system_disk_size` - (Optional) Size of the system disk, measured in GiB. Value range: [20, 500]. The specified value must be equal to or greater than max{20, Imagesize}. Default value: max{40, ImageSize}. ECS instance's system disk can be reset when replacing system disk. When it is changed, the instance will reboot to make the change take effect.
+* `system_disk_size` - (Optional) Size of the system disk, measured in GiB. Value range: [20, 500]. The specified value must be equal to or greater than max{20, Imagesize}. Default value: max{40, ImageSize}. 
 * `system_disk_auto_snapshot_policy_id` - (Optional, ForceNew, Available in 1.73.0+) The ID of the automatic snapshot policy applied to the system disk.
 * `description` - (Optional) Description of the instance, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `internet_charge_type` - (Optional) Internet charge type of the instance, Valid values are `PayByBandwidth`, `PayByTraffic`. Default is `PayByTraffic`. At present, 'PrePaid' instance cannot change the value to "PayByBandwidth" from "PayByTraffic".
@@ -135,11 +161,9 @@ On other OSs such as Linux, the host name can contain a maximum of 64 characters
 
     Default to NoSpot. Note: Currently, the spot instance only supports domestic site account.
 * `spot_price_limit` - (Optional, Float, ForceNew) The hourly price threshold of a instance, and it takes effect only when parameter 'spot_strategy' is 'SpotWithPriceLimit'. Three decimals is allowed at most.
-* `deletion_protection` - (Optional, true) Whether enable the deletion protection or not.
+* `deletion_protection` - (Optional, true) Whether enable the deletion protection or not. Default value: `false`.
     - true: Enable deletion protection.
     - false: Disable deletion protection.
-    
-    Default to false.
 * `force_delete` - (Optional, Available in 1.18.0+) If it is true, the "PrePaid" instance will be change to "PostPaid" and then deleted forcibly.
 However, because of changing instance charge type has CPU core count quota limitation, so strongly recommand that "Don't modify instance charge type frequentlly in one month".
 * `auto_release_time` - (Optional, Available in 1.70.0+) The automatic release time of the `PostPaid` instance. 
@@ -164,14 +188,11 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
         - `cloud_essd`: The ESSD cloud disk.
         - `ephemeral_ssd`: The local SSD disk.
         Default to `cloud_efficiency`.
-    * `encrypted` -(Optional, Bool, ForceNew) Encrypted the data in this disk.
-
-        Default to false
+    * `encrypted` -(Optional, Bool, ForceNew) Encrypted the data in this disk. Default value: `false`.
+    * `kms_key_id` - (Optional, Available in 1.90.1+) The KMS key ID corresponding to the Nth data disk.
     * `snapshot_id` - (Optional, ForceNew) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
     * `auto_snapshot_policy_id` - (Optional, ForceNew, Available in 1.73.0+) The ID of the automatic snapshot policy applied to the system disk.
-    * `delete_with_instance` - (Optional, ForceNew) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency, cloud_essd, cloud_ssd disk. If the category of this data disk was ephemeral_ssd, please don't set this param.
-
-        Default to true
+    * `delete_with_instance` - (Optional, ForceNew) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency, cloud_essd, cloud_ssd disk. If the category of this data disk was ephemeral_ssd, please don't set this param. Default value: `true`.
     * `description` - (Optional, ForceNew) The description of the data disk.
 * `status` - (Optional 1.85.0+) The instance status. Valid values: ["Running", "Stopped"]. You can control the instance start and stop through this parameter. Default to `Running`.
 

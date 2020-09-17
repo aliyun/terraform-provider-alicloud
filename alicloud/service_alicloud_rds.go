@@ -11,10 +11,10 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type RdsService struct {
@@ -37,8 +37,8 @@ type RdsService struct {
 // That the business layer only need to check error.
 var DBInstanceStatusCatcher = Catcher{"OperationDenied.DBInstanceStatus", 60, 5}
 
-func (s *RdsService) DescribeDBInstance(id string) (*rds.DBInstanceAttributeInDescribeDBInstanceAttribute, error) {
-	instance := &rds.DBInstanceAttributeInDescribeDBInstanceAttribute{}
+func (s *RdsService) DescribeDBInstance(id string) (*rds.DBInstanceAttribute, error) {
+	instance := &rds.DBInstanceAttribute{}
 	request := rds.CreateDescribeDBInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -79,8 +79,8 @@ func (s *RdsService) DescribeTasks(id string) (task *rds.DescribeTasksResponse, 
 	return response, nil
 }
 
-func (s *RdsService) DescribeDBReadonlyInstance(id string) (*rds.DBInstanceAttributeInDescribeDBInstanceAttribute, error) {
-	instance := &rds.DBInstanceAttributeInDescribeDBInstanceAttribute{}
+func (s *RdsService) DescribeDBReadonlyInstance(id string) (*rds.DBInstanceAttribute, error) {
+	instance := &rds.DBInstanceAttribute{}
 	request := rds.CreateDescribeDBInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
@@ -176,8 +176,8 @@ func (s *RdsService) DescribeDBAccountPrivilege(id string) (*rds.DBInstanceAccou
 	return &response.Accounts.DBInstanceAccount[0], nil
 }
 
-func (s *RdsService) DescribeDBDatabase(id string) (*rds.DatabaseInDescribeDatabases, error) {
-	ds := &rds.DatabaseInDescribeDatabases{}
+func (s *RdsService) DescribeDBDatabase(id string) (*rds.Database, error) {
+	ds := &rds.Database{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return ds, WrapError(err)
@@ -763,6 +763,43 @@ func (s *RdsService) DescribeSecurityGroupConfiguration(id string) ([]string, er
 		groupIds = append(groupIds, v.SecurityGroupId)
 	}
 	return groupIds, nil
+}
+
+func (s *RdsService) DescribeDBInstanceSSL(id string) (*rds.DescribeDBInstanceSSLResponse, error) {
+	response := &rds.DescribeDBInstanceSSLResponse{}
+	request := rds.CreateDescribeDBInstanceSSLRequest()
+	request.RegionId = s.client.RegionId
+	request.DBInstanceId = id
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DescribeDBInstanceSSL(request)
+	})
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ = raw.(*rds.DescribeDBInstanceSSLResponse)
+	return response, nil
+}
+
+func (s *RdsService) DescribeRdsTDEInfo(id string) (*rds.DescribeDBInstanceTDEResponse, error) {
+
+	response := &rds.DescribeDBInstanceTDEResponse{}
+	request := rds.CreateDescribeDBInstanceTDERequest()
+	request.RegionId = s.client.RegionId
+	request.DBInstanceId = id
+	statErr := s.WaitForDBInstance(id, Running, DefaultLongTimeout)
+	if statErr != nil {
+		return response, WrapError(statErr)
+	}
+	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
+		return rdsClient.DescribeDBInstanceTDE(request)
+	})
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ = raw.(*rds.DescribeDBInstanceTDEResponse)
+	return response, nil
 }
 
 func (s *RdsService) ModifySecurityGroupConfiguration(id string, groupid string) error {

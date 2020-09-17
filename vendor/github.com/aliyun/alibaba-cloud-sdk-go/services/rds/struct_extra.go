@@ -17,8 +17,8 @@ package rds
 
 // Extra is a nested struct in rds response
 type Extra struct {
-	ReplicaGroupID            string       `json:"ReplicaGroupID" xml:"ReplicaGroupID"`
-	ReplicaGroupStatus        string       `json:"ReplicaGroupStatus" xml:"ReplicaGroupStatus"`
-	ActiveReplicaDBInstanceID string       `json:"ActiveReplicaDBInstanceID" xml:"ActiveReplicaDBInstanceID"`
-	DBInstanceId              DBInstanceId `json:"DBInstanceId" xml:"DBInstanceId"`
+	ReplicaGroupID            string                                     `json:"ReplicaGroupID" xml:"ReplicaGroupID"`
+	ReplicaGroupStatus        string                                     `json:"ReplicaGroupStatus" xml:"ReplicaGroupStatus"`
+	ActiveReplicaDBInstanceID string                                     `json:"ActiveReplicaDBInstanceID" xml:"ActiveReplicaDBInstanceID"`
+	DBInstanceIds             DBInstanceIdsInDescribeDBInstanceAttribute `json:"DBInstanceIds" xml:"DBInstanceIds"`
 }

@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -144,6 +145,13 @@ func (client *Client) InitWithProviderChain(regionId string, provider provider.P
 }
 
 func (client *Client) InitWithOptions(regionId string, config *Config, credential auth.Credential) (err error) {
+	if regionId != "" {
+		match, _ := regexp.MatchString("^[a-zA-Z0-9_-]+$", regionId)
+		if !match {
+			return fmt.Errorf("regionId contains invalid characters")
+		}
+	}
+
 	client.isRunning = true
 	client.asyncChanLock = new(sync.RWMutex)
 	client.regionId = regionId
@@ -512,7 +520,12 @@ func (client *Client) getHTTPSInsecure(request requests.AcsRequest) (insecure bo
 }
 
 func (client *Client) DoActionWithSigner(request requests.AcsRequest, response responses.AcsResponse, signer auth.Signer) (err error) {
-
+	if client.Network != "" {
+		match, _ := regexp.MatchString("^[a-zA-Z0-9_-]+$", client.Network)
+		if !match {
+			return fmt.Errorf("netWork contains invalid characters")
+		}
+	}
 	fieldMap := make(map[string]string)
 	initLogMsg(fieldMap)
 	defer func() {
@@ -533,7 +546,14 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 
 	var flag bool
 	for _, value := range noProxy {
-		if value == httpRequest.Host {
+		if strings.HasPrefix(value, "*") {
+			value = fmt.Sprintf(".%s", value)
+		}
+		noProxyReg, err := regexp.Compile(value)
+		if err != nil {
+			return err
+		}
+		if noProxyReg.MatchString(httpRequest.Host) {
 			flag = true
 			break
 		}

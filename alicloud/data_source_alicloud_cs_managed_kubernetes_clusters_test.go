@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
@@ -67,9 +67,6 @@ func TestAccAlicloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 			"clusters.0.vpc_id":                    CHECKSET,
 			"clusters.0.worker_nodes.#":            "2",
 			"clusters.0.connections.%":             CHECKSET,
-			"clusters.0.log_config.#":              "1",
-			"clusters.0.log_config.0.type":         "",  // Because the API does not return  field 'type', the default value of empty is used
-			"clusters.0.log_config.0.project":      "",  // Because the API does not return  field 'project', the default value of empty is used
 			"clusters.0.worker_data_disk_category": "",  // Because the API does not return  field 'worker_data_disk_category', the default value of empty is used
 			"clusters.0.worker_data_disk_size":     "0", // Because the API does not return  field 'worker_data_disk_size', the default value of 0 is used
 		}
@@ -130,8 +127,7 @@ resource "alicloud_log_project" "log" {
 
 resource "alicloud_cs_managed_kubernetes" "default" {
   name_prefix = "${var.name}"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+  worker_vswitch_ids = ["${alicloud_vswitch.default.id}"]
   new_nat_gateway = true
   worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
   worker_number = 2
@@ -143,10 +139,6 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_disk_category  = "cloud_efficiency"
   worker_data_disk_category = "cloud_ssd"
   worker_data_disk_size =  200
-  log_config {
-    type = "SLS"
-    project = "${alicloud_log_project.log.name}"
-  }
 }
 `, name)
 }

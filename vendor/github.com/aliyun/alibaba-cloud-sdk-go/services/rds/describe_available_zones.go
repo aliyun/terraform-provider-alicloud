@@ -79,8 +79,10 @@ type DescribeAvailableZonesRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	EngineVersion        string           `position:"Query" name:"EngineVersion"`
 	Engine               string           `position:"Query" name:"Engine"`
+	InstanceChargeType   string           `position:"Query" name:"InstanceChargeType"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	EvaluateResource     requests.Boolean `position:"Query" name:"EvaluateResource"`
 	ZoneId               string           `position:"Query" name:"ZoneId"`
 }
 
@@ -97,6 +99,7 @@ func CreateDescribeAvailableZonesRequest() (request *DescribeAvailableZonesReque
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Rds", "2014-08-15", "DescribeAvailableZones", "rds", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

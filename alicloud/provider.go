@@ -16,13 +16,13 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/mutexkv"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/terraform/helper/hashcode"
-	"github.com/hashicorp/terraform/helper/mutexkv"
 	"github.com/mitchellh/go-homedir"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 // Provider returns a schema.Provider for alicloud
@@ -142,7 +142,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kms_ciphertext":         dataSourceAlicloudKmsCiphertext(),
 			"alicloud_kms_plaintext":          dataSourceAlicloudKmsPlaintext(),
 			"alicloud_dns_resolution_lines":   dataSourceAlicloudDnsResolutionLines(),
-			"alicloud_dns_domains":            dataSourceAlicloudDnsDomains(),
+			"alicloud_dns_domains":            dataSourceAlicloudAlidnsDomains(),
 			"alicloud_dns_groups":             dataSourceAlicloudDnsGroups(),
 			"alicloud_dns_records":            dataSourceAlicloudDnsRecords(),
 			// alicloud_dns_domain_groups, alicloud_dns_domain_records have been deprecated.
@@ -217,22 +217,23 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_ee_instances":                       dataSourceAlicloudCrEEInstances(),
 			"alicloud_cr_ee_namespaces":                      dataSourceAlicloudCrEENamespaces(),
 			"alicloud_cr_ee_repos":                           dataSourceAlicloudCrEERepos(),
+			"alicloud_cr_ee_sync_rules":                      dataSourceAlicloudCrEESyncRules(),
 			"alicloud_mns_queues":                            dataSourceAlicloudMNSQueues(),
 			"alicloud_mns_topics":                            dataSourceAlicloudMNSTopics(),
 			"alicloud_mns_topic_subscriptions":               dataSourceAlicloudMNSTopicSubscriptions(),
+			"alicloud_api_gateway_service":                   dataSourceAlicloudApiGatewayService(),
 			"alicloud_api_gateway_apis":                      dataSourceAlicloudApiGatewayApis(),
 			"alicloud_api_gateway_groups":                    dataSourceAlicloudApiGatewayGroups(),
 			"alicloud_api_gateway_apps":                      dataSourceAlicloudApiGatewayApps(),
 			"alicloud_elasticsearch_instances":               dataSourceAlicloudElasticsearch(),
 			"alicloud_elasticsearch_zones":                   dataSourceAlicloudElaticsearchZones(),
 			"alicloud_drds_instances":                        dataSourceAlicloudDRDSInstances(),
-			"alicloud_nas_access_groups":                     dataSourceAlicloudAccessGroups(),
+			"alicloud_nas_access_groups":                     dataSourceAlicloudNasAccessGroups(),
 			"alicloud_nas_access_rules":                      dataSourceAlicloudAccessRules(),
-			"alicloud_nas_mount_targets":                     dataSourceAlicloudMountTargets(),
+			"alicloud_nas_mount_targets":                     dataSourceAlicloudNasMountTargets(),
 			"alicloud_nas_file_systems":                      dataSourceAlicloudFileSystems(),
 			"alicloud_nas_protocols":                         dataSourceAlicloudNasProtocols(),
 			"alicloud_cas_certificates":                      dataSourceAlicloudCasCertificates(),
-			"alicloud_actiontrails":                          dataSourceAlicloudActiontrails(),
 			"alicloud_common_bandwidth_packages":             dataSourceAlicloudCommonBandwidthPackages(),
 			"alicloud_route_tables":                          dataSourceAlicloudRouteTables(),
 			"alicloud_route_entries":                         dataSourceAlicloudRouteEntries(),
@@ -249,6 +250,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ess_lifecycle_hooks":                   dataSourceAlicloudEssLifecycleHooks(),
 			"alicloud_ess_scheduled_tasks":                   dataSourceAlicloudEssScheduledTasks(),
 			"alicloud_ots_instances":                         dataSourceAlicloudOtsInstances(),
+			"alicloud_ots_service":                           dataSourceAlicloudOtsService(),
 			"alicloud_ots_instance_attachments":              dataSourceAlicloudOtsInstanceAttachments(),
 			"alicloud_ots_tables":                            dataSourceAlicloudOtsTables(),
 			"alicloud_cloud_connect_networks":                dataSourceAlicloudCloudConnectNetworks(),
@@ -277,7 +279,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_edas_deploy_groups":                    dataSourceAlicloudEdasDeployGroups(),
 			"alicloud_edas_clusters":                         dataSourceAlicloudEdasClusters(),
 			"alicloud_resource_manager_folders":              dataSourceAlicloudResourceManagerFolders(),
-			"alicloud_dns_instances":                         dataSourceAlicloudDnsInstances(),
+			"alicloud_dns_instances":                         dataSourceAlicloudAlidnsInstances(),
 			"alicloud_resource_manager_policies":             dataSourceAlicloudResourceManagerPolicies(),
 			"alicloud_resource_manager_resource_groups":      dataSourceAlicloudResourceManagerResourceGroups(),
 			"alicloud_resource_manager_roles":                dataSourceAlicloudResourceManagerRoles(),
@@ -291,6 +293,27 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_waf_domains":                           dataSourceAlicloudWafDomains(),
 			"alicloud_kms_secrets":                           dataSourceAlicloudKmsSecrets(),
 			"alicloud_cen_route_maps":                        dataSourceAlicloudCenRouteMaps(),
+			"alicloud_cen_private_zones":                     dataSourceAlicloudCenPrivateZones(),
+			"alicloud_dms_enterprise_instances":              dataSourceAlicloudDmsEnterpriseInstances(),
+			"alicloud_cassandra_clusters":                    dataSourceAlicloudCassandraClusters(),
+			"alicloud_cassandra_data_centers":                dataSourceAlicloudCassandraDataCenters(),
+			"alicloud_cassandra_zones":                       dataSourceAlicloudCassandraZones(),
+			"alicloud_kms_secret_versions":                   dataSourceAlicloudKmsSecretVersions(),
+			"alicloud_waf_instances":                         dataSourceAlicloudWafInstances(),
+			"alicloud_eci_image_caches":                      dataSourceAlicloudEciImageCaches(),
+			"alicloud_dms_enterprise_users":                  dataSourceAlicloudDmsEnterpriseUsers(),
+			"alicloud_ecs_dedicated_hosts":                   dataSourceAlicloudEcsDedicatedHosts(),
+			"alicloud_oos_templates":                         dataSourceAlicloudOosTemplates(),
+			"alicloud_oos_executions":                        dataSourceAlicloudOosExecutions(),
+			"alicloud_resource_manager_policy_attachments":   dataSourceAlicloudResourceManagerPolicyAttachments(),
+			"alicloud_dcdn_domains":                          dataSourceAlicloudDcdnDomains(),
+			"alicloud_mse_clusters":                          dataSourceAlicloudMseClusters(),
+			"alicloud_actiontrail_trails":                    dataSourceAlicloudActiontrailTrails(),
+			"alicloud_actiontrails":                          dataSourceAlicloudActiontrailTrails(),
+			"alicloud_alidns_instances":                      dataSourceAlicloudAlidnsInstances(),
+			"alicloud_alidns_domains":                        dataSourceAlicloudAlidnsDomains(),
+			"alicloud_log_service":                           dataSourceAlicloudLogService(),
+			"alicloud_cen_instance_attachments":              dataSourceAlicloudCenInstanceAttachments(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -399,10 +422,12 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_managed_kubernetes":               resourceAlicloudCSManagedKubernetes(),
 			"alicloud_cs_serverless_kubernetes":            resourceAlicloudCSServerlessKubernetes(),
 			"alicloud_cs_kubernetes_autoscaler":            resourceAlicloudCSKubernetesAutoscaler(),
+			"alicloud_cs_kubernetes_node_pool":             resourceAlicloudCSKubernetesNodePool(),
 			"alicloud_cr_namespace":                        resourceAlicloudCRNamespace(),
 			"alicloud_cr_repo":                             resourceAlicloudCRRepo(),
 			"alicloud_cr_ee_namespace":                     resourceAlicloudCrEENamespace(),
 			"alicloud_cr_ee_repo":                          resourceAlicloudCrEERepo(),
+			"alicloud_cr_ee_sync_rule":                     resourceAlicloudCrEESyncRule(),
 			"alicloud_cdn_domain":                          resourceAlicloudCdnDomain(),
 			"alicloud_cdn_domain_new":                      resourceAlicloudCdnDomainNew(),
 			"alicloud_cdn_domain_config":                   resourceAlicloudCdnDomainConfig(),
@@ -461,7 +486,6 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_common_bandwidth_package_attachment": resourceAliyunCommonBandwidthPackageAttachment(),
 			"alicloud_drds_instance":                       resourceAlicloudDRDSInstance(),
 			"alicloud_elasticsearch_instance":              resourceAlicloudElasticsearch(),
-			"alicloud_actiontrail":                         resourceAlicloudActiontrail(),
 			"alicloud_cas_certificate":                     resourceAlicloudCasCertificate(),
 			"alicloud_ddoscoo_instance":                    resourceAlicloudDdoscooInstance(),
 			"alicloud_ddosbgp_instance":                    resourceAlicloudDdosbgpInstance(),
@@ -499,7 +523,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kms_secret":                          resourceAlicloudKmsSecret(),
 			"alicloud_maxcompute_project":                  resourceAlicloudMaxComputeProject(),
 			"alicloud_kms_alias":                           resourceAlicloudKmsAlias(),
-			"alicloud_dns_instance":                        resourceAlicloudDnsInstance(),
+			"alicloud_dns_instance":                        resourceAlicloudAlidnsInstance(),
 			"alicloud_dns_domain_attachment":               resourceAlicloudDnsDomainAttachment(),
 			"alicloud_edas_application":                    resourceAlicloudEdasApplication(),
 			"alicloud_edas_deploy_group":                   resourceAlicloudEdasDeployGroup(),
@@ -508,7 +532,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_edas_cluster":                        resourceAlicloudEdasCluster(),
 			"alicloud_edas_instance_cluster_attachment":    resourceAlicloudEdasInstanceClusterAttachment(),
 			"alicloud_edas_application_deployment":         resourceAlicloudEdasApplicationPackageAttachment(),
-			"alicloud_dns_domain":                          resourceAlicloudDnsDomain(),
+			"alicloud_dns_domain":                          resourceAlicloudAlidnsDomain(),
 			"alicloud_dms_enterprise_instance":             resourceAlicloudDmsEnterpriseInstance(),
 			"alicloud_waf_domain":                          resourceAlicloudWafDomain(),
 			"alicloud_cen_route_map":                       resourceAlicloudCenRouteMap(),
@@ -526,6 +550,23 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kms_key_version":                     resourceAlicloudKmsKeyVersion(),
 			"alicloud_alidns_record":                       resourceAlicloudAlidnsRecord(),
 			"alicloud_ddoscoo_scheduler_rule":              resourceAlicloudDdoscooSchedulerRule(),
+			"alicloud_cassandra_cluster":                   resourceAlicloudCassandraCluster(),
+			"alicloud_cassandra_data_center":               resourceAlicloudCassandraDataCenter(),
+			"alicloud_cen_vbr_health_check":                resourceAlicloudCenVbrHealthCheck(),
+			"alicloud_eci_openapi_image_cache":             resourceAlicloudEciImageCache(),
+			"alicloud_eci_image_cache":                     resourceAlicloudEciImageCache(),
+			"alicloud_dms_enterprise_user":                 resourceAlicloudDmsEnterpriseUser(),
+			"alicloud_ecs_dedicated_host":                  resourceAlicloudEcsDedicatedHost(),
+			"alicloud_oos_template":                        resourceAlicloudOosTemplate(),
+			"alicloud_edas_k8s_cluster":                    resourceAlicloudEdasK8sCluster(),
+			"alicloud_oos_execution":                       resourceAlicloudOosExecution(),
+			"alicloud_resource_manager_policy_attachment":  resourceAlicloudResourceManagerPolicyAttachment(),
+			"alicloud_dcdn_domain":                         resourceAlicloudDcdnDomain(),
+			"alicloud_mse_cluster":                         resourceAlicloudMseCluster(),
+			"alicloud_actiontrail_trail":                   resourceAlicloudActiontrailTrail(),
+			"alicloud_actiontrail":                         resourceAlicloudActiontrailTrail(),
+			"alicloud_alidns_domain":                       resourceAlicloudAlidnsDomain(),
+			"alicloud_alidns_instance":                     resourceAlicloudAlidnsInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -610,9 +651,12 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	endpointsSet := d.Get("endpoints").(*schema.Set)
+	endpointInit := make(map[string]interface{})
+	config.Endpoints = endpointInit
 
 	for _, endpointsSetI := range endpointsSet.List() {
 		endpoints := endpointsSetI.(map[string]interface{})
+		config.Endpoints = endpoints
 		config.EcsEndpoint = strings.TrimSpace(endpoints["ecs"].(string))
 		config.RdsEndpoint = strings.TrimSpace(endpoints["rds"].(string))
 		config.SlbEndpoint = strings.TrimSpace(endpoints["slb"].(string))
@@ -645,7 +689,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.LocationEndpoint = strings.TrimSpace(endpoints["location"].(string))
 		config.ElasticsearchEndpoint = strings.TrimSpace(endpoints["elasticsearch"].(string))
 		config.NasEndpoint = strings.TrimSpace(endpoints["nas"].(string))
-		config.ActionTrailEndpoint = strings.TrimSpace(endpoints["actiontrail"].(string))
+		config.ActiontrailEndpoint = strings.TrimSpace(endpoints["actiontrail"].(string))
 		config.BssOpenApiEndpoint = strings.TrimSpace(endpoints["bssopenapi"].(string))
 		config.DdoscooEndpoint = strings.TrimSpace(endpoints["ddoscoo"].(string))
 		config.DdosbgpEndpoint = strings.TrimSpace(endpoints["ddosbgp"].(string))
@@ -658,11 +702,16 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DmsEnterpriseEndpoint = strings.TrimSpace(endpoints["dms_enterprise"].(string))
 		config.WafOpenapiEndpoint = strings.TrimSpace(endpoints["waf_openapi"].(string))
 		config.ResourcemanagerEndpoint = strings.TrimSpace(endpoints["resourcemanager"].(string))
+		config.EciEndpoint = strings.TrimSpace(endpoints["eci"].(string))
+		config.OosEndpoint = strings.TrimSpace(endpoints["oos"].(string))
+		config.DcdnEndpoint = strings.TrimSpace(endpoints["dcdn"].(string))
+		config.MseEndpoint = strings.TrimSpace(endpoints["mse"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoints["dns"].(string))
 		}
+		config.CassandraEndpoint = strings.TrimSpace(endpoints["cassandra"].(string))
 	}
 
 	if config.RamRoleArn != "" {
@@ -833,6 +882,16 @@ func init() {
 		"resourcemanager_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom resourcemanager endpoints.",
 
 		"alidns_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom alidns endpoints.",
+
+		"cassandra_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cassandra endpoints.",
+
+		"eci_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eci endpoints.",
+
+		"oos_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom oos endpoints.",
+
+		"dcdn_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dcdn endpoints.",
+
+		"mse_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom mse endpoints.",
 	}
 }
 
@@ -877,6 +936,34 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"dcdn": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["dcdn_endpoint"],
+				},
+
+				"mse": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["mse_endpoint"],
+				},
+
+				"oos": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["oos_endpoint"],
+				},
+
+				"eci": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["eci_endpoint"],
+				},
+
 				"alidns": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -903,6 +990,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["dms_enterprise_endpoint"],
+				},
+
+				"cassandra": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cassandra_endpoint"],
 				},
 
 				"cbn": {
@@ -1219,6 +1313,11 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["waf_openapi"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["resourcemanager"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["alidns"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cassandra"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["eci"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["oos"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["dcdn"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["mse"].(string)))
 	return hashcode.String(buf.String())
 }
 

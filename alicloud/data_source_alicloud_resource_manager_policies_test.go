@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudResourceManagerPoliciesDataSource(t *testing.T) {
@@ -95,7 +95,7 @@ func testAccCheckAlicloudResourceManagerPoliciesSourceConfig(rand int, attrMap m
 	}
 	config := fmt.Sprintf(`
 resource "alicloud_resource_manager_policy" "example"{
-	policy_name = "tf-%d"
+	policy_name = "tf-testAccPolicy-%d"
 	description = "policy_test"
 	policy_document = <<EOF
 		{

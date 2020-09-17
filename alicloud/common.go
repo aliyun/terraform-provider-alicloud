@@ -193,6 +193,7 @@ const (
 	ResourceTypeGpdb          = ResourceType("Gpdb")
 	ResourceTypeHBase         = ResourceType("HBase")
 	ResourceTypeAdb           = ResourceType("ADB")
+	ResourceTypeCassandra     = ResourceType("Cassandra")
 )
 
 type InternetChargeType string
@@ -331,6 +332,22 @@ func convertListToJsonString(configured []interface{}) string {
 	return result
 }
 
+// Convert the result for an array and returns a comma separate
+func convertListToCommaSeparate(configured []interface{}) string {
+	if len(configured) < 1 {
+		return ""
+	}
+	result := ""
+	for i, v := range configured {
+		rail := ","
+		if i == len(configured)-1 {
+			rail = ""
+		}
+		result += v.(string) + rail
+	}
+	return result
+}
+
 func convertJsonStringToList(configured string) ([]interface{}, error) {
 	result := make([]interface{}, 0)
 	if err := json.Unmarshal([]byte(configured), &result); err != nil {
@@ -344,6 +361,19 @@ func convertMaptoJsonString(m map[string]interface{}) (string, error) {
 	sm := make(map[string]string, len(m))
 	for k, v := range m {
 		sm[k] = v.(string)
+	}
+
+	if result, err := json.Marshal(sm); err != nil {
+		return "", err
+	} else {
+		return string(result), nil
+	}
+}
+
+func convertMapFloat64ToJsonString(m map[string]interface{}) (string, error) {
+	sm := make(map[string]float64, len(m))
+	for k, v := range m {
+		sm[k] = v.(float64)
 	}
 
 	if result, err := json.Marshal(sm); err != nil {
@@ -755,8 +785,10 @@ func GetCenChildInstanceType(id string) (c string, e error) {
 		return ChildInstanceTypeVpc, nil
 	} else if strings.HasPrefix(id, "vbr") {
 		return ChildInstanceTypeVbr, nil
+	} else if strings.HasPrefix(id, "ccn") {
+		return ChildInstanceTypeCcn, nil
 	} else {
-		return c, fmt.Errorf("CEN child instance ID invalid. Now, it only supports VPC or VBR instance.")
+		return c, fmt.Errorf("CEN child instance ID invalid. Now, it only supports VPC or VBR or CCN instance.")
 	}
 }
 

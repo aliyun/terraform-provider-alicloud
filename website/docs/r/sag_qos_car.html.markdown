@@ -24,19 +24,19 @@ Basic Usage
 
 ```
 resource "alicloud_sag_qos" "default" {
-  name        = "tf-testAccSagQosName"
+  name = "tf-testAccSagQosName"
 }
 resource "alicloud_sag_qos_car" "default" {
-  qos_id =       "${alicloud_sag_qos.default.id}"
-  name =       "tf-testSagQosCarName"
-  description = 	"tf-testSagQosCarDescription"
-  priority =         "1"
-  limit_type =      "Absolute"
-  min_bandwidth_abs =      "10"
-  max_bandwidth_abs =      "20"
-  min_bandwidth_percent =      "10"
-  max_bandwidth_percent =      "20"
-  percent_source_type =    "InternetUpBandwidth"
+  qos_id                = alicloud_sag_qos.default.id
+  name                  = "tf-testSagQosCarName"
+  description           = "tf-testSagQosCarDescription"
+  priority              = "1"
+  limit_type            = "Absolute"
+  min_bandwidth_abs     = "10"
+  max_bandwidth_abs     = "20"
+  min_bandwidth_percent = "10"
+  max_bandwidth_percent = "20"
+  percent_source_type   = "InternetUpBandwidth"
 }
 ```
 ## Argument Reference

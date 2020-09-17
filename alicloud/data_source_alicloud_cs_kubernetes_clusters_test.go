@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudCSKubernetesClustersDataSource(t *testing.T) {
@@ -76,11 +76,6 @@ func TestAccAlicloudCSKubernetesClustersDataSource(t *testing.T) {
 			"clusters.0.connections.api_server_internet": CHECKSET,
 			"clusters.0.connections.api_server_intranet": CHECKSET,
 			"clusters.0.connections.service_domain":      CHECKSET,
-			"clusters.0.log_config.#":                    "1",
-			"clusters.0.log_config.0.type":               "logtail-ds",
-			"clusters.0.log_config.0.project":            fmt.Sprintf("tf-testacckubernetes-%d-delicate-sls", rand),
-			"clusters.0.worker_data_disk_category":       "",  // Because the API does not return  field 'worker_data_disk_category', the default value of empty is used
-			"clusters.0.worker_data_disk_size":           "0", // Because the API does not return  field 'worker_data_disk_size', the default value of 0 is used
 		}
 	}
 
@@ -139,12 +134,13 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_cs_kubernetes" "default" {
-  name_prefix = "${var.name}"
-  vswitch_ids = ["${alicloud_vswitch.default.id}"]
+  name = "${var.name}"
+  master_vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.default.id}","${alicloud_vswitch.default.id}"]
+  worker_vswitch_ids = ["${alicloud_vswitch.default.id}"]
   new_nat_gateway = true
-  master_instance_types = ["${data.alicloud_instance_types.default_m.instance_types.0.id}"]
+  master_instance_types = ["${data.alicloud_instance_types.default_m.instance_types.0.id}","${data.alicloud_instance_types.default_m.instance_types.0.id}","${data.alicloud_instance_types.default_m.instance_types.0.id}"]
   worker_instance_types = ["${data.alicloud_instance_types.default_w.instance_types.0.id}"]
-  worker_numbers = [1]
+  worker_number = "1"
   password = "Yourpassword1234"
   pod_cidr = "192.168.1.0/24"
   service_cidr = "192.168.2.0/24"
@@ -153,11 +149,7 @@ resource "alicloud_cs_kubernetes" "default" {
   worker_disk_category  = "cloud_ssd"
   worker_data_disk_category = "cloud_ssd"
   worker_data_disk_size =  200
-  master_disk_size = 50	 
-  log_config {
-    type = "SLS"
-    project = "${var.name}-delicate-sls"
-  }
+  master_disk_size = 50
 }
 `, name)
 }

@@ -5,15 +5,13 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudPolarDBAccountPrivilege_update(t *testing.T) {
 	var v *polardb.DBAccount
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testacc%sdnsrecordbasic%v.abc", defaultRegionToTest, rand)
+	name := "tf-testAccPolarDBAccountPrivilege_update"
 	resourceId := "alicloud_polardb_account_privilege.default"
 	var basicMap = map[string]string{
 		"db_cluster_id":     CHECKSET,

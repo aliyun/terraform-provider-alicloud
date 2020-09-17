@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudCenRouteEntry_basic(t *testing.T) {
@@ -85,6 +85,7 @@ func resourceCenRouteEntryConfigDependence(name string) string {
 	resource "alicloud_cen_instance_attachment" "default" {
 	    instance_id = "${alicloud_cen_instance.default.id}"
 	    child_instance_id = "${alicloud_vpc.default.id}"
+	    child_instance_type = "VPC"
 	    child_instance_region_id = "%s"
 	    depends_on = [
 	        "alicloud_vswitch.default"]

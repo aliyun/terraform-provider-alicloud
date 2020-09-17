@@ -25,15 +25,15 @@ cluster-autoscaler in Kubernetes Cluster
 
 ```
 resource "alicloud_cs_kubernetes_autoscaler" "default" {
-  cluster_id              = "${var.cluster_id}"
+  cluster_id = var.cluster_id
   nodepools {
-        id                = "scaling_group_id"
-        taints            = "c=d:NoSchedule"
-        labels            = "a=b"
+    id     = "scaling_group_id"
+    taints = "c=d:NoSchedule"
+    labels = "a=b"
   }
-  utilization             = "${var.utilization}"
-  cool_down_duration      = "${var.cool_down_duration}"
-  defer_scale_in_duration = "${var.defer_scale_in_duration}"
+  utilization             = var.utilization
+  cool_down_duration      = var.cool_down_duration
+  defer_scale_in_duration = var.defer_scale_in_duration
 }
 ```
 
@@ -50,6 +50,7 @@ The following arguments are supported:
 * `utilization` - (Required) The utilization option of cluster-autoscaler.
 * `cool_down_duration` (Required) The cool_down_duration option of cluster-autoscaler.  
 * `defer_scale_in_duration` (Required) The defer_scale_in_duration option of cluster-autoscaler.
+* `use_ecs_ram_role_token` (Optional, Available in 1.88.0+) Enable autoscaler access to alibabacloud service by ecs ramrole token. default: false
 
 ### Timeouts
 

@@ -10,10 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform/helper/hashcode"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudOssBucket() *schema.Resource {
@@ -152,7 +152,8 @@ func resourceAlicloudOssBucket() *schema.Resource {
 						},
 						"prefix": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+							Default:  "",
 						},
 						"enabled": {
 							Type:     schema.TypeBool,
@@ -244,6 +245,16 @@ func resourceAlicloudOssBucket() *schema.Resource {
 					string(oss.StorageArchive),
 				}, false),
 			},
+			"redundancy_type": {
+				Type:     schema.TypeString,
+				Default:  oss.RedundancyLRS,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(oss.RedundancyLRS),
+					string(oss.RedundancyZRS),
+				}, false),
+			},
 			"server_side_encryption_rule": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -256,6 +267,10 @@ func resourceAlicloudOssBucket() *schema.Resource {
 								ServerSideEncryptionAes256,
 								ServerSideEncryptionKMS,
 							}, false),
+						},
+						"kms_master_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 					},
 				},
@@ -308,16 +323,18 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapError(Error("[ERROR] The specified bucket name: %#v is not available. The bucket namespace is shared by all users of the OSS system. Please select a different name and try again.", request["bucketName"]))
 	}
 	type Request struct {
-		BucketName string
-		Option     oss.Option
+		BucketName           string
+		StorageClassOption   oss.Option
+		RedundancyTypeOption oss.Option
 	}
 
 	req := Request{
 		d.Get("bucket").(string),
 		oss.StorageClass(oss.StorageClassType(d.Get("storage_class").(string))),
+		oss.RedundancyType(oss.DataRedundancyType(d.Get("redundancy_type").(string))),
 	}
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return nil, ossClient.CreateBucket(req.BucketName, req.Option)
+		return nil, ossClient.CreateBucket(req.BucketName, req.StorageClassOption, req.RedundancyTypeOption)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "CreateBucket", AliyunOssGoSdk)
@@ -370,11 +387,15 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("location", object.BucketInfo.Location)
 	d.Set("owner", object.BucketInfo.Owner.ID)
 	d.Set("storage_class", object.BucketInfo.StorageClass)
+	d.Set("redundancy_type", object.BucketInfo.RedundancyType)
 
 	if &object.BucketInfo.SseRule != nil {
 		if len(object.BucketInfo.SseRule.SSEAlgorithm) > 0 && object.BucketInfo.SseRule.SSEAlgorithm != "None" {
 			rule := make(map[string]interface{})
 			rule["sse_algorithm"] = object.BucketInfo.SseRule.SSEAlgorithm
+			if object.BucketInfo.SseRule.KMSMasterKeyID != "" {
+				rule["kms_master_key_id"] = object.BucketInfo.SseRule.KMSMasterKeyID
+			}
 			data := make([]map[string]interface{}, 0)
 			data = append(data, rule)
 			d.Set("server_side_encryption_rule", data)
@@ -1028,6 +1049,10 @@ func resourceAlicloudOssBucketEncryptionUpdate(client *connectivity.AliyunClient
 	c := encryption_rule[0].(map[string]interface{})
 	if v, ok := c["sse_algorithm"]; ok {
 		sseRule.SSEDefault.SSEAlgorithm = v.(string)
+	}
+
+	if v, ok := c["kms_master_key_id"]; ok {
+		sseRule.SSEDefault.KMSMasterKeyID = v.(string)
 	}
 
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {

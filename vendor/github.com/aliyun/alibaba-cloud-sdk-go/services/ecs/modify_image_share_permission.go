@@ -78,6 +78,7 @@ type ModifyImageSharePermissionRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ImageId              string           `position:"Query" name:"ImageId"`
+	LaunchPermission     string           `position:"Query" name:"LaunchPermission"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
@@ -97,6 +98,7 @@ func CreateModifyImageSharePermissionRequest() (request *ModifyImageSharePermiss
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Ecs", "2014-05-26", "ModifyImageSharePermission", "ecs", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

@@ -79,6 +79,7 @@ type DescribePriceRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ProductCode          string           `position:"Query" name:"ProductCode"`
 	CouponNo             string           `position:"Query" name:"CouponNo"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	BusinessInfo         string           `position:"Query" name:"BusinessInfo"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
@@ -106,7 +107,8 @@ func CreateDescribePriceRequest() (request *DescribePriceRequest) {
 	request = &DescribePriceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Dds", "2015-12-01", "DescribePrice", "dds", "openAPI")
+	request.InitWithApiInfo("Dds", "2015-12-01", "DescribePrice", "Dds", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

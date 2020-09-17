@@ -98,6 +98,7 @@ func CreateResetAccountPasswordRequest() (request *ResetAccountPasswordRequest) 
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("R-kvstore", "2015-01-01", "ResetAccountPassword", "redisa", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

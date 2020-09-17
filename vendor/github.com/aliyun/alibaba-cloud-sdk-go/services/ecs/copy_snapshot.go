@@ -79,6 +79,7 @@ type CopySnapshotRequest struct {
 	ResourceOwnerId                requests.Integer   `position:"Query" name:"ResourceOwnerId"`
 	SnapshotId                     string             `position:"Query" name:"SnapshotId"`
 	DestinationRegionId            string             `position:"Query" name:"DestinationRegionId"`
+	ResourceGroupId                string             `position:"Query" name:"ResourceGroupId"`
 	Tag                            *[]CopySnapshotTag `position:"Query" name:"Tag"  type:"Repeated"`
 	ResourceOwnerAccount           string             `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerId                        requests.Integer   `position:"Query" name:"OwnerId"`
@@ -106,6 +107,7 @@ func CreateCopySnapshotRequest() (request *CopySnapshotRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Ecs", "2014-05-26", "CopySnapshot", "ecs", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

@@ -1,15 +1,16 @@
 package alicloud
 
 import (
+	"regexp"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
@@ -47,9 +48,22 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				ForceNew: true,
 			},
 			"vswitch_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Deprecated: "Field 'vswitch_id' has been deprecated from provider version 1.91.0. New field 'vswitch_ids' replace it.",
+			},
+			"vswitch_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
+				},
+				MinItems:         1,
+				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				ConflictsWith:    []string{"vswitch_id"},
 			},
 			"new_nat_gateway": {
 				Type:     schema.TypeBool,
@@ -109,6 +123,34 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"addons": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"config": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"disabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+					},
+				},
+			},
+			"version": {
+				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 		},
@@ -143,16 +185,43 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		}
 	}
 
+	addons := make([]cs.Addon, 0)
+	if v, ok := d.GetOk("addons"); ok {
+		all, ok := v.([]interface{})
+		if ok {
+			for _, a := range all {
+				addon, ok := a.(map[string]interface{})
+				if ok {
+					addons = append(addons, cs.Addon{
+						Name:     addon["name"].(string),
+						Config:   addon["config"].(string),
+						Disabled: addon["disabled"].(bool),
+					})
+				}
+			}
+		}
+	}
+
 	args := &cs.ServerlessCreationArgs{
 		Name:                 clusterName,
 		ClusterType:          cs.ClusterTypeServerlessKubernetes,
 		RegionId:             client.RegionId,
 		VpcId:                d.Get("vpc_id").(string),
-		VSwitchId:            d.Get("vswitch_id").(string),
 		EndpointPublicAccess: d.Get("endpoint_public_access_enabled").(bool),
 		PrivateZone:          d.Get("private_zone").(bool),
 		NatGateway:           d.Get("new_nat_gateway").(bool),
+		SecurityGroupId:      d.Get("security_group_id").(string),
+		Addons:               addons,
+		KubernetesVersion:    d.Get("version").(string),
 		DeletionProtection:   d.Get("deletion_protection").(bool),
+	}
+
+	if v := d.Get("vswitch_id").(string); v != "" {
+		args.VSwitchId = v
+	}
+
+	if v, ok := d.GetOk("vswitch_ids"); ok {
+		args.VswitchIds = expandStringList(v.([]interface{}))
 	}
 
 	//set tags
@@ -209,6 +278,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	_ = d.Set("security_group_id", object.SecurityGroupId)
 	_ = d.Set("deletion_protection", object.DeletionProtection)
 	_ = d.Set("tags", object.Tags)
+	_ = d.Set("version", object.CurrentVersion)
 
 	var requestInfo *cs.Client
 	var response interface{}

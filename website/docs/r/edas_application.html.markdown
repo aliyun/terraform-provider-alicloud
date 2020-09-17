@@ -19,18 +19,18 @@ Basic Usage
 
 ```
 resource "alicloud_edas_application" "default" {
-  application_name = "xxx"
-  cluster_id = "xxx"
-  package_type = "JAR"
-  build_pack_id = xxx
-  descriotion = "xxx"
-  health_check_url = "xxx"
+  application_name  = "xxx"
+  cluster_id        = "xxx"
+  package_type      = "JAR"
+  build_pack_id     = xxx
+  descriotion       = "xxx"
+  health_check_url  = "xxx"
   logical_region_id = "cn-xxxx:xxx"
-  component_ids = xxx
-  ecu_info = ["xxx"]
-  group_id = "xxx"
-  package_version = "xxx"
-  war_url = "http://xxx"
+  component_ids     = xxx
+  ecu_info          = ["xxx"]
+  group_id          = "xxx"
+  package_version   = "xxx"
+  war_url           = "http://xxx"
 }
 ```
 

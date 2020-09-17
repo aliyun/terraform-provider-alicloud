@@ -1,12 +1,13 @@
 package alicloud
 
 import (
+	"log"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunSnapshot() *schema.Resource {
@@ -36,6 +37,11 @@ func resourceAliyunSnapshot() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -55,6 +61,9 @@ func resourceAliyunSnapshotCreate(d *schema.ResourceData, meta interface{}) erro
 	request.ClientToken = buildClientToken(request.GetActionName())
 	if name, ok := d.GetOk("name"); ok {
 		request.SnapshotName = name.(string)
+	}
+	if id, ok := d.GetOk("resource_group_id"); ok {
+		request.ResourceGroupId = id.(string)
 	}
 	if description, ok := d.GetOk("description"); ok {
 		request.Description = description.(string)
@@ -88,6 +97,7 @@ func resourceAliyunSnapshotRead(d *schema.ResourceData, meta interface{}) error 
 	snapshot, err := ecsService.DescribeSnapshot(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_snapshot ecsService.DescribeSnapshot Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -95,6 +105,7 @@ func resourceAliyunSnapshotRead(d *schema.ResourceData, meta interface{}) error 
 	}
 	d.Set("name", snapshot.SnapshotName)
 	d.Set("disk_id", snapshot.SourceDiskId)
+	d.Set("resource_group_id", snapshot.ResourceGroupId)
 	d.Set("description", snapshot.Description)
 
 	tags, err := ecsService.DescribeTags(d.Id(), TagResourceSnapshot)

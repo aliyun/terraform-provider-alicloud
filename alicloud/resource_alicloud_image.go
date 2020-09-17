@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"strconv"
 	"time"
 
@@ -9,8 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliCloudImage() *schema.Resource {
@@ -254,6 +255,7 @@ func resourceAliCloudImageRead(d *schema.ResourceData, meta interface{}) error {
 	object, err := ecsService.DescribeImageById(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_image ecsService.DescribeImageById Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}

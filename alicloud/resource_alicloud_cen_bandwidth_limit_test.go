@@ -9,11 +9,11 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -255,12 +255,14 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
 
@@ -327,12 +329,14 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
 
@@ -409,18 +413,21 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
 
 resource "alicloud_cen_instance_attachment" "default2" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default2.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "cn-hangzhou"
 }
 

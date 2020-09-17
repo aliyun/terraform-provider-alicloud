@@ -12,6 +12,7 @@ groups:
       - NetworkInterface
       - Snapshot
       - LaunchTemplate
+      - EcsDedicatedHost
       # ESS
       - Ess
       # Container Service
@@ -56,6 +57,8 @@ groups:
       - Datahub
       # Cdn
       - Cdn
+      # Dcdn
+      - Dcdn
       # Api Gateway
       - ApiGateway
       # Mns
@@ -72,10 +75,10 @@ groups:
       - Kms
       # Sls
       - Log
-      # ActionTrail
-      - ActionTrail
+      # Actiontrail
+      - Actiontrail
       # SSL Certificate
-      - Cas
+      - CasCertificate
       # MongoDB
       - MongoDB
       # Ddoscoo
@@ -94,6 +97,7 @@ groups:
       - Market
       - PolarDB
       - HBase
+      - Cassandra
       - Adb
       - Maxcompute
       - Dms
@@ -121,6 +125,7 @@ groups:
       - NetworkInterface
       - Snapshot
       - LaunchTemplate
+      - EcsDedicatedHost
       # ESS
       - Ess
       # Container Service
@@ -164,6 +169,7 @@ groups:
       - Gpdb
       - PolarDB
       - HBase
+      - Cassandra
       - Adb
       - Dms
       - Sweeper-1
@@ -233,8 +239,8 @@ groups:
       - Ram
       # Kms
       - Kms
-      # ActionTrail
-      - ActionTrail
+      # Actiontrail
+      - Actiontrail
       # Cms
       - Cms
       - ResourceManager
@@ -275,7 +281,7 @@ groups:
   - name: Security
     jobs:
       # SSL Certificate
-      - Cas
+      - CasCertificate
       # Ddoscoo
       - Ddoscoo
       - Ddosbgp
@@ -961,7 +967,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Nas"
 
-  - name: ActionTrail
+  - name: Actiontrail
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -972,9 +978,9 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "ActionTrail"
+          TEST_CASE_CODE: "Actiontrail"
 
-  - name: Cas
+  - name: CasCertificate
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -985,7 +991,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Cas"
+          TEST_CASE_CODE: "CasCertificate"
 
   - name: MongoDB
     plan:
@@ -1298,6 +1304,45 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "ResourceManager"
 
+  - name: EcsDedicatedHost
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0730
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "EcsDedicatedHost"
+
+  - name: Dcdn
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0830
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Dcdn"
+
+  - name: Cassandra
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0930
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Cassandra"
+
   - name: SweeperAfter
     plan:
       - get: terraform-provider-alicloud
@@ -1321,7 +1366,7 @@ resources:
 - name: terraform-provider-alicloud
   type: git
   source:
-    uri: https://github.com/terraform-providers/terraform-provider-alicloud.git
+    uri: https://github.com/aliyun/terraform-provider-alicloud.git
     branch: master
 
 - name: aliyun-cli

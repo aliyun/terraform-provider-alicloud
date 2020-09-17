@@ -81,6 +81,7 @@ type ModifyBackupPolicyRequest struct {
 	LogBackupFrequency            string           `position:"Query" name:"LogBackupFrequency"`
 	ArchiveBackupKeepCount        string           `position:"Query" name:"ArchiveBackupKeepCount"`
 	BackupLog                     string           `position:"Query" name:"BackupLog"`
+	BackupInterval                string           `position:"Query" name:"BackupInterval"`
 	DuplicationContent            string           `position:"Query" name:"DuplicationContent"`
 	HighSpaceUsageProtection      string           `position:"Query" name:"HighSpaceUsageProtection"`
 	LogBackupLocalRetentionNumber requests.Integer `position:"Query" name:"LogBackupLocalRetentionNumber"`
@@ -100,6 +101,7 @@ type ModifyBackupPolicyRequest struct {
 	BackupRetentionPeriod         string           `position:"Query" name:"BackupRetentionPeriod"`
 	DuplicationLocation           string           `position:"Query" name:"DuplicationLocation"`
 	ArchiveBackupRetentionPeriod  string           `position:"Query" name:"ArchiveBackupRetentionPeriod"`
+	Category                      string           `position:"Query" name:"Category"`
 	LogBackupRetentionPeriod      string           `position:"Query" name:"LogBackupRetentionPeriod"`
 }
 
@@ -122,6 +124,7 @@ func CreateModifyBackupPolicyRequest() (request *ModifyBackupPolicyRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Rds", "2014-08-15", "ModifyBackupPolicy", "rds", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

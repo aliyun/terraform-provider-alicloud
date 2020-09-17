@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,9 +16,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func resourceAliyunInstance() *schema.Resource {
@@ -192,6 +193,10 @@ func resourceAliyunInstance() *schema.Resource {
 							Optional: true,
 							Default:  false,
 							ForceNew: true,
+						},
+						"kms_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"snapshot_id": {
 							Type:     schema.TypeString,
@@ -439,18 +444,24 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	instance, err := ecsService.DescribeInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_instance ecsService.DescribeInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-
-	disk, err := ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
-	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
+	var disk ecs.Disk
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		disk, err = ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
+		if err != nil {
+			if NotFoundError(err) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
+		return nil
+	})
+	if err != nil {
 		return WrapError(err)
 	}
 	d.Set("system_disk_category", disk.Category)
@@ -617,6 +628,42 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 
 			d.SetPartial("security_groups")
 		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("system_disk_size") {
+		diskReq := ecs.CreateDescribeDisksRequest()
+		diskReq.InstanceId = d.Id()
+		diskReq.DiskType = "system"
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeDisks(diskReq)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), diskReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(diskReq.GetActionName(), raw, diskReq.RpcRequest, diskReq)
+		resp := raw.(*ecs.DescribeDisksResponse)
+
+		instance, errDesc := ecsService.DescribeInstance(d.Id())
+		if errDesc != nil {
+			return WrapError(errDesc)
+		}
+
+		request := ecs.CreateResizeDiskRequest()
+		request.NewSize = requests.NewInteger(d.Get("system_disk_size").(int))
+		if instance.Status == string(Stopped) {
+			request.Type = "offline"
+		} else {
+			request.Type = "online"
+		}
+		request.DiskId = resp.Disks.Disk[0].DiskId
+		_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ResizeDisk(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("system_disk_size")
 	}
 
 	run := false
@@ -992,6 +1039,9 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 				Encrypted:          strconv.FormatBool(disk["encrypted"].(bool)),
 			}
 
+			if kmsKeyId, ok := disk["kms_key_id"]; ok {
+				dataDiskRequest.KMSKeyId = kmsKeyId.(string)
+			}
 			if name, ok := disk["name"]; ok {
 				dataDiskRequest.DiskName = name.(string)
 			}
@@ -1084,7 +1134,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	update := false
-	if d.HasChange("image_id") || d.HasChange("system_disk_size") {
+	if d.HasChange("image_id") {
 		update = true
 		if !run {
 			return update, nil

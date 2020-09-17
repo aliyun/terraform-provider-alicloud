@@ -82,6 +82,7 @@ type DescribeUserEncryptionKeyListRequest struct {
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	TargetRegionId       string           `position:"Query" name:"TargetRegionId"`
 }
 
 // DescribeUserEncryptionKeyListResponse is the response struct for api DescribeUserEncryptionKeyList
@@ -96,7 +97,8 @@ func CreateDescribeUserEncryptionKeyListRequest() (request *DescribeUserEncrypti
 	request = &DescribeUserEncryptionKeyListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Dds", "2015-12-01", "DescribeUserEncryptionKeyList", "dds", "openAPI")
+	request.InitWithApiInfo("Dds", "2015-12-01", "DescribeUserEncryptionKeyList", "Dds", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

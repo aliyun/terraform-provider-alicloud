@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudAlikafkaSaslAclsDataSource(t *testing.T) {
@@ -58,6 +58,7 @@ func TestAccAlicloudAlikafkaSaslAclsDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheckWithAlikafkaAclEnable(t)
 		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
+		testAccPreCheckWithNoDefaultVswitch(t)
 	}
 	alikafkaSaslAclsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
@@ -68,19 +69,8 @@ func dataSourceAlikafkaSaslAclsConfigDependence(name string) string {
 		 default = "%v"
 		}
 
-		data "alicloud_zones" "default" {
-			available_resource_creation= "VSwitch"
-		}
-		resource "alicloud_vpc" "default" {
-		  cidr_block = "172.16.0.0/12"
-		  name       = "${var.name}"
-		}
-		
-		resource "alicloud_vswitch" "default" {
-		  vpc_id = "${alicloud_vpc.default.id}"
-		  cidr_block = "172.16.0.0/24"
-		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-		  name       = "${var.name}"
+		data "alicloud_vswitches" "default" {
+		  is_default = "true"
 		}
 
 		resource "alicloud_alikafka_instance" "default" {
@@ -90,7 +80,7 @@ func dataSourceAlikafkaSaslAclsConfigDependence(name string) string {
 		  disk_size = "500"
 		  deploy_type = "5"
 		  io_max = "20"
-          vswitch_id = "${alicloud_vswitch.default.id}"
+          vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
 		}
 
 		resource "alicloud_alikafka_topic" "default" {

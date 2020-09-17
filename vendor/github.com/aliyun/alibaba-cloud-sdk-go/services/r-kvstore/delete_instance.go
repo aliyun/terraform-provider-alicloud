@@ -77,11 +77,13 @@ func (client *Client) DeleteInstanceWithCallback(request *DeleteInstanceRequest,
 type DeleteInstanceRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ReleaseSubInstance   requests.Boolean `position:"Query" name:"ReleaseSubInstance"`
+	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	GlobalInstanceId     string           `position:"Query" name:"GlobalInstanceId"`
 	InstanceId           string           `position:"Query" name:"InstanceId"`
-	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 }
 
 // DeleteInstanceResponse is the response struct for api DeleteInstance
@@ -96,6 +98,7 @@ func CreateDeleteInstanceRequest() (request *DeleteInstanceRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("R-kvstore", "2015-01-01", "DeleteInstance", "redisa", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

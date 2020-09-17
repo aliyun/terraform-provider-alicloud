@@ -11,7 +11,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type CenService struct {
@@ -23,6 +23,7 @@ const DefaultCenTimeoutLong = 180
 
 const ChildInstanceTypeVpc = "VPC"
 const ChildInstanceTypeVbr = "VBR"
+const ChildInstanceTypeCcn = "CCN"
 
 func (s *CenService) DescribeCenInstanceAttachment(id string) (*cbn.ChildInstance, error) {
 	c := &cbn.ChildInstance{}
@@ -395,4 +396,24 @@ func (s *CenService) GetCenAndRegionIds(id string) (retString []string, err erro
 	}
 
 	return parts, nil
+}
+
+func (s *CenService) CenInstanceAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenInstanceAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+		return object, object.Status, nil
+	}
 }

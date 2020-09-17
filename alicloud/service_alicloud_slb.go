@@ -14,8 +14,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 type SlbService struct {
@@ -36,7 +36,7 @@ func (s *SlbService) BuildSlbCommonRequest() (*requests.CommonRequest, error) {
 	slbReq := slb.CreateCreateLoadBalancerRequest()
 	req, err := s.client.NewCommonRequest(slbReq.GetProduct(), slbReq.GetLocationServiceCode(), strings.ToUpper(string(Https)), connectivity.ApiVersion20140515)
 	if err != nil {
-		err = WrapError(err)
+		return req, WrapError(err)
 	}
 	req.RegionId = s.client.RegionId
 	return req, err

@@ -13,9 +13,9 @@ import (
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 var cmsContactGroup = os.Getenv("ALICLOUD_CMS_CONTACT_GROUP")
@@ -121,6 +121,9 @@ func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "name", "tf-testAccCmsAlarm_basic"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "dimensions.%", "2"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "dimensions.device", "/dev/vda1,/dev/vdb1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_critical.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_warn.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_info.#", "1"),
 				),
 			},
 			{
@@ -152,8 +155,9 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.update", &alarm),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "name", "tf-testAccCmsAlarm_update"),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "operator", "<="),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "triggered_count", "2"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_critical.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_warn.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_info.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "dimensions.%", "2"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "dimensions.device", "/dev/vda1,/dev/vdb1"),
 					resource.TestMatchResourceAttr("alicloud_cms_alarm.update", "webhook", regexp.MustCompile("^https://[0-9]+.eu-central-1.fc.aliyuncs.com/[0-9-]+/proxy/Terraform/AlarmEndpointMock/$")),
@@ -164,8 +168,9 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 				Config: testAccCmsAlarm_updateAfter(cmsContactGroup),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.update", &alarm),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "operator", "=="),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "triggered_count", "3"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_critical.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_warn.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_info.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "dimensions.%", "2"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "dimensions.device", "/dev/vda1,/dev/vdb1"),
 					resource.TestMatchResourceAttr("alicloud_cms_alarm.update", "webhook", regexp.MustCompile("^https://[0-9]+.eu-central-1.fc.aliyuncs.com/[0-9-]+/proxy/Terraform/AlarmEndpointMock/updated$")),
@@ -266,11 +271,25 @@ func testAccCmsAlarm_basic(group string) string {
 	    instanceId = "i-bp1247jeep0y53nu3bnk,i-bp11gdcik8z6dl5jm84p"
 	    device = "/dev/vda1,/dev/vdb1"
 	  }
-	  statistics ="Average"
 	  period = 900
-	  operator = "<="
-	  threshold = 35
-	  triggered_count = 2
+	  escalations_critical {
+		statistics = "Average"
+		comparison_operator = "<="
+		threshold = 35
+		times = 2
+	  }
+	  escalations_warn {
+		statistics = "Average"
+		comparison_operator = "<="
+		threshold = 35
+		times = 2
+	  }
+	  escalations_info {
+		statistics = "Average"
+		comparison_operator = "<="
+		threshold = 35
+		times = 2
+	  }
 	  contact_groups = ["%s"]
       effective_interval = "06:00-20:00"
 	}
@@ -290,11 +309,25 @@ resource "alicloud_cms_alarm" "update" {
     instanceId = "i-bp1247jeep0y53nu3bnk,i-bp11gdcik8z6dl5jm84p"
     device = "/dev/vda1,/dev/vdb1"
   }
-  statistics ="Average"
   period = 900
-  operator = "<="
-  threshold = 35
-  triggered_count = 2
+  escalations_critical {
+	statistics = "Average"
+	comparison_operator = "<="
+	threshold = 35
+	times = 2
+  }
+  escalations_warn {
+	statistics = "Average"
+	comparison_operator = "<="
+	threshold = 35
+	times = 2
+  }
+  escalations_info {
+	statistics = "Average"
+	comparison_operator = "<="
+	threshold = 35
+	times = 2
+  }
   contact_groups = ["%s"]
   effective_interval = "06:00-20:00"
   webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
@@ -315,11 +348,25 @@ func testAccCmsAlarm_updateAfter(group string) string {
 	    instanceId = "i-bp1247jeep0y53nu3bnk,i-bp11gdcik8z6dl5jm84p"
 	    device = "/dev/vda1,/dev/vdb1"
 	  }
-	  statistics ="Average"
 	  period = 900
-	  operator = "=="
-	  threshold = 35
-	  triggered_count = 3
+	  escalations_critical {
+		statistics = "Average"
+		comparison_operator = "<"
+		threshold = 35
+		times = 3
+	  }
+	  escalations_warn {
+		statistics = "Average"
+		comparison_operator = "<"
+		threshold = 35
+		times = 3
+	  }
+	  escalations_info {
+		statistics = "Average"
+		comparison_operator = "<"
+		threshold = 35
+		times = 2
+	  }
 	  contact_groups = ["%s"]
       effective_interval = "06:00-20:00"
   	  webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/updated"
@@ -340,11 +387,25 @@ func testAccCmsAlarm_disable(group string) string {
 	    instanceId = "i-bp1247jeep0y53nu3bnk,i-bp11gdcik8z6dl5jm84p"
 	    device = "/dev/vda1,/dev/vdb1"
 	  }
-	  statistics ="Average"
 	  period = 900
-	  operator = "=="
-	  threshold = 35
-	  triggered_count = 3
+	  escalations_critical {
+		statistics = "Average"
+		comparison_operator = "<"
+		threshold = 35
+		times = 3
+	  }
+	  escalations_warn {
+		statistics = "Average"
+		comparison_operator = "<"
+		threshold = 35
+		times = 3
+	  }
+	  escalations_info {
+		statistics = "Average"
+		comparison_operator = "<"
+		threshold = 35
+		times = 2
+	  }
 	  contact_groups = ["%s"]
       effective_interval = "06:00-20:00"
 	  enabled = false

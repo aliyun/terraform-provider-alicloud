@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func TestAccAlicloudLogAlert_basic(t *testing.T) {
@@ -22,7 +22,7 @@ func TestAccAlicloudLogAlert_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("rf-testacclogalert-%d", rand)
+	name := fmt.Sprintf("tf-testacclogalert-%d", rand)
 	displayname := fmt.Sprintf("alert_displayname-%d", rand)
 	content := "aliyun sls alert test"
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogAlertDependence)

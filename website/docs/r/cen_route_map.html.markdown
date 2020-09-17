@@ -23,76 +23,78 @@ Basic Usage
 
 ```
 # Create a cen Route map resource and use it.
-
 resource "alicloud_cen_instance" "default" {
-	name = "test-name"
+  name = "test-name"
 }
 
 provider "alicloud" {
-	alias = "vpc00_region"
-	region = "cn-hangzhou"
+  alias  = "vpc00_region"
+  region = "cn-hangzhou"
 }
 
 provider "alicloud" {
-	alias = "vpc01_region"
-	region = "cn-shanghai"
+  alias  = "vpc01_region"
+  region = "cn-shanghai"
 }
 
 resource "alicloud_vpc" "vpc00" {
-	provider = "alicloud.vpc00_region"
-	name = "test-name"
-	cidr_block = "172.16.0.0/12"
+  provider   = alicloud.vpc00_region
+  name       = "test-name"
+  cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vpc" "vpc01" {
-	provider = "alicloud.vpc01_region"
-	name = "test-name"
-	cidr_block = "172.16.0.0/12"
+  provider   = alicloud.vpc01_region
+  name       = "test-name"
+  cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_cen_instance_attachment" "default00" {
-	instance_id = "${alicloud_cen_instance.default.id}"
-	child_instance_id = "${alicloud_vpc.vpc00.id}"
-	child_instance_region_id = "cn-hangzhou"
+  instance_id              = alicloud_cen_instance.default.id
+  child_instance_id        = alicloud_vpc.vpc00.id
+  child_instance_type      = "VPC"
+  child_instance_region_id = "cn-hangzhou"
 }
 
 resource "alicloud_cen_instance_attachment" "default01" {
-	instance_id = "${alicloud_cen_instance.default.id}"
-	child_instance_id = "${alicloud_vpc.vpc01.id}"
-	child_instance_region_id = "cn-shanghai"
+  instance_id              = alicloud_cen_instance.default.id
+  child_instance_id        = alicloud_vpc.vpc01.id
+  child_instance_type      = "VPC"
+  child_instance_region_id = "cn-shanghai"
 }
 
 resource "alicloud_cen_route_map" "default" {
-    cen_region_id = "cn-hangzhou"
-    cen_id = "${alicloud_cen_instance.cen.id}"
-    description = "test-desc"
-    priority = "1"
-    transmit_direction = "RegionIn"
-    map_result = "Permit"
-    next_priority = "1"
-    source_region_ids = ["cn-hangzhou"]
-    source_instance_ids = ["${alicloud_vpc.vpc00.id}"]
-    source_instance_ids_reverse_match = "false"
-    destination_instance_ids = ["${alicloud_vpc.vpc01.id}"]
-    destination_instance_ids_reverse_match = "false"
-    source_route_table_ids = ["${alicloud_vpc.vpc00.route_table_id}"]
-    destination_route_table_ids = ["${alicloud_vpc.vpc01.route_table_id}"]
-    source_child_instance_types = ["VPC"]
-    destination_child_instance_types = ["VPC"]
-    destination_cidr_blocks = ["${alicloud_vpc.vpc01.cidr_block}"]
-    cidr_match_mode = "Include"
-    route_types = ["System"]
-    match_asns = ["65501"]
-    as_path_match_mode = "Include"
-    match_community_set = ["65501:1"]
-    community_match_mode = "Include"
-    community_operate_mode = "Additive"
-    operate_community_set = ["65501:1"]
-    preference = "20"
-    prepend_as_path = ["65501"]
-    depends_on = [
-        "alicloud_cen_instance_attachment.default00",
-        "alicloud_cen_instance_attachment.default01"]
+  cen_region_id                          = "cn-hangzhou"
+  cen_id                                 = alicloud_cen_instance.cen.id
+  description                            = "test-desc"
+  priority                               = "1"
+  transmit_direction                     = "RegionIn"
+  map_result                             = "Permit"
+  next_priority                          = "1"
+  source_region_ids                      = ["cn-hangzhou"]
+  source_instance_ids                    = [alicloud_vpc.vpc00.id]
+  source_instance_ids_reverse_match      = "false"
+  destination_instance_ids               = [alicloud_vpc.vpc01.id]
+  destination_instance_ids_reverse_match = "false"
+  source_route_table_ids                 = [alicloud_vpc.vpc00.route_table_id]
+  destination_route_table_ids            = [alicloud_vpc.vpc01.route_table_id]
+  source_child_instance_types            = ["VPC"]
+  destination_child_instance_types       = ["VPC"]
+  destination_cidr_blocks                = [alicloud_vpc.vpc01.cidr_block]
+  cidr_match_mode                        = "Include"
+  route_types                            = ["System"]
+  match_asns                             = ["65501"]
+  as_path_match_mode                     = "Include"
+  match_community_set                    = ["65501:1"]
+  community_match_mode                   = "Include"
+  community_operate_mode                 = "Additive"
+  operate_community_set                  = ["65501:1"]
+  preference                             = "20"
+  prepend_as_path                        = ["65501"]
+  depends_on = [
+    alicloud_cen_instance_attachment.default00,
+    alicloud_cen_instance_attachment.default01,
+  ]
 }
 ```
 ## Argument Reference

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func testAccCheckEIPAssociationDestroy(s *terraform.State) error {
@@ -156,7 +156,6 @@ data "alicloud_instance_types" "default" {
 
 data "alicloud_images" "default" {
 	name_regex = "^ubuntu_18.*64"
-	most_recent = true
 	owners = "system"
 }
 
@@ -184,7 +183,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_instance" "default" {
   vswitch_id = "${alicloud_vswitch.default.id}"
-  image_id = "${data.alicloud_images.default.images.0.id}"
+  image_id = "${data.alicloud_images.default.images.1.id}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   system_disk_category = "cloud_ssd"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
@@ -203,6 +202,7 @@ resource "alicloud_eip" "default" {
 resource "alicloud_eip_association" "default" {
   allocation_id = "${alicloud_eip.default.id}"
   instance_id = "${alicloud_instance.default.id}"
+  force = true
 }
 `, rand)
 }
@@ -218,7 +218,6 @@ data "alicloud_instance_types" "default" {
 
 data "alicloud_images" "default" {
 	name_regex = "^ubuntu_18.*64"
-	most_recent = true
 	owners = "system"
 }
 
@@ -251,7 +250,7 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_instance" "default" {
   count = "${var.number}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  image_id = "${data.alicloud_images.default.images.0.id}"
+  image_id = "${data.alicloud_images.default.images.1.id}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   system_disk_category = "cloud_ssd"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"

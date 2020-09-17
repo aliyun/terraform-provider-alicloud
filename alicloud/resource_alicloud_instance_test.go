@@ -11,9 +11,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/terraform-providers/terraform-provider-alicloud/alicloud/connectivity"
 )
 
 func init() {
@@ -388,6 +388,16 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"status": "Stopped",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_size": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_size": "60",
 					}),
 				),
 			},
@@ -791,6 +801,7 @@ func TestAccAlicloudInstancePrepaid(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
 		IDRefreshName: resourceId,
@@ -1175,7 +1186,7 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "I_am_user_data",
 
-					"instance_charge_type": "PrePaid",
+					"instance_charge_type": "PostPaid",
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"role_name":            "${alicloud_ram_role.default.name}",
 					"data_disks": []map[string]string{
@@ -1190,6 +1201,8 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 							"size":        "20",
 							"category":    "cloud_efficiency",
 							"description": "disk2",
+							"encrypted":   "true",
+							"kms_key_id":  "${alicloud_kms_key.key.id}",
 						},
 					},
 					"force_delete": "true",
@@ -1210,15 +1223,10 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 						"data_disks.1.size":        "20",
 						"data_disks.1.category":    "cloud_efficiency",
 						"data_disks.1.description": "disk2",
-
-						"force_delete":         "true",
-						"instance_charge_type": "PrePaid",
-						"period":               "1",
-						"period_unit":          "Month",
-						"renewal_status":       "Normal",
-						"auto_renew_period":    "0",
-						"include_data_disks":   "true",
-						"dry_run":              "false",
+						"data_disks.1.encrypted":   "true",
+						"data_disks.1.kms_key_id":  CHECKSET,
+						"instance_charge_type":     "PostPaid",
+						"dry_run":                  "false",
 					}),
 				),
 			},
@@ -1284,27 +1292,28 @@ func TestAccAlicloudInstanceTypeUpdate(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_type":        "${data.alicloud_instance_types.new3.instance_types.0.id}",
-					"instance_charge_type": "PrePaid",
-					"period_unit":          "Week",
-					"force_delete":         "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_type":        REGEXMATCH + "^ecs.t5-[a-z0-9]{1,}.small",
-						"instance_charge_type": "PrePaid",
-						"period":               "1",
-						"include_data_disks":   "true",
-						"dry_run":              "false",
-						"renewal_status":       "Normal",
-						"period_unit":          "Week",
-						"force_delete":         "true",
-						"auto_renew_period":    "0",
-					}),
-				),
-			},
+			// Skip PrePaid instance resources.
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"instance_type":        "${data.alicloud_instance_types.new3.instance_types.0.id}",
+			//		"instance_charge_type": "PrePaid",
+			//		"period_unit":          "Week",
+			//		"force_delete":         "true",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"instance_type":        REGEXMATCH + "^ecs.t5-[a-z0-9]{1,}.small",
+			//			"instance_charge_type": "PrePaid",
+			//			"period":               "1",
+			//			"include_data_disks":   "true",
+			//			"dry_run":              "false",
+			//			"renewal_status":       "Normal",
+			//			"period_unit":          "Week",
+			//			"force_delete":         "true",
+			//			"auto_renew_period":    "0",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_type": "${data.alicloud_instance_types.new4.instance_types.0.id}",
@@ -1533,6 +1542,12 @@ resource "alicloud_ram_role" "default" {
 
 resource "alicloud_key_pair" "default" {
 	key_name = "${var.name}"
+}
+
+resource "alicloud_kms_key" "key" {
+        description             = "Hello KMS"
+        pending_window_in_days  = "7"
+        key_state               = "Enabled"
 }
 
 `, name)

@@ -83,8 +83,8 @@ type DescribeAvailableResourceRequest struct {
 // DescribeAvailableResourceResponse is the response struct for api DescribeAvailableResource
 type DescribeAvailableResourceResponse struct {
 	*responses.BaseResponse
-	RequestId      string         `json:"RequestId" xml:"RequestId"`
-	AvailableZones AvailableZones `json:"AvailableZones" xml:"AvailableZones"`
+	RequestId      string                                    `json:"RequestId" xml:"RequestId"`
+	AvailableZones AvailableZonesInDescribeAvailableResource `json:"AvailableZones" xml:"AvailableZones"`
 }
 
 // CreateDescribeAvailableResourceRequest creates a request to invoke DescribeAvailableResource API
@@ -93,6 +93,7 @@ func CreateDescribeAvailableResourceRequest() (request *DescribeAvailableResourc
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("HBase", "2019-01-01", "DescribeAvailableResource", "hbase", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

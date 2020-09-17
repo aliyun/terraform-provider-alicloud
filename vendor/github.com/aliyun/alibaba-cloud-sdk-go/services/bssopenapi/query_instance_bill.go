@@ -82,6 +82,7 @@ type QueryInstanceBillRequest struct {
 	BillingCycle     string           `position:"Query" name:"BillingCycle"`
 	OwnerId          requests.Integer `position:"Query" name:"OwnerId"`
 	PageNum          requests.Integer `position:"Query" name:"PageNum"`
+	BillOwnerId      requests.Integer `position:"Query" name:"BillOwnerId"`
 	BillingDate      string           `position:"Query" name:"BillingDate"`
 	ProductType      string           `position:"Query" name:"ProductType"`
 	IsBillingItem    requests.Boolean `position:"Query" name:"IsBillingItem"`
@@ -105,6 +106,7 @@ func CreateQueryInstanceBillRequest() (request *QueryInstanceBillRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "QueryInstanceBill", "", "")
+	request.Method = requests.POST
 	return
 }
 

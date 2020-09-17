@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudNasMountTargetDataSource(t *testing.T) {
@@ -18,11 +18,11 @@ func TestAccAlicloudNasMountTargetDataSource(t *testing.T) {
 	accessGroupNameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
 			"file_system_id":    `"${alicloud_nas_mount_target.default.file_system_id}"`,
-			"access_group_name": `"${alicloud_nas_access_group.default.id}"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
 			"file_system_id":    `"${alicloud_nas_mount_target.default.file_system_id}"`,
-			"access_group_name": `"${alicloud_nas_access_group.default.id}_fake"`,
+			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}_fake"`,
 		}),
 	}
 	typeConf := dataSourceTestAccConfig{
@@ -35,24 +35,34 @@ func TestAccAlicloudNasMountTargetDataSource(t *testing.T) {
 			"type":           `"${alicloud_nas_access_group.default.type}_fake"`,
 		}),
 	}
+	netWorkTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
+			"file_system_id": `"${alicloud_nas_mount_target.default.file_system_id}"`,
+			"network_type":   `"${alicloud_nas_access_group.default.access_group_type}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
+			"file_system_id": `"${alicloud_nas_mount_target.default.file_system_id}"`,
+			"network_type":   `"${alicloud_nas_access_group.default.access_group_type}_fake"`,
+		}),
+	}
 	mountTargetDomainConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
 			"file_system_id":      `"${alicloud_nas_mount_target.default.file_system_id}"`,
-			"mount_target_domain": `"${alicloud_nas_mount_target.default.id}"`,
+			"mount_target_domain": `split(":",alicloud_nas_mount_target.default.id)[1]`,
 		}),
 		fakeConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
 			"file_system_id":      `"${alicloud_nas_mount_target.default.file_system_id}"`,
-			"mount_target_domain": `"${alicloud_nas_mount_target.default.id}_fake"`,
+			"mount_target_domain": `"fake"`,
 		}),
 	}
 	vpcIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
 			"file_system_id": `"${alicloud_nas_mount_target.default.file_system_id}"`,
-			"vpc_id":         `"${alicloud_vpc.default.id}"`,
+			"vpc_id":         `"${data.alicloud_vpcs.default.vpcs.0.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
 			"file_system_id": `"${alicloud_nas_mount_target.default.file_system_id}"`,
-			"vpc_id":         `"${alicloud_vpc.default.id}_fake"`,
+			"vpc_id":         `"${data.alicloud_vpcs.default.vpcs.0.id}_fake"`,
 		}),
 	}
 	vswitchIdConf := dataSourceTestAccConfig{
@@ -62,17 +72,27 @@ func TestAccAlicloudNasMountTargetDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
 			"file_system_id": `"${alicloud_nas_mount_target.default.file_system_id}"`,
-			"vswitch_id":     `"${alicloud_nas_mount_target.default.vswitch_id}_fake"`,
+			"vswitch_id":     `"fake"`,
 		}),
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
 			"file_system_id": `"${alicloud_nas_mount_target.default.file_system_id}"`,
-			"ids":            `["${alicloud_nas_mount_target.default.id}"]`,
+			"ids":            `[split(":",alicloud_nas_mount_target.default.id)[1]]`,
 		}),
 		fakeConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
 			"file_system_id": `"${alicloud_nas_mount_target.default.file_system_id}"`,
-			"ids":            `["${alicloud_nas_mount_target.default.id}_fake"]`,
+			"ids":            `["fake"]`,
+		}),
+	}
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
+			"file_system_id": `"${alicloud_nas_mount_target.default.file_system_id}"`,
+			"status":         `"Active"`,
+		}),
+		fakeConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
+			"file_system_id": `"${alicloud_nas_mount_target.default.file_system_id}"`,
+			"status":         `"Inactive"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
@@ -81,19 +101,27 @@ func TestAccAlicloudNasMountTargetDataSource(t *testing.T) {
 			"access_group_name":   `"${alicloud_nas_mount_target.default.access_group_name}"`,
 			"vswitch_id":          `"${alicloud_nas_mount_target.default.vswitch_id}"`,
 			"type":                `"${alicloud_nas_access_group.default.type}"`,
-			"vpc_id":              `"${alicloud_vpc.default.id}"`,
-			"mount_target_domain": `"${alicloud_nas_mount_target.default.id}"`,
+			"network_type":        `"${alicloud_nas_access_group.default.access_group_type}"`,
+			"vpc_id":              `"${data.alicloud_vpcs.default.vpcs.0.id}"`,
+			"mount_target_domain": `split(":",alicloud_nas_mount_target.default.id)[1]`,
+			"status":              `"Active"`,
 		}),
 		fakeConfig: testAccCheckAlicloudMountTargetDataSourceConfig(rand, map[string]string{
 			"file_system_id":      `"${alicloud_nas_mount_target.default.file_system_id}"`,
 			"access_group_name":   `"${alicloud_nas_mount_target.default.access_group_name}"`,
 			"vswitch_id":          `"${alicloud_nas_mount_target.default.vswitch_id}_fake"`,
 			"type":                `"${alicloud_nas_access_group.default.type}_fake"`,
-			"vpc_id":              `"${alicloud_vpc.default.id}_fake"`,
-			"mount_target_domain": `"${alicloud_nas_mount_target.default.id}_fake"`,
+			"network_type":        `"${alicloud_nas_access_group.default.access_group_type}_fake}"`,
+			"vpc_id":              `"${data.alicloud_vpcs.default.vpcs.0.id}_fake"`,
+			"mount_target_domain": `"fake"`,
+			"status":              `"Inactive"`,
 		}),
 	}
-	mountTargetCheckInfo.dataSourceTestCheck(t, rand, fileSystemIdConf, accessGroupNameConf, typeConf, mountTargetDomainConf, vpcIdConf, vswitchIdConf, idsConf, allConf)
+	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckWithNoDefaultVpc(t)
+	}
+	mountTargetCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, fileSystemIdConf, accessGroupNameConf, typeConf, netWorkTypeConf, mountTargetDomainConf, vpcIdConf, vswitchIdConf, idsConf, statusConf, allConf)
 }
 
 func testAccCheckAlicloudMountTargetDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -108,18 +136,8 @@ variable "name" {
 variable "description" {
   default = "tf-testAccCheckAlicloudFileSystemsDataSource"
 }
-data "alicloud_zones" "default" {
-			available_resource_creation= "VSwitch"
-}
-resource "alicloud_vpc" "default" {
-			name = "${var.name}"
-			cidr_block = "172.16.0.0/12"
-}
-resource "alicloud_vswitch" "default" {
-			vpc_id = "${alicloud_vpc.default.id}"
-			cidr_block = "172.16.0.0/24"
-			availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-			name = "${var.name}-1"
+data "alicloud_vpcs" "default" {
+			is_default = true
 }
 variable "storage_type" {
   default = "Capacity"
@@ -133,14 +151,14 @@ resource "alicloud_nas_file_system" "default" {
   protocol_type = "${data.alicloud_nas_protocols.default.protocols.0}"
 }
 resource "alicloud_nas_access_group" "default" {
-			name = "tf-testAccNasConfig-%d"
-			type = "Vpc"
+			access_group_name = "tf-testAccNasConfig-%d"
+			access_group_type = "Vpc"
 			description = "tf-testAccNasConfig"
 }
 resource "alicloud_nas_mount_target" "default" {
 			file_system_id = "${alicloud_nas_file_system.default.id}"
-			access_group_name = "${alicloud_nas_access_group.default.id}"
-			vswitch_id = "${alicloud_vswitch.default.id}"               
+			access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
+			vswitch_id = "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"
 }
 data "alicloud_nas_mount_targets" "default" {
 		%s
@@ -151,6 +169,8 @@ data "alicloud_nas_mount_targets" "default" {
 var existMountTargetMapCheck = func(rand int) map[string]string {
 	return map[string]string{
 		"targets.0.type":                "Vpc",
+		"targets.0.network_type":        "Vpc",
+		"targets.0.status":              "Active",
 		"targets.0.vpc_id":              CHECKSET,
 		"targets.0.mount_target_domain": CHECKSET,
 		"targets.0.vswitch_id":          CHECKSET,
