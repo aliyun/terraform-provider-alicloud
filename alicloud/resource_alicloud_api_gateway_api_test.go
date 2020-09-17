@@ -420,7 +420,7 @@ func TestAccAlicloudApigatewayApi_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        "${alicloud_api_gateway_group.default.name}",
+					"name":        "${alicloud_api_gateway_group.default.name}" + "${count.index}",
 					"group_id":    "${alicloud_api_gateway_group.default.id}",
 					"description": "tf_testAcc_api description",
 					"auth_type":   "APP",
