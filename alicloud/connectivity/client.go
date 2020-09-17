@@ -441,16 +441,17 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 
 	// Initialize the OSS client if necessary
 	if client.ossconn == nil {
-		schma := client.config.Protocol
+		schma := strings.ToLower(client.config.Protocol)
 		endpoint := client.config.OssEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, OSSCode)
 		}
 		if endpoint == "" {
-			endpoint, err := client.describeEndpointForService(strings.ToLower(string(OSSCode)))
+			endpointItem, err := client.describeEndpointForService(strings.ToLower(string(OSSCode)))
 			if err != nil {
 				return nil, err
 			}
+			endpoint = endpointItem
 			if endpoint == "" {
 				endpoint = fmt.Sprintf("oss-%s.aliyuncs.com", client.RegionId)
 			}

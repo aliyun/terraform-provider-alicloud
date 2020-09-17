@@ -200,7 +200,7 @@ func (client *AliyunClient) loadEndpoint(productCode string) (string, error) {
 	// if not, get an endpoint by regional rule
 	endpoint, err := loadEndpointFromSdk(client.config, productCodeLow)
 	if err != nil {
-		log.Fatalf("[ERROR] loadEndpoint from Sdk api got an error:%s", err)
+		log.Printf("[ERROR] loadEndpoint from Sdk api got an error: %s", err)
 		serviceCode := serviceCodeMapping[productCodeLow]
 		if serviceCode == "" {
 			serviceCode = productCodeLow
@@ -210,26 +210,28 @@ func (client *AliyunClient) loadEndpoint(productCode string) (string, error) {
 			return "", err
 		}
 	}
-	client.config.Endpoints[productCodeLow] = endpoint
+	if endpoint != "" {
+		client.config.Endpoints[productCodeLow] = endpoint
+	}
 	return endpoint, nil
 }
 
 func loadEndpointFromSdk(config *Config, productCode string) (string, error) {
 	response, err := http.Post(fmt.Sprintf("http://sdk.aliyun-inc.com/api/get/release/endpoint/info?product_id=%s", productCode), "", nil)
 	if err != nil {
-		log.Fatalf("[ERROR] http.post got an error: %s", err)
+		log.Printf("[ERROR] http.post got an error: %s", err)
 		return "", err
 	}
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Fatalf("[ERROR] read http.post response got an error: %s", err)
+		log.Printf("[ERROR] read http.post response got an error: %s", err)
 		return "", err
 	}
 
 	var jsonBody interface{}
 	if err := json.Unmarshal(body, &jsonBody); err != nil {
-		log.Fatalf("[ERROR] json.Unmarshal http.post response body: %s got an error: %s", body, err)
+		log.Printf("[ERROR] json.Unmarshal http.post response body: %s got an error: %s", body, err)
 		return "", err
 	}
 	ok, err := jsonpath.Read(jsonBody, "$.ok")
@@ -239,6 +241,7 @@ func loadEndpointFromSdk(config *Config, productCode string) (string, error) {
 	if ok.(bool) {
 		endpointRegional, err := jsonpath.Read(jsonBody, "$.data.endpoint_regional")
 		if err != nil {
+			log.Printf("[ERROR] jsonpath.Read data.endpoint_regional got an error: %s", err)
 			return "", err
 		}
 		if endpointRegional == "regional" {
@@ -246,8 +249,9 @@ func loadEndpointFromSdk(config *Config, productCode string) (string, error) {
 			for _, pathKey := range []string{"endpoint_map", "standard"} {
 				endpoint, e := jsonpath.Read(jsonBody, fmt.Sprintf("$.data.endpoint_data.%s[\"%s\"]", pathKey, config.RegionId))
 				if e != nil {
-					log.Fatalf("[ERROR] jsonpath.Read endpoint got an error: %s", e)
+					log.Printf("[ERROR] jsonpath.Read endpoint got an error: %s", e)
 					err = e
+					continue
 				}
 				if endpoint != nil && endpoint.(string) != "" {
 					return endpoint.(string), nil
@@ -300,4 +304,6 @@ const (
 	OpenApiGatewayService = "apigateway.cn-hangzhou.aliyuncs.com"
 	OpenSlsService        = "sls.aliyuncs.com"
 	OpenOtsService        = "ots.cn-hangzhou.aliyuncs.com"
+	OpenOssService        = "oss-admin.aliyuncs.com"
+	OpenNasService        = "nas.cn-hangzhou.aliyuncs.com"
 )
