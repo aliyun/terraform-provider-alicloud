@@ -21,7 +21,6 @@ import (
 )
 
 // AnalyzeAppLog invokes the sls.AnalyzeAppLog API synchronously
-// api document: https://help.aliyun.com/api/sls/analyzeapplog.html
 func (client *Client) AnalyzeAppLog(request *AnalyzeAppLogRequest) (response *AnalyzeAppLogResponse, err error) {
 	response = CreateAnalyzeAppLogResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) AnalyzeAppLog(request *AnalyzeAppLogRequest) (response *An
 }
 
 // AnalyzeAppLogWithChan invokes the sls.AnalyzeAppLog API asynchronously
-// api document: https://help.aliyun.com/api/sls/analyzeapplog.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AnalyzeAppLogWithChan(request *AnalyzeAppLogRequest) (<-chan *AnalyzeAppLogResponse, <-chan error) {
 	responseChan := make(chan *AnalyzeAppLogResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) AnalyzeAppLogWithChan(request *AnalyzeAppLogRequest) (<-ch
 }
 
 // AnalyzeAppLogWithCallback invokes the sls.AnalyzeAppLog API asynchronously
-// api document: https://help.aliyun.com/api/sls/analyzeapplog.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AnalyzeAppLogWithCallback(request *AnalyzeAppLogRequest, callback func(response *AnalyzeAppLogResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -95,7 +90,8 @@ func CreateAnalyzeAppLogRequest() (request *AnalyzeAppLogRequest) {
 	request = &AnalyzeAppLogRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Sls", "2019-10-23", "AnalyzeAppLog", "sls", "openAPI")
+	request.InitWithApiInfo("Sls", "2019-10-23", "AnalyzeAppLog", "", "")
+	request.Method = requests.POST
 	return
 }
 

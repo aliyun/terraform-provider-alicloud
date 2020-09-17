@@ -21,7 +21,6 @@ import (
 )
 
 // QuerySlsLogStoreList invokes the edas.QuerySlsLogStoreList API synchronously
-// api document: https://help.aliyun.com/api/edas/queryslslogstorelist.html
 func (client *Client) QuerySlsLogStoreList(request *QuerySlsLogStoreListRequest) (response *QuerySlsLogStoreListResponse, err error) {
 	response = CreateQuerySlsLogStoreListResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) QuerySlsLogStoreList(request *QuerySlsLogStoreListRequest)
 }
 
 // QuerySlsLogStoreListWithChan invokes the edas.QuerySlsLogStoreList API asynchronously
-// api document: https://help.aliyun.com/api/edas/queryslslogstorelist.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) QuerySlsLogStoreListWithChan(request *QuerySlsLogStoreListRequest) (<-chan *QuerySlsLogStoreListResponse, <-chan error) {
 	responseChan := make(chan *QuerySlsLogStoreListResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) QuerySlsLogStoreListWithChan(request *QuerySlsLogStoreList
 }
 
 // QuerySlsLogStoreListWithCallback invokes the edas.QuerySlsLogStoreList API asynchronously
-// api document: https://help.aliyun.com/api/edas/queryslslogstorelist.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) QuerySlsLogStoreListWithCallback(request *QuerySlsLogStoreListRequest, callback func(response *QuerySlsLogStoreListResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

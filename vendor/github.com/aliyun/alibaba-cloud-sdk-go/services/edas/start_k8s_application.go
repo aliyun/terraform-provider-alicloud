@@ -21,7 +21,6 @@ import (
 )
 
 // StartK8sApplication invokes the edas.StartK8sApplication API synchronously
-// api document: https://help.aliyun.com/api/edas/startk8sapplication.html
 func (client *Client) StartK8sApplication(request *StartK8sApplicationRequest) (response *StartK8sApplicationResponse, err error) {
 	response = CreateStartK8sApplicationResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) StartK8sApplication(request *StartK8sApplicationRequest) (
 }
 
 // StartK8sApplicationWithChan invokes the edas.StartK8sApplication API asynchronously
-// api document: https://help.aliyun.com/api/edas/startk8sapplication.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) StartK8sApplicationWithChan(request *StartK8sApplicationRequest) (<-chan *StartK8sApplicationResponse, <-chan error) {
 	responseChan := make(chan *StartK8sApplicationResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) StartK8sApplicationWithChan(request *StartK8sApplicationRe
 }
 
 // StartK8sApplicationWithCallback invokes the edas.StartK8sApplication API asynchronously
-// api document: https://help.aliyun.com/api/edas/startk8sapplication.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) StartK8sApplicationWithCallback(request *StartK8sApplicationRequest, callback func(response *StartK8sApplicationResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

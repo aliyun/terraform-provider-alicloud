@@ -21,7 +21,6 @@ import (
 )
 
 // ListApplicationEcu invokes the edas.ListApplicationEcu API synchronously
-// api document: https://help.aliyun.com/api/edas/listapplicationecu.html
 func (client *Client) ListApplicationEcu(request *ListApplicationEcuRequest) (response *ListApplicationEcuResponse, err error) {
 	response = CreateListApplicationEcuResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ListApplicationEcu(request *ListApplicationEcuRequest) (re
 }
 
 // ListApplicationEcuWithChan invokes the edas.ListApplicationEcu API asynchronously
-// api document: https://help.aliyun.com/api/edas/listapplicationecu.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ListApplicationEcuWithChan(request *ListApplicationEcuRequest) (<-chan *ListApplicationEcuResponse, <-chan error) {
 	responseChan := make(chan *ListApplicationEcuResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ListApplicationEcuWithChan(request *ListApplicationEcuRequ
 }
 
 // ListApplicationEcuWithCallback invokes the edas.ListApplicationEcu API asynchronously
-// api document: https://help.aliyun.com/api/edas/listapplicationecu.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ListApplicationEcuWithCallback(request *ListApplicationEcuRequest, callback func(response *ListApplicationEcuResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

@@ -21,7 +21,6 @@ import (
 )
 
 // DeployApplication invokes the edas.DeployApplication API synchronously
-// api document: https://help.aliyun.com/api/edas/deployapplication.html
 func (client *Client) DeployApplication(request *DeployApplicationRequest) (response *DeployApplicationResponse, err error) {
 	response = CreateDeployApplicationResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DeployApplication(request *DeployApplicationRequest) (resp
 }
 
 // DeployApplicationWithChan invokes the edas.DeployApplication API asynchronously
-// api document: https://help.aliyun.com/api/edas/deployapplication.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeployApplicationWithChan(request *DeployApplicationRequest) (<-chan *DeployApplicationResponse, <-chan error) {
 	responseChan := make(chan *DeployApplicationResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DeployApplicationWithChan(request *DeployApplicationReques
 }
 
 // DeployApplicationWithCallback invokes the edas.DeployApplication API asynchronously
-// api document: https://help.aliyun.com/api/edas/deployapplication.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeployApplicationWithCallback(request *DeployApplicationRequest, callback func(response *DeployApplicationResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

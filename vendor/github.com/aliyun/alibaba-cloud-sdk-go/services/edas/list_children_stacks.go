@@ -21,7 +21,6 @@ import (
 )
 
 // ListChildrenStacks invokes the edas.ListChildrenStacks API synchronously
-// api document: https://help.aliyun.com/api/edas/listchildrenstacks.html
 func (client *Client) ListChildrenStacks(request *ListChildrenStacksRequest) (response *ListChildrenStacksResponse, err error) {
 	response = CreateListChildrenStacksResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ListChildrenStacks(request *ListChildrenStacksRequest) (re
 }
 
 // ListChildrenStacksWithChan invokes the edas.ListChildrenStacks API asynchronously
-// api document: https://help.aliyun.com/api/edas/listchildrenstacks.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ListChildrenStacksWithChan(request *ListChildrenStacksRequest) (<-chan *ListChildrenStacksResponse, <-chan error) {
 	responseChan := make(chan *ListChildrenStacksResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ListChildrenStacksWithChan(request *ListChildrenStacksRequ
 }
 
 // ListChildrenStacksWithCallback invokes the edas.ListChildrenStacks API asynchronously
-// api document: https://help.aliyun.com/api/edas/listchildrenstacks.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ListChildrenStacksWithCallback(request *ListChildrenStacksRequest, callback func(response *ListChildrenStacksResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

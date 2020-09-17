@@ -21,7 +21,6 @@ import (
 )
 
 // ScaleK8sApplication invokes the edas.ScaleK8sApplication API synchronously
-// api document: https://help.aliyun.com/api/edas/scalek8sapplication.html
 func (client *Client) ScaleK8sApplication(request *ScaleK8sApplicationRequest) (response *ScaleK8sApplicationResponse, err error) {
 	response = CreateScaleK8sApplicationResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ScaleK8sApplication(request *ScaleK8sApplicationRequest) (
 }
 
 // ScaleK8sApplicationWithChan invokes the edas.ScaleK8sApplication API asynchronously
-// api document: https://help.aliyun.com/api/edas/scalek8sapplication.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ScaleK8sApplicationWithChan(request *ScaleK8sApplicationRequest) (<-chan *ScaleK8sApplicationResponse, <-chan error) {
 	responseChan := make(chan *ScaleK8sApplicationResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ScaleK8sApplicationWithChan(request *ScaleK8sApplicationRe
 }
 
 // ScaleK8sApplicationWithCallback invokes the edas.ScaleK8sApplication API asynchronously
-// api document: https://help.aliyun.com/api/edas/scalek8sapplication.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ScaleK8sApplicationWithCallback(request *ScaleK8sApplicationRequest, callback func(response *ScaleK8sApplicationResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

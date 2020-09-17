@@ -21,7 +21,6 @@ import (
 )
 
 // BindSlb invokes the edas.BindSlb API synchronously
-// api document: https://help.aliyun.com/api/edas/bindslb.html
 func (client *Client) BindSlb(request *BindSlbRequest) (response *BindSlbResponse, err error) {
 	response = CreateBindSlbResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) BindSlb(request *BindSlbRequest) (response *BindSlbRespons
 }
 
 // BindSlbWithChan invokes the edas.BindSlb API asynchronously
-// api document: https://help.aliyun.com/api/edas/bindslb.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) BindSlbWithChan(request *BindSlbRequest) (<-chan *BindSlbResponse, <-chan error) {
 	responseChan := make(chan *BindSlbResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) BindSlbWithChan(request *BindSlbRequest) (<-chan *BindSlbR
 }
 
 // BindSlbWithCallback invokes the edas.BindSlb API asynchronously
-// api document: https://help.aliyun.com/api/edas/bindslb.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) BindSlbWithCallback(request *BindSlbRequest, callback func(response *BindSlbResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

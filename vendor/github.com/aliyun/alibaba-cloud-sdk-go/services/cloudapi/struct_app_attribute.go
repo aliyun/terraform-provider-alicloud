@@ -17,10 +17,10 @@ package cloudapi
 
 // AppAttribute is a nested struct in cloudapi response
 type AppAttribute struct {
-	AppId        int64  `json:"AppId" xml:"AppId"`
-	AppName      string `json:"AppName" xml:"AppName"`
-	Description  string `json:"Description" xml:"Description"`
-	CreatedTime  string `json:"CreatedTime" xml:"CreatedTime"`
-	ModifiedTime string `json:"ModifiedTime" xml:"ModifiedTime"`
-	Tags         Tags   `json:"Tags" xml:"Tags"`
+	AppId        int64                       `json:"AppId" xml:"AppId"`
+	AppName      string                      `json:"AppName" xml:"AppName"`
+	Description  string                      `json:"Description" xml:"Description"`
+	CreatedTime  string                      `json:"CreatedTime" xml:"CreatedTime"`
+	ModifiedTime string                      `json:"ModifiedTime" xml:"ModifiedTime"`
+	Tags         TagsInDescribeAppAttributes `json:"Tags" xml:"Tags"`
 }
