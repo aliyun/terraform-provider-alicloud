@@ -104,6 +104,16 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"credit_specification": "Standard",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"credit_specification": "Standard",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"system_disk_category": "cloud_ssd",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -271,6 +281,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 					"internet_charge_type":       REMOVEKEY,
 					"security_group_ids":         REMOVEKEY,
 					"internet_max_bandwidth_out": REMOVEKEY,
+					"credit_specification":       REMOVEKEY,
 					"system_disk_category":       REMOVEKEY,
 					"key_name":                   REMOVEKEY,
 					"role_name":                  REMOVEKEY,
@@ -296,6 +307,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 						"internet_charge_type":             REMOVEKEY,
 						"security_group_ids.#":             REMOVEKEY,
 						"internet_max_bandwidth_out":       REMOVEKEY,
+						"credit_specification":             REMOVEKEY,
 						"system_disk_category":             REMOVEKEY,
 						"key_name":                         REMOVEKEY,
 						"role_name":                        REMOVEKEY,
