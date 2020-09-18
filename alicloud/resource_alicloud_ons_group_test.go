@@ -98,7 +98,7 @@ func testSweepOnsGroup(region string) error {
 }
 
 func TestAccAlicloudOnsGroup_basic(t *testing.T) {
-	var v *ons.SubscribeInfoDo
+	var v ons.SubscribeInfoDo
 	resourceId := "alicloud_ons_group.default"
 	ra := resourceAttrInit(resourceId, onsGroupBasicMap)
 	serviceFunc := func() interface{} {
@@ -139,6 +139,20 @@ func TestAccAlicloudOnsGroup_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TFM",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "1",
+						"tags.Created": "TFM",
+					}),
+				),
 			},
 
 			{

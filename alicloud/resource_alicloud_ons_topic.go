@@ -156,7 +156,7 @@ func resourceAlicloudOnsTopicUpdate(d *schema.ResourceData, meta interface{}) er
 	d.Partial(true)
 
 	if d.HasChange("tags") {
-		if err := onsService.SetResourceTags(d, "TOPIC"); err != nil {
+		if err := onsService.SetResourceTagsForTopic(d, "TOPIC"); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("tags")
