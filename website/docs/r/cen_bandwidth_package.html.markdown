@@ -11,7 +11,7 @@ description: |-
 
 Provides a CEN bandwidth package resource. The CEN bandwidth package is an abstracted object that includes an interconnection bandwidth and interconnection areas. To buy a bandwidth package, you must specify the areas to connect. An area consists of one or more Alibaba Cloud regions. The areas in CEN include Mainland China, Asia Pacific, North America, and Europe.
 
-For information about CEN and how to use it, see [Manage bandwidth packages](https://www.alibabacloud.com/help/doc-detail/65982.htm).
+For information about CEN and how to use it, see [Manage bandwidth packages](https://www.alibabacloud.com/help/en/doc-detail/65982.htm).
 
 ## Example Usage
 
@@ -37,6 +37,8 @@ The following arguments are supported:
 * `description` - (Optional) The description of the bandwidth package. Default to null.
 * `charge_type` - (Optional) The billing method. Valid value: PostPaid | PrePaid. Default to PostPaid. If set to PrePaid, the bandwidth package can't be deleted before expired time.
 * `period` - (Optional) The purchase period in month. Valid value: 1, 2, 3, 6, 12. Default to 1.
+* `auto_renew` - (Optional, ForceNew) Whether to renew a bandwidth package automatically or not. It is valid when `charge_type` is `PrePaid`. Valid value: true, false. Default to `false`.
+* `auto_renew_duration` - (Optional, ForceNew) Auto renewal period of an instance, in the unit of month. It is valid when `charge_type` is `PrePaid`. Valid value: 1, 2, 3, 6, 12. Default to `1`.
 
 ->**NOTE:** PrePaid mode will deduct fees from the account directly and the bandwidth package can't be deleted before expired time. 
 
