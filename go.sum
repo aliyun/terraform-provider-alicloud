@@ -74,10 +74,6 @@ github.com/cloudflare/golz4 v0.0.0-20150217214814-ef862a3cdc58/go.mod h1:EOBUe0h
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/denverdino/aliyungo v0.0.0-20200720072455-26fa39a46424 h1:EzWxdDdm2nqJAfbSXpU9mY+n/joTBdwQ+fp3lp057DQ=
-github.com/denverdino/aliyungo v0.0.0-20200720072455-26fa39a46424/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
-github.com/denverdino/aliyungo v0.0.0-20200831100606-661b4d73f397 h1:P7ibEAtdWdgJatNjt2lZpMhrLPkbbZP0E9aI3ewO4no=
-github.com/denverdino/aliyungo v0.0.0-20200831100606-661b4d73f397/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
 github.com/denverdino/aliyungo v0.0.0-20200902071702-b5d3e9ff6492 h1:nFvSxgjFcNgRxCptzKEQi8z2QygnljT1eRBnPWXLmbw=
 github.com/denverdino/aliyungo v0.0.0-20200902071702-b5d3e9ff6492/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
 github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
