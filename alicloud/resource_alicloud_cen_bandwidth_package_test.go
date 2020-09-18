@@ -124,7 +124,8 @@ func testSweepCenBandwidthPackage(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCenBandwidthPackage_basic(t *testing.T) {
+// Skip this testcase because of the account cannot purchase non-internal products.
+func SkipTestAccAlicloudCenBandwidthPackage_basic(t *testing.T) {
 	var cenBwp cbn.CenBandwidthPackage
 
 	resourceId := "alicloud_cen_bandwidth_package.default"
@@ -216,7 +217,8 @@ func TestAccAlicloudCenBandwidthPackage_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenBandwidthPackage_multi(t *testing.T) {
+// Skip this testcase because of the account cannot purchase non-internal products.
+func SkipTestAccAlicloudCenBandwidthPackage_multi(t *testing.T) {
 	var cenBwp cbn.CenBandwidthPackage
 
 	resourceId := "alicloud_cen_bandwidth_package.default"
