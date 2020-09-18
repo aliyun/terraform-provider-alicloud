@@ -440,7 +440,7 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if d.HasChange("credit_specification") {
-		request.SystemDiskCategory = d.Get("credit_specification").(string)
+		request.CreditSpecification = d.Get("credit_specification").(string)
 		d.SetPartial("credit_specification")
 	}
 
