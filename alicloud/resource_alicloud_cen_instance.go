@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
@@ -23,18 +25,27 @@ func resourceAlicloudCenInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(6 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"cen_instance_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"name"},
 			},
 			"name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				Deprecated:    "Field 'name' has been deprecated from version 1.98.0. Use 'cen_instance_name' instead.",
+				ConflictsWith: []string{"cen_instance_name"},
+			},
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"protection_level": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
+				Default:  "REDUCED",
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -50,15 +61,20 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 	cbnService := CbnService{client}
 
 	request := cbn.CreateCreateCenRequest()
+	if v, ok := d.GetOk("cen_instance_name"); ok {
+		request.Name = v.(string)
+	} else if v, ok := d.GetOk("name"); ok {
+		request.Name = v.(string)
+	}
+
 	if v, ok := d.GetOk("description"); ok {
 		request.Description = v.(string)
 	}
-	if v, ok := d.GetOk("name"); ok {
-		request.Name = v.(string)
-	}
+
 	if v, ok := d.GetOk("protection_level"); ok {
 		request.ProtectionLevel = v.(string)
 	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
@@ -73,7 +89,7 @@ func resourceAlicloudCenInstanceCreate(d *schema.ResourceData, meta interface{})
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*cbn.CreateCenResponse)
-		d.SetId(response.CenId)
+		d.SetId(fmt.Sprintf("%v", response.CenId))
 		return nil
 	})
 	if err != nil {
@@ -92,13 +108,15 @@ func resourceAlicloudCenInstanceRead(d *schema.ResourceData, meta interface{}) e
 	object, err := cbnService.DescribeCenInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cen_instance cbnService.DescribeCenInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("description", object.Description)
+	d.Set("cen_instance_name", object.Name)
 	d.Set("name", object.Name)
+	d.Set("description", object.Description)
 	d.Set("protection_level", object.ProtectionLevel)
 	d.Set("status", object.Status)
 
@@ -115,7 +133,7 @@ func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 	d.Partial(true)
 
 	if d.HasChange("tags") {
-		if err := cbnService.setResourceTags(d, "cen"); err != nil {
+		if err := cbnService.SetResourceTags(d, "cen"); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("tags")
@@ -123,6 +141,14 @@ func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 	update := false
 	request := cbn.CreateModifyCenAttributeRequest()
 	request.CenId = d.Id()
+	if !d.IsNewResource() && d.HasChange("cen_instance_name") {
+		update = true
+		request.Name = d.Get("cen_instance_name").(string)
+	}
+	if !d.IsNewResource() && d.HasChange("name") {
+		update = true
+		request.Name = d.Get("name").(string)
+	}
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
 		request.Description = d.Get("description").(string)
@@ -143,8 +169,9 @@ func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
+		d.SetPartial("cen_instance_name")
 		d.SetPartial("name")
+		d.SetPartial("description")
 		d.SetPartial("protection_level")
 	}
 	d.Partial(false)

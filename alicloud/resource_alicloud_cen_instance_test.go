@@ -160,13 +160,13 @@ func TestAccAlicloudCenInstance_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        name,
-					"description": name,
+					"cen_instance_name": name,
+					"description":       name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        name,
-						"description": name,
+						"cen_instance_name": name,
+						"description":       name,
 					}),
 				),
 			},
@@ -192,10 +192,10 @@ func TestAccAlicloudCenInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": name + "update",
+					"cen_instance_name": name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"name": name + "update"}),
+					testAccCheck(map[string]string{"cen_instance_name": name + "update"}),
 				),
 			},
 			{
@@ -208,19 +208,19 @@ func TestAccAlicloudCenInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":        name,
-					"description": name,
+					"cen_instance_name": name,
+					"description":       name,
 					"tags": map[string]string{
 						"Created": "TF",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":         name,
-						"description":  name,
-						"tags.%":       "1",
-						"tags.Created": "TF",
-						"tags.Name":    REMOVEKEY,
+						"cen_instance_name": name,
+						"description":       name,
+						"tags.%":            "1",
+						"tags.Created":      "TF",
+						"tags.Name":         REMOVEKEY,
 					}),
 				),
 			},
@@ -253,8 +253,8 @@ func TestAccAlicloudCenInstance_multi(t *testing.T) {
 				Config: testAccCenInstanceMultiConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc%sCenConfig-%d-4", defaultRegionToTest, rand),
-						"description": "tf-testAccCenConfigDescription",
+						"cen_instance_name": fmt.Sprintf("tf-testAcc%sCenConfig-%d-4", defaultRegionToTest, rand),
+						"description":       "tf-testAccCenConfigDescription",
 					}),
 				),
 			},
@@ -275,7 +275,7 @@ func resourceCenInstanceConfigDependence(name string) string {
 func testAccCenInstanceMultiConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_cen_instance" "default" {
-		name = "tf-testAcc%sCenConfig-%d-${count.index}"
+		cen_instance_name = "tf-testAcc%sCenConfig-%d-${count.index}"
 		description = "tf-testAccCenConfigDescription"
 		count = 5
 }
