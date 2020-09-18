@@ -14,7 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudCenBandwidthLimitsDataSource(t *testing.T) {
+// Skip this testcase because of the account cannot purchase non-internal products.
+func SkipTestAccAlicloudCenBandwidthLimitsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 	idConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenBandwidthLimitsDataSourceConfig(rand, map[string]string{
