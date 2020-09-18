@@ -33,7 +33,7 @@ func (s *AlidnsService) DescribeAlidnsDomainGroup(id string) (object alidns.Doma
 		response, _ := raw.(*alidns.DescribeDomainGroupsResponse)
 
 		if len(response.DomainGroups.DomainGroup) < 1 {
-			err = WrapErrorf(Error(GetNotFoundMessage("AlidnsDomainGroup", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(Error(GetNotFoundMessage("AlidnsDomainGroup", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 			return object, err
 		}
 		for _, object := range response.DomainGroups.DomainGroup {
