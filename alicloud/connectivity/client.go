@@ -449,7 +449,7 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 		if endpoint == "" {
 			endpointItem, err := client.describeEndpointForService(strings.ToLower(string(OSSCode)))
 			if err != nil {
-				return nil, err
+				log.Printf("describeEndpointForService got an error: %#v.", err)
 			}
 			endpoint = endpointItem
 			if endpoint == "" {
