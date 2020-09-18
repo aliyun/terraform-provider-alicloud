@@ -1,41 +1,42 @@
-## 1.97.0 (Unreleased)
+## 1.98.0 (Unreleased)
+## 1.97.0 (September 18, 2020)
 
-- **New Resource:** `alicloud_cen_instance_attachment` [GH-2822]
-- **New Resource:** `alicloud_ons_instance` [GH-2820]
-- **New Resource:** `alicloud_cs_node_pool` [GH-2787]
-- **Data Source:** `alicloud_cen_instance_attachments` [GH-2822]
-- **Data Source:** `alicloud_ons_instances` [GH-2820]
-- **Data Source:** `alicloud_nas_services` [GH-2813]
-- **Data Source:** `alicloud_oss_services` [GH-2812]
-- **Data Source:** `alicloud_ots_services` [GH-2807]
+- **New Resource:** `alicloud_cen_instance_attachment` ([#2822](https://github.com/aliyun/terraform-provider-alicloud/issues/2822))
+- **New Resource:** `alicloud_ons_instance` ([#2820](https://github.com/aliyun/terraform-provider-alicloud/issues/2820))
+- **New Resource:** `alicloud_cs_node_pool` ([#2787](https://github.com/aliyun/terraform-provider-alicloud/issues/2787))
+- **Data Source:** `alicloud_cen_instance_attachments` ([#2822](https://github.com/aliyun/terraform-provider-alicloud/issues/2822))
+- **Data Source:** `alicloud_ons_instances` ([#2820](https://github.com/aliyun/terraform-provider-alicloud/issues/2820))
+- **Data Source:** `alicloud_nas_services` ([#2813](https://github.com/aliyun/terraform-provider-alicloud/issues/2813))
+- **Data Source:** `alicloud_oss_services` ([#2812](https://github.com/aliyun/terraform-provider-alicloud/issues/2812))
+- **Data Source:** `alicloud_ots_services` ([#2807](https://github.com/aliyun/terraform-provider-alicloud/issues/2807))
 
 IMPROVEMENTS:
 
-- Compatible domain_group_name for alidns_domain_group [GH-2830]
-- Add errorcode for DeleteDomain api [GH-2829]
-- remove datasource alicloud_edas_application useless output [GH-2826]
-- add missing pull request [GH-2825]
-- improve resource ons_topic and its datasource [GH-2823]
-- update sdk v1.61.497 [GH-2818]
-- resource alicloud_cen_instance_attachment docs and testcase support child_instance_type [GH-2817]
-- Adjust the document for Alidns [GH-2808]
-- Add waiting method for update scope [GH-2802]
-- UPDATE CHANGELOG [GH-2800]
-- improve(slb) update slb docs rules server_groups slbs [GH-2728]
-- Rewrote resource page to correct name [GH-2580]
-- datasource snapshots supports outputting tags [GH-2545]
+- Compatible domain_group_name for alidns_domain_group ([#2830](https://github.com/aliyun/terraform-provider-alicloud/issues/2830))
+- Add errorcode for DeleteDomain api ([#2829](https://github.com/aliyun/terraform-provider-alicloud/issues/2829))
+- remove datasource alicloud_edas_application useless output ([#2826](https://github.com/aliyun/terraform-provider-alicloud/issues/2826))
+- add missing pull request ([#2825](https://github.com/aliyun/terraform-provider-alicloud/issues/2825))
+- improve resource ons_topic and its datasource ([#2823](https://github.com/aliyun/terraform-provider-alicloud/issues/2823))
+- update sdk v1.61.497 ([#2818](https://github.com/aliyun/terraform-provider-alicloud/issues/2818))
+- resource alicloud_cen_instance_attachment docs and testcase support child_instance_type ([#2817](https://github.com/aliyun/terraform-provider-alicloud/issues/2817))
+- Adjust the document for Alidns ([#2808](https://github.com/aliyun/terraform-provider-alicloud/issues/2808))
+- Add waiting method for update scope ([#2802](https://github.com/aliyun/terraform-provider-alicloud/issues/2802))
+- UPDATE CHANGELOG ([#2800](https://github.com/aliyun/terraform-provider-alicloud/issues/2800))
+- improve(slb) update slb docs rules server_groups slbs ([#2728](https://github.com/aliyun/terraform-provider-alicloud/issues/2728))
+- Rewrote resource page to correct name ([#2580](https://github.com/aliyun/terraform-provider-alicloud/issues/2580))
+- datasource snapshots supports outputting tags ([#2545](https://github.com/aliyun/terraform-provider-alicloud/issues/2545))
 
 BUG FIXES:
 
-- fix resource alicloud_api_gateway_api ConcurrencyLockTimeout error [GH-2827]
-- fix elasticsearch_instance return redundant tags issue [GH-2821]
-- fix cms testcase [GH-2819]
-- fix adb cluster testcase [GH-2816]
-- fix log.Fatal bug when using tea client [GH-2814]
-- fix getting oss endpoint bug [GH-2811]
-- fix elasticsearch_instance return redundant tags issue [GH-2810]
-- fix: db instance delay set is 30s [GH-2780]
-- fix_auto_provisioning_group [GH-2552]
+- fix resource alicloud_api_gateway_api ConcurrencyLockTimeout error ([#2827](https://github.com/aliyun/terraform-provider-alicloud/issues/2827))
+- fix elasticsearch_instance return redundant tags issue ([#2821](https://github.com/aliyun/terraform-provider-alicloud/issues/2821))
+- fix cms testcase ([#2819](https://github.com/aliyun/terraform-provider-alicloud/issues/2819))
+- fix adb cluster testcase ([#2816](https://github.com/aliyun/terraform-provider-alicloud/issues/2816))
+- fix log.Fatal bug when using tea client ([#2814](https://github.com/aliyun/terraform-provider-alicloud/issues/2814))
+- fix getting oss endpoint bug ([#2811](https://github.com/aliyun/terraform-provider-alicloud/issues/2811))
+- fix elasticsearch_instance return redundant tags issue ([#2810](https://github.com/aliyun/terraform-provider-alicloud/issues/2810))
+- fix: db instance delay set is 30s ([#2780](https://github.com/aliyun/terraform-provider-alicloud/issues/2780))
+- fix_auto_provisioning_group ([#2552](https://github.com/aliyun/terraform-provider-alicloud/issues/2552))
 
 ## 1.96.0 (September 13, 2020)
 
