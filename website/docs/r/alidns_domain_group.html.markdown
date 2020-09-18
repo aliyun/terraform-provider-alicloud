@@ -18,14 +18,15 @@ Provides a Alidns Domain Group resource. For information about Alidns Domain Gro
 ```terraform
 # Add a new Alinds Domain Group.
 resource "alicloud_alidns_domain_group" "example" {
-  group_name = "tf-testDG"
+  domain_group_name = "tf-testDG"
 }
 ```
 ## Argument Reference
 
 The following arguments are supported:
 
-* `group_name` - (Required) Name of the domain group. 
+* `group_name` - (Required, Deprecated in v1.97.0+) Replaced by `domain_group_name` after version 1.97.0.
+* `domain_group_name` - (Required, Available in v1.97.0+) Name of the domain group. 
 * `lang` - (Optional) User language. 
 
 ## Attributes Reference
