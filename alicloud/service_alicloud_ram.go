@@ -695,8 +695,22 @@ func (s *RamService) DescribeRamRolePolicyAttachment(id string) (*ram.PolicyInLi
 		return response, WrapError(err)
 	}
 	request.RoleName = parts[3]
-	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.ListPoliciesForRole(request)
+	var listPoliciesForRoleResponse *ram.ListPoliciesForRoleResponse
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListPoliciesForRole(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+				time.Sleep(2 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		listPoliciesForRoleResponse, _ = raw.(*ram.ListPoliciesForRoleResponse)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
@@ -704,9 +718,7 @@ func (s *RamService) DescribeRamRolePolicyAttachment(id string) (*ram.PolicyInLi
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	listPoliciesForRoleResponse, _ := raw.(*ram.ListPoliciesForRoleResponse)
 	if len(listPoliciesForRoleResponse.Policies.Policy) > 0 {
 		for _, v := range listPoliciesForRoleResponse.Policies.Policy {
 			if v.PolicyName == parts[1] && v.PolicyType == parts[2] {
