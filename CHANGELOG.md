@@ -1,4 +1,42 @@
 ## 1.97.0 (Unreleased)
+
+- **New Resource:** `alicloud_cen_instance_attachment` [GH-2822]
+- **New Resource:** `alicloud_ons_instance` [GH-2820]
+- **New Resource:** `alicloud_cs_node_pool` [GH-2787]
+- **Data Source:** `alicloud_cen_instance_attachments` [GH-2822]
+- **Data Source:** `alicloud_ons_instances` [GH-2820]
+- **Data Source:** `alicloud_nas_services` [GH-2813]
+- **Data Source:** `alicloud_oss_services` [GH-2812]
+- **Data Source:** `alicloud_ots_services` [GH-2807]
+
+IMPROVEMENTS:
+
+- Compatible domain_group_name for alidns_domain_group [GH-2830]
+- Add errorcode for DeleteDomain api [GH-2829]
+- remove datasource alicloud_edas_application useless output [GH-2826]
+- add missing pull request [GH-2825]
+- improve resource ons_topic and its datasource [GH-2823]
+- update sdk v1.61.497 [GH-2818]
+- resource alicloud_cen_instance_attachment docs and testcase support child_instance_type [GH-2817]
+- Adjust the document for Alidns [GH-2808]
+- Add waiting method for update scope [GH-2802]
+- UPDATE CHANGELOG [GH-2800]
+- improve(slb) update slb docs rules server_groups slbs [GH-2728]
+- Rewrote resource page to correct name [GH-2580]
+- datasource snapshots supports outputting tags [GH-2545]
+
+BUG FIXES:
+
+- fix resource alicloud_api_gateway_api ConcurrencyLockTimeout error [GH-2827]
+- fix elasticsearch_instance return redundant tags issue [GH-2821]
+- fix cms testcase [GH-2819]
+- fix adb cluster testcase [GH-2816]
+- fix log.Fatal bug when using tea client [GH-2814]
+- fix getting oss endpoint bug [GH-2811]
+- fix elasticsearch_instance return redundant tags issue [GH-2810]
+- fix: db instance delay set is 30s [GH-2780]
+- fix_auto_provisioning_group [GH-2552]
+
 ## 1.96.0 (September 13, 2020)
 
 - **Data Source:** `alicloud_log_service` ([#2804](https://github.com/aliyun/terraform-provider-alicloud/issues/2804))
