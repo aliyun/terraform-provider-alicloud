@@ -129,6 +129,9 @@ The following arguments are supported:
 If it is a multi-zone and `vswitch_id` is specified, the vswitch must in the one of them.
 The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
 * `vswitch_id` - (ForceNew) The virtual switch ID to launch DB instances in one VPC. If there are multiple vswitches, separate them with commas.
+
+  Note: For multiple vswitches, only the first vswitch will be saved eventually in the Terraform state eventually as [DescribeDBInstanceAttribute](https://www.alibabacloud.com/help/doc-detail/26231.htm) only returns the first vswitch.
+
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `security_ip_mode` - (Optional, Available in 1.62.1+)  Valid values are `normal`, `safety`, Default to `normal`. support `safety` switch to high security access mode 
 * `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) .

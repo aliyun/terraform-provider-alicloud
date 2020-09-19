@@ -101,6 +101,11 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// Unfortunately RDS API doesn't retain the info about the additional vswitch
+					// so after creation, we can only compare the first vswitch to guess if there is a diff
+					return old == Trim(strings.Split(new, COMMA_SEPARATED)[0])
+				},
 			},
 			"instance_name": {
 				Type:         schema.TypeString,
