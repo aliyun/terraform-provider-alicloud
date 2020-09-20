@@ -130,9 +130,9 @@ If it is a multi-zone and `vswitch_id` is specified, the vswitch must in the one
 The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
 * `vswitch_id` - (ForceNew) The virtual switch ID to launch DB instances in one VPC. If there are multiple vswitches, separate them with commas.
 
-  Note: putting multiple vswitches separated with commas in this field has been deprecated. Use `vswitch_id_slave_1` if you need to define the vswitch of the secondary instance.
+  Note: putting multiple vswitches separated with commas in this field has been deprecated. Use `vswitch_id_slaves` if you need to define additional vswitches for secondary instances.
 
-* `vswitch_id_slave_1` - (ForceNew, Optional) The virtual switch ID to launch the secondary DB instances in one VPC in the case of a High-Availability DB instance.
+* `vswitch_id_slaves` - (ForceNew, Optional) List of virtual switchs ID where to launch the secondary DB instances in one VPC in the case of a High-Availability DB instance.
 
   Note: You need to use a multi-AZ zone (like `cn-beijing-MAZ5(a,c)`, `ap-southeast-1MAZ1(a,b)`... ) in `zone_id` for this argument to work.
 

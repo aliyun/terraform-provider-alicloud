@@ -107,8 +107,11 @@ func resourceAlicloudDBInstance() *schema.Resource {
 					return old == Trim(strings.Split(new, COMMA_SEPARATED)[0])
 				},
 			},
-			"vswitch_id_slave_1": {
-				Type:     schema.TypeString,
+			"vswitch_id_slaves": {
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 				ForceNew: true,
 				Optional: true,
 			},
@@ -795,10 +798,17 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 		request.ZoneId = Trim(zone.(string))
 	}
 
-	vswitchId := Trim(d.Get("vswitch_id").(string))
+	slaveVswitchesIds := []string{}
+	if vswitchIdSlaves, ok := d.GetOk("vswitch_id_slaves"); ok {
+		for _, slaveVswitchId := range vswitchIdSlaves.([]interface{}) {
+			slaveVswitchesIds = append(slaveVswitchesIds, Trim(slaveVswitchId.(string)))
+		}
+	}
 
-	if vswitchIdSlave1, ok := d.GetOk("vswitch_id_slave_1"); ok && Trim(vswitchIdSlave1.(string)) != "" {
-		vswitchId = strings.Join([]string{vswitchId, vswitchIdSlave1.(string)}, ",")
+	vswitchId := Trim(d.Get("vswitch_id").(string))
+	// RDS API expects all vswitches to be a coma-separated list in VswitchID parameter
+	if len(slaveVswitchesIds) > 0 {
+		vswitchId = strings.Join(append([]string{vswitchId}, slaveVswitchesIds...), ",")
 	}
 
 	request.InstanceNetworkType = string(Classic)
