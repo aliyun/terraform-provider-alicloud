@@ -96,7 +96,16 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
-
+			"zone_id_slaves": {
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				MaxItems: 2,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				ForceNew: true,
@@ -661,6 +670,13 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_storage", instance.DBInstanceStorage)
 	d.Set("db_instance_storage_type", instance.DBInstanceStorageType)
 	d.Set("zone_id", instance.ZoneId)
+
+	slaveZones := []string{}
+	for _, slaveZone := range instance.SlaveZones.SlaveZone {
+		slaveZones = append(slaveZones, slaveZone.ZoneId)
+	}
+	d.Set("zone_id_slaves", slaveZones)
+
 	d.Set("instance_charge_type", instance.PayType)
 	d.Set("period", d.Get("period"))
 	d.Set("vswitch_id", instance.VSwitchId)
@@ -790,12 +806,20 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 	request.DBInstanceDescription = d.Get("instance_name").(string)
 	request.DBInstanceStorageType = d.Get("db_instance_storage_type").(string)
 
+	requestZoneIdSlaves := []*string{&request.ZoneIdSlave1, &request.ZoneIdSlave2}
+
 	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
 		request.ResourceGroupId = v.(string)
 	}
 
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
 		request.ZoneId = Trim(zone.(string))
+	}
+
+	if zoneSlaves, ok := d.GetOk("zone_id_slaves"); ok {
+		for i, zone := range zoneSlaves.([]interface{}) {
+			*requestZoneIdSlaves[i] = Trim(zone.(string))
+		}
 	}
 
 	slaveVswitchesIds := []string{}
@@ -809,6 +833,17 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 	// RDS API expects all vswitches to be a coma-separated list in VswitchID parameter
 	if len(slaveVswitchesIds) > 0 {
 		vswitchId = strings.Join(append([]string{vswitchId}, slaveVswitchesIds...), ",")
+	}
+
+	// Set zoneIdSlaves based on slave vswitches zones if zoneIDSlaves are not specified
+	for i, slaveVswitchId := range slaveVswitchesIds {
+		if *requestZoneIdSlaves[i] == "" {
+			vsw, err := vpcService.DescribeVSwitch(slaveVswitchId)
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			*requestZoneIdSlaves[i] = vsw.ZoneId
+		}
 	}
 
 	request.InstanceNetworkType = string(Classic)
