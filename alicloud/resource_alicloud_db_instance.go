@@ -107,6 +107,11 @@ func resourceAlicloudDBInstance() *schema.Resource {
 					return old == Trim(strings.Split(new, COMMA_SEPARATED)[0])
 				},
 			},
+			"vswitch_id_slave_1": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Optional: true,
+			},
 			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -791,6 +796,10 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 	}
 
 	vswitchId := Trim(d.Get("vswitch_id").(string))
+
+	if vswitchIdSlave1, ok := d.GetOk("vswitch_id_slave_1"); ok && Trim(vswitchIdSlave1.(string)) != "" {
+		vswitchId = strings.Join([]string{vswitchId, vswitchIdSlave1.(string)}, ",")
+	}
 
 	request.InstanceNetworkType = string(Classic)
 
