@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/aliyun/fc-go-sdk"
@@ -20,7 +22,7 @@ func resourceAlicloudFCCustomDomain() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"name": {
+			"domain_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -64,13 +66,13 @@ func resourceAlicloudFCCustomDomain() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"name": {
+						"cert_name": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
 						"private_key": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
 						"certificate": {
 							Type:     schema.TypeString,
@@ -102,14 +104,7 @@ func resourceAlicloudFCCustomDomain() *schema.Resource {
 func resourceAlicloudFCCustomDomainCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	var name string
-	if v, ok := d.GetOk("name"); ok {
-		name = v.(string)
-	} else if v, ok := d.GetOk("name_prefix"); ok {
-		name = resource.PrefixedUniqueId(v.(string))
-	} else {
-		name = resource.UniqueId()
-	}
+	name := d.Get("domain_name").(string)
 
 	request := &fc.CreateCustomDomainInput{
 		DomainName: StringPointer(name),
@@ -157,13 +152,14 @@ func resourceAlicloudFCCustomDomainRead(d *schema.ResourceData, meta interface{}
 	object, err := fcService.DescribeFcCustomDomain(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_fc_custom_domain fcService.DescribeFcCustomDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("name", object.DomainName)
+	d.Set("domain_name", object.DomainName)
 	d.Set("account_id", object.AccountID)
 	d.Set("protocol", object.Protocol)
 	d.Set("api_version", object.APIVersion)
@@ -188,16 +184,18 @@ func resourceAlicloudFCCustomDomainRead(d *schema.ResourceData, meta interface{}
 
 	var certConfig []map[string]interface{}
 	if object.CertConfig != nil {
-		if object.CertConfig.CertName != nil && object.CertConfig.PrivateKey != nil && object.CertConfig.Certificate != nil {
+		// Do not read "private key" data for security reason.
+		if object.CertConfig.CertName != nil && object.CertConfig.Certificate != nil {
 			certConfig = append(certConfig, map[string]interface{}{
-				"name":        *object.CertConfig.CertName,
-				"private_key": *object.CertConfig.PrivateKey,
+				"cert_name":   *object.CertConfig.CertName,
 				"certificate": *object.CertConfig.Certificate,
+				//"private_key": strings.Replace(testFcPrivateKey, `\n`, "\n", -1),
 			})
-		} else if object.CertConfig.CertName == nil && object.CertConfig.PrivateKey == nil && object.CertConfig.Certificate == nil {
+		} else if object.CertConfig.CertName == nil && object.CertConfig.Certificate == nil {
 			// Skip the null cert config.
 		} else {
-			return WrapError(Error(fmt.Sprintf("Illegal cert config: %v", object.CertConfig)))
+			b, _ := json.Marshal(object)
+			return WrapError(Error(fmt.Sprintf("Illegal cert config: %s", string(b))))
 		}
 	}
 	if err := d.Set("cert_config", certConfig); err != nil {
@@ -287,7 +285,7 @@ func parseCertConfig(d *schema.ResourceData) (config *fc.CertConfig) {
 	if v, ok := d.GetOk("cert_config"); ok {
 		m := v.([]interface{})[0].(map[string]interface{})
 		config = &fc.CertConfig{
-			CertName:    StringPointer(m["name"].(string)),
+			CertName:    StringPointer(m["cert_name"].(string)),
 			PrivateKey:  StringPointer(m["private_key"].(string)),
 			Certificate: StringPointer(m["certificate"].(string)),
 		}
