@@ -996,6 +996,90 @@ resource "alicloud_security_group" "default" {
 `, RdsCommonTestCase, name)
 }
 
+// Unknown current resource exists
+func TestAccAlicloudDBInstanceMultiAZWithSlaveZone(t *testing.T) {
+	var instance = &rds.DBInstanceAttribute{}
+	resourceId := "alicloud_db_instance.default"
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	ra := resourceAttrInit(resourceId, instanceBasicMap)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "tf-testAccDBInstance_multiAZWithSlaveZone"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceMysqlMultiAZWithSlaveZoneConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":            "${data.alicloud_db_instance_engines.default.instance_engines.0.engine}",
+					"engine_version":    "${data.alicloud_db_instance_engines.default.instance_engines.0.engine_version}",
+					"instance_type":     "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":  "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
+					"zone_id":           "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}",
+					"zone_id_slaves":    []string{"${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.1.sub_zone_ids.0}"},
+					"instance_name":     "${var.name}",
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"vswitch_id_slaves": []string{"${alicloud_vswitch.secondary_zone_vswitch.id}"},
+					"monitoring_period": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id_slaves.#": "1",
+						"zone_id_slaves.0": CHECKSET,
+						"instance_name":    "tf-testAccDBInstance_multiAZWithSlaveZone",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
+func resourceDBInstanceMysqlMultiAZWithSlaveZoneConfigDependence(name string) string {
+	return fmt.Sprintf(`
+%s
+variable "name" {
+	default = "%s"
+}
+variable "creation" {
+		default = "Rds"
+}
+
+resource "alicloud_vswitch" "secondary_zone_vswitch" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.1.0/24"
+  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.1.sub_zone_ids.0}"
+  name              = "${var.name}"
+}
+
+data "alicloud_db_instance_engines" "default" {
+    engine               = "MySQL"
+    engine_version       = "5.6"
+}
+
+data "alicloud_db_instance_classes" "default" {
+    engine               = "MySQL"
+    engine_version       = "5.6"
+}
+
+resource "alicloud_security_group" "default" {
+	name   = "${var.name}"
+	vpc_id = "${alicloud_vpc.default.id}"
+}
+`, RdsCommonTestCase, name)
+}
+
 func TestAccAlicloudDBInstanceClassic(t *testing.T) {
 	var instance *rds.DBInstanceAttribute
 
