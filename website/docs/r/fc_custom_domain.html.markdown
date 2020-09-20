@@ -23,7 +23,7 @@ variable "name" {
 }
 
 resource "alicloud_fc_custom_domain" "default" {
-	name = "terraform.functioncompute.com"
+	domain_name = "terraform.functioncompute.com"
 	protocol = "HTTP"
 	route_config {
 		path = "/login/*"
@@ -33,7 +33,7 @@ resource "alicloud_fc_custom_domain" "default" {
 		methods = ["GET","POST"]
 	}
   cert_config {
-    name = "your certificate name"
+    cert_name = "your certificate name"
     private_key = "your private key"
     certificate = "your certificate data"
   }
@@ -74,7 +74,7 @@ resource "alicloud_fc_function" "default" {
 
 The following arguments are supported:
 
-* `name` - (Required, ForceNew) The custom domain name. For example, "example.com".
+* `domain_name` - (Required, ForceNew) The custom domain name. For example, "example.com".
 * `protocol` - (Required) The protocol, "HTTP" or "HTTP,HTTPS".
 * `route_config` - (Optional) The configuration of domain route, mapping the path and Function Compute function.
 * `cert_config` - (Optional) The configuration of HTTPS certificate.
@@ -90,7 +90,7 @@ The following arguments are supported:
 
 **cert_config** includes the following arguments:
 
-* `name` - (Required) The name of the certificate, used to distinguish different certificates.
+* `cert_name` - (Required) The name of the certificate, used to distinguish different certificates.
 * `private_key` - (Required) Private key of the HTTPS certificates, follow the 'pem' format.
 * `certificate` - (Required) Certificate data of the HTTPS certificates, follow the 'pem' format.
 
@@ -98,6 +98,7 @@ The following arguments are supported:
 
 The following arguments are exported:
 
+* `id` -The id of the custom domain. It is the same as the domain name.
 * `account_id` - The account id.
 * `api_version` - The api version of Function Compute.
 * `created_time` - The date this resource was created.
@@ -105,7 +106,7 @@ The following arguments are exported:
 
 ## Import
 
-Function Compute custom domain can be imported using the name, e.g.
+Function Compute custom domain can be imported using the id or the domain name, e.g.
 
 ```
 $ terraform import alicloud_fc_custom_domain.foo my-fc-custom-domain

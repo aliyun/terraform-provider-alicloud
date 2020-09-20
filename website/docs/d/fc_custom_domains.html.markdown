@@ -13,13 +13,13 @@ This data source provides the Function Compute custom domains of the current Ali
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_fc_custom_domains" "fc_domains_ds" {
   name_regex = "sample_fc_custom_domain"
 }
 
 output "first_fc_custom_domain_name" {
-  value = "${data.alicloud_fc_custom_domains.fc_domains_ds.custom_domains.0.name}"
+  value = "data.alicloud_fc_custom_domains.fc_domains_ds.domains.0.domain_name"
 }
 ```
 
@@ -35,8 +35,8 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Function Compute custom domain names.
-* `custom_domains` - A list of Function Compute custom domains, including the following attributes:
-  * `name` - The custom domain name.
+* `domains` - A list of Function Compute custom domains, including the following attributes:
+  * `domain_name` - The custom domain name.
   * `protocol` - The custom domain protocol.
   * `account_id` - The account id.
   * `api_version` - The API version of the Function Compute service.
@@ -49,7 +49,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `qualifier` - The version or alias of the Function Compute service that requests are routed to. For example, qualifier v1 indicates that the requests are routed to the version 1 Function Compute service.
     * `methods` - The requests of the specified HTTP methos are routed from. Valid method: GET, POST, DELETE, HEAD, PUT and PATCH. For example, "GET, HEAD" methods indicate that only requests from GET and HEAD methods are routed.
   * `cert_config` - The configuration of HTTPS certificate.
-    * `name` - The name of the certificate.
+    * `cert_name` - The name of the certificate.
     * `private_key` - Private key of the HTTPS certificates, follow the 'pem' format.
     * `certificate` - Certificate data of the HTTPS certificates, follow the 'pem'.
       

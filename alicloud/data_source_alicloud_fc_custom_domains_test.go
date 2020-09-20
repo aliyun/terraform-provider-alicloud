@@ -24,27 +24,27 @@ func TestAccAlicloudFCCustomDomainsDataSource(t *testing.T) {
 
 	var existFCCustomDomainsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"custom_domains.#":                              "1",
-			"names.#":                                       "1",
-			"custom_domains.0.name":                         "terraform.functioncompute.com",
-			"custom_domains.0.protocol":                     "HTTP",
-			"custom_domains.0.account_id":                   CHECKSET,
-			"custom_domains.0.api_version":                  CHECKSET,
-			"custom_domains.0.created_time":                 CHECKSET,
-			"custom_domains.0.last_modified_time":           CHECKSET,
-			"custom_domains.0.route_config.0.path":          "/*",
-			"custom_domains.0.route_config.0.service_name":  name,
-			"custom_domains.0.route_config.0.function_name": name,
-			"custom_domains.0.route_config.0.qualifier":     "v1",
-			"custom_domains.0.route_config.0.methods.0":     "GET",
-			"custom_domains.0.route_config.0.methods.1":     "POST",
+			"domains.#":                              "1",
+			"names.#":                                "1",
+			"domains.0.domain_name":                  "terraform.functioncompute.com",
+			"domains.0.protocol":                     "HTTP",
+			"domains.0.account_id":                   CHECKSET,
+			"domains.0.api_version":                  CHECKSET,
+			"domains.0.created_time":                 CHECKSET,
+			"domains.0.last_modified_time":           CHECKSET,
+			"domains.0.route_config.0.path":          "/*",
+			"domains.0.route_config.0.service_name":  name,
+			"domains.0.route_config.0.function_name": name,
+			"domains.0.route_config.0.qualifier":     "v1",
+			"domains.0.route_config.0.methods.0":     "GET",
+			"domains.0.route_config.0.methods.1":     "POST",
 		}
 	}
 
 	var fakeFCCustomDomainsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"custom_domains.#": "0",
-			"names.#":          "0",
+			"domains.#": "0",
+			"names.#":   "0",
 		}
 	}
 
@@ -64,7 +64,7 @@ variable "name" {
 }
 
 resource "alicloud_fc_custom_domain" "default" {
-	name = "terraform.functioncompute.com"
+	domain_name = "terraform.functioncompute.com"
 	protocol = "HTTP"
 	route_config {
 		path = "/*"

@@ -31,12 +31,12 @@ func dataSourceAlicloudFcCustomDomains() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			// Computed values
-			"custom_domains": {
+			"domains": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"name": {
+						"domain_name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -95,7 +95,7 @@ func dataSourceAlicloudFcCustomDomains() *schema.Resource {
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"name": {
+									"cert_name": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
@@ -145,7 +145,7 @@ func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interfac
 
 		for _, domain := range response.CustomDomains {
 			mapping := map[string]interface{}{
-				"name":               *domain.DomainName,
+				"domain_name":        *domain.DomainName,
 				"account_id":         *domain.AccountID,
 				"protocol":           *domain.Protocol,
 				"api_version":        *domain.APIVersion,
@@ -168,8 +168,7 @@ func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interfac
 			var certConfigMappings []map[string]interface{}
 			if domain.CertConfig != nil && domain.CertConfig.CertName != nil {
 				certConfigMappings = append(certConfigMappings, map[string]interface{}{
-					"name":        *domain.CertConfig.CertName,
-					"private_key": *domain.CertConfig.PrivateKey,
+					"cert_name":   *domain.CertConfig.CertName,
 					"certificate": *domain.CertConfig.Certificate,
 				})
 			}
@@ -199,7 +198,7 @@ func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interfac
 	}
 
 	d.SetId(dataResourceIdHash(names))
-	if err := d.Set("custom_domains", customDomainMappings); err != nil {
+	if err := d.Set("domains", customDomainMappings); err != nil {
 		return WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
