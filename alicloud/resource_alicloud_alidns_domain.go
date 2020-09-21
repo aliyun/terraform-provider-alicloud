@@ -63,6 +63,7 @@ func resourceAlicloudAlidnsDomain() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"tags": tagsSchema(),
