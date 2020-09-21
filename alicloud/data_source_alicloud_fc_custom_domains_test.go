@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -15,10 +16,10 @@ func TestAccAlicloudFCCustomDomainsDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_fc_custom_domain.default.name}",
+			"name_regex": "${alicloud_fc_custom_domain.default.domain_name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "${alicloud_fc_custom_domain.default.name}_fake",
+			"name_regex": "${alicloud_fc_custom_domain.default.domain_name}_fake",
 		}),
 	}
 
@@ -27,7 +28,7 @@ func TestAccAlicloudFCCustomDomainsDataSource(t *testing.T) {
 			"domains.#":                              "1",
 			"names.#":                                "1",
 			"domains.0.domain_name":                  "terraform.functioncompute.com",
-			"domains.0.protocol":                     "HTTP",
+			"domains.0.protocol":                     "HTTP,HTTPS",
 			"domains.0.account_id":                   CHECKSET,
 			"domains.0.api_version":                  CHECKSET,
 			"domains.0.created_time":                 CHECKSET,
@@ -38,6 +39,8 @@ func TestAccAlicloudFCCustomDomainsDataSource(t *testing.T) {
 			"domains.0.route_config.0.qualifier":     "v1",
 			"domains.0.route_config.0.methods.0":     "GET",
 			"domains.0.route_config.0.methods.1":     "POST",
+			"domains.0.cert_config.0.cert_name":      "test",
+			"domains.0.cert_config.0.certificate":    strings.Replace(testFcCertificate, `\n`, "\n", -1),
 		}
 	}
 
@@ -65,13 +68,18 @@ variable "name" {
 
 resource "alicloud_fc_custom_domain" "default" {
 	domain_name = "terraform.functioncompute.com"
-	protocol = "HTTP"
+	protocol = "HTTP,HTTPS"
 	route_config {
 		path = "/*"
 		service_name = "${alicloud_fc_service.default.name}"
 		function_name = "${alicloud_fc_function.default.name}"
 		qualifier = "v1"
 		methods = ["GET","POST"]
+	}
+	cert_config {
+		cert_name = "test"
+		private_key = "%s"
+		certificate = "%s"
 	}
 }
 
@@ -104,5 +112,5 @@ resource "alicloud_fc_function" "default" {
 	runtime = "python2.7"
 	handler = "hello.handler"
 }
-`, name)
+`, name, testFcPrivateKey, testFcCertificate)
 }

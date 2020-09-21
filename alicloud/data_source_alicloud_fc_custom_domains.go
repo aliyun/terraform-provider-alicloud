@@ -180,7 +180,7 @@ func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interfac
 				if nameRegex != "" {
 					r = regexp.MustCompile(nameRegex.(string))
 				}
-				if r != nil && !r.MatchString(mapping["name"].(string)) {
+				if r != nil && !r.MatchString(mapping["domain_name"].(string)) {
 					continue
 				}
 			}
