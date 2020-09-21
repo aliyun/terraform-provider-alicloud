@@ -30,6 +30,13 @@ func dataSourceAlicloudFcCustomDomains() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			// Computed values
 			"domains": {
 				Type:     schema.TypeList,
@@ -120,6 +127,14 @@ func dataSourceAlicloudFcCustomDomains() *schema.Resource {
 func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
+	var ids []string
 	var names []string
 	var customDomainMappings []map[string]interface{}
 	nextToken := ""
@@ -174,6 +189,7 @@ func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interfac
 			}
 			mapping["cert_config"] = certConfigMappings
 
+			// Filter by name.
 			nameRegex, ok := d.GetOk("name_regex")
 			if ok && nameRegex.(string) != "" {
 				var r *regexp.Regexp
@@ -184,7 +200,14 @@ func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interfac
 					continue
 				}
 			}
+			// Filter by id.
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[*domain.DomainName]; !ok {
+					continue
+				}
+			}
 			customDomainMappings = append(customDomainMappings, mapping)
+			ids = append(ids, *domain.DomainName)
 			names = append(names, *domain.DomainName)
 		}
 
@@ -197,8 +220,11 @@ func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	d.SetId(dataResourceIdHash(names))
+	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("domains", customDomainMappings); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {

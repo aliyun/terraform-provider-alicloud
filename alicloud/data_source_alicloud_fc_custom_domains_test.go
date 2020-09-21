@@ -14,6 +14,15 @@ func TestAccAlicloudFCCustomDomainsDataSource(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc-fc-custom-domains-%d", rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceFCCustomDomainsConfigDependence)
 
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_fc_custom_domain.default.id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_fc_custom_domain.default.id}_fake"},
+		}),
+	}
+
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_fc_custom_domain.default.domain_name}",
@@ -23,9 +32,21 @@ func TestAccAlicloudFCCustomDomainsDataSource(t *testing.T) {
 		}),
 	}
 
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_fc_custom_domain.default.domain_name}",
+			"ids":        []string{"${alicloud_fc_custom_domain.default.id}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_fc_custom_domain.default.domain_name}_fake",
+			"ids":        []string{"${alicloud_fc_custom_domain.default.id}_fake"},
+		}),
+	}
+
 	var existFCCustomDomainsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"domains.#":                              "1",
+			"ids.#":                                  "1",
 			"names.#":                                "1",
 			"domains.0.domain_name":                  "terraform.functioncompute.com",
 			"domains.0.protocol":                     "HTTP,HTTPS",
@@ -47,6 +68,7 @@ func TestAccAlicloudFCCustomDomainsDataSource(t *testing.T) {
 	var fakeFCCustomDomainsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"domains.#": "0",
+			"ids.#":     "0",
 			"names.#":   "0",
 		}
 	}
@@ -57,7 +79,7 @@ func TestAccAlicloudFCCustomDomainsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeFCCustomDomainsMapFunc,
 	}
 
-	fcCustomDomainsRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf)
+	fcCustomDomainsRecordsCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
 }
 
 func dataSourceFCCustomDomainsConfigDependence(name string) string {
