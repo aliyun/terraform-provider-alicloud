@@ -71,8 +71,9 @@ func resourceAlicloudFCCustomDomain() *schema.Resource {
 							Required: true,
 						},
 						"private_key": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:      schema.TypeString,
+							Required:  true,
+							Sensitive: true,
 						},
 						"certificate": {
 							Type:     schema.TypeString,
@@ -184,12 +185,14 @@ func resourceAlicloudFCCustomDomainRead(d *schema.ResourceData, meta interface{}
 
 	var certConfig []map[string]interface{}
 	if object.CertConfig != nil {
-		// Do not read "private key" data for security reason.
 		if object.CertConfig.CertName != nil && object.CertConfig.Certificate != nil {
+			oldConfig := d.Get("cert_config").([]interface{})
 			certConfig = append(certConfig, map[string]interface{}{
 				"cert_name":   *object.CertConfig.CertName,
 				"certificate": *object.CertConfig.Certificate,
-				//"private_key": strings.Replace(testFcPrivateKey, `\n`, "\n", -1),
+				// The FC service will not return private key crendential for security reason.
+				// Read it from the terraform file.
+				"private_key": oldConfig[0].(map[string]interface{})["private_key"],
 			})
 		} else if object.CertConfig.CertName == nil && object.CertConfig.Certificate == nil {
 			// Skip the null cert config.
