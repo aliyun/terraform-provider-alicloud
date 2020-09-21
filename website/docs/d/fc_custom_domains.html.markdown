@@ -11,6 +11,8 @@ description: |-
 
 This data source provides the Function Compute custom domains of the current Alibaba Cloud user.
 
+-> **NOTE:** Available in 1.98.0+
+
 ## Example Usage
 
 ```terraform
@@ -34,8 +36,9 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `names` - A list of Function Compute custom domain names.
-* `domains` - A list of Function Compute custom domains, including the following attributes:
+* `ids` - A list of custom domain ids.
+* `names` - A list of custom domain names.
+* `domains` - A list of custom domains, including the following attributes:
   * `domain_name` - The custom domain name.
   * `protocol` - The custom domain protocol.
   * `account_id` - The account id.

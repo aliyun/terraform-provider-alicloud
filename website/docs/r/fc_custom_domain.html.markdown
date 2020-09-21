@@ -12,6 +12,8 @@ description: |-
 Provides an Alicloud Function Compute custom domain resource. 
  For the detailed information, please refer to the [developer guide](https://www.alibabacloud.com/help/doc-detail/90759.htm).
 
+-> **NOTE:** Available in 1.98.0+
+
 
 ## Example Usage
 
@@ -40,16 +42,16 @@ resource "alicloud_fc_custom_domain" "default" {
 }
 
 resource "alicloud_fc_service" "default" {
-    name = "${var.name}"
+    name = var.name
     description = "${var.name}-description"
 }
 
 resource "alicloud_oss_bucket" "default" {
-	bucket = "${var.name}"
+	bucket = var.name
 }
 
 resource "alicloud_oss_bucket_object" "default" {
-	bucket = "${alicloud_oss_bucket.default.id}"
+	bucket = alicloud_oss_bucket.default.id
 	key = "fc/hello.zip"
 	content = <<EOF
 		# -*- coding: utf-8 -*-
@@ -60,10 +62,10 @@ resource "alicloud_oss_bucket_object" "default" {
 }
 
 resource "alicloud_fc_function" "default" {
-	service = "${alicloud_fc_service.default.name}"
-	name = "${var.name}"
-	oss_bucket = "${alicloud_oss_bucket.default.id}"
-	oss_key = "${alicloud_oss_bucket_object.default.key}"
+	service = alicloud_fc_service.default.name
+	name = var.name
+	oss_bucket = alicloud_oss_bucket.default.id
+	oss_key = alicloud_oss_bucket_object.default.key
 	memory_size = 512
 	runtime = "python2.7"
 	handler = "hello.handler"
@@ -75,7 +77,7 @@ resource "alicloud_fc_function" "default" {
 The following arguments are supported:
 
 * `domain_name` - (Required, ForceNew) The custom domain name. For example, "example.com".
-* `protocol` - (Required) The protocol, "HTTP" or "HTTP,HTTPS".
+* `protocol` - (Required) The protocol, `HTTP` or `HTTP,HTTPS`.
 * `route_config` - (Optional) The configuration of domain route, mapping the path and Function Compute function.
 * `cert_config` - (Optional) The configuration of HTTPS certificate.
 
