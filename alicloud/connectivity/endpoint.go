@@ -306,4 +306,5 @@ const (
 	OpenOtsService        = "ots.cn-hangzhou.aliyuncs.com"
 	OpenOssService        = "oss-admin.aliyuncs.com"
 	OpenNasService        = "nas.cn-hangzhou.aliyuncs.com"
+	OpenCdnService        = "cdn.aliyuncs.com"
 )

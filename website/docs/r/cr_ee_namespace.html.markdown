@@ -1,5 +1,5 @@
 ---
-subcategory: "Container Registry(CR)"
+subcategory: "Container Registry (CR)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cr_ee_namespace"
 sidebar_current: "docs-alicloud-resource-cr-ee-namespace"
