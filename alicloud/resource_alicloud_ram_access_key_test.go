@@ -37,6 +37,7 @@ func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
 					testAccCheckRamAccessKeyExists(resourceAKId, &v),
 					testAccCheckRamUserExists(resourceUserId, &u),
 					testAccCheckDecryptSecretKeyAndTest(resourceAKId, pgpPrivKey),
+					resource.TestCheckNoResourceAttr("alicloud_ram_access_key.default", "secret"),
 					testAccCheck(accessKeyBasicMap),
 					testAccCheck(map[string]string{"user_name": fmt.Sprintf("tf-testAcc%sRamAccessKeyConfig%d", defaultRegionToTest, rand)}),
 				),
@@ -47,6 +48,7 @@ func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
 					testAccCheckRamAccessKeyExists(resourceAKId, &v),
 					testAccCheckRamUserExists(resourceUserId, &u),
 					testAccCheck(map[string]string{"status": "Inactive"}),
+					resource.TestCheckResourceAttrSet("alicloud_ram_access_key.default", "secret"),
 				),
 			},
 			{
@@ -54,6 +56,7 @@ func TestAccAlicloudRamAccessKey_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRamAccessKeyExists(resourceAKId, &v),
 					testAccCheckRamUserExists(resourceUserId, &u),
+					resource.TestCheckNoResourceAttr("alicloud_ram_access_key.default", "secret"),
 					testAccCheck(map[string]string{
 						"user_name": fmt.Sprintf("tf-testAcc%sRamAccessKeyConfig%d", defaultRegionToTest, rand),
 						"status":    "Active",

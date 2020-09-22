@@ -32,6 +32,11 @@ func resourceAlicloudRamAccessKey() *schema.Resource {
 				Default:      Active,
 				ValidateFunc: validation.StringInSlice([]string{"Active", "Inactive"}, false),
 			},
+			"secret": {
+				Type:      schema.TypeString,
+				Computed:  true,
+				Sensitive: true,
+			},
 			"pgp_key": {
 				Type:     schema.TypeString,
 				ForceNew: true,
@@ -78,7 +83,10 @@ func resourceAlicloudRamAccessKeyCreate(d *schema.ResourceData, meta interface{}
 		}
 		d.Set("key_fingerprint", fingerprint)
 		d.Set("encrypted_secret", encrypted)
-
+	} else {
+		if err := d.Set("secret", response.AccessKey.AccessKeySecret); err != nil {
+			return WrapError(err)
+		}
 	}
 	if output, ok := d.GetOk("secret_file"); ok && output != nil {
 		// create a secret_file and write access key to it.
