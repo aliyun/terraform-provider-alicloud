@@ -384,7 +384,7 @@ func (e *EdasService) DescribeEdasK8sCluster(clusterId string) (*edas.Cluster, e
 	})
 
 	if err != nil {
-		return cluster, WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return cluster, WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_k8s_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
@@ -405,19 +405,19 @@ func (e *EdasService) DescribeEdasK8sApplication(appId string) (*edas.Applcation
 	application := &edas.Applcation{}
 	regionId := e.client.RegionId
 
-	request := edas.CreateGetApplicationRequest()
+	request := edas.CreateGetK8sApplicationRequest()
 	request.RegionId = regionId
 	request.AppId = appId
 
 	raw, err := e.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
-		return edasClient.GetApplication(request)
+		return edasClient.GetK8sApplication(request)
 	})
 	if err != nil {
 		return application, WrapError(err)
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
-	response, _ := raw.(*edas.GetApplicationResponse)
+	response, _ := raw.(*edas.GetK8sApplicationResponse)
 	if response.Code != 200 {
 		if strings.Contains(response.Message, "does not exist") {
 			return application, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -430,10 +430,10 @@ func (e *EdasService) DescribeEdasK8sApplication(appId string) (*edas.Applcation
 	return &v, nil
 }
 
-func (e *EdasService) DescribeEdasK8sApplicationDeployment(id string) (*edas.Applcation, error) {
+func (e *EdasService) DescribeEdasK8sApplicationPackageAttachment(id string) (*edas.Applcation, error) {
 	application := &edas.Applcation{}
 	v := strings.Split(id, ":")
-	o, err := e.DescribeEdasApplication(v[0])
+	o, err := e.DescribeEdasK8sApplication(v[0])
 	if err != nil {
 		return application, WrapError(err)
 	}

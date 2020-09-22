@@ -572,6 +572,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_actiontrail":                         resourceAlicloudActiontrailTrail(),
 			"alicloud_alidns_domain":                       resourceAlicloudAlidnsDomain(),
 			"alicloud_alidns_instance":                     resourceAlicloudAlidnsInstance(),
+			"alicloud_edas_k8s_application":                resourceAlicloudEdasK8sApplication(),
 		},
 
 		ConfigureFunc: providerConfigure,
