@@ -24,12 +24,6 @@ func dataSourceAlicloudFcCustomDomains() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"names": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -38,6 +32,11 @@ func dataSourceAlicloudFcCustomDomains() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			// Computed values
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"domains": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -107,10 +106,6 @@ func dataSourceAlicloudFcCustomDomains() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"cert_name": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"private_key": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
