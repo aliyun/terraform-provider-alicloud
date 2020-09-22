@@ -8,6 +8,7 @@
 
 IMPROVEMENTS:
 
+- update go.sum [GH-2850]
 - feature(alicloud_ram_access_key): support outputting secret when pgp_key is not set [GH-2856]
 - feat(alicloud_dcdn_domain): support waiting timeout when updating it [GH-2855]
 - Add computed to the resource_group_id attribute of the alidns_domain [GH-2853]

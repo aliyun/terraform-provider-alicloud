@@ -43,8 +43,6 @@ github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible h1:UbBDubZ5xDDaB5
 github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible/go.mod h1:LDQHRZylxvcg8H7wBIDfvO5g/cy4/sz1iucBlc2l3Jw=
 github.com/aliyun/credentials-go v1.1.2 h1:qU1vwGIBb3UJ8BwunHDRFtAhS6jnQLnde/yk0+Ih2GY=
 github.com/aliyun/credentials-go v1.1.2/go.mod h1:ozcZaMR5kLM7pwtCMEpVmQ242suV6qTJya2bDq4X1Tw=
-github.com/aliyun/fc-go-sdk v0.0.0-20200619091938-0882be48e49f h1:8ZIQHvhYUGGmS8qlipiooanGBESy6JJKTZ9/vPmh0UE=
-github.com/aliyun/fc-go-sdk v0.0.0-20200619091938-0882be48e49f/go.mod h1:X4Pc3TFz4LRXaQPhyzBU4Ec8pL/QvaJ36CFtLJsroIM=
 github.com/aliyun/fc-go-sdk v0.0.0-20200912233156-b6ca4b7c8f56 h1:qhSM5kIkcD1LkqyT4mpzTX1xps1UWcWwEtpQmca1dFQ=
 github.com/aliyun/fc-go-sdk v0.0.0-20200912233156-b6ca4b7c8f56/go.mod h1:X4Pc3TFz4LRXaQPhyzBU4Ec8pL/QvaJ36CFtLJsroIM=
 github.com/apparentlymart/go-cidr v1.0.1 h1:NmIwLZ/KdsjIUlhf+/Np40atNXm/+lZ5txfTJ/SpF+U=
