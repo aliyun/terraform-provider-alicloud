@@ -48,6 +48,7 @@ func TestAccAlicloudFCCustomDomainsDataSource(t *testing.T) {
 			"domains.#":                              "1",
 			"ids.#":                                  "1",
 			"names.#":                                "1",
+			"domains.0.id":                           "terraform.functioncompute.com",
 			"domains.0.domain_name":                  "terraform.functioncompute.com",
 			"domains.0.protocol":                     "HTTP,HTTPS",
 			"domains.0.account_id":                   CHECKSET,
