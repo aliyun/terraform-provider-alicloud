@@ -43,6 +43,10 @@ func dataSourceAlicloudFcCustomDomains() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"domain_name": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -160,6 +164,7 @@ func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interfac
 
 		for _, domain := range response.CustomDomains {
 			mapping := map[string]interface{}{
+				"id":                 *domain.DomainName,
 				"domain_name":        *domain.DomainName,
 				"account_id":         *domain.AccountID,
 				"protocol":           *domain.Protocol,

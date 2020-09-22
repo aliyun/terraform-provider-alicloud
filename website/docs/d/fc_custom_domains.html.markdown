@@ -16,12 +16,12 @@ This data source provides the Function Compute custom domains of the current Ali
 ## Example Usage
 
 ```terraform
-data "alicloud_fc_custom_domains" "fc_domains_ds" {
+data "alicloud_fc_custom_domains" "fc_domains" {
   name_regex = "sample_fc_custom_domain"
 }
 
 output "first_fc_custom_domain_name" {
-  value = "data.alicloud_fc_custom_domains.fc_domains_ds.domains.0.domain_name"
+  value = data.alicloud_fc_custom_domains.fc_domains_ds.domains.0.domain_name
 }
 ```
 
@@ -29,6 +29,7 @@ output "first_fc_custom_domain_name" {
 
 The following arguments are supported:
 
+* `ids` (Optional) - A list of functions ids.
 * `name_regex` - (Optional) A regex string to filter results by Function Compute custom domain name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -39,6 +40,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of custom domain ids.
 * `names` - A list of custom domain names.
 * `domains` - A list of custom domains, including the following attributes:
+  * `id` - The custom domain id, same as domain name.
   * `domain_name` - The custom domain name.
   * `protocol` - The custom domain protocol.
   * `account_id` - The account id.
