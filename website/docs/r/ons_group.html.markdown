@@ -67,7 +67,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 4 mins) Used when Creating ONS instance. 
-* `delete` - (Defaults to 4 mins) Used when terminating the Alidns domain instance. 
+* `delete` - (Defaults to 4 mins) Used when terminating the ONS instance. 
 
 ## Import
 
