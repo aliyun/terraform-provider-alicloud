@@ -1,4 +1,31 @@
 ## 1.98.0 (Unreleased)
+
+- **New Resource:** `alicloud_fc_custom_domain` [GH-2828]
+- **Data Source:** `alicloud_cen_vbr_health_checks` [GH-2854]
+- **Data Source:** `alicloud_edas_services` [GH-2852]
+- **Data Source:** `alicloud_cdn_services` [GH-2850]
+- **Data Source:** `alicloud_fc_custom_domains` [GH-2828]
+
+IMPROVEMENTS:
+
+- feature(alicloud_ram_access_key): support outputting secret when pgp_key is not set [GH-2856]
+- feat(alicloud_dcdn_domain): support waiting timeout when updating it [GH-2855]
+- Add computed to the resource_group_id attribute of the alidns_domain [GH-2853]
+- add DiffSuppressFunc for resource_manager_policy field policy_document to match jsonstring diff [GH-2851]
+- improve cen resources' testcase [GH-2842]
+- upgrade resource and datasource for CEN Instance [GH-2840]
+- Improve resource ons_group and its datasource [GH-2838]
+- ram_user_policy_attachment support throttling.user error retry [GH-2837]
+- ram_role_policy_attachment support throttling.user error retry [GH-2835]
+- Add credit_specification parameter to ess scaling configuration [GH-2834]
+- remove the useless package in the go.sum [GH-2833]
+- upgrade resource alicloud_cen_bandwidth_package and its datasource [GH-2832]
+- UPDATECHANGELOG [GH-2831]
+
+BUG FIXES:
+
+- fix oss endpoint in eu-central-1 issue [GH-2836]
+
 ## 1.97.0 (September 18, 2020)
 
 - **New Resource:** `alicloud_cen_instance_attachment` ([#2822](https://github.com/aliyun/terraform-provider-alicloud/issues/2822))
