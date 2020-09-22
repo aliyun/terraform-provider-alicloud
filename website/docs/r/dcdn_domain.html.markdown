@@ -70,6 +70,14 @@ The following arguments are supported:
 
 * `id` -The id of the DCDN Domain. It is the same as its domain name.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when Creating DCDN domain instance. 
+* `update` - (Defaults to 5 mins) Used when Creating DCDN domain instance. 
+* `delete` - (Defaults to 10 mins) Used when terminating the DCDN domain instance. 
+
 ## Import
 
 DCDN Domain can be imported using the id or DCDN Domain name, e.g.
