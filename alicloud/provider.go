@@ -322,6 +322,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_vbr_health_checks":                 dataSourceAlicloudCenVbrHealthChecks(),
 			"alicloud_config_rules":                          dataSourceAlicloudConfigRules(),
 			"alicloud_config_configuration_recorders":        dataSourceAlicloudConfigConfigurationRecorders(),
+			"alicloud_config_delivery_channels":              dataSourceAlicloudConfigDeliveryChannels(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -578,6 +579,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_instance":                     resourceAlicloudAlidnsInstance(),
 			"alicloud_config_rule":                         resourceAlicloudConfigRule(),
 			"alicloud_config_configuration_recorder":       resourceAlicloudConfigConfigurationRecorder(),
+			"alicloud_config_delivery_channel":             resourceAlicloudConfigDeliveryChannel(),
 		},
 
 		ConfigureFunc: providerConfigure,
