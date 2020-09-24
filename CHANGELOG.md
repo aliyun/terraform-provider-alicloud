@@ -1,4 +1,4 @@
-## 1.98.0 (Unreleased)
+## 1.99.0 (Unreleased)
 ## 1.98.0 (September 22, 2020)
 
 - **New Resource:** `alicloud_fc_custom_domain` ([#2828](https://github.com/aliyun/terraform-provider-alicloud/issues/2828))

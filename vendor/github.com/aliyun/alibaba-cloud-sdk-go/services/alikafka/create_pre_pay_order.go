@@ -21,6 +21,7 @@ import (
 )
 
 // CreatePrePayOrder invokes the alikafka.CreatePrePayOrder API synchronously
+// api document: https://help.aliyun.com/api/alikafka/createprepayorder.html
 func (client *Client) CreatePrePayOrder(request *CreatePrePayOrderRequest) (response *CreatePrePayOrderResponse, err error) {
 	response = CreateCreatePrePayOrderResponse()
 	err = client.DoAction(request, response)
@@ -28,6 +29,8 @@ func (client *Client) CreatePrePayOrder(request *CreatePrePayOrderRequest) (resp
 }
 
 // CreatePrePayOrderWithChan invokes the alikafka.CreatePrePayOrder API asynchronously
+// api document: https://help.aliyun.com/api/alikafka/createprepayorder.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreatePrePayOrderWithChan(request *CreatePrePayOrderRequest) (<-chan *CreatePrePayOrderResponse, <-chan error) {
 	responseChan := make(chan *CreatePrePayOrderResponse, 1)
 	errChan := make(chan error, 1)
@@ -50,6 +53,8 @@ func (client *Client) CreatePrePayOrderWithChan(request *CreatePrePayOrderReques
 }
 
 // CreatePrePayOrderWithCallback invokes the alikafka.CreatePrePayOrder API asynchronously
+// api document: https://help.aliyun.com/api/alikafka/createprepayorder.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreatePrePayOrderWithCallback(request *CreatePrePayOrderRequest, callback func(response *CreatePrePayOrderResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
