@@ -21,6 +21,7 @@ import (
 )
 
 // GetAllowedIpList invokes the alikafka.GetAllowedIpList API synchronously
+// api document: https://help.aliyun.com/api/alikafka/getallowediplist.html
 func (client *Client) GetAllowedIpList(request *GetAllowedIpListRequest) (response *GetAllowedIpListResponse, err error) {
 	response = CreateGetAllowedIpListResponse()
 	err = client.DoAction(request, response)
@@ -28,6 +29,8 @@ func (client *Client) GetAllowedIpList(request *GetAllowedIpListRequest) (respon
 }
 
 // GetAllowedIpListWithChan invokes the alikafka.GetAllowedIpList API asynchronously
+// api document: https://help.aliyun.com/api/alikafka/getallowediplist.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) GetAllowedIpListWithChan(request *GetAllowedIpListRequest) (<-chan *GetAllowedIpListResponse, <-chan error) {
 	responseChan := make(chan *GetAllowedIpListResponse, 1)
 	errChan := make(chan error, 1)
@@ -50,6 +53,8 @@ func (client *Client) GetAllowedIpListWithChan(request *GetAllowedIpListRequest)
 }
 
 // GetAllowedIpListWithCallback invokes the alikafka.GetAllowedIpList API asynchronously
+// api document: https://help.aliyun.com/api/alikafka/getallowediplist.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) GetAllowedIpListWithCallback(request *GetAllowedIpListRequest, callback func(response *GetAllowedIpListResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
