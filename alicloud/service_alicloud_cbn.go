@@ -430,3 +430,53 @@ func (s *CbnService) SetResourceTags(d *schema.ResourceData, resourceType string
 	}
 	return nil
 }
+
+func (s *CbnService) DescribeCenRouteService(id string) (object cbn.RouteServiceEntry, err error) {
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := cbn.CreateDescribeRouteServicesInCenRequest()
+	request.RegionId = s.client.RegionId
+	request.AccessRegionId = parts[3]
+	request.CenId = parts[0]
+	request.Host = parts[2]
+	request.HostRegionId = parts[1]
+
+	raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		return cbnClient.DescribeRouteServicesInCen(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*cbn.DescribeRouteServicesInCenResponse)
+
+	if len(response.RouteServiceEntries.RouteServiceEntry) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("CenRouteService", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+		return
+	}
+	return response.RouteServiceEntries.RouteServiceEntry[0], nil
+}
+
+func (s *CbnService) CenRouteServiceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenRouteService(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+		return object, object.Status, nil
+	}
+}
