@@ -582,6 +582,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_configuration_recorder":       resourceAlicloudConfigConfigurationRecorder(),
 			"alicloud_config_delivery_channel":             resourceAlicloudConfigDeliveryChannel(),
 			"alicloud_cms_alarm_contact":                   resourceAlicloudCmsAlarmContact(),
+			"alicloud_cen_route_service":                   resourceAlicloudCenRouteService(),
 		},
 
 		ConfigureFunc: providerConfigure,
