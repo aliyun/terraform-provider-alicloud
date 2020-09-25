@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
 	"regexp"
 	"time"
@@ -453,7 +454,7 @@ func (s *VpcService) WaitForCenInstanceGrant(id string, status Status, timeout i
 				return WrapError(err)
 			}
 		}
-		if object.CenInstanceId == instanceId && string(object.CenOwnerId) == ownerId && status != Deleted {
+		if object.CenInstanceId == instanceId && fmt.Sprint(object.CenOwnerId) == ownerId && status != Deleted {
 			break
 		}
 		if time.Now().After(deadline) {

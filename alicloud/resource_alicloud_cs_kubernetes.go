@@ -773,7 +773,6 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			}
 			d.SetPartial("worker_data_disks")
 		}
-
 		if d.HasChange("tags") && !d.IsNewResource() {
 			if tags, err := ConvertCsTags(d); err == nil {
 				args.Tags = tags
@@ -929,7 +928,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 		}
 
-		if d.Get("exclude_autoscaler_nodes").(bool) {
+		if d.Get("exclude_autoscaler_nodes") != nil && d.Get("exclude_autoscaler_nodes").(bool) {
 			result, err = knockOffAutoScalerNodes(result, meta)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", AlibabaCloudSdkGoERROR)
@@ -998,7 +997,9 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", d.Id(), object.RegionId)
+	if object.Profile != EdgeProfile {
+		connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", d.Id(), object.RegionId)
+	}
 
 	d.Set("connections", connection)
 	natRequest := vpc.CreateDescribeNatGatewaysRequest()
@@ -1159,10 +1160,22 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	}
 
 	var apiAudiences string
-	if list := expandStringList(d.Get("api_audiences").([]interface{})); len(list) > 0 {
-		apiAudiences = strings.Join(list, ",")
+	if d.Get("api_audiences") != nil {
+		if list := expandStringList(d.Get("api_audiences").([]interface{})); len(list) > 0 {
+			apiAudiences = strings.Join(list, ",")
+		}
 	}
 
+	var imageId, nodeNameMode, saIssuer string
+	if d.Get("image_id") != nil {
+		imageId = d.Get("image_id").(string)
+	}
+	if d.Get("node_name_mode") != nil {
+		nodeNameMode = d.Get("node_name_mode").(string)
+	}
+	if d.Get("service_account_issuer") != nil {
+		saIssuer = d.Get("service_account_issuer").(string)
+	}
 	creationArgs := &cs.DelicatedKubernetesClusterCreationRequest{
 		ClusterArgs: cs.ClusterArgs{
 			DisableRollback: true,
@@ -1175,7 +1188,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			// the params below is ok to be empty
 			KubernetesVersion:         d.Get("version").(string),
 			NodeCidrMask:              strconv.Itoa(d.Get("node_cidr_mask").(int)),
-			ImageId:                   d.Get("image_id").(string),
 			KeyPair:                   d.Get("key_name").(string),
 			ServiceCidr:               d.Get("service_cidr").(string),
 			CloudMonitorFlags:         d.Get("install_cloud_monitor").(bool),
@@ -1183,11 +1195,18 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			IsEnterpriseSecurityGroup: d.Get("is_enterprise_security_group").(bool),
 			EndpointPublicAccess:      d.Get("slb_internet_enabled").(bool),
 			SnatEntry:                 d.Get("new_nat_gateway").(bool),
-			NodeNameMode:              d.Get("node_name_mode").(string),
 			Addons:                    addons,
-			ServiceAccountIssuer:      d.Get("service_account_issuer").(string),
 			ApiAudiences:              apiAudiences,
 		},
+	}
+	if imageId != "" {
+		creationArgs.ClusterArgs.ImageId = imageId
+	}
+	if nodeNameMode != "" {
+		creationArgs.ClusterArgs.NodeNameMode = nodeNameMode
+	}
+	if saIssuer != "" {
+		creationArgs.ClusterArgs.ServiceAccountIssuer = saIssuer
 	}
 
 	if v := d.Get("user_data").(string); v != "" {
@@ -1222,7 +1241,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	if tags, err := ConvertCsTags(d); err == nil {
 		creationArgs.Tags = tags
 	}
-
 	// CA default is empty
 	if userCa, ok := d.GetOk("user_ca"); ok {
 		userCaContent, err := loadFileContent(userCa.(string))
@@ -1261,12 +1279,19 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		}
 	}
 
+	var workerDiskCategory string
+	var workerDiskSize int64
+	if d.Get("worker_disk_category") != nil {
+		workerDiskCategory = d.Get("worker_disk_category").(string)
+	}
+	if d.Get("worker_disk_size") != nil {
+		workerDiskSize = int64(d.Get("worker_disk_size").(int))
+	}
+
 	creationArgs.WorkerArgs = cs.WorkerArgs{
-		WorkerVSwitchIds:         expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
-		WorkerInstanceTypes:      expandStringList(d.Get("worker_instance_types").([]interface{})),
-		NumOfNodes:               int64(d.Get("worker_number").(int)),
-		WorkerSystemDiskCategory: d.Get("worker_disk_category").(string),
-		WorkerSystemDiskSize:     int64(d.Get("worker_disk_size").(int)),
+		WorkerVSwitchIds:    expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
+		WorkerInstanceTypes: expandStringList(d.Get("worker_instance_types").([]interface{})),
+		NumOfNodes:          int64(d.Get("worker_number").(int)),
 		// TODO support other params
 	}
 
@@ -1287,6 +1312,13 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			createDataDisks = append(createDataDisks, dataDisk)
 		}
 		creationArgs.WorkerDataDisks = createDataDisks
+	}
+	if workerDiskSize != 0 {
+		creationArgs.WorkerArgs.WorkerSystemDiskSize = workerDiskSize
+	}
+
+	if workerDiskCategory != "" {
+		creationArgs.WorkerArgs.WorkerSystemDiskCategory = workerDiskCategory
 	}
 
 	if v, ok := d.GetOk("worker_instance_charge_type"); ok {
