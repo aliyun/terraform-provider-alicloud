@@ -230,3 +230,58 @@ func (s *FcService) WaitForFcCustomDomain(id string, status Status, timeout int)
 		}
 	}
 }
+
+func (s *FcService) DescribeFcFunctionAsyncInvokeConfig(id string) (*fc.GetFunctionAsyncInvokeConfigOutput, error) {
+	serviceName, functionName, qualifier, err := parseFCDestinationConfigId(id)
+	if err != nil {
+		return nil, err
+	}
+	request := &fc.GetFunctionAsyncInvokeConfigInput{
+		ServiceName:  &serviceName,
+		FunctionName: &functionName,
+	}
+	if qualifier != "" {
+		request.Qualifier = &qualifier
+	}
+	response := &fc.GetFunctionAsyncInvokeConfigOutput{}
+
+	var requestInfo *fc.Client
+	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+		requestInfo = fcClient
+		return fcClient.GetFunctionAsyncInvokeConfig(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ServiceNotFound", "FunctionNotFound", "AsyncConfigNotExists"}) {
+			err = WrapErrorf(err, NotFoundMsg, FcGoSdk)
+		} else {
+			err = WrapErrorf(err, DefaultErrorMsg, id, "FcFunctionAsyncInvokeConfig", FcGoSdk)
+		}
+		return response, err
+	}
+	addDebug("GetFunctionAsyncInvokeConfig", raw, requestInfo, request)
+	response, _ = raw.(*fc.GetFunctionAsyncInvokeConfigOutput)
+	return response, err
+}
+
+func (s *FcService) WaitForFcFunctionAsyncInvokeConfig(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		_, err := s.DescribeFcFunctionAsyncInvokeConfig(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if status != Deleted {
+			return nil
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, id, ProviderERROR)
+		}
+	}
+}

@@ -54,8 +54,8 @@ github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible h1:UbBDubZ5xDDaB5
 github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible/go.mod h1:LDQHRZylxvcg8H7wBIDfvO5g/cy4/sz1iucBlc2l3Jw=
 github.com/aliyun/credentials-go v1.1.2 h1:qU1vwGIBb3UJ8BwunHDRFtAhS6jnQLnde/yk0+Ih2GY=
 github.com/aliyun/credentials-go v1.1.2/go.mod h1:ozcZaMR5kLM7pwtCMEpVmQ242suV6qTJya2bDq4X1Tw=
-github.com/aliyun/fc-go-sdk v0.0.0-20200912233156-b6ca4b7c8f56 h1:qhSM5kIkcD1LkqyT4mpzTX1xps1UWcWwEtpQmca1dFQ=
-github.com/aliyun/fc-go-sdk v0.0.0-20200912233156-b6ca4b7c8f56/go.mod h1:X4Pc3TFz4LRXaQPhyzBU4Ec8pL/QvaJ36CFtLJsroIM=
+github.com/aliyun/fc-go-sdk v0.0.0-20200925033337-c013428cbe21 h1:0kcRapGFTtwZIgbGSaM+N1y+GrnLaY4Vz78FqPnt164=
+github.com/aliyun/fc-go-sdk v0.0.0-20200925033337-c013428cbe21/go.mod h1:X4Pc3TFz4LRXaQPhyzBU4Ec8pL/QvaJ36CFtLJsroIM=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apparentlymart/go-cidr v1.0.1 h1:NmIwLZ/KdsjIUlhf+/Np40atNXm/+lZ5txfTJ/SpF+U=

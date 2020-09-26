@@ -29,6 +29,9 @@ const (
 	functionCodeWithQualifierPath    = singleFunctionWithQualifierPath + "/code"
 	invokeFunctionWithQualifierPath  = singleFunctionWithQualifierPath + "/invocations"
 	provisionConfigWithQualifierPath = singleFunctionWithQualifierPath + "/provision-config"
+	asyncConfigPath = singleFunctionPath + "/async-invoke-config"
+	asyncConfigWithQualifierPath = singleFunctionWithQualifierPath + "/async-invoke-config"
+	listAsyncConfigsPath = singleFunctionPath + "/async-invoke-configs"
 
 	printIndent = "  "
 

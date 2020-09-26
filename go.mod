@@ -11,7 +11,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.2+incompatible
 	github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible
 	github.com/aliyun/credentials-go v1.1.2
-	github.com/aliyun/fc-go-sdk v0.0.0-20200912233156-b6ca4b7c8f56
+	github.com/aliyun/fc-go-sdk v0.0.0-20200925033337-c013428cbe21
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/denverdino/aliyungo v0.0.0-20200902071702-b5d3e9ff6492
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
