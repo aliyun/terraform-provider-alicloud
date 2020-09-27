@@ -2,19 +2,17 @@
 subcategory: "Function Compute Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fc_function_async_invoke_config"
-sidebar_current: "docs-alicloud-resource-fc"
+sidebar_current: "docs-alicloud-resource-fc-function-async-invoke-config"
 description: |-
   Provides an Alicloud Function Compute Function Async Invoke Config resource. 
 ---
 
-# alicloud\_fc\_function_async_invoke_config
+# alicloud\_fc\_function\_async\_invoke\_config
 
 Manages an asynchronous invocation configuration for a FC Function or Alias.  
  For the detailed information, please refer to the [developer guide](https://www.alibabacloud.com/help/doc-detail/181866.htm).
 
 -> **NOTE:** Available in 1.99.0+
- 
-
 
 ## Example Usage
 
@@ -66,15 +64,15 @@ resource "alicloud_fc_function_async_invoke_config" "example" {
 
 The following arguments are required:
 
-* `service_name` - (Required) Name of the Function Compute Function, omitting any version or alias qualifier.
-* `function_name` - (Required) Name of the Function Compute Function.
+* `service_name` - (Required, ForceNew) Name of the Function Compute Function, omitting any version or alias qualifier.
+* `function_name` - (Required, ForceNew) Name of the Function Compute Function.
 
 The following arguments are optional:
 
 * `destination_config` - (Optional) Configuration block with destination configuration. See below for details.
 * `maximum_event_age_in_seconds` - (Optional) Maximum age of a request that Function Compute sends to a function for processing in seconds. Valid values between 60 and 21600.
 * `maximum_retry_attempts` - (Optional) Maximum number of times to retry when the function returns an error. Valid values between 0 and 2. Defaults to 2.
-* `qualifier` - (Optional) Function Compute Function published version, `LATEST`, or Function Compute Alias name.
+* `qualifier` - (Optional, ForceNew) Function Compute Function published version, `LATEST`, or Function Compute Alias name. The default value is `LATEST`.
 
 ### destination_config Configuration Block
 
@@ -101,7 +99,7 @@ The following arguments are required:
 
 In addition to all arguments above, the following arguments are exported:
 
-* `id` - Fully qualified Function Compute Sevice and Function name (`example_service_name:example_function_name`) or Alicloud Resource Name (ARN).
+* `id` - Fully qualified Function Compute Function name (`service_name:function_name:qualifier`) or Alicloud Resource Name (ARN).
 * `created_time` - The date this resource was created.
 * `last_modified_time` - The date this resource was last modified.
 
