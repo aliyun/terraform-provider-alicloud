@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudCmsAlarmContact() *schema.Resource {
@@ -45,8 +46,9 @@ func resourceAlicloudCmsAlarmContact() *schema.Resource {
 				Required: true,
 			},
 			"lang": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"en", "zh-cn"}, false),
 			},
 		},
 	}
@@ -113,6 +115,7 @@ func resourceAlicloudCmsAlarmContactRead(d *schema.ResourceData, meta interface{
 	d.Set("channels_mail", object.Channels.Mail)
 	d.Set("channels_sms", object.Channels.SMS)
 	d.Set("describe", object.Desc)
+	d.Set("lang", object.Lang)
 	return nil
 }
 func resourceAlicloudCmsAlarmContactUpdate(d *schema.ResourceData, meta interface{}) error {

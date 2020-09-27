@@ -113,10 +113,9 @@ func TestAccAlicloudCmsAlarmContact_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"Lang"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

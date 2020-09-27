@@ -57,3 +57,4 @@ The following attributes are exported:
     * `channels_state_ding_web_hook` - Indicates whether the DingTalk chatbot is normal.
     * `channels_state_mail` - The status of the email address.
     * `channels_status_sms` - The status of the phone number.
+    * `Lang` - The language type of the alarm.
