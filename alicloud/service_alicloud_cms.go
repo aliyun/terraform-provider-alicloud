@@ -148,3 +148,34 @@ func (s *CmsService) GetIspCities(id string) (ispCities IspCities, err error) {
 
 	return list, nil
 }
+
+func (s *CmsService) DescribeCmsAlarmContact(id string) (object cms.Contact, err error) {
+	request := cms.CreateDescribeContactListRequest()
+	request.RegionId = s.client.RegionId
+
+	request.ContactName = id
+
+	raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+		return cmsClient.DescribeContactList(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ContactNotExists"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContact", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*cms.DescribeContactListResponse)
+	if response.Code != "200" {
+		err = Error("DescribeContactList failed for " + response.Message)
+		return
+	}
+
+	if len(response.Contacts.Contact) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContact", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+		return
+	}
+	return response.Contacts.Contact[0], nil
+}

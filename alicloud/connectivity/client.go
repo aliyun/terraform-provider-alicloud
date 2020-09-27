@@ -159,6 +159,7 @@ type AliyunClient struct {
 	actiontrailConn              *actiontrail.Client
 	onsConn                      *ons.Client
 	configConn                   *config.Client
+	cmsConn                      *cms.Client
 }
 
 type ApiVersion string
