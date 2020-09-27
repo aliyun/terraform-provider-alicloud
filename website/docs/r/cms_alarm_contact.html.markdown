@@ -48,7 +48,7 @@ The following arguments are supported:
 * `channels_mail` - (Optional) The email address of the alarm contact. After you add or modify an email address, the recipient receives an email that contains an activation link. The system adds the recipient to the list of alarm contacts only after the recipient activates the email address.
 * `channels_sms` - (Optional) The phone number of the alarm contact. After you add or modify an email address, the recipient receives an email that contains an activation link. The system adds the recipient to the list of alarm contacts only after the recipient activates the email address.
 * `describe` - (Required) The description of the alarm contact.
-* `lang` - (Optional) The language type of the alarm. 
+* `lang` - (Optional) The language type of the alarm. Valid values: `en`, `zh-cn`.
 
 -> **NOTE:** Specify at least one of the following alarm notification targets: `channels_aliim`, `channels_ding_web_hook`, `channels_mail`, `channels_sms`.
 

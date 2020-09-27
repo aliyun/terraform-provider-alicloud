@@ -100,6 +100,10 @@ func dataSourceAlicloudCmsAlarmContacts() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"lang": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -186,6 +190,7 @@ func dataSourceAlicloudCmsAlarmContactsRead(d *schema.ResourceData, meta interfa
 			"channels_status_sms":          object.ChannelsState.SMS,
 			"contact_groups":               object.ContactGroups.ContactGroup,
 			"describe":                     object.Desc,
+			"lang":                         object.Lang,
 		}
 		ids = append(ids, object.Name)
 		names = append(names, object.Name)
