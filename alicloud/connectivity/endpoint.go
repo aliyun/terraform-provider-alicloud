@@ -19,6 +19,7 @@ import (
 type ServiceCode string
 
 const (
+	CmsCode             = ServiceCode("CMS")
 	ConfigCode          = ServiceCode("CONFIG")
 	OnsCode             = ServiceCode("ONS")
 	DcdnCode            = ServiceCode("DCDN")
