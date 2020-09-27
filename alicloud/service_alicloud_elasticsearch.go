@@ -256,8 +256,15 @@ func updateInstanceTags(d *schema.ResourceData, meta interface{}) error {
 	n := nraw.(map[string]interface{})
 	remove, add := elasticsearchService.diffElasticsearchTags(o, n)
 
-	if len(remove) > 0 {
-		tagKeys, err := json.Marshal(remove)
+	// 对系统 Tag 进行过滤
+	removeTagKeys := make([]string, 0)
+	for _, v := range remove {
+		if !elasticsearchTagIgnored(v, "") {
+			removeTagKeys = append(removeTagKeys, v)
+		}
+	}
+	if len(removeTagKeys) > 0 {
+		tagKeys, err := json.Marshal(removeTagKeys)
 		if err != nil {
 			return WrapError(err)
 		}
