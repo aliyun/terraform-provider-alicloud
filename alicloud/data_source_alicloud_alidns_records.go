@@ -40,11 +40,10 @@ func dataSourceAlicloudAlidnsRecords() *schema.Resource {
 				ForceNew: true,
 			},
 			"line": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"default", "telecom", "unicom", "mobile", "oversea", "edu", "drpeng", "btvn"}, false),
-				Default:      "default",
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Default:  "default",
 			},
 			"order_by": {
 				Type:     schema.TypeString,

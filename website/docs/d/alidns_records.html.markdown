@@ -34,7 +34,7 @@ The following arguments are supported:
 
 * `domain_name` - (Required) The domain name associated to the records. 
 * `type` - (Optional) Record type. Valid values: `A`, `NS`, `MX`, `TXT`, `CNAME`, `SRV`, `AAAA`, `REDIRECT_URL`, `FORWORD_URL` .
-* `line` - (Optional) ISP line. Valid values: `default`, `telecom`, `unicom`, `mobile`, `oversea`, `edu`, `drpeng`, `btvn`, .etc. For checking all resolution lines enumeration please visit [Alibaba Cloud DNS doc](https://www.alibabacloud.com/help/doc-detail/34339.htm) 
+* `line` - (Optional) ISP line. For checking all resolution lines enumeration please visit [Alibaba Cloud DNS doc](https://www.alibabacloud.com/help/doc-detail/34339.htm) 
 * `status` - (Optional) Record status. Valid values: `ENABLE` and `DISABLE`.
 * `is_locked` - (Optional, type: bool) Whether the record is locked or not.
 * `ids` - (Optional) A list of record IDs.
