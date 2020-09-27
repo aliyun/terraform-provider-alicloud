@@ -21,6 +21,14 @@ func TestAccAlicloudDmsEnterpriseUsersDataSource(t *testing.T) {
 			"ids": []string{"${alicloud_dms_enterprise_user.default.uid}-fake"},
 		}),
 	}
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": []string{"${alicloud_dms_enterprise_user.default.user_name}"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": []string{"${alicloud_dms_enterprise_user.default.user_name}-fake"},
+		}),
+	}
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_dms_enterprise_user.default.uid}"},
@@ -72,7 +80,7 @@ func TestAccAlicloudDmsEnterpriseUsersDataSource(t *testing.T) {
 		fakeMapFunc:  fakeDmsEnterpriseUsersMapFunc,
 	}
 
-	kmsKeysCheckInfo.dataSourceTestCheck(t, rand, idsConf, statusConf, roleConf)
+	kmsKeysCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, statusConf, roleConf)
 }
 
 func dataSourceDmsEnterpriseUsersConfigDependence(name string) string {
