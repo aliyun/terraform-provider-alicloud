@@ -112,11 +112,7 @@ func resourceAlicloudFCAsyncInvokeConfigCreate(d *schema.ResourceData, meta inte
 	functionName := d.Get("function_name").(string)
 	qualifier := d.Get("qualifier").(string)
 
-	id := fmt.Sprintf("%s:%s", serviceName, functionName)
-
-	if qualifier != "" {
-		id = fmt.Sprintf("%s:%s", id, qualifier)
-	}
+	id := fmt.Sprintf("%s:%s:%s", serviceName, functionName, qualifier)
 
 	request := &fc.PutFunctionAsyncInvokeConfigInput{
 		ServiceName:  StringPointer(serviceName),
@@ -206,10 +202,7 @@ func resourceAlicloudFCAsyncInvokeConfigUpdate(d *schema.ResourceData, meta inte
 	}
 	request.MaxAsyncRetryAttempts = Int64Pointer(int64(d.Get("maximum_retry_attempts").(int)))
 	request.DestinationConfig = parseFCDestinationConfig(d.Get("destination_config").([]interface{}))
-
-	if qualifier != "" {
-		request.Qualifier = StringPointer(qualifier)
-	}
+	request.Qualifier = StringPointer(qualifier)
 
 	if v, ok := d.GetOk("maximum_event_age_in_seconds"); ok {
 		request.MaxAsyncEventAgeInSeconds = Int64Pointer(int64(v.(int)))
@@ -246,6 +239,9 @@ func resourceAlicloudFCAsyncInvokeConfigDelete(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	fcService := FcService{client}
 	serviceName, functionName, qualifier, err := parseFCDestinationConfigId(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
 	request := &fc.DeleteFunctionAsyncInvokeConfigInput{
 		ServiceName:  &serviceName,
 		FunctionName: &functionName,
