@@ -62,13 +62,8 @@ resource "alicloud_fc_function_async_invoke_config" "example" {
 
 ## Argument Reference
 
-The following arguments are required:
-
 * `service_name` - (Required, ForceNew) Name of the Function Compute Function, omitting any version or alias qualifier.
 * `function_name` - (Required, ForceNew) Name of the Function Compute Function.
-
-The following arguments are optional:
-
 * `destination_config` - (Optional) Configuration block with destination configuration. See below for details.
 * `maximum_event_age_in_seconds` - (Optional) Maximum age of a request that Function Compute sends to a function for processing in seconds. Valid values between 60 and 21600.
 * `maximum_retry_attempts` - (Optional) Maximum number of times to retry when the function returns an error. Valid values between 0 and 2. Defaults to 2.

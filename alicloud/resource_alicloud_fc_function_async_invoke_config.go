@@ -146,7 +146,7 @@ func resourceAlicloudFCAsyncInvokeConfigCreate(d *schema.ResourceData, meta inte
 		response, _ = raw.(*fc.PutFunctionAsyncInvokeConfigOutput)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_async_invoke_config", "PutFunctionAsyncInvokeConfig", FcGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_function_async_invoke_config", "PutFunctionAsyncInvokeConfig", FcGoSdk)
 	}
 
 	if response == nil {
@@ -225,7 +225,7 @@ func resourceAlicloudFCAsyncInvokeConfigUpdate(d *schema.ResourceData, meta inte
 		response, _ = raw.(*fc.PutFunctionAsyncInvokeConfigOutput)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_async_invoke_config", "PutFunctionAsyncInvokeConfig", FcGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_function_async_invoke_config", "PutFunctionAsyncInvokeConfig", FcGoSdk)
 	}
 
 	if response == nil {
