@@ -1,30 +1,31 @@
-## 1.99.0 (Unreleased)
+## 1.100.0 (Unreleased)
+## 1.99.0 (September 28, 2020)
 
-- **New Resource:** `alicloud_cms_alarm_contact` [GH-2870]
-- **New Resource:** `alicloud_cen_route_service` [GH-2868]
-- **New Resource:** `alicloud_config_delivery_channel` [GH-2865]
-- **New Resource:** `alicloud_config_configuration_recorder` [GH-2863]
-- **New Resource:** `alicloud_config_rule` [GH-2858]
-- **Data Source:** `alicloud_cms_alarm_contacts` [GH-2870]
-- **Data Source:** `alicloud_cen_route_services` [GH-2868]
-- **Data Source:** `alicloud_config_delivery_channels` [GH-2865]
-- **Data Source:** `alicloud_config_configuration_recorders` [GH-2863]
-- **Data Source:** `alicloud_config_rules` [GH-2858]
+- **New Resource:** `alicloud_cms_alarm_contact` ([#2870](https://github.com/aliyun/terraform-provider-alicloud/issues/2870))
+- **New Resource:** `alicloud_cen_route_service` ([#2868](https://github.com/aliyun/terraform-provider-alicloud/issues/2868))
+- **New Resource:** `alicloud_config_delivery_channel` ([#2865](https://github.com/aliyun/terraform-provider-alicloud/issues/2865))
+- **New Resource:** `alicloud_config_configuration_recorder` ([#2863](https://github.com/aliyun/terraform-provider-alicloud/issues/2863))
+- **New Resource:** `alicloud_config_rule` ([#2858](https://github.com/aliyun/terraform-provider-alicloud/issues/2858))
+- **Data Source:** `alicloud_cms_alarm_contacts` ([#2870](https://github.com/aliyun/terraform-provider-alicloud/issues/2870))
+- **Data Source:** `alicloud_cen_route_services` ([#2868](https://github.com/aliyun/terraform-provider-alicloud/issues/2868))
+- **Data Source:** `alicloud_config_delivery_channels` ([#2865](https://github.com/aliyun/terraform-provider-alicloud/issues/2865))
+- **Data Source:** `alicloud_config_configuration_recorders` ([#2863](https://github.com/aliyun/terraform-provider-alicloud/issues/2863))
+- **Data Source:** `alicloud_config_rules` ([#2858](https://github.com/aliyun/terraform-provider-alicloud/issues/2858))
 
 IMPROVEMENTS:
 
-- Use Alidns_domain_attachment instead dns_domain_attachment resource [GH-2878]
-- Add enum for 'Lang' attribute of cms_alarm_contact [GH-2877]
-- Remove the enum of 'line' attribute in alidns_record [GH-2872]
-- update vendor [GH-2866]
-- support more regions for alikafka [GH-2864]
-- Remove mutli filter conditions from alicloud_hbase_zones and alicloud… [GH-2862]
-- update go.sum [GH-2860]
-- UPDATE CHANGELOG [GH-2857]
+- Use Alidns_domain_attachment instead dns_domain_attachment resource ([#2878](https://github.com/aliyun/terraform-provider-alicloud/issues/2878))
+- Add enum for 'Lang' attribute of cms_alarm_contact ([#2877](https://github.com/aliyun/terraform-provider-alicloud/issues/2877))
+- Remove the enum of 'line' attribute in alidns_record ([#2872](https://github.com/aliyun/terraform-provider-alicloud/issues/2872))
+- update vendor ([#2866](https://github.com/aliyun/terraform-provider-alicloud/issues/2866))
+- support more regions for alikafka ([#2864](https://github.com/aliyun/terraform-provider-alicloud/issues/2864))
+- Remove mutli filter conditions from alicloud_hbase_zones and alicloud… ([#2862](https://github.com/aliyun/terraform-provider-alicloud/issues/2862))
+- update go.sum ([#2860](https://github.com/aliyun/terraform-provider-alicloud/issues/2860))
+- UPDATE CHANGELOG ([#2857](https://github.com/aliyun/terraform-provider-alicloud/issues/2857))
 
 BUG FIXES:
 
-- Fix elasticsearch untagResources failed error [GH-2876]
+- Fix elasticsearch untagResources failed error ([#2876](https://github.com/aliyun/terraform-provider-alicloud/issues/2876))
 
 ## 1.98.0 (September 22, 2020)
 
