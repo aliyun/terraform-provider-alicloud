@@ -20,7 +20,7 @@ Manages an asynchronous invocation configuration for a FC Function or Alias.
 
 -> **NOTE** Ensure the FC Function RAM Role has necessary permissions for the destination, such as `mns:SendMessage`, `mns:PublishMessage` or `fc:InvokeFunction`, otherwise the API will return a generic error.
 
-```hcl
+```terraform
 resource "alicloud_fc_function_async_invoke_config" "example" {
   service_name = alicloud_fc_service.example.name
   function_name = alicloud_fc_function.example.name
@@ -39,7 +39,7 @@ resource "alicloud_fc_function_async_invoke_config" "example" {
 
 ### Error Handling Configuration
 
-```hcl
+```terraform
 resource "alicloud_fc_function_async_invoke_config" "example" {
   service_name = alicloud_fc_service.example.name
   function_name = alicloud_fc_function.example.name
@@ -50,7 +50,7 @@ resource "alicloud_fc_function_async_invoke_config" "example" {
 
 ### Configuration for Function Latest Unpublished Version
 
-```hcl
+```terraform
 resource "alicloud_fc_function_async_invoke_config" "example" {
   service_name = alicloud_fc_service.example.name
   function_name = alicloud_fc_function.example.name
