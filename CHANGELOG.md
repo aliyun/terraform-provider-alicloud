@@ -1,4 +1,31 @@
 ## 1.99.0 (Unreleased)
+
+- **New Resource:** `alicloud_cms_alarm_contact` [GH-2870]
+- **New Resource:** `alicloud_cen_route_service` [GH-2868]
+- **New Resource:** `alicloud_config_delivery_channel` [GH-2865]
+- **New Resource:** `alicloud_config_configuration_recorder` [GH-2863]
+- **New Resource:** `alicloud_config_rule` [GH-2858]
+- **Data Source:** `alicloud_cms_alarm_contacts` [GH-2870]
+- **Data Source:** `alicloud_cen_route_services` [GH-2868]
+- **Data Source:** `alicloud_config_delivery_channels` [GH-2865]
+- **Data Source:** `alicloud_config_configuration_recorders` [GH-2863]
+- **Data Source:** `alicloud_config_rules` [GH-2858]
+
+IMPROVEMENTS:
+
+- Use Alidns_domain_attachment instead dns_domain_attachment resource [GH-2878]
+- Add enum for 'Lang' attribute of cms_alarm_contact [GH-2877]
+- Remove the enum of 'line' attribute in alidns_record [GH-2872]
+- update vendor [GH-2866]
+- support more regions for alikafka [GH-2864]
+- Remove mutli filter conditions from alicloud_hbase_zones and alicloud… [GH-2862]
+- update go.sum [GH-2860]
+- UPDATE CHANGELOG [GH-2857]
+
+BUG FIXES:
+
+- Fix elasticsearch untagResources failed error [GH-2876]
+
 ## 1.98.0 (September 22, 2020)
 
 - **New Resource:** `alicloud_fc_custom_domain` ([#2828](https://github.com/aliyun/terraform-provider-alicloud/issues/2828))
