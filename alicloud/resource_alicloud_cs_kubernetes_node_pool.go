@@ -197,6 +197,11 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -557,8 +562,9 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 		RegionId: common.Region(client.RegionId),
 		Count:    int64(d.Get("node_count").(int)),
 		NodePoolInfo: cs.NodePoolInfo{
-			Name:         d.Get("name").(string),
-			NodePoolType: "ess", // hard code the type
+			Name:            d.Get("name").(string),
+			NodePoolType:    "ess", // hard code the type
+			ResourceGroupId: d.Get("resource_group_id").(string),
 		},
 		ScalingGroup: cs.ScalingGroup{
 			VpcId:              vpcId,

@@ -158,6 +158,7 @@ type ClusterArgs struct {
 	EndpointPublicAccess      bool      `json:"endpoint_public_access"`
 	ProxyMode                 ProxyMode `json:"proxy_mode"`
 	SnatEntry                 bool      `json:"snat_entry"`
+	ResourceGroupId           string    `json:"resource_group_id"`
 
 	Addons []Addon `json:"addons"`
 	Tags   []Tag   `json:"tags"`
@@ -167,6 +168,7 @@ type ClusterArgs struct {
 	ApiAudiences         string `json:"api_audiences,omitempty"`
 	ServiceAccountIssuer string `json:"service_account_issuer,omitempty"`
 	CustomSAN            string `json:"custom_san,omitempty"`
+	ClusterSpec          string `json:"cluster_spec"`
 }
 
 //addon

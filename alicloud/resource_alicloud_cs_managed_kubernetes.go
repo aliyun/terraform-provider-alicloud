@@ -83,8 +83,8 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  DiskCloudEfficiency,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
+				//ValidateFunc: validation.StringInSlice([]string{
+				//	string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_data_disk_size": {
@@ -255,9 +255,9 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"image_id": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: imageIdSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
+				// DiffSuppressFunc: imageIdSuppressFunc,
 			},
 			"install_cloud_monitor": {
 				Type:             schema.TypeBool,
@@ -504,6 +504,16 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"cluster_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
