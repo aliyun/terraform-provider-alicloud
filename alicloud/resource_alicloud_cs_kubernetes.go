@@ -641,11 +641,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-			"cluster_spec": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
 		},
 	}
 }
