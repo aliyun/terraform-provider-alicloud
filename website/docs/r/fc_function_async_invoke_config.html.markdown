@@ -12,7 +12,7 @@ description: |-
 Manages an asynchronous invocation configuration for a FC Function or Alias.  
  For the detailed information, please refer to the [developer guide](https://www.alibabacloud.com/help/doc-detail/181866.htm).
 
--> **NOTE:** Available in 1.99.0+
+-> **NOTE:** Available in 1.100.0+
 
 ## Example Usage
 
