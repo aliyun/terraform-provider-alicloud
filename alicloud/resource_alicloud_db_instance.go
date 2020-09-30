@@ -96,6 +96,16 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			"zone_id_slave1": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"zone_id_slave2": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -783,6 +793,14 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.Create
 
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
 		request.ZoneId = Trim(zone.(string))
+	}
+
+	if zoneSlave1, ok := d.GetOk("zone_id_slave1"); ok && Trim(zoneSlave1.(string)) != "" {
+		request.ZoneIdSlave1 = Trim(zoneSlave1.(string))
+	}
+
+	if zoneSlave2, ok := d.GetOk("zone_id_slave2"); ok && Trim(zoneSlave2.(string)) != "" {
+		request.ZoneIdSlave2 = Trim(zoneSlave2.(string))
 	}
 
 	vswitchId := Trim(d.Get("vswitch_id").(string))
