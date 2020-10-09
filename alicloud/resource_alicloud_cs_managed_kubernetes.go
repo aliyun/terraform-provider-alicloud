@@ -83,8 +83,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  DiskCloudEfficiency,
-				//ValidateFunc: validation.StringInSlice([]string{
-				//	string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_data_disk_size": {
@@ -97,8 +95,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"worker_data_disk_category": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_instance_charge_type": {
@@ -509,6 +505,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"cluster_spec": {
 				Type:     schema.TypeString,
