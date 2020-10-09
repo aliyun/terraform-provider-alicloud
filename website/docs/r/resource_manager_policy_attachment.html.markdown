@@ -69,12 +69,12 @@ The following arguments are supported:
     
 ## Attributes Reference
 
-* `id` - The resource ID of Resource Manager Policy Attachment. The value is same as `<policy_name>`:`<policy_type>`:`<principal_name>`:`<principal_type>`.
+* `id` - This ID of this resource. It is formatted to `<policy_name>`:`<policy_type>`:`<principal_name>`:`<principal_type>`:`<resource_group_id>`. Before version 1.100.0, the value is `<policy_name>`:`<policy_type>`:`<principal_name>`:`<principal_type>`.
 
 ## Import
 
 Resource Manager Policy Attachment can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_resource_policy_attachment.example tf-testaccrdpolicy:Custom:tf-testaccrdpolicy@11827252********.onaliyun.com:IMSUser
+$ terraform import alicloud_resource_policy_attachment.example tf-testaccrdpolicy:Custom:tf-testaccrdpolicy@11827252********.onaliyun.com:IMSUser:rg******
 ```
