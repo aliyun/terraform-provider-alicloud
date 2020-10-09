@@ -510,8 +510,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"cluster_spec": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
-				Default:      "ack.standard",
 				ValidateFunc: validation.StringInSlice([]string{"ack.standard", "ack.pro.small"}, false),
 			},
 		},
