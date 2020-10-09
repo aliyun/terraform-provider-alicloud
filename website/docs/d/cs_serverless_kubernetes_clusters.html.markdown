@@ -51,7 +51,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
   * `deletion_protection` - Whether the cluster support delete protection.  
   * `connections` - Map of serverless cluster connection information. It contains several attributes to `Block Connections`.
-  * `resource_group_id` - (Optional, Available in 1.100.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
+  * `resource_group_id` - (Optional, ForceNew, Available in 1.100.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
   
 ### Block Connections
 
