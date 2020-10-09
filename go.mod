@@ -6,14 +6,13 @@ require (
 	github.com/alibabacloud-go/tea-utils v1.3.4
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.514
 	github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
-	github.com/aliyun/aliyun-log-go-sdk v0.1.6
+	github.com/aliyun/aliyun-log-go-sdk v0.1.13
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20191115025756-088ba95470f4
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.2+incompatible
 	github.com/aliyun/aliyun-tablestore-go-sdk v4.1.3+incompatible
 	github.com/aliyun/credentials-go v1.1.2
 	github.com/aliyun/fc-go-sdk v0.0.0-20200912233156-b6ca4b7c8f56
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
-	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
 	github.com/denverdino/aliyungo v0.0.0-20200902071702-b5d3e9ff6492
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/gogap/errors v0.0.0-20160523102334-149c546090d0 // indirect
@@ -33,9 +32,8 @@ require (
 	github.com/klauspost/cpuid v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/modern-go/reflect2 v1.0.1 // indirect
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.0 // indirect
-	github.com/sirupsen/logrus v1.2.0 // indirect
 	github.com/valyala/bytebufferpool v0.0.0-20180905182247-cdfbe9377474 // indirect
 	github.com/valyala/fasthttp v0.0.0-20180927122258-761788a34bb6 // indirect
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
