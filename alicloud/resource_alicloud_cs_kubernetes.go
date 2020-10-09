@@ -346,7 +346,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"image_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				// DiffSuppressFunc: imageIdSuppressFunc,
 			},
 			"install_cloud_monitor": {
 				Type:             schema.TypeBool,

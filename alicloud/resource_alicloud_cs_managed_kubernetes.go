@@ -253,7 +253,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"image_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				// DiffSuppressFunc: imageIdSuppressFunc,
 			},
 			"install_cloud_monitor": {
 				Type:             schema.TypeBool,
@@ -510,6 +509,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"cluster_spec": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ack.standard", "ack.pro.small"}, false),
 			},
 		},

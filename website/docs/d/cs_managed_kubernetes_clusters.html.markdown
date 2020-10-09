@@ -58,7 +58,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `type` - Type of collecting logs.
     * `project` - Log Service project name. 
   * `resource_group_id` - (Optional, ForceNew, Available in 1.100.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-  * `cluster_spec` - (Optional, Available in 1.100.0+) The cluster specifications of kubernetes cluster,which can be empty.Valid values:
+  * `cluster_spec` - (Optional, ForceNew, Available in 1.100.0+) The cluster specifications of kubernetes cluster,which can be empty.Valid values:
     - `ack.standard`:The standard version.
     - `ack.pro.small`:The production version.
 ### Block Nodes
