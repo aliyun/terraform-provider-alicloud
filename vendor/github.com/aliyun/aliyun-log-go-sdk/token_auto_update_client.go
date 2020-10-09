@@ -155,6 +155,17 @@ func (c *TokenAutoUpdateClient) CreateProject(name, description string) (prj *Lo
 	return
 }
 
+// UpdateProject create a new loghub project.
+func (c *TokenAutoUpdateClient) UpdateProject(name, description string) (prj *LogProject, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		prj, err = c.logClient.UpdateProject(name, description)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) GetProject(name string) (prj *LogProject, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		prj, err = c.logClient.GetProject(name)
@@ -984,6 +995,114 @@ func (c *TokenAutoUpdateClient) UpdateIndexString(project, logstore string, inde
 func (c *TokenAutoUpdateClient) GetIndexString(project, logstore string) (index string, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		index, err = c.logClient.GetIndexString(project, logstore)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) CreateConsumerGroup(project, logstore string, cg ConsumerGroup) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateConsumerGroup(project, logstore, cg)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) UpdateConsumerGroup(project, logstore string, cg ConsumerGroup) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateConsumerGroup(project, logstore, cg)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) DeleteConsumerGroup(project, logstore string, cgName string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.DeleteConsumerGroup(project, logstore, cgName)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) ListConsumerGroup(project, logstore string) (cgList []*ConsumerGroup, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		cgList, err = c.logClient.ListConsumerGroup(project, logstore)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) HeartBeat(project, logstore string, cgName, consumer string, heartBeatShardIDs []int) (shardIDs []int, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		shardIDs, err = c.logClient.HeartBeat(project, logstore, cgName, consumer, heartBeatShardIDs)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) UpdateCheckpoint(project, logstore string, cgName string, consumer string, shardID int, checkpoint string, forceSuccess bool) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateCheckpoint(project, logstore, cgName, consumer, shardID, checkpoint, forceSuccess)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetCheckpoint(project, logstore string, cgName string) (checkPointList []*ConsumerGroupCheckPoint, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		checkPointList, err = c.logClient.GetCheckpoint(project, logstore, cgName)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+// ####################### Resource Tags API ######################
+// TagResources tag specific resource
+func (c *TokenAutoUpdateClient) TagResources(project string, tags *ResourceTags) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.TagResources(project, tags)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+// UnTagResources untag specific resource
+func (c *TokenAutoUpdateClient) UnTagResources(project string, tags *ResourceUnTags) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UnTagResources(project, tags)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+// ListTagResources list rag resources
+func (c *TokenAutoUpdateClient) ListTagResources(project string,
+	resourceType string,
+	resourceIDs []string,
+	tags []ResourceFilterTag,
+	nextToken string) (respTags []*ResourceTagResponse, respNextToken string, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		respTags, respNextToken, err = c.logClient.ListTagResources(project, resourceType, resourceIDs, tags, nextToken)
 		if !c.processError(err) {
 			return
 		}

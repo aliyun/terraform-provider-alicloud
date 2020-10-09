@@ -18,10 +18,10 @@ type ChartSearch struct {
 type ChartDisplay struct {
 	XAxisKeys   []string `json:"xAxis,omitempty"`
 	YAxisKeys   []string `json:"yAxis,omitempty"`
-	XPosition   int      `json:"xPos"`
-	YPosition   int      `json:"yPos"`
-	Width       int      `json:"width"`
-	Height      int      `json:"height"`
+	XPosition   float64  `json:"xPos"`
+	YPosition   float64  `json:"yPos"`
+	Width       float64  `json:"width"`
+	Height      float64  `json:"height"`
 	DisplayName string   `json:"displayName"`
 }
 

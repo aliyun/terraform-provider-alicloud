@@ -21,6 +21,7 @@ import (
 )
 
 // UpdateAllowedIp invokes the alikafka.UpdateAllowedIp API synchronously
+// api document: https://help.aliyun.com/api/alikafka/updateallowedip.html
 func (client *Client) UpdateAllowedIp(request *UpdateAllowedIpRequest) (response *UpdateAllowedIpResponse, err error) {
 	response = CreateUpdateAllowedIpResponse()
 	err = client.DoAction(request, response)
@@ -28,6 +29,8 @@ func (client *Client) UpdateAllowedIp(request *UpdateAllowedIpRequest) (response
 }
 
 // UpdateAllowedIpWithChan invokes the alikafka.UpdateAllowedIp API asynchronously
+// api document: https://help.aliyun.com/api/alikafka/updateallowedip.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateAllowedIpWithChan(request *UpdateAllowedIpRequest) (<-chan *UpdateAllowedIpResponse, <-chan error) {
 	responseChan := make(chan *UpdateAllowedIpResponse, 1)
 	errChan := make(chan error, 1)
@@ -50,6 +53,8 @@ func (client *Client) UpdateAllowedIpWithChan(request *UpdateAllowedIpRequest) (
 }
 
 // UpdateAllowedIpWithCallback invokes the alikafka.UpdateAllowedIp API asynchronously
+// api document: https://help.aliyun.com/api/alikafka/updateallowedip.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateAllowedIpWithCallback(request *UpdateAllowedIpRequest, callback func(response *UpdateAllowedIpResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

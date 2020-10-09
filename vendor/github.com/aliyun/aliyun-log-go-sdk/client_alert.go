@@ -25,11 +25,22 @@ const (
 	NotificationTypeMessageCenter = "MessageCenter"
 )
 
+const (
+	ScheduleTypeFixedRate = "FixedRate"
+	ScheduleTypeHourly    = "Hourly"
+	ScheduleTypeDaily     = "Daily"
+	ScheduleTypeWeekly    = "Weekly"
+	ScheduleTypeCron      = "Cron"
+	ScheduleTypeDayRun    = "DryRun"
+	ScheduleTypeResident  = "Resident"
+)
+
 type Alert struct {
 	Name             string              `json:"name"`
 	DisplayName      string              `json:"displayName"`
 	Description      string              `json:"description"`
 	State            string              `json:"state"`
+	Status           string              `json:"status"`
 	Configuration    *AlertConfiguration `json:"configuration"`
 	Schedule         *Schedule           `json:"schedule"`
 	CreateTime       int64               `json:"createTime,omitempty"`
@@ -42,6 +53,7 @@ func (alert *Alert) MarshalJSON() ([]byte, error) {
 		"displayName":   alert.DisplayName,
 		"description":   alert.Description,
 		"state":         alert.State,
+		"status":        alert.Status,
 		"configuration": alert.Configuration,
 		"schedule":      alert.Schedule,
 		"type":          "Alert",
@@ -78,8 +90,12 @@ type Notification struct {
 }
 
 type Schedule struct {
-	Type     string `json:"type"`
-	Interval string `json:"interval"`
+	Type           string `json:"type"`
+	Interval       string `json:"interval"`
+	CronExpression string `json:"cronExpression"`
+	Delay          int32  `json:"delay"`
+	DayOfWeek      int32  `json:"dayOfWeek"`
+	Hour           int32  `json:"hour"`
 }
 
 func (c *Client) CreateSavedSearch(project string, savedSearch *SavedSearch) error {
