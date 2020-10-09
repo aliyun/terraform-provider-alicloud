@@ -2,12 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudResourceManagerPolicyVersion() *schema.Resource {
@@ -20,10 +22,6 @@ func resourceAlicloudResourceManagerPolicyVersion() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"create_date": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"is_default_version": {
 				Type:       schema.TypeBool,
 				Optional:   true,
@@ -31,19 +29,30 @@ func resourceAlicloudResourceManagerPolicyVersion() *schema.Resource {
 				Deprecated: "Field 'is_default_version' has been deprecated from provider version 1.90.0",
 			},
 			"policy_document": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.ValidateJsonString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
 			},
 			"policy_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
+			"create_date": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Removed:  "Field 'create_date' has been removed from provider version 1.100.0.",
+			},
 			"version_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 				ForceNew: true,
+				Removed:  "Field 'version_id' has been removed from provider version 1.100.0.",
 			},
 		},
 	}
@@ -56,9 +65,9 @@ func resourceAlicloudResourceManagerPolicyVersionCreate(d *schema.ResourceData, 
 	if v, ok := d.GetOkExists("is_default_version"); ok {
 		request.SetAsDefault = requests.NewBoolean(v.(bool))
 	}
+
 	request.PolicyDocument = d.Get("policy_document").(string)
 	request.PolicyName = d.Get("policy_name").(string)
-
 	raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
 		return resourcemanagerClient.CreatePolicyVersion(request)
 	})
@@ -77,6 +86,7 @@ func resourceAlicloudResourceManagerPolicyVersionRead(d *schema.ResourceData, me
 	object, err := resourcemanagerService.DescribeResourceManagerPolicyVersion(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_resource_manager_policy_version resourcemanagerService.DescribeResourceManagerPolicyVersion Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -87,7 +97,6 @@ func resourceAlicloudResourceManagerPolicyVersionRead(d *schema.ResourceData, me
 		return WrapError(err)
 	}
 	d.Set("policy_name", parts[0])
-	d.Set("create_date", object.CreateDate)
 	d.Set("is_default_version", object.IsDefaultVersion)
 	d.Set("policy_document", object.PolicyDocument)
 	return nil
