@@ -15,7 +15,7 @@ This data source provides a list of DMS Enterprise Users in an Alibaba Cloud acc
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_dms_enterprise_users" "dms_enterprise_users_ds"{
   ids = ["uid"]
@@ -37,6 +37,7 @@ The following arguments are supported:
 * `status` - (Optional) The status of the user.
 * `tid` - (Optional) The ID of the tenant in DMS Enterprise.
 * `ids` - (Optional)  A list of DMS Enterprise User IDs (UID).
+* `name_regex` - (Optional, Available in 1.100.0+) A regex string to filter the results by the DMS Enterprise User nick_name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -44,9 +45,11 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of DMS Enterprise User IDs (UID).
+* `names` - A list of DMS Enterprise User names.
 * `users` - A list of DMS Enterprise Users. Each element contains the following attributes:
   * `mobile` - The DingTalk number or mobile number of the user.
   * `nick_name` - The nickname of the user.
+  * `user_name` - The nickname of the user.
   * `parent_uid` - The Alibaba Cloud unique ID (UID) of the parent account if the user corresponds to a Resource Access Management (RAM) user.
   * `role_ids` - The list ids of the role that the user plays.
   * `role_names` - The list names of the role that he user plays.

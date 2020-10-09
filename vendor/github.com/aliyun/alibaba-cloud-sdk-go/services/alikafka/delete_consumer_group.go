@@ -21,6 +21,7 @@ import (
 )
 
 // DeleteConsumerGroup invokes the alikafka.DeleteConsumerGroup API synchronously
+// api document: https://help.aliyun.com/api/alikafka/deleteconsumergroup.html
 func (client *Client) DeleteConsumerGroup(request *DeleteConsumerGroupRequest) (response *DeleteConsumerGroupResponse, err error) {
 	response = CreateDeleteConsumerGroupResponse()
 	err = client.DoAction(request, response)
@@ -28,6 +29,8 @@ func (client *Client) DeleteConsumerGroup(request *DeleteConsumerGroupRequest) (
 }
 
 // DeleteConsumerGroupWithChan invokes the alikafka.DeleteConsumerGroup API asynchronously
+// api document: https://help.aliyun.com/api/alikafka/deleteconsumergroup.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteConsumerGroupWithChan(request *DeleteConsumerGroupRequest) (<-chan *DeleteConsumerGroupResponse, <-chan error) {
 	responseChan := make(chan *DeleteConsumerGroupResponse, 1)
 	errChan := make(chan error, 1)
@@ -50,6 +53,8 @@ func (client *Client) DeleteConsumerGroupWithChan(request *DeleteConsumerGroupRe
 }
 
 // DeleteConsumerGroupWithCallback invokes the alikafka.DeleteConsumerGroup API asynchronously
+// api document: https://help.aliyun.com/api/alikafka/deleteconsumergroup.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteConsumerGroupWithCallback(request *DeleteConsumerGroupRequest, callback func(response *DeleteConsumerGroupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

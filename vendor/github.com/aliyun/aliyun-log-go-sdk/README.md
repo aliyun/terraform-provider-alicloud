@@ -212,7 +212,7 @@ if err != nil {
 
 8. **创建logtail 采集配置**
 
-   logtail 采集配置，目前通过sdk 支持创建下列几种模式的采集配置，分别为 [完整正则](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/logtail_config/log_config_common_regex.go)，[分隔符模式](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/logtail_config/log_config_delimiter.go)，[json模式](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/logtail_config/log_config_json.go) ，[插件模式](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/logtail_config/log_config_plugin.go)，这里展示的完整正则模式的创建。
+   logtail 采集配置，目前通过sdk 支持创建下列几种模式的采集配置，分别为 [完整正则](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/config/log_config_common_regex.go)，[分隔符模式](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/config/log_config_delimiter.go)，[json模式](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/config/log_config_json.go) ，[插件模式](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/config/log_config_plugin.go)，这里展示的完整正则模式的创建。
 
    ```go
    regexConfig := new(sls.RegexConfigInputDetail)

@@ -53,9 +53,7 @@ func TestAccAlicloudResourceManagerPolicyVersion_basic(t *testing.T) {
 }
 
 var ResourceManagerPolicyVersionMap = map[string]string{
-	"create_date":        CHECKSET,
 	"is_default_version": "false",
-	"version_id":         NOSET,
 }
 
 func ResourceManagerPolicyVersionBasicdependence(name string) string {

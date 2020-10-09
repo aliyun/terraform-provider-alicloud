@@ -63,7 +63,6 @@ func TestAccAlicloudResourceManagerPolicy_basic(t *testing.T) {
 }
 
 var ResourceManagerPolicyMap = map[string]string{
-	"create_date":     CHECKSET,
 	"default_version": CHECKSET,
 	"policy_type":     CHECKSET,
 }

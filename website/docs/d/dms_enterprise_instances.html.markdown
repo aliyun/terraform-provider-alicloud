@@ -15,13 +15,13 @@ This data source provides a list of DMS Enterprise Instances in an Alibaba Cloud
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_dms_enterprise_instances" "dms_enterprise_instances_ds" {
   net_type             = "CLASSIC",
   instance_type        = "mysql",
   env_type"            = "test",
-  instance_alias_regex = "tf_testAcc",
+  name_regex           = "tf_testAcc",
   output_file          = "dms_enterprise_instances.json"
 }
 
@@ -41,13 +41,15 @@ The following arguments are supported:
 * `net_type` - (Optional) The network type of the database instance. Valid values: CLASSIC and VPC. For more information about the valid values, see the description of the RegisterInstance operation.
 * `search_key` - (Optional) The keyword used to query database instances.
 * `tid` - (Optional) The ID of the tenant in Data Management (DMS) Enterprise.
+* `name_regex` - (Optional, Available in v1.100.0+) A regex string to filter the results by the DMS Enterprise Instance instance_alias.
 * `instance_alias_regex` - (Optional) A regex string to filter the results by the DMS Enterprise Instance instance_alias.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
-
+* `ids` - A list of DMS Enterprise IDs (Each of them consists of host:port).
+* `names` - A list of DMS Enterprise names.
 * `instances` - A list of KMS keys. Each element contains the following attributes:
   * `data_link_name` - The name of the data link for the database instance.
   * `database_password` - The logon password of the database instance.

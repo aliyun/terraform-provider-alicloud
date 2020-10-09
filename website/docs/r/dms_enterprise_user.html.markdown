@@ -15,10 +15,10 @@ Provides a DMS Enterprise User resource. For information about Alidms Enterprise
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_dms_enterprise_user" "example" {
   uid        = "uid"
-  nick_name  = "tf-test"
+  user_name  = "tf-test"
   role_names = ["DBA"]
   mobile     = "1591066xxxx"
 }
@@ -32,7 +32,8 @@ The following arguments are supported:
 * `uid` - (Required, ForceNew) The Alibaba Cloud unique ID (UID) of the user to add.
 * `status` - (Optional) The state of DMS Enterprise User. Valid values: `NORMAL`, `DISABLE`.
 * `role_names` - (Optional) The roles that the user plays.
-* `nick_name` - (Optional) The nickname of the user.
+* `nick_name` - (Optional) It has been deprecated from 1.100.0 and use `user_name` instead.
+* `user_name` - (Optional, Available in 1.100.0+) The nickname of the user.
 * `mobile` - (Optional) The DingTalk number or mobile number of the user.
 * `max_result_count` - (Optional) Query the maximum number of rows on the day.
 * `max_execute_count` - (Optional) Maximum number of inquiries on the day.
