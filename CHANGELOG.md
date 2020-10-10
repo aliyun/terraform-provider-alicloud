@@ -4,6 +4,7 @@
 
 IMPROVEMENTS:
 
+- Create cluster support ResourceGroup and ACK-Pro [GH-2889]
 - update vendor for alikafka [GH-2883]
 - resource_manager_policy add validateJsonString and resource_manager_attachment support level 5 id [GH-2880]
 - dms user: replace some parameters for compatibility  [GH-2875]
