@@ -11,6 +11,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Work around the SLS log project does not exist error [GH-2893]
 - bugfix: Upgrade github.com/aliyun/aliyun-log-go-sdk to v0.1.13 [GH-2888]
 
 ## 1.99.0 (September 28, 2020)
