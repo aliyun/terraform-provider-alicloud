@@ -1,4 +1,18 @@
 ## 1.100.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- update vendor for alikafka [GH-2883]
+- resource_manager_policy add validateJsonString and resource_manager_attachment support level 5 id [GH-2880]
+- dms user: replace some parameters for compatibility  [GH-2875]
+- feature: resource dms_enterprise_instance supports skip_test and deprecated instance_alias  [GH-2874]
+- Suport FC aysnc invoke config feature  [GH-2873]
+- UPDATE CHANGELOG  [GH-2869]
+
+BUG FIXES:
+
+- bugfix: Upgrade github.com/aliyun/aliyun-log-go-sdk to v0.1.13 [GH-2888]
+
 ## 1.99.0 (September 28, 2020)
 
 - **New Resource:** `alicloud_cms_alarm_contact` ([#2870](https://github.com/aliyun/terraform-provider-alicloud/issues/2870))
