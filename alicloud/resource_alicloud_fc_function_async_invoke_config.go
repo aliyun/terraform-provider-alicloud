@@ -118,8 +118,13 @@ func resourceAlicloudFCAsyncInvokeConfigCreate(d *schema.ResourceData, meta inte
 		ServiceName:  StringPointer(serviceName),
 		FunctionName: StringPointer(functionName),
 	}
-	request.MaxAsyncRetryAttempts = Int64Pointer(int64(d.Get("maximum_retry_attempts").(int)))
-	request.DestinationConfig = parseFCDestinationConfig(d.Get("destination_config").([]interface{}))
+
+	if v, ok := d.GetOk("maximum_retry_attempts"); ok {
+		request.MaxAsyncRetryAttempts = Int64Pointer(int64(v.(int)))
+	}
+	if v, ok := d.GetOk("destination_config"); ok {
+		request.DestinationConfig = parseFCDestinationConfig(v.([]interface{}))
+	}
 
 	if qualifier != "" {
 		request.Qualifier = StringPointer(qualifier)
