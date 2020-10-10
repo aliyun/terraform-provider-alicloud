@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"encoding/json"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 )
@@ -69,6 +70,7 @@ type ClusterType struct {
 	NodeStatus             string          `json:"node_status"`
 	DockerVersion          string          `json:"docker_version"`
 	ClusterType            string          `json:"cluster_type"`
+	Profile                string          `json:"profile"`
 }
 
 func (client *Client) DescribeClusters(nameFilter string) (clusters []ClusterType, err error) {
@@ -451,6 +453,11 @@ type KubernetesClusterScaleArgs struct {
 	WorkerSystemDiskCategory ecs.DiskCategory `json:"worker_system_disk_category"`
 	WorkerDataDisk           bool             `json:"worker_data_disk"`
 	Count                    int              `json:"count"`
+
+	// Edge worker related args
+	IsEdgeWorker          bool   `json:"is_edge_worker"`
+	EnsRegionId           string `json:"ens_region_id"`
+	EnsInternetChargeType string `json:"ens_internet_charge_type"`
 
 	//data disk
 	WorkerDataDiskCategory  string `json:"worker_data_disk_category"`
