@@ -4,6 +4,7 @@
 
 IMPROVEMENTS:
 
+- update ci test by adding config [GH-2894]
 - Create cluster support ResourceGroup and ACK-Pro [GH-2889]
 - update vendor for alikafka [GH-2883]
 - resource_manager_policy add validateJsonString and resource_manager_attachment support level 5 id [GH-2880]
@@ -13,6 +14,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+- Revert "Create cluster support ResourceGroup and ACK-Pro" [GH-2895]
 - Work around the SLS log project does not exist error [GH-2893]
 - bugfix: Upgrade github.com/aliyun/aliyun-log-go-sdk to v0.1.13 [GH-2888]
 
