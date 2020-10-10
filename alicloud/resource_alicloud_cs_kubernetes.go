@@ -98,9 +98,11 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"master_disk_category": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				Default:          DiskCloudEfficiency,
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  DiskCloudEfficiency,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"master_instance_charge_type": {
@@ -172,9 +174,11 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_disk_category": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				Default:          DiskCloudEfficiency,
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  DiskCloudEfficiency,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_data_disk_size": {
@@ -185,8 +189,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
 			},
 			"worker_data_disk_category": {
-				Type:             schema.TypeString,
-				Optional:         true,
+				Type:     schema.TypeString,
+				Optional: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_data_disks": {
@@ -344,8 +350,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"image_id": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: imageIdSuppressFunc,
 			},
 			"install_cloud_monitor": {
 				Type:             schema.TypeBool,
@@ -627,12 +634,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				ForceNew: true,
-			},
-			"resource_group_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
 				ForceNew: true,
 			},
 		},
@@ -1186,8 +1187,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			Addons:                    addons,
 			ServiceAccountIssuer:      d.Get("service_account_issuer").(string),
 			ApiAudiences:              apiAudiences,
-			ResourceGroupId:           d.Get("resource_group_id").(string),
-			ClusterSpec:               d.Get("cluster_spec").(string),
 		},
 	}
 
