@@ -1,12 +1,13 @@
 ## 1.100.0 (Unreleased)
 
+- **New Resource:** `alicloud_fc_function_async_invoke_config` [GH-2873]
+
 IMPROVEMENTS:
 
 - update vendor for alikafka [GH-2883]
 - resource_manager_policy add validateJsonString and resource_manager_attachment support level 5 id [GH-2880]
 - dms user: replace some parameters for compatibility  [GH-2875]
 - feature: resource dms_enterprise_instance supports skip_test and deprecated instance_alias  [GH-2874]
-- Suport FC aysnc invoke config feature  [GH-2873]
 - UPDATE CHANGELOG  [GH-2869]
 
 BUG FIXES:
