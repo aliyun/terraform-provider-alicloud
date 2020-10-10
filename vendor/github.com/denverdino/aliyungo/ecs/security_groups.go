@@ -7,7 +7,6 @@ import (
 
 type NicType string
 type Direction string
-type SecurityGroupType string
 
 const (
 	NicTypeInternet = NicType("internet")
@@ -16,9 +15,6 @@ const (
 	DirectionIngress = Direction("ingress")
 	DirectionEgress  = Direction("egress")
 	DirectionAll     = Direction("all")
-
-	SecurityGroupTypeNormal     = SecurityGroupType("normal")
-	SecurityGroupTypeEnterprise = SecurityGroupType("enterprise")
 )
 
 type IpProtocol string
@@ -96,9 +92,8 @@ func (client *Client) DescribeSecurityGroupAttribute(args *DescribeSecurityGroup
 }
 
 type DescribeSecurityGroupsArgs struct {
-	RegionId         common.Region
-	VpcId            string
-	SecurityGroupIds []string
+	RegionId common.Region
+	VpcId    string
 	common.Pagination
 }
 
@@ -109,8 +104,6 @@ type SecurityGroupItemType struct {
 	SecurityGroupName string
 	Description       string
 	VpcId             string
-	SecurityGroupType SecurityGroupType // normal|enterprise
-	ServiceManaged    bool
 	CreationTime      util.ISO6801Time
 }
 
