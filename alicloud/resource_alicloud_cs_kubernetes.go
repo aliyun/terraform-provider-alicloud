@@ -21,6 +21,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
+	aliyungoecs "github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -859,6 +860,8 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("version", object.CurrentVersion)
 	d.Set("worker_ram_role_name", object.WorkerRamRoleName)
 	d.Set("tags", object.Tags)
+	d.Set("resource_group_id", object.ResourceGroupId)
+	d.Set("cluster_spec", object.ClusterSpec)
 
 	var masterNodes []map[string]interface{}
 	var workerNodes []map[string]interface{}
@@ -1187,7 +1190,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			ServiceAccountIssuer:      d.Get("service_account_issuer").(string),
 			ApiAudiences:              apiAudiences,
 			ResourceGroupId:           d.Get("resource_group_id").(string),
-			ClusterSpec:               d.Get("cluster_spec").(string),
 		},
 	}
 
@@ -1246,7 +1248,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			MasterCount:              len(d.Get("master_vswitch_ids").([]interface{})),
 			MasterVSwitchIds:         expandStringList(d.Get("master_vswitch_ids").([]interface{})),
 			MasterInstanceTypes:      expandStringList(d.Get("master_instance_types").([]interface{})),
-			MasterSystemDiskCategory: d.Get("master_disk_category").(string),
+			MasterSystemDiskCategory: aliyungoecs.DiskCategory(d.Get("master_disk_category").(string)),
 			MasterSystemDiskSize:     int64(d.Get("master_disk_size").(int)),
 			// TODO support other params
 		}
@@ -1266,7 +1268,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		WorkerVSwitchIds:         expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
 		WorkerInstanceTypes:      expandStringList(d.Get("worker_instance_types").([]interface{})),
 		NumOfNodes:               int64(d.Get("worker_number").(int)),
-		WorkerSystemDiskCategory: d.Get("worker_disk_category").(string),
+		WorkerSystemDiskCategory: aliyungoecs.DiskCategory(d.Get("worker_disk_category").(string)),
 		WorkerSystemDiskSize:     int64(d.Get("worker_disk_size").(int)),
 		// TODO support other params
 	}
@@ -1299,6 +1301,11 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			creationArgs.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
 		}
 	}
+
+	if v, ok := d.GetOk("cluster_spec"); ok {
+		creationArgs.ClusterSpec = v.(string)
+	}
+
 	return creationArgs, nil
 }
 

@@ -286,6 +286,8 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	_ = d.Set("deletion_protection", object.DeletionProtection)
 	_ = d.Set("tags", object.Tags)
 	_ = d.Set("version", object.CurrentVersion)
+	_ = d.Set("resource_group_id", object.ResourceGroupId)
+	_ = d.Set("cluster_spec", object.ClusterSpec)
 
 	var requestInfo *cs.Client
 	var response interface{}
