@@ -4,6 +4,7 @@
 
 IMPROVEMENTS:
 
+- add valid value Australia for resource cen_bandwidth_package and update vendor [GH-2895]
 - update ci test by adding config [GH-2894]
 - Create cluster support ResourceGroup and ACK-Pro [GH-2889]
 - update vendor for alikafka [GH-2883]
