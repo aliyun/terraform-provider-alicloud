@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"regexp"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -179,15 +180,17 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
-			//b, _ := json.Marshal(request)
-			//fmt.Println("=============create===============")
-			//fmt.Println(string(b))
-			//fmt.Println("==================================")
 			return fcClient.CreateService(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"AccessDenied", "does not exist"}) {
 				return resource.RetryableError(err)
+			}
+			// Work around the "log project doest not exist" error since SLS log project CRUD is not strong consistency.
+			if e, ok := err.(*fc.ServiceError); ok {
+				if r := regexp.MustCompile("project.*does not exist"); e.ErrorCode == "InvalidArgument" && r.MatchString(e.ErrorMessage) {
+					return resource.RetryableError(err)
+				}
 			}
 			return resource.NonRetryableError(err)
 		}
@@ -317,18 +320,25 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 	if request != nil {
 		request.ServiceName = StringPointer(d.Id())
 		var requestInfo *fc.Client
-		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			requestInfo = fcClient
-			//b, _ := json.Marshal(request)
-			//fmt.Println("==============update===============")
-			//fmt.Println(string(b))
-			//fmt.Println("===================================")
-			return fcClient.UpdateService(request)
-		})
-		if err != nil {
+
+		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+				requestInfo = fcClient
+				return fcClient.UpdateService(request)
+			})
+			if err != nil {
+				// Work around the "log project doest not exist" error since SLS log project CRUD is not strong consistency.
+				if e, ok := err.(*fc.ServiceError); ok {
+					if r := regexp.MustCompile("project.*does not exist"); e.ErrorCode == "InvalidArgument" && r.MatchString(e.ErrorMessage) {
+						return resource.RetryableError(err)
+					}
+				}
+			}
+			addDebug("UpdateService", raw, requestInfo, request)
+			return nil
+		}); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateService", FcGoSdk)
 		}
-		addDebug("UpdateService", raw, requestInfo, request)
 	}
 
 	d.Partial(false)
