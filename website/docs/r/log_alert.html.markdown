@@ -85,7 +85,7 @@ The following arguments are supported:
     * `end` - (Required) end time. example: 20s.
     * `time_span_type` - (Optional) default Custom. No need to configure this parameter.
 * `notification_list` - (Required) Alarm information notification list.
-    * `type` - (Required) Notification type. support Email, SMS, DingTalk.
+    * `type` - (Required) Notification type. support Email, SMS, DingTalk, MessageCenter.
     * `content` - (Required) Notice content of alarm.
     * `service_uri` - (Optional) Request address.
     * `mobile_list` - (Optional) SMS sending mobile number.
