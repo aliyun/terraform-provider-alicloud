@@ -1,23 +1,23 @@
 ## 1.100.0 (Unreleased)
 
-- **New Resource:** `alicloud_fc_function_async_invoke_config` [GH-2873]
+- **New Resource:** `alicloud_fc_function_async_invoke_config` ([#2873](https://github.com/aliyun/terraform-provider-alicloud/issues/2873))
 
 IMPROVEMENTS:
 
-- add valid value Australia for resource cen_bandwidth_package and update vendor [GH-2895]
-- update ci test by adding config [GH-2894]
-- Create cluster support ResourceGroup and ACK-Pro [GH-2889]
-- update vendor for alikafka [GH-2883]
-- resource_manager_policy add validateJsonString and resource_manager_attachment support level 5 id [GH-2880]
-- dms user: replace some parameters for compatibility  [GH-2875]
-- feature: resource dms_enterprise_instance supports skip_test and deprecated instance_alias  [GH-2874]
-- UPDATE CHANGELOG  [GH-2869]
+- add valid value Australia for resource cen_bandwidth_package and update vendor ([#2895](https://github.com/aliyun/terraform-provider-alicloud/issues/2895))
+- update ci test by adding config ([#2894](https://github.com/aliyun/terraform-provider-alicloud/issues/2894))
+- Create cluster support ResourceGroup and ACK-Pro ([#2889](https://github.com/aliyun/terraform-provider-alicloud/issues/2889))
+- update vendor for alikafka ([#2883](https://github.com/aliyun/terraform-provider-alicloud/issues/2883))
+- resource_manager_policy add validateJsonString and resource_manager_attachment support level 5 id ([#2880](https://github.com/aliyun/terraform-provider-alicloud/issues/2880))
+- dms user: replace some parameters for compatibility  ([#2875](https://github.com/aliyun/terraform-provider-alicloud/issues/2875))
+- feature: resource dms_enterprise_instance supports skip_test and deprecated instance_alias  ([#2874](https://github.com/aliyun/terraform-provider-alicloud/issues/2874))
+- UPDATE CHANGELOG  ([#2869](https://github.com/aliyun/terraform-provider-alicloud/issues/2869))
 
 BUG FIXES:
 
-- Revert "Create cluster support ResourceGroup and ACK-Pro" [GH-2895]
-- Work around the SLS log project does not exist error [GH-2893]
-- bugfix: Upgrade github.com/aliyun/aliyun-log-go-sdk to v0.1.13 [GH-2888]
+- Revert "Create cluster support ResourceGroup and ACK-Pro" ([#2895](https://github.com/aliyun/terraform-provider-alicloud/issues/2895))
+- Work around the SLS log project does not exist error ([#2893](https://github.com/aliyun/terraform-provider-alicloud/issues/2893))
+- bugfix: Upgrade github.com/aliyun/aliyun-log-go-sdk to v0.1.13 ([#2888](https://github.com/aliyun/terraform-provider-alicloud/issues/2888))
 
 ## 1.99.0 (September 28, 2020)
 
