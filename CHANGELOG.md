@@ -1,4 +1,5 @@
-## 1.100.0 (Unreleased)
+## 1.101.0 (Unreleased)
+## 1.100.0 (October 12, 2020)
 
 - **New Resource:** `alicloud_fc_function_async_invoke_config` ([#2873](https://github.com/aliyun/terraform-provider-alicloud/issues/2873))
 
