@@ -37,9 +37,17 @@ func dataSourceAlicloudLogServiceRead(d *schema.ResourceData, meta interface{}) 
 
 	client := meta.(*connectivity.AliyunClient)
 
-	response, err := client.NewTeaCommonClientWithEndpoint(connectivity.OpenSlsService, func(teaClient *rpc.Client) (map[string]interface{}, error) {
-		return teaClient.DoRequest(StringPointer("GetSlsService"), nil, StringPointer("POST"), StringPointer("2019-10-23"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
-	})
+	sdkConfig, err := client.NewSdkConfig()
+	if err != nil {
+		return WrapError(err)
+	}
+	sdkConfig.SetEndpoint(connectivity.OpenSlsService)
+
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer("GetSlsService"), nil, StringPointer("POST"), StringPointer("2019-10-23"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
 	addDebug("GetSlsService", response, nil)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_log_service", "GetLogService", AlibabaCloudSdkGoERROR)
@@ -54,9 +62,7 @@ func dataSourceAlicloudLogServiceRead(d *schema.ResourceData, meta interface{}) 
 		return nil
 	}
 
-	response, err = client.NewTeaCommonClientWithEndpoint(connectivity.OpenSlsService, func(teaClient *rpc.Client) (map[string]interface{}, error) {
-		return teaClient.DoRequest(StringPointer("OpenSlsService"), nil, StringPointer("POST"), StringPointer("2019-10-23"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
-	})
+	response, err = conn.DoRequest(StringPointer("OpenSlsService"), nil, StringPointer("POST"), StringPointer("2019-10-23"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
 	addDebug("OpenSlsService", response, nil)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_log_service", "OpenLogService", AlibabaCloudSdkGoERROR)

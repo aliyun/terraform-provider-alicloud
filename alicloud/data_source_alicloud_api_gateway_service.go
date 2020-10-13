@@ -36,10 +36,17 @@ func dataSourceAlicloudApigatewayServiceRead(d *schema.ResourceData, meta interf
 	}
 
 	client := meta.(*connectivity.AliyunClient)
+	sdkConfig, err := client.NewSdkConfig()
+	if err != nil {
+		return WrapError(err)
+	}
+	sdkConfig.SetEndpoint(connectivity.OpenApiGatewayService)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer("OpenApiGatewayService"), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
 
-	response, err := client.NewTeaCommonClientWithEndpoint(connectivity.OpenApiGatewayService, func(teaClient *rpc.Client) (map[string]interface{}, error) {
-		return teaClient.DoRequest(StringPointer("OpenApiGatewayService"), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
-	})
 	addDebug("OpenApiGatewayService", response, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ORDER.OPEND"}) {
