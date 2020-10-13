@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"os"
 	"testing"
 
@@ -91,7 +92,11 @@ func TestAccAlicloudDmsEnterprisesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeDmsEnterpriseInstancesMapFunc,
 	}
 
-	DmsEnterpriseInstancesCheckInfo.dataSourceTestCheck(t, rand, searchkeyConf, instancealiasRegexConfConf, nameRegexConfConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, false, connectivity.DmsEnterpriseNoSupportedRegions)
+	}
+
+	DmsEnterpriseInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, searchkeyConf, instancealiasRegexConfConf, nameRegexConfConf)
 }
 
 func dataSourceDmsEnterpriseInstancesConfigDependence(name string) string {

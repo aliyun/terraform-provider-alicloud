@@ -100,6 +100,7 @@ func TestAccAlicloudDmsEnterprise(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.DmsEnterpriseNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
