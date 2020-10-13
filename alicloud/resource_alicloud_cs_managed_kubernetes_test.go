@@ -45,7 +45,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"name":                        name,
 					"worker_vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
 					"worker_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"worker_number":               "1",
+					"worker_number":               "2",
 					"password":                    "Test12345",
 					"pod_cidr":                    "172.20.0.0/16",
 					"service_cidr":                "172.21.0.0/20",
@@ -59,7 +59,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                      name,
-						"worker_number":             "1",
+						"worker_number":             "2",
 						"password":                  "Test12345",
 						"pod_cidr":                  "172.20.0.0/16",
 						"service_cidr":              "172.21.0.0/20",
@@ -138,99 +138,6 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_log_project" "log" {
   name        = "${var.name}"
   description = "created by terraform for managedkubernetes cluster"
-}
-`, name)
-}
-
-func resourceCSManagedKubernetesConfigDependence_multiAZ(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-
-data "alicloud_zones" default {
-  available_resource_creation = "VSwitch"
-}
-
-data "alicloud_instance_types" "default" {
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 2
-	memory_size = 4
-	kubernetes_node_role = "Worker"
-}
-
-data "alicloud_instance_types" "default1" {
-	availability_zone = "${lookup(data.alicloud_zones.default.zones[length(data.alicloud_zones.default.zones)-1], "id")}"
-	cpu_core_count = 2
-	memory_size = 4
-	kubernetes_node_role = "Worker"
-}
-
-data "alicloud_instance_types" "default2" {
-	availability_zone = "${lookup(data.alicloud_zones.default.zones[length(data.alicloud_zones.default.zones)-2], "id")}"
-	cpu_core_count = 2
-	memory_size = 4
-	kubernetes_node_role = "Worker"
-}
-
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
-}
-
-resource "alicloud_vswitch" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-}
-
-resource "alicloud_vswitch" "default1" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "10.1.2.0/24"
-  availability_zone = "${lookup(data.alicloud_zones.default.zones[length(data.alicloud_zones.default.zones)-1], "id")}"
-}
-
-resource "alicloud_vswitch" "default2" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "10.1.3.0/24"
-  availability_zone = "${lookup(data.alicloud_zones.default.zones[length(data.alicloud_zones.default.zones)-2], "id")}"
-}
-
-resource "alicloud_nat_gateway" "default" {
-  name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-  specification = "Small"
-}
-
-resource "alicloud_snat_entry" "default" {
-  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids}"
-  source_vswitch_id = "${alicloud_vswitch.default.id}"
-  snat_ip           = "${alicloud_eip.default.ip_address}"
-}
-
-resource "alicloud_snat_entry" "default1" {
-  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids}"
-  source_vswitch_id = "${alicloud_vswitch.default1.id}"
-  snat_ip           = "${alicloud_eip.default.ip_address}"
-}
-
-resource "alicloud_snat_entry" "default2" {
-  snat_table_id     = "${alicloud_nat_gateway.default.snat_table_ids}"
-  source_vswitch_id = "${alicloud_vswitch.default2.id}"
-  snat_ip           = "${alicloud_eip.default.ip_address}"
-}
-
-resource "alicloud_eip" "default" {
-  name = "${var.name}"
-  bandwidth = "100"
-}
-
-resource "alicloud_eip_association" "default" {
-  allocation_id = "${alicloud_eip.default.id}"
-  instance_id   = "${alicloud_nat_gateway.default.id}"
 }
 `, name)
 }
