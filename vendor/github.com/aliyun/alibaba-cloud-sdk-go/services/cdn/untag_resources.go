@@ -21,7 +21,6 @@ import (
 )
 
 // UntagResources invokes the cdn.UntagResources API synchronously
-// api document: https://help.aliyun.com/api/cdn/untagresources.html
 func (client *Client) UntagResources(request *UntagResourcesRequest) (response *UntagResourcesResponse, err error) {
 	response = CreateUntagResourcesResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) UntagResources(request *UntagResourcesRequest) (response *
 }
 
 // UntagResourcesWithChan invokes the cdn.UntagResources API asynchronously
-// api document: https://help.aliyun.com/api/cdn/untagresources.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UntagResourcesWithChan(request *UntagResourcesRequest) (<-chan *UntagResourcesResponse, <-chan error) {
 	responseChan := make(chan *UntagResourcesResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) UntagResourcesWithChan(request *UntagResourcesRequest) (<-
 }
 
 // UntagResourcesWithCallback invokes the cdn.UntagResources API asynchronously
-// api document: https://help.aliyun.com/api/cdn/untagresources.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UntagResourcesWithCallback(request *UntagResourcesRequest, callback func(response *UntagResourcesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -76,6 +71,7 @@ func (client *Client) UntagResourcesWithCallback(request *UntagResourcesRequest,
 // UntagResourcesRequest is the request struct for api UntagResources
 type UntagResourcesRequest struct {
 	*requests.RpcRequest
+	All          requests.Boolean `position:"Query" name:"All"`
 	ResourceId   *[]string        `position:"Query" name:"ResourceId"  type:"Repeated"`
 	OwnerId      requests.Integer `position:"Query" name:"OwnerId"`
 	ResourceType string           `position:"Query" name:"ResourceType"`
