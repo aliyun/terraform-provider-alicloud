@@ -559,6 +559,7 @@ The following arguments are supported:
 * `related_cluster_id` (Optional, ForceNew) This specify the related cluster id, if this cluster is a Gateway.
 * `host_group` - (Optional) Groups of Host, You can specify MASTER as a group, CORE as a group (just like the above example).
 * `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
+* `period` - (Optional, Available in v1.101.0+) If charge type is PrePaid, this should be specified, unit is month. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36.
 
 #### Block host_group
 
