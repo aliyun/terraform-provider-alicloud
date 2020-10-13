@@ -46,9 +46,17 @@ func dataSourceAlicloudEdasServiceRead(d *schema.ResourceData, meta interface{})
 		"Parameter.1.Code":  "env",
 		"Parameter.1.Value": "env_public",
 	}
-	response, err := client.NewTeaCommonClientWithEndpoint("business.aliyuncs.com", func(teaClient *rpc.Client) (map[string]interface{}, error) {
-		return teaClient.DoRequest(StringPointer("CreateInstance"), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-	})
+	sdkConfig, err := client.NewSdkConfig()
+	if err != nil {
+		return WrapError(err)
+	}
+	sdkConfig.SetEndpoint(connectivity.OpenBssService)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer("CreateInstance"), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
 	addDebug("CreateInstance", response, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"SYSTEM.SALE_VALIDATE_NO_SPECIFIC_CODE_FAILED"}) {
