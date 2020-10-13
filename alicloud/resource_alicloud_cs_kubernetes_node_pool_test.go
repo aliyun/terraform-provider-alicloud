@@ -49,7 +49,6 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 					"password":             "Test12345",
 					"system_disk_category": "cloud_ssd",
 					"system_disk_size":     "20",
-					"tags":                 []map[string]string{{"key": "test-tag-key", "value": "test-tag-value"}},
 					"data_disks":           []map[string]string{{"size": "100", "category": "cloud_ssd"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -59,9 +58,6 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"password":              "Test12345",
 						"system_disk_category":  "cloud_ssd",
 						"system_disk_size":      "20",
-						"tags.#":                "1",
-						"tags.0.key":            "test-tag-key",
-						"tags.0.value":          "test-tag-value",
 						"data_disks.#":          "1",
 						"data_disks.0.size":     "100",
 						"data_disks.0.category": "cloud_ssd",
@@ -75,18 +71,39 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"system_disk_size": "80",
-					"tags":             []map[string]string{{"key": "test-tag-key", "value": "test-tag-value"}, {"key": "new-tag-key", "value": "new-tag-value"}},
 					"data_disks":       []map[string]string{{"size": "100", "category": "cloud_ssd"}, {"size": "200", "category": "cloud_efficiency"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"system_disk_size":      "80",
-						"tags.#":                "2",
-						"tags.0.key":            "test-tag-key",
-						"tags.0.value":          "test-tag-value",
-						"tags.1.key":            "new-tag-key",
-						"tags.1.value":          "new-tag-value",
 						"data_disks.#":          "2",
 						"data_disks.0.size":     "100",
 						"data_disks.0.category": "cloud_ssd",
