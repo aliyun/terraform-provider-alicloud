@@ -137,6 +137,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"service_cidr":          "192.168.2.0/24",
 					"enable_ssh":            "true",
 					"install_cloud_monitor": "true",
+					"resource_group_id":     fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -149,6 +150,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 						"service_cidr":          "192.168.2.0/24",
 						"enable_ssh":            "true",
 						"install_cloud_monitor": "true",
+						"resource_group_id":     fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 					}),
 				),
 			},
@@ -161,7 +163,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types",
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
 					"worker_instance_charge_type", "worker_instance_types", "log_config",
-					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes"},
+					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes", "resource_group_id"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -255,6 +257,7 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 					"enable_ssh":            "true",
 					"install_cloud_monitor": "true",
 					"user_ca":               tmpFile.Name(),
+					"resource_group_id":     fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckUserCA(resourceId, v),
@@ -268,6 +271,7 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 						"service_cidr":          "192.168.2.0/24",
 						"enable_ssh":            "true",
 						"install_cloud_monitor": "true",
+						"resource_group_id":     fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 					}),
 				),
 			},
