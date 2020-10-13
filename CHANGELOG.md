@@ -2,6 +2,8 @@
 
 IMPROVEMENTS:
 
+- update go vendors [GH-2904]
+- improve cs test cases [GH-2901]
 - update sdk v1.61.557 [GH-2900]
 - improve invoking api by tea dsl conn [GH-2899]
 - add valid value Australia for resource cen_bandwidth_package and update vendor [GH-2896]
