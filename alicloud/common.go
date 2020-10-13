@@ -354,6 +354,18 @@ func convertListToCommaSeparate(configured []interface{}) string {
 	return result
 }
 
+func convertBoolToString(configured bool) string {
+	return strconv.FormatBool(configured)
+}
+
+func convertIntergerToString(configured int) string {
+	return strconv.Itoa(configured)
+}
+
+func convertFloat64ToString(configured float64) string {
+	return strconv.FormatFloat(configured, 'E', -1, 64)
+}
+
 func convertJsonStringToList(configured string) ([]interface{}, error) {
 	result := make([]interface{}, 0)
 	if err := json.Unmarshal([]byte(configured), &result); err != nil {

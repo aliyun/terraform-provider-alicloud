@@ -10,6 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
+var redisInstanceClassForTest = "redis.master.small.default"
+var memcacheInstanceClassForTest = "memcache.master.small.default"
+
 func TestAccAlicloudKVStoreRedisBackupPolicy_classic(t *testing.T) {
 	var policy *r_kvstore.DescribeBackupPolicyResponse
 
