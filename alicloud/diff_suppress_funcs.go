@@ -255,6 +255,17 @@ func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 	return true
 }
 
+func redisPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return strings.ToLower(d.Get("payment_type").(string)) == "postpaid"
+}
+
+func redisPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if strings.ToLower(d.Get("payment_type").(string)) == "prepaid" && d.Get("auto_renew").(bool) {
+		return false
+	}
+	return true
+}
+
 func elasticsearchEnablePublicDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return d.Get("enable_public").(bool) == false
 }

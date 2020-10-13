@@ -160,6 +160,7 @@ type AliyunClient struct {
 	onsConn                      *ons.Client
 	configConn                   *config.Client
 	cmsConn                      *cms.Client
+	r_kvstoreConn                *r_kvstore.Client
 }
 
 type ApiVersion string
@@ -1991,4 +1992,29 @@ func (client *AliyunClient) WithConfigClient(do func(*config.Client) (interface{
 		client.configConn = configConn
 	}
 	return do(client.configConn)
+}
+
+func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (interface{}, error)) (interface{}, error) {
+	if client.r_kvstoreConn == nil {
+		endpoint := client.config.RKvstoreEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, RKvstoreCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(RKvstoreCode), endpoint)
+		}
+
+		r_kvstoreConn, err := r_kvstore.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the RKvstoreclient: %#v", err)
+		}
+		r_kvstoreConn.AppendUserAgent(Terraform, terraformVersion)
+		r_kvstoreConn.AppendUserAgent(Provider, providerVersion)
+		r_kvstoreConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.r_kvstoreConn = r_kvstoreConn
+	}
+	return do(client.r_kvstoreConn)
 }

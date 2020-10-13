@@ -20,6 +20,7 @@ type ServiceCode string
 
 const (
 	CmsCode             = ServiceCode("CMS")
+	RKvstoreCode        = ServiceCode("RKVSTORE")
 	ConfigCode          = ServiceCode("CONFIG")
 	OnsCode             = ServiceCode("ONS")
 	DcdnCode            = ServiceCode("DCDN")
