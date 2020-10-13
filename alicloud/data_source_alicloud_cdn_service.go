@@ -54,9 +54,16 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 		enable = v.(string)
 	}
 
-	response, err := client.NewTeaCommonClientWithEndpoint(connectivity.OpenCdnService, func(teaClient *rpc.Client) (map[string]interface{}, error) {
-		return teaClient.DoRequest(StringPointer("DescribeCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
-	})
+	sdkConfig, err := client.NewSdkConfig()
+	if err != nil {
+		return WrapError(err)
+	}
+	sdkConfig.SetEndpoint(connectivity.OpenCdnService)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer("DescribeCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
 	addDebug("DescribeCdnService", response, nil)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "DescribeCdnService", AlibabaCloudSdkGoERROR)
@@ -76,26 +83,23 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 		}
 		requestBody := map[string]interface{}{"InternetChargeType": chargeType}
 		if opened && chargeType != response["ChangingChargeType"].(string) {
-			resp, err := client.NewTeaCommonClientWithEndpoint(connectivity.OpenSlsService, func(teaClient *rpc.Client) (map[string]interface{}, error) {
-				return teaClient.DoRequest(StringPointer("ModifyCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
-			})
+			resp, err := conn.DoRequest(StringPointer("ModifyCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
+
 			addDebug("ModifyCdnService", resp, nil)
 			if err != nil {
 				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "ModifyCdnService", AlibabaCloudSdkGoERROR)
 			}
 		}
 		if !opened {
-			resp, err := client.NewTeaCommonClientWithEndpoint(connectivity.OpenSlsService, func(teaClient *rpc.Client) (map[string]interface{}, error) {
-				return teaClient.DoRequest(StringPointer("OpenCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
-			})
+			resp, err := conn.DoRequest(StringPointer("OpenCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
+
 			addDebug("OpenCdnService", resp, nil)
 			if err != nil {
 				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "OpenCdnService", AlibabaCloudSdkGoERROR)
 			}
 		}
-		response, err = client.NewTeaCommonClientWithEndpoint(connectivity.OpenCdnService, func(teaClient *rpc.Client) (map[string]interface{}, error) {
-			return teaClient.DoRequest(StringPointer("DescribeCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
-		})
+		response, err = conn.DoRequest(StringPointer("DescribeCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
+
 		addDebug("DescribeCdnService", response, nil)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "DescribeCdnService", AlibabaCloudSdkGoERROR)

@@ -17,5 +17,5 @@ package cs
 
 // Clusters is a nested struct in cs response
 type Clusters struct {
-	ClusterDetail []ClusterDetail `json:"clusterDetail" xml:"clusterDetail"`
+	ClustersItem []ClustersItem `json:"clusters" xml:"clusters"`
 }
