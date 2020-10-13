@@ -123,7 +123,7 @@ func dataSourceAlicloudNasMountTargetsRead(d *schema.ResourceData, meta interfac
 	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-	var objects []nas.DescribeMountTargetsMountTarget1
+	var objects []nas.MountTarget
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {

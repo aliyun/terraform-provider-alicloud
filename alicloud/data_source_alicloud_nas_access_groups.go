@@ -126,7 +126,7 @@ func dataSourceAlicloudNasAccessGroupsRead(d *schema.ResourceData, meta interfac
 	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-	var objects []nas.DescribeAccessGroupsAccessGroup1
+	var objects []nas.AccessGroup
 	var accessGroupNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
