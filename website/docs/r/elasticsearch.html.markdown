@@ -26,6 +26,9 @@ resource "alicloud_elasticsearch_instance" "instance" {
   data_node_spec       = "elasticsearch.sn2ne.large"
   data_node_disk_size  = "20"
   data_node_disk_type  = "cloud_ssd"
+  client_node_amount   = "2"
+  client_node_spec     = "elasticsearch.sn2ne.large"
+  protocol             = "HTTPS"
   vswitch_id           = "some vswitch id"
   password             = "Your password"
   version              = "5.5.3_with_X-Pack"
@@ -64,6 +67,9 @@ The following arguments are supported:
 * `kibana_private_whitelist` - (Optional, Available in v1.87.0+) Set the Kibana's IP whitelist in private network.
 * `enable_kibana_private_network` - (Optional, Available in v1.87.0+) Bool, default to false. When it set to true, the instance can close kibana private network access。
 * `master_node_spec` - (Optional) The dedicated master node spec. If specified, dedicated master node will be created.
+* `client_node_amount` - (Optional, Available in v1.101.0+) The Elasticsearch cluster's client node quantity, between 2 and 25.
+* `client_node_spec` - (Optional, Available in v1.101.0+) The client node spec. If specified, client node will be created.
+* `protocol` - (Optional, Available in v1.101.0+) Elasticsearch protocol. Supported values: `HTTP`, `HTTPS`.default is `HTTP`.
 * `zone_count` - (Optional, Available in 1.44.0+) The Multi-AZ supported for Elasticsearch, between 1 and 3. The `data_node_amount` value must be an integral multiple of the `zone_count` value.
 * `tags` - (Optional, Available in v1.73.0+) A mapping of tags to assign to the resource. 
   - key: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:". It cannot contain "http://" and "https://". It cannot be a null string.

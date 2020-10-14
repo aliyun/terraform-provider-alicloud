@@ -11,5 +11,8 @@ resource "alicloud_elasticsearch_instance" "instance" {
   description               = var.description
   zone_count                = var.zone_count
   master_node_spec          = var.master_node_spec
+  client_node_amount        = var.client_node_amount
+  client_node_spec          = var.client_node_spec
+  protocol                  = var.protocol
 }
 
