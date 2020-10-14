@@ -92,6 +92,7 @@ The following attributes are exported:
 * `id` - The `key` of the resource supplied above, also call instance id.
 * `vpc_id` - The ID of attaching VPC to instance.
 * `zone_id` - The Zone to launch the kafka instance.
+* `end_point` - The EndPoint to access the kafka instance.
 
 ## Import
 
