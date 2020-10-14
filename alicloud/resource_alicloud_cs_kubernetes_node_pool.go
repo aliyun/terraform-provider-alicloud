@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
+	aliyungoecs "github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -197,6 +198,12 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -336,7 +343,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if d.HasChange("system_disk_category") {
 		update = true
-		args.ScalingGroup.SystemDiskCategory = d.Get("system_disk_category").(string)
+		args.ScalingGroup.SystemDiskCategory = aliyungoecs.DiskCategory(d.Get("system_disk_category").(string))
 	}
 
 	if d.HasChange("system_disk_size") {
@@ -557,8 +564,9 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 		RegionId: common.Region(client.RegionId),
 		Count:    int64(d.Get("node_count").(int)),
 		NodePoolInfo: cs.NodePoolInfo{
-			Name:         d.Get("name").(string),
-			NodePoolType: "ess", // hard code the type
+			Name:            d.Get("name").(string),
+			NodePoolType:    "ess", // hard code the type
+			ResourceGroupId: d.Get("resource_group_id").(string),
 		},
 		ScalingGroup: cs.ScalingGroup{
 			VpcId:              vpcId,
@@ -566,7 +574,7 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 			InstanceTypes:      expandStringList(d.Get("instance_types").([]interface{})),
 			LoginPassword:      password,
 			KeyPair:            d.Get("key_name").(string),
-			SystemDiskCategory: d.Get("system_disk_category").(string),
+			SystemDiskCategory: aliyungoecs.DiskCategory(d.Get("system_disk_category").(string)),
 			SystemDiskSize:     int64(d.Get("system_disk_size").(int)),
 			SecurityGroupId:    d.Get("security_group_id").(string),
 			ImageId:            d.Get("image_id").(string),

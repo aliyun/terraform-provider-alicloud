@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"encoding/json"
+
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 )
@@ -69,6 +70,7 @@ type ClusterType struct {
 	NodeStatus             string          `json:"node_status"`
 	DockerVersion          string          `json:"docker_version"`
 	ClusterType            string          `json:"cluster_type"`
+	Profile                string          `json:"profile"`
 }
 
 func (client *Client) DescribeClusters(nameFilter string) (clusters []ClusterType, err error) {
@@ -170,7 +172,7 @@ type KubernetesCreationArgs struct {
 	WorkerSystemDiskSize     int64            `json:"worker_system_disk_size,omitempty"`
 	WorkerSystemDiskCategory ecs.DiskCategory `json:"worker_system_disk_category,omitempty"`
 	WorkerDataDisk           bool             `json:"worker_data_disk"`
-	WorkerDataDiskCategory   string           `json:"worker_data_disk_category,omitempty"`
+	WorkerDataDiskCategory   ecs.DiskCategory `json:"worker_data_disk_category,omitempty"`
 	WorkerDataDiskSize       int64            `json:"worker_data_disk_size,omitempty"`
 
 	WorkerInstanceChargeType string `json:"worker_instance_charge_type"`
@@ -231,7 +233,7 @@ type KubernetesMultiAZCreationArgs struct {
 	WorkerSystemDiskCategory ecs.DiskCategory `json:"worker_system_disk_category"`
 	WorkerSystemDiskSize     int64            `json:"worker_system_disk_size"`
 	WorkerDataDisk           bool             `json:"worker_data_disk"`
-	WorkerDataDiskCategory   string           `json:"worker_data_disk_category"`
+	WorkerDataDiskCategory   ecs.DiskCategory `json:"worker_data_disk_category"`
 	WorkerDataDiskSize       int64            `json:"worker_data_disk_size"`
 
 	WorkerInstanceChargeType string `json:"worker_instance_charge_type"`
@@ -288,9 +290,9 @@ type KubernetesClusterParameter struct {
 	ImageId           string `json:"ImageId"`
 	KeyPair           string `json:"KeyPair"`
 
-	MasterSystemDiskCategory string `json:"MasterSystemDiskCategory"`
-	MasterSystemDiskSize     string `json:"MasterSystemDiskSize"`
-	MasterImageId            string `json:"MasterImageId"`
+	MasterSystemDiskCategory ecs.DiskCategory `json:"MasterSystemDiskCategory"`
+	MasterSystemDiskSize     string           `json:"MasterSystemDiskSize"`
+	MasterImageId            string           `json:"MasterImageId"`
 
 	MasterInstanceChargeType string `json:"MasterInstanceChargeType"`
 	MasterPeriodUnit         string `json:"MasterPeriodUnit"`
@@ -299,13 +301,13 @@ type KubernetesClusterParameter struct {
 	RawMasterAutoRenew       string `json:"MasterAutoRenew"`
 	MasterAutoRenewPeriod    string `json:"MasterAutoRenewPeriod"`
 
-	WorkerSystemDiskCategory string `json:"WorkerSystemDiskCategory"`
-	WorkerSystemDiskSize     string `json:"WorkerSystemDiskSize"`
-	WorkerImageId            string `json:"WorkerImageId"`
+	WorkerSystemDiskCategory ecs.DiskCategory `json:"WorkerSystemDiskCategory"`
+	WorkerSystemDiskSize     string           `json:"WorkerSystemDiskSize"`
+	WorkerImageId            string           `json:"WorkerImageId"`
 	WorkerDataDisk           *bool
-	RawWorkerDataDisk        string `json:"WorkerDataDisk"`
-	WorkerDataDiskCategory   string `json:"WorkerDataDiskCategory"`
-	WorkerDataDiskSize       string `json:"WorkerDataDiskSize"`
+	RawWorkerDataDisk        string           `json:"WorkerDataDisk"`
+	WorkerDataDiskCategory   ecs.DiskCategory `json:"WorkerDataDiskCategory"`
+	WorkerDataDiskSize       string           `json:"WorkerDataDiskSize"`
 
 	WorkerInstanceChargeType string `json:"WorkerInstanceChargeType"`
 	WorkerPeriodUnit         string `json:"WorkerPeriodUnit"`
@@ -452,11 +454,16 @@ type KubernetesClusterScaleArgs struct {
 	WorkerDataDisk           bool             `json:"worker_data_disk"`
 	Count                    int              `json:"count"`
 
+	// Edge worker related args
+	IsEdgeWorker          bool   `json:"is_edge_worker"`
+	EnsRegionId           string `json:"ens_region_id"`
+	EnsInternetChargeType string `json:"ens_internet_charge_type"`
+
 	//data disk
-	WorkerDataDiskCategory  string `json:"worker_data_disk_category"`
-	WorkerDataDiskSize      int64  `json:"worker_data_disk_size"`
-	WorkerDataDiskEncrypted string `json:"worker_data_disk_encrypted"`
-	WorkerDataDiskKMSKeyId  string `json:"worker_data_disk_kms_key_id"`
+	WorkerDataDiskCategory  ecs.DiskCategory `json:"worker_data_disk_category"`
+	WorkerDataDiskSize      int64            `json:"worker_data_disk_size"`
+	WorkerDataDiskEncrypted string           `json:"worker_data_disk_encrypted"`
+	WorkerDataDiskKMSKeyId  string           `json:"worker_data_disk_kms_key_id"`
 }
 
 // Deprecated

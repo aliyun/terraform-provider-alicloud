@@ -137,6 +137,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"service_cidr":          "192.168.2.0/24",
 					"enable_ssh":            "true",
 					"install_cloud_monitor": "true",
+					"resource_group_id":     fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -149,6 +150,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 						"service_cidr":          "192.168.2.0/24",
 						"enable_ssh":            "true",
 						"install_cloud_monitor": "true",
+						"resource_group_id":     fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 					}),
 				),
 			},
@@ -255,6 +257,7 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 					"enable_ssh":            "true",
 					"install_cloud_monitor": "true",
 					"user_ca":               tmpFile.Name(),
+					"resource_group_id":     fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckUserCA(resourceId, v),
@@ -268,6 +271,7 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 						"service_cidr":          "192.168.2.0/24",
 						"enable_ssh":            "true",
 						"install_cloud_monitor": "true",
+						"resource_group_id":     fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 					}),
 				),
 			},

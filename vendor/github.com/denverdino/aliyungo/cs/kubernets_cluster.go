@@ -3,6 +3,7 @@ package cs
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/denverdino/aliyungo/ecs"
 	"net/http"
 	"time"
 
@@ -158,6 +159,7 @@ type ClusterArgs struct {
 	EndpointPublicAccess      bool      `json:"endpoint_public_access"`
 	ProxyMode                 ProxyMode `json:"proxy_mode"`
 	SnatEntry                 bool      `json:"snat_entry"`
+	ResourceGroupId           string    `json:"resource_group_id"`
 
 	Addons []Addon `json:"addons"`
 	Tags   []Tag   `json:"tags"`
@@ -167,6 +169,7 @@ type ClusterArgs struct {
 	ApiAudiences         string `json:"api_audiences,omitempty"`
 	ServiceAccountIssuer string `json:"service_account_issuer,omitempty"`
 	CustomSAN            string `json:"custom_san,omitempty"`
+	ClusterSpec          string `json:"cluster_spec"`
 }
 
 //addon
@@ -201,8 +204,8 @@ type MasterArgs struct {
 	MasterAutoRenew       bool `json:"master_auto_renew"`
 	MasterAutoRenewPeriod int  `json:"master_auto_renew_period"`
 
-	MasterSystemDiskCategory string `json:"master_system_disk_category"`
-	MasterSystemDiskSize     int64  `json:"master_system_disk_size"`
+	MasterSystemDiskCategory ecs.DiskCategory `json:"master_system_disk_category"`
+	MasterSystemDiskSize     int64            `json:"master_system_disk_size"`
 
 	MasterDataDisks []DataDisk `json:"master_data_disks"` //支持多个数据盘
 
@@ -230,8 +233,8 @@ type WorkerArgs struct {
 	WorkerAutoRenew       bool `json:"worker_auto_renew"`
 	WorkerAutoRenewPeriod int  `json:"worker_auto_renew_period"`
 
-	WorkerSystemDiskCategory string `json:"worker_system_disk_category"`
-	WorkerSystemDiskSize     int64  `json:"worker_system_disk_size"`
+	WorkerSystemDiskCategory ecs.DiskCategory `json:"worker_system_disk_category"`
+	WorkerSystemDiskSize     int64            `json:"worker_system_disk_size"`
 
 	WorkerDataDisk  bool       `json:"worker_data_disk"`
 	WorkerDataDisks []DataDisk `json:"worker_data_disks"` //支持多个数据盘
@@ -323,7 +326,12 @@ type ManagedKubernetesClusterCreationRequest struct {
 //Create DelicatedKubernetes Cluster
 func (client *Client) CreateDelicatedKubernetesCluster(request *DelicatedKubernetesClusterCreationRequest) (*ClusterCommonResponse, error) {
 	response := &ClusterCommonResponse{}
-	err := client.Invoke(request.RegionId, http.MethodPost, "/clusters", nil, request, response)
+	path := "/clusters"
+	if request.ResourceGroupId != "" {
+		// 创建集群到指定资源组
+		path = fmt.Sprintf("/resource_groups/%s/clusters", request.ResourceGroupId)
+	}
+	err := client.Invoke(request.RegionId, http.MethodPost, path, nil, request, response)
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +342,12 @@ func (client *Client) CreateDelicatedKubernetesCluster(request *DelicatedKuberne
 //Create ManagedKubernetes Cluster
 func (client *Client) CreateManagedKubernetesCluster(request *ManagedKubernetesClusterCreationRequest) (*ClusterCommonResponse, error) {
 	response := &ClusterCommonResponse{}
-	err := client.Invoke(request.RegionId, http.MethodPost, "/clusters", nil, request, response)
+	path := "/clusters"
+	if request.ResourceGroupId != "" {
+		// 创建集群到指定资源组
+		path = fmt.Sprintf("/resource_groups/%s/clusters", request.ResourceGroupId)
+	}
+	err := client.Invoke(request.RegionId, http.MethodPost, path, nil, request, response)
 	if err != nil {
 		return nil, err
 	}
@@ -402,6 +415,7 @@ type KubernetesClusterDetail struct {
 	Updated time.Time `json:"updated"`
 
 	WorkerRamRoleName string `json:"worker_ram_role_name"`
+	ClusterSpec       string `json:"cluster_spec"`
 }
 
 //GetMetaData
