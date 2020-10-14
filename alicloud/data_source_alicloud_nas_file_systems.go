@@ -130,6 +130,9 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 			if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
 				id_found := false
 				for _, id := range v.([]interface{}) {
+					if id == nil {
+						continue
+					}
 					if string(file_system.FileSystemId) == id.(string) {
 						id_found = true
 						break

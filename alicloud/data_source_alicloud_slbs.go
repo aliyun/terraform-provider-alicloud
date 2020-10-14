@@ -186,6 +186,9 @@ func dataSourceAlicloudSlbsRead(d *schema.ResourceData, meta interface{}) error 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}

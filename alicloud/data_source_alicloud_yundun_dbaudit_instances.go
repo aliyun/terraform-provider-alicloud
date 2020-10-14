@@ -105,6 +105,9 @@ func dataSourceAlicloudDbauditInstancesRead(d *schema.ResourceData, meta interfa
 		ids, _ := v.([]interface{})
 		var ids_str []string
 		for _, v_instance_id := range ids {
+			if v_instance_id == nil {
+				continue
+			}
 			ids_str = append(ids_str, v_instance_id.(string))
 		}
 		request.InstanceId = &ids_str
