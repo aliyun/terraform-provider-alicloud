@@ -1,4 +1,18 @@
 ## 1.101.0 (Unreleased)
+## 1.100.1 (October 13, 2020)
+
+IMPROVEMENTS:
+
+- update go vendors ([#2904](https://github.com/aliyun/terraform-provider-alicloud/issues/2904))
+- improve cs test cases ([#2901](https://github.com/aliyun/terraform-provider-alicloud/issues/2901))
+- update sdk v1.61.557 ([#2900](https://github.com/aliyun/terraform-provider-alicloud/issues/2900))
+- improve invoking api by tea dsl conn ([#2899](https://github.com/aliyun/terraform-provider-alicloud/issues/2899))
+- add valid value Australia for resource cen_bandwidth_package and update vendor ([#2896](https://github.com/aliyun/terraform-provider-alicloud/issues/2896))
+
+BUG FIXES:
+
+- Fix edas bug ([#2676](https://github.com/aliyun/terraform-provider-alicloud/issues/2676))
+
 ## 1.100.0 (October 12, 2020)
 
 - **New Resource:** `alicloud_fc_function_async_invoke_config` ([#2873](https://github.com/aliyun/terraform-provider-alicloud/issues/2873))

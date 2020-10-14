@@ -105,6 +105,7 @@ groups:
       - Edas
       - ResourceManager
       - Config
+      - Alidns
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -214,6 +215,7 @@ groups:
     jobs:
       # Dns and Pvtz
       - Dns
+      - Alidns
       - Pvtz
       - Sweeper-1
       - Sweeper-2
@@ -1357,6 +1359,19 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "Config"
+
+  - name: Alidns
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 1130
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Alidns"
 
   - name: SweeperAfter
     plan:
