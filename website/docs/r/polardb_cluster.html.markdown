@@ -19,7 +19,7 @@ databases.
 
 ### Create a PolarDB MySQL cluster
 
-```
+```terraform
 variable "name" {
   default = "polardbClusterconfig"
 }
