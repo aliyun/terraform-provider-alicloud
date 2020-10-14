@@ -16,7 +16,7 @@ Provides a PolarDB endpoint address resource to allocate an Internet endpoint ad
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "PolarDB"
 }
