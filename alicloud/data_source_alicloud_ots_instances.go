@@ -109,6 +109,9 @@ func dataSourceAlicloudOtsInstancesRead(d *schema.ResourceData, meta interface{}
 	idsMap := make(map[string]bool)
 	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
 		for _, x := range v.([]interface{}) {
+			if x == nil {
+				continue
+			}
 			idsMap[x.(string)] = true
 		}
 	}

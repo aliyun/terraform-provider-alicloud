@@ -293,6 +293,9 @@ const LOCAL_HOST_IP = "127.0.0.1"
 func expandStringList(configured []interface{}) []string {
 	vs := make([]string, 0, len(configured))
 	for _, v := range configured {
+		if v == nil {
+			continue
+		}
 		vs = append(vs, v.(string))
 	}
 	return vs
@@ -323,6 +326,9 @@ func convertListToJsonString(configured []interface{}) string {
 	}
 	result := "["
 	for i, v := range configured {
+		if v == nil {
+			continue
+		}
 		result += "\"" + v.(string) + "\""
 		if i < len(configured)-1 {
 			result += ","

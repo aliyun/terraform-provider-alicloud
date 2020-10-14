@@ -83,6 +83,9 @@ func dataSourceAlicloudKmsSecretVersionsRead(d *schema.ResourceData, meta interf
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
 		for _, i := range v.([]interface{}) {
+			if i == nil {
+				continue
+			}
 			idsMap[i.(string)] = i.(string)
 		}
 	}

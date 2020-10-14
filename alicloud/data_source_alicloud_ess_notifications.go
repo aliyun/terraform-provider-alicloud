@@ -83,6 +83,9 @@ func dataSourceAlicloudEssNotificationsRead(d *schema.ResourceData, meta interfa
 	idsMap := make(map[string]string)
 	if ids, okIds := d.GetOk("ids"); okIds {
 		for _, i := range ids.([]interface{}) {
+			if i == nil {
+				continue
+			}
 			idsMap[i.(string)] = i.(string)
 		}
 		for _, n := range allNotifications {

@@ -136,6 +136,9 @@ func dataSourceAlicloudCmsAlarmContactsRead(d *schema.ResourceData, meta interfa
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
