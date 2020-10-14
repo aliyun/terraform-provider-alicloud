@@ -85,7 +85,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
 					"worker_instance_charge_type", "worker_instance_types", "log_config",
 					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes",
-					"cpu_policy", "proxy_mode", "cluster_spec", "resource_group_id"},
+					"cpu_policy", "proxy_mode"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

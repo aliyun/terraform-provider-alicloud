@@ -510,7 +510,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"", "ack.standard", "ack.pro.small"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"ack.standard", "ack.pro.small"}, false),
 			},
 		},
 	}
