@@ -60,3 +60,10 @@ variable "zone_count" {
   default = "1"
 }
 
+variable "client_node_amount" {
+  default = "2"
+}
+
+variable "client_node_spec" {
+  default = "elasticsearch.sn2ne.large"
+}
