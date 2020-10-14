@@ -140,6 +140,18 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional: true,
 			},
 
+			// Client node configuration
+			"client_node_amount": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(2, 25),
+			},
+
+			"client_node_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
 			"domain": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -287,6 +299,9 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	d.Set("data_node_disk_type", object.Result.NodeSpec.DiskType)
 	d.Set("data_node_disk_encrypted", object.Result.NodeSpec.DiskEncryption)
 	d.Set("master_node_spec", object.Result.MasterConfiguration.Spec)
+	// Client node configuration
+	d.Set("client_node_amount", object.Result.ClientNodeConfiguration.Amount)
+	d.Set("client_node_spec", object.Result.ClientNodeConfiguration.Spec)
 
 	// Cross zone configuration
 	d.Set("zone_count", object.Result.ZoneCount)
@@ -409,6 +424,20 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		}
 
 		d.SetPartial("tags")
+	}
+
+	if d.HasChange("client_node_spec") || d.HasChange("client_node_amount") {
+
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		if err := updateClientNode(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("client_node_spec")
+		d.SetPartial("client_node_amount")
 	}
 
 	if d.IsNewResource() {
@@ -596,6 +625,22 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 		masterNode["diskType"] = "cloud_ssd"
 		content["advancedDedicateMaster"] = true
 		content["masterConfiguration"] = masterNode
+	}
+
+	// Client node configuration
+	if d.Get("client_node_spec") != nil && d.Get("client_node_spec") != "" {
+		clientNode := make(map[string]interface{})
+		clientNode["spec"] = d.Get("client_node_spec")
+		clientNode["disk"] = "20"
+		clientNode["diskType"] = "cloud_efficiency"
+		if d.Get("client_node_amount") == nil {
+			clientNode["amount"] = 2
+		} else {
+			clientNode["amount"] = d.Get("client_node_amount")
+		}
+
+		content["haveClientNode"] = true
+		content["clientNodeConfiguration"] = clientNode
 	}
 
 	// Network configuration
