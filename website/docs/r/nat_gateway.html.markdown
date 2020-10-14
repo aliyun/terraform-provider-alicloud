@@ -23,8 +23,8 @@ But, in order to manage stock bandwidth packages, version 1.13.0 re-support conf
 ## Example Usage
 
 Basic usage
-
-```
+- create notmal nat gateway
+```terraform
 variable "name" {
   default = "natGatewayExampleName"
 }
@@ -51,6 +51,38 @@ resource "alicloud_nat_gateway" "default" {
 }
 ```
 
+- create enhanced nat gateway
+```terraform
+variable "name" {
+  default = "natGatewayExampleName"
+}
+
+resource "alicloud_vpc" "enhanced" {
+  name       = var.name
+  cidr_block = "10.0.0.0/8"
+}
+
+data "alicloud_enhanced_nat_available_zones" "enhanced"{
+}
+
+resource "alicloud_vswitch" "enhanced" {
+  name              = var.name
+  availability_zone = data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id
+  cidr_block        = "10.10.0.0/20"
+  vpc_id            = alicloud_vpc.enhanced.id
+}
+
+resource "alicloud_nat_gateway" "enhanced" {
+  depends_on           = [alicloud_vswitch.enhanced]
+  vpc_id               = alicloud_vpc.enhanced.id
+  specification        = "Small"
+  name                 = var.name
+  instance_charge_type = "PostPaid"
+  vswitch_id           = alicloud_vswitch.enhanced.id
+  nat_type             = "Enhanced"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -63,6 +95,8 @@ The following arguments are supported:
 * `bandwidth_packages` - (Optional) A list of bandwidth packages for the nat gatway. Only support nat gateway created before 00:00 on November 4, 2017. Available in v1.13.0+ and v1.7.1-.
 * `instance_charge_type` - (Optional, ForceNew, Available in 1.45.0+) The billing method of the nat gateway. Valid values are "PrePaid" and "PostPaid". Default to "PostPaid".
 * `period` - (Optional, ForceNew, Available in 1.45.0+) The duration that you will buy the resource, in month. It is valid when `instance_charge_type` is `PrePaid`. Default to 1. Valid values: [1-9, 12, 24, 36]. At present, the provider does not support modify "period" and you can do that via web console.
+* `nat_type` - (Optional, ForceNew, Available in 1.102.0+) The type of nat gateway. Default to `Normal`. Valid values: [`Normal`, `Enhanced`].
+* `vswitch_id` - (Optional, ForceNew, Available in 1.102.0+) The id of VSwitch.
 
 ## Block bandwidth packages
 The bandwidth package mapping supports the following:
@@ -85,6 +119,8 @@ The following attributes are exported:
 * `bandwidth_package_ids` - A list ID of the bandwidth packages, and split them with commas.
 * `snat_table_ids` - The nat gateway will auto create a snap and forward item, the `snat_table_ids` is the created one.
 * `forward_table_ids` - The nat gateway will auto create a snap and forward item, the `forward_table_ids` is the created one.
+* `nat_type` - The type of the nat gateway.
+* `vswitch_id` - The ID of the VSwitch, if the `nat_type` is `Enhanced`, it will not be none. 
 
 ## Import
 

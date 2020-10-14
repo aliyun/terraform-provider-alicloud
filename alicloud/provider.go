@@ -326,6 +326,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_alarm_contacts":                    dataSourceAlicloudCmsAlarmContacts(),
 			"alicloud_kvstore_connections":                   dataSourceAlicloudKvstoreConnections(),
 			"alicloud_cms_alarm_contact_groups":              dataSourceAlicloudCmsAlarmContactGroups(),
+			"alicloud_enhanced_nat_available_zones":          dataSourceAlicloudEnhancedNatAvailableZones(),
 			"alicloud_cen_route_services":                    dataSourceAlicloudCenRouteServices(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
