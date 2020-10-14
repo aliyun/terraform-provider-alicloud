@@ -179,3 +179,51 @@ func (s *CmsService) DescribeCmsAlarmContact(id string) (object cms.Contact, err
 	}
 	return response.Contacts.Contact[0], nil
 }
+
+func (s *CmsService) DescribeCmsAlarmContactGroup(id string) (object cms.ContactGroup, err error) {
+	request := cms.CreateDescribeContactGroupListRequest()
+	request.RegionId = s.client.RegionId
+
+	request.PageNumber = requests.NewInteger(1)
+	request.PageSize = requests.NewInteger(20)
+	for {
+
+		raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.DescribeContactGroupList(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ContactGroupNotExists", "ResourceNotFound"}) {
+				err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContactGroup", id)), NotFoundMsg, ProviderERROR)
+				return object, err
+			}
+			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return object, err
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*cms.DescribeContactGroupListResponse)
+		if response.Code != "200" {
+			err = Error("DescribeContactGroupList failed for " + response.Message)
+			return object, err
+		}
+
+		if len(response.ContactGroupList.ContactGroup) < 1 {
+			err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContactGroup", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+			return object, err
+		}
+		for _, object := range response.ContactGroupList.ContactGroup {
+			if object.Name == id {
+				return object, nil
+			}
+		}
+		if len(response.ContactGroupList.ContactGroup) < PageSizeMedium {
+			break
+		}
+		if page, err := getNextpageNumber(request.PageNumber); err != nil {
+			return object, WrapError(err)
+		} else {
+			request.PageNumber = page
+		}
+	}
+	err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContactGroup", id)), NotFoundMsg, ProviderERROR)
+	return
+}

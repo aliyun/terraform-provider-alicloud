@@ -324,6 +324,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_configuration_recorders":        dataSourceAlicloudConfigConfigurationRecorders(),
 			"alicloud_config_delivery_channels":              dataSourceAlicloudConfigDeliveryChannels(),
 			"alicloud_cms_alarm_contacts":                    dataSourceAlicloudCmsAlarmContacts(),
+			"alicloud_cms_alarm_contact_groups":              dataSourceAlicloudCmsAlarmContactGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -585,6 +586,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_config_delivery_channel":             resourceAlicloudConfigDeliveryChannel(),
 			"alicloud_cms_alarm_contact":                   resourceAlicloudCmsAlarmContact(),
 			"alicloud_cen_route_service":                   resourceAlicloudCenRouteService(),
+			"alicloud_cms_alarm_contact_group":             resourceAlicloudCmsAlarmContactGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
