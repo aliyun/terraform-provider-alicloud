@@ -67,3 +67,7 @@ variable "client_node_amount" {
 variable "client_node_spec" {
   default = "elasticsearch.sn2ne.large"
 }
+
+variable "protocol" {
+  default = "HTTPS"
+}
