@@ -646,6 +646,82 @@ func TestAccAlicloudElasticsearchInstance_client_node(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudElasticsearchInstance_https(t *testing.T) {
+	var instance *elasticsearch.DescribeInstanceResponse
+
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := resourceAttrInit(resourceId, elasticsearchMap)
+
+	serviceFunc := func() interface{} {
+		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testAccES-keepit%s%d", defaultRegionToTest, rand)
+	if len(name) > 30 {
+		name = name[:30]
+	}
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":          name,
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
+					"version":              "6.3_with_X-Pack",
+					"password":             "Yourpassword1234",
+					"data_node_spec":       DataNodeSpec,
+					"data_node_amount":     DataNodeAmount,
+					"data_node_disk_size":  DataNodeDisk,
+					"data_node_disk_type":  DataNodeDiskType,
+					"instance_charge_type": string(PostPaid),
+					"client_node_spec":     ClientNodeSpec,
+					"client_node_amount":   ClientNodeAmount,
+					"protocol":             "HTTPS",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocol": "HTTPS",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocol": "HTTP",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocol": "HTTP",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocol": "HTTPS",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocol": "HTTPS",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var elasticsearchMap = map[string]string{
 	"description":                   CHECKSET,
 	"data_node_spec":                DataNodeSpec,
