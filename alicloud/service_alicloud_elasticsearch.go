@@ -667,3 +667,65 @@ func updateClientNode(d *schema.ResourceData, meta interface{}) error {
 
 	return nil
 }
+
+func openHttps(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
+
+	request := elasticsearch.CreateOpenHttpsRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
+	request.RegionId = client.RegionId
+	request.InstanceId = d.Id()
+	request.SetContentType("application/json")
+
+	// retry
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
+	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.OpenHttps(request)
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
+}
+
+func closeHttps(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
+
+	request := elasticsearch.CreateCloseHttpsRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
+	request.RegionId = client.RegionId
+	request.InstanceId = d.Id()
+	request.SetContentType("application/json")
+
+	// retry
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
+	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.CloseHttps(request)
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
+}

@@ -152,6 +152,13 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional: true,
 			},
 
+			"protocol": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "HTTP",
+				ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS"}, false),
+			},
+
 			"domain": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -302,6 +309,8 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	// Client node configuration
 	d.Set("client_node_amount", object.Result.ClientNodeConfiguration.Amount)
 	d.Set("client_node_spec", object.Result.ClientNodeConfiguration.Spec)
+	// Protocol: HTTP/HTTPS
+	d.Set("protocol", object.Result.Protocol)
 
 	// Cross zone configuration
 	d.Set("zone_count", object.Result.ZoneCount)
@@ -438,6 +447,29 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 		d.SetPartial("client_node_spec")
 		d.SetPartial("client_node_amount")
+	}
+
+	if d.HasChange("protocol") {
+
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		var https func(*schema.ResourceData, interface{}) error
+
+		if d.Get("protocol") == "HTTPS" {
+			https = openHttps
+		} else if d.Get("protocol") == "HTTP" {
+			https = closeHttps
+		}
+
+		if nil != https {
+			if err := https(d, meta); err != nil {
+				return WrapError(err)
+			}
+		}
+
+		d.SetPartial("protocol")
 	}
 
 	if d.IsNewResource() {
