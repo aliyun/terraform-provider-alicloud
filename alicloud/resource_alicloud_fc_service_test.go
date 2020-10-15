@@ -184,17 +184,20 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "${var.name}",
+					"name":    "${var.name}",
+					"publish": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"version": "1",
+					}),
 				),
 			},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"name_prefix"},
+				ImportStateVerifyIgnore: []string{"name_prefix", "publish"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -203,6 +206,7 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": "tf unit test",
+						"version":     "2",
 					}),
 				),
 			},
@@ -213,6 +217,7 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"internet_access": "false",
+						"version":         "3",
 					}),
 				),
 			},
@@ -223,7 +228,8 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"role": CHECKSET,
+						"role":    CHECKSET,
+						"version": "4",
 					}),
 				),
 			},
@@ -240,6 +246,7 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 					testAccCheck(map[string]string{
 						"log_config.0.project":  name,
 						"log_config.0.logstore": name,
+						"version":               "5",
 					}),
 				),
 			},
@@ -257,6 +264,7 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 						"role":                  REMOVEKEY,
 						"internet_access":       REMOVEKEY,
 						"description":           REMOVEKEY,
+						"version":               "6",
 					}),
 				),
 			},
@@ -348,7 +356,7 @@ func TestAccAlicloudFCServiceVpcAndNasUpdate(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"log_config": []map[string]string{
 						{
-							"project":  "${alicloud_log_store.default.project}",
+							"project":  "${alicloud_log_project.default.name}",
 							"logstore": "${alicloud_log_store.default.name}",
 						},
 					},
