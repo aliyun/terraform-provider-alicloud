@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -104,7 +105,11 @@ func TestAccAlicloudConfigRulesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeConfigRulesRecordsMapFunc,
 	}
 
-	rolesRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, configRuleStatusConf, riskLevelConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
+	}
+
+	rolesRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, configRuleStatusConf, riskLevelConf, allConf)
 
 }
 
