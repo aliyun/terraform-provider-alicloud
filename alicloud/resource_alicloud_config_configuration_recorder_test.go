@@ -20,7 +20,7 @@ func TestAccAlicloudConfigConfigurationRecorder_basic(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, "", ConfigConfigurationRecorderBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
 		},
 
 		IDRefreshName: resourceId,

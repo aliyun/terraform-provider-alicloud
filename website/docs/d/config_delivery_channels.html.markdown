@@ -13,6 +13,8 @@ This data source provides the Config Delivery Channels of the current Alibaba Cl
 
 -> **NOTE:**  Available in 1.99.0+.
 
+-> **NOTE:** The Cloud Config region only support `cn-shanghai` and `ap-northeast-1`.
+
 ## Example Usage
 
 ```terraform

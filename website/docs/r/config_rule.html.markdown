@@ -14,6 +14,8 @@ For information about Alicloud Config Rule and how to use it, see [What is Alicl
 
 -> **NOTE:** Available in v1.99.0+.
 
+-> **NOTE:** The Cloud Config region only support `cn-shanghai` and `ap-northeast-1`.
+
 -> **NOTE:** If you use custom rules, you need to create your own rule functions in advance. Please refer to the link for [Create a custom rule.](https://www.alibabacloud.com/help/en/doc-detail/127405.htm)
 
 ## Example Usage

@@ -25,7 +25,7 @@ func TestAccAlicloudConfigDeliveryChannel_basic(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ConfigDeliveryChannelBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -144,7 +144,7 @@ func TestAccAlicloudConfigDeliveryChannel_MNS(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ConfigDeliveryChannelBasicdependence_MNS)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -262,7 +262,7 @@ func TestAccAlicloudConfigDeliveryChannel_SLS(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ConfigDeliveryChannelBasicdependence_SLS)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
 		},
 
 		IDRefreshName: resourceId,
