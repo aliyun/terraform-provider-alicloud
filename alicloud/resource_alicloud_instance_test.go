@@ -319,6 +319,18 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_name":        fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_name", rand),
+					"system_disk_description": fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_description", rand),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_name":        fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_name", rand),
+						"system_disk_description": fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_description", rand),
+					}),
+				),
+			},
 			// private_ip cannot be set separately from vpc
 			/*{
 				Config: testAccConfig(map[string]interface{}{

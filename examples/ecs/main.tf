@@ -69,6 +69,8 @@ resource "alicloud_instance" "instance" {
 
   instance_charge_type          = "PostPaid"
   system_disk_category          = "cloud_efficiency"
+  system_disk_name              = "${var.short_name}-${var.role}-${format(var.count_format, count.index + 1)}-system-disk"
+  system_disk_description       = "${var.short_name}-${var.role}-${format(var.count_format, count.index + 1)}-system-disk-description"
   security_enhancement_strategy = "Deactive"
 
   data_disks {
