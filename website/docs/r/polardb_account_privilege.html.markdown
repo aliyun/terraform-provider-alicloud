@@ -63,7 +63,7 @@ resource "alicloud_polardb_account" "account" {
 
 resource "alicloud_polardb_account_privilege" "privilege" {
   db_cluster_id         = alicloud_polardb_cluster.cluster.id
-  account_name          = alicloud_polardb_account.account.name
+  account_name          = alicloud_polardb_account.account.account_name
   account_privilege     = "ReadOnly"
   db_names              = [alicloud_polardb_database.db.db_name]
 }
