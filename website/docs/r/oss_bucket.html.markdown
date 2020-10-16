@@ -18,7 +18,7 @@ Provides a resource to create a oss bucket and set its attribution.
 
 Private Bucket
 
-```
+```terraform
 resource "alicloud_oss_bucket" "bucket-acl" {
   bucket = "bucket-170309-acl"
   acl    = "private"
@@ -27,7 +27,7 @@ resource "alicloud_oss_bucket" "bucket-acl" {
 
 Static Website
 
-```
+```terraform
 resource "alicloud_oss_bucket" "bucket-website" {
   bucket = "bucket-170309-website"
 
@@ -40,7 +40,7 @@ resource "alicloud_oss_bucket" "bucket-website" {
 
 Enable Logging
 
-```
+```terraform
 resource "alicloud_oss_bucket" "bucket-target" {
   bucket = "bucket-170309-acl"
   acl    = "public-read"
@@ -58,7 +58,7 @@ resource "alicloud_oss_bucket" "bucket-logging" {
 
 Referer configuration
 
-```
+```terraform
 resource "alicloud_oss_bucket" "bucket-referer" {
   bucket = "bucket-170309-referer"
   acl    = "private"
@@ -72,7 +72,7 @@ resource "alicloud_oss_bucket" "bucket-referer" {
 
 Set lifecycle rule
 
-```
+```terraform
 resource "alicloud_oss_bucket" "bucket-lifecycle" {
   bucket = "bucket-170309-lifecycle"
   acl    = "public-read"
@@ -141,7 +141,7 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
 
 Set bucket policy 
 
-```
+```terraform
 resource "alicloud_oss_bucket" "bucket-policy" {
   bucket = "bucket-170309-policy"
   acl    = "private"
@@ -160,7 +160,7 @@ resource "alicloud_oss_bucket" "bucket-policy" {
 
 IA Bucket
 
-```
+```terraform
 resource "alicloud_oss_bucket" "bucket-storageclass" {
   bucket        = "bucket-170309-storageclass"
   storage_class = "IA"
@@ -169,7 +169,7 @@ resource "alicloud_oss_bucket" "bucket-storageclass" {
 
 Set bucket server-side encryption rule 
 
-```
+```terraform
 resource "alicloud_oss_bucket" "bucket-sserule" {
   bucket = "bucket-170309-sserule"
   acl    = "private"
@@ -192,7 +192,7 @@ resource "alicloud_oss_bucket" "bucket-sserule" {
 
 Set bucket tags 
 
-```
+```terraform
 resource "alicloud_oss_bucket" "bucket-tags" {
   bucket = "bucket-170309-tags"
   acl    = "private"
@@ -206,7 +206,7 @@ resource "alicloud_oss_bucket" "bucket-tags" {
 
 Enable bucket versioning 
 
-```
+```terraform
 resource "alicloud_oss_bucket" "bucket-versioning" {
   bucket = "bucket-170309-versioning"
   acl    = "private"
@@ -219,7 +219,7 @@ resource "alicloud_oss_bucket" "bucket-versioning" {
 
 Set bucket redundancy type
 
-```
+```terraform
 resource "alicloud_oss_bucket" "bucket-redundancytype" {
   bucket          = "bucket_name"
   redundancy_type = "ZRS"
