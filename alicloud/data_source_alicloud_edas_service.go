@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -37,8 +36,6 @@ func dataSourceAlicloudEdasServiceRead(d *schema.ResourceData, meta interface{})
 		return nil
 	}
 
-	client := meta.(*connectivity.AliyunClient)
-
 	request := map[string]interface{}{
 		"ProductCode":       "edas",
 		"SubscriptionType":  "PayAsYouGo",
@@ -46,12 +43,7 @@ func dataSourceAlicloudEdasServiceRead(d *schema.ResourceData, meta interface{})
 		"Parameter.1.Code":  "env",
 		"Parameter.1.Value": "env_public",
 	}
-	sdkConfig, err := client.NewSdkConfig()
-	if err != nil {
-		return WrapError(err)
-	}
-	sdkConfig.SetEndpoint(connectivity.OpenBssService)
-	conn, err := rpc.NewClient(&sdkConfig)
+	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenBssService)
 	if err != nil {
 		return WrapError(err)
 	}

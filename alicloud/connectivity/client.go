@@ -89,6 +89,7 @@ type AliyunClient struct {
 	OtsInstanceName              string
 	accountIdMutex               sync.RWMutex
 	config                       *Config
+	teaSdkConfig                 rpc.Config
 	accountId                    string
 	ecsconn                      *ecs.Client
 	essconn                      *ess.Client
@@ -186,6 +187,9 @@ const Provider = "Terraform-Provider"
 const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
+var loadSdkfromRemoteMutex = sync.Mutex{}
+var loadSdkfromLocationMutex = sync.Mutex{}
+
 // The main version number that is being run at the moment.
 var providerVersion = "1.101.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
@@ -201,9 +205,19 @@ func (c *Config) Client() (*AliyunClient, error) {
 		}
 	}
 	loadLocalEndpoint = hasLocalEndpoint()
+	if hasLocalEndpoint() {
+		if err := c.loadEndpointFromLocal(); err != nil {
+			return nil, err
+		}
+	}
+	teaSdkConfig, err := c.getTeaDslSdkConfig(true)
+	if err != nil {
+		return nil, err
+	}
 
 	return &AliyunClient{
 		config:                       c,
+		teaSdkConfig:                 teaSdkConfig,
 		Region:                       c.Region,
 		RegionId:                     c.RegionId,
 		AccessKey:                    c.AccessKey,
@@ -366,6 +380,58 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 	}
 
 	return do(client.vpcconn)
+}
+
+func (client *AliyunClient) NewEcsClient() (*rpc.Client, error) {
+	productCode := "ecs"
+	endpoint := ""
+	if client.config.Endpoints[productCode] == nil {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
+		}
+	}
+	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
+		endpoint = client.config.Endpoints[productCode].(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint).SetReadTimeout(60000)
+
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+
+	return conn, nil
+}
+
+func (client *AliyunClient) NewVpcClient() (*rpc.Client, error) {
+	productCode := "vpc"
+	endpoint := ""
+	if client.config.Endpoints[productCode] == nil {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
+		}
+	}
+	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
+		endpoint = client.config.Endpoints[productCode].(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+
+	return conn, nil
 }
 
 func (client *AliyunClient) WithNasClient(do func(*nas.Client) (interface{}, error)) (interface{}, error) {
@@ -1005,40 +1071,16 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 	return do(client.cloudapiconn)
 }
 
-func (client *AliyunClient) NewSdkConfig() (rpc.Config, error) {
+func (client *AliyunClient) NewTeaCommonClient(endpoint string) (*rpc.Client, error) {
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
 
-	sdkConfig, err := client.config.getTeaDslSdkConfig(true)
+	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return sdkConfig, fmt.Errorf("unable to initialize the sdk config: %#v", err)
-	}
-	sdkConfig.SetProtocol(client.config.Protocol)
-
-	return sdkConfig, nil
-}
-
-func (client *AliyunClient) NewTeaCommonClient(productCode string, do func(*rpc.Client) (map[string]interface{}, error)) (map[string]interface{}, error) {
-	// Initialize the Tea client using region
-	if client.teaConn == nil {
-		endpoint, err := client.loadEndpoint(productCode)
-		if err != nil {
-			return nil, fmt.Errorf("[ERROR] loading endpoint got an error: %s", err)
-		}
-
-		sdkConfig, err := client.config.getTeaDslSdkConfig(true)
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the sdk config: %#v", err)
-		}
-		sdkConfig.SetProtocol(client.config.Protocol)
-		sdkConfig.SetEndpoint(endpoint)
-
-		conn, err := rpc.NewClient(&sdkConfig)
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the tea client: %#v", err)
-		}
-		client.teaConn = conn
+		return nil, fmt.Errorf("unable to initialize the tea client: %#v", err)
 	}
 
-	return do(client.teaConn)
+	return conn, nil
 }
 
 func (client *AliyunClient) WithDataHubClient(do func(*datahub.DataHub) (interface{}, error)) (interface{}, error) {
