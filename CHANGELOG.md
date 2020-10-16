@@ -1,4 +1,34 @@
 ## 1.101.0 (Unreleased)
+
+- **New Resource:** `alicloud_cms_alarm_contact_group` [GH-2885]
+- **New Resource:** `alicloud_kvstore_connection` [GH-2867]
+- **Data Source:** `alicloud_cms_alarm_contact_groups` [GH-2885]
+- **Data Source:** `alicloud_kvstore_connections` [GH-2867]
+
+IMPROVEMENTS:
+
+- resource_alicloud_instance add system_disk_name and system_disk_description params [GH-2920]
+- remove unsupported field resource_group_id from resource cs_kubernetes_node_pool [GH-2919]
+- Skip testcase with invalid region for Cloud Config [GH-2918]
+- Support service version in FC [GH-2917]
+- Correct the alicloud_polardb_cluster and alicloud_polardb_account_privilege's example usage [GH-2916]
+- sync vendor using go mod [GH-2915]
+- resource alicloud_alikafka_instance supports end_point [GH-2912]
+- elasticsearch instance support configuration 'client node' and 'protocol' [GH-2910]
+- resource alicloud_polardb_account_privilege supports DMLOnly and DMLOnly and then improve its docs [GH-2906]
+- Exclude unsupported regions for dms enterprise [GH-2903]
+- update changelog [GH-2902]
+- Creating a cluster response increases: cluster_spec [GH-2898]
+- alicloud_log_alert: support message center type [GH-2897]
+- disable validate disk category on ack cluster [GH-2886]
+- added create emr cluster request params validation [GH-2786]
+
+BUG FIXES:
+
+- fix testcase: replace alicloud_zones with alicloud_kvstore_zones [GH-2925]
+- fix datasource ids bug [GH-2911]
+- bugfix: implement DiffSuppressFunc for chart list of log dashboard and pass required fields on update [GH-2891]
+
 ## 1.100.1 (October 13, 2020)
 
 IMPROVEMENTS:
