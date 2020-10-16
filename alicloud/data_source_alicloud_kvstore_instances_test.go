@@ -181,13 +181,14 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 
 func dataSourceKvstoreInstancesDependence(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_zones" "default"{
+	data "alicloud_kvstore_zones" "default"{
+		instance_charge_type = "PostPaid"
 	}
 	data "alicloud_vpcs" "default" {
 	  is_default = true
 	}
 	data "alicloud_vswitches" "default" {
-	  zone_id = data.alicloud_zones.default.ids.2
+	  zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
 	  vpc_id = data.alicloud_vpcs.default.ids.0
 	}
 	data "alicloud_resource_manager_resource_groups" "default" {
@@ -208,7 +209,7 @@ func dataSourceKvstoreInstancesDependence(name string) string {
 		For = "update test",
 	 }
 	 resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.1
-	 zone_id = data.alicloud_zones.default.ids.2
+	 zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
 	 instance_class="redis.master.mid.default"
 	}
 	`, name)
