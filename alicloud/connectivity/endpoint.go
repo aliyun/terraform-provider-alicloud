@@ -160,94 +160,88 @@ func loadEndpoint(region string, serviceCode ServiceCode) string {
 	return ""
 }
 
-func (client *AliyunClient) loadEndpoint(productCode string) (string, error) {
+// NOTE: The productCode must be lower.
+func (client *AliyunClient) loadEndpoint(productCode string) error {
 	productCodeUp := strings.ToUpper(productCode)
-	productCodeLow := strings.ToLower(productCode)
 	config := client.config
-	if config.Endpoints[productCodeLow] != nil && config.Endpoints[productCodeLow].(string) != "" {
-		return config.Endpoints[productCodeLow].(string), nil
-	}
+
 	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", productCodeUp)))
 	if endpoint != "" {
-		config.Endpoints[productCodeLow] = endpoint
-		return endpoint, nil
-	}
-
-	// Load current path endpoint file endpoints.xml, if failed, it will load from environment variables TF_ENDPOINT_PATH
-	if loadLocalEndpoint {
-		data, err := ioutil.ReadFile(localEndpointPath)
-		if err != nil || len(data) <= 0 {
-			d, e := ioutil.ReadFile(os.Getenv(localEndpointPathEnv))
-			if e != nil {
-				return "", e
-			}
-			data = d
-		}
-		var endpoints Endpoints
-		err = xml.Unmarshal(data, &endpoints)
-		if err != nil {
-			return "", err
-		}
-		for _, endpoint := range endpoints.Endpoint {
-			if endpoint.RegionIds.RegionId == string(config.RegionId) {
-				for _, product := range endpoint.Products.Product {
-					if strings.ToLower(product.ProductName) == productCodeLow {
-						config.Endpoints[productCodeLow] = strings.TrimSpace(product.DomainName)
-						return strings.TrimSpace(product.DomainName), nil
-					}
-				}
-			}
-		}
+		config.Endpoints[productCode] = endpoint
+		return nil
 	}
 
 	// if not, get an endpoint by regional rule
-	endpoint, err := loadEndpointFromSdk(client.config, productCodeLow)
+	err := loadEndpointFromSdk(client.config, productCode)
 	if err != nil {
 		log.Printf("[ERROR] loadEndpoint from Sdk api got an error: %s", err)
-		serviceCode := serviceCodeMapping[productCodeLow]
+		serviceCode := serviceCodeMapping[productCode]
 		if serviceCode == "" {
-			serviceCode = productCodeLow
+			serviceCode = productCode
 		}
-		endpoint, err = client.describeEndpointForService(serviceCode)
-		if err != nil {
-			return "", err
+		if _, err = client.describeEndpointForService(serviceCode); err != nil {
+			return err
 		}
 	}
 
-	if endpoint == "" {
-		return "", fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	client.config.Endpoints[productCodeLow] = endpoint
-	return endpoint, nil
+	return err
 }
 
-func loadEndpointFromSdk(config *Config, productCode string) (string, error) {
+// Load current path endpoint file endpoints.xml, if failed, it will load from environment variables TF_ENDPOINT_PATH
+func (config *Config) loadEndpointFromLocal() error {
+	data, err := ioutil.ReadFile(localEndpointPath)
+	if err != nil || len(data) <= 0 {
+		d, e := ioutil.ReadFile(os.Getenv(localEndpointPathEnv))
+		if e != nil {
+			return e
+		}
+		data = d
+	}
+	var endpoints Endpoints
+	err = xml.Unmarshal(data, &endpoints)
+	if err != nil {
+		return err
+	}
+	for _, endpoint := range endpoints.Endpoint {
+		if endpoint.RegionIds.RegionId == string(config.RegionId) {
+			for _, product := range endpoint.Products.Product {
+				config.Endpoints[strings.ToLower(product.ProductName)] = strings.TrimSpace(product.DomainName)
+			}
+		}
+	}
+	return nil
+}
+
+func loadEndpointFromSdk(config *Config, productCode string) error {
+	loadSdkfromRemoteMutex.Lock()
+	defer loadSdkfromRemoteMutex.Unlock()
+
 	response, err := http.Post(fmt.Sprintf("http://sdk.aliyun-inc.com/api/get/release/endpoint/info?product_id=%s", productCode), "", nil)
 	if err != nil {
 		log.Printf("[ERROR] http.post got an error: %s", err)
-		return "", err
+		return err
 	}
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("[ERROR] read http.post response got an error: %s", err)
-		return "", err
+		return err
 	}
 
 	var jsonBody interface{}
 	if err := json.Unmarshal(body, &jsonBody); err != nil {
 		log.Printf("[ERROR] json.Unmarshal http.post response body: %s got an error: %s", body, err)
-		return "", err
+		return err
 	}
 	ok, err := jsonpath.Read(jsonBody, "$.ok")
 	if err != nil {
-		return "", err
+		return err
 	}
 	if ok.(bool) {
 		endpointRegional, err := jsonpath.Read(jsonBody, "$.data.endpoint_regional")
 		if err != nil {
 			log.Printf("[ERROR] jsonpath.Read data.endpoint_regional got an error: %s", err)
-			return "", err
+			return err
 		}
 		if endpointRegional == "regional" {
 			var err error
@@ -259,15 +253,18 @@ func loadEndpointFromSdk(config *Config, productCode string) (string, error) {
 					continue
 				}
 				if endpoint != nil && endpoint.(string) != "" {
-					return endpoint.(string), nil
+					config.Endpoints[productCode] = endpoint.(string)
+					return nil
 				}
 			}
-			return "", err
+			return err
 		}
 	}
-	return "", nil
+	return nil
 }
 func (client *AliyunClient) describeEndpointForService(serviceCode string) (string, error) {
+	loadSdkfromLocationMutex.Lock()
+	defer loadSdkfromLocationMutex.Unlock()
 	args := location.CreateDescribeEndpointsRequest()
 	args.ServiceCode = serviceCode
 	args.Id = client.config.RegionId
@@ -294,6 +291,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 	if endpointsResponse != nil && len(endpointsResponse.Endpoints.Endpoint) > 0 {
 		for _, e := range endpointsResponse.Endpoints.Endpoint {
 			if e.Type == "openAPI" {
+				client.config.Endpoints[strings.ToLower(serviceCode)] = e.Endpoint
 				return e.Endpoint, nil
 			}
 		}

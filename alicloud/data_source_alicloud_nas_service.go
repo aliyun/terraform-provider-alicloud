@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -35,13 +34,7 @@ func dataSourceAlicloudNasServiceRead(d *schema.ResourceData, meta interface{}) 
 		return nil
 	}
 
-	client := meta.(*connectivity.AliyunClient)
-	sdkConfig, err := client.NewSdkConfig()
-	if err != nil {
-		return WrapError(err)
-	}
-	sdkConfig.SetEndpoint(connectivity.OpenNasService)
-	conn, err := rpc.NewClient(&sdkConfig)
+	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenNasService)
 	if err != nil {
 		return WrapError(err)
 	}
