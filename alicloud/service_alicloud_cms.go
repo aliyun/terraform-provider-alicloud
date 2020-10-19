@@ -159,7 +159,7 @@ func (s *CmsService) DescribeCmsAlarmContact(id string) (object cms.Contact, err
 		return cmsClient.DescribeContactList(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ContactNotExists"}) {
+		if IsExpectedErrors(err, []string{"ContactNotExists", "ResourceNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContact", id)), NotFoundMsg, ProviderERROR)
 			return
 		}
