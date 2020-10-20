@@ -156,7 +156,6 @@ func (s *VpcService) ListTagResources(resourceId, resourceType string) (object i
 		return nil, WrapError(err)
 	}
 	action := "ListTagResources"
-
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
 		"ResourceId.1": resourceId,
@@ -166,7 +165,6 @@ func (s *VpcService) ListTagResources(resourceId, resourceType string) (object i
 	tags := make([]interface{}, 0)
 
 	for {
-		total := 0
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -183,7 +181,6 @@ func (s *VpcService) ListTagResources(resourceId, resourceType string) (object i
 				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, resourceId, "$.TagResources.TagResource", response))
 			}
 			tags = append(tags, v.([]interface{})...)
-			total = len(v.([]interface{}))
 			nextToken, _ := jsonpath.Get("$.NextToken", response)
 			request["NextToken"] = nextToken
 			return nil
@@ -192,7 +189,7 @@ func (s *VpcService) ListTagResources(resourceId, resourceType string) (object i
 			err = WrapErrorf(err, DefaultErrorMsg, resourceId, action, AlibabaCloudSdkGoERROR)
 			return
 		}
-		if total < PageSizeXLarge {
+		if request["NextToken"].(string) == "" {
 			break
 		}
 	}
