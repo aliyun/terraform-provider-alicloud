@@ -6,6 +6,10 @@ cloud.google.com/go/internal/optional
 cloud.google.com/go/internal/trace
 cloud.google.com/go/internal/version
 cloud.google.com/go/storage
+# github.com/PaesslerAG/gval v1.0.0
+github.com/PaesslerAG/gval
+# github.com/PaesslerAG/jsonpath v0.1.1
+github.com/PaesslerAG/jsonpath
 # github.com/Sirupsen/logrus v0.0.0-20181010200618-458213699411 => github.com/sirupsen/logrus v0.0.0-20181010200618-458213699411
 github.com/Sirupsen/logrus
 # github.com/agext/levenshtein v1.2.2
