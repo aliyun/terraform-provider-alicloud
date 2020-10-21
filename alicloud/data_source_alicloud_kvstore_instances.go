@@ -41,9 +41,10 @@ func dataSourceAlicloudKvstoreInstances() *schema.Resource {
 				Computed: true,
 			},
 			"edition_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Enterprise", "Community"}, false),
 			},
 			"engine_version": {
 				Type:         schema.TypeString,

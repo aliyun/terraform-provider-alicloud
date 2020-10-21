@@ -144,7 +144,7 @@ func (s *R_kvstoreService) DescribeInstanceAutoRenewalAttribute(id string) (obje
 	return response.Items.Item[0], nil
 }
 
-func (s *R_kvstoreService) DescribeSecurityGroupConfiguration(id string) (object r_kvstore.EcsSecurityGroupRelation, err error) {
+func (s *R_kvstoreService) DescribeSecurityGroupConfiguration(id string) (object r_kvstore.ItemsInDescribeSecurityGroupConfiguration, err error) {
 	request := r_kvstore.CreateDescribeSecurityGroupConfigurationRequest()
 	request.RegionId = s.client.RegionId
 
@@ -168,7 +168,7 @@ func (s *R_kvstoreService) DescribeSecurityGroupConfiguration(id string) (object
 		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
-	return response.Items.EcsSecurityGroupRelation[0], nil
+	return response.Items, nil
 }
 
 func (s *R_kvstoreService) DescribeKvstoreInstance(id string) (object r_kvstore.DBInstanceAttribute, err error) {

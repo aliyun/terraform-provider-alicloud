@@ -77,6 +77,10 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Optional:      true,
 				ConflictsWith: []string{"parameters"},
 			},
+			"connection_domain": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"coupon_no": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -507,6 +511,7 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("bandwidth", object.Bandwidth)
 	d.Set("capacity", object.Capacity)
 	d.Set("config", object.Config)
+	d.Set("connection_domain", object.ConnectionDomain)
 	d.Set("db_instance_name", object.InstanceName)
 	d.Set("instance_name", object.InstanceName)
 	d.Set("end_time", object.EndTime)
@@ -542,7 +547,11 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapError(err)
 		}
-		d.Set("security_group_id", describeSecurityGroupConfigurationObject.SecurityGroupId)
+		sgs := make([]string, 0)
+		for _, sg := range describeSecurityGroupConfigurationObject.EcsSecurityGroupRelation {
+			sgs = append(sgs, sg.SecurityGroupId)
+		}
+		d.Set("security_group_id", strings.Join(sgs, ","))
 	}
 	if _, ok := d.GetOk("ssl_enable"); ok {
 
@@ -769,9 +778,25 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		update = true
 		modifyInstanceAttributeReq.InstanceReleaseProtection = requests.NewBoolean(d.Get("instance_release_protection").(bool))
 	}
-	if !d.IsNewResource() && d.HasChange("password") {
+	if !d.IsNewResource() && (d.HasChange("password") || d.HasChange("kms_encrypted_password")) {
 		update = true
-		modifyInstanceAttributeReq.NewPassword = d.Get("password").(string)
+		password := d.Get("password").(string)
+		kmsPassword := d.Get("kms_encrypted_password").(string)
+
+		if password == "" && kmsPassword == "" {
+			return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+		}
+
+		if password != "" {
+			modifyInstanceAttributeReq.NewPassword = password
+		} else {
+			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
+			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			modifyInstanceAttributeReq.NewPassword = decryptResp.Plaintext
+		}
 	}
 	if update {
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
@@ -788,6 +813,8 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("instance_name")
 		d.SetPartial("db_instance_name")
 		d.SetPartial("instance_release_protection")
+		d.SetPartial("kms_encrypted_password")
+		d.SetPartial("kms_encryption_context")
 		d.SetPartial("password")
 	}
 	update = false
@@ -1010,6 +1037,7 @@ func resourceAlicloudKvstoreInstanceDelete(d *schema.ResourceData, meta interfac
 	}
 	return nil
 }
+
 func convertModifyModeRequest(input int) string {
 	switch input {
 	case 0:
@@ -1021,6 +1049,7 @@ func convertModifyModeRequest(input int) string {
 	}
 	return ""
 }
+
 func refreshParameters(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	r_kvstoreService := R_kvstoreService{client}
