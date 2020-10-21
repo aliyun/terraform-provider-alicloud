@@ -1,6 +1,7 @@
 package cs
 
 import (
+	"fmt"
 	"github.com/denverdino/aliyungo/common"
 	"net/http"
 	"net/url"
@@ -24,6 +25,7 @@ type ServerlessCreationArgs struct {
 	Tags                 []Tag                 `json:"tags"`
 	Addons               []Addon               `json:"addons"`
 	ResourceGroupId      string                `json:"resource_group_id"`
+	ClusterSpec          string                `json:"cluster_spec"`
 }
 
 type ServerlessClusterResponse struct {
@@ -42,6 +44,8 @@ type ServerlessClusterResponse struct {
 	CurrentVersion     string                `json:"current_version"`
 	PrivateZone        bool                  `json:"private_zone"`
 	DeletionProtection bool                  `json:"deletion_protection"`
+	ResourceGroupId    string                `json:"resource_group_id"`
+	ClusterSpec        string                `json:"cluster_spec"`
 }
 
 type Tag struct {
@@ -69,7 +73,12 @@ func (client *Client) CreateServerlessKubernetesCluster(args *ServerlessCreation
 	//reset clusterType,
 	args.ClusterType = ServerlessKubernetes
 	cluster := &ClusterCommonResponse{}
-	err := client.Invoke(common.Region(args.RegionId), http.MethodPost, "/clusters", nil, args, &cluster)
+	path := "/clusters"
+	if args.ResourceGroupId != "" {
+		// 创建集群到指定资源组
+		path = fmt.Sprintf("/resource_groups/%s/clusters", args.ResourceGroupId)
+	}
+	err := client.Invoke(common.Region(args.RegionId), http.MethodPost, path, nil, args, &cluster)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"regexp"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -126,6 +127,15 @@ func resourceAlicloudFCService() *schema.Resource {
 					},
 				},
 			},
+			"publish": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"version": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"last_modified": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -179,15 +189,17 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
-			//b, _ := json.Marshal(request)
-			//fmt.Println("=============create===============")
-			//fmt.Println(string(b))
-			//fmt.Println("==================================")
 			return fcClient.CreateService(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"AccessDenied", "does not exist"}) {
 				return resource.RetryableError(err)
+			}
+			// Work around the "log project doest not exist" error since SLS log project CRUD is not strong consistency.
+			if e, ok := err.(*fc.ServiceError); ok {
+				if r := regexp.MustCompile("project.*does not exist"); e.ErrorCode == "InvalidArgument" && r.MatchString(e.ErrorMessage) {
+					return resource.RetryableError(err)
+				}
 			}
 			return resource.NonRetryableError(err)
 		}
@@ -200,6 +212,32 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	d.SetId(*response.ServiceName)
+
+	etag := response.Header.Get("ETag")
+	if d.Get("publish").(bool) {
+		input := &fc.PublishServiceVersionInput{
+			ServiceName: response.ServiceName,
+			IfMatch:     &etag,
+		}
+		input.Description = response.Description
+		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+				requestInfo = fcClient
+				return fcClient.PublishServiceVersion(input)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"AccessDenied", "ServiceNotFound"}) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug("PublishServiceVersion", raw, requestInfo, request)
+			return nil
+
+		}); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_service", "PublishServiceVersion", FcGoSdk)
+		}
+	}
 	return resourceAlicloudFCServiceRead(d, meta)
 }
 
@@ -261,7 +299,36 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 	if err := d.Set("nas_config", nasConfigs); err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("last_modified", object.LastModifiedTime)
+
+	// Get the latest version of the service.
+	input := &fc.ListServiceVersionsInput{
+		ServiceName: object.ServiceName,
+		Limit:       Int32Pointer(1),
+		Direction:   StringPointer("BACKWARD"),
+	}
+	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		var requestInfo *fc.Client
+		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			requestInfo = fcClient
+			return fcClient.ListServiceVersions(input)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"AccessDenied", "ServiceNotFound"}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug("ListServiceVersions", raw, requestInfo, input)
+		output, _ := raw.(*fc.ListServiceVersionsOutput)
+		if len(output.Versions) > 0 {
+			d.Set("version", output.Versions[0].VersionID)
+		}
+		return nil
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_service", "PublishServiceVersion", FcGoSdk)
+	}
 
 	return nil
 }
@@ -317,18 +384,52 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 	if request != nil {
 		request.ServiceName = StringPointer(d.Id())
 		var requestInfo *fc.Client
-		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			requestInfo = fcClient
-			//b, _ := json.Marshal(request)
-			//fmt.Println("==============update===============")
-			//fmt.Println(string(b))
-			//fmt.Println("===================================")
-			return fcClient.UpdateService(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateService", FcGoSdk)
+		var response *fc.UpdateServiceOutput
+		if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+				requestInfo = fcClient
+				return fcClient.UpdateService(request)
+			})
+			if err != nil {
+				// Work around the "log project doest not exist" error since SLS log project CRUD is not strong consistency.
+				if e, ok := err.(*fc.ServiceError); ok {
+					if r := regexp.MustCompile("project.*does not exist"); e.ErrorCode == "InvalidArgument" && r.MatchString(e.ErrorMessage) {
+						return resource.RetryableError(err)
+					}
+				}
+			}
+			addDebug("UpdateService", raw, requestInfo, request)
+			response, _ = raw.(*fc.UpdateServiceOutput)
+			return nil
+		}); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_service", "UpdateService", FcGoSdk)
 		}
-		addDebug("UpdateService", raw, requestInfo, request)
+
+		etag := response.Header.Get("ETag")
+		if d.Get("publish").(bool) {
+			input := &fc.PublishServiceVersionInput{
+				ServiceName: response.ServiceName,
+				IfMatch:     &etag,
+			}
+			input.Description = response.Description
+			if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+				raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+					requestInfo = fcClient
+					return fcClient.PublishServiceVersion(input)
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"AccessDenied", "ServiceNotFound"}) {
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug("PublishServiceVersion", raw, requestInfo, request)
+				return nil
+
+			}); err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_service", "PublishServiceVersion", FcGoSdk)
+			}
+		}
 	}
 
 	d.Partial(false)
@@ -338,6 +439,44 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudFCServiceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	fcService := FcService{client}
+
+	// Delete the service versions.
+	var nextToken *string
+	for {
+		input := &fc.ListServiceVersionsInput{
+			ServiceName: StringPointer(d.Id()),
+			Limit:       Int32Pointer(100),
+			NextToken:   nextToken,
+		}
+		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+			return fcClient.ListServiceVersions(input)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ListServiceVersions", FcGoSdk)
+		}
+
+		output := raw.(*fc.ListServiceVersionsOutput)
+		nextToken = output.NextToken
+		for _, v := range output.Versions {
+			// Delete the service version.
+			input := &fc.DeleteServiceVersionInput{
+				ServiceName: StringPointer(d.Id()),
+				VersionID:   v.VersionID,
+			}
+			_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+				return fcClient.DeleteServiceVersion(input)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), v.VersionID, "DeleteServiceVersion", FcGoSdk)
+			}
+		}
+
+		if nextToken == nil || *nextToken == "" {
+			break
+		}
+	}
+
+	// Delete the service.
 	request := &fc.DeleteServiceInput{
 		ServiceName: StringPointer(d.Id()),
 	}
@@ -354,7 +493,6 @@ func resourceAlicloudFCServiceDelete(d *schema.ResourceData, meta interface{}) e
 	}
 	addDebug("DeleteService", raw, requestInfo, request)
 	return WrapError(fcService.WaitForFcService(d.Id(), Deleted, DefaultTimeout))
-
 }
 
 func parseVpcConfig(d *schema.ResourceData, meta interface{}) (config *fc.VPCConfig, err error) {

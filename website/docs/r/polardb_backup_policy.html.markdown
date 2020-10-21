@@ -11,11 +11,11 @@ description: |-
 
 Provides a PolarDB cluster backup policy resource and used to configure cluster backup policy.
 
--> **NOTE:** Available in v1.66.0+. Each DB cluster has a backup policy and it will be set default values when destroying the resource.
+-> **NOTE:** Available in v1.66.0+. Each PolarDB cluster has a backup policy.
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "polardbClusterconfig"
 }
@@ -46,12 +46,12 @@ resource "alicloud_polardb_cluster" "default" {
   db_node_class = "polar.mysql.x4.large"
   pay_type      = "PostPaid"
   description   = var.name
-  vswitch_id    = "vsw-t4nq4tr8wcuj7397rbws2"
+  vswitch_id    = alicloud_vswitch.default.id
 }
 
 resource "alicloud_polardb_backup_policy" "policy" {
   db_cluster_id           = alicloud_polardb_cluster.default.id
-  preferred_backup_period = "Tuesday,Wednesday"
+  preferred_backup_period = ["Tuesday", "Wednesday"]
   preferred_backup_time   = "10:00Z-11:00Z"
 }
 ```
@@ -64,7 +64,7 @@ The alicloud_polardb_backup_policy resource allows you to manage your polardb cl
 The following arguments are supported:
 
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster that can run database.
-* `preferred_backup_period` - (Optional) PolarDB Cluster backup period. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to ["Tuesday", "Thursday", "Saturday"].
+* `preferred_backup_period` - (Optional) PolarDB Cluster backup period. Valid values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]. Default to ["Tuesday", "Thursday", "Saturday"].
 * `preferred_backup_time` - (Optional) PolarDB Cluster backup time, in the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. Default to "02:00Z-03:00Z". China time is 8 hours behind it.
 
 ## Attributes Reference

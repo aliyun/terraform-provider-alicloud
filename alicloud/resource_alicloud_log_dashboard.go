@@ -3,6 +3,9 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"reflect"
+	"sort"
 	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -38,8 +41,9 @@ func resourceAlicloudLogDashboard() *schema.Resource {
 				Optional: true,
 			},
 			"char_list": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:             schema.TypeString,
+				DiffSuppressFunc: jsonPolicyDiffSuppress,
+				Required:         true,
 			},
 		},
 	}
@@ -109,17 +113,17 @@ func resourceAlicloudLogDashboardUpdate(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	update := false
 	dashboard := sls.Dashboard{}
+	dashboard.DisplayName = d.Get("display_name").(string)
+	data := d.Get("char_list").(string)
+	err := json.Unmarshal([]byte(data), &dashboard.ChartList)
+	if err != nil {
+		return WrapError(err)
+	}
 
 	if d.HasChange("display_name") {
-		dashboard.DisplayName = d.Get("display_name").(string)
 		update = true
 	}
 	if d.HasChange("char_list") {
-		data := d.Get("char_list").(string)
-		err := json.Unmarshal([]byte(data), &dashboard.ChartList)
-		if err != nil {
-			return WrapError(err)
-		}
 		update = true
 	}
 
@@ -171,4 +175,54 @@ func resourceAlicloudLogDashboardDelete(d *schema.ResourceData, meta interface{}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteDashboard", AliyunLogGoSdkERROR)
 	}
 	return WrapError(logService.WaitForLogDashboard(d.Id(), Deleted, DefaultTimeout))
+}
+
+func jsonPolicyDiffSuppress(k, old, new string, d *schema.ResourceData) bool {
+	if old == "" && new == "" {
+		return true
+	}
+
+	var oldChartList, newChartList []sls.Chart
+	if old != "" && new != "" {
+		if err := json.Unmarshal([]byte(old), &oldChartList); err != nil {
+			log.Printf("[ERROR] Could not unmarshal old chart list %s: %v", old, err)
+			return false
+		}
+		if err := json.Unmarshal([]byte(new), &newChartList); err != nil {
+			log.Printf("[ERROR] Could not unmarshal new chart list %s: %v", new, err)
+			return false
+		}
+
+		return compareChartList(newChartList, oldChartList)
+	}
+
+	return false
+}
+
+type chartSort []sls.Chart
+
+func (a chartSort) Len() int {
+	return len(a)
+}
+
+func (a chartSort) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a chartSort) Less(i, j int) bool {
+	return a[i].Title < a[j].Title
+}
+
+func compareChartList(a, b []sls.Chart) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	sort.Sort(chartSort(a))
+	sort.Sort(chartSort(b))
+	for i, chart := range a {
+		if !reflect.DeepEqual(chart, b[i]) {
+			return false
+		}
+	}
+	return true
 }

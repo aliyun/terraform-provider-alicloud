@@ -37,6 +37,20 @@ func TestAccAlicloudDmsEnterprisesDataSource(t *testing.T) {
 			"instance_alias_regex": name + "fake",
 		}),
 	}
+	nameRegexConfConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"net_type":      "VPC",
+			"instance_type": "${alicloud_dms_enterprise_instance.default.instance_type}",
+			"env_type":      "test",
+			"name_regex":    name,
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"net_type":      "VPC",
+			"instance_type": "${alicloud_dms_enterprise_instance.default.instance_type}",
+			"env_type":      "test",
+			"name_regex":    name + "fake",
+		}),
+	}
 	var existDmsEnterpriseInstancesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"instances.#":                   "1",
@@ -77,7 +91,7 @@ func TestAccAlicloudDmsEnterprisesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeDmsEnterpriseInstancesMapFunc,
 	}
 
-	DmsEnterpriseInstancesCheckInfo.dataSourceTestCheck(t, rand, searchkeyConf, instancealiasRegexConfConf)
+	DmsEnterpriseInstancesCheckInfo.dataSourceTestCheck(t, rand, searchkeyConf, instancealiasRegexConfConf, nameRegexConfConf)
 }
 
 func dataSourceDmsEnterpriseInstancesConfigDependence(name string) string {

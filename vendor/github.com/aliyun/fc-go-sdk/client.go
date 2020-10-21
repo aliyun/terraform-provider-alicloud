@@ -697,3 +697,68 @@ func (c *Client) sendRequest(input ServiceInput, httpMethod string) (*resty.Resp
 	}
 	return resp, nil
 }
+
+// GetFunctionAsyncInvokeConfig returns async config from fc
+func (c *Client) GetFunctionAsyncInvokeConfig(input *GetFunctionAsyncInvokeConfigInput) (*GetFunctionAsyncInvokeConfigOutput, error) {
+	if input == nil {
+		input = new(GetFunctionAsyncInvokeConfigInput)
+	}
+
+	var output = new(GetFunctionAsyncInvokeConfigOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// ListFunctionAsyncInvokeConfigs returns list of async configs from fc
+func (c *Client) ListFunctionAsyncInvokeConfigs(input *ListFunctionAsyncInvokeConfigsInput) (*ListFunctionAsyncInvokeConfigsOutput, error) {
+	if input == nil {
+		input = new(ListFunctionAsyncInvokeConfigsInput)
+	}
+
+	var output = new(ListFunctionAsyncInvokeConfigsOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+
+// PutFunctionAsyncInvokeConfig creates or updates an async config
+func (c *Client) PutFunctionAsyncInvokeConfig(input *PutFunctionAsyncInvokeConfigInput) (*PutFunctionAsyncInvokeConfigOutput, error) {
+	if input == nil {
+		input = new(PutFunctionAsyncInvokeConfigInput)
+	}
+
+	var output = new(PutFunctionAsyncInvokeConfigOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPut)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// DeleteFunctionAsyncInvokeConfig deletes async config
+func (c *Client) DeleteFunctionAsyncInvokeConfig(input *DeleteFunctionAsyncInvokeConfigInput) (*DeleteFunctionAsyncInvokeConfigOutput, error) {
+	if input == nil {
+		input = new(DeleteFunctionAsyncInvokeConfigInput)
+	}
+	var output = new(DeleteFunctionAsyncInvokeConfigOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodDelete)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	return output, nil
+}

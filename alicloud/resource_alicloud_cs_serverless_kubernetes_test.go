@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -48,6 +49,7 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 					"new_nat_gateway":                "true",
 					"deletion_protection":            "false",
 					"endpoint_public_access_enabled": "true",
+					"resource_group_id":              fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

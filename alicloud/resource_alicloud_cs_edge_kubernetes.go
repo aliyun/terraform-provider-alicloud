@@ -383,7 +383,7 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 	cluster, _ := response.(*cs.ClusterCommonResponse)
 	d.SetId(cluster.ClusterID)
 
-	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())

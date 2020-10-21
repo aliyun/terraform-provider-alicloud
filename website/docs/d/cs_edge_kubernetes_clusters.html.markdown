@@ -11,11 +11,11 @@ description: |-
 
 This data source provides a list Container Service Edge Kubernetes Clusters on Alibaba Cloud.
 
--> **NOTE:** Available in v1.35.0+
+-> **NOTE:** Available in v1.102.0+
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_cs_edge_kubernetes_clusters" "k8s_clusters" {
   name_regex  = "my-first-k8s"
@@ -23,7 +23,7 @@ data "alicloud_cs_edge_kubernetes_clusters" "k8s_clusters" {
 }
 
 output "output" {
-  value = "${data.alicloud_cs_edge_kubernetes_clusters.k8s_clusters.clusters}"
+  value = data.alicloud_cs_edge_kubernetes_clusters.k8s_clusters.clusters
 }
 ```
 

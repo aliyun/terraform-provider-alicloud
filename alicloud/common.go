@@ -293,6 +293,9 @@ const LOCAL_HOST_IP = "127.0.0.1"
 func expandStringList(configured []interface{}) []string {
 	vs := make([]string, 0, len(configured))
 	for _, v := range configured {
+		if v == nil {
+			continue
+		}
 		vs = append(vs, v.(string))
 	}
 	return vs
@@ -323,6 +326,9 @@ func convertListToJsonString(configured []interface{}) string {
 	}
 	result := "["
 	for i, v := range configured {
+		if v == nil {
+			continue
+		}
 		result += "\"" + v.(string) + "\""
 		if i < len(configured)-1 {
 			result += ","
@@ -346,6 +352,18 @@ func convertListToCommaSeparate(configured []interface{}) string {
 		result += v.(string) + rail
 	}
 	return result
+}
+
+func convertBoolToString(configured bool) string {
+	return strconv.FormatBool(configured)
+}
+
+func convertIntergerToString(configured int) string {
+	return strconv.Itoa(configured)
+}
+
+func convertFloat64ToString(configured float64) string {
+	return strconv.FormatFloat(configured, 'E', -1, 64)
 }
 
 func convertJsonStringToList(configured string) ([]interface{}, error) {
@@ -392,6 +410,10 @@ func BoolPointer(b bool) *bool {
 }
 
 func Int32Pointer(i int32) *int32 {
+	return &i
+}
+
+func Int64Pointer(i int64) *int64 {
 	return &i
 }
 

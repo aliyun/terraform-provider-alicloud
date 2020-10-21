@@ -19,6 +19,8 @@ import (
 type ServiceCode string
 
 const (
+	CmsCode             = ServiceCode("CMS")
+	RKvstoreCode        = ServiceCode("RKVSTORE")
 	ConfigCode          = ServiceCode("CONFIG")
 	OnsCode             = ServiceCode("ONS")
 	DcdnCode            = ServiceCode("DCDN")
@@ -211,9 +213,11 @@ func (client *AliyunClient) loadEndpoint(productCode string) (string, error) {
 			return "", err
 		}
 	}
-	if endpoint != "" {
-		client.config.Endpoints[productCodeLow] = endpoint
+
+	if endpoint == "" {
+		return "", fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
 	}
+	client.config.Endpoints[productCodeLow] = endpoint
 	return endpoint, nil
 }
 
@@ -308,4 +312,5 @@ const (
 	OpenOssService        = "oss-admin.aliyuncs.com"
 	OpenNasService        = "nas.cn-hangzhou.aliyuncs.com"
 	OpenCdnService        = "cdn.aliyuncs.com"
+	OpenBssService        = "business.aliyuncs.com"
 )

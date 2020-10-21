@@ -104,9 +104,14 @@ func resourceAlicloudLogAlert() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"type": {
-							Type:         schema.TypeString,
-							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"SMS", "DingTalk", "Email"}, false),
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								sls.NotificationTypeSMS,
+								sls.NotificationTypeDingTalk,
+								sls.NotificationTypeEmail,
+								sls.NotificationTypeMessageCenter},
+								false),
 						},
 						"content": {
 							Type:     schema.TypeString,
@@ -342,30 +347,37 @@ func createAlertConfig(d *schema.ResourceData, project, dashboard string, client
 				}
 			}
 
-			if noti_map["type"].(string) == "Email" {
+			if noti_map["type"].(string) == sls.NotificationTypeEmail {
 				email := &sls.Notification{
-					Type:      "Email",
+					Type:      sls.NotificationTypeEmail,
 					EmailList: email_list,
 					Content:   content,
 				}
 				noti = append(noti, email)
 			}
 
-			if noti_map["type"].(string) == "SMS" {
+			if noti_map["type"].(string) == sls.NotificationTypeSMS {
 				sms := &sls.Notification{
-					Type:       "SMS",
+					Type:       sls.NotificationTypeSMS,
 					MobileList: mobile_list,
 					Content:    content,
 				}
 				noti = append(noti, sms)
 			}
-			if noti_map["type"].(string) == "DingTalk" {
+			if noti_map["type"].(string) == sls.NotificationTypeDingTalk {
 				ding := &sls.Notification{
-					Type:       "DingTalk",
+					Type:       sls.NotificationTypeDingTalk,
 					ServiceUri: noti_map["service_uri"].(string),
 					Content:    content,
 				}
 				noti = append(noti, ding)
+			}
+			if noti_map["type"].(string) == sls.NotificationTypeMessageCenter {
+				messageCenter := &sls.Notification{
+					Type:    sls.NotificationTypeMessageCenter,
+					Content: content,
+				}
+				noti = append(noti, messageCenter)
 			}
 		}
 	}
@@ -404,21 +416,24 @@ func getNotiMap(v *sls.Notification) map[string]interface{} {
 	mapping := make(map[string]interface{})
 
 	mapping["content"] = v.Content
-	if v.Type == "SMS" {
-		mapping["type"] = "SMS"
+	if v.Type == sls.NotificationTypeSMS {
+		mapping["type"] = sls.NotificationTypeSMS
 		mapping["mobile_list"] = v.MobileList
 	}
 
-	if v.Type == "Email" {
-		mapping["type"] = "Email"
+	if v.Type == sls.NotificationTypeEmail {
+		mapping["type"] = sls.NotificationTypeEmail
 		mapping["email_list"] = v.EmailList
 	}
 
-	if v.Type == "DingTalk" {
-		mapping["type"] = "DingTalk"
+	if v.Type == sls.NotificationTypeDingTalk {
+		mapping["type"] = sls.NotificationTypeDingTalk
 		mapping["service_uri"] = v.ServiceUri
 	}
 
+	if v.Type == sls.NotificationTypeMessageCenter {
+		mapping["type"] = sls.NotificationTypeMessageCenter
+	}
 	return mapping
 
 }

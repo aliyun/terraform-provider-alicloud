@@ -24,8 +24,12 @@ after creating cluster successfully, and you can put them into the specified loc
 
 -> **NOTE:** If you want to manage Kubernetes, you can use [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html).
 
+-> **NOTE:** Available in v1.102.0+.
+
 ## Example Usage
-```$xslt
+
+```terraform
+
 // If vpc_id is not specified, a new one will be created
 resource "alicloud_vpc" "vpc" {
   count      = var.vpc_id == "" ? 1 : 0
@@ -92,8 +96,8 @@ The following arguments are supported:
 It is a new field since 1.75.0. You can specific network plugin,log component,ingress component and so on.     
 
 -> **NOTE:** If you want to upgrade provider to 1.90.0+, you need to pay attention to the disabled value. If the value is `""`, you need to modify it to `"false"`, and then run `terraform apply` to make it effect. After that, you can modify the provider version to upgrade smoothly. Otherwise, there will throw an error: `Error: a bool is required`.
- 
-```$xslt
+
+```terraform
   main.tf
    
   dynamic "addons" {
@@ -104,7 +108,8 @@ It is a new field since 1.75.0. You can specific network plugin,log component,in
       }
   }
 ```
-```$xslt
+
+```terraform
     varibales.tf 
     
     // Network-flannel 

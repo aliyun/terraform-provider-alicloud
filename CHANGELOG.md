@@ -1,4 +1,98 @@
-## 1.99.0 (Unreleased)
+## 1.102.0 (Unreleased)
+## 1.101.0 (October 16, 2020)
+
+- **New Resource:** `alicloud_cms_alarm_contact_group` ([#2885](https://github.com/aliyun/terraform-provider-alicloud/issues/2885))
+- **New Resource:** `alicloud_kvstore_connection` ([#2867](https://github.com/aliyun/terraform-provider-alicloud/issues/2867))
+- **Data Source:** `alicloud_cms_alarm_contact_groups` ([#2885](https://github.com/aliyun/terraform-provider-alicloud/issues/2885))
+- **Data Source:** `alicloud_kvstore_connections` ([#2867](https://github.com/aliyun/terraform-provider-alicloud/issues/2867))
+
+IMPROVEMENTS:
+
+- resource_alicloud_instance add system_disk_name and system_disk_description params ([#2920](https://github.com/aliyun/terraform-provider-alicloud/issues/2920))
+- remove unsupported field resource_group_id from resource cs_kubernetes_node_pool ([#2919](https://github.com/aliyun/terraform-provider-alicloud/issues/2919))
+- Skip testcase with invalid region for Cloud Config ([#2918](https://github.com/aliyun/terraform-provider-alicloud/issues/2918))
+- Support service version in FC ([#2917](https://github.com/aliyun/terraform-provider-alicloud/issues/2917))
+- Correct the alicloud_polardb_cluster and alicloud_polardb_account_privilege's example usage ([#2916](https://github.com/aliyun/terraform-provider-alicloud/issues/2916))
+- sync vendor using go mod ([#2915](https://github.com/aliyun/terraform-provider-alicloud/issues/2915))
+- resource alicloud_alikafka_instance supports end_point ([#2912](https://github.com/aliyun/terraform-provider-alicloud/issues/2912))
+- elasticsearch instance support configuration 'client node' and 'protocol' ([#2910](https://github.com/aliyun/terraform-provider-alicloud/issues/2910))
+- resource alicloud_polardb_account_privilege supports DMLOnly and DMLOnly and then improve its docs ([#2906](https://github.com/aliyun/terraform-provider-alicloud/issues/2906))
+- Exclude unsupported regions for dms enterprise ([#2903](https://github.com/aliyun/terraform-provider-alicloud/issues/2903))
+- update changelog ([#2902](https://github.com/aliyun/terraform-provider-alicloud/issues/2902))
+- Creating a cluster response increases: cluster_spec ([#2898](https://github.com/aliyun/terraform-provider-alicloud/issues/2898))
+- alicloud_log_alert: support message center type ([#2897](https://github.com/aliyun/terraform-provider-alicloud/issues/2897))
+- disable validate disk category on ack cluster ([#2886](https://github.com/aliyun/terraform-provider-alicloud/issues/2886))
+- added create emr cluster request params validation ([#2786](https://github.com/aliyun/terraform-provider-alicloud/issues/2786))
+
+BUG FIXES:
+
+- fix testcase: replace alicloud_zones with alicloud_kvstore_zones ([#2925](https://github.com/aliyun/terraform-provider-alicloud/issues/2925))
+- fix datasource ids bug ([#2911](https://github.com/aliyun/terraform-provider-alicloud/issues/2911))
+- bugfix: implement DiffSuppressFunc for chart list of log dashboard and pass required fields on update ([#2891](https://github.com/aliyun/terraform-provider-alicloud/issues/2891))
+
+## 1.100.1 (October 13, 2020)
+
+IMPROVEMENTS:
+
+- update go vendors ([#2904](https://github.com/aliyun/terraform-provider-alicloud/issues/2904))
+- improve cs test cases ([#2901](https://github.com/aliyun/terraform-provider-alicloud/issues/2901))
+- update sdk v1.61.557 ([#2900](https://github.com/aliyun/terraform-provider-alicloud/issues/2900))
+- improve invoking api by tea dsl conn ([#2899](https://github.com/aliyun/terraform-provider-alicloud/issues/2899))
+- add valid value Australia for resource cen_bandwidth_package and update vendor ([#2896](https://github.com/aliyun/terraform-provider-alicloud/issues/2896))
+
+BUG FIXES:
+
+- Fix edas bug ([#2676](https://github.com/aliyun/terraform-provider-alicloud/issues/2676))
+
+## 1.100.0 (October 12, 2020)
+
+- **New Resource:** `alicloud_fc_function_async_invoke_config` ([#2873](https://github.com/aliyun/terraform-provider-alicloud/issues/2873))
+
+IMPROVEMENTS:
+
+- add valid value Australia for resource cen_bandwidth_package and update vendor ([#2895](https://github.com/aliyun/terraform-provider-alicloud/issues/2895))
+- update ci test by adding config ([#2894](https://github.com/aliyun/terraform-provider-alicloud/issues/2894))
+- Create cluster support ResourceGroup and ACK-Pro ([#2889](https://github.com/aliyun/terraform-provider-alicloud/issues/2889))
+- update vendor for alikafka ([#2883](https://github.com/aliyun/terraform-provider-alicloud/issues/2883))
+- resource_manager_policy add validateJsonString and resource_manager_attachment support level 5 id ([#2880](https://github.com/aliyun/terraform-provider-alicloud/issues/2880))
+- dms user: replace some parameters for compatibility  ([#2875](https://github.com/aliyun/terraform-provider-alicloud/issues/2875))
+- feature: resource dms_enterprise_instance supports skip_test and deprecated instance_alias  ([#2874](https://github.com/aliyun/terraform-provider-alicloud/issues/2874))
+- UPDATE CHANGELOG  ([#2869](https://github.com/aliyun/terraform-provider-alicloud/issues/2869))
+
+BUG FIXES:
+
+- Revert "Create cluster support ResourceGroup and ACK-Pro" ([#2895](https://github.com/aliyun/terraform-provider-alicloud/issues/2895))
+- Work around the SLS log project does not exist error ([#2893](https://github.com/aliyun/terraform-provider-alicloud/issues/2893))
+- bugfix: Upgrade github.com/aliyun/aliyun-log-go-sdk to v0.1.13 ([#2888](https://github.com/aliyun/terraform-provider-alicloud/issues/2888))
+
+## 1.99.0 (September 28, 2020)
+
+- **New Resource:** `alicloud_cms_alarm_contact` ([#2870](https://github.com/aliyun/terraform-provider-alicloud/issues/2870))
+- **New Resource:** `alicloud_cen_route_service` ([#2868](https://github.com/aliyun/terraform-provider-alicloud/issues/2868))
+- **New Resource:** `alicloud_config_delivery_channel` ([#2865](https://github.com/aliyun/terraform-provider-alicloud/issues/2865))
+- **New Resource:** `alicloud_config_configuration_recorder` ([#2863](https://github.com/aliyun/terraform-provider-alicloud/issues/2863))
+- **New Resource:** `alicloud_config_rule` ([#2858](https://github.com/aliyun/terraform-provider-alicloud/issues/2858))
+- **Data Source:** `alicloud_cms_alarm_contacts` ([#2870](https://github.com/aliyun/terraform-provider-alicloud/issues/2870))
+- **Data Source:** `alicloud_cen_route_services` ([#2868](https://github.com/aliyun/terraform-provider-alicloud/issues/2868))
+- **Data Source:** `alicloud_config_delivery_channels` ([#2865](https://github.com/aliyun/terraform-provider-alicloud/issues/2865))
+- **Data Source:** `alicloud_config_configuration_recorders` ([#2863](https://github.com/aliyun/terraform-provider-alicloud/issues/2863))
+- **Data Source:** `alicloud_config_rules` ([#2858](https://github.com/aliyun/terraform-provider-alicloud/issues/2858))
+
+IMPROVEMENTS:
+
+- Use Alidns_domain_attachment instead dns_domain_attachment resource ([#2878](https://github.com/aliyun/terraform-provider-alicloud/issues/2878))
+- Add enum for 'Lang' attribute of cms_alarm_contact ([#2877](https://github.com/aliyun/terraform-provider-alicloud/issues/2877))
+- Remove the enum of 'line' attribute in alidns_record ([#2872](https://github.com/aliyun/terraform-provider-alicloud/issues/2872))
+- update vendor ([#2866](https://github.com/aliyun/terraform-provider-alicloud/issues/2866))
+- support more regions for alikafka ([#2864](https://github.com/aliyun/terraform-provider-alicloud/issues/2864))
+- Remove mutli filter conditions from alicloud_hbase_zones and alicloud… ([#2862](https://github.com/aliyun/terraform-provider-alicloud/issues/2862))
+- update go.sum ([#2860](https://github.com/aliyun/terraform-provider-alicloud/issues/2860))
+- UPDATE CHANGELOG ([#2857](https://github.com/aliyun/terraform-provider-alicloud/issues/2857))
+
+BUG FIXES:
+
+- Fix elasticsearch untagResources failed error ([#2876](https://github.com/aliyun/terraform-provider-alicloud/issues/2876))
+
 ## 1.98.0 (September 22, 2020)
 
 - **New Resource:** `alicloud_fc_custom_domain` ([#2828](https://github.com/aliyun/terraform-provider-alicloud/issues/2828))

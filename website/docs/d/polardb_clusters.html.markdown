@@ -16,14 +16,14 @@ Filters support regular expression for the cluster description, searches by tags
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_polardb_clusters" "polardb_clusters_ds" {
   description_regex = "pc-\\w+"
   status     = "Running"
 }
 
 output "first_polardb_cluster_id" {
-  value = "${data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id}"
+  value = data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id
 }
 ```
 

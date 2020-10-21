@@ -10,6 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
+var redisInstanceClassForTest = "redis.master.small.default"
+var memcacheInstanceClassForTest = "memcache.master.small.default"
+
 func TestAccAlicloudKVStoreRedisBackupPolicy_classic(t *testing.T) {
 	var policy *r_kvstore.DescribeBackupPolicyResponse
 
@@ -296,15 +299,15 @@ var kvStoreMap = map[string]string{
 
 func testAccKVStoreBackupPolicy_classic(instanceType, instanceClass, engineVersion string) string {
 	return fmt.Sprintf(`
-	data "alicloud_zones" "default" {
-		available_resource_creation = "KVStore"
+	data "alicloud_kvstore_zones" "default"{
+		instance_charge_type = "PostPaid"
 	}
 	variable "name" {
 		default = "tf-testAccKVStoreBackupPolicy_classic"
 	}
 
 	resource "alicloud_kvstore_instance" "default" {
-		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+		availability_zone = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
@@ -321,15 +324,15 @@ func testAccKVStoreBackupPolicy_classic(instanceType, instanceClass, engineVersi
 
 func testAccKVStoreBackupPolicy_classicUpdatePeriod(instanceType, instanceClass, engineVersion string) string {
 	return fmt.Sprintf(`
-	data "alicloud_zones" "default" {
-		available_resource_creation = "KVStore"
+	data "alicloud_kvstore_zones" "default"{
+		instance_charge_type = "PostPaid"
 	}
 	variable "name" {
 		default = "tf-testAccKVStoreBackupPolicy_classic"
 	}
 
 	resource "alicloud_kvstore_instance" "default" {
-		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+		availability_zone = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
@@ -346,15 +349,15 @@ func testAccKVStoreBackupPolicy_classicUpdatePeriod(instanceType, instanceClass,
 
 func testAccKVStoreBackupPolicy_classicUpdateTime(instanceType, instanceClass, engineVersion string) string {
 	return fmt.Sprintf(`
-	data "alicloud_zones" "default" {
-		available_resource_creation = "KVStore"
+	data "alicloud_kvstore_zones" "default"{
+		instance_charge_type = "PostPaid"
 	}
 	variable "name" {
 		default = "tf-testAccKVStoreBackupPolicy_classic"
 	}
 
 	resource "alicloud_kvstore_instance" "default" {
-		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+		availability_zone = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"
@@ -371,15 +374,15 @@ func testAccKVStoreBackupPolicy_classicUpdateTime(instanceType, instanceClass, e
 
 func testAccKVStoreBackupPolicy_classicUpdateAll(instanceType, instanceClass, engineVersion string) string {
 	return fmt.Sprintf(`
-	data "alicloud_zones" "default" {
-		available_resource_creation = "KVStore"
+	data "alicloud_kvstore_zones" "default"{
+		instance_charge_type = "PostPaid"
 	}
 	variable "name" {
 		default = "tf-testAccKVStoreBackupPolicy_classic"
 	}
 
 	resource "alicloud_kvstore_instance" "default" {
-		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+		availability_zone = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
 		instance_name  = "${var.name}"
 		security_ips = ["10.0.0.1"]
 		instance_type = "%s"

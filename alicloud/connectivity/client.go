@@ -159,6 +159,8 @@ type AliyunClient struct {
 	actiontrailConn              *actiontrail.Client
 	onsConn                      *ons.Client
 	configConn                   *config.Client
+	cmsConn                      *cms.Client
+	r_kvstoreConn                *r_kvstore.Client
 }
 
 type ApiVersion string
@@ -185,7 +187,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 // The main version number that is being run at the moment.
-var providerVersion = "1.98.0"
+var providerVersion = "1.101.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient
@@ -1003,6 +1005,17 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 	return do(client.cloudapiconn)
 }
 
+func (client *AliyunClient) NewSdkConfig() (rpc.Config, error) {
+
+	sdkConfig, err := client.config.getTeaDslSdkConfig(true)
+	if err != nil {
+		return sdkConfig, fmt.Errorf("unable to initialize the sdk config: %#v", err)
+	}
+	sdkConfig.SetProtocol(client.config.Protocol)
+
+	return sdkConfig, nil
+}
+
 func (client *AliyunClient) NewTeaCommonClient(productCode string, do func(*rpc.Client) (map[string]interface{}, error)) (map[string]interface{}, error) {
 	// Initialize the Tea client using region
 	if client.teaConn == nil {
@@ -1010,30 +1023,7 @@ func (client *AliyunClient) NewTeaCommonClient(productCode string, do func(*rpc.
 		if err != nil {
 			return nil, fmt.Errorf("[ERROR] loading endpoint got an error: %s", err)
 		}
-		if endpoint == "" {
-			return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-		}
 
-		sdkConfig, err := client.config.getTeaDslSdkConfig(true)
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the sdk config: %#v", err)
-		}
-		sdkConfig.SetProtocol(client.config.Protocol)
-		sdkConfig.SetEndpoint(endpoint)
-
-		conn, err := rpc.NewClient(&sdkConfig)
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the tea client: %#v", err)
-		}
-		client.teaConn = conn
-	}
-
-	return do(client.teaConn)
-}
-
-func (client *AliyunClient) NewTeaCommonClientWithEndpoint(endpoint string, do func(*rpc.Client) (map[string]interface{}, error)) (map[string]interface{}, error) {
-	// Initialize the Tea client using endpoint
-	if client.teaConn == nil {
 		sdkConfig, err := client.config.getTeaDslSdkConfig(true)
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the sdk config: %#v", err)
@@ -2002,4 +1992,29 @@ func (client *AliyunClient) WithConfigClient(do func(*config.Client) (interface{
 		client.configConn = configConn
 	}
 	return do(client.configConn)
+}
+
+func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (interface{}, error)) (interface{}, error) {
+	if client.r_kvstoreConn == nil {
+		endpoint := client.config.RKvstoreEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, RKvstoreCode)
+		}
+		if strings.HasPrefix(endpoint, "http") {
+			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(RKvstoreCode), endpoint)
+		}
+
+		r_kvstoreConn, err := r_kvstore.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the RKvstoreclient: %#v", err)
+		}
+		r_kvstoreConn.AppendUserAgent(Terraform, terraformVersion)
+		r_kvstoreConn.AppendUserAgent(Provider, providerVersion)
+		r_kvstoreConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		client.r_kvstoreConn = r_kvstoreConn
+	}
+	return do(client.r_kvstoreConn)
 }

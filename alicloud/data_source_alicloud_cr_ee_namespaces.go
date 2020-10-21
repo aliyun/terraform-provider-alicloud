@@ -102,6 +102,9 @@ func dataSourceAlicloudCrEENamespacesRead(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("ids"); ok {
 		idsMap = make(map[string]string)
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}

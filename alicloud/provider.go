@@ -202,7 +202,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mongodb_zones":                         dataSourceAlicloudMongoDBZones(),
 			"alicloud_gpdb_instances":                        dataSourceAlicloudGpdbInstances(),
 			"alicloud_gpdb_zones":                            dataSourceAlicloudGpdbZones(),
-			"alicloud_kvstore_instances":                     dataSourceAlicloudKVStoreInstances(),
+			"alicloud_kvstore_instances":                     dataSourceAlicloudKvstoreInstances(),
 			"alicloud_kvstore_zones":                         dataSourceAlicloudKVStoreZones(),
 			"alicloud_kvstore_instance_classes":              dataSourceAlicloudKVStoreInstanceClasses(),
 			"alicloud_kvstore_instance_engines":              dataSourceAlicloudKVStoreInstanceEngines(),
@@ -322,6 +322,11 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cdn_service":                           dataSourceAlicloudCdnService(),
 			"alicloud_cen_vbr_health_checks":                 dataSourceAlicloudCenVbrHealthChecks(),
 			"alicloud_config_rules":                          dataSourceAlicloudConfigRules(),
+			"alicloud_config_configuration_recorders":        dataSourceAlicloudConfigConfigurationRecorders(),
+			"alicloud_config_delivery_channels":              dataSourceAlicloudConfigDeliveryChannels(),
+			"alicloud_cms_alarm_contacts":                    dataSourceAlicloudCmsAlarmContacts(),
+			"alicloud_kvstore_connections":                   dataSourceAlicloudKvstoreConnections(),
+			"alicloud_cms_alarm_contact_groups":              dataSourceAlicloudCmsAlarmContactGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -463,6 +468,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fc_function":                         resourceAlicloudFCFunction(),
 			"alicloud_fc_trigger":                          resourceAlicloudFCTrigger(),
 			"alicloud_fc_custom_domain":                    resourceAlicloudFCCustomDomain(),
+			"alicloud_fc_function_async_invoke_config":     resourceAlicloudFCFunctionAsyncInvokeConfig(),
 			"alicloud_vpn_gateway":                         resourceAliyunVpnGateway(),
 			"alicloud_vpn_customer_gateway":                resourceAliyunVpnCustomerGateway(),
 			"alicloud_vpn_route_entry":                     resourceAliyunVpnRouteEntry(),
@@ -476,7 +482,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_bandwidth_limit":                 resourceAlicloudCenBandwidthLimit(),
 			"alicloud_cen_route_entry":                     resourceAlicloudCenRouteEntry(),
 			"alicloud_cen_instance_grant":                  resourceAlicloudCenInstanceGrant(),
-			"alicloud_kvstore_instance":                    resourceAlicloudKVStoreInstance(),
+			"alicloud_kvstore_instance":                    resourceAlicloudKvstoreInstance(),
 			"alicloud_kvstore_backup_policy":               resourceAlicloudKVStoreBackupPolicy(),
 			"alicloud_kvstore_account":                     resourceAlicloudKVstoreAccount(),
 			"alicloud_datahub_project":                     resourceAlicloudDatahubProject(),
@@ -534,7 +540,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_maxcompute_project":                  resourceAlicloudMaxComputeProject(),
 			"alicloud_kms_alias":                           resourceAlicloudKmsAlias(),
 			"alicloud_dns_instance":                        resourceAlicloudAlidnsInstance(),
-			"alicloud_dns_domain_attachment":               resourceAlicloudDnsDomainAttachment(),
+			"alicloud_dns_domain_attachment":               resourceAlicloudAlidnsDomainAttachment(),
+			"alicloud_alidns_domain_attachment":            resourceAlicloudAlidnsDomainAttachment(),
 			"alicloud_edas_application":                    resourceAlicloudEdasApplication(),
 			"alicloud_edas_deploy_group":                   resourceAlicloudEdasDeployGroup(),
 			"alicloud_edas_application_scale":              resourceAlicloudEdasInstanceApplicationAttachment(),
@@ -578,6 +585,12 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_domain":                       resourceAlicloudAlidnsDomain(),
 			"alicloud_alidns_instance":                     resourceAlicloudAlidnsInstance(),
 			"alicloud_config_rule":                         resourceAlicloudConfigRule(),
+			"alicloud_config_configuration_recorder":       resourceAlicloudConfigConfigurationRecorder(),
+			"alicloud_config_delivery_channel":             resourceAlicloudConfigDeliveryChannel(),
+			"alicloud_cms_alarm_contact":                   resourceAlicloudCmsAlarmContact(),
+			"alicloud_cen_route_service":                   resourceAlicloudCenRouteService(),
+			"alicloud_kvstore_connection":                  resourceAlicloudKvstoreConnection(),
+			"alicloud_cms_alarm_contact_group":             resourceAlicloudCmsAlarmContactGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -718,6 +731,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DcdnEndpoint = strings.TrimSpace(endpoints["dcdn"].(string))
 		config.MseEndpoint = strings.TrimSpace(endpoints["mse"].(string))
 		config.ConfigEndpoint = strings.TrimSpace(endpoints["config"].(string))
+		config.RKvstoreEndpoint = strings.TrimSpace(endpoints["r_kvstore"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -906,6 +920,8 @@ func init() {
 		"mse_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom mse endpoints.",
 
 		"config_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom config endpoints.",
+
+		"r_kvstore_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom r_kvstore endpoints.",
 	}
 }
 
@@ -950,6 +966,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"r_kvstore": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["r_kvstore_endpoint"],
+				},
+
 				"config": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1340,6 +1363,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["dcdn"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["mse"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["config"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["r_kvstore"].(string)))
 	return hashcode.String(buf.String())
 }
 

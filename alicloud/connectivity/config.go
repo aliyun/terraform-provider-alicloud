@@ -36,6 +36,7 @@ type Config struct {
 	RamRolePolicy            string
 	RamRoleSessionExpiration int
 	Endpoints                map[string]interface{}
+	RKvstoreEndpoint         string
 	EcsEndpoint              string
 	RdsEndpoint              string
 	SlbEndpoint              string

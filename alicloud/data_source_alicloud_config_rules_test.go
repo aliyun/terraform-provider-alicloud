@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -104,7 +106,11 @@ func TestAccAlicloudConfigRulesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeConfigRulesRecordsMapFunc,
 	}
 
-	rolesRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, configRuleStatusConf, riskLevelConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
+	}
+
+	rolesRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, configRuleStatusConf, riskLevelConf, allConf)
 
 }
 

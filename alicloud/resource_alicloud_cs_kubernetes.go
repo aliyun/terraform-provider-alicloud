@@ -21,6 +21,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
+	aliyungoecs "github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -98,11 +99,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"master_disk_category": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  DiskCloudEfficiency,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          DiskCloudEfficiency,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"master_instance_charge_type": {
@@ -174,11 +173,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_disk_category": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  DiskCloudEfficiency,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          DiskCloudEfficiency,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_data_disk_size": {
@@ -189,10 +186,8 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
 			},
 			"worker_data_disk_category": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
+				Type:             schema.TypeString,
+				Optional:         true,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_data_disks": {
@@ -350,9 +345,8 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"image_id": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: imageIdSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"install_cloud_monitor": {
 				Type:             schema.TypeBool,
@@ -636,6 +630,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				},
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -859,6 +859,8 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("version", object.CurrentVersion)
 	d.Set("worker_ram_role_name", object.WorkerRamRoleName)
 	d.Set("tags", object.Tags)
+	d.Set("resource_group_id", object.ResourceGroupId)
+	d.Set("cluster_spec", object.ClusterSpec)
 
 	var masterNodes []map[string]interface{}
 	var workerNodes []map[string]interface{}
@@ -1166,16 +1168,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		}
 	}
 
-	var imageId, nodeNameMode, saIssuer string
-	if d.Get("image_id") != nil {
-		imageId = d.Get("image_id").(string)
-	}
-	if d.Get("node_name_mode") != nil {
-		nodeNameMode = d.Get("node_name_mode").(string)
-	}
-	if d.Get("service_account_issuer") != nil {
-		saIssuer = d.Get("service_account_issuer").(string)
-	}
 	creationArgs := &cs.DelicatedKubernetesClusterCreationRequest{
 		ClusterArgs: cs.ClusterArgs{
 			DisableRollback: true,
@@ -1199,14 +1191,18 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			ApiAudiences:              apiAudiences,
 		},
 	}
-	if imageId != "" {
-		creationArgs.ClusterArgs.ImageId = imageId
+
+	if imageId, ok := d.GetOk("image_id"); ok {
+		creationArgs.ClusterArgs.ImageId = imageId.(string)
 	}
-	if nodeNameMode != "" {
-		creationArgs.ClusterArgs.NodeNameMode = nodeNameMode
+	if nodeNameMode, ok := d.GetOk("node_name_mode"); ok {
+		creationArgs.ClusterArgs.NodeNameMode = nodeNameMode.(string)
 	}
-	if saIssuer != "" {
-		creationArgs.ClusterArgs.ServiceAccountIssuer = saIssuer
+	if saIssuer, ok := d.GetOk("service_account_issuer"); ok {
+		creationArgs.ClusterArgs.ServiceAccountIssuer = saIssuer.(string)
+	}
+	if resourceGroupId, ok := d.GetOk("resource_group_id"); ok {
+		creationArgs.ClusterArgs.ResourceGroupId = resourceGroupId.(string)
 	}
 
 	if v := d.Get("user_data").(string); v != "" {
@@ -1263,7 +1259,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			MasterCount:              len(d.Get("master_vswitch_ids").([]interface{})),
 			MasterVSwitchIds:         expandStringList(d.Get("master_vswitch_ids").([]interface{})),
 			MasterInstanceTypes:      expandStringList(d.Get("master_instance_types").([]interface{})),
-			MasterSystemDiskCategory: d.Get("master_disk_category").(string),
+			MasterSystemDiskCategory: aliyungoecs.DiskCategory(d.Get("master_disk_category").(string)),
 			MasterSystemDiskSize:     int64(d.Get("master_disk_size").(int)),
 			// TODO support other params
 		}
@@ -1279,19 +1275,16 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		}
 	}
 
-	var workerDiskCategory string
 	var workerDiskSize int64
-	if d.Get("worker_disk_category") != nil {
-		workerDiskCategory = d.Get("worker_disk_category").(string)
-	}
 	if d.Get("worker_disk_size") != nil {
 		workerDiskSize = int64(d.Get("worker_disk_size").(int))
 	}
 
 	creationArgs.WorkerArgs = cs.WorkerArgs{
-		WorkerVSwitchIds:    expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
-		WorkerInstanceTypes: expandStringList(d.Get("worker_instance_types").([]interface{})),
-		NumOfNodes:          int64(d.Get("worker_number").(int)),
+		WorkerVSwitchIds:         expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
+		WorkerInstanceTypes:      expandStringList(d.Get("worker_instance_types").([]interface{})),
+		NumOfNodes:               int64(d.Get("worker_number").(int)),
+		WorkerSystemDiskCategory: aliyungoecs.DiskCategory(d.Get("worker_disk_category").(string)),
 		// TODO support other params
 	}
 
@@ -1317,10 +1310,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		creationArgs.WorkerArgs.WorkerSystemDiskSize = workerDiskSize
 	}
 
-	if workerDiskCategory != "" {
-		creationArgs.WorkerArgs.WorkerSystemDiskCategory = workerDiskCategory
-	}
-
 	if v, ok := d.GetOk("worker_instance_charge_type"); ok {
 		creationArgs.WorkerInstanceChargeType = v.(string)
 		if creationArgs.WorkerInstanceChargeType == string(PrePaid) {
@@ -1330,6 +1319,11 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			creationArgs.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
 		}
 	}
+
+	if v, ok := d.GetOk("cluster_spec"); ok {
+		creationArgs.ClusterSpec = v.(string)
+	}
+
 	return creationArgs, nil
 }
 

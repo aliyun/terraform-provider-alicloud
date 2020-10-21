@@ -25,16 +25,19 @@ func dataSourceAlicloudCSEdgeKubernetesClusters() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				Computed: true,
+				ForceNew: true,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.ValidateRegexp,
+				ForceNew:     true,
 			},
 			"enable_details": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -47,10 +50,12 @@ func dataSourceAlicloudCSEdgeKubernetesClusters() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+				ForceNew: true,
 			},
 			"clusters": {
 				Type:     schema.TypeList,
 				Computed: true,
+				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {

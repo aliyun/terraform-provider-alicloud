@@ -80,10 +80,13 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 	request.RegionId = string(client.Region)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-	var allArs []nas.DescribeAccessRulesAccessRule1
+	var allArs []nas.AccessRule
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
@@ -137,7 +140,7 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 	return accessRulesDecriptionAttributes(d, allArs, meta)
 }
 
-func accessRulesDecriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.DescribeAccessRulesAccessRule1, meta interface{}) error {
+func accessRulesDecriptionAttributes(d *schema.ResourceData, nasSetTypes []nas.AccessRule, meta interface{}) error {
 	var ids []string
 	var s []map[string]interface{}
 

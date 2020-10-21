@@ -12,11 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func SkipTestAccAlicloudDnsDomainAttachment_basic(t *testing.T) {
+func TestAccAlicloudAlidnsDomainAttachment_basic(t *testing.T) {
 	var v alidns.DescribeInstanceDomainsResponse
 
-	resourceId := "alicloud_dns_domain_attachment.default"
-	ra := resourceAttrInit(resourceId, dnsDomainAttachmnetMap)
+	resourceId := "alicloud_alidns_domain_attachment.default"
+	ra := resourceAttrInit(resourceId, alidnsDomainAttachmnetMap)
 
 	serviceFunc := func() interface{} {
 		return &DnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -27,7 +27,7 @@ func SkipTestAccAlicloudDnsDomainAttachment_basic(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tftestacc%d", rand)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDnsDomainAttachmentConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlidnsDomainAttachmentConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -39,8 +39,8 @@ func SkipTestAccAlicloudDnsDomainAttachment_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":  "${alicloud_dns_instance.default.id}",
-					"domain_names": []string{"${alicloud_dns.default.name}"},
+					"instance_id":  "${alicloud_alidns_instance.default.id}",
+					"domain_names": []string{"${alicloud_alidns_domain.default.domain_name}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -56,7 +56,7 @@ func SkipTestAccAlicloudDnsDomainAttachment_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_names": []string{"${alicloud_dns.default.name}", "${alicloud_dns.default1.name}"},
+					"domain_names": []string{"${alicloud_alidns_domain.default.domain_name}", "${alicloud_alidns_domain.default1.domain_name}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -68,9 +68,9 @@ func SkipTestAccAlicloudDnsDomainAttachment_basic(t *testing.T) {
 	})
 }
 
-func resourceDnsDomainAttachmentConfigDependence(name string) string {
+func resourceAlidnsDomainAttachmentConfigDependence(name string) string {
 	return fmt.Sprintf(`
-	resource "alicloud_dns_instance" "default" {
+	resource "alicloud_alidns_instance" "default" {
  	  dns_security    = "basic"
  	  domain_numbers  = 3
  	  version_code    = "version_personal"
@@ -78,14 +78,14 @@ func resourceDnsDomainAttachmentConfigDependence(name string) string {
 	  renewal_status  = "ManualRenewal"
 	}
 
-	resource "alicloud_dns" "default" {
-  	  name = "%s.abc"
+	resource "alicloud_alidns_domain" "default" {
+  	  domain_name = "%s.abc"
 	}
 
-	resource "alicloud_dns" "default1" {
-  	  name = "%s1.abc"
+	resource "alicloud_alidns_domain" "default1" {
+  	  domain_name = "%s1.abc"
 	}
 `, name, name)
 }
 
-var dnsDomainAttachmnetMap = map[string]string{}
+var alidnsDomainAttachmnetMap = map[string]string{}

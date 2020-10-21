@@ -115,7 +115,7 @@ func (s *DnsService) DescribeDnsInstance(id string) (object alidns.DescribeDnsPr
 	return *response, nil
 }
 
-func (s *DnsService) DescribeDnsDomainAttachment(id string) (object alidns.DescribeInstanceDomainsResponse, err error) {
+func (s *DnsService) DescribeAlidnsDomainAttachment(id string) (object alidns.DescribeInstanceDomainsResponse, err error) {
 	request := alidns.CreateDescribeInstanceDomainsRequest()
 	request.RegionId = s.client.RegionId
 
@@ -145,7 +145,7 @@ func (s *DnsService) DescribeDnsDomainAttachment(id string) (object alidns.Descr
 func (s *DnsService) WaitForAlidnsDomainAttachment(id string, expected map[string]interface{}, isDelete bool, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		object, err := s.DescribeDnsDomainAttachment(id)
+		object, err := s.DescribeAlidnsDomainAttachment(id)
 		if err != nil {
 			if NotFoundError(err) {
 				if isDelete {

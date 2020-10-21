@@ -16,7 +16,7 @@ Provides a DMS Enterprise Instance resource.
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_dms_enterprise_instance" "default" {
   tid               = "12345"
   instance_type     = "MySQL"
@@ -27,7 +27,7 @@ resource "alicloud_dms_enterprise_instance" "default" {
   port              = 3306
   database_user     = "your_user_name"
   database_password = "Yourpassword123"
-  instance_alias    = "your_alias_name"
+  instance_name     = "your_alias_name"
   dba_uid           = "1182725234xxxxxxx"
   safe_rule         = "自由操作"
   query_timeout     = 60
@@ -48,7 +48,8 @@ The following arguments are supported:
 * `port` - (Required, ForceNew) Access port of the target database.
 * `database_user` - (Required) Database access account.
 * `database_password` - (Required) Database access password.
-* `instance_alias` - (Required) Instance alias, to help users quickly distinguish positioning.
+* `instance_alias` - It has been deprecated from provider version 1.100.0 and 'instance_name' instead.
+* `instance_name` - (Required, Available in v1.100.0+) Instance name, to help users quickly distinguish positioning.
 * `dba_uid` - (Required, ForceNew)  The DBA of the instance is passed into the Alibaba Cloud uid of the DBA.
 * `safe_rule` - (Required, ForceNew) The security rule of the instance is passed into the name of the security rule in the enterprise.
 * `query_timeout` - (Required) Query timeout time, unit: s (seconds).
@@ -67,7 +68,16 @@ The following attributes are exported:
 
 * `id` - The id of the DMS enterprise instance and format as `<host>:<port>`.
 * `dba_nick_name` - The instance dba nickname.
-* `state` - The instance status.
+* `state` - It has been deprecated from provider version 1.100.0 and 'status' instead.
+* `status` - The instance status.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.100.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins) Used when creating the DMS enterprise instance. 
 
 ## Import
 
