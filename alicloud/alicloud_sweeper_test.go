@@ -31,6 +31,7 @@ func sharedClientForRegion(region string) (interface{}, error) {
 		AccessKey: accessKey,
 		SecretKey: secretKey,
 		Protocol:  "HTTPS",
+		Endpoints: make(map[string]interface{}),
 	}
 	if accountId := os.Getenv("ALICLOUD_ACCOUNT_ID"); accountId != "" {
 		conf.AccountId = accountId
