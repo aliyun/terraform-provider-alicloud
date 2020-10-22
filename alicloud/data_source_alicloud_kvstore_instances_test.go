@@ -121,6 +121,7 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 			"instances.0.capacity":                    CHECKSET,
 			"instances.0.config.%":                    CHECKSET,
 			"instances.0.connection_mode":             "",
+			"instances.0.connection_domain":           CHECKSET,
 			"instances.0.id":                          CHECKSET,
 			"instances.0.db_instance_id":              CHECKSET,
 			"instances.0.db_instance_name":            name,

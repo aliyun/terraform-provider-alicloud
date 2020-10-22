@@ -132,6 +132,7 @@ The following attributes are exported:
 * `end_time` - The expiration time of the prepaid instance.
 * `qps` - Theoretical maximum QPS value.
 * `status` - The status of KVStore DBInstance.
+* `connection_domain`- Intranet connection address of the KVStore instance.
 
 ### Timeouts
 

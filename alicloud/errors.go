@@ -317,11 +317,13 @@ func WrapComplexError(cause, err error, filepath string, fileline int) error {
 const DefaultErrorMsg = "Resource %s %s Failed!!! %s"
 const RequestIdMsg = "RequestId: %s"
 const NotFoundMsg = ResourceNotfound + "!!! %s"
+const NotFoundWithResponse = ResourceNotfound + "!!! Response: %v"
 const DefaultTimeoutMsg = "Resource %s %s Timeout!!! %s"
 const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"
 const WaitTimeoutMsg = "Resource %s %s Timeout In %d Seconds. Got: %s Expected: %s !!! %s"
 const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"
 const IdMsg = "Resource id：%s "
+const FailedGetAttributeMsg = "Getting resource %s attribute by path %s failed!!! Body: %v."
 
 const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n\n"
 const FailedToReachTargetStatus = "Failed to reach target status. Current status is %s."

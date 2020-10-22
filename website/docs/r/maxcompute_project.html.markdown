@@ -1,4 +1,5 @@
 ---
+subcategory: "MaxCompute"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_maxcompute_project"
 sidebar_current: "docs-alicloud-resource-maxcompute-project"

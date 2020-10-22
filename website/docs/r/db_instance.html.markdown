@@ -9,63 +9,63 @@ description: |-
 
 # alicloud\_db\_instance
 
-Provides an RDS instance resource. A DB instance is an isolated database
-environment in the cloud. A DB instance can contain multiple user-created
-databases.
+Provides an RDS instance resource. A DB instance is an isolated database environment in the cloud. A DB instance can contain multiple user-created databases.
+
+For information about RDS and how to use it, see [What is ApsaraDB for RDS](https://www.alibabacloud.com/help/en/doc-detail/26092.htm).
 
 ## Example Usage
 
 ### Create a RDS MySQL instance
 
-```
+```terraform
 variable "name" {
-  default = "dbInstanceconfig"
+  default = "tf-testaccdbinstance"
 }
 
 variable "creation" {
   default = "Rds"
 }
 
-data "alicloud_zones" "default" {
+data "alicloud_zones" "example" {
   available_resource_creation = var.creation
 }
 
-resource "alicloud_vpc" "default" {
+resource "alicloud_vpc" "example" {
   name       = var.name
   cidr_block = "172.16.0.0/16"
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
+resource "alicloud_vswitch" "example" {
+  vpc_id            = alicloud_vpc.example.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  availability_zone = data.alicloud_zones.example.zones[0].id
   name              = var.name
 }
 
-resource "alicloud_db_instance" "default" {
+resource "alicloud_db_instance" "example" {
   engine               = "MySQL"
   engine_version       = "5.6"
   instance_type        = "rds.mysql.s2.large"
   instance_storage     = "30"
   instance_charge_type = "Postpaid"
   instance_name        = var.name
-  vswitch_id           = alicloud_vswitch.default.id
+  vswitch_id           = alicloud_vswitch.example.id
   monitoring_period    = "60"
 }
 ```
 
 ### Create a RDS MySQL instance with specific parameters
 
-```
-resource "alicloud_vpc" "default" {
+```terraform
+resource "alicloud_vpc" "example" {
   name       = "vpc-123456"
   cidr_block = "172.16.0.0/16"
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
+resource "alicloud_vswitch" "example" {
+  vpc_id            = alicloud_vpc.example.id
   cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.example.zones.0.id
   name              = "vpc-123456"
 }
 
@@ -74,10 +74,10 @@ resource "alicloud_db_instance" "default" {
   engine_version      = "5.6"
   db_instance_class   = "rds.mysql.t1.small"
   db_instance_storage = "10"
-  vswitch_id          = "${alicloud_vswitch.default.id}"
+  vswitch_id          = alicloud_vswitch.example.id
 }
 
-resource "alicloud_db_instance" "default" {
+resource "alicloud_db_instance" "example" {
   engine              = "MySQL"
   engine_version      = "5.6"
   db_instance_class   = "rds.mysql.t1.small"
@@ -90,6 +90,120 @@ resource "alicloud_db_instance" "default" {
     name  = "connect_timeout"
     value = "50"
   }
+}
+```
+### Create a High Availability RDS MySQL Instance
+
+```terraform
+variable "name" {
+  default = "tf-testaccdbinstance"
+}
+
+data "alicloud_zones" "example" {
+  available_resource_creation = "Rds"
+}
+
+resource "alicloud_vpc" "example" {
+  name       = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "example" {
+  count             = 2
+  vpc_id            = alicloud_vpc.example.id
+  cidr_block        = format("172.16.%d.0/24", count.index+1)
+  availability_zone = data.alicloud_zones.example.zones[count.index].id
+  name              = format("vswich_%d", var.name, count.index)
+}
+
+resource "alicloud_db_instance" "example" {
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  instance_storage     = "30"
+  instance_type        = "rds.mysql.t1.small"
+  instance_charge_type = "Postpaid"
+  instance_name        = var.name
+  zone_id              = data.alicloud_zones.example.zones.0.id
+  zone_id_slave_a      = data.alicloud_zones.example.zones.1.id
+  vswitch_id           = join(",", alicloud_vswitch.example.*.id)
+  monitoring_period    = "60"
+}
+
+```
+
+### Create a High Availability RDS MySQL Instance with multi zones
+
+```terraform
+variable "name" {
+  default = "tf-testaccdbinstance"
+}
+
+data "alicloud_zones" "example" {
+  available_resource_creation = "Rds"
+  multi                       = true
+}
+
+resource "alicloud_vpc" "example" {
+  name       = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "example" {
+  count             = length(data.alicloud_zones.example.zones.0.multi_zone_ids)
+  vpc_id            = alicloud_vpc.example.id
+  cidr_block        = format("172.16.%d.0/24", count.index+1)
+  availability_zone = data.alicloud_zones.example.zones.0.multi_zone_ids[count.index]
+  name              = format("vswitch_%d", count.index)
+}
+
+resource "alicloud_db_instance" "this" {
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  instance_storage     = "30"
+  instance_type        = "rds.mysql.t1.small"
+  instance_charge_type = "Postpaid"
+  instance_name        = var.name
+  zone_id              = data.alicloud_zones.example.zones.0.id
+  vswitch_id           = join(",", alicloud_vswitch.example.*.id)
+  monitoring_period    = "60"
+}
+```
+
+### Create a Enterprise Edition RDS MySQL Instance 
+```terraform
+variable "name" {
+  default = "tf-testaccdbinstance"
+}
+
+data "alicloud_zones" "example" {
+  available_resource_creation = "Rds"
+}
+
+resource "alicloud_vpc" "example" {
+  name       = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "example" {
+  count             = 3
+  vpc_id            = alicloud_vpc.example.id
+  cidr_block        = format("172.16.%d.0/24", count.index+1)
+  availability_zone = data.alicloud_zones.example.zones[count.index].id
+  name              = format("vswich_%d", var.name, count.index)
+}
+
+resource "alicloud_db_instance" "example" {
+  engine               = "MySQL"
+  engine_version       = "8.0"
+  instance_storage     = "30"
+  instance_type        = "mysql.n2.small.25"
+  instance_charge_type = "Postpaid"
+  instance_name        = var.name
+  zone_id              = data.alicloud_zones.example.zones.0.id
+  zone_id_slave_a      = data.alicloud_zones.example.zones.1.id
+  zone_id_slave_b      = data.alicloud_zones.example.zones.2.id
+  vswitch_id           = join(",", alicloud_vswitch.example.*.id)
+  monitoring_period    = "60"
 }
 ```
 

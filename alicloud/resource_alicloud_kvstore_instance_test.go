@@ -930,7 +930,9 @@ func TestAccAlicloudKVStoreRedisInstance_classicmulti(t *testing.T) {
 	})
 }
 
-var RedisDbInstanceMap = map[string]string{}
+var RedisDbInstanceMap = map[string]string{
+	"connection_domain": CHECKSET,
+}
 
 func KvstoreInstanceVpcTestdependence(name string) string {
 	return fmt.Sprintf(`
