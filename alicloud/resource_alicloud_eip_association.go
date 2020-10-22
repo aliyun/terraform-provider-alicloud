@@ -65,7 +65,8 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	request.AllocationId = Trim(d.Get("allocation_id").(string))
 	request.InstanceId = Trim(d.Get("instance_id").(string))
 	request.InstanceType = EcsInstance
-	request.ClientToken = buildClientToken(request.GetActionName())
+	// There is a product api bug about clientToken and after fixed , the clientToken will be opened again.
+	//request.ClientToken = buildClientToken(request.GetActionName())
 
 	if strings.HasPrefix(request.InstanceId, "lb-") {
 		request.InstanceType = SlbInstance
@@ -79,7 +80,7 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	if privateIPAddress, ok := d.GetOk("private_ip_address"); ok {
 		request.PrivateIpAddress = privateIPAddress.(string)
 	}
-	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.AssociateEipAddress(request)
 		})
