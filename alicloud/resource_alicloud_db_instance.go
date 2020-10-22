@@ -102,9 +102,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ForceNew: true,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					_, a := d.GetOk("zone_id_slave_a")
-					_, b := d.GetOk("zone_id_slave_b")
-					return (a || b) && (old != new)
+					// If it is a new resource, do not suppress.
+					if d.Id() == "" {
+						return false
+					}
+					// If it is not a new resource and it is a multi-zone deployment, it needs to be suppressed.
+					return len(strings.Split(new, ",")) > 1
 				},
 			},
 			"instance_name": {
