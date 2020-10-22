@@ -22,7 +22,7 @@ data "alicloud_zones" "resources" {
 
 data "alicloud_polardb_node_classes" "resources" {
   zone_id              = data.alicloud_zones.resources.zones.0.id
-  pay_type             = "Postpaid"
+  pay_type             = "PostPaid"
   db_type              = "MySQL"
   db_version           = "5.6"
 }
