@@ -120,12 +120,10 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"name", "new_nat_gateway", "pod_cidr",
-					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca", "force_update",
-					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
-					"worker_instance_charge_type", "worker_instance_types", "log_config",
-					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes",
-					"cpu_policy", "proxy_mode", "worker_data_disks", "is_enterprise_security_group"},
+				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
+					"install_cloud_monitor", "force_update", "node_cidr_mask", "slb_internet_enabled", "worker_disk_category",
+					"worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config",
+					"worker_vswitch_ids", "proxy_mode", "worker_data_disks", "is_enterprise_security_group"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

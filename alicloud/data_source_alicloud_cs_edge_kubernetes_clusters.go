@@ -143,9 +143,7 @@ func dataSourceAlicloudCSEdgeKubernetesClustersRead(d *schema.ResourceData, meta
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_edge_kubernetes_clusters", "DescribeClusters", DenverdinoAliyungo)
 	}
 	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["NameFilter"] = ""
-		addDebug("DescribeClusters", response, requestInfo, requestMap)
+		addDebug("DescribeClusters", response, requestInfo)
 	}
 	allClusterTypes, _ = response.([]cs.ClusterType)
 

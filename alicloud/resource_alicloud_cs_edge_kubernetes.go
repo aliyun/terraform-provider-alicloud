@@ -342,7 +342,6 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 					},
 				},
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'log_config' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
 		},
 	}
@@ -398,7 +397,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 	invoker := NewInvoker()
 	//scale up cloud worker nodes
 	var resp interface{}
-	if !d.IsNewResource() && d.HasChanges("worker_number") {
+	if d.HasChanges("worker_number") {
 		password := d.Get("password").(string)
 		keyPair := d.Get("key_name").(string)
 		oldV, newV := d.GetChange("worker_number")
@@ -447,7 +446,6 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 				}
 				args.WorkerDataDisks = createDataDisks
 			}
-			d.SetPartial("worker_data_disks")
 		}
 		if err := invoker.Run(func() error {
 			var err error
@@ -470,6 +468,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+		d.SetPartial("worker_data_disks")
 		d.SetPartial("worker_number")
 	}
 

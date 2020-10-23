@@ -17,10 +17,10 @@ VPC, you can set `new_nat_gateway` to "true" to create one automatically.
 
 -> **NOTE:** Creating kubernetes cluster need to install several packages and it will cost about 15 minutes. Please be patient.
 
--> **NOTE:** From version 1.9.4, the provider supports to download kube config, client certificate, client key and cluster ca certificate
+-> **NOTE:** The provider supports to download kube config, client certificate, client key and cluster ca certificate
 after creating cluster successfully, and you can put them into the specified location, like '~/.kube/config'.
 
--> **NOTE:** From version 1.20.0, the provider supports disabling internet load balancer for API Server by setting `false` to `slb_internet_enabled`.
+-> **NOTE:** The provider supports disabling internet load balancer for API Server by setting `false` to `slb_internet_enabled`.
 
 -> **NOTE:** If you want to manage Kubernetes, you can use [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html).
 
@@ -46,6 +46,7 @@ resource "alicloud_vswitch" "vswitches" {
 
 
 resource "alicloud_cs_edge_kubernetes" "k8s" {
+  name                  = var.cluster_name
   count                 = var.k8s_number
   worker_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)): length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
   worker_instance_types = var.worker_instance_types
@@ -65,6 +66,8 @@ resource "alicloud_cs_edge_kubernetes" "k8s" {
         config                  = lookup(addons.value, "config", var.cluster_addons)
       }
   }
+  slb_internet_enabled = var.slb_enabled
+  is_enterprise_security_group = var.enterprise_sg
 }
 
 ```
@@ -76,24 +79,24 @@ The following arguments are supported:
 #### Global params
 * `name` - (Optional) The kubernetes cluster's name. It is unique in one Alicloud account.
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
-* `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
+* `version` - (Optional) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
 * `password` - (Required, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `key_name` - (Required) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
-* `install_cloud_monitor` - (Optional) Install cloud monitor agent on ECS. default: true 
+* `install_cloud_monitor` - (Optional) Install cloud monitor agent on ECS. default: `true` 
 * `proxy_mode` - Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
-* `user_data` - (Optional, Available in 1.81.0+) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
-* `worker_data_disks` - (Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size. 
+* `user_data` - (Optional) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
+* `worker_data_disks` - (Optional) The data disk configurations of worker nodes, such as the disk type and disk size. 
   - category: the type of the data disks. Valid values:
       + cloud: basic disks.
       + cloud_efficiency: ultra disks.
       + cloud_ssd: SSDs.
   - size: the size of a data disk. Unit: GiB.
   - encrypted: specifies whether to encrypt data disks. Valid values: true and false.
-* `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
-* `is_enterprise_security_group` - (Optional, Available in 1.91.0+) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
+* `security_group_id` - (Optional) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
+* `is_enterprise_security_group` - (Optional) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
 
 #### Addons 
-It is a new field since 1.75.0. You can specific network plugin,log component,ingress component and so on.     
+You can specific network plugin,log component,ingress component and so on.     
 
 -> **NOTE:** If you want to upgrade provider to 1.90.0+, you need to pay attention to the disabled value. If the value is `""`, you need to modify it to `"false"`, and then run `terraform apply` to make it effect. After that, you can modify the provider version to upgrade smoothly. Otherwise, there will throw an error: `Error: a bool is required`.
 
@@ -140,18 +143,19 @@ It is a new field since 1.75.0. You can specific network plugin,log component,in
         default = [
             {
                 "name"     = "logtail-ds-docker",
-                "config"   = "{\"IngressDashboardEnabled\":\"false\"}",
-            }
-            {
-                "name"     = "alibaba-log-controller",
                 "config"   = "",
             }
+            {
+                "name": "alibaba-log-controller",
+                "config": "{\"IngressDashboardEnabled\":\"false\"}"
+    }
         ]
     } 
  
   
 ```
-* `logtail-ds-docker` - You can specific `IngressDashboardEnabled` and `sls_project_name` in config. If you switch on `IngressDashboardEnabled` and `sls_project_name`,then logtail-ds-docker would use `sls_project_name` as default log store. 
+* `logtail-ds-docker` - Logtail addon.
+* `alibaba-log-controller` - In edge cluster, you should set the IngressDashboardEnabled to false in config.
 
 You can get more information about addons on ACK web console. When you create a ACK cluster. You can get openapi-spec before creating the cluster on submission page. 
 
@@ -167,9 +171,9 @@ You can get more information about addons on ACK web console. When you create a 
 If you want to use `Flannel` as CNI network plugin, You need to specific the `pod_cidr` field and addons with `flannel`.
 
 #### Worker params 
-* `worker_number` - (Required) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
+* `worker_number` - (Required) The cloud worker node number of the edge kubernetes cluster. Default to 1. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
 * `worker_vswtich_ids` - (Required) The vswitches used by workers. 
-* `worker_instance_types` - (Required, ForceNew) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
+* `worker_instance_types` - (Required, ForceNew) The instance types of worker node, you can set multiple types to avoid NoStock of a certain type
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
 
@@ -181,7 +185,6 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 
   
 ### Timeouts
--> **NOTE:** Available in 1.58.0+.
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status). 
@@ -200,7 +203,6 @@ The following attributes are exported:
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
 * `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
-* `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
 * `version` - The Kubernetes server version for the cluster.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
 
@@ -208,11 +210,6 @@ The following attributes are exported:
 * `id` - ID of the node.
 * `name` - Node name.
 * `private_ip` - The private IP address of node.
-
-### Block Connections
-* `api_server_internet` - API Server Internet endpoint.
-* `api_server_intranet` - API Server Intranet endpoint.
-* `service_domain` - Service Access Domain.
 
 ## Import
 
