@@ -1,36 +1,37 @@
-## 1.102.0 (Unreleased)
+## 1.103.0 (Unreleased)
+## 1.102.0 (October 23, 2020)
 
-- **Data Source:** `alicloud_kvstore_accounts` [GH-2952]
-- **Data Source:** `alicloud_enhanced_nat_available_zones` [GH-2907]
+- **Data Source:** `alicloud_kvstore_accounts` ([#2952](https://github.com/aliyun/terraform-provider-alicloud/issues/2952))
+- **Data Source:** `alicloud_enhanced_nat_available_zones` ([#2907](https://github.com/aliyun/terraform-provider-alicloud/issues/2907))
 
 IMPROVEMENTS:
 
-- improve ci test by removing debug print [GH-2954]
-- improve validation of resource alicloud_polardb_endpoint_address's parameter connection_prefix [GH-2953]
-- Resource alicloud_adb_clusters add optional paramter: status and improve validation of resource alicloud_adb_connection's parameter connection_prefix [GH-2949]
-- add example usage for RDS Instance [GH-2945]
-- Support multiple security_group_id and Set connection_domain as output param [GH-2943]
-- support new region cn-guangzhou [GH-2941]
-- support datasource for CEN Route Service [GH-2939]
-- improve cas certificate testcase [GH-2936]
-- applying tea dsl sdk to vpc resource [GH-2935]
-- using tea dsl sdk to init client [GH-2934]
-- update changelog [GH-2928]
-- feat: resource ess_scaling_group suppors new field group_deletion_protection [GH-2927]
+- improve ci test by removing debug print ([#2954](https://github.com/aliyun/terraform-provider-alicloud/issues/2954))
+- improve validation of resource alicloud_polardb_endpoint_address's parameter connection_prefix ([#2953](https://github.com/aliyun/terraform-provider-alicloud/issues/2953))
+- Resource alicloud_adb_clusters add optional paramter: status and improve validation of resource alicloud_adb_connection's parameter connection_prefix ([#2949](https://github.com/aliyun/terraform-provider-alicloud/issues/2949))
+- add example usage for RDS Instance ([#2945](https://github.com/aliyun/terraform-provider-alicloud/issues/2945))
+- Support multiple security_group_id and Set connection_domain as output param ([#2943](https://github.com/aliyun/terraform-provider-alicloud/issues/2943))
+- support new region cn-guangzhou ([#2941](https://github.com/aliyun/terraform-provider-alicloud/issues/2941))
+- support datasource for CEN Route Service ([#2939](https://github.com/aliyun/terraform-provider-alicloud/issues/2939))
+- improve cas certificate testcase ([#2936](https://github.com/aliyun/terraform-provider-alicloud/issues/2936))
+- applying tea dsl sdk to vpc resource ([#2935](https://github.com/aliyun/terraform-provider-alicloud/issues/2935))
+- using tea dsl sdk to init client ([#2934](https://github.com/aliyun/terraform-provider-alicloud/issues/2934))
+- update changelog ([#2928](https://github.com/aliyun/terraform-provider-alicloud/issues/2928))
+- feat: resource ess_scaling_group suppors new field group_deletion_protection ([#2927](https://github.com/aliyun/terraform-provider-alicloud/issues/2927))
 
 BUG FIXES:
 
-- fix(eip_association): TaskConflict error caused by clientToken [GH-2951]
-- fix (db_instance): vswitch_id suppress diff error when creating a new one [GH-2950]
-- fix config bug when running sweeper test [GH-2946]
-- fix maxcompute doc subcategory [GH-2942]
-- fix disk, keypair and image random diff bug [GH-2938]
-- fix alicloud_security_group tags random diff bug [GH-2937]
-- fix the test case of cms_alarm and add errorCode for cms_contact [GH-2932]
-- fix document for RDS instance [GH-2931]
-- fix oss_bucket document format is not correct [GH-2930]
-- fix testcase: replace alicloud_zones with alicloud_kvstore_zones [GH-2926]
-- feat: supported to specify slave zones [GH-2924]
+- fix(eip_association): TaskConflict error caused by clientToken ([#2951](https://github.com/aliyun/terraform-provider-alicloud/issues/2951))
+- fix (db_instance): vswitch_id suppress diff error when creating a new one ([#2950](https://github.com/aliyun/terraform-provider-alicloud/issues/2950))
+- fix config bug when running sweeper test ([#2946](https://github.com/aliyun/terraform-provider-alicloud/issues/2946))
+- fix maxcompute doc subcategory ([#2942](https://github.com/aliyun/terraform-provider-alicloud/issues/2942))
+- fix disk, keypair and image random diff bug ([#2938](https://github.com/aliyun/terraform-provider-alicloud/issues/2938))
+- fix alicloud_security_group tags random diff bug ([#2937](https://github.com/aliyun/terraform-provider-alicloud/issues/2937))
+- fix the test case of cms_alarm and add errorCode for cms_contact ([#2932](https://github.com/aliyun/terraform-provider-alicloud/issues/2932))
+- fix document for RDS instance ([#2931](https://github.com/aliyun/terraform-provider-alicloud/issues/2931))
+- fix oss_bucket document format is not correct ([#2930](https://github.com/aliyun/terraform-provider-alicloud/issues/2930))
+- fix testcase: replace alicloud_zones with alicloud_kvstore_zones ([#2926](https://github.com/aliyun/terraform-provider-alicloud/issues/2926))
+- feat: supported to specify slave zones ([#2924](https://github.com/aliyun/terraform-provider-alicloud/issues/2924))
 
 ## 1.101.0 (October 16, 2020)
 
