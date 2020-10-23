@@ -54,7 +54,18 @@ func resourceAliyunNatGateway() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"nat_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Normal", "Enhanced"}, false),
+				Default:      "Normal",
+			},
+			"vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"bandwidth_package_ids": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -126,6 +137,7 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	request.RegionId = string(client.Region)
 	request.VpcId = string(d.Get("vpc_id").(string))
 	request.Spec = string(d.Get("specification").(string))
+	request.NatType = d.Get("nat_type").(string)
 	request.InstanceChargeType = d.Get("instance_charge_type").(string)
 	if request.InstanceChargeType == string(PrePaid) {
 		period := d.Get("period").(int)
@@ -161,6 +173,10 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 		request.Description = v.(string)
 	}
 
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request.VSwitchId = v.(string)
+	}
+
 	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
 		args := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
@@ -179,7 +195,7 @@ func resourceAliyunNatGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nat_gateway", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	if err := vpcService.WaitForNatGateway(d.Id(), Available, DefaultTimeout); err != nil {
+	if err := vpcService.WaitForNatGateway(d.Id(), Available, DefaultTimeout*3); err != nil {
 		return WrapError(err)
 	}
 	return resourceAliyunNatGatewayRead(d, meta)
@@ -206,7 +222,9 @@ func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("forward_table_ids", strings.Join(object.ForwardTableIds.ForwardTableId, ","))
 	d.Set("description", object.Description)
 	d.Set("vpc_id", object.VpcId)
+	d.Set("nat_type", object.NatType)
 	d.Set("instance_charge_type", object.InstanceChargeType)
+	d.Set("vswitch_id", object.NatGatewayPrivateInfo.VswitchId)
 	if object.InstanceChargeType == "PrePaid" {
 		period, err := computePeriodByUnit(object.CreationTime, object.ExpiredTime, d.Get("period").(int), "Month")
 		if err != nil {
