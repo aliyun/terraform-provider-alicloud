@@ -98,8 +98,6 @@ The following arguments are supported:
 #### Addons 
 You can specific network plugin,log component,ingress component and so on.     
 
--> **NOTE:** If you want to upgrade provider to 1.90.0+, you need to pay attention to the disabled value. If the value is `""`, you need to modify it to `"false"`, and then run `terraform apply` to make it effect. After that, you can modify the provider version to upgrade smoothly. Otherwise, there will throw an error: `Error: a bool is required`.
-
 ```terraform
   main.tf
    
