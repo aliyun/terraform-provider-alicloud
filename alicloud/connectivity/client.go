@@ -191,7 +191,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkfromLocationMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.101.0"
+var providerVersion = "1.102.0"
 var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Client for AliyunClient

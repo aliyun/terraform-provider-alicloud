@@ -253,3 +253,55 @@ func (s *R_kvstoreService) DescribeKvstoreConnection(id string) (object r_kvstor
 	err = WrapErrorf(Error("The instance is not bound to the public IP"), DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	return
 }
+
+func (s *R_kvstoreService) DescribeKvstoreAccount(id string) (object r_kvstore.Account, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := r_kvstore.CreateDescribeAccountsRequest()
+	request.RegionId = s.client.RegionId
+	request.AccountName = parts[1]
+	request.InstanceId = parts[0]
+
+	raw, err := s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+		return r_kvstoreClient.DescribeAccounts(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreAccount", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*r_kvstore.DescribeAccountsResponse)
+
+	if len(response.Accounts.Account) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreAccount", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+		return
+	}
+	return response.Accounts.Account[0], nil
+}
+
+func (s *R_kvstoreService) KvstoreAccountStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeKvstoreAccount(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.AccountStatus == failState {
+				return object, object.AccountStatus, WrapError(Error(FailedToReachTargetStatus, object.AccountStatus))
+			}
+		}
+		return object, object.AccountStatus, nil
+	}
+}
