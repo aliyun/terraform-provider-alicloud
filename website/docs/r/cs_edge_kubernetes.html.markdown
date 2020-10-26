@@ -24,7 +24,7 @@ after creating cluster successfully, and you can put them into the specified loc
 
 -> **NOTE:** If you want to manage Kubernetes, you can use [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html).
 
--> **NOTE:** Available in v1.102.0+.
+-> **NOTE:** Available in v1.103.0+.
 
 ## Example Usage
 

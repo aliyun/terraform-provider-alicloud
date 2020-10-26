@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list Container Service Edge Kubernetes Clusters on Alibaba Cloud.
 
--> **NOTE:** Available in v1.102.0+
+-> **NOTE:** Available in v1.103.0+
 
 ## Example Usage
 
