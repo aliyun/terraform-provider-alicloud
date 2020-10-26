@@ -263,6 +263,18 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"maintain_start_time": "02:00Z",
+					"maintain_end_time":   "03:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_start_time": "02:00Z",
+						"maintain_end_time":   "03:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":              "redis.master.small.default",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -278,8 +290,10 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"zone_id":    "${data.alicloud_zones.default.zones[length(data.alicloud_zones.default.ids) - 1].id}",
-					"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":             "${data.alicloud_zones.default.zones[length(data.alicloud_zones.default.ids) - 1].id}",
+					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+					"maintain_start_time": "04:00Z",
+					"maintain_end_time":   "06:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -298,6 +312,8 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"tags.For":                      "acceptance test",
 						"zone_id":                       CHECKSET,
 						"vswitch_id":                    CHECKSET,
+						"maintain_start_time":           "04:00Z",
+						"maintain_end_time":             "06:00Z",
 					}),
 				),
 			},
@@ -450,6 +466,18 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"maintain_start_time": "02:00Z",
+					"maintain_end_time":   "03:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_start_time": "02:00Z",
+						"maintain_end_time":   "03:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":              "memcache.master.small.default",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -460,8 +488,10 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"zone_id":    "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
-					"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":             "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+					"maintain_start_time": "04:00Z",
+					"maintain_end_time":   "06:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -476,6 +506,8 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 						"tags.For":                    "acceptance test",
 						"zone_id":                     CHECKSET,
 						"vswitch_id":                  CHECKSET,
+						"maintain_start_time":         "04:00Z",
+						"maintain_end_time":           "06:00Z",
 					}),
 				),
 			},
@@ -630,6 +662,18 @@ func TestAccAlicloudKVStoreRedisInstance_classictest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"maintain_start_time": "02:00Z",
+					"maintain_end_time":   "03:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_start_time": "02:00Z",
+						"maintain_end_time":   "03:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":              "redis.master.small.default",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -644,6 +688,8 @@ func TestAccAlicloudKVStoreRedisInstance_classictest(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
+					"maintain_start_time": "04:00Z",
+					"maintain_end_time":   "06:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -659,6 +705,8 @@ func TestAccAlicloudKVStoreRedisInstance_classictest(t *testing.T) {
 						"tags.%":                        "2",
 						"tags.Created":                  "TF",
 						"tags.For":                      "acceptance test",
+						"maintain_start_time":           "04:00Z",
+						"maintain_end_time":             "06:00Z",
 					}),
 				),
 			},
@@ -796,6 +844,18 @@ func TestAccAlicloudKVStoreMemcacheInstance_classictest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"maintain_start_time": "02:00Z",
+					"maintain_end_time":   "03:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_start_time": "02:00Z",
+						"maintain_end_time":   "03:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":              "memcache.master.small.default",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -805,6 +865,8 @@ func TestAccAlicloudKVStoreMemcacheInstance_classictest(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
+					"maintain_start_time": "04:00Z",
+					"maintain_end_time":   "06:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -816,6 +878,8 @@ func TestAccAlicloudKVStoreMemcacheInstance_classictest(t *testing.T) {
 						"tags.%":                      "2",
 						"tags.Created":                "TF",
 						"tags.For":                    "acceptance test",
+						"maintain_start_time":         "04:00Z",
+						"maintain_end_time":           "06:00Z",
 					}),
 				),
 			},

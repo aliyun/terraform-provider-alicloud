@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"github.com/PaesslerAG/jsonpath"
 	"strconv"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -80,11 +81,11 @@ func dataSourceAlicloudEnhancedNatAvailableZonesRead(d *schema.ResourceData, met
 	var ids []string
 
 	v, err := jsonpath.Get("$.Zones", response)
-	if err != nil || len(v.([]interface{})) < 1  {
+	if err != nil || len(v.([]interface{})) < 1 {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_enhanced_nat_available_zones", action, AlibabaCloudSdkGoERROR)
 	}
-	for _, val := range v.([]interface{}){
-		zone := val.(map[string]interface {})
+	for _, val := range v.([]interface{}) {
+		zone := val.(map[string]interface{})
 		mapping := map[string]interface{}{
 			"zone_id":    zone["ZoneId"].(string),
 			"local_name": zone["LocalName"].(string),

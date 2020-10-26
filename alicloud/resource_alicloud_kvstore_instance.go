@@ -675,6 +675,28 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("auto_renew_period")
 	}
 	update = false
+	modifyInstanceMaintainTimeReq := r_kvstore.CreateModifyInstanceMaintainTimeRequest()
+	modifyInstanceMaintainTimeReq.InstanceId = d.Id()
+	if d.HasChange("maintain_end_time") {
+		update = true
+	}
+	modifyInstanceMaintainTimeReq.MaintainEndTime = d.Get("maintain_end_time").(string)
+	if d.HasChange("maintain_start_time") {
+		update = true
+	}
+	modifyInstanceMaintainTimeReq.MaintainStartTime = d.Get("maintain_start_time").(string)
+	if update {
+		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+			return r_kvstoreClient.ModifyInstanceMaintainTime(modifyInstanceMaintainTimeReq)
+		})
+		addDebug(modifyInstanceMaintainTimeReq.GetActionName(), raw)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyInstanceMaintainTimeReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("maintain_end_time")
+		d.SetPartial("maintain_start_time")
+	}
+	update = false
 	modifyInstanceMajorVersionReq := r_kvstore.CreateModifyInstanceMajorVersionRequest()
 	modifyInstanceMajorVersionReq.InstanceId = d.Id()
 	if !d.IsNewResource() && d.HasChange("engine_version") {
