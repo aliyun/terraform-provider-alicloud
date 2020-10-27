@@ -503,7 +503,10 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	// upgrade cluster version
-	_ = UpgradeAlicloudKubernetesCluster(d, meta)
+	err := UpgradeAlicloudKubernetesCluster(d, meta)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeClusterVersion", DenverdinoAliyungo)
+	}
 	d.Partial(false)
 	return resourceAlicloudCSKubernetesRead(d, meta)
 }
