@@ -231,8 +231,9 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Disable", "Enable", "Update"}, false),
 			},
 			"security_group_id": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: redisSecurityGroupIdDiffSuppressFunc,
 			},
 			"security_ip_group_attribute": {
 				Type:     schema.TypeString,
@@ -726,7 +727,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			return r_kvstoreClient.ModifyInstanceSSL(request)
 		})
 		addDebug(request.GetActionName(), raw)
-		if err != nil {
+		if err != nil && !IsExpectedErrors(err, []string{"SSLDisableStateExistsFault"}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
