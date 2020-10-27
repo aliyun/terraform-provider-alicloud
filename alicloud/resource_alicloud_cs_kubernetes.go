@@ -963,38 +963,38 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	// Get slb information
 	connection := make(map[string]string)
 
+	request := slb.CreateDescribeLoadBalancersRequest()
 	if len(masterNodes) != 0 {
-		request := slb.CreateDescribeLoadBalancersRequest()
 		request.ServerId = masterNodes[0]["id"].(string)
-		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DescribeLoadBalancers(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		lbs, _ := raw.(*slb.DescribeLoadBalancersResponse)
-		for _, lb := range lbs.LoadBalancers.LoadBalancer {
-			if strings.ToLower(lb.AddressType) == strings.ToLower(string(Internet)) {
-				d.Set("slb_internet", lb.LoadBalancerId)
-				connection["api_server_internet"] = fmt.Sprintf("https://%s:6443", lb.Address)
-				connection["master_public_ip"] = lb.Address
-			} else {
-				d.Set("slb_intranet", lb.LoadBalancerId)
-				connection["api_server_intranet"] = fmt.Sprintf("https://%s:6443", lb.Address)
+	}
+	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+		return slbClient.DescribeLoadBalancers(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	lbs, _ := raw.(*slb.DescribeLoadBalancersResponse)
+	for _, lb := range lbs.LoadBalancers.LoadBalancer {
+		if strings.ToLower(lb.AddressType) == strings.ToLower(string(Internet)) {
+			d.Set("slb_internet", lb.LoadBalancerId)
+			connection["api_server_internet"] = fmt.Sprintf("https://%s:6443", lb.Address)
+			connection["master_public_ip"] = lb.Address
+		} else {
+			d.Set("slb_intranet", lb.LoadBalancerId)
+			connection["api_server_intranet"] = fmt.Sprintf("https://%s:6443", lb.Address)
 
-				reqVpc := vpc.CreateDescribeEipAddressesRequest()
-				reqVpc.AssociatedInstanceId = lb.LoadBalancerId
-				reqVpc.AssociatedInstanceType = "SlbInstance"
-				raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-					return vpcClient.DescribeEipAddresses(reqVpc)
-				})
-				eip, _ := raw.(*vpc.DescribeEipAddressesResponse)
-				if eip != nil && len(eip.EipAddresses.EipAddress) > 0 {
-					eipAddr := eip.EipAddresses.EipAddress[0].IpAddress
-					connection["master_public_ip"] = eipAddr
-					connection["api_server_internet"] = fmt.Sprintf("https://%s:6443", eipAddr)
-				}
+			reqVpc := vpc.CreateDescribeEipAddressesRequest()
+			reqVpc.AssociatedInstanceId = lb.LoadBalancerId
+			reqVpc.AssociatedInstanceType = "SlbInstance"
+			raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+				return vpcClient.DescribeEipAddresses(reqVpc)
+			})
+			eip, _ := raw.(*vpc.DescribeEipAddressesResponse)
+			if eip != nil && len(eip.EipAddresses.EipAddress) > 0 {
+				eipAddr := eip.EipAddresses.EipAddress[0].IpAddress
+				connection["master_public_ip"] = eipAddr
+				connection["api_server_internet"] = fmt.Sprintf("https://%s:6443", eipAddr)
 			}
 		}
 	}
@@ -1006,7 +1006,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("connections", connection)
 	natRequest := vpc.CreateDescribeNatGatewaysRequest()
 	natRequest.VpcId = object.VpcId
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+	raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 		return vpcClient.DescribeNatGateways(natRequest)
 	})
 	if err != nil {

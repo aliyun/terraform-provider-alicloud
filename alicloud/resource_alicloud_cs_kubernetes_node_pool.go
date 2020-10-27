@@ -387,7 +387,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if d.HasChange("enable_auto_scaling") {
 		update = true
-		args.AutoScaling.EnableAutoScaling = d.Get("enable_auto_scaling").(bool)
+		args.AutoScaling.Enable = d.Get("enable_auto_scaling").(bool)
 	}
 
 	if d.HasChange("max") {
@@ -467,7 +467,7 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("max", object.MaxInstance)
 	}
 	if _, ok := d.GetOk("enable_auto_scaling"); ok {
-		d.Set("enable_auto_scaling", object.EnableAutoScaling)
+		d.Set("enable_auto_scaling", object.Enable)
 	}
 	if sg, ok := d.GetOk("min"); ok && sg.(string) != "" {
 		d.Set("min", object.MinInstance)
@@ -592,10 +592,10 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 	if v, ok := d.GetOk("enable_auto_scaling"); ok {
 		if enable, ok := v.(bool); ok && enable {
 			creationArgs.AutoScaling = cs.AutoScaling{
-				EnableAutoScaling: true,
-				MaxInstance:       int64(d.Get("max").(int)),
-				MinInstance:       int64(d.Get("min").(int)),
-				Type:              d.Get("type").(string),
+				Enable:      true,
+				MaxInstance: int64(d.Get("max").(int)),
+				MinInstance: int64(d.Get("min").(int)),
+				Type:        d.Get("type").(string),
 			}
 		}
 	}
