@@ -122,6 +122,7 @@ It is a new field since 1.75.0. You can specific network plugin,log component,in
       content {
         name                    = lookup(addons.value, "name", var.cluster_addons)
         config                  = lookup(addons.value, "config", var.cluster_addons)
+        disabled                = lookup(addons.value, "disabled", var.cluster_addons)
       }
   }
 ```
