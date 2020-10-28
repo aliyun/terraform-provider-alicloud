@@ -125,7 +125,12 @@ func resourceAlicloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{
 			"arg_value": args.ArgValue,
 		})
 	}
-	d.Set("function_name", config.FunctionName)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("domain_name", parts[0])
+	d.Set("function_name", parts[1])
 	d.Set("function_args", funArgs)
 
 	return nil
@@ -144,8 +149,12 @@ func resourceAlicloudCdnDomainConfigDelete(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 	request.ConfigId = config.ConfigId
-	request.DomainName = d.Get("domain_name").(string)
+	request.DomainName = parts[0]
 	raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
 		return cdnClient.DeleteSpecificConfig(request)
 	})
