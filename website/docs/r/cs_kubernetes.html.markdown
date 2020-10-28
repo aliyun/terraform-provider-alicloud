@@ -71,6 +71,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
       content {
         name                    = lookup(addons.value, "name", var.cluster_addons)
         config                  = lookup(addons.value, "config", var.cluster_addons)
+        disabled                = lookup(addons.value, "disabled", var.cluster_addons)
       }
   }
 }
