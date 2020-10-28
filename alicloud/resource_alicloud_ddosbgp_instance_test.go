@@ -42,10 +42,10 @@ func testSweepDdosbgpInstances(region string) error {
 	req := ddosbgp.CreateDescribeInstanceListRequest()
 	req.RegionId = client.RegionId
 	req.DdosRegionId = client.RegionId
-	req.PageSize = requests.Integer(PageSizeLarge)
+	req.PageSize = requests.Integer(fmt.Sprint(PageSizeLarge))
 
 	var page = 1
-	req.PageNo = requests.Integer(page)
+	req.PageNo = requests.Integer(fmt.Sprint(page))
 	for {
 		raw, err := client.WithDdosbgpClient(func(ddosbgpClient *ddosbgp.Client) (interface{}, error) {
 			return ddosbgpClient.DescribeInstanceList(req)
@@ -64,7 +64,7 @@ func testSweepDdosbgpInstances(region string) error {
 		}
 
 		page++
-		req.PageNo = requests.Integer(page)
+		req.PageNo = requests.Integer(fmt.Sprint(page))
 	}
 
 	for _, v := range insts {

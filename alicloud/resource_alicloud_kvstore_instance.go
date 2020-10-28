@@ -961,7 +961,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 	if d.HasChange("enable_public") {
 		prefix := d.Get("connection_string_prefix").(string)
-		port := string(d.Get("port").(int))
+		port := fmt.Sprintf("%s", d.Get("port"))
 		target := d.Get("enable_public").(bool)
 
 		if target {
