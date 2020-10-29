@@ -421,7 +421,7 @@ func flattenBandWidthPackages(natGatewayId string, meta interface{}) ([]map[stri
 			return nil, WrapError(err1)
 		}
 
-		bandwidth, err2 := strconv.Atoi(pg["BandWidth"].(string))
+		bandwidth, err2 := strconv.Atoi(pg["Bandwidth"].(string))
 		if err2 != nil {
 			return nil, WrapError(err2)
 		}
