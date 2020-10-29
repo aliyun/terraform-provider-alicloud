@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/denverdino/aliyungo/common"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -233,7 +235,7 @@ func resourceAliyunNatGatewayRead(d *schema.ResourceData, meta interface{}) erro
 		d.Set("period", period)
 	}
 
-	bindWidthPackages, err := flattenBandWidthPackages(object.BandwidthPackageIds.BandwidthPackageId, meta, d)
+	bindWidthPackages, err := flattenBandWidthPackages(d.Id(), meta)
 	if err != nil {
 		return WrapError(err)
 	} else {
@@ -355,109 +357,109 @@ func resourceAliyunNatGatewayDelete(d *schema.ResourceData, meta interface{}) er
 
 func deleteBandwidthPackages(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	packRequest := vpc.CreateDescribeBandwidthPackagesRequest()
-	packRequest.RegionId = string(client.Region)
-	packRequest.NatGatewayId = d.Id()
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeBandwidthPackages(packRequest)
-		})
-		if err != nil {
-			return resource.NonRetryableError(err)
-		}
-		addDebug(packRequest.GetActionName(), raw, packRequest.RpcRequest, packRequest)
-		response, _ := raw.(*vpc.DescribeBandwidthPackagesResponse)
-		retry := false
-		if len(response.BandwidthPackages.BandwidthPackage) > 0 {
-			for _, pack := range response.BandwidthPackages.BandwidthPackage {
-				request := vpc.CreateDeleteBandwidthPackageRequest()
-				request.RegionId = string(client.Region)
-				request.BandwidthPackageId = pack.BandwidthPackageId
-				raw, e := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-					return vpcClient.DeleteBandwidthPackage(request)
-				})
-				if e != nil {
-					if IsExpectedErrors(e, []string{"Invalid.RegionId"}) {
-						return resource.NonRetryableError(e)
-					} else if IsExpectedErrors(e, []string{"INSTANCE_NOT_EXISTS"}) {
-						return nil
-					}
-					err = e
-					retry = true
-				}
-				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			}
+	packages, err := DescribeNatBandwidthPackages(d.Id(), meta)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	conn, err := meta.(*connectivity.AliyunClient).NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	for _, pg := range packages {
+		var response map[string]interface{}
+		action := "DeleteBandwidthPackage"
+		request := map[string]interface{}{
+			"RegionId":           client.RegionId,
+			"BandwidthPackageId": pg["BandwidthPackageId"].(string),
 		}
 
-		if retry {
-			return resource.RetryableError(err)
+		// If the API supports
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"Invalid.RegionId"}) {
+					time.Sleep(5 * time.Second)
+					return resource.RetryableError(err)
+				} else if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXISTS"}) {
+					return nil
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), pg["BandwidthPackageId"].(string), AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), packRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
 
-func flattenBandWidthPackages(bandWidthPackageIds []string, meta interface{}, d *schema.ResourceData) ([]map[string]interface{}, error) {
-	packageLen := len(bandWidthPackageIds)
-	result := make([]map[string]interface{}, 0, packageLen)
-	for i := packageLen - 1; i >= 0; i-- {
-		packageId := bandWidthPackageIds[i]
-		bandWidthPackage, err := getPackage(packageId, meta, d)
-		if err != nil {
-			return result, WrapError(err)
+func flattenBandWidthPackages(natGatewayId string, meta interface{}) ([]map[string]interface{}, error) {
+	packages, err := DescribeNatBandwidthPackages(natGatewayId, meta)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	var result []map[string]interface{}
+	for _, pg := range packages {
+		var ipAddress []string
+		publicIpAddresses := pg["PublicIpAddresses"].([]map[string]interface{})
+		for _, val := range publicIpAddresses {
+			ipAddress = append(ipAddress, val["IpAddress"].(string))
 		}
-		ipAddress := flattenPackPublicIp(bandWidthPackage.PublicIpAddresses.PublicIpAddresse)
-		ipCont, ipContErr := strconv.Atoi(bandWidthPackage.IpCount)
-		bandWidth, bandWidthErr := strconv.Atoi(bandWidthPackage.Bandwidth)
-		if ipContErr != nil {
-			return result, WrapError(ipContErr)
-		}
-		if bandWidthErr != nil {
-			return result, WrapError(bandWidthErr)
-		}
+
 		l := map[string]interface{}{
-			"ip_count":            ipCont,
-			"bandwidth":           bandWidth,
-			"zone":                bandWidthPackage.ZoneId,
-			"public_ip_addresses": ipAddress,
+			"ip_count":            pg["IpCount"].(int),
+			"bandwidth":           pg["Bandwidth"].(int),
+			"zone":                pg["ZoneId"].(string),
+			"public_ip_addresses": strings.Join(ipAddress, ","),
 		}
 		result = append(result, l)
 	}
 	return result, nil
 }
-func getPackage(packageId string, meta interface{}, d *schema.ResourceData) (pack vpc.BandwidthPackage, err error) {
-	client := meta.(*connectivity.AliyunClient)
-	request := vpc.CreateDescribeBandwidthPackagesRequest()
-	request.RegionId = client.RegionId
-	request.NatGatewayId = d.Id()
-	request.BandwidthPackageId = packageId
 
-	invoker := NewInvoker()
-	err = invoker.Run(func() error {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeBandwidthPackages(request)
-		})
+func DescribeNatBandwidthPackages(natGatewayId string, meta interface{}) ([]map[string]interface{}, error) {
+	client := meta.(*connectivity.AliyunClient)
+	addDebug("DescribeBandwidthPackages", natGatewayId, natGatewayId, "")
+	var response map[string]interface{}
+	action := "DescribeBandwidthPackages"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"NatGatewayId": natGatewayId,
+	}
+
+	conn, err := meta.(*connectivity.AliyunClient).NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	// If the API supports
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			if IsExpectedErrors(err, []string{"TaskConflict", "UnknownError", Throttling}) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		packages, _ := raw.(*vpc.DescribeBandwidthPackagesResponse)
-		if len(packages.BandwidthPackages.BandwidthPackage) < 1 || packages.BandwidthPackages.BandwidthPackage[0].BandwidthPackageId != packageId {
-			return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
-		pack = packages.BandwidthPackages.BandwidthPackage[0]
+		addDebug(action, response, request)
 		return nil
 	})
-	return
-}
-func flattenPackPublicIp(publicIpAddressList []vpc.PublicIpAddresse) string {
-	var result []string
-	for _, publicIpAddresses := range publicIpAddressList {
-		ipAddress := publicIpAddresses.IpAddress
-		result = append(result, ipAddress)
+	if err != nil {
+		return nil, WrapError(err)
 	}
-	return strings.Join(result, ",")
+
+	if len(response["BandwidthPackages"].([]map[string]interface{})) < 1 {
+		return nil, WrapError(Error("the nat bandwidth package is nil "))
+	}
+
+	return response["BandwidthPackages"].([]map[string]interface{}), nil
 }
