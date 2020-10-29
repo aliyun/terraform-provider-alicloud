@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"sort"
 	"strconv"
 	"time"
 
@@ -84,14 +85,17 @@ func dataSourceAlicloudEnhancedNatAvailableZonesRead(d *schema.ResourceData, met
 	if err != nil || len(v.([]interface{})) < 1 {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_enhanced_nat_available_zones", action, AlibabaCloudSdkGoERROR)
 	}
-	for _, val := range v.([]interface{}) {
-		zone := val.(map[string]interface{})
+
+	zones := v.([]interface{})
+	sort.Slice(zones, func(i, j int) bool { return zones[i].(map[string]interface{})["ZoneId"].(string) < zones[j].(map[string]interface{})["ZoneId"].(string) })
+	for _, val := range zones {
+		value := val.(map[string]interface{})
 		mapping := map[string]interface{}{
-			"zone_id":    zone["ZoneId"].(string),
-			"local_name": zone["LocalName"].(string),
+			"zone_id":    value["ZoneId"].(string),
+			"local_name": value["LocalName"].(string),
 		}
 		s = append(s, mapping)
-		ids = append(ids, zone["LocalName"].(string))
+		ids = append(ids, value["LocalName"].(string))
 	}
 
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))

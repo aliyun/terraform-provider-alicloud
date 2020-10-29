@@ -367,7 +367,8 @@ func deleteBandwidthPackages(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 
-	for _, pg := range packages {
+	for _, val := range packages {
+		pg := val.(map[string]interface{})
 		var response map[string]interface{}
 		action := "DeleteBandwidthPackage"
 		request := map[string]interface{}{
@@ -406,7 +407,8 @@ func flattenBandWidthPackages(natGatewayId string, meta interface{}) ([]map[stri
 	}
 
 	var result []map[string]interface{}
-	for _, pg := range packages {
+	for _, val := range packages {
+		pg := val.(map[string]interface{})
 		var ipAddress []string
 		publicIpAddresses := pg["PublicIpAddresses"].([]map[string]interface{})
 		for _, val := range publicIpAddresses {
@@ -424,7 +426,7 @@ func flattenBandWidthPackages(natGatewayId string, meta interface{}) ([]map[stri
 	return result, nil
 }
 
-func DescribeNatBandwidthPackages(natGatewayId string, meta interface{}) ([]map[string]interface{}, error) {
+func DescribeNatBandwidthPackages(natGatewayId string, meta interface{}) ([]interface{}, error) {
 	client := meta.(*connectivity.AliyunClient)
 	addDebug("DescribeBandwidthPackages", natGatewayId, natGatewayId, "")
 	var response map[string]interface{}
@@ -457,9 +459,6 @@ func DescribeNatBandwidthPackages(natGatewayId string, meta interface{}) ([]map[
 		return nil, WrapError(err)
 	}
 
-	if len(response["BandwidthPackages"].([]map[string]interface{})) < 1 {
-		return nil, WrapError(Error("the nat bandwidth package is nil "))
-	}
-
-	return response["BandwidthPackages"].([]map[string]interface{}), nil
+	packages := response["BandwidthPackages"].(map[string]interface{})
+	return packages["BandwidthPackage"].([]interface{}), nil
 }
