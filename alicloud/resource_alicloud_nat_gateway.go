@@ -410,14 +410,25 @@ func flattenBandWidthPackages(natGatewayId string, meta interface{}) ([]map[stri
 	for _, val := range packages {
 		pg := val.(map[string]interface{})
 		var ipAddress []string
-		publicIpAddresses := pg["PublicIpAddresses"].([]map[string]interface{})
+		publicIp := pg["PublicIpAddresses"].(map[string]interface{})["PublicIpAddresse"]
+		publicIpAddresses := publicIp.([]interface{})
 		for _, val := range publicIpAddresses {
-			ipAddress = append(ipAddress, val["IpAddress"].(string))
+			ipAddress = append(ipAddress, val.(map[string]interface{})["IpAddress"].(string))
+		}
+
+		ipCount, err1 := strconv.Atoi(pg["IpCount"].(string))
+		if err1 != nil {
+			return nil, WrapError(err1)
+		}
+
+		bandwidth, err2 := strconv.Atoi(pg["BandWidth"].(string))
+		if err2 != nil {
+			return nil, WrapError(err2)
 		}
 
 		l := map[string]interface{}{
-			"ip_count":            pg["IpCount"].(int),
-			"bandwidth":           pg["Bandwidth"].(int),
+			"ip_count":            ipCount,
+			"bandwidth":           bandwidth,
 			"zone":                pg["ZoneId"].(string),
 			"public_ip_addresses": strings.Join(ipAddress, ","),
 		}
