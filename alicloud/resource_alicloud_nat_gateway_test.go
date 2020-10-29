@@ -191,14 +191,6 @@ func TestAccAlicloudNatGatewayBasic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccNatGatewayConfig_natType(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"nat_type": "Enhanced",
-					}),
-				),
-			},
-			{
 				Config: testAccNatGatewayConfig_all(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
