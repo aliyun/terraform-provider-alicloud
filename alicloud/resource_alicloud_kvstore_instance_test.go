@@ -812,16 +812,17 @@ func TestAccAlicloudKVStoreMemcacheInstance_classictest(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"engine_version": "4.0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"engine_version": "4.0",
-					}),
-				),
-			},
+			// Currently, the memcache does not support upgrade version to 4.0 from 2.8
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"engine_version": "4.0",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"engine_version": "4.0",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_class": "memcache.master.mid.default",
