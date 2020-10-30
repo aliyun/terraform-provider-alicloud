@@ -1,4 +1,26 @@
 ## 1.103.0 (Unreleased)
+
+- **New Resource:** `alicloud_cs_edge_kubernetes` [GH-2871]
+- **Data Source:** `alicloud_cs_edge_kubernetes_clusters` [GH-2871]
+
+IMPROVEMENTS:
+
+- improve fc service docs [GH-2975]
+- improve memcache test case [GH-2974]
+- change nat bandwidth pachage to use commonApi instead of sdk [GH-2971]
+- Support modify maintain time for kvstore instance and Supplementary documentation for kvstore connection [GH-2962]
+- improve(slb) update slb listener scheduler [GH-2960]
+- update changelog [GH-2959]
+- change sdk to common api [GH-2958]
+- add sweep for Resource Manager testcase [GH-2955]
+
+BUG FIXES:
+
+- fix API Gateway App list tags failed [GH-2973]
+- fix the managed k8s does not display connections information [GH-2970]
+- Fix cdn_domain_config import bug [GH-2967]
+- fix(alicloud_kvstore_instance): security_group_id diff error and SSLDisableStateExistsFault error [GH-2963]
+
 ## 1.102.0 (October 23, 2020)
 
 - **Data Source:** `alicloud_kvstore_accounts` ([#2952](https://github.com/aliyun/terraform-provider-alicloud/issues/2952))
