@@ -1546,3 +1546,23 @@ func (s *EcsService) EcsDedicatedHostStateRefreshFunc(id string, failStates []st
 		return object, object.Status, nil
 	}
 }
+
+func (s *EcsService) WaitForAutoProvisioningGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeAutoProvisioningGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AutoProvisioningGroupId, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
+}
