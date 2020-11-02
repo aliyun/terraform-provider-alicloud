@@ -87,7 +87,9 @@ func dataSourceAlicloudEnhancedNatAvailableZonesRead(d *schema.ResourceData, met
 	}
 
 	zones := v.([]interface{})
-	sort.Slice(zones, func(i, j int) bool { return zones[i].(map[string]interface{})["ZoneId"].(string) < zones[j].(map[string]interface{})["ZoneId"].(string) })
+	sort.Slice(zones, func(i, j int) bool {
+		return zones[i].(map[string]interface{})["ZoneId"].(string) < zones[j].(map[string]interface{})["ZoneId"].(string)
+	})
 	for _, val := range zones {
 		value := val.(map[string]interface{})
 		mapping := map[string]interface{}{
