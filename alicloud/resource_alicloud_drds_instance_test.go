@@ -64,8 +64,20 @@ func testSweepDRDSInstances(region string) error {
 		}
 		// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
 		if skip {
-			if need, err := vpcService.needSweepVpc(v.VpcId, ""); err == nil {
-				skip = !need
+			instanceDetailRequest := drds.CreateDescribeDrdsInstanceRequest()
+			instanceDetailRequest.DrdsInstanceId = id
+			raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
+				return drdsClient.DescribeDrdsInstance(instanceDetailRequest)
+			})
+			if err != nil {
+				log.Printf("[ERROR] Error retrieving DRDS Instance: %s. %s", id, WrapError(err))
+			}
+			instanceDetailResponse, _ := raw.(*drds.DescribeDrdsInstanceResponse)
+			for _, vip := range instanceDetailResponse.Data.Vips.Vip {
+				if need, err := vpcService.needSweepVpc(vip.VpcId, ""); err == nil {
+					skip = !need
+					break
+				}
 			}
 
 		}
