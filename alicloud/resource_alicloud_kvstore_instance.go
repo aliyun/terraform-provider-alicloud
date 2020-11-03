@@ -592,6 +592,41 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	r_kvstoreService := R_kvstoreService{client}
 	d.Partial(true)
 
+	if d.HasChange("payment_type") {
+		object, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		target := d.Get("payment_type").(string)
+		if object.ChargeType != target {
+			if target == "PrePaid" {
+				request := r_kvstore.CreateTransformToPrePaidRequest()
+				request.InstanceId = d.Id()
+				if v, ok := d.GetOk("period"); ok {
+					if v, err := strconv.Atoi(v.(string)); err == nil {
+						request.Period = requests.NewInteger(v)
+					} else {
+						return WrapError(err)
+					}
+				}
+				if v, ok := d.GetOk("auto_renew"); ok {
+					request.AutoPay = requests.NewBoolean(v.(bool))
+				}
+				raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+					return r_kvstoreClient.TransformToPrePaid(request)
+				})
+				addDebug(request.GetActionName(), raw)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+				stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+			}
+			d.SetPartial("payment_type")
+		}
+	}
 	if d.HasChange("tags") {
 		if err := r_kvstoreService.SetResourceTags(d, "INSTANCE"); err != nil {
 			return WrapError(err)
@@ -1001,41 +1036,6 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 		d.SetPartial("enable_public")
-	}
-	if d.HasChange("payment_type") {
-		object, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-		target := d.Get("payment_type").(string)
-		if object.ChargeType != target {
-			if target == "PrePaid" {
-				request := r_kvstore.CreateTransformToPrePaidRequest()
-				request.InstanceId = d.Id()
-				if v, ok := d.GetOk("period"); ok {
-					if v, err := strconv.Atoi(v.(string)); err == nil {
-						request.Period = requests.NewInteger(v)
-					} else {
-						return WrapError(err)
-					}
-				}
-				if v, ok := d.GetOk("auto_renew"); ok {
-					request.AutoPay = requests.NewBoolean(v.(bool))
-				}
-				raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
-					return r_kvstoreClient.TransformToPrePaid(request)
-				})
-				addDebug(request.GetActionName(), raw)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-				}
-				stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
-				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
-				}
-			}
-			d.SetPartial("payment_type")
-		}
 	}
 	d.Partial(false)
 	return resourceAlicloudKvstoreInstanceRead(d, meta)
