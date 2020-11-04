@@ -246,6 +246,56 @@ func TestAccAlicloudNatGatewayEnhanced(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudNatGatewayTransform(t *testing.T) {
+	var v vpc.NatGateway
+	resourceId := "alicloud_nat_gateway.main"
+	ra := resourceAttrInit(resourceId, testAccCheckNatGatewayBasicMap)
+	serviceFunc := func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckNatGatewayDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNatGatewayConfig_transform_to_enhanced(rand, "Normal", ""),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":               CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period"},
+			},
+			{
+				Config: testAccNatGatewayConfig_transform_to_enhanced(rand, "Enhanced", "${alicloud_vswitch.foo1.id}"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"nat_type":           "Enhanced",
+						"vswitch_id":         CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
 func testAccNatGatewayConfigBasic(rand int) string {
 	return fmt.Sprintf(
 		`
@@ -464,6 +514,44 @@ resource "alicloud_nat_gateway" "default" {
 	specification = "Small"
 }
 `, rand)
+}
+
+func testAccNatGatewayConfig_transform_to_enhanced(rand int, natType string, vswitchId string) string {
+	return fmt.Sprintf(
+		`
+variable "name" {
+	default = "tf-testAccNatGatewayTransformConfig%d"
+}
+
+variable "nat_type" {
+	default = "%s"
+}
+
+data "alicloud_enhanced_nat_available_zones" "enhanced" {
+}
+
+resource "alicloud_vpc" "foo" {
+  name       = var.name
+  cidr_block = "10.0.0.0/8"
+}
+
+resource "alicloud_vswitch" "foo1" {
+  depends_on        = [alicloud_vpc.foo]
+  name              = var.name
+  availability_zone = data.alicloud_enhanced_nat_available_zones.enhanced.zones[1].zone_id
+  cidr_block        = "10.10.0.0/20"
+  vpc_id            = alicloud_vpc.foo.id
+}
+
+resource "alicloud_nat_gateway" "main" {
+  depends_on           = [alicloud_vpc.foo, alicloud_vswitch.foo1]
+  vpc_id               = alicloud_vpc.foo.id
+  specification        = "Small"
+  name                 = var.name
+  nat_type             = var.nat_type
+  vswitch_id           = "%s"
+}
+`, rand, natType, vswitchId)
 }
 
 var testAccCheckNatGatewayBasicMap = map[string]string{

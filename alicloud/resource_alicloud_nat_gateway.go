@@ -59,14 +59,12 @@ func resourceAliyunNatGateway() *schema.Resource {
 			"nat_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Normal", "Enhanced"}, false),
 				Default:      "Normal",
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"bandwidth_package_ids": {
 				Type:     schema.TypeString,
@@ -262,7 +260,6 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 	modifyNatGatewayAttributeRequest.NatGatewayId = natGateway.NatGatewayId
 
 	if d.HasChange("name") {
-		d.SetPartial("name")
 		var name string
 		if v, ok := d.GetOk("name"); ok {
 			name = v.(string)
@@ -272,10 +269,10 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		modifyNatGatewayAttributeRequest.Name = name
 
 		attributeUpdate = true
+		d.SetPartial("name")
 	}
 
 	if d.HasChange("description") {
-		d.SetPartial("description")
 		var description string
 		if v, ok := d.GetOk("description"); ok {
 			description = v.(string)
@@ -286,6 +283,7 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		modifyNatGatewayAttributeRequest.Description = description
 
 		attributeUpdate = true
+		d.SetPartial("description")
 	}
 
 	if attributeUpdate {
@@ -299,7 +297,6 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if d.HasChange("specification") {
-		d.SetPartial("specification")
 		modifyNatGatewaySpecRequest := vpc.CreateModifyNatGatewaySpecRequest()
 		modifyNatGatewaySpecRequest.RegionId = natGateway.RegionId
 		modifyNatGatewaySpecRequest.NatGatewayId = natGateway.NatGatewayId
@@ -312,7 +309,59 @@ func resourceAliyunNatGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyNatGatewaySpecRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(modifyNatGatewaySpecRequest.GetActionName(), raw, modifyNatGatewaySpecRequest.RpcRequest, modifyNatGatewaySpecRequest)
+		d.SetPartial("specification")
 	}
+
+	if d.HasChange("nat_type") {
+		vv := d.Get("nat_type").(string)
+		if vv == "Enhanced" {
+			action := "UpdateNatGatewayNatType"
+			request := map[string]interface{}{
+				"RegionId":     client.RegionId,
+				"NatGatewayId": d.Id(),
+				"NatType":      vv,
+			}
+
+			if vswId := d.Get("vswitch_id").(string); vswId != "" {
+				request["VSwitchId"] = vswId
+			}
+			request["ClientToken"] = buildClientToken("UpdateNatGatewayNatType")
+
+			conn, err := meta.(*connectivity.AliyunClient).NewVpcClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			// If the API supports
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err1 := resource.Retry(3*time.Minute, func() *resource.RetryError {
+				response, err2 := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+				addDebug(action, response, request)
+				if err2 != nil {
+					if IsExpectedErrors(err2, []string{"TaskConflict", "UnknownError", Throttling, "OperationFailed.NatGwRouteInMiddleStatus"}) {
+						wait()
+						return resource.RetryableError(err2)
+					}
+					return resource.NonRetryableError(err2)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err1 != nil {
+				return WrapErrorf(err1, DefaultErrorMsg, "alicloud_nat_transform_to_enhanced", action, AlibabaCloudSdkGoERROR)
+			}
+			if err3 := vpcService.WaitForNatGatewayTransform(d.Id(), DefaultTimeout*5); err3 != nil {
+				return WrapError(err3)
+			}
+		} else {
+			return WrapError(Error("You should set natType from Normal to Enhanced"))
+		}
+		d.SetPartial("vswitch_id")
+		d.SetPartial("nat_type")
+	}
+
 	d.Partial(false)
 	if err := vpcService.WaitForNatGateway(d.Id(), Available, DefaultTimeout); err != nil {
 		return WrapError(err)
