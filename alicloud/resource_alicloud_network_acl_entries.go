@@ -17,7 +17,9 @@ func resourceAliyunNetworkAclEntries() *schema.Resource {
 		Read:   resourceAliyunNetworkAclEntriesRead,
 		Update: resourceAliyunNetworkAclEntriesUpdate,
 		Delete: resourceAliyunNetworkAclEntriesDelete,
-
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 		Schema: map[string]*schema.Schema{
 
 			"network_acl_id": {
@@ -33,30 +35,37 @@ func resourceAliyunNetworkAclEntries() *schema.Resource {
 						"description": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"source_cidr_ip": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"entry_type": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"name": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"policy": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"port": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"protocol": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -69,30 +78,37 @@ func resourceAliyunNetworkAclEntries() *schema.Resource {
 						"description": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"destination_cidr_ip": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"entry_type": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"name": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"policy": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"port": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"protocol": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -126,31 +142,34 @@ func resourceAliyunNetworkAclEntriesRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	ingress := []vpc.UpdateNetworkAclEntriesIngressAclEntries{}
-	for _, e := range d.Get("ingress").([]interface{}) {
-		ingress = append(ingress, vpc.UpdateNetworkAclEntriesIngressAclEntries{
-			Protocol:            e.(map[string]interface{})["protocol"].(string),
-			Port:                e.(map[string]interface{})["port"].(string),
-			SourceCidrIp:        e.(map[string]interface{})["source_cidr_ip"].(string),
-			NetworkAclEntryName: e.(map[string]interface{})["name"].(string),
-			EntryType:           e.(map[string]interface{})["entry_type"].(string),
-			Policy:              e.(map[string]interface{})["policy"].(string),
-			Description:         e.(map[string]interface{})["description"].(string),
-		})
+	var ingress []map[string]interface{}
+	for _, ob := range object.IngressAclEntries.IngressAclEntry {
+		mapping := map[string]interface{}{
+			"description":    ob.Description,
+			"source_cidr_ip": ob.SourceCidrIp,
+			"entry_type":     "custom",
+			"name":           ob.NetworkAclEntryName,
+			"policy":         ob.Policy,
+			"port":           ob.Port,
+			"protocol":       ob.Protocol,
+		}
+		ingress = append(ingress, mapping)
 	}
 
-	egress := []vpc.UpdateNetworkAclEntriesEgressAclEntries{}
-	for _, e := range d.Get("egress").([]interface{}) {
-		egress = append(egress, vpc.UpdateNetworkAclEntriesEgressAclEntries{
-			Protocol:            e.(map[string]interface{})["protocol"].(string),
-			Port:                e.(map[string]interface{})["port"].(string),
-			DestinationCidrIp:   e.(map[string]interface{})["destination_cidr_ip"].(string),
-			NetworkAclEntryName: e.(map[string]interface{})["name"].(string),
-			EntryType:           e.(map[string]interface{})["entry_type"].(string),
-			Policy:              e.(map[string]interface{})["policy"].(string),
-			Description:         e.(map[string]interface{})["description"].(string),
-		})
+	var egress []map[string]interface{}
+	for _, ob := range object.EgressAclEntries.EgressAclEntry {
+		mapping := map[string]interface{}{
+			"description":         ob.Description,
+			"destination_cidr_ip": ob.DestinationCidrIp,
+			"entry_type":          "custom",
+			"name":                ob.NetworkAclEntryName,
+			"policy":              ob.Policy,
+			"port":                ob.Port,
+			"protocol":            ob.Protocol,
+		}
+		egress = append(egress, mapping)
 	}
+
 	d.Set("network_acl_id", object.NetworkAclId)
 	d.Set("egress", egress)
 	d.Set("ingress", ingress)
