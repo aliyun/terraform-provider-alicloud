@@ -1347,6 +1347,81 @@ func (s *VpcService) setInstanceSecondaryCidrBlocks(d *schema.ResourceData) erro
 		}
 		d.SetPartial("secondary_cidr_blocks")
 	}
+	return nil
+}
 
+func (s *VpcService) DescribeNatGatewayTransform(id string) ([]interface{}, error) {
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	action := "GetNatGatewayConvertStatus"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"NatGatewayId": id,
+	}
+	request["ClientToken"] = buildClientToken("GetNatGatewayConvertStatus")
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+
+	response, err1 := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+	if err1 != nil {
+		if IsExpectedErrors(err1, []string{"InvalidVpcID.NotFound", "Forbidden.VpcNotFound"}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+
+	ob, err2 := jsonpath.Get("$.ConvertSteps", response)
+	if err2 != nil {
+		return nil, WrapErrorf(err2, FailedGetAttributeMsg, id, "$.ConvertSteps", response)
+	}
+
+	natType, err3 := jsonpath.Get("$.DstNatType", response)
+	if err3 != nil {
+		return nil, WrapErrorf(err3, FailedGetAttributeMsg, id, "$.DstNatType", response)
+	}
+
+	object := ob.([]interface{})
+	if len(object) < 1 || natType.(string) != "Enhanced" {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("NAT", id)), NotFoundWithResponse, response)
+	}
+	return object, nil
+
+}
+
+func (s *VpcService) WaitForNatGatewayTransform(id string, timeout int64) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeNatGatewayTransform(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return err
+			}
+			if IsExpectedErrors(err, []string{"OperationFailed.NatGwRouteInMiddleStatusError"}) {
+				return nil
+			}
+			return err
+		}
+
+		isOk := false
+		for _, v := range object {
+			val := v.(map[string]interface{})
+			if val["StepName"].(string) == "end_success" && val["StepStatus"].(string) == "successful" {
+				isOk = true
+				break
+			}
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, "", "", ProviderERROR)
+		}
+		if isOk {
+			break
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
 	return nil
 }
