@@ -104,6 +104,7 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 						},
 					},
 					"is_enterprise_security_group": "true",
+					"deletion_protection":          false,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
