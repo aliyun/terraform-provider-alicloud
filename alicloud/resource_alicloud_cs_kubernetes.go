@@ -401,6 +401,87 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Default:          true,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"timezone": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"os_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "Linux",
+				ValidateFunc: validation.StringInSlice([]string{"Windows", "Linux"}, false),
+			},
+			"platform": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "CentOS",
+			},
+			"node_port_range": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "30000-32767",
+			},
+			"runtime": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "docker",
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "19.03.5",
+						},
+					},
+				},
+			},
+			"cluster_domain": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "cluster.local",
+				Description: "cluster local domain ",
+			},
+			"taints": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"effect": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"NoSchedule", "NoExecute", "PreferNoSchedule"}, false),
+						},
+					},
+				},
+			},
+			"rds_instances": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"custom_san": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			// computed parameters
 			"kube_config": {
 				Type:     schema.TypeString,
@@ -780,6 +861,30 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			d.SetPartial("tags")
 		}
 
+		if d.HasChange("taints") && !d.IsNewResource() {
+			args.Taints = expandKubernetesTaintsConfig(d.Get("taints").([]interface{}))
+		}
+
+		if d.HasChange("runtime") && !d.IsNewResource() {
+			args.Runtime = expandKubernetesRuntimeConfig(d.Get("runtime").(map[string]interface{}))
+		}
+
+		if d.HasChange("rds_instances") && !d.IsNewResource() {
+			args.RdsInstances = expandStringList(d.Get("rds_instances").([]interface{}))
+		}
+
+		if d.HasChange("cpu_policy") && !d.IsNewResource() {
+			args.CpuPolicy = d.Get("cpu_policy").(string)
+		}
+
+		if d.HasChange("install_cloud_monitor") && !d.IsNewResource() {
+			args.CloudMonitorFlags = d.Get("install_cloud_monitor").(bool)
+		}
+
+		if d.HasChange("image_id") && !d.IsNewResource() {
+			args.ImageId = d.Get("image_id").(string)
+		}
+
 		var resoponse interface{}
 		if err := invoker.Run(func() error {
 			var err error
@@ -862,6 +967,18 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("resource_group_id", object.ResourceGroupId)
 	d.Set("cluster_spec", object.ClusterSpec)
 
+	d.Set("deletion_protection", object.DeletionProtection)
+	d.Set("os_type", object.OSType)
+
+	// d.Set("platform", object.Platform)
+	// d.Set("timezone", object.TimeZone)
+	// d.Set("cluster_domain", object.ClusterDomin)
+	// d.Set("custom_san",object.CustomSAN)
+	// d.Set("runtime", object.Runtime)
+	// d.Set("taints", object.Taits)
+	// d.Set("rds_instances", object.RdsInstances)
+	// d.Set("node_port_range", object.NodePortRange)
+
 	var masterNodes []map[string]interface{}
 	var workerNodes []map[string]interface{}
 
@@ -874,7 +991,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		if err := invoker.Run(func() error {
 			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 				requestInfo = csClient
-				nodes, paginationResult, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
+				nodes, paginationResult, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}, "")
 				return []interface{}{nodes, paginationResult}, err
 			})
 			response = raw
@@ -896,7 +1013,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 				if err := invoker.Run(func() error {
 					raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 						requestInfo = csClient
-						nodes, _, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
+						nodes, _, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}, "")
 						return nodes, err
 					})
 					response = raw
@@ -1170,13 +1287,10 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 
 	creationArgs := &cs.DelicatedKubernetesClusterCreationRequest{
 		ClusterArgs: cs.ClusterArgs{
-			DisableRollback: true,
-			Name:            clusterName,
-			// TODO add windows and other platform support
-			OsType:   "Linux",
-			Platform: "CentOS",
-			VpcId:    vpcId,
-
+			DisableRollback:    true,
+			Name:               clusterName,
+			DeletionProtection: d.Get("deletion_protection").(bool),
+			VpcId:              vpcId,
 			// the params below is ok to be empty
 			KubernetesVersion:         d.Get("version").(string),
 			NodeCidrMask:              strconv.Itoa(d.Get("node_cidr_mask").(int)),
@@ -1190,6 +1304,26 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 			Addons:                    addons,
 			ApiAudiences:              apiAudiences,
 		},
+	}
+
+	if osType, ok := d.GetOk("os_type"); ok {
+		creationArgs.OsType = osType.(string)
+	}
+
+	if platform, ok := d.GetOk("platform"); ok {
+		creationArgs.Platform = platform.(string)
+	}
+
+	if timezone, ok := d.GetOk("timezone"); ok {
+		creationArgs.Timezone = timezone.(string)
+	}
+
+	if clusterDomain, ok := d.GetOk("cluster_domain"); ok {
+		creationArgs.ClusterDomain = clusterDomain.(string)
+	}
+
+	if customSan, ok := d.GetOk("custom_san"); ok {
+		creationArgs.CustomSAN = customSan.(string)
 	}
 
 	if imageId, ok := d.GetOk("image_id"); ok {
@@ -1324,6 +1458,30 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		creationArgs.ClusterSpec = v.(string)
 	}
 
+	if encryptionProviderKey, ok := d.GetOk("encryption_provider_key"); ok {
+		creationArgs.EncryptionProviderKey = encryptionProviderKey.(string)
+	}
+
+	if rdsInstances, ok := d.GetOk("rds_instances"); ok {
+		creationArgs.RdsInstances = expandStringList(rdsInstances.([]interface{}))
+	}
+
+	if nodePortRange, ok := d.GetOk("node_port_range"); ok {
+		creationArgs.NodePortRange = nodePortRange.(string)
+	}
+
+	if runtime, ok := d.GetOk("runtime"); ok {
+		if v := runtime.(map[string]interface{}); len(v) > 0 {
+			creationArgs.Runtime = expandKubernetesRuntimeConfig(v)
+		}
+	}
+
+	if taints, ok := d.GetOk("taints"); ok {
+		if v := taints.([]interface{}); len(v) > 0 {
+			creationArgs.Taints = expandKubernetesTaintsConfig(v)
+		}
+	}
+
 	return creationArgs, nil
 }
 
@@ -1371,4 +1529,35 @@ func knockOffAutoScalerNodes(nodes []cs.KubernetesNodeType, meta interface{}) ([
 	}
 
 	return result, nil
+}
+
+func expandKubernetesTaintsConfig(l []interface{}) []cs.Taint {
+	config := []cs.Taint{}
+
+	for _, v := range l {
+		if m, ok := v.(map[string]interface{}); ok {
+			config = append(config, cs.Taint{
+				Key:    m["key"].(string),
+				Value:  m["value"].(string),
+				Effect: cs.Effect(m["effect"].(string)),
+			})
+		}
+	}
+
+	return config
+}
+
+func expandKubernetesRuntimeConfig(l map[string]interface{}) cs.Runtime {
+	config := cs.Runtime{}
+
+	// m := l[0].(map[string]interface{})
+
+	if v, ok := l["name"]; ok && v != "" {
+		config.Name = v.(string)
+	}
+	if v, ok := l["version"]; ok && v != "" {
+		config.Version = v.(string)
+	}
+
+	return config
 }

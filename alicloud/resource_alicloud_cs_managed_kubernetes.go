@@ -305,6 +305,92 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Default:          true,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"timezone": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"os_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "Linux",
+				ValidateFunc: validation.StringInSlice([]string{"Windows", "Linux"}, false),
+			},
+			"platform": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "CentOS",
+			},
+			"node_port_range": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "30000-32767",
+			},
+			"cluster_domain": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "cluster.local",
+				Description: "cluster local domain ",
+			},
+			"runtime": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "docker",
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "19.03.5",
+						},
+					},
+				},
+			},
+			"taints": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"effect": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"NoSchedule", "NoExecute", "PreferNoSchedule"}, false),
+						},
+					},
+				},
+			},
+			"rds_instances": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"custom_san": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"encryption_provider_key": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "disk encryption key, only in ack-pro",
+			},
 			// computed parameters
 			"kube_config": {
 				Type:     schema.TypeString,

@@ -580,12 +580,12 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 	setNodePoolTaints(&creationArgs.KubernetesConfig, d)
 	setNodePoolLabels(&creationArgs.KubernetesConfig, d)
 
-	if v := d.Get("user_data").(string); v != "" {
-		_, base64DecodeError := base64.StdEncoding.DecodeString(v)
+	if v, ok := d.GetOk("user_data"); ok && v != "" {
+		_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
 		if base64DecodeError == nil {
-			creationArgs.KubernetesConfig.UserData = v
+			creationArgs.KubernetesConfig.UserData = v.(string)
 		} else {
-			creationArgs.KubernetesConfig.UserData = base64.StdEncoding.EncodeToString([]byte(v))
+			creationArgs.KubernetesConfig.UserData = base64.StdEncoding.EncodeToString([]byte(v.(string)))
 		}
 	}
 

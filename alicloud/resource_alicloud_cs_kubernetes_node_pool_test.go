@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -42,32 +43,29 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                 name,
-					"cluster_id":           "",
-					"vswitch_ids":          []string{""},
-					"instance_types":       []string{"ecs.g6.large"},
+					"cluster_id":           os.Getenv("CLUSTER_ID"),
+					"vswitch_ids":          []string{os.Getenv("VSWITCH_ID")},
+					"instance_types":       []string{"ecs.n4.large"},
 					"node_count":           "0",
 					"password":             "Test12345",
-					"system_disk_category": "cloud_ssd",
-					"system_disk_size":     "20",
-					"data_disks":           []map[string]string{{"size": "100", "category": "cloud_ssd"}},
+					"system_disk_category": "cloud_efficiency",
+					"system_disk_size":     "40",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                  name,
-						"node_count":            "0",
-						"password":              "Test12345",
-						"system_disk_category":  "cloud_ssd",
-						"system_disk_size":      "20",
-						"data_disks.#":          "1",
-						"data_disks.0.size":     "100",
-						"data_disks.0.category": "cloud_ssd",
+						"name":                 name,
+						"node_count":           "0",
+						"password":             "Test12345",
+						"system_disk_category": "cloud_efficiency",
+						"system_disk_size":     "40",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"name", "cluster_id", "vswitch_ids", "instance_types", "node_count", "password", "system_disk_category", "system_disk_size"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

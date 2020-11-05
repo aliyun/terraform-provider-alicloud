@@ -244,6 +244,22 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"rds_instances": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			// computed parameters start
 			"connections": {
 				Type:     schema.TypeMap,
