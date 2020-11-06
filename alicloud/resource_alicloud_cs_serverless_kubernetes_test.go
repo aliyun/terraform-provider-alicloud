@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -49,11 +48,15 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 					"new_nat_gateway":                "true",
 					"deletion_protection":            "false",
 					"endpoint_public_access_enabled": "true",
-					"resource_group_id":              fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": name,
+						"name":                           name,
+						"new_nat_gateway":                "true",
+						"deletion_protection":            "false",
+						"endpoint_public_access_enabled": "true",
+						"resource_group_id":              CHECKSET,
 					}),
 				),
 			},
@@ -70,6 +73,8 @@ variable "name" {
 data "alicloud_zones" default {
   available_resource_creation = "VSwitch"
 }
+
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_vpc" "default" {
   name = "${var.name}"

@@ -160,6 +160,8 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 						"service_cidr":          "192.168.2.0/24",
 						"enable_ssh":            "true",
 						"install_cloud_monitor": "true",
+						"resource_group_id":     CHECKSET,
+						"deletion_protection":   "false",
 						"timezone":              "Asia/Shanghai",
 						"os_type":               "Linux",
 						"platform":              "CentOS",
@@ -303,6 +305,7 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 						"service_cidr":          "192.168.2.0/24",
 						"enable_ssh":            "true",
 						"install_cloud_monitor": "true",
+						"resource_group_id":     CHECKSET,
 						"deletion_protection":   "false",
 						"timezone":              "Asia/Shanghai",
 						"os_type":               "Linux",
@@ -392,9 +395,7 @@ func resourceCSKubernetesConfigDependence(name string) string {
 		kubernetes_node_role = "Worker"
 	}
 
-	data "alicloud_resource_manager_resource_groups" "default" {
-  		name_regex = ""
-	}
+	data "alicloud_resource_manager_resource_groups" "default" {}
 
 	resource "alicloud_vpc" "default" {
 	  name = "${var.name}"

@@ -405,26 +405,31 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+				ForceNew: true,
 			},
 			"timezone": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"os_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "Linux",
+				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Windows", "Linux"}, false),
 			},
 			"platform": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "CentOS",
+				ForceNew: true,
 			},
 			"node_port_range": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "30000-32767",
+				ForceNew: true,
 			},
 			"runtime": {
 				Type:     schema.TypeMap,
@@ -448,7 +453,8 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "cluster.local",
-				Description: "cluster local domain ",
+				ForceNew:    true,
+				Description: "cluster local domain",
 			},
 			"taints": {
 				Type:     schema.TypeList,
@@ -481,6 +487,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"custom_san": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			// computed parameters
 			"kube_config": {

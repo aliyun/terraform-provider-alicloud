@@ -82,6 +82,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 						"worker_data_disk_category": "cloud_ssd",
 						"slb_internet_enabled":      "true",
 						"cluster_spec":              "ack.pro.small",
+						"resource_group_id":         CHECKSET,
 						"deletion_protection":       "false",
 						"timezone":                  "Asia/Shanghai",
 						"os_type":                   "Linux",
@@ -151,9 +152,7 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role = "Worker"
 }
 
-data "alicloud_resource_manager_resource_groups" "default" {
-	name_regex = ""
-}
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_vpc" "default" {
   name = "${var.name}"
