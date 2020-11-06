@@ -2,12 +2,15 @@
 
 IMPROVEMENTS:
 
+- ci test supports network acl [GH-2995]
+- Increase sls retry type [GH-2992]
 - Modify the order of updating the interface [GH-2983]
 - Modify the way of obtaining Drds instance vpc id [GH-2981]
 - update changelog [GH-2978]
 
 BUG FIXES:
 
+- fix client bug when loading endpoint [GH-2994]
 - fix network acl error [GH-2986]
 - fix auto_provisioning_group and reserved_instance set attribute failed bug [GH-2972]
 
