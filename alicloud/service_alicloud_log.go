@@ -24,7 +24,7 @@ func (s *LogService) DescribeLogProject(id string) (*sls.LogProject, error) {
 			return slsClient.GetProject(id)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{LogClientTimeout}) {
+			if IsExpectedErrors(err, []string{LogClientTimeout, "ProjectForbidden"}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
