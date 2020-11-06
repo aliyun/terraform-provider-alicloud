@@ -188,7 +188,7 @@ const Module = "Terraform-Module"
 
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 var loadSdkfromRemoteMutex = sync.Mutex{}
-var loadSdkfromLocationMutex = sync.Mutex{}
+var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
 var providerVersion = "1.103.0"

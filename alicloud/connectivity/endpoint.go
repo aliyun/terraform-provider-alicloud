@@ -4,15 +4,10 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
-	"log"
-	"net/http"
 	"os"
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
-	"github.com/yalp/jsonpath"
-
-	"encoding/json"
 )
 
 // ServiceCode Load endpoints from endpoints.xml or environment variables to meet specified application scenario, like private cloud.
@@ -162,28 +157,28 @@ func loadEndpoint(region string, serviceCode ServiceCode) string {
 
 // NOTE: The productCode must be lower.
 func (client *AliyunClient) loadEndpoint(productCode string) error {
-	productCodeUp := strings.ToUpper(productCode)
-	config := client.config
-
-	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", productCodeUp)))
+	loadSdkEndpointMutex.Lock()
+	defer loadSdkEndpointMutex.Unlock()
+	// Firstly, load endpoint from environment variables
+	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", strings.ToUpper(productCode))))
 	if endpoint != "" {
-		config.Endpoints[productCode] = endpoint
+		client.config.Endpoints[productCode] = endpoint
 		return nil
 	}
 
-	// if not, get an endpoint by regional rule
-	err := loadEndpointFromSdk(client.config, productCode)
-	if err != nil {
-		log.Printf("[ERROR] loadEndpoint from Sdk api got an error: %s", err)
-		serviceCode := serviceCodeMapping[productCode]
-		if serviceCode == "" {
-			serviceCode = productCode
-		}
-		if _, err = client.describeEndpointForService(serviceCode); err != nil {
-			return err
-		}
-	}
+	// Secondly, load endpoint from known rules
+	// Currently, this way is not pass.
+	// if _, ok := irregularProductCode[productCode]; !ok {
+	// 	client.config.Endpoints[productCode] = regularEndpoint
+	// 	return nil
+	// }
 
+	// Thirdly, load endpoint from location
+	serviceCode := serviceCodeMapping[productCode]
+	if serviceCode == "" {
+		serviceCode = productCode
+	}
+	_, err := client.describeEndpointForService(serviceCode)
 	return err
 }
 
@@ -212,59 +207,7 @@ func (config *Config) loadEndpointFromLocal() error {
 	return nil
 }
 
-func loadEndpointFromSdk(config *Config, productCode string) error {
-	loadSdkfromRemoteMutex.Lock()
-	defer loadSdkfromRemoteMutex.Unlock()
-
-	response, err := http.Post(fmt.Sprintf("http://sdk.aliyun-inc.com/api/get/release/endpoint/info?product_id=%s", productCode), "", nil)
-	if err != nil {
-		log.Printf("[ERROR] http.post got an error: %s", err)
-		return err
-	}
-	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Printf("[ERROR] read http.post response got an error: %s", err)
-		return err
-	}
-
-	var jsonBody interface{}
-	if err := json.Unmarshal(body, &jsonBody); err != nil {
-		log.Printf("[ERROR] json.Unmarshal http.post response body: %s got an error: %s", body, err)
-		return err
-	}
-	ok, err := jsonpath.Read(jsonBody, "$.ok")
-	if err != nil {
-		return err
-	}
-	if ok.(bool) {
-		endpointRegional, err := jsonpath.Read(jsonBody, "$.data.endpoint_regional")
-		if err != nil {
-			log.Printf("[ERROR] jsonpath.Read data.endpoint_regional got an error: %s", err)
-			return err
-		}
-		if endpointRegional == "regional" {
-			var err error
-			for _, pathKey := range []string{"endpoint_map", "standard"} {
-				endpoint, e := jsonpath.Read(jsonBody, fmt.Sprintf("$.data.endpoint_data.%s[\"%s\"]", pathKey, config.RegionId))
-				if e != nil {
-					log.Printf("[ERROR] jsonpath.Read endpoint got an error: %s", e)
-					err = e
-					continue
-				}
-				if endpoint != nil && endpoint.(string) != "" {
-					config.Endpoints[productCode] = endpoint.(string)
-					return nil
-				}
-			}
-			return err
-		}
-	}
-	return nil
-}
 func (client *AliyunClient) describeEndpointForService(serviceCode string) (string, error) {
-	loadSdkfromLocationMutex.Lock()
-	defer loadSdkfromLocationMutex.Unlock()
 	args := location.CreateDescribeEndpointsRequest()
 	args.ServiceCode = serviceCode
 	args.Id = client.config.RegionId
