@@ -1,18 +1,20 @@
 ## 1.104.0 (Unreleased)
+## 1.103.1 (November 06, 2020)
 
 IMPROVEMENTS:
 
-- ci test supports network acl [GH-2995]
-- Increase sls retry type [GH-2992]
-- Modify the order of updating the interface [GH-2983]
-- Modify the way of obtaining Drds instance vpc id [GH-2981]
-- update changelog [GH-2978]
+- ci test supports network acl ([#2995](https://github.com/aliyun/terraform-provider-alicloud/issues/2995))
+- Increase sls retry type ([#2992](https://github.com/aliyun/terraform-provider-alicloud/issues/2992))
+- Modify the order of updating the interface ([#2983](https://github.com/aliyun/terraform-provider-alicloud/issues/2983))
+- Modify the way of obtaining Drds instance vpc id ([#2981](https://github.com/aliyun/terraform-provider-alicloud/issues/2981))
+- update changelog ([#2978](https://github.com/aliyun/terraform-provider-alicloud/issues/2978))
 
 BUG FIXES:
 
-- fix client bug when loading endpoint [GH-2994]
-- fix network acl error [GH-2986]
-- fix auto_provisioning_group and reserved_instance set attribute failed bug [GH-2972]
+- fix(alicloud_eip): delete it failed error ([#2996](https://github.com/aliyun/terraform-provider-alicloud/issues/2996))
+- fix client bug when loading endpoint ([#2994](https://github.com/aliyun/terraform-provider-alicloud/issues/2994))
+- fix network acl error ([#2986](https://github.com/aliyun/terraform-provider-alicloud/issues/2986))
+- fix auto_provisioning_group and reserved_instance set attribute failed bug ([#2972](https://github.com/aliyun/terraform-provider-alicloud/issues/2972))
 
 ## 1.103.0 (October 30, 2020)
 
