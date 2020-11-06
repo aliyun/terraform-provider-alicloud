@@ -144,7 +144,7 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
 					"install_cloud_monitor", "force_update", "node_cidr_mask", "slb_internet_enabled", "worker_disk_category",
 					"worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config",
-					"worker_vswitch_ids", "proxy_mode", "worker_data_disks", "is_enterprise_security_group"},
+					"worker_vswitch_ids", "proxy_mode", "worker_data_disks", "is_enterprise_security_group", "rds_instances", "deletion_protection"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -187,7 +187,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types",
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
 					"worker_instance_charge_type", "worker_instance_types", "log_config",
-					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes"},
+					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes", "cpu_policy", "proxy_mode", "cluster_domain", "custom_san", "node_port_range", "os_type", "platform", "timezone", "runtime", "taints", "rds_instances"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -332,7 +332,7 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 					"master_disk_category", "master_disk_size", "master_instance_charge_type", "master_instance_types",
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
 					"worker_instance_charge_type", "worker_instance_types", "log_config",
-					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes"},
+					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes", "cpu_policy", "proxy_mode", "cluster_domain", "custom_san", "node_port_range", "os_type", "platform", "timezone", "runtime", "taints", "rds_instances"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

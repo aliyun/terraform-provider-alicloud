@@ -447,7 +447,7 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	d.Set("node_count", object.TotalNodes)
-	d.Set("cluster_id", d.Get("cluster_id").(string))
+	//d.Set("cluster_id", d.Get("cluster_id").(string))
 	d.Set("name", object.Name)
 	d.Set("vpc_id", object.VpcId)
 	d.Set("vswitch_ids", object.VswitchIds)
@@ -457,7 +457,7 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("system_disk_category", object.SystemDiskCategory)
 	d.Set("system_disk_size", object.SystemDiskSize)
 	d.Set("image_id", object.ImageId)
-	d.Set("data_disks", object.DataDisks)
+	//d.Set("data_disks", object.DataDisks)
 	d.Set("tags", object.Tags)
 	d.Set("labels", object.Labels)
 	d.Set("taints", object.Taints)
@@ -471,6 +471,20 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	}
 	if sg, ok := d.GetOk("min"); ok && sg.(string) != "" {
 		d.Set("min", object.MinInstance)
+	}
+
+	if passwd, ok := d.GetOk("password"); ok && passwd.(string) != "" {
+		d.Set("password", passwd)
+	}
+
+	if parts, err := ParseResourceId(d.Id(), 2); err != nil {
+		return WrapError(err)
+	} else {
+		d.Set("cluster_id", string(parts[0]))
+	}
+
+	if err := d.Set("data_disks", flattenNodeDataDisksConfig(object.DataDisks)); err != nil {
+		return WrapError(err)
 	}
 
 	return nil
@@ -691,4 +705,19 @@ func setNodePoolTaints(config *cs.KubernetesConfig, d *schema.ResourceData) erro
 	}
 
 	return nil
+}
+
+func flattenNodeDataDisksConfig(config []cs.NodePoolDataDisk) (m []map[string]interface{}) {
+	if config == nil {
+		return []map[string]interface{}{}
+	}
+
+	for _, disks := range config {
+		m = append(m, map[string]interface{}{
+			"size":     disks.Size,
+			"category": disks.Category,
+		})
+	}
+
+	return m
 }
