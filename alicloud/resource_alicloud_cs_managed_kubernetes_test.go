@@ -64,7 +64,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"node_port_range":             "30000-32767",
 					"cluster_domain":              "cluster.local",
 					"custom_san":                  "www.terraform.io",
-					"encryption_provider_key":     "${alicloud_kms_secret.default.id}",
+					"encryption_provider_key":     "${data.alicloud_kms_secrets.default.secrets.0.id}",
 					"runtime":                     map[string]interface{}{"Name": "docker", "Version": "19.03.5"},
 					"rds_instances":               []string{"${alicloud_db_instance.default.id}"},
 					"taints":                      []map[string]string{{"key": "tf-key1", "value": "tf-value1", "effect": "NoSchedule"}},
@@ -154,6 +154,8 @@ data "alicloud_instance_types" "default" {
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
+data "alicloud_kms_secrets" "default" {}
+
 resource "alicloud_vpc" "default" {
   name = "${var.name}"
   cidr_block = "10.1.0.0/21"
@@ -169,12 +171,6 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_log_project" "log" {
   name        = "${var.name}"
   description = "created by terraform for managedkubernetes cluster"
-}
-
-resource "alicloud_kms_secret" "default" {
-  secret_name          = "secret-tf"
-  secret_data          = "Secret data."
-  version_id           = "000000000001"
 }
 
 resource "alicloud_db_instance" "default" {
