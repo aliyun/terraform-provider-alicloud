@@ -29,6 +29,10 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role = "Worker"
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {
+	name_regex = ""
+}
+
 resource "alicloud_vpc" "default" {
   name = "${var.name}"
   cidr_block = "10.1.0.0/21"
@@ -44,6 +48,17 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_log_project" "log" {
   name        = "${var.name}"
   description = "created by terraform for managedkubernetes cluster"
+}
+
+resource "alicloud_db_instance" "default" {
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  instance_type        = "rds.mysql.s2.large"
+  instance_storage     = "30"
+  instance_charge_type = "Postpaid"
+  instance_name        = var.name
+  vswitch_id           = alicloud_vswitch.default.id
+  monitoring_period    = "60"
 }
 
 `
@@ -105,6 +120,8 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 					},
 					"is_enterprise_security_group": "true",
 					"deletion_protection":          "false",
+					"resource_group_id":            "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"rds_instances":                []string{"${alicloud_db_instance.default.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -116,6 +133,9 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 						"slb_internet_enabled":         "true",
 						"is_enterprise_security_group": "true",
 						"deletion_protection":          "false",
+						"rds_instances.#":              "1",
+						"runtime.Name":                 "docker",
+						"runtime.Version":              "19.03.5",
 					}),
 				),
 			},

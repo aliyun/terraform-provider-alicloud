@@ -35,7 +35,7 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 ## Example Usage
 
-```terraform
+```
 // If there is not specifying vpc_id, the module will launch a new vpc
 resource "alicloud_vpc" "vpc" {
   count      = var.vpc_id == "" ? 1 : 0
@@ -111,7 +111,7 @@ The following arguments are supported:
 
 The following example is the definition of runtime block:
 
-```terraform
+```
   runtime = {
     name = "docker"
     version = "19.03.5"
@@ -122,7 +122,7 @@ The following example is the definition of runtime block:
 
 The following example is the definition of tags block. The type of this field is map:
 
-```terraform
+```
   # for example, define three tags
 
   tags = {
@@ -160,7 +160,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 
 The following example is the definition of `master_vswtich_ids` block, the `worker_vswtich_ids` is similar.
 
-```terraform
+```
   # the ID can be the same.
   # if your master nodes have three.
   master_vswtich_ids = ["vsw-id1", "vsw-id1", "vsw-id3"]
@@ -206,7 +206,7 @@ The following example is the definition of `master_vswtich_ids` block, the `work
 
 The following example is the definition of taints block:
 
-```terraform
+```
 resource "alicloud_cs_kubernetes" "k8s" {
   # ... other configuration ...
 
@@ -235,7 +235,7 @@ You can get more information about addons on ACK web console. When you create a 
 
 The `main.tf`:
 
-```terraform
+```
 resource "alicloud_cs_managed_kubernetes" "k8s" {
   # ... other configuration ...
 
@@ -252,7 +252,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
 
 The `varibales.tf`:
 
-```terraform
+```
 # Network-flannel is required, Conflicts With Network-terway
 variable "cluster_addons" {
   description = "Addon components in kubernetes cluster"
@@ -434,6 +434,6 @@ The following arguments are supported in the `connections` configuration block:
 
 Kubernetes cluster can be imported using the id, e.g. Then complete the main.tf accords to the result of `terraform plan`
 
-```terraform
+```
   $ terraform import alicloud_cs_kubernetes.main cluster-id
 ```

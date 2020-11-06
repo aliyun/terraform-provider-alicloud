@@ -28,7 +28,7 @@ after creating cluster successfully, and you can put them into the specified loc
 
 ## Example Usage
 
-```terraform
+```
 # If vpc_id is not specified, a new one will be created
 resource "alicloud_vpc" "vpc" {
   count      = var.vpc_id == "" ? 1 : 0
@@ -128,7 +128,7 @@ To create an edge cluster, you only need to install additional logging component
 
 The `main.tf`:
 
-```terraform
+```
 resource "alicloud_cs_edg_kubernetes" "k8s" {
   # ... other configuration ...
 
@@ -144,7 +144,7 @@ resource "alicloud_cs_edg_kubernetes" "k8s" {
 
 The `varibales.tf`:
 
-```terraform
+```
 # flannel network component, Required.
 variable "cluster_addons" {
   description = "Addon components in kubernetes cluster"
@@ -227,6 +227,6 @@ The following arguments are supported in the `worker_nodes` configuration block:
 
 Kubernetes cluster can be imported using the id, e.g. Then complete the main.tf accords to the result of `terraform plan`
 
-```terraform
+```
   $ terraform import alicloud_cs_edge_kubernetes.main cluster-id
 ```

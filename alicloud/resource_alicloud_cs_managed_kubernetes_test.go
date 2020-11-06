@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -57,14 +56,18 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"worker_instance_charge_type": "PostPaid",
 					"slb_internet_enabled":        "true",
 					"cluster_spec":                "ack.pro.small",
-					"resource_group_id":           fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"deletion_protection":         "false",
 					"timezone":                    "Asia/Shanghai",
 					"os_type":                     "Linux",
 					"platform":                    "CentOS",
 					"node_port_range":             "30000-32767",
 					"cluster_domain":              "cluster.local",
+					"custom_san":                  "www.terraform.io",
+					"encryption_provider_key":     "${alicloud_kms_secret.default.id}",
 					"runtime":                     map[string]interface{}{"Name": "docker", "Version": "19.03.5"},
+					"rds_instances":               []string{"${alicloud_db_instance.default.id}"},
+					"taints":                      []map[string]string{{"key": "tf-key1", "value": "tf-value1", "effect": "NoSchedule"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -79,13 +82,20 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 						"worker_data_disk_category": "cloud_ssd",
 						"slb_internet_enabled":      "true",
 						"cluster_spec":              "ack.pro.small",
-						"resource_group_id":         fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+						"deletion_protection":       "false",
 						"timezone":                  "Asia/Shanghai",
 						"os_type":                   "Linux",
 						"platform":                  "CentOS",
 						"node_port_range":           "30000-32767",
 						"cluster_domain":            "cluster.local",
-						"encryption_provider_key":   fmt.Sprintf(`"%s"`, os.Getenv("ENCRYPTION_PROVIDER_KEY")),
+						"custom_san":                "www.terraform.io",
+						"rds_instances.#":           "1",
+						"taints.#":                  "1",
+						"taints.0.key":              "tf-key1",
+						"taints.0.value":            "tf-value1",
+						"taints.0.effect":           "NoSchedule",
+						"runtime.Name":              "docker",
+						"runtime.Version":           "19.03.5",
 					}),
 				),
 			},
@@ -141,6 +151,10 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role = "Worker"
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {
+	name_regex = ""
+}
+
 resource "alicloud_vpc" "default" {
   name = "${var.name}"
   cidr_block = "10.1.0.0/21"
@@ -157,6 +171,24 @@ resource "alicloud_log_project" "log" {
   name        = "${var.name}"
   description = "created by terraform for managedkubernetes cluster"
 }
+
+resource "alicloud_kms_secret" "default" {
+  secret_name          = "secret-tf"
+  secret_data          = "Secret data."
+  version_id           = "000000000001"
+}
+
+resource "alicloud_db_instance" "default" {
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  instance_type        = "rds.mysql.s2.large"
+  instance_storage     = "30"
+  instance_charge_type = "Postpaid"
+  instance_name        = "${var.name}"
+  vswitch_id           = "${alicloud_vswitch.default.id}"
+  monitoring_period    = "60"
+}
+
 `, name)
 }
 
