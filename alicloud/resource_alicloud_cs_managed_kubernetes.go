@@ -309,31 +309,37 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+				ForceNew: true,
 			},
 			"timezone": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"os_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "Linux",
+				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Windows", "Linux"}, false),
 			},
 			"platform": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "CentOS",
+				ForceNew: true,
 			},
 			"node_port_range": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "30000-32767",
+				ForceNew: true,
 			},
 			"cluster_domain": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "cluster.local",
+				ForceNew:    true,
 				Description: "cluster local domain ",
 			},
 			"runtime": {
@@ -385,10 +391,12 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"custom_san": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"encryption_provider_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
+				ForceNew:    true,
 				Description: "disk encryption key, only in ack-pro",
 			},
 			// computed parameters

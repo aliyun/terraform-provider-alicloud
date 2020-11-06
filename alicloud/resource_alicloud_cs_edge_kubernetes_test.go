@@ -29,9 +29,7 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role = "Worker"
 }
 
-data "alicloud_resource_manager_resource_groups" "default" {
-	name_regex = ""
-}
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_vpc" "default" {
   name = "${var.name}"
