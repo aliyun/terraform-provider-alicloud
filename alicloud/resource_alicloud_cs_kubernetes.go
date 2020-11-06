@@ -968,8 +968,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("cluster_spec", object.ClusterSpec)
 
 	d.Set("deletion_protection", object.DeletionProtection)
-	d.Set("os_type", object.OSType)
-
+	//d.Set("os_type", object.OSType)
 	// d.Set("platform", object.Platform)
 	// d.Set("timezone", object.TimeZone)
 	// d.Set("cluster_domain", object.ClusterDomin)
@@ -1549,8 +1548,6 @@ func expandKubernetesTaintsConfig(l []interface{}) []cs.Taint {
 
 func expandKubernetesRuntimeConfig(l map[string]interface{}) cs.Runtime {
 	config := cs.Runtime{}
-
-	// m := l[0].(map[string]interface{})
 
 	if v, ok := l["name"]; ok && v != "" {
 		config.Name = v.(string)

@@ -137,7 +137,17 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"service_cidr":          "192.168.2.0/24",
 					"enable_ssh":            "true",
 					"install_cloud_monitor": "true",
-					"resource_group_id":     fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"deletion_protection":   "false",
+					"timezone":              "Asia/Shanghai",
+					"os_type":               "Linux",
+					"platform":              "CentOS",
+					"node_port_range":       "30000-32767",
+					"cluster_domain":        "cluster.local",
+					"custom_san":            "www.terraform.io",
+					"rds_instances":         []string{"${alicloud_db_instance.default.id}"},
+					"taints":                []map[string]string{{"key": "tf-key1", "value": "tf-value1", "effect": "NoSchedule"}},
+					"runtime":               map[string]interface{}{"Name": "docker", "Version": "19.03.5"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -150,7 +160,19 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 						"service_cidr":          "192.168.2.0/24",
 						"enable_ssh":            "true",
 						"install_cloud_monitor": "true",
-						"resource_group_id":     fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+						"timezone":              "Asia/Shanghai",
+						"os_type":               "Linux",
+						"platform":              "CentOS",
+						"node_port_range":       "30000-32767",
+						"cluster_domain":        "cluster.local",
+						"custom_san":            "www.terraform.io",
+						"rds_instances.#":       "1",
+						"taints.#":              "1",
+						"taints.0.key":          "tf-key1",
+						"taints.0.value":        "tf-value1",
+						"taints.0.effect":       "NoSchedule",
+						"runtime.Name":          "docker",
+						"runtime.Version":       "19.03.5",
 					}),
 				),
 			},
@@ -257,13 +279,16 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 					"enable_ssh":            "true",
 					"install_cloud_monitor": "true",
 					"user_ca":               tmpFile.Name(),
-					"resource_group_id":     fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+					"resource_group_id":     "${alicloud_resource_manager_resource_group.default.id}",
 					"deletion_protection":   "false",
 					"timezone":              "Asia/Shanghai",
 					"os_type":               "Linux",
 					"platform":              "CentOS",
 					"node_port_range":       "30000-32767",
 					"cluster_domain":        "cluster.local",
+					"custom_san":            "www.terraform.io",
+					"rds_instances":         []string{"${alicloud_db_instance.default.id}"},
+					"taints":                []map[string]string{{"key": "tf-key1", "value": "tf-value1", "effect": "NoSchedule"}},
 					"runtime":               map[string]interface{}{"Name": "docker", "Version": "19.03.5"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -278,12 +303,20 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 						"service_cidr":          "192.168.2.0/24",
 						"enable_ssh":            "true",
 						"install_cloud_monitor": "true",
-						"resource_group_id":     fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+						"deletion_protection":   "false",
 						"timezone":              "Asia/Shanghai",
 						"os_type":               "Linux",
 						"platform":              "CentOS",
 						"node_port_range":       "30000-32767",
 						"cluster_domain":        "cluster.local",
+						"custom_san":            "www.terraform.io",
+						"rds_instances.#":       "1",
+						"taints.#":              "1",
+						"taints.0.key":          "tf-key1",
+						"taints.0.value":        "tf-value1",
+						"taints.0.effect":       "NoSchedule",
+						"runtime.Name":          "docker",
+						"runtime.Version":       "19.03.5",
 					}),
 				),
 			},
@@ -358,7 +391,11 @@ func resourceCSKubernetesConfigDependence(name string) string {
 		memory_size = 4
 		kubernetes_node_role = "Worker"
 	}
-	
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+  		name_regex = ""
+	}
+
 	resource "alicloud_vpc" "default" {
 	  name = "${var.name}"
 	  cidr_block = "10.1.0.0/21"
@@ -370,6 +407,18 @@ func resourceCSKubernetesConfigDependence(name string) string {
 	  cidr_block = "10.1.1.0/24"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
+	
+	resource "alicloud_db_instance" "default" {
+	  engine               = "MySQL"
+	  engine_version       = "5.6"
+	  instance_type        = "rds.mysql.s2.large"
+	  instance_storage     = "30"
+	  instance_charge_type = "Postpaid"
+	  instance_name        = "${var.name}"
+	  vswitch_id           = alicloud_vswitch.default.id
+	  monitoring_period    = "60"
+	}
+
 	`, name)
 }
 
