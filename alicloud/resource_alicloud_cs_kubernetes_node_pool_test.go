@@ -42,10 +42,10 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                 name,
-					"cluster_id":           "",
-					"vswitch_ids":          []string{""},
+					"cluster_id":           "c24bc7a1c7ca045998ae8b4fa88184eb3",
+					"vswitch_ids":          []string{"vsw-2ze3ds0mdip0hdz8ia7qx"},
 					"instance_types":       []string{"ecs.n4.large"},
-					"node_count":           "0",
+					"node_count":           "1",
 					"password":             "Test12345",
 					"system_disk_category": "cloud_efficiency",
 					"system_disk_size":     "40",
@@ -54,7 +54,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                  name,
-						"node_count":            "0",
+						"node_count":            "1",
 						"password":              "Test12345",
 						"system_disk_category":  "cloud_efficiency",
 						"system_disk_size":      "40",
@@ -65,9 +65,10 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
