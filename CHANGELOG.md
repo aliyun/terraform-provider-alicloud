@@ -1,4 +1,16 @@
 ## 1.104.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Modify the order of updating the interface [GH-2983]
+- Modify the way of obtaining Drds instance vpc id [GH-2981]
+- update changelog [GH-2978]
+
+BUG FIXES:
+
+- fix network acl error [GH-2986]
+- fix auto_provisioning_group and reserved_instance set attribute failed bug [GH-2972]
+
 ## 1.103.0 (October 30, 2020)
 
 - **New Resource:** `alicloud_cs_edge_kubernetes` ([#2871](https://github.com/aliyun/terraform-provider-alicloud/issues/2871))
