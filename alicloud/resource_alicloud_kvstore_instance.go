@@ -912,10 +912,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	update = false
 	modifyInstanceSpecReq := r_kvstore.CreateModifyInstanceSpecRequest()
 	modifyInstanceSpecReq.InstanceId = d.Id()
-	if !d.IsNewResource() && d.HasChange("auto_renew") {
-		update = true
-		modifyInstanceSpecReq.AutoPay = requests.NewBoolean(d.Get("auto_renew").(bool))
-	}
+	modifyInstanceSpecReq.AutoPay = requests.NewBoolean(true)
 	modifyInstanceSpecReq.EffectiveTime = "0"
 	if !d.IsNewResource() && d.HasChange("engine_version") {
 
@@ -962,7 +959,6 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("auto_renew")
 		d.SetPartial("engine_version")
 		d.SetPartial("instance_class")
 	}
