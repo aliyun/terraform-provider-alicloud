@@ -48,6 +48,15 @@ The following arguments are supported:
 * `arn` - The Alicloud Resource Name (ARN) of the secret.
 * `planned_delete_time` - The time when the secret is scheduled to be deleted.
 
+### Timeouts
+
+-> **NOTE:** Available in 1.104.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins) Used when creating the KMS Secret. 
+
+
 ## Import
 
 KMS secret can be imported using the id, e.g.
