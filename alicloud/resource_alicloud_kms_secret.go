@@ -4,8 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"log"
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -18,6 +22,9 @@ func resourceAlicloudKmsSecret() *schema.Resource {
 		Delete: resourceAlicloudKmsSecretDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(1 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"arn": {
@@ -58,7 +65,7 @@ func resourceAlicloudKmsSecret() *schema.Resource {
 			"secret_data_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"text", "binary"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"binary", "text"}, false),
 				Default:      "text",
 			},
 			"secret_name": {
@@ -90,13 +97,16 @@ func resourceAlicloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("description"); ok {
 		request.Description = v.(string)
 	}
+
 	if v, ok := d.GetOk("encryption_key_id"); ok {
 		request.EncryptionKeyId = v.(string)
 	}
+
 	request.SecretData = d.Get("secret_data").(string)
 	if v, ok := d.GetOk("secret_data_type"); ok {
 		request.SecretDataType = v.(string)
 	}
+
 	request.SecretName = d.Get("secret_name").(string)
 	if v, ok := d.GetOk("tags"); ok {
 		addTags := make([]JsonTag, 0)
@@ -113,15 +123,27 @@ func resourceAlicloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) e
 		request.Tags = string(tags)
 	}
 	request.VersionId = d.Get("version_id").(string)
-	raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-		return kmsClient.CreateSecret(request)
+	wait := incrementalWait(3*time.Second, 1*time.Second)
+	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		args := *request
+		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+			return kmsClient.CreateSecret(&args)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"Rejected.Throttling"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*kms.CreateSecretResponse)
+		d.SetId(fmt.Sprintf("%v", response.SecretName))
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_secret", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*kms.CreateSecretResponse)
-	d.SetId(response.SecretName)
 
 	return resourceAlicloudKmsSecretRead(d, meta)
 }
@@ -131,6 +153,7 @@ func resourceAlicloudKmsSecretRead(d *schema.ResourceData, meta interface{}) err
 	object, err := kmsService.DescribeKmsSecret(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_kms_secret kmsService.DescribeKmsSecret Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -145,7 +168,9 @@ func resourceAlicloudKmsSecretRead(d *schema.ResourceData, meta interface{}) err
 
 	tags := make(map[string]string)
 	for _, t := range object.Tags.Tag {
-		tags[t.TagKey] = t.TagValue
+		if !ignoredTags(t.TagKey, t.TagValue) {
+			tags[t.TagKey] = t.TagValue
+		}
 	}
 	d.Set("tags", tags)
 
@@ -165,7 +190,7 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 	d.Partial(true)
 
 	if d.HasChange("tags") {
-		if err := kmsService.setResourceTags(d, "secret"); err != nil {
+		if err := kmsService.SetResourceTags(d, "secret"); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("tags")
