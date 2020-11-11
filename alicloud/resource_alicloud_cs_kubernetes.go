@@ -807,7 +807,13 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		}
 
 		if newValue < oldValue {
-			return WrapErrorf(fmt.Errorf("worker_number can not be less than before"), "scaleOutFailed %d:%d", newValue, oldValue)
+			nodes, err := removeKubernetesNodes(d, meta)
+			if err != nil {
+				return WrapErrorf(fmt.Errorf("node removed failed"), "node:%++v, err:%++v", nodes, err)
+			}
+			log.Printf("[DEBUG]: nodes removed: %++v", nodes)
+
+			return resourceAlicloudCSKubernetesRead(d, meta)
 		}
 
 		args := &cs.ScaleOutKubernetesClusterRequest{
@@ -1596,4 +1602,93 @@ func expandKubernetesRuntimeConfig(l map[string]interface{}) cs.Runtime {
 	}
 
 	return config
+}
+
+func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, error) {
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
+	invoker := NewInvoker()
+	// remove nodes count
+	o, n := d.GetChange("worker_number")
+	count := o.(int) - n.(int)
+
+	var result []cs.KubernetesNodeType
+	var response interface{}
+	var defaultNodePoolId string
+
+	// get the default nodepool id
+	if err := invoker.Run(func() error {
+		var err error
+		response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			nodePools, err := csClient.DescribeClusterNodePools(d.Id())
+			return *nodePools, err
+		})
+		return err
+	}); err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
+	}
+
+	for _, v := range response.([]cs.NodePoolDetail) {
+		if v.BasicNodePool.NodePoolInfo.Name == "default-nodepool" {
+			defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
+		}
+	}
+
+	// list all nodes of default nodepool
+	if err := invoker.Run(func() error {
+		var err error
+		response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			nodes, _, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: 1, PageSize: PageSizeLarge}, defaultNodePoolId)
+			return nodes, err
+		})
+		return err
+	}); err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
+	}
+
+	ret := response.([]cs.KubernetesNodeType)
+
+	// filter out autoscaler nodes
+	var err error
+	result, err = knockOffAutoScalerNodes(ret, meta)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", AlibabaCloudSdkGoERROR)
+	}
+
+	// filter out Master nodes
+	var allNodeName []string
+	var allHostName []string
+	for _, value := range result {
+		if value.InstanceRole == "Worker" {
+			allNodeName = append(allNodeName, value.NodeName)
+			allHostName = append(allHostName, value.InstanceId)
+		}
+	}
+
+	// remove nodes
+	removeNodesName := allNodeName[len(allNodeName)-count:]
+	removeNodesArgs := &cs.DeleteKubernetesClusterNodesRequest{
+		Nodes:       removeNodesName,
+		ReleaseNode: true,
+		DrainNode:   true,
+	}
+	if err := invoker.Run(func() error {
+		var err error
+		response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			resp, err := csClient.DeleteKubernetesClusterNodes(d.Id(), removeNodesArgs)
+			return resp, err
+		})
+		return err
+	}); err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "RemoveClusterNodes", DenverdinoAliyungo)
+	}
+
+	stateConf := BuildStateConf([]string{"removing"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return nil, WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	d.SetPartial("worker_number")
+
+	return allHostName[len(allHostName)-count:], nil
 }
