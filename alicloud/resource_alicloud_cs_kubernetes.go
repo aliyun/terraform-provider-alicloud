@@ -405,7 +405,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
-				ForceNew: true,
 			},
 			"timezone": {
 				Type:     schema.TypeString,
@@ -945,6 +944,30 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		}
 		d.SetPartial("name")
 		d.SetPartial("name_prefix")
+	}
+
+	if !d.IsNewResource() && d.HasChange("deletion_protection") {
+		var requestInfo cs.ModifyClusterArgs
+		if v, ok := d.GetOk("deletion_protection"); ok {
+			requestInfo.DeletionProtection = v.(bool)
+		}
+
+		var response interface{}
+		if err := invoker.Run(func() error {
+			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				return nil, csClient.ModifyCluster(d.Id(), &requestInfo)
+			})
+			return err
+		}); err != nil && !IsExpectedErrors(err, []string{"ErrorModifyDeletionProtectionFailed"}) {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
+		}
+		if debugOn() {
+			requestMap := make(map[string]interface{})
+			requestMap["ClusterId"] = d.Id()
+			requestMap["deletion_protection"] = requestInfo.DeletionProtection
+			addDebug("ModifyCluster", response, requestInfo, requestMap)
+		}
+		d.SetPartial("deletion_protection")
 	}
 
 	UpgradeAlicloudKubernetesCluster(d, meta)
