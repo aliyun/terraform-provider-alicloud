@@ -112,6 +112,10 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/denverdino/aliyungo v0.0.0-20201103230946-b4b2bfaecbac h1:byL04av3a7bAhb93ypFcAld9rVYa617/o5RJgKZl3Og=
 github.com/denverdino/aliyungo v0.0.0-20201103230946-b4b2bfaecbac/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
+github.com/denverdino/aliyungo v0.0.0-20201110010600-f7c7d0e1d041 h1:ez7Lngh/Q1w9Ezl9MJPoUhgpDckiTVCd1sLan9mq3iA=
+github.com/denverdino/aliyungo v0.0.0-20201110010600-f7c7d0e1d041/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
+github.com/denverdino/aliyungo v0.0.0-20201111050017-ecb1ab1b9105 h1:7BRp61rqTM3gv8QOr9OcsQY7Fexf0zX3Ner/IpUYeYE=
+github.com/denverdino/aliyungo v0.0.0-20201111050017-ecb1ab1b9105/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=

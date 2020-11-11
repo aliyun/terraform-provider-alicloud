@@ -21,22 +21,67 @@ This resource will help you to manager cluster-autoscaler in Kubernetes Cluster.
 
 ## Example Usage
 
-cluster-autoscaler in Kubernetes Cluster
+cluster-autoscaler in Kubernetes Cluster, Some variables need to be replaced.
 
 ```
-resource "alicloud_cs_kubernetes_autoscaler" "default" {
-  cluster_id = var.cluster_id
-  nodepools {
-    id     = "scaling_group_id"
-    taints = "c=d:NoSchedule"
-    labels = "a=b"
+variable "name" {
+  default     = "autoscaler"
+}
+
+data "alicloud_vpcs" "default" {}
+
+data "alicloud_images" "default" {
+  owners      = "system"
+  name_regex  = "^centos_7"
+  most_recent = true
+}
+
+resource "alicloud_security_group" "default" {
+  name                 = "${var.name}"
+  vpc_id               = "${data.alicloud_vpcs.default.vpcs.0.id}"
+}
+
+resource "alicloud_ess_scaling_group" "default" {
+  scaling_group_name   = "${var.name}"
+  
+  min_size             = var.min_size
+  max_size             = var.max_size
+  vswitch_ids          = ["${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"] 
+  removal_policies     = ["OldestInstance", "NewestInstance"]
+}
+
+resource "alicloud_ess_scaling_configuration" "default" {
+  image_id             = "${data.alicloud_images.default.images.0.id}"
+  security_group_id    = alicloud_security_group.default.id
+  scaling_group_id     = alicloud_ess_scaling_group.default.id
+  instance_type        = "var.instance_type"
+  internet_charge_type = "PayByTraffic"
+  force_delete         = true
+  enable               = true
+  active               = true
+
+  # ... ignore the change about tags and user_data
+  lifecycle {
+    ignore_changes = [tags,user_data]
   }
+
+}
+
+resource "alicloud_cs_kubernetes_autoscaler" "default" {
+  cluster_id              = alicloud_cs_managed_kubernetes.k8s.id
+  nodepools {
+    id                    = "${alicloud_ess_scaling_group.default.id}"
+    labels                = "a=b"
+  }
+
   utilization             = var.utilization
   cool_down_duration      = var.cool_down_duration
   defer_scale_in_duration = var.defer_scale_in_duration
-}
-```
 
+  depends_on = [alicloud_ess_scaling_group.defalut, alicloud_ess_scaling_configuration.default]
+}
+
+```
 
 ## Argument Reference
 
@@ -51,6 +96,14 @@ The following arguments are supported:
 * `cool_down_duration` (Required) The cool_down_duration option of cluster-autoscaler.  
 * `defer_scale_in_duration` (Required) The defer_scale_in_duration option of cluster-autoscaler.
 * `use_ecs_ram_role_token` (Optional, Available in 1.88.0+) Enable autoscaler access to alibabacloud service by ecs ramrole token. default: false
+
+If you use `alicloud_cs_kubernetes_autoscaler` to manage nodes, because it depends on `alicloud_ess_scaling_group`. To avoid resource inconsistencies caused by resource changes, It is highly recommend that you add the following configuration.
+```
+  # ... ignore the change about tags and user_data
+  lifecycle {
+    ignore_changes = [tags,user_data]
+  }
+```
 
 ### Timeouts
 

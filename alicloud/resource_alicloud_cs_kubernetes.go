@@ -1494,7 +1494,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 func knockOffAutoScalerNodes(nodes []cs.KubernetesNodeType, meta interface{}) ([]cs.KubernetesNodeType, error) {
 	log.Printf("[DEBUG] start to knock off auto scaler nodes %++v\n", nodes)
 	client := meta.(*connectivity.AliyunClient)
-	scaleNoddesMap := make(map[string]ecs.Instance)
+	realNodesMap := make(map[string]ecs.Instance)
 	result := make([]cs.KubernetesNodeType, 0)
 	instanceIds := make([]interface{}, 0)
 
@@ -1510,10 +1510,8 @@ func knockOffAutoScalerNodes(nodes []cs.KubernetesNodeType, meta interface{}) ([
 	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(len(nodes))
 	request.InstanceIds = convertListToJsonString(instanceIds)
-	tags := []ecs.DescribeInstancesTag{{Key: defaultScalingGroupTag, Value: "true"}}
-	request.Tag = &tags
 
-	// filter ecs by tags, find all ecs created by autoscaler
+	// get all the nodes in use
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.DescribeInstances(request)
 	})
@@ -1524,12 +1522,23 @@ func knockOffAutoScalerNodes(nodes []cs.KubernetesNodeType, meta interface{}) ([
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	response, _ := raw.(*ecs.DescribeInstancesResponse)
+
+	// filter out all autoscaler nodes
 	for _, instance := range response.Instances.Instance {
-		scaleNoddesMap[instance.InstanceId] = instance
+		flags := false
+		for _, v := range instance.Tags.Tag {
+			if v.TagKey == defaultScalingGroupTag && v.TagValue == "true" {
+				flags = true
+			}
+		}
+		if flags != true {
+			realNodesMap[instance.InstanceId] = instance
+		}
 	}
 
+	// get the target node list
 	for _, node := range nodes {
-		if _, ok := scaleNoddesMap[node.InstanceId]; !ok {
+		if _, ok := realNodesMap[node.InstanceId]; !ok {
 			result = append(result, node)
 		}
 	}
