@@ -25,7 +25,7 @@ github.com/alibabacloud-go/tea-rpc/client
 github.com/alibabacloud-go/tea-rpc-utils/service
 # github.com/alibabacloud-go/tea-utils v1.3.4
 github.com/alibabacloud-go/tea-utils/service
-# github.com/aliyun/alibaba-cloud-sdk-go v1.61.557
+# github.com/aliyun/alibaba-cloud-sdk-go v1.61.623
 github.com/aliyun/alibaba-cloud-sdk-go/sdk
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials
@@ -398,8 +398,6 @@ github.com/valyala/fasthttp/stackless
 # github.com/vmihailenco/msgpack v4.0.1+incompatible
 github.com/vmihailenco/msgpack
 github.com/vmihailenco/msgpack/codes
-# github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
-github.com/yalp/jsonpath
 # github.com/zclconf/go-cty v1.1.0
 github.com/zclconf/go-cty/cty
 github.com/zclconf/go-cty/cty/convert
