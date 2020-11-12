@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -41,7 +40,6 @@ func testSweepDRDSInstances(region string) error {
 	}
 
 	request := drds.CreateDescribeDrdsInstancesRequest()
-	request.PageSize = requests.NewInteger(PageSizeXLarge)
 	raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 		return drdsClient.DescribeDrdsInstances(request)
 	})
@@ -52,7 +50,7 @@ func testSweepDRDSInstances(region string) error {
 
 	sweeped := false
 	vpcService := VpcService{client}
-	for _, v := range response.Instances.Instance {
+	for _, v := range response.Data.Instance {
 		name := v.Description
 		id := v.DrdsInstanceId
 		skip := true
@@ -136,10 +134,10 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          "${var.name}",
-					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":              "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"instance_series":      "${var.instance_series}",
 					"instance_charge_type": "PostPaid",
-					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"specification":        "drds.sn1.4c8g.8C16G",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -210,11 +208,11 @@ func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":          "${var.name}",
-					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":              "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"instance_series":      "${var.instance_series}",
 					"instance_charge_type": "PostPaid",
 					"specification":        "drds.sn1.4c8g.8C16G",
-					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"count":                "3",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -244,7 +242,6 @@ func resourceDRDSInstanceConfigDependence(name string) string {
         is_default = "true"
 	}
 	data "alicloud_vswitches" "default" {
-	  zone_id = "${data.alicloud_zones.default.zones.0.id}"
 	  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
 	}
 `, name)

@@ -17,8 +17,8 @@ package hbase
 
 // ConnAddrInfo is a nested struct in hbase response
 type ConnAddrInfo struct {
+	ConnAddrPort string `json:"ConnAddrPort" xml:"ConnAddrPort"`
 	ConnType     string `json:"ConnType" xml:"ConnType"`
 	ConnAddr     string `json:"ConnAddr" xml:"ConnAddr"`
-	ConnAddrPort string `json:"ConnAddrPort" xml:"ConnAddrPort"`
 	NetType      string `json:"NetType" xml:"NetType"`
 }

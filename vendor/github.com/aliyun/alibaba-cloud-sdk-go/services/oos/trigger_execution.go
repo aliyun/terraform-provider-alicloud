@@ -21,7 +21,6 @@ import (
 )
 
 // TriggerExecution invokes the oos.TriggerExecution API synchronously
-// api document: https://help.aliyun.com/api/oos/triggerexecution.html
 func (client *Client) TriggerExecution(request *TriggerExecutionRequest) (response *TriggerExecutionResponse, err error) {
 	response = CreateTriggerExecutionResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) TriggerExecution(request *TriggerExecutionRequest) (respon
 }
 
 // TriggerExecutionWithChan invokes the oos.TriggerExecution API asynchronously
-// api document: https://help.aliyun.com/api/oos/triggerexecution.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) TriggerExecutionWithChan(request *TriggerExecutionRequest) (<-chan *TriggerExecutionResponse, <-chan error) {
 	responseChan := make(chan *TriggerExecutionResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) TriggerExecutionWithChan(request *TriggerExecutionRequest)
 }
 
 // TriggerExecutionWithCallback invokes the oos.TriggerExecution API asynchronously
-// api document: https://help.aliyun.com/api/oos/triggerexecution.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) TriggerExecutionWithCallback(request *TriggerExecutionRequest, callback func(response *TriggerExecutionResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
