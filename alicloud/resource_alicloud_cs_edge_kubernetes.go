@@ -414,8 +414,6 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 	//scale up cloud worker nodes
 	var resp interface{}
 	if d.HasChanges("worker_number") {
-		password := d.Get("password").(string)
-		keyPair := d.Get("key_name").(string)
 		oldV, newV := d.GetChange("worker_number")
 		oldValue, ok := oldV.(int)
 		if !ok {
@@ -425,67 +423,83 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 		if !ok {
 			return WrapErrorf(fmt.Errorf("worker_number new value can not be parsed"), "parseError %d", oldValue)
 		}
+
+		// remove cluster nodes.
 		if newValue < oldValue {
-			return WrapErrorf(fmt.Errorf("worker_number can not be less than before"), "scaleOutCloudWorkersFailed %d:%d", newValue, oldValue)
-		}
-		args := &cs.ScaleOutKubernetesClusterRequest{
-			KeyPair:             keyPair,
-			LoginPassword:       password,
-			Count:               int64(newValue) - int64(oldValue),
-			WorkerVSwitchIds:    expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
-			WorkerInstanceTypes: expandStringList(d.Get("worker_instance_types").([]interface{})),
-		}
-		if userData, ok := d.GetOk("user_data"); ok {
-			_, base64DecodeError := base64.StdEncoding.DecodeString(userData.(string))
-			if base64DecodeError == nil {
-				args.UserData = userData.(string)
-			} else {
-				args.UserData = base64.StdEncoding.EncodeToString([]byte(userData.(string)))
+			nodes, err := removeKubernetesNodes(d, meta)
+			if err != nil {
+				return WrapErrorf(fmt.Errorf("node removed failed"), "node:%++v, err:%++v", nodes, err)
 			}
 		}
-		if imageID, ok := d.GetOk("image_id"); ok {
-			args.ImageId = imageID.(string)
 
-		}
-		if d.HasChange("worker_data_disks") {
-			if dds, ok := d.GetOk("worker_data_disks"); ok {
-				disks := dds.([]interface{})
-				createDataDisks := make([]cs.DataDisk, 0, len(disks))
-				for _, e := range disks {
-					pack := e.(map[string]interface{})
-					dataDisk := cs.DataDisk{
-						Size:      pack["size"].(string),
-						Category:  pack["category"].(string),
-						Encrypted: pack["encrypted"].(string),
-					}
-					createDataDisks = append(createDataDisks, dataDisk)
+		// scale out cluster.
+		if newValue > oldValue {
+			password := d.Get("password").(string)
+			keyPair := d.Get("key_name").(string)
+
+			args := &cs.ScaleOutKubernetesClusterRequest{
+				KeyPair:             keyPair,
+				LoginPassword:       password,
+				Count:               int64(newValue) - int64(oldValue),
+				WorkerVSwitchIds:    expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
+				WorkerInstanceTypes: expandStringList(d.Get("worker_instance_types").([]interface{})),
+			}
+
+			if userData, ok := d.GetOk("user_data"); ok {
+				_, base64DecodeError := base64.StdEncoding.DecodeString(userData.(string))
+				if base64DecodeError == nil {
+					args.UserData = userData.(string)
+				} else {
+					args.UserData = base64.StdEncoding.EncodeToString([]byte(userData.(string)))
 				}
-				args.WorkerDataDisks = createDataDisks
 			}
-		}
-		if err := invoker.Run(func() error {
-			var err error
-			resp, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				resp, err := csClient.ScaleOutKubernetesCluster(d.Id(), args)
-				return resp, err
-			})
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ScaleOutCloudWorkers", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			resizeRequestMap := make(map[string]interface{})
-			resizeRequestMap["ClusterId"] = d.Id()
-			resizeRequestMap["Args"] = args
-			addDebug("ResizeKubernetesCluster", resp, resizeRequestMap)
-		}
-		stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			if imageID, ok := d.GetOk("image_id"); ok {
+				args.ImageId = imageID.(string)
+
+			}
+
+			if d.HasChange("worker_data_disks") {
+				if dds, ok := d.GetOk("worker_data_disks"); ok {
+					disks := dds.([]interface{})
+					createDataDisks := make([]cs.DataDisk, 0, len(disks))
+					for _, e := range disks {
+						pack := e.(map[string]interface{})
+						dataDisk := cs.DataDisk{
+							Size:      pack["size"].(string),
+							Category:  pack["category"].(string),
+							Encrypted: pack["encrypted"].(string),
+						}
+						createDataDisks = append(createDataDisks, dataDisk)
+					}
+					args.WorkerDataDisks = createDataDisks
+				}
+			}
+			if err := invoker.Run(func() error {
+				var err error
+				resp, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+					resp, err := csClient.ScaleOutKubernetesCluster(d.Id(), args)
+					return resp, err
+				})
+				return err
+			}); err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ScaleOutCloudWorkers", DenverdinoAliyungo)
+			}
+			if debugOn() {
+				resizeRequestMap := make(map[string]interface{})
+				resizeRequestMap["ClusterId"] = d.Id()
+				resizeRequestMap["Args"] = args
+				addDebug("ResizeKubernetesCluster", resp, resizeRequestMap)
+			}
+			stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("worker_data_disks")
+			d.SetPartial("worker_number")
 		}
-		d.SetPartial("worker_data_disks")
-		d.SetPartial("worker_number")
+
 	}
 
 	// modify cluster name
@@ -518,6 +532,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 		d.SetPartial("name_prefix")
 	}
 
+	// modify cluster deletion protection
 	if !d.IsNewResource() && d.HasChange("deletion_protection") {
 		var requestInfo cs.ModifyClusterArgs
 		if v, ok := d.GetOk("deletion_protection"); ok {

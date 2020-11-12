@@ -781,20 +781,6 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 	d.Partial(true)
 	invoker := NewInvoker()
 	if d.HasChange("worker_number") && !d.IsNewResource() {
-		password := d.Get("password").(string)
-		if password == "" {
-			if v := d.Get("kms_encrypted_password").(string); v != "" {
-				kmsService := KmsService{client}
-				decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
-				if err != nil {
-					return WrapError(err)
-				}
-				password = decryptResp.Plaintext
-			}
-		}
-
-		keyPair := d.Get("key_name").(string)
-
 		oldV, newV := d.GetChange("worker_number")
 
 		oldValue, ok := oldV.(int)
@@ -806,123 +792,140 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			return WrapErrorf(fmt.Errorf("worker_number new value can not be parsed"), "parseError %d", newValue)
 		}
 
+		// scale out cluster.
+		if newValue > oldValue {
+			password := d.Get("password").(string)
+			if password == "" {
+				if v := d.Get("kms_encrypted_password").(string); v != "" {
+					kmsService := KmsService{client}
+					decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+					if err != nil {
+						return WrapError(err)
+					}
+					password = decryptResp.Plaintext
+				}
+			}
+
+			keyPair := d.Get("key_name").(string)
+
+			args := &cs.ScaleOutKubernetesClusterRequest{
+				KeyPair:             keyPair,
+				LoginPassword:       password,
+				ImageId:             d.Get("image_id").(string),
+				UserData:            d.Get("user_data").(string),
+				Count:               int64(newValue) - int64(oldValue),
+				WorkerVSwitchIds:    expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
+				WorkerInstanceTypes: expandStringList(d.Get("worker_instance_types").([]interface{})),
+			}
+
+			if v := d.Get("user_data").(string); v != "" {
+				_, base64DecodeError := base64.StdEncoding.DecodeString(v)
+				if base64DecodeError == nil {
+					args.UserData = v
+				} else {
+					args.UserData = base64.StdEncoding.EncodeToString([]byte(v))
+				}
+			}
+
+			if v, ok := d.GetOk("worker_instance_charge_type"); ok {
+				args.WorkerInstanceChargeType = v.(string)
+				if args.WorkerInstanceChargeType == string(PrePaid) {
+					args.WorkerAutoRenew = d.Get("worker_auto_renew").(bool)
+					args.WorkerAutoRenewPeriod = d.Get("worker_auto_renew_period").(int)
+					args.WorkerPeriod = d.Get("worker_period").(int)
+					args.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
+				}
+			}
+
+			if d.HasChange("worker_data_disks") {
+				if dds, ok := d.GetOk("worker_data_disks"); ok {
+					disks := dds.([]interface{})
+					createDataDisks := make([]cs.DataDisk, 0, len(disks))
+					for _, e := range disks {
+						pack := e.(map[string]interface{})
+						dataDisk := cs.DataDisk{
+							Size:                 pack["size"].(string),
+							DiskName:             pack["name"].(string),
+							Category:             pack["category"].(string),
+							Device:               pack["device"].(string),
+							AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
+							KMSKeyId:             pack["kms_key_id"].(string),
+							Encrypted:            pack["encrypted"].(string),
+						}
+						createDataDisks = append(createDataDisks, dataDisk)
+					}
+					args.WorkerDataDisks = createDataDisks
+				}
+				d.SetPartial("worker_data_disks")
+			}
+			if d.HasChange("tags") && !d.IsNewResource() {
+				if tags, err := ConvertCsTags(d); err == nil {
+					args.Tags = tags
+				}
+				d.SetPartial("tags")
+			}
+
+			if d.HasChange("taints") && !d.IsNewResource() {
+				args.Taints = expandKubernetesTaintsConfig(d.Get("taints").([]interface{}))
+			}
+
+			if d.HasChange("runtime") && !d.IsNewResource() {
+				args.Runtime = expandKubernetesRuntimeConfig(d.Get("runtime").(map[string]interface{}))
+			}
+
+			if d.HasChange("rds_instances") && !d.IsNewResource() {
+				args.RdsInstances = expandStringList(d.Get("rds_instances").([]interface{}))
+			}
+
+			if d.HasChange("cpu_policy") && !d.IsNewResource() {
+				args.CpuPolicy = d.Get("cpu_policy").(string)
+			}
+
+			if d.HasChange("install_cloud_monitor") && !d.IsNewResource() {
+				args.CloudMonitorFlags = d.Get("install_cloud_monitor").(bool)
+			}
+
+			if d.HasChange("image_id") && !d.IsNewResource() {
+				args.ImageId = d.Get("image_id").(string)
+			}
+
+			var resoponse interface{}
+			if err := invoker.Run(func() error {
+				var err error
+				resoponse, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+					resp, err := csClient.ScaleOutKubernetesCluster(d.Id(), args)
+					return resp, err
+				})
+				return err
+			}); err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ResizeKubernetesCluster", DenverdinoAliyungo)
+			}
+			if debugOn() {
+				resizeRequestMap := make(map[string]interface{})
+				resizeRequestMap["ClusterId"] = d.Id()
+				resizeRequestMap["Args"] = args
+				addDebug("ResizeKubernetesCluster", resoponse, resizeRequestMap)
+			}
+
+			stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("worker_number")
+		}
+
+		// remove cluster nodes.
 		if newValue < oldValue {
 			nodes, err := removeKubernetesNodes(d, meta)
 			if err != nil {
 				return WrapErrorf(fmt.Errorf("node removed failed"), "node:%++v, err:%++v", nodes, err)
 			}
-			log.Printf("[DEBUG]: nodes removed: %++v", nodes)
-
-			return resourceAlicloudCSKubernetesRead(d, meta)
 		}
 
-		args := &cs.ScaleOutKubernetesClusterRequest{
-			KeyPair:             keyPair,
-			LoginPassword:       password,
-			ImageId:             d.Get("image_id").(string),
-			UserData:            d.Get("user_data").(string),
-			Count:               int64(newValue) - int64(oldValue),
-			WorkerVSwitchIds:    expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
-			WorkerInstanceTypes: expandStringList(d.Get("worker_instance_types").([]interface{})),
-		}
-
-		if v := d.Get("user_data").(string); v != "" {
-			_, base64DecodeError := base64.StdEncoding.DecodeString(v)
-			if base64DecodeError == nil {
-				args.UserData = v
-			} else {
-				args.UserData = base64.StdEncoding.EncodeToString([]byte(v))
-			}
-		}
-
-		if v, ok := d.GetOk("worker_instance_charge_type"); ok {
-			args.WorkerInstanceChargeType = v.(string)
-			if args.WorkerInstanceChargeType == string(PrePaid) {
-				args.WorkerAutoRenew = d.Get("worker_auto_renew").(bool)
-				args.WorkerAutoRenewPeriod = d.Get("worker_auto_renew_period").(int)
-				args.WorkerPeriod = d.Get("worker_period").(int)
-				args.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
-			}
-		}
-
-		if d.HasChange("worker_data_disks") {
-			if dds, ok := d.GetOk("worker_data_disks"); ok {
-				disks := dds.([]interface{})
-				createDataDisks := make([]cs.DataDisk, 0, len(disks))
-				for _, e := range disks {
-					pack := e.(map[string]interface{})
-					dataDisk := cs.DataDisk{
-						Size:                 pack["size"].(string),
-						DiskName:             pack["name"].(string),
-						Category:             pack["category"].(string),
-						Device:               pack["device"].(string),
-						AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
-						KMSKeyId:             pack["kms_key_id"].(string),
-						Encrypted:            pack["encrypted"].(string),
-					}
-					createDataDisks = append(createDataDisks, dataDisk)
-				}
-				args.WorkerDataDisks = createDataDisks
-			}
-			d.SetPartial("worker_data_disks")
-		}
-		if d.HasChange("tags") && !d.IsNewResource() {
-			if tags, err := ConvertCsTags(d); err == nil {
-				args.Tags = tags
-			}
-			d.SetPartial("tags")
-		}
-
-		if d.HasChange("taints") && !d.IsNewResource() {
-			args.Taints = expandKubernetesTaintsConfig(d.Get("taints").([]interface{}))
-		}
-
-		if d.HasChange("runtime") && !d.IsNewResource() {
-			args.Runtime = expandKubernetesRuntimeConfig(d.Get("runtime").(map[string]interface{}))
-		}
-
-		if d.HasChange("rds_instances") && !d.IsNewResource() {
-			args.RdsInstances = expandStringList(d.Get("rds_instances").([]interface{}))
-		}
-
-		if d.HasChange("cpu_policy") && !d.IsNewResource() {
-			args.CpuPolicy = d.Get("cpu_policy").(string)
-		}
-
-		if d.HasChange("install_cloud_monitor") && !d.IsNewResource() {
-			args.CloudMonitorFlags = d.Get("install_cloud_monitor").(bool)
-		}
-
-		if d.HasChange("image_id") && !d.IsNewResource() {
-			args.ImageId = d.Get("image_id").(string)
-		}
-
-		var resoponse interface{}
-		if err := invoker.Run(func() error {
-			var err error
-			resoponse, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				resp, err := csClient.ScaleOutKubernetesCluster(d.Id(), args)
-				return resp, err
-			})
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ResizeKubernetesCluster", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			resizeRequestMap := make(map[string]interface{})
-			resizeRequestMap["ClusterId"] = d.Id()
-			resizeRequestMap["Args"] = args
-			addDebug("ResizeKubernetesCluster", resoponse, resizeRequestMap)
-		}
-
-		stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
-
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-		d.SetPartial("worker_number")
 	}
 
+	// modify cluster name
 	if !d.IsNewResource() && (d.HasChange("name") || d.HasChange("name_prefix")) {
 		var clusterName string
 		if v, ok := d.GetOk("name"); ok {
@@ -952,6 +955,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("name_prefix")
 	}
 
+	// modify cluster deletion protection
 	if !d.IsNewResource() && d.HasChange("deletion_protection") {
 		var requestInfo cs.ModifyClusterArgs
 		if v, ok := d.GetOk("deletion_protection"); ok {
@@ -1567,7 +1571,7 @@ func knockOffAutoScalerNodes(nodes []cs.KubernetesNodeType, meta interface{}) ([
 
 	// get the target node list
 	for _, node := range nodes {
-		if _, ok := realNodesMap[node.InstanceId]; !ok {
+		if _, ok := realNodesMap[node.InstanceId]; ok {
 			result = append(result, node)
 		}
 	}
@@ -1683,7 +1687,7 @@ func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, 
 		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "RemoveClusterNodes", DenverdinoAliyungo)
 	}
 
-	stateConf := BuildStateConf([]string{"removing"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	stateConf := BuildStateConf([]string{"removing"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return nil, WrapErrorf(err, IdMsg, d.Id())
 	}

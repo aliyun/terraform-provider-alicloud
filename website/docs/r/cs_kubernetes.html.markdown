@@ -100,7 +100,7 @@ The following arguments are supported:
 * `cluster_domain` - (Optional, ForceNew, Available in 1.104.0+) Cluster local domain name, Default to `cluster.local`. A domain name consists of one or more sections separated by a decimal point (.), each of which is up to 63 characters long, and can be lowercase, numerals, and underscores (-), and must be lowercase or numerals at the beginning and end.
 * `custom_san` - (Optional, ForceNew, Available in 1.104.0+) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
 * `user_ca` - (Optional, ForceNew) The path of customized CA cert, you can use this CA to sign client certs to connect your cluster.
-* `deletion_protection` - (Optional, ForceNew, Available in 1.104.0+)  Whether to enable cluster deletion protection.
+* `deletion_protection` - (Optional, Available in 1.104.0+)  Whether to enable cluster deletion protection.
 * `install_cloud_monitor` - (Optional) Install cloud monitor agent on ECS. Default to `true`.
 * `exclude_autoscaler_nodes` - (Optional, Available in 1.88.0+) Exclude autoscaler nodes from `worker_nodes`. Default to `false`.
 * `service_account_issuer` - (Optional, ForceNew, Available in 1.92.0+) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well).

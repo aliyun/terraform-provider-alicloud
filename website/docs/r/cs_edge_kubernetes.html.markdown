@@ -84,7 +84,7 @@ The following arguments are supported:
 * `is_enterprise_security_group` - (Optional) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
 * `rds_instance` - (Optional, Available in 1.104.0+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.104.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `deletion_protection` - (Optional, ForceNew, Available in 1.104.0+)  Whether to enable cluster deletion protection.
+* `deletion_protection` - (Optional, Available in 1.104.0+)  Whether to enable cluster deletion protection.
 
 ### Network params
 
