@@ -35,6 +35,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[\w\-.]{0,30}$`), "be 0 to 30 characters in length and can contain numbers, letters, underscores, (_) and hyphens (-). It must start with a letter, a number or Chinese character."),
+				Computed:     true,
 			},
 
 			"vswitch_id": {
@@ -215,6 +216,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 
 			"zone_count": {
 				Type:         schema.TypeInt,
+				ForceNew:     true,
 				Optional:     true,
 				ValidateFunc: validation.IntBetween(1, 3),
 				Default:      1,
