@@ -421,7 +421,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 			addDebug("UpdateKubernetesNodePool", resoponse, resizeRequestMap)
 		}
 
-		stateConf := BuildStateConf([]string{"scaling"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+		stateConf := BuildStateConf([]string{"scaling", "updating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -447,7 +447,6 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	d.Set("node_count", object.TotalNodes)
-	//d.Set("cluster_id", d.Get("cluster_id").(string))
 	d.Set("name", object.Name)
 	d.Set("vpc_id", object.VpcId)
 	d.Set("vswitch_ids", object.VswitchIds)
@@ -457,12 +456,9 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("system_disk_category", object.SystemDiskCategory)
 	d.Set("system_disk_size", object.SystemDiskSize)
 	d.Set("image_id", object.ImageId)
-	//d.Set("data_disks", object.DataDisks)
-	d.Set("tags", object.Tags)
-	d.Set("labels", object.Labels)
-	d.Set("taints", object.Taints)
 	d.Set("node_name_mode", object.NodeNameMode)
 	d.Set("user_data", object.UserData)
+
 	if sg, ok := d.GetOk("max"); ok && sg.(string) != "" {
 		d.Set("max", object.MaxInstance)
 	}
@@ -484,6 +480,18 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if err := d.Set("data_disks", flattenNodeDataDisksConfig(object.DataDisks)); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("taints", flattenTaintsConfig(object.Taints)); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("labels", flattenLabelsConfig(object.Labels)); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
 		return WrapError(err)
 	}
 
@@ -695,8 +703,9 @@ func setNodePoolTaints(config *cs.KubernetesConfig, d *schema.ResourceData) erro
 		for _, i := range vl {
 			if m, ok := i.(map[string]interface{}); ok {
 				taints = append(taints, cs.Taint{
-					Key:   m["key"].(string),
-					Value: m["value"].(string),
+					Key:    m["key"].(string),
+					Value:  m["value"].(string),
+					Effect: cs.Effect(m["effect"].(string)),
 				})
 			}
 
@@ -717,6 +726,50 @@ func flattenNodeDataDisksConfig(config []cs.NodePoolDataDisk) (m []map[string]in
 			"size":     disks.Size,
 			"category": disks.Category,
 		})
+	}
+
+	return m
+}
+
+func flattenTaintsConfig(config []cs.Taint) (m []map[string]interface{}) {
+	if config == nil {
+		return []map[string]interface{}{}
+	}
+
+	for _, taint := range config {
+		m = append(m, map[string]interface{}{
+			"key":    taint.Key,
+			"value":  taint.Value,
+			"effect": taint.Effect,
+		})
+	}
+
+	return m
+}
+
+func flattenLabelsConfig(config []cs.Label) (m []map[string]interface{}) {
+	if config == nil {
+		return []map[string]interface{}{}
+	}
+
+	for _, label := range config {
+		m = append(m, map[string]interface{}{
+			"key":   label.Key,
+			"value": label.Value,
+		})
+	}
+
+	return m
+}
+
+func flattenTagsConfig(config []cs.Tag) map[string]string {
+	m := make(map[string]string, len(config))
+	if len(config) < 0 {
+		return m
+	}
+
+	for _, tag := range config {
+		m[tag.Key] = tag.Value
 	}
 
 	return m
