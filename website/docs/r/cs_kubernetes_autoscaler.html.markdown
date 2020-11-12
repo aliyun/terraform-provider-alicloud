@@ -97,7 +97,7 @@ The following arguments are supported:
 * `defer_scale_in_duration` (Required) The defer_scale_in_duration option of cluster-autoscaler.
 * `use_ecs_ram_role_token` (Optional, Available in 1.88.0+) Enable autoscaler access to alibabacloud service by ecs ramrole token. default: false
 
-If you use `alicloud_cs_kubernetes_autoscaler` to manage nodes, because it depends on `alicloud_ess_scaling_group`. To avoid resource inconsistencies caused by resource changes, It is highly recommend that you add the following configuration.
+-> **NOTE:** If you use `alicloud_cs_kubernetes_autoscaler` to manage nodes, because it depends on `alicloud_ess_scaling_group`. To avoid resource inconsistencies caused by resource changes, It is highly recommend that you add the following configuration.
 ```
   # ... ignore the change about tags and user_data
   lifecycle {
