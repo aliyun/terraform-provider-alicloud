@@ -127,12 +127,7 @@ func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 		if !errorValue.IsNil() {
 			return WrapError(fmt.Errorf("Checking resource %s %s exists error:%s ", rc.resourceId, rs.Primary.ID, errorValue.Interface().(error).Error()))
 		}
-		if reflect.TypeOf(rc.resourceObject).Elem().String() == outValue[0].Type().String() {
-			reflect.ValueOf(rc.resourceObject).Elem().Set(outValue[0])
-			return nil
-		} else {
-			return WrapError(fmt.Errorf("The response object type expected *%s, got %s ", outValue[0].Type().String(), reflect.TypeOf(rc.resourceObject).String()))
-		}
+		return nil
 	}
 }
 
