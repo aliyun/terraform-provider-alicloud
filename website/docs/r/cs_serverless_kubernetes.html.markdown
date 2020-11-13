@@ -32,7 +32,7 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "my-first-k8s"
 }

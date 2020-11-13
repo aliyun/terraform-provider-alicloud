@@ -35,7 +35,7 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 ## Example Usage
 
-```
+```terraform
 // If there is not specifying vpc_id, the module will launch a new vpc
 resource "alicloud_vpc" "vpc" {
   count      = var.vpc_id == "" ? 1 : 0
