@@ -128,6 +128,14 @@ func resourceAlicloudDBReadWriteSplittingConnectionRead(d *schema.ResourceData, 
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 
+	proxy, proxyErr := rdsService.DescribeDBProxy(d.Id())
+	if proxyErr != nil {
+		return WrapError(proxyErr)
+	}
+	if proxy.DBProxyInstanceType == "2" {
+		return resourceAlicloudDBProxyEndpointRead(d, rdsService, proxy.DBProxyInstanceName)
+	}
+
 	err := rdsService.WaitForDBReadWriteSplitting(d.Id(), "", DefaultLongTimeout)
 	if err != nil {
 		return WrapError(err)
@@ -264,4 +272,55 @@ func resourceAlicloudDBReadWriteSplittingConnectionDelete(d *schema.ResourceData
 	}
 
 	return WrapError(rdsService.WaitForDBReadWriteSplitting(d.Id(), Deleted, DefaultLongTimeout))
+}
+
+func resourceAlicloudDBProxyEndpointRead(d *schema.ResourceData, rdsService RdsService, endPointName string) error {
+	endpointInfo, endpointError := rdsService.DescribeDBProxyEndpoint(d.Id(), endPointName)
+	if endpointError != nil {
+		return WrapError(endpointError)
+	}
+	d.Set("instance_id", d.Id())
+	d.Set("connection_string", endpointInfo.DBProxyConnectString)
+	d.Set("distribution_type", endpointInfo.ReadOnlyInstanceDistributionType)
+	if port, err := strconv.Atoi(endpointInfo.DBProxyConnectStringPort); err == nil {
+		d.Set("port", port)
+	}
+
+	if mdt, err := strconv.Atoi(endpointInfo.ReadOnlyInstanceMaxDelayTime); err == nil {
+		d.Set("max_delay_time", mdt)
+	}
+	submatch := dbConnectionPrefixWithSuffixRegexp.FindStringSubmatch(endpointInfo.DBProxyConnectString)
+	if len(submatch) > 1 {
+		d.Set("connection_prefix", submatch[1])
+	}
+
+	var documented map[string]interface{}
+	if w, ok := d.GetOk("weight"); ok {
+		documented = w.(map[string]interface{})
+	} else {
+		documented = make(map[string]interface{})
+	}
+	var weight []map[string]interface{}
+	rawData := []byte(endpointInfo.ReadOnlyInstanceWeight)
+	parseErr := json.Unmarshal(rawData, &weight)
+	if parseErr != nil {
+		return WrapError(parseErr)
+	}
+	for _, configNode := range weight {
+		var dbInstanceId string
+		if instanceId, ok := configNode["DBInstanceId"]; ok {
+			dbInstanceId = instanceId.(string)
+		}
+		if _, ok := configNode["Availability"]; ok && configNode["Availability"] != "Available" {
+			delete(documented, dbInstanceId)
+			continue
+		}
+		if _, ok := configNode["Weight"]; ok && configNode["Weight"] != "0" {
+			if _, ok := documented[dbInstanceId]; ok {
+				documented[dbInstanceId] = configNode["Weight"]
+			}
+		}
+	}
+	d.Set("weight", documented)
+	return nil
 }
