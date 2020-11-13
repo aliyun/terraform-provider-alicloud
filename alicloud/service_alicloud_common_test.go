@@ -790,7 +790,10 @@ resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}"
-  name              = "${var.name}"
+	name              = "${var.name}"
+	timeouts {
+    delete = "30m"
+  }
 }
 `
 const PolarDBCommonTestCase = `
