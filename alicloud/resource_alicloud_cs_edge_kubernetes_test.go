@@ -117,23 +117,27 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 						},
 					},
 					"is_enterprise_security_group": "true",
-					"deletion_protection":          "false",
+					"deletion_protection":          "true",
 					"resource_group_id":            "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"rds_instances":                []string{"${alicloud_db_instance.default.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                         name,
-						"worker_number":                "1",
-						"password":                     "Test12345",
-						"pod_cidr":                     "172.20.0.0/16",
-						"service_cidr":                 "172.21.0.0/20",
-						"slb_internet_enabled":         "true",
-						"is_enterprise_security_group": "true",
-						"deletion_protection":          "false",
-						"rds_instances.#":              "1",
-						"runtime.Name":                 "docker",
-						"runtime.Version":              "19.03.5",
+						"name":                          name,
+						"version":                       "1.12.6-aliyunedge.2",
+						"worker_number":                 "1",
+						"password":                      "Test12345",
+						"pod_cidr":                      "172.20.0.0/16",
+						"service_cidr":                  "172.21.0.0/20",
+						"slb_internet_enabled":          "true",
+						"is_enterprise_security_group":  "true",
+						"deletion_protection":           "true",
+						"resource_group_id":             CHECKSET,
+						"rds_instances.#":               "1",
+						"worker_data_disks.#":           "1",
+						"worker_data_disks.0.category":  "cloud_ssd",
+						"worker_data_disks.0.size":      "200",
+						"worker_data_disks.0.encrypted": "false",
 					}),
 				),
 			},
@@ -144,7 +148,7 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
 					"install_cloud_monitor", "force_update", "node_cidr_mask", "slb_internet_enabled", "worker_disk_category",
 					"worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config",
-					"worker_vswitch_ids", "proxy_mode", "worker_data_disks", "is_enterprise_security_group", "rds_instances", "deletion_protection"},
+					"worker_vswitch_ids", "proxy_mode", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -163,6 +167,16 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name": "modified-edge-cluster",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
 					}),
 				),
 			},

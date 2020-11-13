@@ -424,12 +424,9 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			return WrapErrorf(fmt.Errorf("worker_number new value can not be parsed"), "parseError %d", oldValue)
 		}
 
-		// remove cluster nodes.
+		// Edge cluster node support remove nodes.
 		if newValue < oldValue {
-			nodes, err := removeKubernetesNodes(d, meta)
-			if err != nil {
-				return WrapErrorf(fmt.Errorf("node removed failed"), "node:%++v, err:%++v", nodes, err)
-			}
+			return WrapErrorf(fmt.Errorf("worker_number can not be less than before"), "scaleOutCloudWorkersFailed %d:%d", newValue, oldValue)
 		}
 
 		// scale out cluster.

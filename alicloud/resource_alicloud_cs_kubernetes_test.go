@@ -138,7 +138,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"enable_ssh":            "true",
 					"install_cloud_monitor": "true",
 					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"deletion_protection":   "false",
+					"deletion_protection":   "true",
 					"timezone":              "Asia/Shanghai",
 					"os_type":               "Linux",
 					"platform":              "CentOS",
@@ -161,7 +161,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 						"enable_ssh":            "true",
 						"install_cloud_monitor": "true",
 						"resource_group_id":     CHECKSET,
-						"deletion_protection":   "false",
+						"deletion_protection":   "true",
 						"timezone":              "Asia/Shanghai",
 						"os_type":               "Linux",
 						"platform":              "CentOS",
@@ -211,6 +211,26 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"name": "tf-dedicated-k8s",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": "tf-dedicated-k8s",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"new_nat_gateway":       REMOVEKEY,
 					"worker_number":         "3",
 					"install_cloud_monitor": REMOVEKEY,
@@ -220,6 +240,16 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 						"new_nat_gateway":       "true",
 						"worker_number":         "3",
 						"install_cloud_monitor": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"worker_number": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"worker_number": "1",
 					}),
 				),
 			},
