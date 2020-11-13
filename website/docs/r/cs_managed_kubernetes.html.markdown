@@ -419,6 +419,7 @@ The following arguments are supported in the `connections` configuration block:
 
 * `api_server_internet` - API Server Internet endpoint.
 * `api_server_intranet` - API Server Intranet endpoint.
+* `master_public_ip` - Master node SSH IP address.
 * `service_domain` - Service Access Domain.
 
 ## Import

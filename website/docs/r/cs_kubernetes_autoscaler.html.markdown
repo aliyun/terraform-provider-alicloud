@@ -21,9 +21,9 @@ This resource will help you to manager cluster-autoscaler in Kubernetes Cluster.
 
 ## Example Usage
 
-cluster-autoscaler in Kubernetes Cluster, Some variables need to be replaced.
+cluster-autoscaler in Kubernetes Cluster.
 
-```
+```terraform
 variable "name" {
   default     = "autoscaler"
 }
@@ -46,7 +46,7 @@ data "alicloud_instance_types" "default" {
 
 resource "alicloud_security_group" "default" {
   name                 = var.name
-  vpc_id               = "${data.alicloud_vpcs.default.vpcs.0.id}"
+  vpc_id               = data.alicloud_vpcs.default.vpcs.0.id
 }
 
 resource "alicloud_ess_scaling_group" "default" {
@@ -54,15 +54,15 @@ resource "alicloud_ess_scaling_group" "default" {
   
   min_size             = var.min_size
   max_size             = var.max_size
-  vswitch_ids          = ["${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"] 
+  vswitch_ids          = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0] 
   removal_policies     = ["OldestInstance", "NewestInstance"]
 }
 
 resource "alicloud_ess_scaling_configuration" "default" {
-  image_id             = "${data.alicloud_images.default.images.0.id}"
+  image_id             = data.alicloud_images.default.images.0.id
   security_group_id    = alicloud_security_group.default.id
   scaling_group_id     = alicloud_ess_scaling_group.default.id
-  instance_type        = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  instance_type        = data.alicloud_instance_types.default.instance_types.0.id
   internet_charge_type = "PayByTraffic"
   force_delete         = true
   enable               = true
@@ -76,9 +76,9 @@ resource "alicloud_ess_scaling_configuration" "default" {
 }
 
 resource "alicloud_cs_kubernetes_autoscaler" "default" {
-  cluster_id              = "${data.alicloud_cs_managed_kubernetes_clusters.default.clusters.0.id}"
+  cluster_id              = data.alicloud_cs_managed_kubernetes_clusters.default.clusters.0.id
   nodepools {
-    id                    = "${alicloud_ess_scaling_group.default.id}"
+    id                    = alicloud_ess_scaling_group.default.id
     labels                = "a=b"
   }
 
@@ -106,9 +106,9 @@ The following arguments are supported:
 
 #### Ignoring Changes to tags and user_data
 
--> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html?&_ga=2.50296422.1576589271.1605065528-344919894.1600241279#lifecycle-lifecycle-customizations) with `ignore_changes` to create a  a autoscaler group, then ignore any changes to that tags and user_data caused externally (e.g. Application Autoscaling).
+-> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html) with `ignore_changes` to create a  a autoscaler group, then ignore any changes to that tags and user_data caused externally (e.g. Application Autoscaling).
 ```
-  # ... ignore the change about tags and user_data
+  # ... ignore the change about tags and user_data in alicloud_ess_scaling_configuration
   lifecycle {
     ignore_changes = [tags,user_data]
   }
