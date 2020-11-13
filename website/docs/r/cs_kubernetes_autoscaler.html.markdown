@@ -36,13 +36,21 @@ data "alicloud_images" "default" {
   most_recent = true
 }
 
+# If your account no running clusters, you need to create a new one
+data "alicloud_cs_managed_kubernetes_clusters" "default" {}
+
+data "alicloud_instance_types" "default" {
+  cpu_core_count = 2
+  memory_size    = 4
+}
+
 resource "alicloud_security_group" "default" {
-  name                 = "${var.name}"
+  name                 = var.name
   vpc_id               = "${data.alicloud_vpcs.default.vpcs.0.id}"
 }
 
 resource "alicloud_ess_scaling_group" "default" {
-  scaling_group_name   = "${var.name}"
+  scaling_group_name   = var.name
   
   min_size             = var.min_size
   max_size             = var.max_size
@@ -54,7 +62,7 @@ resource "alicloud_ess_scaling_configuration" "default" {
   image_id             = "${data.alicloud_images.default.images.0.id}"
   security_group_id    = alicloud_security_group.default.id
   scaling_group_id     = alicloud_ess_scaling_group.default.id
-  instance_type        = "var.instance_type"
+  instance_type        = "${data.alicloud_instance_types.default.instance_types.0.id}"
   internet_charge_type = "PayByTraffic"
   force_delete         = true
   enable               = true
@@ -68,7 +76,7 @@ resource "alicloud_ess_scaling_configuration" "default" {
 }
 
 resource "alicloud_cs_kubernetes_autoscaler" "default" {
-  cluster_id              = alicloud_cs_managed_kubernetes.k8s.id
+  cluster_id              = "${data.alicloud_cs_managed_kubernetes_clusters.default.clusters.0.id}"
   nodepools {
     id                    = "${alicloud_ess_scaling_group.default.id}"
     labels                = "a=b"
@@ -80,7 +88,6 @@ resource "alicloud_cs_kubernetes_autoscaler" "default" {
 
   depends_on = [alicloud_ess_scaling_group.defalut, alicloud_ess_scaling_configuration.default]
 }
-
 ```
 
 ## Argument Reference
@@ -97,7 +104,9 @@ The following arguments are supported:
 * `defer_scale_in_duration` (Required) The defer_scale_in_duration option of cluster-autoscaler.
 * `use_ecs_ram_role_token` (Optional, Available in 1.88.0+) Enable autoscaler access to alibabacloud service by ecs ramrole token. default: false
 
--> **NOTE:** If you use `alicloud_cs_kubernetes_autoscaler` to manage nodes, because it depends on `alicloud_ess_scaling_group`. To avoid resource inconsistencies caused by resource changes, It is highly recommend that you add the following configuration.
+#### Ignoring Changes to tags and user_data
+
+-> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html?&_ga=2.50296422.1576589271.1605065528-344919894.1600241279#lifecycle-lifecycle-customizations) with `ignore_changes` to create a  a autoscaler group, then ignore any changes to that tags and user_data caused externally (e.g. Application Autoscaling).
 ```
   # ... ignore the change about tags and user_data
   lifecycle {

@@ -57,7 +57,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"slb_internet_enabled":        "true",
 					"cluster_spec":                "ack.pro.small",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"deletion_protection":         "false",
+					"deletion_protection":         "true",
 					"timezone":                    "Asia/Shanghai",
 					"os_type":                     "Linux",
 					"platform":                    "CentOS",
@@ -83,7 +83,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 						"slb_internet_enabled":      "true",
 						"cluster_spec":              "ack.pro.small",
 						"resource_group_id":         CHECKSET,
-						"deletion_protection":       "false",
+						"deletion_protection":       "true",
 						"timezone":                  "Asia/Shanghai",
 						"os_type":                   "Linux",
 						"platform":                  "CentOS",
@@ -123,11 +123,41 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"name": "tf-managed-k8s",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": "tf-managed-k8s",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"worker_number": "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"worker_number": "5",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"worker_number": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"worker_number": "3",
 					}),
 				),
 			},
