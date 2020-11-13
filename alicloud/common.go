@@ -916,3 +916,21 @@ func checkWaitForReady(object interface{}, conditions map[string]interface{}) (b
 	}
 	return true, values, nil
 }
+
+// When using teadsl, we need to convert float, int64 and int32 to int for comparison.
+func formatInt(src interface{}) int {
+	attrType := reflect.TypeOf(src)
+	switch attrType.String() {
+	case "float64":
+		return int(src.(float64))
+	case "float32":
+		return int(src.(float32))
+	case "int64":
+		return int(src.(int64))
+	case "int32":
+		return int(src.(int32))
+	default:
+		panic(fmt.Sprintf("Not support type %s", attrType.String()))
+	}
+	return 0
+}

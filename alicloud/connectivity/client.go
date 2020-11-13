@@ -82,6 +82,7 @@ import (
 type AliyunClient struct {
 	Region   Region
 	RegionId string
+	SourceIp string
 	//In order to build ots table client, add accesskey and secretkey in aliyunclient temporarily.
 	AccessKey                    string
 	SecretKey                    string
@@ -218,6 +219,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 	return &AliyunClient{
 		config:                       c,
 		teaSdkConfig:                 teaSdkConfig,
+		SourceIp:                     c.SourceIp,
 		Region:                       c.Region,
 		RegionId:                     c.RegionId,
 		AccessKey:                    c.AccessKey,
@@ -410,6 +412,32 @@ func (client *AliyunClient) NewEcsClient() (*rpc.Client, error) {
 
 func (client *AliyunClient) NewVpcClient() (*rpc.Client, error) {
 	productCode := "vpc"
+	endpoint := ""
+	if client.config.Endpoints[productCode] == nil {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
+		}
+	}
+	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
+		endpoint = client.config.Endpoints[productCode].(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+
+	return conn, nil
+}
+
+func (client *AliyunClient) NewRdsClient() (*rpc.Client, error) {
+	productCode := "rds"
 	endpoint := ""
 	if client.config.Endpoints[productCode] == nil {
 		if err := client.loadEndpoint(productCode); err != nil {

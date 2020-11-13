@@ -9,6 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -102,42 +105,46 @@ func (s *RdsService) DescribeDBReadonlyInstance(id string) (*rds.DBInstanceAttri
 	return &response.Items.DBInstanceAttribute[0], nil
 }
 
-func (s *RdsService) DescribeDBAccount(id string) (*rds.DBInstanceAccount, error) {
-	ds := &rds.DBInstanceAccount{}
+func (s *RdsService) DescribeDBAccount(id string) (map[string]interface{}, error) {
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return ds, WrapError(err)
+		return nil, WrapError(err)
 	}
-	request := rds.CreateDescribeAccountsRequest()
-	request.RegionId = s.client.RegionId
-	request.DBInstanceId = parts[0]
-	request.AccountName = parts[1]
+	var response map[string]interface{}
+	action := "DescribeAccounts"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": parts[0],
+		"AccountName":  parts[1],
+		"SourceIp":     s.client.SourceIp,
+	}
 	invoker := NewInvoker()
 	invoker.AddCatcher(DBInstanceStatusCatcher)
-	var response *rds.DescribeAccountsResponse
 	if err := invoker.Run(func() error {
-		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.DescribeAccounts(request)
-		})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			return err
+			return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-		response, _ = raw.(*rds.DescribeAccountsResponse)
+		addDebug(action, response, request)
 		return nil
 	}); err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return ds, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return ds, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-
-	if len(response.Accounts.DBInstanceAccount) < 1 {
-		return ds, WrapErrorf(Error(GetNotFoundMessage("DBAccount", id)), NotFoundMsg, ProviderERROR)
+	v, err := jsonpath.Get("$.Accounts.DBInstanceAccount", response)
+	if err != nil {
+		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Accounts.DBInstanceAccount", response)
 	}
-	return &response.Accounts.DBInstanceAccount[0], nil
+	if len(v.([]interface{})) < 1 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccount", id)), NotFoundMsg, ProviderERROR)
+	}
+	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
 func (s *RdsService) DescribeDBAccountPrivilege(id string) (*rds.DBInstanceAccount, error) {
@@ -1106,24 +1113,29 @@ func (s *RdsService) WaitForAccount(id string, status Status, timeout int) error
 			}
 		}
 		if object != nil {
-			if object.AccountStatus == string(status) {
+			if object["AccountStatus"] == string(status) {
 				break
-			} else if object.AccountStatus == "Lock" {
-				request := rds.CreateDeleteAccountRequest()
-				request.RegionId = s.client.RegionId
-				request.DBInstanceId = object.DBInstanceId
-				request.AccountName = object.AccountName
+			} else if object["AccountStatus"] == "Lock" {
+				action := "DeleteAccount"
+				request := map[string]interface{}{
+					"RegionId":     s.client.RegionId,
+					"DBInstanceId": object["DBInstanceId"],
+					"AccountName":  object["AccountName"],
+					"SourceIp":     s.client.SourceIp,
+				}
+				conn, err := s.client.NewRdsClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 
-				_, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-					return rdsClient.DeleteAccount(request)
-				})
 				if err != nil && !IsExpectedErrors(err, []string{"InvalidAccountName.NotFound"}) {
-					return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 				}
 			}
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AccountStatus, status, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object["AccountStatus"], status, ProviderERROR)
 		}
 	}
 	return nil

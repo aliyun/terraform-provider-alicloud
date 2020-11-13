@@ -21,6 +21,7 @@ var securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-cred
 
 // Config of aliyun
 type Config struct {
+	SourceIp        string
 	AccessKey       string
 	SecretKey       string
 	EcsRoleName     string

@@ -5,9 +5,10 @@ import (
 	"strings"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -73,10 +74,14 @@ func resourceAlicloudDBAccount() *schema.Resource {
 func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
-	request := rds.CreateCreateAccountRequest()
-	request.RegionId = client.RegionId
-	request.DBInstanceId = d.Get("instance_id").(string)
-	request.AccountName = d.Get("name").(string)
+	var response map[string]interface{}
+	action := "CreateAccount"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": d.Get("instance_id").(string),
+		"AccountName":  d.Get("name").(string),
+		"SourceIp":     client.SourceIp,
+	}
 
 	password := d.Get("password").(string)
 	kmsPassword := d.Get("kms_encrypted_password").(string)
@@ -86,44 +91,51 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if password != "" {
-		request.AccountPassword = password
+		request["AccountPassword"] = password
 	} else {
 		kmsService := KmsService{client}
 		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
 		if err != nil {
 			return WrapError(err)
 		}
-		request.AccountPassword = decryptResp.Plaintext
+		request["AccountPassword"] = decryptResp.Plaintext
 	}
-	request.AccountType = d.Get("type").(string)
-
+	if v, ok := d.GetOk("AccountType"); ok {
+		request["AccountType"] = v
+	}
 	// Description will not be set when account type is normal and it is a API bug
 	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
-		request.AccountDescription = v.(string)
+		request["AccountDescription"] = v
 	}
 	// wait instance running before modifying
-	if err := rdsService.WaitForDBInstance(request.DBInstanceId, Running, DefaultTimeoutMedium); err != nil {
+	if err := rdsService.WaitForDBInstance(request["DBInstanceId"].(string), Running, DefaultTimeoutMedium); err != nil {
 		return WrapError(err)
 	}
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.CreateAccount(request)
-		})
+	conn, err := meta.(*connectivity.AliyunClient).NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) {
+				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_db_account", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_db_account", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%s%s%s", request.DBInstanceId, COLON_SEPARATED, request.AccountName))
+	d.SetId(fmt.Sprintf("%v%s%v", request["DBInstanceId"], COLON_SEPARATED, request["AccountName"]))
 
 	if err := rdsService.WaitForAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
 		return WrapError(err)
@@ -144,10 +156,10 @@ func resourceAlicloudDBAccountRead(d *schema.ResourceData, meta interface{}) err
 		return WrapError(err)
 	}
 
-	d.Set("instance_id", object.DBInstanceId)
-	d.Set("name", object.AccountName)
-	d.Set("type", object.AccountType)
-	d.Set("description", object.AccountDescription)
+	d.Set("instance_id", object["DBInstanceId"])
+	d.Set("name", object["AccountName"])
+	d.Set("type", object["AccountType"])
+	d.Set("description", object["AccountDescription"])
 
 	return nil
 }
@@ -164,19 +176,23 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		if err := rdsService.WaitForAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
-		request := rds.CreateModifyAccountDescriptionRequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = instanceId
-		request.AccountName = accountName
-		request.AccountDescription = d.Get("description").(string)
-
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.ModifyAccountDescription(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		action := "ModifyAccountDescription"
+		request := map[string]interface{}{
+			"RegionId":           client.RegionId,
+			"DBInstanceId":       instanceId,
+			"AccountName":        accountName,
+			"AccountDescription": d.Get("description"),
+			"SourceIp":           client.SourceIp,
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		conn, err := client.NewRdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
 		d.SetPartial("description")
 	}
 
@@ -184,11 +200,13 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		if err := rdsService.WaitForAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
-		request := rds.CreateResetAccountPasswordRequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = instanceId
-		request.AccountName = accountName
-
+		action := "ResetAccountPassword"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": instanceId,
+			"AccountName":  accountName,
+			"SourceIp":     client.SourceIp,
+		}
 		password := d.Get("password").(string)
 		kmsPassword := d.Get("kms_encrypted_password").(string)
 
@@ -198,25 +216,26 @@ func resourceAlicloudDBAccountUpdate(d *schema.ResourceData, meta interface{}) e
 
 		if password != "" {
 			d.SetPartial("password")
-			request.AccountPassword = password
+			request["AccountPassword"] = password
 		} else {
 			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
 			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
 			if err != nil {
 				return WrapError(err)
 			}
-			request.AccountPassword = decryptResp.Plaintext
+			request["AccountPassword"] = decryptResp.Plaintext
 			d.SetPartial("kms_encrypted_password")
 			d.SetPartial("kms_encryption_context")
 		}
-
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.ResetAccountPassword(request)
-		})
+		conn, err := client.NewRdsClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
 		d.SetPartial("password")
 	}
 
@@ -231,18 +250,21 @@ func resourceAlicloudDBAccountDelete(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapError(err)
 	}
-	request := rds.CreateDeleteAccountRequest()
-	request.RegionId = client.RegionId
-	request.DBInstanceId = parts[0]
-	request.AccountName = parts[1]
-
-	raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-		return rdsClient.DeleteAccount(request)
-	})
-	if err != nil && !IsExpectedErrors(err, []string{"InvalidAccountName.NotFound"}) {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	action := "DeleteAccount"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": parts[0],
+		"AccountName":  parts[1],
+		"SourceIp":     client.SourceIp,
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
+	conn, err := client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
 	return rdsService.WaitForAccount(d.Id(), Deleted, DefaultTimeoutMedium)
 }
