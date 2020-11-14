@@ -1,21 +1,22 @@
-## 1.103.2 (Unreleased)
+## 1.104.0 (Unreleased)
+## 1.103.2 (November 14, 2020)
 
 IMPROVEMENTS:
 
-- resource/alicloud_readonly_instance: Enlarging the createing timeout to 60min [GH-3023]
-- TestCase/Cen: Add sweep function for cen_instance_attachemt and cen_route_service [GH-3022]
-- resource/alicloud_db_instance: Improve its testcase by adding timeouts for vswitch [GH-3020]
-- Updata alibaba-cloud-sdk-go to v1.61.623 and make the drds_instance struct compatible [GH-3017]
-- Add asynchronous for kms secret [GH-3007]
-- resource/alicloud_pvtz_zone_record: Support setting new attribute remark [GH-3006]
-- resource/alicloud_kvstore_instance: Add constant auto_pay for kvstore api ModifyInstanceSpec [GH-3003]
-- Cleanup after release 1.103.1 [GH-2997]
-- update changelog [GH-2993]
-- Create cluster parameters aligned with the ACK [GH-2990]
+- resource/alicloud_readonly_instance: Enlarging the createing timeout to 60min ([#3023](https://github.com/aliyun/terraform-provider-alicloud/issues/3023))
+- TestCase/Cen: Add sweep function for cen_instance_attachemt and cen_route_service ([#3022](https://github.com/aliyun/terraform-provider-alicloud/issues/3022))
+- resource/alicloud_db_instance: Improve its testcase by adding timeouts for vswitch ([#3020](https://github.com/aliyun/terraform-provider-alicloud/issues/3020))
+- Updata alibaba-cloud-sdk-go to v1.61.623 and make the drds_instance struct compatible ([#3017](https://github.com/aliyun/terraform-provider-alicloud/issues/3017))
+- Add asynchronous for kms secret ([#3007](https://github.com/aliyun/terraform-provider-alicloud/issues/3007))
+- resource/alicloud_pvtz_zone_record: Support setting new attribute remark ([#3006](https://github.com/aliyun/terraform-provider-alicloud/issues/3006))
+- resource/alicloud_kvstore_instance: Add constant auto_pay for kvstore api ModifyInstanceSpec ([#3003](https://github.com/aliyun/terraform-provider-alicloud/issues/3003))
+- Cleanup after release 1.103.1 ([#2997](https://github.com/aliyun/terraform-provider-alicloud/issues/2997))
+- update changelog ([#2993](https://github.com/aliyun/terraform-provider-alicloud/issues/2993))
+- Create cluster parameters aligned with the ACK ([#2990](https://github.com/aliyun/terraform-provider-alicloud/issues/2990))
 
 BUG FIXES:
 
-- resource/alicloud_elasticsearch_instance: fix schema details for 'description' and 'zone_count' [GH-3018]
+- resource/alicloud_elasticsearch_instance: fix schema details for 'description' and 'zone_count' ([#3018](https://github.com/aliyun/terraform-provider-alicloud/issues/3018))
 
 ## 1.103.1 (November 06, 2020)
 
