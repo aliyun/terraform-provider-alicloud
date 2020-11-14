@@ -49,22 +49,28 @@ The following arguments are supported:
 * `name` - (Required) HBase instance name. Length must be 2-128 characters long. Only Chinese characters, English letters, numbers, period (.), underline (_), or dash (-) are permitted. 
 * `zone_id` - (Optional, ForceNew) The Zone to launch the HBase instance. if vswitch_id is not empty, this zone_id can be "" or consistent.
 * `engine` - (Optional, ForceNew) "hbase/hbaseue/bds", The following types are supported after v1.73.0: `hbaseue` and `bds ` 
-* `engine_version` - (Required, ForceNew) hbase major version. hbase:1.1/2.0, hbaseue:2.0, bds:1.0, unsupport other engine temporarily. Value options can refer to the latest docs [CreateInstance](https://help.aliyun.com/document_detail/144607.html).
+* `engine_version` - (Required, ForceNew) HBase major version. hbase:1.1/2.0, hbaseue:2.0, bds:1.0, unsupport other engine temporarily. Value options can refer to the latest docs [CreateInstance](https://help.aliyun.com/document_detail/144607.html).
+* `master_instance_quantity` - (Optional) Count nodes of the master node.
 * `master_instance_type`、`core_instance_type` - (Required, ForceNew) Instance specification. see [Instance specifications](https://help.aliyun.com/document_detail/53532.html). or you can call describeInstanceType api.
-* `core_instance_quantity`- (Optional. ForceNew) default=2. if core_instance_quantity > 1,this is cluster's instance.  if core_instance_quantity = 1,this is a single instance. 
+* `core_instance_quantity`- (Optional) Default=2. if core_instance_quantity > 1,this is cluster's instance.  if core_instance_quantity = 1,this is a single instance.
 * `core_disk_type`-  (Required, ForceNew) Valid values are `cloud_ssd`, `cloud_efficiency`, `local_hdd_pro`, `local_ssd_pro`. local_disk size is fixed.
-* `core_disk_size` -  (Optional, ForceNew) User-defined HBase instance one core node's storage space.Unit: GB. Value range:
+* `core_disk_size` -  (Optional) User-defined HBase instance one core node's storage, Valid when engine=hbase/hbaseue, bds engine no need core_disk_size, space.Unit: GB. Value range:
   - Custom storage space; value range: [400, 8000]
   - 40-GB increments. 
 * `pay_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`,System default to `PostPaid`.
 * `duration` - (Optional, ForceNew) 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 60, valid when pay_type = PrePaid. unit: month.
 * `auto_renew` - (Optional, ForceNew) `true`, `false`, System default to `false`, valid when pay_type = PrePaid.
-* `vswitch_id` - (Optional, ForceNew) if vswitch_id is not empty, that mean net_type = vpc and has a same region. if vswitch_id is empty, net_type_classic
+* `vswitch_id` - (Optional, ForceNew) If vswitch_id is not empty, that mean net_type = vpc and has a same region. if vswitch_id is empty, net_type_classic
 * `cold_storage_size` - (Optional, ForceNew) 0 or 0+. 0 means is_cold_storage = false. 0+ means is_cold_storage = true
 * `maintain_start_time` - (Optional, Available in 1.73.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available in 1.73.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
-* `deletion_protection` - (Optional, Available in 1.73.0) the switch of delete protection. true: delete protect, false: no delete protect. you must set false when you want to delete cluster.
+* `deletion_protection` - (Optional, Available in 1.73.0) The switch of delete protection. true: delete protect, false: no delete protect. you must set false when you want to delete cluster.
 * `tags` - (Optional, Available in 1.73.0) A mapping of tags to assign to the resource.
+* `account` - (Optional, Available in 1.105.0+) The account of the cluster web ui.
+* `password` - (Optional, Available in 1.105.0+) The password of the cluster web ui account.
+* `ip_white` - (Optional, Available in 1.105.0+) The white ip list of the cluster.
+* `security_groups` - (Optional, Available in 1.105.0+) The security group resource of the cluster.
+
 
 -> **NOTE:** now only instance name can be change. the others(instance_type, disk_size, core_instance_quantity and so on) will be supported in the furture.
 
@@ -73,6 +79,9 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the HBase.
+* `ui_proxy_conn_addrs` - (Optional, Available in 1.105.0+) The Web UI proxy addresses of the cluster.
+* `zk_conn_addrs` - (Optional, Available in 1.105.0+) The zookeeper addresses of the cluster.
+* `slb_conn_addrs` - (Optional, Available in 1.105.0+) The slb service addresses of the cluster.
 
 ### Timeouts
 

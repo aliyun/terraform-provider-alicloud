@@ -20,7 +20,7 @@ variable "core_instance_type" {
   default = "hbase.sn1.large"
 }
 
-# 2~20
+# 2~200
 variable "core_instance_quantity" {
   default = 2
 }
@@ -67,4 +67,7 @@ variable "maintain_end_time" {
 }
 variable "deletion_protection" {
   default = true
+}
+variable "ip_white" {
+  default = "127.0.0.1"
 }
