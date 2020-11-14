@@ -82,9 +82,9 @@ The following arguments are supported:
 * `version` - (Optional) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
 * `security_group_id` - (Optional) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `is_enterprise_security_group` - (Optional) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
-* `rds_instance` - (Optional, Available in 1.104.0+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
-* `resource_group_id` - (Optional, ForceNew, Available in 1.104.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `deletion_protection` - (Optional, Available in 1.104.0+)  Whether to enable cluster deletion protection.
+* `rds_instance` - (Optional, Available in 1.103.2+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.103.2+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
+* `deletion_protection` - (Optional, Available in 1.103.2+)  Whether to enable cluster deletion protection.
 
 ### Network params
 
