@@ -1,7 +1,8 @@
-## 1.104.0 (Unreleased)
+## 1.103.2 (Unreleased)
 
 IMPROVEMENTS:
 
+- resource/alicloud_readonly_instance: Enlarging the createing timeout to 60min [GH-3023]
 - TestCase/Cen: Add sweep function for cen_instance_attachemt and cen_route_service [GH-3022]
 - resource/alicloud_db_instance: Improve its testcase by adding timeouts for vswitch [GH-3020]
 - Updata alibaba-cloud-sdk-go to v1.61.623 and make the drds_instance struct compatible [GH-3017]
