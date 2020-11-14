@@ -30,6 +30,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -59,16 +60,18 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			"master_instance_type": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
+			},
+			"master_instance_quantity": {
+				Type:     schema.TypeInt,
+				Computed: true,
 			},
 			"core_instance_type": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"core_instance_quantity": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntBetween(1, 20),
+				ValidateFunc: validation.IntBetween(1, 200),
 				Optional:     true,
 				Default:      2,
 			},
@@ -76,12 +79,12 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "cloud_efficiency", "local_hdd_pro", "local_ssd_pro"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "cloud_efficiency", "local_hdd_pro", "local_ssd_pro", "-"}, false),
 			},
 			"core_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(400, 8000),
+				ValidateFunc: validation.Any(validation.IntBetween(400, 8000), validation.IntInSlice([]int{0})),
 				Default:      400,
 			},
 			"pay_type": {
@@ -94,7 +97,6 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			"duration": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				ForceNew:         true,
 				Computed:         true,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 60}),
 				DiffSuppressFunc: payTypePostPaidDiffSuppressFunc,
@@ -114,8 +116,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			"cold_storage_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Computed: true,
-				ForceNew: true,
+				Default:  0,
 			},
 			"maintain_start_time": {
 				Type:     schema.TypeString,
@@ -133,6 +134,86 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Default:  true,
 			},
 			"tags": tagsSchema(),
+			"account": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"ip_white": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"security_groups": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"ui_proxy_conn_addrs": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"conn_addr_port": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"conn_addr": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"net_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"zk_conn_addrs": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"conn_addr_port": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"conn_addr": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"net_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"slb_conn_addrs": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"conn_addr_port": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"conn_addr": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"net_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -246,6 +327,7 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 	d.Set("engine", instance.Engine)
 	d.Set("engine_version", instance.MajorVersion)
 	d.Set("master_instance_type", instance.MasterInstanceType)
+	d.Set("master_instance_quantity", instance.MasterNodeCount)
 	d.Set("core_instance_type", instance.CoreInstanceType)
 	d.Set("core_instance_quantity", instance.CoreNodeCount)
 	diskCount, err := strconv.Atoi(instance.CoreDiskCount)
@@ -266,14 +348,68 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 		d.Set("duration", period)
 	}
 	// now sdk can not get right value, "auto_renew", "is_cold_storage".
-	d.Set("auto_renew", d.Get("auto_renew"))
-	d.Set("cold_storage_size", d.Get("cold_storage_size"))
+	d.Set("auto_renew", instance.AutoRenewal)
+	d.Set("cold_storage_size", instance.ColdStorageSize)
 	d.Set("vpc_id", instance.VpcId)
 	d.Set("vswitch_id", instance.VswitchId)
 	d.Set("maintain_start_time", instance.MaintainStartTime)
 	d.Set("maintain_end_time", instance.MaintainEndTime)
 	d.Set("deletion_protection", instance.IsDeletionProtection)
 	d.Set("tags", hbaseService.tagsToMap(instance.Tags.Tag))
+
+	ipWhitelist, err := hbaseService.DescribeIpWhitelist(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	ipWhite := LOCAL_HOST_IP
+	for _, value := range ipWhitelist.Groups.Group {
+		if value.GroupName == "default" {
+			ipWhite = strings.Join(value.IpList.Ip, ",")
+		}
+	}
+	d.Set("ip_white", ipWhite)
+
+	securityGroups, err := hbaseService.DescribeSecurityGroups(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("security_groups", securityGroups.SecurityGroupIds.SecurityGroupId)
+
+	conns, err := hbaseService.DescribeClusterConnection(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	// UiProxyConnAddrInfo
+	var uiConnAddrs []map[string]interface{}
+	e := map[string]interface{}{
+		"conn_addr_port": conns.UiProxyConnAddrInfo.ConnAddrPort,
+		"conn_addr":      conns.UiProxyConnAddrInfo.ConnAddr,
+		"net_type":       conns.UiProxyConnAddrInfo.NetType,
+	}
+	uiConnAddrs = append(uiConnAddrs, e)
+	d.Set("ui_proxy_conn_addrs", uiConnAddrs)
+	// ZKConnAddrs
+	var zkConnAddrs []map[string]interface{}
+	for _, v := range conns.ZkConnAddrs.ZkConnAddr {
+		e := map[string]interface{}{
+			"conn_addr_port": v.ConnAddrPort,
+			"conn_addr":      v.ConnAddr,
+			"net_type":       v.NetType,
+		}
+		zkConnAddrs = append(zkConnAddrs, e)
+	}
+	d.Set("zk_conn_addrs", zkConnAddrs)
+	// slbConnAddrs
+	var slbConnAddrs []map[string]interface{}
+	for _, v := range conns.SlbConnAddrs.SlbConnAddr {
+		e := map[string]interface{}{
+			"conn_addr_port": v.ConnAddrInfo.ConnAddrPort,
+			"conn_addr":      v.ConnAddrInfo.ConnAddr,
+			"net_type":       v.ConnAddrInfo.NetType,
+		}
+		slbConnAddrs = append(slbConnAddrs, e)
+	}
+	d.Set("slb_conn_addrs", slbConnAddrs)
 	return nil
 }
 
@@ -281,6 +417,45 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	hBaseService := HBaseService{client}
 	d.Partial(true)
+	if d.HasChange("ip_white") {
+		request := hbase.CreateModifyIpWhitelistRequest()
+		request.ClusterId = d.Id()
+		request.IpList = d.Get("ip_white").(string)
+		request.GroupName = "default"
+		request.IpVersion = "4"
+		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
+			return hbaseClient.ModifyIpWhitelist(request)
+		})
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("ip_white")
+	}
+
+	if d.HasChange("security_groups") {
+		request := hbase.CreateModifySecurityGroupsRequest()
+		request.ClusterId = d.Id()
+		securityGroups := d.Get("security_groups").([]interface{})
+		if securityGroups != nil && len(securityGroups) > 0 {
+			request.SecurityGroupIds = strings.Join(expandStringList(securityGroups), ",")
+		} else {
+			request.SecurityGroupIds = " "
+		}
+		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
+			return hbaseClient.ModifySecurityGroups(request)
+		})
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+			5*time.Second, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("security_groups")
+	}
 
 	if d.HasChange("maintain_start_time") || d.HasChange("maintain_end_time") {
 		request := hbase.CreateModifyInstanceMaintainTimeRequest()
@@ -352,7 +527,31 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("core_instance_quantity")
 	}
 
-	if d.HasChange("core_disk_size") {
+	if d.HasChange("master_instance_type") || d.HasChange("core_instance_type") {
+		request := hbase.CreateModifyInstanceTypeRequest()
+		request.ClusterId = d.Id()
+		request.MasterInstanceType = d.Get("master_instance_type").(string)
+		request.CoreInstanceType = d.Get("core_instance_type").(string)
+
+		raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
+			return client.ModifyInstanceType(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		// Cumbersome operation，async call, wait for state change
+		// wait instance status is running after modifying
+		stateConf := BuildStateConf([]string{Hb_LEVEL_MODIFY}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+			5*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_LEVEL_MODIFY_FAILED}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("master_instance_type")
+		d.SetPartial("core_instance_type")
+	}
+
+	if d.HasChange("core_disk_size") && d.Get("engine") != "bds" {
 		request := hbase.CreateResizeDiskSizeRequest()
 		request.ClusterId = d.Id()
 		request.NodeDiskSize = requests.NewInteger(d.Get("core_disk_size").(int))
@@ -366,12 +565,51 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 		// Cumbersome operation，async call, wait for state change
 		// wait instance status is running after modifying
 		stateConf := BuildStateConf([]string{Hb_DISK_RESIZING}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
-			5*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_DISK_RESIZE_FAILED}))
+			1*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_DISK_RESIZE_FAILED}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("core_disk_size")
+	}
+
+	if d.HasChange("cold_storage_size") {
+		request := hbase.CreateResizeColdStorageSizeRequest()
+		request.ClusterId = d.Id()
+		request.ColdStorageSize = requests.NewInteger(d.Get("cold_storage_size").(int))
+
+		raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
+			return client.ResizeColdStorageSize(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		// Cumbersome operation，async call, wait for state change
+		// wait instance status is running after modifying
+		stateConf := BuildStateConf([]string{Hb_HBASE_COLD_EXPANDING}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+			10*time.Second, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_DISK_RESIZE_FAILED}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("cold_storage_size")
+	}
+
+	if d.HasChange("account") || d.HasChange("password") {
+		request := hbase.CreateModifyUIAccountPasswordRequest()
+		request.ClusterId = d.Id()
+		request.AccountName = d.Get("account").(string)
+		request.AccountPassword = d.Get("password").(string)
+
+		raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
+			return client.ModifyUIAccountPassword(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("account")
+		d.SetPartial("password")
 	}
 
 	d.Partial(false)

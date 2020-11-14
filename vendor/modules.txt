@@ -168,6 +168,8 @@ github.com/denverdino/aliyungo/ecs
 github.com/denverdino/aliyungo/util
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
+# github.com/fatih/structs v1.1.0
+github.com/fatih/structs
 # github.com/go-kit/kit v0.10.0
 github.com/go-kit/kit/log
 github.com/go-kit/kit/log/level
