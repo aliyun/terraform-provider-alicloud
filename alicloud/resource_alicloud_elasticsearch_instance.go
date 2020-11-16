@@ -485,6 +485,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		}
 
 		d.SetPartial("instance_charge_type")
+		d.SetPartial("period")
 	}
 
 	if d.Get("instance_charge_type").(string) == string(PrePaid) && d.HasChange("period") {
