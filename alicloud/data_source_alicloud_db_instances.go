@@ -328,17 +328,18 @@ func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, dbi []rds
 			"readonly_instance_ids":    readOnlyInstanceIDs,
 			"vpc_id":                   item.VpcId,
 			"vswitch_id":               item.VSwitchId,
-			"connection_string":        instance.ConnectionString,
-			"port":                     instance.Port,
-			"db_instance_storage_type": instance.DBInstanceStorageType,
-			"instance_storage":         instance.DBInstanceStorage,
-			"master_zone":              instance.MasterZone,
+			"connection_string":        instance["ConnectionString"],
+			"port":                     instance["Port"],
+			"db_instance_storage_type": instance["DBInstanceStorageType"],
+			"instance_storage":         instance["DBInstanceStorage"],
+			"master_zone":              instance["MasterZone"],
 		}
-		if len(instance.SlaveZones.SlaveZone) == 2 {
-			mapping["zone_id_slave_a"] = instance.SlaveZones.SlaveZone[0].ZoneId
-			mapping["zone_id_slave_b"] = instance.SlaveZones.SlaveZone[1].ZoneId
-		} else if len(instance.SlaveZones.SlaveZone) == 1 {
-			mapping["zone_id_slave_a"] = instance.SlaveZones.SlaveZone[0].ZoneId
+		slaveZones := instance["SlaveZones"].(map[string]interface{})["SlaveZone"].([]interface{})
+		if len(slaveZones) == 2 {
+			mapping["zone_id_slave_a"] = slaveZones[0].(map[string]interface{})["ZoneId"]
+			mapping["zone_id_slave_b"] = slaveZones[1].(map[string]interface{})["ZoneId"]
+		} else if len(slaveZones) == 1 {
+			mapping["zone_id_slave_a"] = slaveZones[0].(map[string]interface{})["ZoneId"]
 		}
 
 		ids = append(ids, item.DBInstanceId)

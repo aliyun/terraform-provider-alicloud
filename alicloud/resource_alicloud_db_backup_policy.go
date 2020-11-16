@@ -213,7 +213,7 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	// At present, the sql server database does not support setting high_space_usage_protection and it`s has default value
-	if instance.Engine == "SQLServer" {
+	if instance["Engine"] == "SQLServer" {
 		d.Set("high_space_usage_protection", "Enable")
 	} else {
 		d.Set("high_space_usage_protection", object.HighSpaceUsageProtection)
@@ -282,10 +282,10 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 		}
 		return WrapError(err)
 	}
-	if instance.Engine != "SQLServer" {
+	if instance["Engine"] != "SQLServer" {
 		request.LogBackupRetentionPeriod = "7"
 	}
-	if instance.Engine == "MySQL" && instance.DBInstanceStorageType == "local_ssd" {
+	if instance["Engine"] == "MySQL" && instance["DBInstanceStorageType"] == "local_ssd" {
 		request.ArchiveBackupRetentionPeriod = "0"
 		request.ArchiveBackupKeepCount = "1"
 		request.ArchiveBackupKeepPolicy = "ByMonth"

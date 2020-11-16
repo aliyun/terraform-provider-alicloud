@@ -261,17 +261,17 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
-	d.Set("engine", instance.Engine)
-	d.Set("master_db_instance_id", instance.MasterInstanceId)
-	d.Set("engine_version", instance.EngineVersion)
-	d.Set("instance_type", instance.DBInstanceClass)
-	d.Set("port", instance.Port)
-	d.Set("instance_storage", instance.DBInstanceStorage)
-	d.Set("zone_id", instance.ZoneId)
-	d.Set("vswitch_id", instance.VSwitchId)
-	d.Set("connection_string", instance.ConnectionString)
-	d.Set("instance_name", instance.DBInstanceDescription)
-	d.Set("resource_group_id", instance.ResourceGroupId)
+	d.Set("engine", instance["Engine"])
+	d.Set("master_db_instance_id", instance["MasterInstanceId"])
+	d.Set("engine_version", instance["EngineVersion"])
+	d.Set("instance_type", instance["DBInstanceClass"])
+	d.Set("port", instance["Port"])
+	d.Set("instance_storage", instance["DBInstanceStorage"])
+	d.Set("zone_id", instance["ZoneId"])
+	d.Set("vswitch_id", instance["VSwitchId"])
+	d.Set("connection_string", instance["ConnectionString"])
+	d.Set("instance_name", instance["DBInstanceDescription"])
+	d.Set("resource_group_id", instance["ResourceGroupId"])
 
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
 		return err
@@ -299,7 +299,7 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 		}
 		return WrapError(err)
 	}
-	if PayType(instance.PayType) == Prepaid {
+	if PayType(instance["PayType"].(string)) == Prepaid {
 		return WrapError(Error("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically."))
 	}
 

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -103,40 +103,48 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
-	d.Set("instance_id", object.DBInstanceId)
-	d.Set("account_name", object.AccountName)
+	d.Set("instance_id", object["DBInstanceId"])
+	d.Set("account_name", object["AccountName"])
 	d.Set("privilege", parts[2])
 	var names []string
-	for _, pri := range object.DatabasePrivileges.DatabasePrivilege {
-		if pri.AccountPrivilege == parts[2] {
-			names = append(names, pri.DBName)
+	databasePrivilege := object["DatabasePrivileges"].(map[string]interface{})["DatabasePrivilege"].([]interface{})
+	for _, pri := range databasePrivilege {
+		pri := pri.(map[string]interface{})
+		if pri["AccountPrivilege"] == parts[2] {
+			names = append(names, pri["DBName"].(string))
 		}
 	}
 
-	if len(names) < 1 && strings.HasPrefix(object.DBInstanceId, "pgm-") {
-
-		request := rds.CreateDescribeDatabasesRequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = object.DBInstanceId
-
+	if len(names) < 1 && strings.HasPrefix(object["DBInstanceId"].(string), "pgm-") {
+		conn, err := client.NewRdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "DescribeDatabases"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": object["DBInstanceId"],
+			"SourceIp":     client.SourceIp,
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-				return rdsClient.DescribeDatabases(request)
-			})
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBInstanceStatus"}) {
-					return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, object.DBInstanceId, request.GetActionName(), AlibabaCloudSdkGoERROR))
+					return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, object["DBInstanceId"], action, AlibabaCloudSdkGoERROR))
 				}
-				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, object.DBInstanceId, request.GetActionName(), AlibabaCloudSdkGoERROR))
+				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, object["DBInstanceId"], action, AlibabaCloudSdkGoERROR))
 			}
-
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-			response, _ := raw.(*rds.DescribeDatabasesResponse)
-			for _, db := range response.Databases.Database {
-				for _, account := range db.Accounts.AccountPrivilegeInfo {
-					if account.Account == object.AccountName && (account.AccountPrivilege == parts[2] || account.AccountPrivilege == "ALL") {
-						names = append(names, db.DBName)
+			addDebug(action, response, request)
+			dataBases := response["Databases"].(map[string]interface{})["Database"].([]interface{})
+			for _, db := range dataBases {
+				db := db.(map[string]interface{})
+				accountPrivilegeInfos := db["Accounts"].(map[string]interface{})["AccountPrivilegeInfo"].([]interface{})
+				for _, account := range accountPrivilegeInfos {
+					account := account.(map[string]interface{})
+					if account["Account"] == object["AccountName"] && (account["AccountPrivilege"] == parts[2] || account["AccountPrivilege"] == "ALL") {
+						names = append(names, db["DBName"].(string))
 					}
 				}
 			}
@@ -217,12 +225,13 @@ func resourceAlicloudDBAccountPrivilegeDelete(d *schema.ResourceData, meta inter
 		return nil
 	}
 	var dbName string
-
-	if len(object.DatabasePrivileges.DatabasePrivilege) > 0 {
-		for _, pri := range object.DatabasePrivileges.DatabasePrivilege {
-			if pri.AccountPrivilege == parts[2] {
-				dbName = pri.DBName
-				if err := rdsService.RevokeAccountPrivilege(d.Id(), pri.DBName); err != nil {
+	databasePrivileges := object["DatabasePrivileges"].(map[string]interface{})["DatabasePrivilege"].([]interface{})
+	if len(databasePrivileges) > 0 {
+		for _, pri := range databasePrivileges {
+			pri := pri.(map[string]interface{})
+			if pri["AccountPrivilege"] == parts[2] {
+				dbName = pri["DBName"].(string)
+				if err := rdsService.RevokeAccountPrivilege(d.Id(), dbName); err != nil {
 					return WrapError(err)
 				}
 			}

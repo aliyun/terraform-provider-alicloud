@@ -96,10 +96,10 @@ func resourceAlicloudDBDatabaseRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	d.Set("instance_id", object.DBInstanceId)
-	d.Set("name", object.DBName)
-	d.Set("character_set", object.CharacterSetName)
-	d.Set("description", object.DBDescription)
+	d.Set("instance_id", object["DBInstanceId"])
+	d.Set("name", object["DBName"])
+	d.Set("character_set", object["CharacterSetName"])
+	d.Set("description", object["DBDescription"])
 
 	return nil
 }
