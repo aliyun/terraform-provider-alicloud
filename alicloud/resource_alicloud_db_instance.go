@@ -483,7 +483,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return WrapError(err)
 		}
-		request.ConnectionString = instance.ConnectionString
+		request.ConnectionString = instance["ConnectionString"].(string)
 
 		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
 			return rdsClient.ModifyDBInstanceSSL(request)
@@ -653,31 +653,32 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	d.Set("resource_group_id", instance.ResourceGroupId)
+	d.Set("resource_group_id", instance["ResourceGroupId"])
 	d.Set("monitoring_period", monitoringPeriod)
 
 	d.Set("security_ips", ips)
-	d.Set("security_ip_mode", instance.SecurityIPMode)
+	d.Set("security_ip_mode", instance["SecurityIPMode"])
 
-	d.Set("engine", instance.Engine)
-	d.Set("engine_version", instance.EngineVersion)
-	d.Set("instance_type", instance.DBInstanceClass)
-	d.Set("port", instance.Port)
-	d.Set("instance_storage", instance.DBInstanceStorage)
-	d.Set("db_instance_storage_type", instance.DBInstanceStorageType)
-	d.Set("zone_id", instance.ZoneId)
-	d.Set("instance_charge_type", instance.PayType)
+	d.Set("engine", instance["Engine"])
+	d.Set("engine_version", instance["EngineVersion"])
+	d.Set("instance_type", instance["DBInstanceClass"])
+	d.Set("port", instance["Port"])
+	d.Set("instance_storage", instance["DBInstanceStorage"])
+	d.Set("db_instance_storage_type", instance["DBInstanceStorageType"])
+	d.Set("zone_id", instance["ZoneId"])
+	d.Set("instance_charge_type", instance["PayType"])
 	d.Set("period", d.Get("period"))
-	d.Set("vswitch_id", instance.VSwitchId)
-	d.Set("connection_string", instance.ConnectionString)
-	d.Set("instance_name", instance.DBInstanceDescription)
-	d.Set("maintain_time", instance.MaintainTime)
-	d.Set("auto_upgrade_minor_version", instance.AutoUpgradeMinorVersion)
-	if len(instance.SlaveZones.SlaveZone) == 2 {
-		d.Set("zone_id_slave_a", instance.SlaveZones.SlaveZone[0].ZoneId)
-		d.Set("zone_id_slave_b", instance.SlaveZones.SlaveZone[1].ZoneId)
-	} else if len(instance.SlaveZones.SlaveZone) == 1 {
-		d.Set("zone_id_slave_a", instance.SlaveZones.SlaveZone[0].ZoneId)
+	d.Set("vswitch_id", instance["VSwitchId"])
+	d.Set("connection_string", instance["ConnectionString"])
+	d.Set("instance_name", instance["DBInstanceDescription"])
+	d.Set("maintain_time", instance["MaintainTime"])
+	d.Set("auto_upgrade_minor_version", instance["AutoUpgradeMinorVersion"])
+	slaveZones := instance["SlaveZones"].(map[string]interface{})["SlaveZone"].([]interface{})
+	if len(slaveZones) == 2 {
+		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
+		d.Set("zone_id_slave_b", slaveZones[1].(map[string]interface{})["ZoneId"])
+	} else if len(slaveZones) == 1 {
+		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
 	}
 	if sqlCollectorPolicy.SQLCollectorStatus == "Enable" {
 		d.Set("sql_collector_status", "Enabled")
@@ -694,7 +695,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	if instance.PayType == string(Prepaid) {
+	if instance["PayType"] == string(Prepaid) {
 		request := rds.CreateDescribeInstanceAutoRenewalAttributeRequest()
 		request.RegionId = client.RegionId
 		request.DBInstanceId = d.Id()
@@ -712,7 +713,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 			d.Set("auto_renew", renew.AutoRenew == "True")
 			d.Set("auto_renew_period", renew.Duration)
 		}
-		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpireTime, d.Get("period").(int), "Month")
+		period, err := computePeriodByUnit(instance["CreationTime"], instance["ExpireTime"], d.Get("period").(int), "Month")
 		if err != nil {
 			return WrapError(err)
 		}
@@ -753,7 +754,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 		}
 		return WrapError(err)
 	}
-	if PayType(instance.PayType) == Prepaid {
+	if PayType(instance["PayType"].(string)) == Prepaid {
 		return WrapError(Error("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically."))
 	}
 
