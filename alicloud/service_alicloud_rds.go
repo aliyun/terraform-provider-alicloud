@@ -649,32 +649,34 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 		return WrapError(err)
 	}
 	if updateForData {
-		request := rds.CreateModifyBackupPolicyRequest()
-		request.RegionId = s.client.RegionId
-		request.DBInstanceId = d.Id()
-		request.PreferredBackupPeriod = backupPeriod
-		request.PreferredBackupTime = backupTime
-		request.BackupRetentionPeriod = retentionPeriod
-		request.CompressType = compressType
-		request.BackupPolicyMode = "DataBackupPolicy"
+		conn, err := s.client.NewRdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "ModifyBackupPolicy"
+		request := map[string]interface{}{
+			"RegionId":              s.client.RegionId,
+			"DBInstanceId":          d.Id(),
+			"PreferredBackupPeriod": backupPeriod,
+			"PreferredBackupTime":   backupTime,
+			"BackupRetentionPeriod": retentionPeriod,
+			"CompressType":          compressType,
+			"BackupPolicyMode":      "DataBackupPolicy",
+			"SourceIp":              s.client.SourceIp,
+		}
 		if instance["Engine"] == "SQLServer" && logBackupFrequency == "LogInterval" {
-			request.LogBackupFrequency = logBackupFrequency
+			request["LogBackupFrequency"] = logBackupFrequency
 		}
 		if instance["Engine"] == "MySQL" && instance["DBInstanceStorageType"] == "local_ssd" {
-			request.ArchiveBackupRetentionPeriod = archiveBackupRetentionPeriod
-			request.ArchiveBackupKeepCount = archiveBackupKeepCount
-			request.ArchiveBackupKeepPolicy = archiveBackupKeepPolicy
+			request["ArchiveBackupRetentionPeriod"] = archiveBackupRetentionPeriod
+			request["ArchiveBackupKeepCount"] = archiveBackupKeepCount
+			request["ArchiveBackupKeepPolicy"] = archiveBackupKeepPolicy
 		}
-		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.ModifyBackupPolicy(request)
-		})
-
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
+		addDebug(action, response, request)
 		if err := s.WaitForDBInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
@@ -682,26 +684,27 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 
 	// At present, the sql server database does not support setting logBackupRetentionPeriod
 	if updateForLog && instance["Engine"] != "SQLServer" {
-		request := rds.CreateModifyBackupPolicyRequest()
-		request.RegionId = s.client.RegionId
-		request.DBInstanceId = d.Id()
-		request.EnableBackupLog = enableBackupLog
-		request.LocalLogRetentionHours = localLogRetentionHours
-		request.LocalLogRetentionSpace = localLogRetentionSpace
-		request.HighSpaceUsageProtection = highSpaceUsageProtection
-		request.BackupPolicyMode = "LogBackupPolicy"
-		request.LogBackupRetentionPeriod = logBackupRetentionPeriod
-
-		raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.ModifyBackupPolicy(request)
-		})
-
+		conn, err := s.client.NewRdsClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
+		action := "ModifyBackupPolicy"
+		request := map[string]interface{}{
+			"RegionId":                 s.client.RegionId,
+			"DBInstanceId":             d.Id(),
+			"EnableBackupLog":          enableBackupLog,
+			"LocalLogRetentionHours":   localLogRetentionHours,
+			"LocalLogRetentionSpace":   localLogRetentionSpace,
+			"HighSpaceUsageProtection": highSpaceUsageProtection,
+			"BackupPolicyMode":         "LogBackupPolicy",
+			"LogBackupRetentionPeriod": logBackupRetentionPeriod,
+			"SourceIp":                 s.client.SourceIp,
+		}
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
 		if err := s.WaitForDBInstance(d.Id(), Running, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
@@ -884,24 +887,26 @@ func (s *RdsService) DescribeMultiIZByRegion() (izs []string, err error) {
 	return zoneIds, nil
 }
 
-func (s *RdsService) DescribeBackupPolicy(id string) (*rds.DescribeBackupPolicyResponse, error) {
-	policy := &rds.DescribeBackupPolicyResponse{}
-	request := rds.CreateDescribeBackupPolicyRequest()
-	request.DBInstanceId = id
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-		return rdsClient.DescribeBackupPolicy(request)
-	})
-
+func (s *RdsService) DescribeBackupPolicy(id string) (map[string]interface{}, error) {
+	action := "DescribeBackupPolicy"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": id,
+		"SourceIp":     s.client.SourceIp,
+	}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return policy, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return policy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	return raw.(*rds.DescribeBackupPolicyResponse), nil
+	addDebug(action, response, request)
+	return response, nil
 }
 
 func (s *RdsService) DescribeDbInstanceMonitor(id string) (monitoringPeriod int, err error) {
