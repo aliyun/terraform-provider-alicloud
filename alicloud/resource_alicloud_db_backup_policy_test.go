@@ -166,10 +166,12 @@ func TestAccAlicloudDBBackupPolicy_mysql(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"archive_backup_keep_policy": "KeepAll",
+					"archive_backup_keep_count":  "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"archive_backup_keep_policy": "KeepAll",
+						"archive_backup_keep_count":  "1",
 					}),
 				),
 			},
