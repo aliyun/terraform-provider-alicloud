@@ -1488,7 +1488,7 @@ func (s *RdsService) DescribeDBProxyEndpoint(id string, endpointName string) (en
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound", "Endpoint.NotFound"}) {
-			return endpointInfo, WrapErrorf(err, InstanceNotFound, AlibabaCloudSdkGoERROR)
+			return endpointInfo, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return endpointInfo, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
