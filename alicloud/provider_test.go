@@ -312,6 +312,13 @@ func testAccPreCheckWithCenVbrHealthCheckSetting(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithCmsGroupIdSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("CMS_GROUP_ID")); v == "" {
+		t.Skipf("Skipping the test case with there is no \"CMS_GROUP_ID\" setting")
+		t.Skipped()
+	}
+}
+
 var providerCommon = `
 provider "alicloud" {
 	assume_role {}
