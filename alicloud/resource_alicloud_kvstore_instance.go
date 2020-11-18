@@ -58,6 +58,19 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"backup_period": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"backup_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"bandwidth": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -103,6 +116,12 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+			},
+			"enable_backup_log": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntInSlice([]int{0, 1}),
+				Default:      0,
 			},
 			"end_time": {
 				Type:     schema.TypeString,
@@ -542,6 +561,13 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("vpc_auth_mode", object.VpcAuthMode)
 	d.Set("zone_id", object.ZoneId)
 	d.Set("availability_zone", object.ZoneId)
+	describeBackupPolicyObject, err := r_kvstoreService.DescribeBackupPolicy(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("backup_period", strings.Split(describeBackupPolicyObject.PreferredBackupPeriod, ","))
+	d.Set("backup_time", describeBackupPolicyObject.PreferredBackupTime)
+
 	if _, ok := d.GetOk("security_group_id"); ok {
 
 		describeSecurityGroupConfigurationObject, err := r_kvstoreService.DescribeSecurityGroupConfiguration(d.Id())
@@ -820,6 +846,35 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("availability_zone")
 		d.SetPartial("zone_id")
 		d.SetPartial("vswitch_id")
+	}
+	update = false
+	modifyBackupPolicyReq := r_kvstore.CreateModifyBackupPolicyRequest()
+	modifyBackupPolicyReq.InstanceId = d.Id()
+	if d.HasChange("backup_period") {
+		update = true
+	}
+	modifyBackupPolicyReq.PreferredBackupPeriod = convertListToCommaSeparate(d.Get("backup_period").(*schema.Set).List())
+	if d.HasChange("backup_time") {
+		update = true
+	}
+	modifyBackupPolicyReq.PreferredBackupTime = d.Get("backup_time").(string)
+	if update {
+		if _, ok := d.GetOk("enable_backup_log"); ok {
+			modifyBackupPolicyReq.EnableBackupLog = requests.NewInteger(d.Get("enable_backup_log").(int))
+		}
+		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+			return r_kvstoreClient.ModifyBackupPolicy(modifyBackupPolicyReq)
+		})
+		addDebug(modifyBackupPolicyReq.GetActionName(), raw)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyBackupPolicyReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("backup_period")
+		d.SetPartial("backup_time")
 	}
 	update = false
 	modifyInstanceAttributeReq := r_kvstore.CreateModifyInstanceAttributeRequest()

@@ -114,6 +114,9 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `instance_release_protection`- (Optional, ForceNew, Available in 1.101.0+) Whether to open the release protection.
 * `global_instance_id`- (Optional, Available in 1.101.0+) The ID of distributed cache.
 * `global_instance`- (Optional, ForceNew, Available in 1.101.0+) Whether to create a distributed cache. Default to: `false`.
+* `backup_period`- (Optional, Available in 1.104.0+) Backup period. 
+* `backup_time`- (Optional, Available in 1.104.0+) Backup time, the format is HH:mmZ-HH:mmZ (UTC time).
+* `enable_backup_log`- (Optional, Available in 1.104.0+) Turn on or off incremental backup. Valid values: `1`, `0`. Default to `0`
 
 -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
