@@ -54,6 +54,16 @@ func TestAccAlicloudFCAliasUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": "this is an alias description.",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "this is an alias description.",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "this is another alias description.",
 					"routing_config": []map[string]interface{}{
 						{
 							"additional_version_weights": map[string]string{
@@ -64,7 +74,7 @@ func TestAccAlicloudFCAliasUpdate(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":      "this is an alias description.",
+						"description":      "this is another alias description.",
 						"routing_config.#": "1",
 						"routing_config.0.additional_version_weights.1": "0.3",
 					}),
