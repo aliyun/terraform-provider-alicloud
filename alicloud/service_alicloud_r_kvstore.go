@@ -305,3 +305,25 @@ func (s *R_kvstoreService) KvstoreAccountStateRefreshFunc(id string, failStates 
 		return object, object.AccountStatus, nil
 	}
 }
+
+func (s *R_kvstoreService) DescribeBackupPolicy(id string) (object r_kvstore.DescribeBackupPolicyResponse, err error) {
+	request := r_kvstore.CreateDescribeBackupPolicyRequest()
+	request.RegionId = s.client.RegionId
+
+	request.InstanceId = id
+
+	raw, err := s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+		return r_kvstoreClient.DescribeBackupPolicy(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*r_kvstore.DescribeBackupPolicyResponse)
+	return *response, nil
+}

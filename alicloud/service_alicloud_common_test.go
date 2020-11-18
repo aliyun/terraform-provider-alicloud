@@ -829,18 +829,16 @@ resource "alicloud_vswitch" "this" {
 `
 
 const KVStoreCommonTestCase = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+data "alicloud_kvstore_zones" "default"{
+	instance_charge_type = "PostPaid"
 }
 data "alicloud_vpcs" "default" {
 	is_default = true
 }
-
 data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)+(-1))%length(data.alicloud_zones.default.zones)], "id")}"
+	zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
+	vpc_id = data.alicloud_vpcs.default.ids.0
 }
-
 `
 
 const DBMultiAZCommonTestCase = `
