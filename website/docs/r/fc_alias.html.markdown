@@ -12,7 +12,7 @@ description: |-
 Creates a Function Compute service alias. Creates an alias that points to the specified Function Compute service version. 
  For the detailed information, please refer to the [developer guide](https://www.alibabacloud.com/help/doc-detail/171635.htm).
 
--> **NOTE:** Available in 1.103.3+
+-> **NOTE:** Available in 1.104.0+
 
 
 ## Example Usage
@@ -20,7 +20,7 @@ Creates a Function Compute service alias. Creates an alias that points to the sp
 Basic Usage
 
 ```terrraform
-resource "alicloud_fc_alias" "test_fc_alias" {
+resource "alicloud_fc_alias" "example" {
   alias_name       = "my_alias"
   description      = "a sample description"
   service_name     = "my_service_name"
@@ -54,5 +54,5 @@ The following arguments are supported:
 Function Compute alias can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_fc_alias.foo my_alias_id
+$ terraform import alicloud_fc_alias.example my_alias_id
 ```

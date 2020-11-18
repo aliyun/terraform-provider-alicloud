@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/aliyun/fc-go-sdk"
@@ -108,36 +109,24 @@ func resourceAlicloudFCAliasCreate(d *schema.ResourceData, meta interface{}) err
 
 func resourceAlicloudFCAliasRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	serviceName := d.Get("service_name").(string)
-	request := &fc.GetAliasInput{
-		ServiceName: StringPointer(serviceName),
-		AliasName:   StringPointer(d.Get("alias_name").(string)),
-	}
+	fcService := FcService{client}
 
-	var response *fc.GetAliasOutput
-	var requestInfo *fc.Client
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-			requestInfo = fcClient
-			return fcClient.GetAlias(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"AliasNotFound"}) {
-				d.SetId("")
-			}
-			return resource.NonRetryableError(WrapError(err))
+	id := d.Id()
+	response, err := fcService.DescribeFcAlias(id)
+	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_fc_alias fcService.DescribeFcAlias Failed!!! %s", err)
+			d.SetId("")
+			return nil
 		}
-		addDebug("GetAlias", raw, requestInfo, request)
-		response, _ = raw.(*fc.GetAliasOutput)
-		return nil
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_alias", "GetAlias", FcGoSdk)
+		return WrapError(err)
 	}
-
-	if response == nil {
-		return WrapError(Error("Getting function compute alias got an empty response"))
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return WrapError(err)
 	}
-
+	serviceName := parts[0]
+	d.Set("service_name", serviceName)
 	d.Set("alias_name", *response.AliasName)
 	d.Set("description", *response.Description)
 	d.Set("service_version", *response.VersionID)
