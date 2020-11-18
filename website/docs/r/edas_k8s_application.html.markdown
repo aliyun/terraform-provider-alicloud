@@ -28,7 +28,6 @@ resource "alicloud_edas_k8s_application" "default" {
     
   // set 'image_url' and 'repo_id' when package_type is 'image'
   image_url                 = "registry-vpc.cn-beijing.aliyuncs.com/edas-demo-image/consumer:1.0"
-  repo_id                   = var.repo_id
 
   // set 'package_url','package_version' and 'jdk' when package_type is not 'image'
   package_url               = var.package_url
@@ -39,10 +38,6 @@ resource "alicloud_edas_k8s_application" "default" {
   web_container             = var.web_container
   edas_container_version    = var.edas_container_version
 
-  intranet_target_port      = var.intranet_target_port
-  intranet_slb_port         = var.intranet_slb_port
-  intranet_slb_protocol     = var.intranet_slb_protocol
-  intranet_slb_id           = var.intranet_slb_id
   internet_target_port      = var.internet_target_port
   internet_slb_port         = var.internet_slb_port
   internet_slb_protocol     = var.internet_slb_protocol
@@ -65,8 +60,6 @@ resource "alicloud_edas_k8s_application" "default" {
   local_volume              = var.local_volume
   namespace                 = "default"
   logical_region_id         = cn-beijing
-  uri_encoding              = "UTF-8"
-  use_body_encoding         = false
 }
 ```
 
