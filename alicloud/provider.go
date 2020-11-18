@@ -476,6 +476,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fc_service":                          resourceAlicloudFCService(),
 			"alicloud_fc_function":                         resourceAlicloudFCFunction(),
 			"alicloud_fc_trigger":                          resourceAlicloudFCTrigger(),
+			"alicloud_fc_alias":                            resourceAlicloudFCAlias(),
 			"alicloud_fc_custom_domain":                    resourceAlicloudFCCustomDomain(),
 			"alicloud_fc_function_async_invoke_config":     resourceAlicloudFCFunctionAsyncInvokeConfig(),
 			"alicloud_vpn_gateway":                         resourceAliyunVpnGateway(),
