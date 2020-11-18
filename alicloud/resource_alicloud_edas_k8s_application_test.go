@@ -220,9 +220,8 @@ func TestAccAlicloudEdasK8sApplicationJar_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-edask8sappb%v", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEdasK8sApplicationConfigDependence)
-	region := os.Getenv("ALICLOUD_REGION")
-	packageUrl := fmt.Sprintf("http://edas-bj.oss-%s.aliyuncs.com/prod/demo/SPRING_CLOUD_PROVIDER.jar", region)
-	updateUrl := fmt.Sprintf("http://edas-bj.oss-%s.aliyuncs.com/prod/demo/DUBBO_PROVIDER.jar", region)
+	packageUrl := "http://edas-bj.oss-cn-beijing.aliyuncs.com/prod/demo/SPRING_CLOUD_PROVIDER.jar"
+	updateUrl := "http://edas-bj.oss-cn-beijing.aliyuncs.com/prod/demo/DUBBO_PROVIDER.jar"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
