@@ -3,10 +3,11 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/config"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -19,6 +20,10 @@ func resourceAlicloudConfigDeliveryChannel() *schema.Resource {
 		Delete: resourceAlicloudConfigDeliveryChannelDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(3 * time.Minute),
+			Update: schema.DefaultTimeout(3 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"delivery_channel_assume_role_arn": {
@@ -62,36 +67,52 @@ func resourceAlicloudConfigDeliveryChannel() *schema.Resource {
 
 func resourceAlicloudConfigDeliveryChannelCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := config.CreatePutDeliveryChannelRequest()
-	request.DeliveryChannelAssumeRoleArn = d.Get("delivery_channel_assume_role_arn").(string)
+	var response map[string]interface{}
+	action := "PutDeliveryChannel"
+	request := make(map[string]interface{})
+	conn, err := client.NewConfigClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request["DeliveryChannelAssumeRoleArn"] = d.Get("delivery_channel_assume_role_arn")
 	if v, ok := d.GetOk("delivery_channel_condition"); ok {
-		request.DeliveryChannelCondition = v.(string)
+		request["DeliveryChannelCondition"] = v
 	}
 
 	if v, ok := d.GetOk("delivery_channel_name"); ok {
-		request.DeliveryChannelName = v.(string)
+		request["DeliveryChannelName"] = v
 	}
 
-	request.DeliveryChannelTargetArn = d.Get("delivery_channel_target_arn").(string)
-	request.DeliveryChannelType = d.Get("delivery_channel_type").(string)
+	request["DeliveryChannelTargetArn"] = d.Get("delivery_channel_target_arn")
+	request["DeliveryChannelType"] = d.Get("delivery_channel_type")
 	if v, ok := d.GetOk("description"); ok {
-		request.Description = v.(string)
+		request["Description"] = v
 	}
 
 	if v, ok := d.GetOk("status"); ok {
-		request.Status = requests.NewInteger(v.(int))
+		request["Status"] = v
 	}
 
-	raw, err := client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-		return configClient.PutDeliveryChannel(request)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"DeliveryChannelSlsUnreachableError"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+
+		d.SetId(fmt.Sprint(response["DeliveryChannelId"]))
+		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_delivery_channel", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_delivery_channel", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*config.PutDeliveryChannelResponse)
-	d.SetId(fmt.Sprintf("%v", response.DeliveryChannelId))
 
 	return resourceAlicloudConfigDeliveryChannelRead(d, meta)
 }
@@ -107,53 +128,70 @@ func resourceAlicloudConfigDeliveryChannelRead(d *schema.ResourceData, meta inte
 		}
 		return WrapError(err)
 	}
-
-	d.Set("delivery_channel_assume_role_arn", object.DeliveryChannelAssumeRoleArn)
-	d.Set("delivery_channel_condition", object.DeliveryChannelCondition)
-	d.Set("delivery_channel_name", object.DeliveryChannelName)
-	d.Set("delivery_channel_target_arn", object.DeliveryChannelTargetArn)
-	d.Set("delivery_channel_type", object.DeliveryChannelType)
-	d.Set("description", object.Description)
-	d.Set("status", object.Status)
+	d.Set("delivery_channel_assume_role_arn", object["DeliveryChannelAssumeRoleArn"])
+	d.Set("delivery_channel_condition", object["DeliveryChannelCondition"])
+	d.Set("delivery_channel_name", object["DeliveryChannelName"])
+	d.Set("delivery_channel_target_arn", object["DeliveryChannelTargetArn"])
+	d.Set("delivery_channel_type", object["DeliveryChannelType"])
+	d.Set("description", object["Description"])
+	d.Set("status", formatInt(object["Status"]))
 	return nil
 }
 func resourceAlicloudConfigDeliveryChannelUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
 	update := false
-	request := config.CreatePutDeliveryChannelRequest()
-	request.DeliveryChannelId = d.Id()
+	request := map[string]interface{}{
+		"DeliveryChannelId": d.Id(),
+	}
 	if d.HasChange("delivery_channel_assume_role_arn") {
 		update = true
 	}
-	request.DeliveryChannelAssumeRoleArn = d.Get("delivery_channel_assume_role_arn").(string)
+	request["DeliveryChannelAssumeRoleArn"] = d.Get("delivery_channel_assume_role_arn")
 	if d.HasChange("delivery_channel_target_arn") {
 		update = true
 	}
-	request.DeliveryChannelTargetArn = d.Get("delivery_channel_target_arn").(string)
-	request.DeliveryChannelType = d.Get("delivery_channel_type").(string)
+	request["DeliveryChannelTargetArn"] = d.Get("delivery_channel_target_arn")
+	request["DeliveryChannelType"] = d.Get("delivery_channel_type")
 	if d.HasChange("delivery_channel_condition") {
 		update = true
-		request.DeliveryChannelCondition = d.Get("delivery_channel_condition").(string)
+		request["DeliveryChannelCondition"] = d.Get("delivery_channel_condition")
 	}
 	if d.HasChange("delivery_channel_name") {
 		update = true
-		request.DeliveryChannelName = d.Get("delivery_channel_name").(string)
+		request["DeliveryChannelName"] = d.Get("delivery_channel_name")
 	}
 	if d.HasChange("description") {
 		update = true
-		request.Description = d.Get("description").(string)
+		request["Description"] = d.Get("description")
 	}
 	if d.HasChange("status") {
 		update = true
-		request.Status = requests.NewInteger(d.Get("status").(int))
+		request["Status"] = d.Get("status")
 	}
 	if update {
-		raw, err := client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-			return configClient.PutDeliveryChannel(request)
-		})
-		addDebug(request.GetActionName(), raw)
+		action := "PutDeliveryChannel"
+		conn, err := client.NewConfigClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"DeliveryChannelSlsUnreachableError"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 	return resourceAlicloudConfigDeliveryChannelRead(d, meta)
