@@ -135,6 +135,8 @@ func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "CreateLogStoreV2", AliyunLogGoSdkERROR)
 	}
+	// Wait for the store to be available
+	time.Sleep(60 * time.Second)
 	d.SetId(fmt.Sprintf("%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("name").(string)))
 
 	return resourceAlicloudLogStoreUpdate(d, meta)

@@ -1,7 +1,8 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/config"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -10,72 +11,97 @@ type ConfigService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *ConfigService) DescribeConfigRule(id string) (object config.ConfigRule, err error) {
-	request := config.CreateDescribeConfigRuleRequest()
-	request.RegionId = s.client.RegionId
-
-	request.ConfigRuleId = id
-
-	raw, err := s.client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-		return configClient.DescribeConfigRule(request)
-	})
+func (s *ConfigService) DescribeConfigRule(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewConfigClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeConfigRule"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"ConfigRuleId": id,
+	}
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AccountNotExisted", "ConfigRuleNotExists"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ConfigRule", id)), NotFoundMsg, ProviderERROR)
-			return
+			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*config.DescribeConfigRuleResponse)
-	return response.ConfigRule, nil
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.ConfigRule", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ConfigRule", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }
-func (s *ConfigService) DescribeConfigDeliveryChannel(id string) (object config.DeliveryChannel, err error) {
-	request := config.CreateDescribeDeliveryChannelsRequest()
-	request.RegionId = s.client.RegionId
 
-	request.DeliveryChannelIds = id
-
-	raw, err := s.client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-		return configClient.DescribeDeliveryChannels(request)
-	})
+func (s *ConfigService) DescribeConfigDeliveryChannel(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewConfigClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDeliveryChannels"
+	request := map[string]interface{}{
+		"RegionId":           s.client.RegionId,
+		"DeliveryChannelIds": id,
+	}
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AccountNotExisted", "DeliveryChannelNotExists"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ConfigDeliveryChannel", id)), NotFoundMsg, ProviderERROR)
-			return
+			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*config.DescribeDeliveryChannelsResponse)
-
-	if len(response.DeliveryChannels) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("ConfigDeliveryChannel", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-		return
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.DeliveryChannels", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DeliveryChannels", response)
 	}
-	return response.DeliveryChannels[0], nil
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Config", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["DeliveryChannelId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Config", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
-func (s *ConfigService) DescribeConfigConfigurationRecorder(id string) (object config.ConfigurationRecorder, err error) {
-	request := config.CreateDescribeConfigurationRecorderRequest()
-	request.RegionId = s.client.RegionId
-
-	raw, err := s.client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-		return configClient.DescribeConfigurationRecorder(request)
-	})
+func (s *ConfigService) DescribeConfigConfigurationRecorder(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewConfigClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeConfigurationRecorder"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+	}
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AccountNotExisted"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ConfigConfigurationRecorder", id)), NotFoundMsg, ProviderERROR)
-			return
+			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*config.DescribeConfigurationRecorderResponse)
-	return response.ConfigurationRecorder, nil
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.ConfigurationRecorder", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ConfigurationRecorder", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }
 
 func (s *ConfigService) ConfigConfigurationRecorderStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
@@ -90,10 +116,10 @@ func (s *ConfigService) ConfigConfigurationRecorderStateRefreshFunc(id string, f
 		}
 
 		for _, failState := range failStates {
-			if object.ConfigurationRecorderStatus == failState {
-				return object, object.ConfigurationRecorderStatus, WrapError(Error(FailedToReachTargetStatus, object.ConfigurationRecorderStatus))
+			if object["ConfigurationRecorderStatus"].(string) == failState {
+				return object, object["ConfigurationRecorderStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["ConfigurationRecorderStatus"].(string)))
 			}
 		}
-		return object, object.ConfigurationRecorderStatus, nil
+		return object, object["ConfigurationRecorderStatus"].(string), nil
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/config"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -58,29 +58,29 @@ func dataSourceAlicloudConfigConfigurationRecorders() *schema.Resource {
 func dataSourceAlicloudConfigConfigurationRecordersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := config.CreateDescribeConfigurationRecorderRequest()
-
-	var response *config.DescribeConfigurationRecorderResponse
-	raw, err := client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-		return configClient.DescribeConfigurationRecorder(request)
-	})
+	action := "DescribeConfigurationRecorder"
+	request := make(map[string]interface{})
+	var response map[string]interface{}
+	conn, err := client.NewConfigClient()
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_config_configuration_recorders", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ = raw.(*config.DescribeConfigurationRecorderResponse)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+	if err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_config_configuration_recorders", action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
 
 	s := make([]map[string]interface{}, 0)
 	mapping := map[string]interface{}{
-		"id":                         fmt.Sprintf("%v", response.ConfigurationRecorder.AccountId),
-		"account_id":                 fmt.Sprintf("%v", response.ConfigurationRecorder.AccountId),
-		"organization_enable_status": response.ConfigurationRecorder.OrganizationEnableStatus,
-		"organization_master_id":     response.ConfigurationRecorder.OrganizationMasterId,
-		"resource_types":             response.ConfigurationRecorder.ResourceTypes,
-		"status":                     response.ConfigurationRecorder.ConfigurationRecorderStatus,
+		"id":                         fmt.Sprint(formatInt(response["ConfigurationRecorder"].(map[string]interface{})["AccountId"])),
+		"account_id":                 fmt.Sprint(formatInt(response["ConfigurationRecorder"].(map[string]interface{})["AccountId"])),
+		"organization_enable_status": response["ConfigurationRecorder"].(map[string]interface{})["OrganizationEnableStatus"],
+		"organization_master_id":     formatInt(response["ConfigurationRecorder"].(map[string]interface{})["OrganizationMasterId"]),
+		"resource_types":             response["ConfigurationRecorder"].(map[string]interface{})["ResourceTypes"],
+		"status":                     response["ConfigurationRecorder"].(map[string]interface{})["ConfigurationRecorderStatus"],
 	}
 	s = append(s, mapping)
-
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))
 
 	if err := d.Set("recorders", s); err != nil {

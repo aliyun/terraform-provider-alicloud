@@ -39,6 +39,7 @@ The following arguments are supported:
 * `risk_level` - (Optional, ForceNew) The risk level of Config Rule. Valid values: `1`: Critical ,`2`: Warning , `3`: Info.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by rule name.
+* `message_type` - (Optional, ForceNew,  Available in v1.104.0+) Trigger mechanism of rules. Valid values: `ConfigurationItemChangeNotification`,`OversizedConfigurationItemChangeNotification` and `ScheduledNotification`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 -> **NOTE:** When you use the personal version to configure auditing, please ignore `multi_account` and `member_id`.
@@ -61,9 +62,13 @@ The following attributes are exported in addition to the arguments listed above:
     * `modified_timestamp`- the timestamp of the Config Rule modified.
     * `risk_level`- The risk level of the Config Rule.
     * `rule_name`- The name of the Config Rule.
-    * `source_details`- The source details of the Config Rule.
-        * `event_source` - Event source of the Config Rule.
-        * `maximum_execution_frequency` - Rule execution cycle.
-        * `message_type` - Rule trigger mechanism.
+    * `event_source` - Event source of the Config Rule.
+    * `scope_compliance_resource_id` - The ID of the resource to be evaluated.
+    * `scope_compliance_resource_types` - The types of the resources to be evaluated against the rule.
+    * `source_detail_message_type` - Rule trigger mechanism.
+    * `source_maximum_execution_frequency` - Rule execution cycle. 
     * `source_identifier`- The name of the custom rule or managed rule.
     * `source_owner`- The source owner of the Config Rule.
+    * `compliance` - The information about the compliance evaluations based on the rule.
+        * `compliance_type` - The compliance evaluation result of the target resources.
+        * `count` - The number of resources with the specified compliance evaluation result.

@@ -5,8 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/config"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -56,21 +55,24 @@ func resourceAlicloudConfigConfigurationRecorder() *schema.Resource {
 
 func resourceAlicloudConfigConfigurationRecorderCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := config.CreateStartConfigurationRecorderRequest()
-	if v, ok := d.GetOkExists("enterprise_edition"); ok {
-		request.EnterpriseEdition = requests.NewBoolean(v.(bool))
-	}
-
-	raw, err := client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-		return configClient.StartConfigurationRecorder(request)
-	})
+	var response map[string]interface{}
+	action := "StartConfigurationRecorder"
+	request := make(map[string]interface{})
+	conn, err := client.NewConfigClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_configuration_recorder", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*config.StartConfigurationRecorderResponse)
-	d.SetId(fmt.Sprintf("%v", response.ConfigurationRecorder.AccountId))
+	if v, ok := d.GetOkExists("enterprise_edition"); ok {
+		request["EnterpriseEdition"] = v
+	}
+
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_configuration_recorder", action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	response = response["ConfigurationRecorder"].(map[string]interface{})
+	d.SetId(fmt.Sprint(formatInt(response["AccountId"])))
 
 	return resourceAlicloudConfigConfigurationRecorderUpdate(d, meta)
 }
@@ -86,30 +88,32 @@ func resourceAlicloudConfigConfigurationRecorderRead(d *schema.ResourceData, met
 		}
 		return WrapError(err)
 	}
-
-	d.Set("organization_enable_status", object.OrganizationEnableStatus)
-	d.Set("organization_master_id", object.OrganizationMasterId)
-	d.Set("resource_types", object.ResourceTypes)
-	d.Set("status", object.ConfigurationRecorderStatus)
+	d.Set("organization_enable_status", object["OrganizationEnableStatus"])
+	d.Set("organization_master_id", formatInt(object["OrganizationMasterId"]))
+	d.Set("resource_types", object["ResourceTypes"])
+	d.Set("status", object["ConfigurationRecorderStatus"])
 	return nil
 }
 func resourceAlicloudConfigConfigurationRecorderUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	configService := ConfigService{client}
+	var response map[string]interface{}
 	update := false
-	request := config.CreatePutConfigurationRecorderRequest()
-	if d.HasChange("resource_types") {
+	request := make(map[string]interface{})
+	if !d.IsNewResource() && d.HasChange("resource_types") {
 		update = true
 	}
-	request.ResourceTypes = convertListToCommaSeparate(d.Get("resource_types").(*schema.Set).List())
-
+	request["ResourceTypes"] = convertListToCommaSeparate(d.Get("resource_types").(*schema.Set).List())
 	if update {
-		raw, err := client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-			return configClient.PutConfigurationRecorder(request)
-		})
-		addDebug(request.GetActionName(), raw)
+		action := "PutConfigurationRecorder"
+		conn, err := client.NewConfigClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
+		}
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		stateConf := BuildStateConf([]string{}, []string{"REGISTERED"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, configService.ConfigConfigurationRecorderStateRefreshFunc(d.Id(), []string{"REGISTRABLE"}))
 		if _, err := stateConf.WaitForState(); err != nil {

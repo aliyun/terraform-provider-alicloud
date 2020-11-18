@@ -71,6 +71,15 @@ The following attributes are exported:
 
 * `id` - This ID of Config Delivery Channel.  
 
+### Timeouts
+
+-> **NOTE:** Available in 1.104.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 3 mins) Used when create the Config Delivery Channel.
+* `update` - (Defaults to 3 mins) Used when update the Config Delivery Channel.
+
 ## Import
 
 Alicloud Config Delivery Channel can be imported using the id, e.g.

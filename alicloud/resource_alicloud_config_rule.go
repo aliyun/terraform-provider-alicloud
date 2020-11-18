@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/config"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -88,52 +87,55 @@ func resourceAlicloudConfigRule() *schema.Resource {
 
 func resourceAlicloudConfigRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := config.CreatePutConfigRuleRequest()
+	var response map[string]interface{}
+	action := "PutConfigRule"
+	request := make(map[string]interface{})
+	conn, err := client.NewConfigClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	if v, ok := d.GetOk("description"); ok {
-		request.Description = v.(string)
+		request["Description"] = v
 	}
 
 	if v, ok := d.GetOk("input_parameters"); ok {
 		respJson, err := convertMaptoJsonString(v.(map[string]interface{}))
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_rule", action, AlibabaCloudSdkGoERROR)
 		}
-		request.InputParameters = respJson
+		request["InputParameters"] = respJson
 	}
 
 	if v, ok := d.GetOk("member_id"); ok {
-		request.MemberId = requests.NewInteger(v.(int))
+		request["MemberId"] = v
 	}
 
 	if v, ok := d.GetOkExists("multi_account"); ok {
-		request.MultiAccount = requests.NewBoolean(v.(bool))
+		request["MultiAccount"] = v
 	}
 
-	request.RiskLevel = requests.NewInteger(d.Get("risk_level").(int))
-	request.ConfigRuleName = d.Get("rule_name").(string)
+	request["RiskLevel"] = d.Get("risk_level")
+	request["ConfigRuleName"] = d.Get("rule_name")
 	if v, ok := d.GetOk("scope_compliance_resource_id"); ok {
-		request.ScopeComplianceResourceId = v.(string)
+		request["ScopeComplianceResourceId"] = v
 	}
 
-	request.ScopeComplianceResourceTypes = convertListToJsonString(d.Get("scope_compliance_resource_types").(*schema.Set).List())
-	request.SourceDetailMessageType = d.Get("source_detail_message_type").(string)
-	request.SourceIdentifier = d.Get("source_identifier").(string)
+	request["ScopeComplianceResourceTypes"] = convertListToJsonString(d.Get("scope_compliance_resource_types").(*schema.Set).List())
+	request["SourceDetailMessageType"] = d.Get("source_detail_message_type")
+	request["SourceIdentifier"] = d.Get("source_identifier")
 	if v, ok := d.GetOk("source_maximum_execution_frequency"); ok {
-		request.SourceMaximumExecutionFrequency = v.(string)
+		request["SourceMaximumExecutionFrequency"] = v
 	}
 
-	request.SourceOwner = d.Get("source_owner").(string)
-	request.ClientToken = buildClientToken(request.GetActionName())
-	raw, err := client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-		return configClient.PutConfigRule(request)
-	})
+	request["SourceOwner"] = d.Get("source_owner")
+	request["ClientToken"] = buildClientToken("PutConfigRule")
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_rule", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*config.PutConfigRuleResponse)
-	d.SetId(fmt.Sprintf("%v", response.ConfigRuleId))
+	addDebug(action, response, request)
+
+	d.SetId(fmt.Sprint(response["ConfigRuleId"]))
 
 	return resourceAlicloudConfigRuleRead(d, meta)
 }
@@ -149,83 +151,102 @@ func resourceAlicloudConfigRuleRead(d *schema.ResourceData, meta interface{}) er
 		}
 		return WrapError(err)
 	}
-
-	d.Set("description", object.Description)
-	d.Set("input_parameters", object.InputParameters)
-	d.Set("risk_level", object.RiskLevel)
-	d.Set("rule_name", object.ConfigRuleName)
-	d.Set("source_identifier", object.Source.Identifier)
-	d.Set("source_owner", object.Source.Owner)
+	d.Set("description", object["Description"])
+	d.Set("input_parameters", object["InputParameters"])
+	d.Set("risk_level", formatInt(object["RiskLevel"]))
+	d.Set("rule_name", object["ConfigRuleName"])
+	d.Set("scope_compliance_resource_id", object["Scope"].(map[string]interface{})["ComplianceResourceId"])
+	d.Set("scope_compliance_resource_types", object["Scope"].(map[string]interface{})["ComplianceResourceTypes"])
+	d.Set("source_identifier", object["Source"].(map[string]interface{})["Identifier"])
+	d.Set("source_maximum_execution_frequency", object["MaximumExecutionFrequency"])
+	d.Set("source_owner", object["Source"].(map[string]interface{})["Owner"])
+	if v := object["Source"].(map[string]interface{})["SourceDetails"].([]interface{}); len(v) > 0 {
+		d.Set("source_detail_message_type", v[0].(map[string]interface{})["MessageType"])
+	}
 	return nil
 }
 func resourceAlicloudConfigRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
 	update := false
-	request := config.CreatePutConfigRuleRequest()
-	request.ConfigRuleId = d.Id()
+	request := map[string]interface{}{
+		"ConfigRuleId": d.Id(),
+	}
 	if d.HasChange("risk_level") {
 		update = true
 	}
-	request.RiskLevel = requests.NewInteger(d.Get("risk_level").(int))
-	request.ConfigRuleName = d.Get("rule_name").(string)
+	request["RiskLevel"] = d.Get("risk_level")
+	request["ConfigRuleName"] = d.Get("rule_name")
 	if d.HasChange("scope_compliance_resource_types") {
 		update = true
 	}
-	request.ScopeComplianceResourceTypes = convertListToJsonString(d.Get("scope_compliance_resource_types").(*schema.Set).List())
+	request["ScopeComplianceResourceTypes"] = convertListToJsonString(d.Get("scope_compliance_resource_types").(*schema.Set).List())
 	if d.HasChange("source_detail_message_type") {
 		update = true
 	}
-	request.SourceDetailMessageType = d.Get("source_detail_message_type").(string)
-	request.SourceIdentifier = d.Get("source_identifier").(string)
-	request.SourceOwner = d.Get("source_owner").(string)
+	request["SourceDetailMessageType"] = d.Get("source_detail_message_type")
+	request["SourceIdentifier"] = d.Get("source_identifier")
+	request["SourceOwner"] = d.Get("source_owner")
 	if d.HasChange("description") {
 		update = true
-		request.Description = d.Get("description").(string)
+		request["Description"] = d.Get("description")
 	}
 	if d.HasChange("input_parameters") {
 		update = true
 		respJson, err := convertMaptoJsonString(d.Get("input_parameters").(map[string]interface{}))
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_rule", "PutConfigRule", AlibabaCloudSdkGoERROR)
 		}
-		request.InputParameters = respJson
-
+		request["InputParameters"] = respJson
 	}
-	request.MemberId = requests.NewInteger(d.Get("member_id").(int))
-	request.MultiAccount = requests.NewBoolean(d.Get("multi_account").(bool))
 	if d.HasChange("scope_compliance_resource_id") {
 		update = true
-		request.ScopeComplianceResourceId = d.Get("scope_compliance_resource_id").(string)
+		request["ScopeComplianceResourceId"] = d.Get("scope_compliance_resource_id")
 	}
 	if d.HasChange("source_maximum_execution_frequency") {
 		update = true
-		request.SourceMaximumExecutionFrequency = d.Get("source_maximum_execution_frequency").(string)
+		request["SourceMaximumExecutionFrequency"] = d.Get("source_maximum_execution_frequency")
 	}
 	if update {
-		request.ClientToken = buildClientToken(request.GetActionName())
-		raw, err := client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-			return configClient.PutConfigRule(request)
-		})
-		addDebug(request.GetActionName(), raw)
+		if _, ok := d.GetOk("member_id"); ok {
+			request["MemberId"] = d.Get("member_id")
+		}
+		if _, ok := d.GetOkExists("multi_account"); ok {
+			request["MultiAccount"] = d.Get("multi_account")
+		}
+		action := "PutConfigRule"
+		conn, err := client.NewConfigClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
+		}
+		request["ClientToken"] = buildClientToken("PutConfigRule")
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 	return resourceAlicloudConfigRuleRead(d, meta)
 }
 func resourceAlicloudConfigRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := config.CreateDeleteConfigRulesRequest()
-	request.ConfigRuleIds = d.Id()
-	raw, err := client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-		return configClient.DeleteConfigRules(request)
-	})
-	addDebug(request.GetActionName(), raw)
+	action := "DeleteConfigRules"
+	var response map[string]interface{}
+	conn, err := client.NewConfigClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"ConfigRuleIds": d.Id(),
+	}
+
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AccountNotExisted", "ConfigRuleNotExists"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
