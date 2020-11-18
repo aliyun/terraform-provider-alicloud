@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -15,6 +16,41 @@ import (
 
 type EdasService struct {
 	client *connectivity.AliyunClient
+}
+
+type Hook struct {
+	Exec      *Exec      `json:"exec,omitempty"`
+	HttpGet   *HttpGet   `json:"httpGet,omitempty"`
+	TcpSocket *TcpSocket `json:"tcpSocket,omitempty"`
+}
+
+type Exec struct {
+	Command []string `json:"command"`
+}
+
+type HttpGet struct {
+	Path        string       `json:"path"`
+	Port        int          `json:"port"`
+	Scheme      string       `json:"scheme"`
+	HttpHeaders []HttpHeader `json:"httpHeaders"`
+}
+
+type HttpHeader struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type TcpSocket struct {
+	Host string `json:"host"`
+	Port int    `json:"port"`
+}
+
+type Prober struct {
+	FailureThreshold    int `json:"failureThreshold"`
+	InitialDelaySeconds int `json:"initialDelaySeconds"`
+	SuccessThreshold    int `json:"successThreshold"`
+	TimeoutSeconds      int `json:"timeoutSeconds"`
+	Hook                `json:",inline"`
 }
 
 func (e *EdasService) GetChangeOrderStatus(id string) (info *edas.ChangeOrderInfo, err error) {
@@ -316,13 +352,13 @@ func (e *EdasService) DescribeEdasSlbAttachment(id string) (*edas.Applcation, er
 }
 
 type CommandArg struct {
-	argument string `json:"argument" xml:"argument"`
+	Argument string `json:"argument" xml:"argument"`
 }
 
 func (e *EdasService) GetK8sCommandArgs(args []interface{}) (string, error) {
-	aString := make([]CommandArg, len(args))
-	for i, v := range args {
-		aString[i].argument = v.(string)
+	aString := make([]CommandArg, 0)
+	for _, v := range args {
+		aString = append(aString, CommandArg{Argument: v.(string)})
 	}
 	b, err := json.Marshal(aString)
 	if err != nil {
@@ -331,15 +367,23 @@ func (e *EdasService) GetK8sCommandArgs(args []interface{}) (string, error) {
 	return string(b), nil
 }
 
+func (e *EdasService) GetK8sCommandArgsForDeploy(args []interface{}) (string, error) {
+	b, err := json.Marshal(args)
+	if err != nil {
+		return "", WrapError(err)
+	}
+	return string(b), nil
+}
+
 type K8sEnv struct {
-	name  string `json:"name" xml:"name"`
-	value string `json:"value" xml:"value"`
+	Name  string `json:"name" xml:"name"`
+	Value string `json:"value" xml:"value"`
 }
 
 func (e *EdasService) GetK8sEnvs(envs map[string]interface{}) (string, error) {
 	k8sEnvs := make([]K8sEnv, 0)
 	for n, v := range envs {
-		k8sEnvs = append(k8sEnvs, K8sEnv{name: n, value: v.(string)})
+		k8sEnvs = append(k8sEnvs, K8sEnv{Name: n, Value: v.(string)})
 	}
 
 	b, err := json.Marshal(k8sEnvs)
@@ -384,7 +428,7 @@ func (e *EdasService) DescribeEdasK8sCluster(clusterId string) (*edas.Cluster, e
 	})
 
 	if err != nil {
-		return cluster, WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return cluster, WrapErrorf(err, DefaultErrorMsg, "alicloud_edas_k8s_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
@@ -405,19 +449,19 @@ func (e *EdasService) DescribeEdasK8sApplication(appId string) (*edas.Applcation
 	application := &edas.Applcation{}
 	regionId := e.client.RegionId
 
-	request := edas.CreateGetApplicationRequest()
+	request := edas.CreateGetK8sApplicationRequest()
 	request.RegionId = regionId
 	request.AppId = appId
 
 	raw, err := e.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
-		return edasClient.GetApplication(request)
+		return edasClient.GetK8sApplication(request)
 	})
 	if err != nil {
 		return application, WrapError(err)
 	}
 	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
-	response, _ := raw.(*edas.GetApplicationResponse)
+	response, _ := raw.(*edas.GetK8sApplicationResponse)
 	if response.Code != 200 {
 		if strings.Contains(response.Message, "does not exist") {
 			return application, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -430,13 +474,66 @@ func (e *EdasService) DescribeEdasK8sApplication(appId string) (*edas.Applcation
 	return &v, nil
 }
 
-func (e *EdasService) DescribeEdasK8sApplicationDeployment(id string) (*edas.Applcation, error) {
-	application := &edas.Applcation{}
-	v := strings.Split(id, ":")
-	o, err := e.DescribeEdasApplication(v[0])
+func (e *EdasService) PreStopEqual(old, new interface{}) bool {
+	oldStr := old.(string)
+	newStr := new.(string)
+	var oldHook Hook
+	err := json.Unmarshal([]byte(oldStr), &oldHook)
 	if err != nil {
-		return application, WrapError(err)
+		return false
 	}
+	var newHook Hook
+	err = json.Unmarshal([]byte(newStr), &newHook)
+	if err != nil {
+		return false
+	}
+	return reflect.DeepEqual(oldHook, newHook)
+}
 
-	return o, nil
+func (e *EdasService) PostStartEqual(old, new interface{}) bool {
+	oldStr := old.(string)
+	newStr := new.(string)
+	var oldHook Hook
+	err := json.Unmarshal([]byte(oldStr), &oldHook)
+	if err != nil {
+		return false
+	}
+	var newHook Hook
+	err = json.Unmarshal([]byte(newStr), &newHook)
+	if err != nil {
+		return false
+	}
+	return reflect.DeepEqual(oldHook, newHook)
+}
+
+func (e *EdasService) LivenessEqual(old, new interface{}) bool {
+	oldStr := old.(string)
+	newStr := new.(string)
+	var oldProber Prober
+	err := json.Unmarshal([]byte(oldStr), &oldProber)
+	if err != nil {
+		return false
+	}
+	var newProber Prober
+	err = json.Unmarshal([]byte(newStr), &newProber)
+	if err != nil {
+		return false
+	}
+	return reflect.DeepEqual(oldProber, newProber)
+}
+
+func (e *EdasService) ReadinessEqual(old, new interface{}) bool {
+	oldStr := old.(string)
+	newStr := new.(string)
+	var oldProber Prober
+	err := json.Unmarshal([]byte(oldStr), &oldProber)
+	if err != nil {
+		return false
+	}
+	var newProber Prober
+	err = json.Unmarshal([]byte(newStr), &newProber)
+	if err != nil {
+		return false
+	}
+	return reflect.DeepEqual(oldProber, newProber)
 }
