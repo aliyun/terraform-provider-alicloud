@@ -404,80 +404,81 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 	return nil
 }
 
-func (s *RdsService) DescribeDBInstanceNetInfo(id string) ([]rds.DBInstanceNetInfo, error) {
-
-	request := rds.CreateDescribeDBInstanceNetInfoRequest()
-	request.RegionId = s.client.RegionId
-	request.DBInstanceId = id
-	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-		return rdsClient.DescribeDBInstanceNetInfo(request)
-	})
-
+func (s *RdsService) DescribeDBInstanceNetInfo(id string) ([]interface{}, error) {
+	action := "DescribeDBInstanceNetInfo"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": id,
+		"SourceIp":     s.client.SourceIp,
+	}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	response, _ := raw.(*rds.DescribeDBInstanceNetInfoResponse)
-	if len(response.DBInstanceNetInfos.DBInstanceNetInfo) < 1 {
+	addDebug(action, response, request)
+	dBInstanceNetInfos := response["DBInstanceNetInfos"].(map[string]interface{})["DBInstanceNetInfo"].([]interface{})
+	if len(dBInstanceNetInfos) < 1 {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstanceNetInfo", id)), NotFoundMsg, ProviderERROR)
 	}
 
-	return response.DBInstanceNetInfos.DBInstanceNetInfo, nil
+	return dBInstanceNetInfos, nil
 }
 
-func (s *RdsService) DescribeDBConnection(id string) (*rds.DBInstanceNetInfo, error) {
-	info := &rds.DBInstanceNetInfo{}
+func (s *RdsService) DescribeDBConnection(id string) (map[string]interface{}, error) {
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return info, WrapError(err)
+		return nil, WrapError(err)
 	}
 	object, err := s.DescribeDBInstanceNetInfo(parts[0])
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidCurrentConnectionString.NotFound"}) {
-			return info, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return info, WrapError(err)
+		return nil, WrapError(err)
 	}
 
 	if object != nil {
 		for _, o := range object {
-			if strings.HasPrefix(o.ConnectionString, parts[1]) {
-				return &o, nil
+			o := o.(map[string]interface{})
+			if strings.HasPrefix(o["ConnectionString"].(string), parts[1]) {
+				return o, nil
 			}
 		}
 	}
 
-	return info, WrapErrorf(Error(GetNotFoundMessage("DBConnection", id)), NotFoundMsg, ProviderERROR)
+	return nil, WrapErrorf(Error(GetNotFoundMessage("DBConnection", id)), NotFoundMsg, ProviderERROR)
 }
-func (s *RdsService) DescribeDBReadWriteSplittingConnection(id string) (*rds.DBInstanceNetInfo, error) {
-	ds := &rds.DBInstanceNetInfo{}
+func (s *RdsService) DescribeDBReadWriteSplittingConnection(id string) (map[string]interface{}, error) {
 	object, err := s.DescribeDBInstanceNetInfo(id)
 	if err != nil && !NotFoundError(err) {
-		return ds, err
+		return nil, err
 	}
 
 	if object != nil {
 		for _, conn := range object {
-			if conn.ConnectionStringType != "ReadWriteSplitting" {
+			conn := conn.(map[string]interface{})
+			if conn["ConnectionStringType"] != "ReadWriteSplitting" {
 				continue
 			}
-			if conn.MaxDelayTime == "" {
+			if conn["MaxDelayTime"] == "" {
 				continue
 			}
-			if _, err := strconv.Atoi(conn.MaxDelayTime); err != nil {
-				return ds, err
+			if _, err := strconv.Atoi(conn["MaxDelayTime"].(string)); err != nil {
+				return nil, err
 			}
-			return &conn, nil
+			return conn, nil
 		}
 	}
 
-	return ds, WrapErrorf(Error(GetNotFoundMessage("ReadWriteSplittingConnection", id)), NotFoundMsg, ProviderERROR)
+	return nil, WrapErrorf(Error(GetNotFoundMessage("ReadWriteSplittingConnection", id)), NotFoundMsg, ProviderERROR)
 }
 
 func (s *RdsService) GrantAccountPrivilege(id, dbName string) error {
@@ -1130,11 +1131,11 @@ func (s *RdsService) WaitForDBConnection(id string, status Status, timeout int) 
 				return WrapError(err)
 			}
 		}
-		if object != nil && object.ConnectionString != "" {
+		if object != nil && object["ConnectionString"] != "" {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ConnectionString, id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object["ConnectionString"], id, ProviderERROR)
 		}
 	}
 }
@@ -1157,7 +1158,7 @@ func (s *RdsService) WaitForDBReadWriteSplitting(id string, status Status, timeo
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ConnectionString, id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object["ConnectionString"], id, ProviderERROR)
 		}
 	}
 	return nil
