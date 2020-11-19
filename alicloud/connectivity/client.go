@@ -1275,15 +1275,17 @@ func (client *AliyunClient) WithCsProjectClient(clusterId, endpoint string, clus
 }
 
 func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string, apiVersion ApiVersion) (*requests.CommonRequest, error) {
-	request := requests.NewCommonRequest()
-	endpoint := loadEndpoint(client.RegionId, ServiceCode(strings.ToUpper(product)))
-	if endpoint == "" {
-		endpointItem, err := client.describeEndpointForService(serviceCode)
-		if err != nil {
-			return nil, fmt.Errorf("describeEndpointForService got an error: %#v.", err)
+	endpoint := ""
+	product = strings.ToLower(product)
+	if client.config.Endpoints[product] == nil {
+		if err := client.loadEndpoint(product); err != nil {
+			return nil, err
 		}
-		endpoint = endpointItem
 	}
+	if client.config.Endpoints[product] != nil && client.config.Endpoints[product].(string) != "" {
+		endpoint = client.config.Endpoints[product].(string)
+	}
+	request := requests.NewCommonRequest()
 	// Use product code to find product domain
 	if endpoint != "" {
 		request.Domain = endpoint
