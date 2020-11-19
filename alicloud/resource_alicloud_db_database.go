@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -34,7 +34,7 @@ func resourceAlicloudDBDatabase() *schema.Resource {
 				Type:         schema.TypeString,
 				ForceNew:     true,
 				Required:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-z][a-z1-9_-]*[a-z1-9]$`), "The name can consist of lowercase letters, numbers, underscores, and middle lines, and must begin with letters and end with letters or numbers"),
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9_-]*[a-z0-9]$`), "The name can consist of lowercase letters, numbers, underscores, and middle lines, and must begin with letters and end with letters or numbers"),
 			},
 
 			"character_set": {
@@ -55,35 +55,40 @@ func resourceAlicloudDBDatabase() *schema.Resource {
 func resourceAlicloudDBDatabaseCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	request := rds.CreateCreateDatabaseRequest()
-	request.RegionId = client.RegionId
-	request.DBInstanceId = d.Get("instance_id").(string)
-	request.DBName = d.Get("name").(string)
-	request.CharacterSetName = d.Get("character_set").(string)
-
-	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
-		request.DBDescription = v.(string)
+	action := "CreateDatabase"
+	request := map[string]interface{}{
+		"RegionId":         client.RegionId,
+		"DBInstanceId":     d.Get("instance_id"),
+		"DBName":           d.Get("name"),
+		"CharacterSetName": d.Get("character_set"),
+		"SourceIp":         client.SourceIp,
 	}
-
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.CreateDatabase(request)
-		})
+	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
+		request["DBDescription"] = v
+	}
+	conn, err := client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%s%s%s", request.DBInstanceId, COLON_SEPARATED, request.DBName))
+	d.SetId(fmt.Sprintf("%v%s%v", request["DBInstanceId"], COLON_SEPARATED, request["DBName"]))
 
 	return resourceAlicloudDBDatabaseRead(d, meta)
 }
@@ -115,19 +120,23 @@ func resourceAlicloudDBDatabaseUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapError(err)
 		}
-		request := rds.CreateModifyDBDescriptionRequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = parts[0]
-		request.DBName = parts[1]
-		request.DBDescription = d.Get("description").(string)
-		var raw interface{}
-		raw, err = client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.ModifyDBDescription(request)
-		})
+		action := "ModifyDBDescription"
+		request := map[string]interface{}{
+			"RegionId":      client.RegionId,
+			"DBInstanceId":  parts[0],
+			"DBName":        parts[1],
+			"DBDescription": d.Get("description"),
+			"SourceIp":      client.SourceIp,
+		}
+		conn, err := client.NewRdsClient()
 		if err != nil {
 			return WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
 	}
 	return resourceAlicloudDBDatabaseRead(d, meta)
 }
@@ -139,27 +148,31 @@ func resourceAlicloudDBDatabaseDelete(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapError(err)
 	}
-	request := rds.CreateDeleteDatabaseRequest()
-	request.RegionId = client.RegionId
-	request.DBInstanceId = parts[0]
-	request.DBName = parts[1]
+	action := "DeleteDatabase"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": parts[0],
+		"DBName":       parts[1],
+		"SourceIp":     client.SourceIp,
+	}
 	// wait instance status is running before deleting database
 	if err := rdsService.WaitForDBInstance(parts[0], Running, 1800); err != nil {
 		return WrapError(err)
 	}
-	raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-		return rdsClient.DeleteDatabase(request)
-	})
+	conn, err := client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 	if err != nil {
 		if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidDBName.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
+	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return WrapError(rdsService.WaitForDBDatabase(d.Id(), Deleted, DefaultTimeoutMedium))
 }
