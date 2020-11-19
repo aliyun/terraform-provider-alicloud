@@ -355,21 +355,21 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 		}
 		// Need to check whether some parameter needs restart
 		if !d.Get("force_restart").(bool) {
-			act := "DescribeParameterTemplates"
-			req := map[string]interface{}{
+			action := "DescribeParameterTemplates"
+			request := map[string]interface{}{
 				"RegionId":      s.client.RegionId,
 				"DBInstanceId":  d.Id(),
 				"Engine":        d.Get("engine"),
 				"EngineVersion": d.Get("engine_version"),
-				"ClientToken":   buildClientToken(act),
+				"ClientToken":   buildClientToken(action),
 				"SourceIp":      s.client.SourceIp,
 			}
 			forceRestartMap := make(map[string]string)
-			response, err := conn.DoRequest(StringPointer(act), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, req, &util.RuntimeOptions{})
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), act, AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			addDebug(act, response, req)
+			addDebug(action, response, request)
 			templateRecords := response["Parameters"].(map[string]interface{})["TemplateRecord"].([]interface{})
 			for _, para := range templateRecords {
 				para := para.(map[string]interface{})
@@ -1435,29 +1435,32 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 }
 
 func (s *RdsService) describeTags(d *schema.ResourceData) (tags []Tag, err error) {
-	request := rds.CreateDescribeTagsRequest()
-	request.DBInstanceId = d.Id()
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithRdsClient(func(client *rds.Client) (interface{}, error) {
-		return client.DescribeTags(request)
-	})
-	if err != nil {
-		tmp := make([]Tag, 0)
-		return tmp, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	action := "DescribeTags"
+	request := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+		"RegionId":     s.client.RegionId,
+		"SourceIp":     s.client.SourceIp,
 	}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	response, _ := raw.(*rds.DescribeTagsResponse)
-	return s.respToTags(response.Items.TagInfos), nil
+	return s.respToTags(response["Items"].(map[string]interface{})["TagInfos"].([]interface{})), nil
 }
 
-func (s *RdsService) respToTags(tagSet []rds.TagInfos) (tags []Tag) {
+func (s *RdsService) respToTags(tagSet []interface{}) (tags []Tag) {
 	result := make([]Tag, 0, len(tagSet))
 	for _, t := range tagSet {
+		t := t.(map[string]interface{})
 		tag := Tag{
-			Key:   t.TagKey,
-			Value: t.TagValue,
+			Key:   t["TagKey"].(string),
+			Value: t["TagValue"].(string),
 		}
 		result = append(result, tag)
 	}

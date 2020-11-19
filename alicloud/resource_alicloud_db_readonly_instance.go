@@ -4,10 +4,10 @@ import (
 	"strings"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -124,16 +124,17 @@ func resourceAlicloudDBReadonlyInstanceCreate(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 
-	raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-		return rdsClient.CreateReadOnlyDBInstance(request)
-	})
-
+	action := "CreateReadOnlyDBInstance"
+	conn, err := client.NewRdsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	resp, _ := raw.(*rds.CreateReadOnlyDBInstanceResponse)
-	d.SetId(resp.DBInstanceId)
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	d.SetId(response["DBInstanceId"].(string))
 
 	// wait instance status change from Creating to running
 	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 15*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
@@ -163,49 +164,54 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		d.Partial(false)
 		return resourceAlicloudDBInstanceRead(d, meta)
 	}
-
+	conn, err := client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	if d.HasChange("instance_name") {
-		request := rds.CreateModifyDBInstanceDescriptionRequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = d.Id()
-		request.DBInstanceDescription = d.Get("instance_name").(string)
-
+		action := "ModifyDBInstanceDescription"
+		request := map[string]interface{}{
+			"RegionId":              client.RegionId,
+			"DBInstanceId":          d.Id(),
+			"DBInstanceDescription": d.Get("instance_name"),
+			"SourceIp":              client.SourceIp,
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-				return rdsClient.ModifyDBInstanceDescription(request)
-			})
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
+			addDebug(action, response, request)
 			d.SetPartial("instance_name")
 			return nil
 		})
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
 	}
 
 	update := false
-	request := rds.CreateModifyDBInstanceSpecRequest()
-	request.RegionId = client.RegionId
-	request.DBInstanceId = d.Id()
-	request.PayType = string(Postpaid)
-
+	action := "ModifyDBInstanceSpec"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": d.Id(),
+		"PayType":      Postpaid,
+		"SourceIp":     client.SourceIp,
+	}
 	if d.HasChange("instance_type") {
-		request.DBInstanceClass = d.Get("instance_type").(string)
+		request["DBInstanceClass"] = d.Get("instance_type")
 		update = true
 	}
 
 	if d.HasChange("instance_storage") {
-		request.DBInstanceStorage = requests.NewInteger(d.Get("instance_storage").(int))
+		request["DBInstanceStorage"] = d.Get("instance_storage")
 		update = true
 	}
 
@@ -216,25 +222,24 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-				return rdsClient.ModifyDBInstanceSpec(request)
-			})
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InvalidOrderTask.NotSupport", "OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			addDebug(action, response, request)
 			d.SetPartial("instance_type")
 			d.SetPartial("instance_storage")
 			return nil
 		})
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
 		// wait instance status is running after modifying
@@ -302,26 +307,27 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 	if PayType(instance["PayType"].(string)) == Prepaid {
 		return WrapError(Error("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically."))
 	}
-
-	request := rds.CreateDeleteDBInstanceRequest()
-	request.RegionId = client.RegionId
-	request.DBInstanceId = d.Id()
-
+	action := "DeleteDBInstance"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": d.Id(),
+		"SourceIp":     client.SourceIp,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	conn, err := client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.DeleteDBInstance(request)
-		})
-
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"RwSplitNetType.Exist", "OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
+		addDebug(action, response, request)
 		return nil
 	})
 
@@ -329,7 +335,7 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 		if NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	stateConf := BuildStateConf([]string{"Creating", "Active", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{}))
@@ -339,32 +345,33 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 	return nil
 }
 
-func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (*rds.CreateReadOnlyDBInstanceRequest, error) {
+func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]interface{}, error) {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-	request := rds.CreateCreateReadOnlyDBInstanceRequest()
-	request.RegionId = string(client.Region)
-	request.DBInstanceId = Trim(d.Get("master_db_instance_id").(string))
-	request.EngineVersion = Trim(d.Get("engine_version").(string))
-	request.DBInstanceStorage = requests.NewInteger(d.Get("instance_storage").(int))
-	request.DBInstanceClass = Trim(d.Get("instance_type").(string))
-	request.DBInstanceDescription = d.Get("instance_name").(string)
-
+	request := map[string]interface{}{
+		"RegionId":              client.RegionId,
+		"DBInstanceId":          Trim(d.Get("master_db_instance_id").(string)),
+		"EngineVersion":         Trim(d.Get("engine_version").(string)),
+		"DBInstanceStorage":     d.Get("instance_storage"),
+		"DBInstanceClass":       Trim(d.Get("instance_type").(string)),
+		"DBInstanceDescription": d.Get("instance_name"),
+		"SourceIp":              client.SourceIp,
+	}
 	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
-		request.ResourceGroupId = v.(string)
+		request["ResourceGroupId"] = v
 	}
 
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
-		request.ZoneId = Trim(zone.(string))
+		request["ZoneId"] = Trim(zone.(string))
 	}
 
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 
-	request.InstanceNetworkType = string(Classic)
+	request["InstanceNetworkType"] = Classic
 
 	if vswitchId != "" {
-		request.VSwitchId = vswitchId
-		request.InstanceNetworkType = strings.ToUpper(string(Vpc))
+		request["VSwitchId"] = vswitchId
+		request["InstanceNetworkType"] = strings.ToUpper(string(Vpc))
 
 		// check vswitchId in zone
 		vsw, err := vpcService.DescribeVSwitch(vswitchId)
@@ -372,22 +379,22 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (*rd
 			return nil, WrapError(err)
 		}
 
-		if request.ZoneId == "" {
-			request.ZoneId = vsw.ZoneId
-		} else if strings.Contains(request.ZoneId, MULTI_IZ_SYMBOL) {
-			zonestr := strings.Split(strings.SplitAfter(request.ZoneId, "(")[1], ")")[0]
+		if request["ZoneId"] == "" {
+			request["ZoneId"] = vsw.ZoneId
+		} else if strings.Contains(request["ZoneId"].(string), MULTI_IZ_SYMBOL) {
+			zonestr := strings.Split(strings.SplitAfter(request["ZoneId"].(string), "(")[1], ")")[0]
 			if !strings.Contains(zonestr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
-				return nil, WrapError(Error("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.ZoneId))
+				return nil, WrapError(Error("The specified vswitch %s isn't in the multi zone %v.", vsw.VSwitchId, request["ZoneId"]))
 			}
-		} else if request.ZoneId != vsw.ZoneId {
-			return nil, WrapError(Error("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.ZoneId))
+		} else if request["ZoneId"] != vsw.ZoneId {
+			return nil, WrapError(Error("The specified vswitch %s isn't in the multi zone %v.", vsw.VSwitchId, request["ZoneId"]))
 		}
 
-		request.VPCId = vsw.VpcId
+		request["VPCId"] = vsw.VpcId
 	}
 
-	request.PayType = string(Postpaid)
-	request.ClientToken = buildClientToken(request.GetActionName())
+	request["PayType"] = Postpaid
+	request["ClientToken"] = buildClientToken("CreateReadOnlyDBInstance")
 
 	return request, nil
 }
