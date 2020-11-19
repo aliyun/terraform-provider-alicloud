@@ -36,6 +36,7 @@ const (
 
 	ShenZhenFinance = Region("cn-shenzhen-finance-1")
 	ShanghaiFinance = Region("cn-shanghai-finance-1")
+	CnNorth2Gov1    = Region("cn-north-2-gov-1")
 )
 
 var ValidRegions = []Region{
@@ -45,6 +46,7 @@ var ValidRegions = []Region{
 	APSouth1,
 	MEEast1,
 	EUCentral1, EUWest1,
+	ShenZhenFinance, ShanghaiFinance, CnNorth2Gov1,
 }
 
 var EcsClassicSupportedRegions = []Region{Shenzhen, Shanghai, Beijing, Qingdao, Hangzhou, Hongkong, USWest1, APSouthEast1}
