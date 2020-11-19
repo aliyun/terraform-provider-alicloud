@@ -163,9 +163,9 @@ func TestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"image_url":             image,
 						"replicas":              "2",
-						"internet_slb_protocol": CHECKSET,
-						"internet_slb_port":     CHECKSET,
-						"internet_target_port":  CHECKSET,
+						"internet_slb_protocol": "TCP",
+						"internet_slb_port":     "8080",
+						"internet_target_port":  "18082",
 					}),
 				),
 			},
@@ -174,16 +174,56 @@ func TestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"internet_slb_protocol", "internet_slb_port", "internet_target_port"},
+				ImportStateVerifyIgnore: []string{"internet_slb_protocol", "internet_slb_port", "internet_target_port", "package_version"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replicas": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replicas": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_url": updateImg,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_url": updateImg,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"command":      "/bin/sh",
+					"command_args": []string{"-c", "sleep 1000"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"command":        "/bin/sh",
+						"command_args.#": "2",
+						"command_args.0": "-c",
+						"command_args.1": "sleep 1000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"envs": map[string]string{"a": "b"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"envs.%": "1",
+						"envs.a": "b",
+					}),
+				),
 			},
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"replicas":       "3",
-					"image_url":      updateImg,
-					"command":        "/bin/sh",
-					"command_args":   []string{"-c", "sleep 1000"},
-					"envs":           map[string]string{"a": "b"},
 					"limit_m_cpu":    "500",
 					"limit_mem":      "1000",
 					"requests_m_cpu": "100",
@@ -191,14 +231,40 @@ func TestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"limit_m_cpu":    "500",
+						"limit_mem":      "1000",
+						"requests_m_cpu": "100",
+						"requests_mem":   "100",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replicas":       "3",
+					"image_url":      updateImg,
+					"command":        "/bin/sh",
+					"command_args":   []string{"-c", "sleep 1001"},
+					"envs":           map[string]string{"a": "c"},
+					"limit_m_cpu":    "501",
+					"limit_mem":      "1001",
+					"requests_m_cpu": "101",
+					"requests_mem":   "101",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
 						"image_url":      updateImg,
 						"replicas":       "3",
 						"command":        "/bin/sh",
 						"command_args.#": "2",
-						"limit_m_cpu":    CHECKSET,
-						"limit_mem":      CHECKSET,
-						"requests_m_cpu": CHECKSET,
-						"requests_mem":   CHECKSET,
+						"command_args.0": "-c",
+						"command_args.1": "sleep 1001",
+						"envs.%":         "1",
+						"envs.a":         "c",
+						"limit_m_cpu":    "501",
+						"limit_mem":      "1001",
+						"requests_m_cpu": "101",
+						"requests_mem":   "101",
 					}),
 				),
 			},
@@ -260,7 +326,53 @@ func TestAccAlicloudEdasK8sApplicationJar_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"package_url"},
+				ImportStateVerifyIgnore: []string{"package_url", "package_version"},
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"readiness": "{}",
+					"liveness":  "{}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"readiness": "{}",
+						"liveness":  "{}",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"package_url": updateUrl,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"package_url": updateUrl,
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replicas": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replicas": "2",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"jdk": "Dragonwell JDK 8",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"jdk": "Dragonwell JDK 8",
+					}),
+				),
 			},
 
 			{
@@ -276,8 +388,8 @@ func TestAccAlicloudEdasK8sApplicationJar_basic(t *testing.T) {
 						"package_url": updateUrl,
 						"replicas":    "2",
 						"jdk":         "Dragonwell JDK 8",
-						"readiness":   CHECKSET,
-						"liveness":    CHECKSET,
+						"readiness":   "{}",
+						"liveness":    "{}",
 					}),
 				),
 			},
@@ -322,11 +434,7 @@ func TestAccAlicloudEdasK8sApplication_multi(t *testing.T) {
 					"image_url":        image,
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"application_name": CHECKSET,
-						"replicas":         "1",
-						"image_url":        CHECKSET,
-					}),
+					testAccCheck(nil),
 				),
 			},
 		},

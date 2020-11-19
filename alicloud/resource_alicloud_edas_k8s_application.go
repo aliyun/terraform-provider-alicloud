@@ -161,6 +161,7 @@ func resourceAlicloudEdasK8sApplication() *schema.Resource {
 			"package_version": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Default:  strconv.FormatInt(time.Now().Unix(), 10),
 			},
 			"jdk": {
 				Type:     schema.TypeString,
@@ -210,9 +211,7 @@ func resourceAlicloudEdasK8sApplicationCreate(d *schema.ResourceData, meta inter
 		} else {
 			request.PackageUrl = v.(string)
 		}
-		if v, ok := d.GetOk("package_version"); !ok {
-			request.PackageVersion = strconv.FormatInt(time.Now().Unix(), 10)
-		} else {
+		if v, ok := d.GetOk("package_version"); ok {
 			request.PackageVersion = v.(string)
 		}
 		if v, ok := d.GetOk("jdk"); !ok {
@@ -446,6 +445,7 @@ func resourceAlicloudEdasK8sApplicationRead(d *schema.ResourceData, meta interfa
 func resourceAlicloudEdasK8sApplicationUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	edasService := EdasService{client}
+	var partialKeys []string
 	request := edas.CreateDeployK8sApplicationRequest()
 	request.AppId = d.Id()
 	request.RegionId = client.RegionId
@@ -455,58 +455,43 @@ func resourceAlicloudEdasK8sApplicationUpdate(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapError(err)
 	}
-	update := false
 	if strings.ToLower(packageType) == "image" {
 		if d.HasChange("image_url") {
-			update = true
-			request.Image = d.Get("image_url").(string)
-			d.SetPartial("image_url")
-		} else if v, ok := d.GetOk("image_url"); !ok {
+			partialKeys = append(partialKeys, "image_url")
+		}
+		request.Image = d.Get("image_url").(string)
+		if len(request.Image) == 0 {
 			return WrapError(Error("image_url is needed for creating image k8s application"))
-		} else {
-			request.Image = v.(string)
 		}
 	} else {
 		if d.HasChange("package_url") {
-			update = true
-			request.PackageUrl = d.Get("package_url").(string)
-			d.SetPartial("package_url")
-		} else if v, ok := d.GetOk("package_url"); !ok {
+			partialKeys = append(partialKeys, "package_url")
+		}
+		request.PackageUrl = d.Get("package_url").(string)
+		if len(request.PackageUrl) == 0 {
 			return WrapError(Error("package_url is needed for creating fatjar k8s application"))
-		} else {
-			request.PackageUrl = v.(string)
 		}
-		if v, ok := d.GetOk("package_version"); !ok {
-			request.PackageVersion = strconv.FormatInt(time.Now().Unix(), 10)
-		} else {
-			request.PackageVersion = v.(string)
-		}
+		request.PackageVersion = d.Get("package_version").(string)
+
 		if d.HasChange("jdk") {
-			update = true
-			request.JDK = d.Get("jdk").(string)
-			d.SetPartial("jdk")
-		} else if v, ok := d.GetOk("jdk"); !ok {
+			partialKeys = append(partialKeys, "jdk")
+		}
+		request.JDK = d.Get("jdk").(string)
+		if len(request.JDK) == 0 {
 			return WrapError(Error("jdk is needed for creating non-image k8s application"))
-		} else {
-			request.JDK = v.(string)
 		}
 		if strings.ToLower(packageType) == "war" {
 			var webContainer string
 			var edasContainer string
 			if d.HasChange("web_container") {
-				update = true
-				webContainer = d.Get("web_container").(string)
-				d.SetPartial("web_container")
-			} else if v, ok := d.GetOk("web_container"); ok {
-				webContainer = v.(string)
+				partialKeys = append(partialKeys, "web_container")
 			}
+			webContainer = d.Get("web_container").(string)
+
 			if d.HasChange("edas_container_version") {
-				update = true
-				edasContainer = d.Get("edas_container_version").(string)
-				d.SetPartial("edas_container_version")
-			} else if v, ok := d.GetOk("edas_container_version"); ok {
-				edasContainer = v.(string)
+				partialKeys = append(partialKeys, "edas_container_version")
 			}
+			edasContainer = d.Get("edas_container_version").(string)
 			if len(webContainer) == 0 && len(edasContainer) == 0 {
 				return WrapError(Error("web_container or edas_container_version is needed for creating war k8s application"))
 			}
@@ -516,34 +501,27 @@ func resourceAlicloudEdasK8sApplicationUpdate(d *schema.ResourceData, meta inter
 	}
 
 	if d.HasChange("replicas") {
-		update = true
-		request.Replicas = requests.NewInteger(d.Get("replicas").(int))
-		d.SetPartial("replicas")
-	} else {
-		request.Replicas = requests.NewInteger(d.Get("replicas").(int))
+		partialKeys = append(partialKeys, "replicas")
 	}
+	request.Replicas = requests.NewInteger(d.Get("replicas").(int))
 
 	if d.HasChange("limit_mem") {
-		update = true
+		partialKeys = append(partialKeys, "limit_mem")
 		request.MemoryLimit = requests.NewInteger(d.Get("limit_mem").(int))
-		d.SetPartial("limit_mem")
 	}
 
 	if d.HasChange("requests_mem") {
-		update = true
+		partialKeys = append(partialKeys, "requests_mem")
 		request.MemoryRequest = requests.NewInteger(d.Get("requests_mem").(int))
-		d.SetPartial("requests_mem")
 	}
 
 	if d.HasChange("command") {
-		update = true
+		partialKeys = append(partialKeys, "command")
 		request.Command = d.Get("command").(string)
-		d.SetPartial("command")
 	}
 
 	if d.HasChange("command_args") {
-		update = true
-		d.SetPartial("command_args")
+		partialKeys = append(partialKeys, "command_args")
 		commands, err := edasService.GetK8sCommandArgsForDeploy(d.Get("command_args").([]interface{}))
 		if err != nil {
 			return WrapError(err)
@@ -552,78 +530,68 @@ func resourceAlicloudEdasK8sApplicationUpdate(d *schema.ResourceData, meta inter
 	}
 
 	if d.HasChange("envs") {
-		update = true
+		partialKeys = append(partialKeys, "envs")
 		envs, err := edasService.GetK8sEnvs(d.Get("envs").(map[string]interface{}))
 		if err != nil {
 			return WrapError(err)
 		}
 		request.Envs = envs
-		d.SetPartial("envs")
 	}
 
 	if d.HasChange("pre_stop") {
 		if !edasService.PreStopEqual(d.GetChange("pre_stop")) {
-			update = true
+			partialKeys = append(partialKeys, "pre_stop")
 			request.PreStop = d.Get("pre_stop").(string)
-			d.SetPartial("pre_stop")
 		}
 	}
 
 	if d.HasChange("post_start") {
 		if !edasService.PostStartEqual(d.GetChange("post_start")) {
-			update = true
+			partialKeys = append(partialKeys, "post_start")
 			request.PostStart = d.Get("post_start").(string)
-			d.SetPartial("post_start")
 		}
 	}
 
 	if d.HasChange("liveness") {
 		if !edasService.LivenessEqual(d.GetChange("liveness")) {
-			update = true
+			partialKeys = append(partialKeys, "liveness")
 			request.Liveness = d.Get("liveness").(string)
-			d.SetPartial("liveness")
 		}
 	}
 
 	if d.HasChange("readiness") {
 		if !edasService.ReadinessEqual(d.GetChange("readiness")) {
-			update = true
+			partialKeys = append(partialKeys, "readiness")
 			request.Readiness = d.Get("readiness").(string)
-			d.SetPartial("readiness")
 		}
 	}
 
 	if d.HasChange("nas_id") {
-		update = true
+		partialKeys = append(partialKeys, "nas_id")
 		request.NasId = d.Get("nas_id").(string)
-		d.SetPartial("nas_id")
 	}
 
 	if d.HasChange("mount_descs") {
-		update = true
+		partialKeys = append(partialKeys, "mount_descs")
 		request.MountDescs = d.Get("mount_descs").(string)
-		d.SetPartial("mount_descs")
 	}
 
 	if d.HasChange("local_volume") {
-		update = true
+		partialKeys = append(partialKeys, "local_volume")
 		request.LocalVolume = d.Get("local_volume").(string)
-		d.SetPartial("local_volume")
 	}
 
 	if d.HasChange("requests_m_cpu") {
-		update = true
+		partialKeys = append(partialKeys, "requests_m_cpu")
 		request.McpuRequest = requests.NewInteger(d.Get("requests_m_cpu").(int))
-		d.SetPartial("requests_m_cpu")
 	}
 
 	if d.HasChange("limit_m_cpu") {
-		update = true
+		partialKeys = append(partialKeys, "limit_m_cpu")
 		request.McpuLimit = requests.NewInteger(d.Get("limit_m_cpu").(int))
-		d.SetPartial("limit_m_cpu")
 	}
 
-	if update {
+	if len(partialKeys) > 0 {
 		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 			return edasClient.DeployK8sApplication(request)
 		})
@@ -644,8 +612,11 @@ func resourceAlicloudEdasK8sApplicationUpdate(d *schema.ResourceData, meta inter
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 		}
+		for _, key := range partialKeys {
+			d.SetPartial(key)
+		}
 	}
-
+	d.Partial(false)
 	return resourceAlicloudEdasK8sApplicationRead(d, meta)
 }
 
