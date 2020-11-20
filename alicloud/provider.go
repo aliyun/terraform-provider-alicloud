@@ -336,6 +336,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_enhanced_nat_available_zones":          dataSourceAlicloudEnhancedNatAvailableZones(),
 			"alicloud_cen_route_services":                    dataSourceAlicloudCenRouteServices(),
 			"alicloud_kvstore_accounts":                      dataSourceAlicloudKvstoreAccounts(),
+			"alicloud_cms_group_metric_rules":                dataSourceAlicloudCmsGroupMetricRules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -601,6 +602,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_route_service":                   resourceAlicloudCenRouteService(),
 			"alicloud_kvstore_connection":                  resourceAlicloudKvstoreConnection(),
 			"alicloud_cms_alarm_contact_group":             resourceAlicloudCmsAlarmContactGroup(),
+			"alicloud_cms_group_metric_rule":               resourceAlicloudCmsGroupMetricRule(),
 		},
 
 		ConfigureFunc: providerConfigure,
