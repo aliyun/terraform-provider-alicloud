@@ -104,3 +104,4 @@ var HttpHttpsHealthCheckMehtodSupportedRegions = []Region{Hangzhou, Beijing, Sha
 var HBaseClassicSupportedRegions = []Region{Hangzhou, Beijing, Shanghai, Shenzhen}
 var EdasSupportedRegions = []Region{Hangzhou, Beijing, Shanghai, Shenzhen, Zhangjiakou, Qingdao, Hongkong}
 var CloudConfigSupportedRegions = []Region{Shanghai, APSouthEast1}
+var DBReadwriteSplittingConnectionSupportedRegions = []Region{APSouthEast1}
