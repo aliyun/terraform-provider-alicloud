@@ -46,6 +46,7 @@ func TestAccAlicloudDBReadWriteSplittingConnection_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DBReadwriteSplittingConnectionSupportedRegions)
 		},
 
 		// module name
@@ -138,6 +139,7 @@ func resourceDBReadWriteSplittingConfigDependence(prefix string) string {
   		instance_charge_type = "PostPaid"
   		engine               = "MySQL"
   		engine_version       = "5.6"
+		zone_id              = "ap-southeast-1a"
 	}
 
 	resource "alicloud_db_instance" "default" {
