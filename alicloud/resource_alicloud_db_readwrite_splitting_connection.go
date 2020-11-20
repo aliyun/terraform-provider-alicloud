@@ -147,30 +147,32 @@ func resourceAlicloudDBReadWriteSplittingConnectionRead(d *schema.ResourceData, 
 	}
 
 	d.Set("instance_id", d.Id())
-	d.Set("connection_string", object.ConnectionString)
-	d.Set("distribution_type", object.DistributionType)
-	if port, err := strconv.Atoi(object.Port); err == nil {
+	d.Set("connection_string", object["ConnectionString"])
+	d.Set("distribution_type", object["DistributionType"])
+	if port, err := strconv.Atoi(object["Port"].(string)); err == nil {
 		d.Set("port", port)
 	}
-	if mdt, err := strconv.Atoi(object.MaxDelayTime); err == nil {
+	if mdt, err := strconv.Atoi(object["MaxDelayTime"].(string)); err == nil {
 		d.Set("max_delay_time", mdt)
 	}
 	if w, ok := d.GetOk("weight"); ok {
 		documented := w.(map[string]interface{})
-		for _, config := range object.DBInstanceWeights.DBInstanceWeight {
-			if config.Availability != "Available" {
-				delete(documented, config.DBInstanceId)
+		dBInstanceWeights := object["DBInstanceWeights"].(map[string]interface{})["DBInstanceWeight"].([]interface{})
+		for _, config := range dBInstanceWeights {
+			config := config.(map[string]interface{})
+			if config["Availability"] != "Available" {
+				delete(documented, config["DBInstanceId"].(string))
 				continue
 			}
-			if config.Weight != "0" {
-				if _, ok := documented[config.DBInstanceId]; ok {
-					documented[config.DBInstanceId] = config.Weight
+			if config["Weight"] != "0" {
+				if _, ok := documented[config["DBInstanceId"].(string)]; ok {
+					documented[config["DBInstanceId"].(string)] = config["Weight"]
 				}
 			}
 		}
 		d.Set("weight", documented)
 	}
-	submatch := dbConnectionPrefixWithSuffixRegexp.FindStringSubmatch(object.ConnectionString)
+	submatch := dbConnectionPrefixWithSuffixRegexp.FindStringSubmatch(object["ConnectionString"].(string))
 	if len(submatch) > 1 {
 		d.Set("connection_prefix", submatch[1])
 	}

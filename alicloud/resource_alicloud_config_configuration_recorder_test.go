@@ -3,13 +3,12 @@ package alicloud
 import (
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/config"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudConfigConfigurationRecorder_basic(t *testing.T) {
-	var v config.ConfigurationRecorder
+	var v map[string]interface{}
 	resourceId := "alicloud_config_configuration_recorder.default"
 	ra := resourceAttrInit(resourceId, ConfigConfigurationRecorderMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

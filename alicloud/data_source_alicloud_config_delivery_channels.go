@@ -1,9 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/config"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -92,8 +94,9 @@ func dataSourceAlicloudConfigDeliveryChannels() *schema.Resource {
 func dataSourceAlicloudConfigDeliveryChannelsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := config.CreateDescribeDeliveryChannelsRequest()
-	var objects []config.DeliveryChannel
+	action := "DescribeDeliveryChannels"
+	request := make(map[string]interface{})
+	var objects []map[string]interface{}
 	var deliveryChannelNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -113,28 +116,34 @@ func dataSourceAlicloudConfigDeliveryChannelsRead(d *schema.ResourceData, meta i
 		}
 	}
 	status, statusOk := d.GetOkExists("status")
-	var response *config.DescribeDeliveryChannelsResponse
-	raw, err := client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-		return configClient.DescribeDeliveryChannels(request)
-	})
+	var response map[string]interface{}
+	conn, err := client.NewConfigClient()
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_config_delivery_channels", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ = raw.(*config.DescribeDeliveryChannelsResponse)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+	if err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_config_delivery_channels", action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
 
-	for _, item := range response.DeliveryChannels {
+	resp, err := jsonpath.Get("$.DeliveryChannels", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DeliveryChannels", response)
+	}
+	for _, v := range resp.([]interface{}) {
+		item := v.(map[string]interface{})
 		if deliveryChannelNameRegex != nil {
-			if !deliveryChannelNameRegex.MatchString(item.DeliveryChannelName) {
+			if !deliveryChannelNameRegex.MatchString(item["DeliveryChannelName"].(string)) {
 				continue
 			}
 		}
 		if len(idsMap) > 0 {
-			if _, ok := idsMap[item.DeliveryChannelId]; !ok {
+			if _, ok := idsMap[fmt.Sprint(item["DeliveryChannelId"])]; !ok {
 				continue
 			}
 		}
-		if statusOk && status != item.Status {
+		if statusOk && status.(int) != formatInt(item["Status"]) {
 			continue
 		}
 		objects = append(objects, item)
@@ -144,18 +153,18 @@ func dataSourceAlicloudConfigDeliveryChannelsRead(d *schema.ResourceData, meta i
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"delivery_channel_assume_role_arn": object.DeliveryChannelAssumeRoleArn,
-			"delivery_channel_condition":       object.DeliveryChannelCondition,
-			"id":                               object.DeliveryChannelId,
-			"delivery_channel_id":              object.DeliveryChannelId,
-			"delivery_channel_name":            object.DeliveryChannelName,
-			"delivery_channel_target_arn":      object.DeliveryChannelTargetArn,
-			"delivery_channel_type":            object.DeliveryChannelType,
-			"description":                      object.Description,
-			"status":                           object.Status,
+			"delivery_channel_assume_role_arn": object["DeliveryChannelAssumeRoleArn"],
+			"delivery_channel_condition":       object["DeliveryChannelCondition"],
+			"id":                               fmt.Sprint(object["DeliveryChannelId"]),
+			"delivery_channel_id":              fmt.Sprint(object["DeliveryChannelId"]),
+			"delivery_channel_name":            object["DeliveryChannelName"],
+			"delivery_channel_target_arn":      object["DeliveryChannelTargetArn"],
+			"delivery_channel_type":            object["DeliveryChannelType"],
+			"description":                      object["Description"],
+			"status":                           formatInt(object["Status"]),
 		}
-		ids = append(ids, object.DeliveryChannelId)
-		names = append(names, object.DeliveryChannelName)
+		ids = append(ids, fmt.Sprint(object["DeliveryChannelId"]))
+		names = append(names, object["DeliveryChannelName"].(string))
 		s = append(s, mapping)
 	}
 

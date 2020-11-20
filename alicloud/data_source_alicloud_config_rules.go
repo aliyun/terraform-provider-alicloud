@@ -1,11 +1,12 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/config"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -40,6 +41,12 @@ func dataSourceAlicloudConfigRules() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"message_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ConfigurationItemChangeNotification", "ScheduledNotification", "ConfigurationSnapshotDeliveryCompleted"}, false),
+			},
 			"multi_account": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -70,6 +77,22 @@ func dataSourceAlicloudConfigRules() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"compliance": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"compliance_type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"count": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+								},
+							},
+						},
 						"config_rule_arn": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -94,6 +117,10 @@ func dataSourceAlicloudConfigRules() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"event_source": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"input_parameters": {
 							Type:     schema.TypeMap,
 							Computed: true,
@@ -110,27 +137,24 @@ func dataSourceAlicloudConfigRules() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"source_details": {
+						"scope_compliance_resource_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"scope_compliance_resource_types": {
 							Type:     schema.TypeList,
 							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"event_source": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"maximum_execution_frequency": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"message_type": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"source_detail_message_type": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"source_identifier": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"source_maximum_execution_frequency": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -153,22 +177,26 @@ func dataSourceAlicloudConfigRules() *schema.Resource {
 func dataSourceAlicloudConfigRulesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := config.CreateListConfigRulesRequest()
+	action := "ListConfigRules"
+	request := make(map[string]interface{})
 	if v, ok := d.GetOk("config_rule_state"); ok {
-		request.ConfigRuleState = v.(string)
+		request["ConfigRuleState"] = v
 	}
 	if v, ok := d.GetOk("member_id"); ok {
-		request.MemberId = requests.NewInteger(v.(int))
+		request["MemberId"] = v
+	}
+	if v, ok := d.GetOk("message_type"); ok {
+		request["MessageType"] = v
 	}
 	if v, ok := d.GetOkExists("multi_account"); ok {
-		request.MultiAccount = requests.NewBoolean(v.(bool))
+		request["MultiAccount"] = v
 	}
 	if v, ok := d.GetOk("risk_level"); ok {
-		request.RiskLevel = requests.NewInteger(v.(int))
+		request["RiskLevel"] = v
 	}
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	var objects []config.ConfigRule
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
 	var ruleNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -187,13 +215,17 @@ func dataSourceAlicloudConfigRulesRead(d *schema.ResourceData, meta interface{})
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	var response *config.ListConfigRulesResponse
+	var response map[string]interface{}
+	conn, err := client.NewConfigClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-			raw, err := client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-				return configClient.ListConfigRules(request)
-			})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &runtime)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Throttling.User"}) {
 					wait()
@@ -201,86 +233,87 @@ func dataSourceAlicloudConfigRulesRead(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw)
-			response, _ = raw.(*config.ListConfigRulesResponse)
+			addDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_config_rules", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_config_rules", action, AlibabaCloudSdkGoERROR)
 		}
 
-		for _, item := range response.ConfigRules.ConfigRuleList {
+		resp, err := jsonpath.Get("$.ConfigRules.ConfigRuleList", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ConfigRules.ConfigRuleList", response)
+		}
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
 			if ruleNameRegex != nil {
-				if !ruleNameRegex.MatchString(item.ConfigRuleName) {
+				if !ruleNameRegex.MatchString(item["ConfigRuleName"].(string)) {
 					continue
 				}
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.ConfigRuleId]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["ConfigRuleId"])]; !ok {
 					continue
 				}
 			}
 			objects = append(objects, item)
 		}
-		if len(response.ConfigRules.ConfigRuleList) < PageSizeLarge {
+		if len(resp.([]interface{})) < PageSizeLarge {
 			break
 		}
-
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	ids := make([]string, 0)
 	names := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"account_id":        object.AccountId,
-			"config_rule_arn":   object.ConfigRuleArn,
-			"id":                object.ConfigRuleId,
-			"config_rule_id":    object.ConfigRuleId,
-			"config_rule_state": object.ConfigRuleState,
-			"description":       object.Description,
-			"risk_level":        object.RiskLevel,
-			"rule_name":         object.ConfigRuleName,
-			"source_identifier": object.SourceIdentifier,
-			"source_owner":      object.SourceOwner,
+			"account_id":        formatInt(object["AccountId"]),
+			"config_rule_arn":   object["ConfigRuleArn"],
+			"id":                fmt.Sprint(object["ConfigRuleId"]),
+			"config_rule_id":    fmt.Sprint(object["ConfigRuleId"]),
+			"config_rule_state": object["ConfigRuleState"],
+			"description":       object["Description"],
+			"risk_level":        formatInt(object["RiskLevel"]),
+			"rule_name":         object["ConfigRuleName"],
+			"source_identifier": object["SourceIdentifier"],
+			"source_owner":      object["SourceOwner"],
 		}
-		ids = append(ids, object.ConfigRuleId)
+
+		complianceSli := make([]map[string]interface{}, 0)
+		if len(object["Compliance"].(map[string]interface{})) > 0 {
+			compliance := object["Compliance"]
+			complianceMap := make(map[string]interface{})
+			complianceMap["compliance_type"] = compliance.(map[string]interface{})["ComplianceType"]
+			complianceMap["count"] = compliance.(map[string]interface{})["Count"]
+			complianceSli = append(complianceSli, complianceMap)
+		}
+		mapping["compliance"] = complianceSli
+
+		ids = append(ids, fmt.Sprint(object["ConfigRuleId"]))
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
-			names = append(names, object.ConfigRuleName)
+			names = append(names, object["ConfigRuleName"].(string))
 			s = append(s, mapping)
 			continue
 		}
 
-		request := config.CreateDescribeConfigRuleRequest()
-		request.RegionId = client.RegionId
-		request.ConfigRuleId = object.ConfigRuleId
-		raw, err := client.WithConfigClient(func(configClient *config.Client) (interface{}, error) {
-			return configClient.DescribeConfigRule(request)
-		})
+		configService := ConfigService{client}
+		id := fmt.Sprint(object["ConfigRuleId"])
+		getResp, err := configService.DescribeConfigRule(id)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_config_rules", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		responseGet, _ := raw.(*config.DescribeConfigRuleResponse)
-		mapping["create_timestamp"] = responseGet.ConfigRule.CreateTimestamp
-		mapping["input_parameters"] = responseGet.ConfigRule.InputParameters
-		mapping["modified_timestamp"] = responseGet.ConfigRule.ModifiedTimestamp
-
-		sourceDetails := make([]map[string]interface{}, len(responseGet.ConfigRule.ManagedRule.SourceDetails))
-		for i, v := range responseGet.ConfigRule.ManagedRule.SourceDetails {
-			mapping1 := map[string]interface{}{
-				"event_source":                v.EventSource,
-				"maximum_execution_frequency": v.MaximumExecutionFrequency,
-				"message_type":                v.MessageType,
-			}
-			sourceDetails[i] = mapping1
+		mapping["create_timestamp"] = getResp["CreateTimestamp"]
+		mapping["input_parameters"] = getResp["InputParameters"]
+		mapping["modified_timestamp"] = getResp["ModifiedTimestamp"]
+		mapping["scope_compliance_resource_id"] = getResp["Scope"].(map[string]interface{})["ComplianceResourceId"]
+		mapping["scope_compliance_resource_types"] = getResp["Scope"].(map[string]interface{})["ComplianceResourceTypes"]
+		mapping["source_maximum_execution_frequency"] = getResp["MaximumExecutionFrequency"]
+		if v := getResp["Source"].(map[string]interface{})["SourceDetails"].([]interface{}); len(v) > 0 {
+			mapping["event_source"] = v[0].(map[string]interface{})["EventSource"]
+			mapping["source_detail_message_type"] = v[0].(map[string]interface{})["MessageType"]
 		}
-		mapping["source_details"] = sourceDetails
-		names = append(names, object.ConfigRuleName)
+		names = append(names, object["ConfigRuleName"].(string))
 		s = append(s, mapping)
 	}
 

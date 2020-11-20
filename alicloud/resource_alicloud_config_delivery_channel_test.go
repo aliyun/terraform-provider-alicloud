@@ -5,14 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/config"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudConfigDeliveryChannel_basic(t *testing.T) {
-	var v config.DeliveryChannel
+	var v map[string]interface{}
 	resourceId := "alicloud_config_delivery_channel.default"
 	ra := resourceAttrInit(resourceId, ConfigDeliveryChannelMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -131,7 +130,7 @@ func TestAccAlicloudConfigDeliveryChannel_basic(t *testing.T) {
 }
 
 func TestAccAlicloudConfigDeliveryChannel_MNS(t *testing.T) {
-	var v config.DeliveryChannel
+	var v map[string]interface{}
 	resourceId := "alicloud_config_delivery_channel.default"
 	ra := resourceAttrInit(resourceId, ConfigDeliveryChannelMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -249,7 +248,7 @@ func TestAccAlicloudConfigDeliveryChannel_MNS(t *testing.T) {
 }
 
 func TestAccAlicloudConfigDeliveryChannel_SLS(t *testing.T) {
-	var v config.DeliveryChannel
+	var v map[string]interface{}
 	resourceId := "alicloud_config_delivery_channel.default"
 	ra := resourceAttrInit(resourceId, ConfigDeliveryChannelMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -391,8 +390,8 @@ variable "name" {
 locals {
   uid          	   = data.alicloud_account.this.id
   role_arn         = data.alicloud_ram_roles.this.roles.0.arn
-  mns	       	   = format("acs:oss:%[2]s:%%s:/topics/%%s",local.uid,alicloud_mns_topic.default.name)
-  mns_change	   = format("acs:oss:%[2]s:%%s:/topics/%%s",local.uid,alicloud_mns_topic.change.name)
+  mns	       	   = format("acs:mns:%[2]s:%%s:/topics/%%s",local.uid,alicloud_mns_topic.default.name)
+  mns_change	   = format("acs:mns:%[2]s:%%s:/topics/%%s",local.uid,alicloud_mns_topic.change.name)
 }
 
 resource "alicloud_mns_topic" "default" {
@@ -420,8 +419,8 @@ variable "name" {
 locals {
   uid          	   = data.alicloud_account.this.id
   role_arn         = data.alicloud_ram_roles.this.roles.0.arn
-  sls	       	   = format("acs:oss:%[2]s:%%s:/project/%%s/logstore/%%s",local.uid,alicloud_log_project.this.name,alicloud_log_store.this.name)
-  sls_change	   = format("acs:oss:%[2]s:%%s:/project/%%s/logstore/%%s",local.uid,alicloud_log_project.this.name,alicloud_log_store.change.name)
+  sls	       	   = format("acs:log:%[2]s:%%s:project/%%s/logstore/%%s",local.uid,alicloud_log_project.this.name,alicloud_log_store.this.name)
+  sls_change	   = format("acs:log:%[2]s:%%s:project/%%s/logstore/%%s",local.uid,alicloud_log_project.this.name,alicloud_log_store.change.name)
 }
 
 resource "alicloud_log_project" "this" {
