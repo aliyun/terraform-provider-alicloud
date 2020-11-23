@@ -444,7 +444,6 @@ func TestAccAlicloudEdasK8sApplication_multi(t *testing.T) {
 var edasK8sApplicationBasicMap = map[string]string{
 	"application_name": CHECKSET,
 	"cluster_id":       CHECKSET,
-	"package_type":     CHECKSET,
 }
 
 func testAccCheckEdasK8sApplicationDestroy(s *terraform.State) error {
