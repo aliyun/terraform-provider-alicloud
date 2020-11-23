@@ -338,6 +338,16 @@ func convertListToJsonString(configured []interface{}) string {
 	return result
 }
 
+func converJsonStringToStringList(src interface{}) (result []interface{}) {
+	if err, ok := src.([]interface{}); !ok {
+		panic(err)
+	}
+	for _, v := range src.([]interface{}) {
+		result = append(result, fmt.Sprint(formatInt(v)))
+	}
+	return
+}
+
 // Convert the result for an array and returns a comma separate
 func convertListToCommaSeparate(configured []interface{}) string {
 	if len(configured) < 1 {
