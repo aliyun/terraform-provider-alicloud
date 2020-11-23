@@ -271,29 +271,18 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 	}
 	d.Set("operator", oper)
 	d.Set("threshold", alarm.Escalations.Critical.Threshold)
-	if alarm.Escalations.Critical.Times != "" {
-		if count, err := strconv.Atoi(alarm.Escalations.Critical.Times); err != nil {
-			return WrapError(err)
-		} else {
-			d.Set("triggered_count", count)
-		}
-	}
+	d.Set("triggered_count", alarm.Escalations.Critical.Times)
 
 	escalationsCritical := make([]map[string]interface{}, 1)
-	if alarm.Escalations.Critical.Times != "" {
-		if count, err := strconv.Atoi(alarm.Escalations.Critical.Times); err != nil {
-			return WrapError(err)
-		} else {
-			mapping := map[string]interface{}{
-				"statistics":          alarm.Escalations.Critical.Statistics,
-				"comparison_operator": convertOperator(alarm.Escalations.Critical.ComparisonOperator),
-				"threshold":           alarm.Escalations.Critical.Threshold,
-				"times":               count,
-			}
-			escalationsCritical[0] = mapping
-			d.Set("escalations_critical", escalationsCritical)
-		}
+
+	mapping := map[string]interface{}{
+		"statistics":          alarm.Escalations.Critical.Statistics,
+		"comparison_operator": convertOperator(alarm.Escalations.Critical.ComparisonOperator),
+		"threshold":           alarm.Escalations.Critical.Threshold,
+		"times":               alarm.Escalations.Critical.Times,
 	}
+	escalationsCritical[0] = mapping
+	d.Set("escalations_critical", escalationsCritical)
 
 	escalationsWarn := make([]map[string]interface{}, 1)
 	if alarm.Escalations.Warn.Times != "" {
@@ -330,11 +319,9 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("effective_interval", alarm.EffectiveInterval)
 	//d.Set("start_time", parts[0])
 	//d.Set("end_time", parts[1])
-	if silence, err := strconv.Atoi(alarm.SilenceTime); err != nil {
-		return fmt.Errorf("Atoi SilenceTime got an error: %#v.", err)
-	} else {
-		d.Set("silence_time", silence)
-	}
+
+	d.Set("silence_time", alarm.SilenceTime)
+
 	d.Set("status", alarm.AlertState)
 	d.Set("enabled", alarm.EnableState)
 	d.Set("webhook", alarm.Webhook)

@@ -6,11 +6,11 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"strings"
-
-	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -37,11 +37,11 @@ func testSweepCMSAlarms(region string) error {
 		"tf_testAcc",
 	}
 
-	var alarms []cms.Alarm
+	var alarms []cms.AlarmInDescribeMetricRuleList
 	req := cms.CreateDescribeMetricRuleListRequest()
 	req.RegionId = client.RegionId
-	req.PageSize = strconv.Itoa(PageSizeLarge)
-	req.Page = strconv.Itoa(1)
+	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.Page = requests.NewInteger(1)
 	for {
 		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
 			return cmsClient.DescribeMetricRuleList(req)
@@ -58,11 +58,11 @@ func testSweepCMSAlarms(region string) error {
 		if len(resp.Alarms.Alarm) < PageSizeLarge {
 			break
 		}
-		current, err := strconv.Atoi(req.Page)
-		if err != nil {
-			break
+		if page, err := getNextpageNumber(req.Page); err != nil {
+			return WrapError(err)
+		} else {
+			req.Page = page
 		}
-		req.Page = strconv.Itoa(current + 1)
 	}
 
 	for _, v := range alarms {
@@ -83,7 +83,7 @@ func testSweepCMSAlarms(region string) error {
 			continue
 		}
 
-		log.Printf("[INFO] Deleting CMS Alarm: %s (%s). Status: %s", name, id, v.State)
+		log.Printf("[INFO] Deleting CMS Alarm: %s (%s). Status: %s", name, id, v.AlertState)
 		req := cms.CreateDeleteMetricRulesRequest()
 		req.Id = &[]string{id}
 		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
@@ -99,7 +99,7 @@ func testSweepCMSAlarms(region string) error {
 // At present, the provider does not support creating contact group resource, so you should create manually a contact group
 // by web console and set it by environment variable ALICLOUD_CMS_CONTACT_GROUP before running the following test case.
 func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
-	var alarm cms.Alarm
+	var alarm cms.AlarmInDescribeMetricRuleList
 	resourceName := "alicloud_cms_alarm.basic"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAcc%sCmsAlarmContactGroup%d", defaultRegionToTest, rand)
@@ -136,7 +136,7 @@ func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
 }
 
 func TestAccAlicloudCmsAlarm_update(t *testing.T) {
-	var alarm cms.Alarm
+	var alarm cms.AlarmInDescribeMetricRuleList
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAcc%sCmsAlarmContactGroup%d", defaultRegionToTest, rand)
 	resource.Test(t, resource.TestCase{
@@ -180,7 +180,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 }
 
 func TestAccAlicloudCmsAlarm_disable(t *testing.T) {
-	var alarm cms.Alarm
+	var alarm cms.AlarmInDescribeMetricRuleList
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAcc%sCmsAlarmContactGroup%d", defaultRegionToTest, rand)
 	resource.Test(t, resource.TestCase{
@@ -205,7 +205,7 @@ func TestAccAlicloudCmsAlarm_disable(t *testing.T) {
 	})
 }
 
-func testAccCheckCmsAlarmExists(n string, d *cms.Alarm) resource.TestCheckFunc {
+func testAccCheckCmsAlarmExists(n string, d *cms.AlarmInDescribeMetricRuleList) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		alarm, ok := s.RootModule().Resources[n]
 		if !ok {

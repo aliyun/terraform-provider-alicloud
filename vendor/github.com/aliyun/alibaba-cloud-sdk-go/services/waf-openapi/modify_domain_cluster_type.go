@@ -21,7 +21,6 @@ import (
 )
 
 // ModifyDomainClusterType invokes the waf_openapi.ModifyDomainClusterType API synchronously
-// api document: https://help.aliyun.com/api/waf-openapi/modifydomainclustertype.html
 func (client *Client) ModifyDomainClusterType(request *ModifyDomainClusterTypeRequest) (response *ModifyDomainClusterTypeResponse, err error) {
 	response = CreateModifyDomainClusterTypeResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ModifyDomainClusterType(request *ModifyDomainClusterTypeRe
 }
 
 // ModifyDomainClusterTypeWithChan invokes the waf_openapi.ModifyDomainClusterType API asynchronously
-// api document: https://help.aliyun.com/api/waf-openapi/modifydomainclustertype.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyDomainClusterTypeWithChan(request *ModifyDomainClusterTypeRequest) (<-chan *ModifyDomainClusterTypeResponse, <-chan error) {
 	responseChan := make(chan *ModifyDomainClusterTypeResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ModifyDomainClusterTypeWithChan(request *ModifyDomainClust
 }
 
 // ModifyDomainClusterTypeWithCallback invokes the waf_openapi.ModifyDomainClusterType API asynchronously
-// api document: https://help.aliyun.com/api/waf-openapi/modifydomainclustertype.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyDomainClusterTypeWithCallback(request *ModifyDomainClusterTypeRequest, callback func(response *ModifyDomainClusterTypeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

@@ -22,6 +22,7 @@ type InstanceInfo struct {
 	InDebt           int    `json:"InDebt" xml:"InDebt"`
 	InstanceId       string `json:"InstanceId" xml:"InstanceId"`
 	PayType          int    `json:"PayType" xml:"PayType"`
+	Version          string `json:"Version" xml:"Version"`
 	SubscriptionType string `json:"SubscriptionType" xml:"SubscriptionType"`
 	EndDate          int64  `json:"EndDate" xml:"EndDate"`
 	RemainDay        int    `json:"RemainDay" xml:"RemainDay"`
