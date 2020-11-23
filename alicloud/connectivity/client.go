@@ -45,7 +45,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	waf_openapi "github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
@@ -145,7 +144,6 @@ type AliyunClient struct {
 	dnsConn                      *alidns.Client
 	edasconn                     *edas.Client
 	dms_enterpriseConn           *dms_enterprise.Client
-	waf_openapiConn              *waf_openapi.Client
 	resourcemanagerConn          *resourcemanager.Client
 	bssopenapiConn               *bssopenapi.Client
 	alidnsConn                   *alidns.Client
@@ -1820,31 +1818,6 @@ func (client *AliyunClient) WithDmsEnterpriseClient(do func(*dms_enterprise.Clie
 	return do(client.dms_enterpriseConn)
 }
 
-func (client *AliyunClient) WithWafOpenapiClient(do func(*waf_openapi.Client) (interface{}, error)) (interface{}, error) {
-	if client.waf_openapiConn == nil {
-		endpoint := client.config.WafOpenapiEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, WafOpenapiCode)
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(WafOpenapiCode), endpoint)
-		}
-
-		waf_openapiConn, err := waf_openapi.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the WafOpenapiclient: %#v", err)
-		}
-		waf_openapiConn.AppendUserAgent(Terraform, terraformVersion)
-		waf_openapiConn.AppendUserAgent(Provider, providerVersion)
-		waf_openapiConn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.waf_openapiConn = waf_openapiConn
-	}
-	return do(client.waf_openapiConn)
-}
-
 func (client *AliyunClient) WithResourcemanagerClient(do func(*resourcemanager.Client) (interface{}, error)) (interface{}, error) {
 	if client.resourcemanagerConn == nil {
 		endpoint := client.config.ResourcemanagerEndpoint
@@ -2112,6 +2085,51 @@ func (client *AliyunClient) NewCmsClient() (*rpc.Client, error) {
 
 func (client *AliyunClient) NewConfigClient() (*rpc.Client, error) {
 	productCode := "config"
+	endpoint := ""
+	if client.config.Endpoints[productCode] == nil {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
+		}
+	}
+	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
+		endpoint = client.config.Endpoints[productCode].(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewWafClient() (*rpc.Client, error) {
+	productCode := "waf"
+	endpoint := ""
+	if client.config.Endpoints[productCode] == nil {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
+		}
+	}
+	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
+		endpoint = client.config.Endpoints[productCode].(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+func (client *AliyunClient) NewBssopenapiClient() (*rpc.Client, error) {
+	productCode := "bssopenapi"
 	endpoint := ""
 	if client.config.Endpoints[productCode] == nil {
 		if err := client.loadEndpoint(productCode); err != nil {
