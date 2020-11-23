@@ -256,6 +256,6 @@ func (c *Config) getTeaDslSdkConfig(stsSupported bool) (config rpc.Config, err e
 		SetRegionId(c.RegionId).
 		SetProtocol(c.Protocol).
 		SetReadTimeout(30000).
-		SetConnectTimeout(5000)
+		SetConnectTimeout(30000)
 	return
 }
