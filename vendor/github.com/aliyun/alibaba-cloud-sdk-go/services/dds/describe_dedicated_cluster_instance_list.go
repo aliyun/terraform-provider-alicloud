@@ -77,7 +77,7 @@ type DescribeDedicatedClusterInstanceListRequest struct {
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	Engine               string           `position:"Query" name:"Engine"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
-	InstanceStatus       requests.Integer `position:"Query" name:"InstanceStatus"`
+	InstanceStatus       string           `position:"Query" name:"InstanceStatus"`
 	DedicatedHostName    string           `position:"Query" name:"DedicatedHostName"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -85,6 +85,8 @@ type DescribeDedicatedClusterInstanceListRequest struct {
 	ClusterId            string           `position:"Query" name:"ClusterId"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	InstanceId           string           `position:"Query" name:"InstanceId"`
+	ZoneId               string           `position:"Query" name:"ZoneId"`
+	Region               string           `position:"Query" name:"Region"`
 }
 
 // DescribeDedicatedClusterInstanceListResponse is the response struct for api DescribeDedicatedClusterInstanceList
