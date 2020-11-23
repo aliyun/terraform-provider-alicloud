@@ -406,11 +406,6 @@ func resourceAlicloudEdasK8sApplicationRead(d *schema.ResourceData, meta interfa
 			cpu, err := strconv.Atoi(v.CpuRequest)
 
 			if err != nil {
-				if NotFoundError(err) {
-					log.Printf("[DEBUG] Resource alicloud_edas_k8s_application ecsService.DescribeEdasK8sApplication Failed!!! %s", err)
-					d.SetId("")
-					return nil
-				}
 				return WrapError(err)
 			}
 			d.Set("requests_m_cpu", cpu*1000)
@@ -493,7 +488,7 @@ func resourceAlicloudEdasK8sApplicationUpdate(d *schema.ResourceData, meta inter
 			}
 			edasContainer = d.Get("edas_container_version").(string)
 			if len(webContainer) == 0 && len(edasContainer) == 0 {
-				return WrapError(Error("web_container or edas_container_version is needed for creating war k8s application"))
+				return WrapError(Error("web_container or edas_container_version is needed for updating war k8s application"))
 			}
 			request.WebContainer = webContainer
 			request.EdasContainerVersion = edasContainer
