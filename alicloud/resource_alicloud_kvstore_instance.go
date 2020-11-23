@@ -224,6 +224,10 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"private_connection_prefix": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"private_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -929,6 +933,29 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("kms_encrypted_password")
 		d.SetPartial("kms_encryption_context")
 		d.SetPartial("password")
+	}
+	update = false
+	modifyDBInstanceConnectionStringReq := r_kvstore.CreateModifyDBInstanceConnectionStringRequest()
+	modifyDBInstanceConnectionStringReq.DBInstanceId = d.Id()
+	if d.HasChange("private_connection_prefix") {
+		update = true
+	}
+	modifyDBInstanceConnectionStringReq.NewConnectionString = d.Get("private_connection_prefix").(string)
+	modifyDBInstanceConnectionStringReq.IPType = "Private"
+	if update {
+		modifyDBInstanceConnectionStringReq.CurrentConnectionString = d.Get("connection_domain").(string)
+		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+			return r_kvstoreClient.ModifyDBInstanceConnectionString(modifyDBInstanceConnectionStringReq)
+		})
+		addDebug(modifyDBInstanceConnectionStringReq.GetActionName(), raw)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyDBInstanceConnectionStringReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("private_connection_prefix")
 	}
 	update = false
 	modifySecurityIpsReq := r_kvstore.CreateModifySecurityIpsRequest()
