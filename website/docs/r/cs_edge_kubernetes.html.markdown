@@ -111,7 +111,7 @@ The following arguments are supported:
       * cloud_efficiency : ultra disks.
       * cloud_ssd : SSDs.
       * cloud_essd : ESSDs.
-  * `size`: the size of a data disk. Unit: GiB.
+  * `size`: the size of a data disk, at least 40. Unit: GiB.
   * `encrypted`: specifies whether to encrypt data disks. Valid values: true and false.
 * `install_cloud_monitor` - (Optional) Install cloud monitor agent on ECS. default: `true`.
 * `proxy_mode` - Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
