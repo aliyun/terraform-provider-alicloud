@@ -25,6 +25,8 @@ func resourceAlicloudKmsSecret() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Update: schema.DefaultTimeout(1 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"arn": {
@@ -199,10 +201,21 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 		request := kms.CreateUpdateSecretRequest()
 		request.SecretName = d.Id()
 		request.Description = d.Get("description").(string)
-		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-			return kmsClient.UpdateSecret(request)
+		wait := incrementalWait(3*time.Second, 1*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+				return kmsClient.UpdateSecret(request)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"Rejected.Throttling"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw)
+			return nil
 		})
-		addDebug(request.GetActionName(), raw)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -228,10 +241,22 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 		request.VersionStages = convertListToJsonString(d.Get("version_stages").(*schema.Set).List())
 	}
 	if update {
-		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-			return kmsClient.PutSecretValue(request)
+		wait := incrementalWait(3*time.Second, 1*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			args := *request
+			raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+				return kmsClient.PutSecretValue(&args)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"Rejected.Throttling"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw)
+			return nil
 		})
-		addDebug(request.GetActionName(), raw)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -253,10 +278,21 @@ func resourceAlicloudKmsSecretDelete(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("recovery_window_in_days"); ok {
 		request.RecoveryWindowInDays = fmt.Sprintf("%v", v.(int))
 	}
-	raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-		return kmsClient.DeleteSecret(request)
+	wait := incrementalWait(3*time.Second, 1*time.Second)
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+			return kmsClient.DeleteSecret(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"Rejected.Throttling"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw)
+		return nil
 	})
-	addDebug(request.GetActionName(), raw)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Forbidden.ResourceNotFound"}) {
 			return nil
