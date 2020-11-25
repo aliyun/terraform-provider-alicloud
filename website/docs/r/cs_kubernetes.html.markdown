@@ -194,7 +194,7 @@ The following example is the definition of `master_vswtich_ids` block, the `work
     * cloud_efficiency: ultra disks.
     * cloud_ssd: SSDs.
     * cloud_essd: essd.
-  * `size`: the size of a data disk. Unit: GiB.
+  * `size`: the size of a data disk, at least 40. Unit: GiB.
   * `encrypted`: specifies whether to encrypt data disks. Valid values: true and false.
 * `node_name_mode` - (Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be `aliyun.com00055test`.
 * `node_port_range`- (Optional, ForceNew, Available in 1.103.2+) The service port range of nodes, valid values: `30000` to `65535`. Default to `30000-32767`.
