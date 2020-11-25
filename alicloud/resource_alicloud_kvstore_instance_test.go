@@ -287,6 +287,16 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"private_connection_prefix": "privateconnectionstringprefix",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_connection_prefix": "privateconnectionstringprefix",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":              "redis.master.small.default",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -302,12 +312,13 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"zone_id":             "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
-					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
-					"maintain_start_time": "04:00Z",
-					"maintain_end_time":   "06:00Z",
-					"backup_period":       []string{"Wednesday"},
-					"backup_time":         "11:00Z-12:00Z",
+					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
+					"maintain_start_time":       "04:00Z",
+					"maintain_end_time":         "06:00Z",
+					"backup_period":             []string{"Wednesday"},
+					"backup_time":               "11:00Z-12:00Z",
+					"private_connection_prefix": "privateconnectionstringprefixupdate",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -330,6 +341,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"maintain_end_time":             "06:00Z",
 						"backup_period.#":               "1",
 						"backup_time":                   "11:00Z-12:00Z",
+						"private_connection_prefix":     "privateconnectionstringprefixupdate",
 					}),
 				),
 			},
@@ -348,7 +360,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKvstoreMemcacheInstanceVpcTest%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreInstanceVpcTestdependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreMemcacheInstanceVpcTestdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -506,6 +518,16 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"private_connection_prefix": "privateconnectionstringprefix1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_connection_prefix": "privateconnectionstringprefix1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":              "memcache.master.small.default",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -516,12 +538,13 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"zone_id":             "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
-					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
-					"maintain_start_time": "04:00Z",
-					"maintain_end_time":   "06:00Z",
-					"backup_period":       []string{"Wednesday"},
-					"backup_time":         "11:00Z-12:00Z",
+					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
+					"maintain_start_time":       "04:00Z",
+					"maintain_end_time":         "06:00Z",
+					"backup_period":             []string{"Wednesday"},
+					"backup_time":               "11:00Z-12:00Z",
+					"private_connection_prefix": "privateconnectionstringprefix1update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -540,6 +563,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 						"maintain_end_time":           "06:00Z",
 						"backup_period.#":             "1",
 						"backup_time":                 "11:00Z-12:00Z",
+						"private_connection_prefix":   "privateconnectionstringprefix1update",
 					}),
 				),
 			},
@@ -773,7 +797,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_classictest(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKvstoreMemcacheInstanceClassicTest%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreInstanceClassicTestdependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreMemcacheInstanceClassicTestdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1085,10 +1109,44 @@ func KvstoreInstanceVpcTestdependence(name string) string {
 	`)
 }
 
+func KvstoreMemcacheInstanceVpcTestdependence(name string) string {
+	return fmt.Sprintf(`
+	data "alicloud_kvstore_zones" "default"{
+		instance_charge_type = "PostPaid"
+		engine = "memcache"
+	}
+	data "alicloud_vpcs" "default" {
+		is_default = true
+	}
+	data "alicloud_vswitches" "default" {
+  		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+	data "alicloud_resource_manager_resource_groups" "default"{
+	}
+
+	data "alicloud_vswitches" "update" {
+  		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+	`)
+}
+
 func KvstoreInstanceClassicTestdependence(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_kvstore_zones" "default"{
 		instance_charge_type = "PostPaid"
+	}
+	data "alicloud_resource_manager_resource_groups" "default"{
+	}
+	`)
+}
+
+func KvstoreMemcacheInstanceClassicTestdependence(name string) string {
+	return fmt.Sprintf(`
+	data "alicloud_kvstore_zones" "default"{
+		instance_charge_type = "PostPaid"
+		engine = "memcache"
 	}
 	data "alicloud_resource_manager_resource_groups" "default"{
 	}

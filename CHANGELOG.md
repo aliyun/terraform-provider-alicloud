@@ -1,4 +1,33 @@
-## 1.104.0 (Unreleased)
+## 1.105.0 (Unreleased)
+## 1.104.0 (November 20, 2020)
+
+- **New Resource:** `alicloud_cms_group_metric_rule` ([#3044](https://github.com/aliyun/terraform-provider-alicloud/issues/3044))
+- **New Resource:** `alicloud_fc_alias` ([#3038](https://github.com/aliyun/terraform-provider-alicloud/issues/3038))
+- **Data Source:** `alicloud_cms_group_metric_rules` ([#3044](https://github.com/aliyun/terraform-provider-alicloud/issues/3044))
+
+IMPROVEMENTS:
+
+- resource/alicloud_kvstore_instance: Add ModifyBackupPolicy for resource and Deprecated alicloud_kvstore_backup_policy ([#3049](https://github.com/aliyun/terraform-provider-alicloud/issues/3049))
+- Modify NewCommonRequest endpoint loading method ([#3047](https://github.com/aliyun/terraform-provider-alicloud/issues/3047))
+- supports Finance and Gov region ([#3046](https://github.com/aliyun/terraform-provider-alicloud/issues/3046))
+- resource/alicloud_db_connection:upgrade teadsl sdk ([#3045](https://github.com/aliyun/terraform-provider-alicloud/issues/3045))
+- resource/alicloud_db_readonly_instance:upgrade teadsl sdk ([#3043](https://github.com/aliyun/terraform-provider-alicloud/issues/3043))
+- config/rule: Update config rule attribute and add sweep function for config rule ([#3042](https://github.com/aliyun/terraform-provider-alicloud/issues/3042))
+- resource/alicloud_db_database:upgrade teadsl sdk ([#3040](https://github.com/aliyun/terraform-provider-alicloud/issues/3040))
+- resource/alicloud_db_instance:upgrade teadsl sdk ([#3036](https://github.com/aliyun/terraform-provider-alicloud/issues/3036))
+- resource/alicloud_slb_listener: Supporting new field ca_certificate_id ([#3033](https://github.com/aliyun/terraform-provider-alicloud/issues/3033))
+- resource/alicloud_db_backup_policy:upgrade teadsl sdk ([#3031](https://github.com/aliyun/terraform-provider-alicloud/issues/3031))
+- Convert ons_instance to common Api ([#3029](https://github.com/aliyun/terraform-provider-alicloud/issues/3029))
+- resource/alicloud_db_account_privilege:upgrade to teadsl sdk ([#3027](https://github.com/aliyun/terraform-provider-alicloud/issues/3027))
+- correct docs provider version from 1.104.0 to 1.103.2 ([#3026](https://github.com/aliyun/terraform-provider-alicloud/issues/3026))
+- resource/alicloud_db_account:adapt to teadsl sdk and support temporary ak ([#3025](https://github.com/aliyun/terraform-provider-alicloud/issues/3025))
+- update changelog ([#3024](https://github.com/aliyun/terraform-provider-alicloud/issues/3024))
+
+BUG FIXES:
+
+- fix:get db readwrite splitting connection ([#3032](https://github.com/aliyun/terraform-provider-alicloud/issues/3032))
+- Fixed bug of converting charge_tyep to Prepaid ([#3028](https://github.com/aliyun/terraform-provider-alicloud/issues/3028))
+
 ## 1.103.2 (November 14, 2020)
 
 IMPROVEMENTS:

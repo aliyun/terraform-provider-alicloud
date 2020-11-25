@@ -415,14 +415,28 @@ func (s *RdsService) DescribeDBInstanceNetInfo(id string) ([]interface{}, error)
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	var response map[string]interface{}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalError"}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+				return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
+			return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
 	}
-	addDebug(action, response, request)
 	dBInstanceNetInfos := response["DBInstanceNetInfos"].(map[string]interface{})["DBInstanceNetInfo"].([]interface{})
 	if len(dBInstanceNetInfos) < 1 {
 		return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstanceNetInfo", id)), NotFoundMsg, ProviderERROR)
@@ -468,7 +482,7 @@ func (s *RdsService) DescribeDBReadWriteSplittingConnection(id string) (map[stri
 			if conn["ConnectionStringType"] != "ReadWriteSplitting" {
 				continue
 			}
-			if conn["MaxDelayTime"] == "" {
+			if conn["MaxDelayTime"] == nil {
 				continue
 			}
 			if _, err := strconv.Atoi(conn["MaxDelayTime"].(string)); err != nil {
@@ -1499,47 +1513,47 @@ func (s *RdsService) tagsToString(tags []Tag) string {
 	return string(v)
 }
 
-func (s *RdsService) DescribeDBProxy(id string) (describeDBProxy *rds.DescribeDBProxyResponse, err error) {
-
-	request := rds.CreateDescribeDBProxyRequest()
-	request.RegionId = s.client.RegionId
-	request.DBInstanceId = id
-	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-		return rdsClient.DescribeDBProxy(request)
-	})
-
+func (s *RdsService) DescribeDBProxy(id string) (map[string]interface{}, error) {
+	action := "DescribeDBProxy"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": id,
+		"SourceIp":     s.client.SourceIp,
+	}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return describeDBProxy, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return describeDBProxy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	response, _ := raw.(*rds.DescribeDBProxyResponse)
+	addDebug(action, response, request)
 	return response, nil
 }
 
-func (s *RdsService) DescribeDBProxyEndpoint(id string, endpointName string) (endpointInfo *rds.DescribeDBProxyEndpointResponse, err error) {
-
-	request := rds.CreateDescribeDBProxyEndpointRequest()
-	request.RegionId = s.client.RegionId
-	request.DBInstanceId = id
-	request.DBProxyEndpointId = endpointName
-	raw, err := s.client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-		return rdsClient.DescribeDBProxyEndpoint(request)
-	})
-
+func (s *RdsService) DescribeDBProxyEndpoint(id string, endpointName string) (map[string]interface{}, error) {
+	action := "DescribeDBProxyEndpoint"
+	request := map[string]interface{}{
+		"RegionId":          s.client.RegionId,
+		"DBInstanceId":      id,
+		"DBProxyEndpointId": endpointName,
+		"SourceIp":          s.client.SourceIp,
+	}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound", "Endpoint.NotFound"}) {
-			return endpointInfo, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return endpointInfo, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	response, _ := raw.(*rds.DescribeDBProxyEndpointResponse)
+	addDebug(action, response, request)
 	return response, nil
 }

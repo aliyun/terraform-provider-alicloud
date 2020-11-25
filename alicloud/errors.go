@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"regexp"
 	"strings"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -185,6 +186,17 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 		if strings.Contains(err.Error(), code) {
 			return true
 		}
+	}
+	return false
+}
+
+func IsEOFError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if e, ok := err.(*common.Error); ok {
+		re := regexp.MustCompile("^Post https://.*EOF$")
+		return re.MatchString(e.Message)
 	}
 	return false
 }

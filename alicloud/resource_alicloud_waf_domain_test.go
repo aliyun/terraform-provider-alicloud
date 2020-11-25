@@ -6,12 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	waf_openapi "github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	//"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"os"
 
 	"sync"
@@ -39,30 +38,44 @@ func testSweepWafDomains(region string) error {
 		fmt.Sprintf("tf_testacc%s", region),
 	}
 
-	var domains []waf_openapi.Domain
-	args := waf_openapi.CreateDescribeDomainRequest()
-	args.Port = requests.DefaultHttpPort
+	wafInstanceIds := make([]string, 0)
+	domainIds := make([]string, 0)
+	request := make(map[string]interface{})
+	conn, err := client.NewWafClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	action := "DescribeInstanceInfos"
 
-	for {
-
-		raw, err := client.WithWafOpenapiClient(func(waf_openapiClient *waf_openapi.Client) (interface{}, error) {
-
-			return waf_openapiClient.DescribeDomain(args)
-		})
-		if err != nil {
-			log.Printf("Error retrieving WAF Domain: %s", err)
-		}
-		addDebug(args.GetActionName(), raw)
-		resp, _ := raw.(*waf_openapi.DescribeDomainResponse)
-		if resp == nil || len(resp.Domain.Cname) < 1 {
-			break
-		}
-		domains = append(domains, resp.Domain)
-
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	if err != nil {
+		log.Printf("[ERROR] Failed to retrieve waf instance in service list: %s", err)
+	}
+	resp, err := jsonpath.Get("$.InstanceInfos", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceInfos", response)
+	}
+	for _, v := range resp.([]interface{}) {
+		item := v.(map[string]interface{})
+		wafInstanceIds = append(wafInstanceIds, item["InstanceId"].(string))
 	}
 
-	for _, v := range domains {
-		name := v.Cname
+	for _, instanceId := range wafInstanceIds {
+		action = "DescribeDomainNames"
+		request = make(map[string]interface{})
+		request["InstanceId"] = instanceId
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve waf domain in service list: %s", err)
+		}
+		for _, item := range response["DomainNames"].([]interface{}) {
+			domainIds = append(domainIds, fmt.Sprintf(`%s:%s`, instanceId, item.(string)))
+		}
+	}
+
+	for _, id := range domainIds {
+		part := strings.Split(id, ":")
+		name := part[1]
 		skip := true
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
@@ -71,33 +84,32 @@ func testSweepWafDomains(region string) error {
 			}
 		}
 		if skip {
-			log.Printf("[INFO] Skipping WAF domain: %s", name)
+			log.Printf("[INFO] Skipping WAF domain: %s", id)
 			continue
 		}
-		log.Printf("[INFO] Deleting WAF domain: %s", name)
-		request := waf_openapi.CreateDeleteDomainRequest()
-		request.Domain = name
-		raw, err := client.WithWafOpenapiClient(func(waf_openapiClient *waf_openapi.Client) (interface{}, error) {
-			return waf_openapiClient.DeleteDomain(request)
-		})
+		log.Printf("[INFO] Deleting WAF domain: %s", id)
+
+		request = make(map[string]interface{})
+		action = "DeleteDomain"
+		request["InstanceId"] = part[0]
+		request["Domain"] = name
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete WAF domain (%s): %s", name, err)
+			log.Printf("[ERROR] Failed to delete WAF domain (%s): %s", id, err)
 		}
-		addDebug(request.GetActionName(), raw)
 	}
 	return nil
 }
 
 func TestAccAlicloudWafDomain(t *testing.T) {
-	var v waf_openapi.Domain
+	var v map[string]interface{}
 
 	resourceId := "alicloud_waf_domain.domain"
 	ra := resourceAttrInit(resourceId, wafDomainBasicMap)
 
-	serviceFunc := func() interface{} {
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &Waf_openapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	}, "DescribeWafDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
