@@ -114,6 +114,9 @@ The following arguments are supported:
 * `service_account_issuer` - (Optional, ForceNew, Available in 1.92.0+) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well).
 * `api_audiences` - (Optional, ForceNew, Available in 1.92.0+) A list of API audiences for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm). Set this to `["kubernetes.default.svc"]` if you want to enable the Token Volume Projection feature (requires specifying `service_account_issuer` as well.
 * `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster . Detailed below.
+* `cluster_spec` - (Optional, ForceNew, Available in 1.101.0+) The cluster specifications of kubernetes cluster,which can be empty.Valid values:
+  * ack.standard : Standard managed clusters.
+  * ack.pro.small : Professional managed clusters.
 * `encryption_provider_key` - (Optional, ForceNew, Available in 1.103.2+) The disk encryption key.
 
 ##### runtime
@@ -172,10 +175,10 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
 * `worker_data_disks` - (Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size.
   * `category`: the type of the data disks. Valid values:
-    * cloud: basic disks.
-    * cloud_efficiency: ultra disks.
-    * cloud_ssd: SSDs.
-    * cloud_essd: essd.
+      * cloud: basic disks.
+      * cloud_efficiency: ultra disks.
+      * cloud_ssd: SSDs.
+      * cloud_essd: essd.
   * `size`: the size of a data disk. Unit: GiB.
   * `encrypted`: specifies whether to encrypt data disks. Valid values: true and false.
 * `node_name_mode` - (Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be `aliyun.com00055test`.
@@ -361,6 +364,8 @@ variable "cluster_addons" {
 
 ### Computed params (No need to configure)
 
+You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.104.1, we've written it to tf state file. For more information, see `certificate_authority`.
+
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
@@ -378,15 +383,6 @@ variable "cluster_addons" {
   * `type` - Type of collecting logs, only `SLS` are supported currently.
   * `project` - Log Service project name, cluster logs will output to this project.
 * `cluster_network_type` - (Optional) The network that cluster uses, use `flannel` or `terway`.
-  
-### Timeouts
-
--> **NOTE:** Available in 1.58.0+.
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 90 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status).
-* `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.
-* `delete` - (Defaults to 60 mins) Used when terminating the kubernetes cluster.
 
 ## Attributes Reference
 
@@ -399,28 +395,27 @@ The following attributes are exported:
 * `slb_intranet` - The ID of private load balancer where the current cluster master node is located.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
-* `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
-* `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
+* `worker_nodes` - List of cluster worker nodes.
+  * `id` - ID of the node.
+  * `name` - Node name.
+  * `private_ip` - The private IP address of node.
+  * `role` - (Deprecated from version 1.9.4).
+* `connections` - Map of kubernetes cluster connection information.
+  * `api_server_internet` - API Server Internet endpoint.
+  * `api_server_intranet` - API Server Intranet endpoint.
+  * `master_public_ip` - Master node SSH IP address.
+  * `service_domain` - Service Access Domain.
 * `version` - The Kubernetes server version for the cluster.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
 
-### Block Nodes
+## Timeouts
 
-The following arguments are supported in the `worker_nodes` configuration block:
+-> **NOTE:** Available in 1.58.0+.
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `id` - ID of the node.
-* `name` - Node name.
-* `private_ip` - The private IP address of node.
-* `role` - (Deprecated from version 1.9.4)
-
-### Block Connections
-
-The following arguments are supported in the `connections` configuration block:
-
-* `api_server_internet` - API Server Internet endpoint.
-* `api_server_intranet` - API Server Intranet endpoint.
-* `master_public_ip` - Master node SSH IP address.
-* `service_domain` - Service Access Domain.
+* `create` - (Defaults to 90 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status).
+* `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.
+* `delete` - (Defaults to 60 mins) Used when terminating the kubernetes cluster.
 
 ## Import
 

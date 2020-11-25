@@ -33,6 +33,8 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 -> **NOTE:** From version 1.75.0, Some parameters have been removed from resource,You can check them below and re-import the cluster if necessary.
 
+-> **NOTE:** From version 1.101.0+, We supported the `professional managed clusters(ack-pro)`, You can create a pro cluster by setting the the value of `cluster_spec`.
+
 ## Example Usage
 
 ```terraform
@@ -367,6 +369,8 @@ variable "cluster_addons" {
 
 ### Computed params (No need to configure)
 
+You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.104.1, we've written it to tf state file. For more information, see `certificate_authority`.
+
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
@@ -385,15 +389,7 @@ variable "cluster_addons" {
   * `type` - Type of collecting logs, only `SLS` are supported currently.
   * `project` - Log Service project name, cluster logs will output to this project.
 * `cluster_network_type` - (Optional) The network that cluster uses, use `flannel` or `terway`.
-  
-### Timeouts
 
--> **NOTE:** Available in 1.58.0+.
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 90 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status).
-* `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.
-* `delete` - (Defaults to 60 mins) Used when terminating the kubernetes cluster.
 
 ## Attributes Reference
 
@@ -406,29 +402,36 @@ The following attributes are exported:
 * `slb_intranet` - The ID of private load balancer where the current cluster master node is located.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
-* `master_nodes` - List of cluster master nodes. It contains several attributes to `Block Nodes`.
-* `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
-* `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
+* `master_nodes` - List of cluster master nodes.
+  * `id` - ID of the node.
+  * `name` - Node name.
+  * `private_ip` - The private IP address of node.
+  * `role` - (Deprecated from version 1.9.4)
+* `worker_nodes` - List of cluster worker nodes.
+  * `id` - ID of the node.
+  * `name` - Node name.
+  * `private_ip` - The private IP address of node.
+  * `role` - (Deprecated from version 1.9.4)
+* `connections` - Map of kubernetes cluster connection information.
+  * `api_server_internet` - API Server Internet endpoint.
+  * `api_server_intranet` - API Server Intranet endpoint.
+  * `master_public_ip` - Master node SSH IP address.
+  * `service_domain` - Service Access Domain.
 * `version` - The Kubernetes server version for the cluster.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
+* `certificate_authority` - (Available in 1.104.1+) Nested attribute containing certificate-authority-data for your cluster. It contains several attributes to `certificate_authority`.
+  * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
+  * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
+  * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
 
-### Block Nodes
+## Timeouts
 
-The following arguments are supported in the `worker_nodes` configuration block:
+-> **NOTE:** Available in 1.58.0+.
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `id` - ID of the node.
-* `name` - Node name.
-* `private_ip` - The private IP address of node.
-* `role` - (Deprecated from version 1.9.4)
-
-### Block Connections
-
-The following arguments are supported in the `connections` configuration block:
-
-* `api_server_internet` - API Server Internet endpoint.
-* `api_server_intranet` - API Server Intranet endpoint.
-* `master_public_ip` - Master node SSH IP address.
-* `service_domain` - Service Access Domain.
+* `create` - (Defaults to 90 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status).
+* `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.
+* `delete` - (Defaults to 60 mins) Used when terminating the kubernetes cluster.
 
 ## Import
 

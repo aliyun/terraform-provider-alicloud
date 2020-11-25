@@ -261,6 +261,26 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			// computed parameters start
+			"certificate_authority": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cluster_cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_key": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 			"connections": {
 				Type:     schema.TypeMap,
 				Computed: true,
