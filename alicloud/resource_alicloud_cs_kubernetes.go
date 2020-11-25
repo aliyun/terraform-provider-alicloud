@@ -1731,7 +1731,5 @@ func flattenAlicloudCSCertificate(certificate *cs.ClusterConfig) map[string]stri
 	m["client_cert"] = kubeConfig["users"].([]interface{})[0].(map[interface{}]interface{})["user"].(map[interface{}]interface{})["client-certificate-data"].(string)
 	m["client_key"] = kubeConfig["users"].([]interface{})[0].(map[interface{}]interface{})["user"].(map[interface{}]interface{})["client-key-data"].(string)
 
-	log.Printf("[DEBUG] m: %#v\n", m)
-
 	return m
 }
