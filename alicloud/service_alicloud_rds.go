@@ -628,8 +628,8 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 	logBackupRetentionPeriod := ""
 	if v, ok := d.GetOk("log_backup_retention_period"); ok && v.(int) != 0 {
 		logBackupRetentionPeriod = strconv.Itoa(v.(int))
-	} else {
-		logBackupRetentionPeriod = strconv.Itoa(d.Get("log_retention_period").(int))
+	} else if v, ok := d.GetOk("log_retention_period"); ok && v.(int) != 0 {
+		logBackupRetentionPeriod = strconv.Itoa(v.(int))
 	}
 
 	localLogRetentionHours := ""
