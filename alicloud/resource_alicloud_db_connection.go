@@ -84,11 +84,10 @@ func resourceAlicloudDBConnectionCreate(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	err = resource.Retry(8*time.Minute, func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) || IsEOFError(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -173,7 +172,6 @@ func resourceAlicloudDBConnectionUpdate(d *schema.ResourceData, meta interface{}
 		request["ConnectionStringPrefix"] = parts[1]
 		request["Port"] = d.Get("port")
 		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		conn, err := client.NewRdsClient()
 		if err != nil {
 			return WrapError(err)
@@ -181,7 +179,7 @@ func resourceAlicloudDBConnectionUpdate(d *schema.ResourceData, meta interface{}
 		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, OperationDeniedDBStatus) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) || IsEOFError(err) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -221,7 +219,6 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		object, err := rdsService.DescribeDBConnection(d.Id())
 		if err != nil {
@@ -230,7 +227,7 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 		request["CurrentConnectionString"] = object["ConnectionString"]
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
+			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) || IsEOFError(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

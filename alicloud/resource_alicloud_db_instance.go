@@ -14,7 +14,6 @@ import (
 
 	"strconv"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -264,7 +263,9 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapError(err)
 	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
@@ -391,7 +392,9 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			"ClientToken":  buildClientToken(action),
 			"SourceIp":     client.SourceIp,
 		}
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -407,7 +410,9 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			"ClientToken":             buildClientToken(action),
 			"SourceIp":                client.SourceIp,
 		}
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -589,11 +594,10 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InvalidOrderTask.NotSupport"}) {
+				if IsExpectedErrors(err, []string{"InvalidOrderTask.NotSupport"}) || IsEOFError(err) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -687,12 +691,12 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	} else if len(slaveZones) == 1 {
 		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
 	}
-	if sqlCollectorPolicy.SQLCollectorStatus == "Enable" {
+	if sqlCollectorPolicy["SQLCollectorStatus"] == "Enable" {
 		d.Set("sql_collector_status", "Enabled")
 	} else {
-		d.Set("sql_collector_status", sqlCollectorPolicy.SQLCollectorStatus)
+		d.Set("sql_collector_status", sqlCollectorPolicy["SQLCollectorStatus"])
 	}
-	configValue, err := strconv.Atoi(sqlCollectorRetention.ConfigValue)
+	configValue, err := strconv.Atoi(sqlCollectorRetention["ConfigValue"].(string))
 	if err != nil {
 		return WrapError(err)
 	}
@@ -703,22 +707,28 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if instance["PayType"] == string(Prepaid) {
-		request := rds.CreateDescribeInstanceAutoRenewalAttributeRequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = d.Id()
-
-		raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.DescribeInstanceAutoRenewalAttribute(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		action := "DescribeInstanceAutoRenewalAttribute"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+			"SourceIp":     client.SourceIp,
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*rds.DescribeInstanceAutoRenewalAttributeResponse)
-		if response != nil && len(response.Items.Item) > 0 {
-			renew := response.Items.Item[0]
-			d.Set("auto_renew", renew.AutoRenew == "True")
-			d.Set("auto_renew_period", renew.Duration)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		conn, err := client.NewRdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		items := response["Items"].(map[string]interface{})["Item"].([]interface{})
+		if response != nil && len(items) > 0 {
+			renew := items[0].(map[string]interface{})
+			d.Set("auto_renew", renew["AutoRenew"] == "True")
+			d.Set("auto_renew_period", renew["Duration"])
 		}
 		period, err := computePeriodByUnit(instance["CreationTime"], instance["ExpireTime"], d.Get("period").(int), "Month")
 		if err != nil {
@@ -738,14 +748,14 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
 		return WrapError(err)
 	}
-	d.Set("ssl_status", sslAction.RequireUpdate)
+	d.Set("ssl_status", sslAction["RequireUpdate"])
 	d.Set("ssl_action", d.Get("ssl_action"))
 
 	tdeInfo, err := rdsService.DescribeRdsTDEInfo(d.Id())
 	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
 		return WrapError(err)
 	}
-	d.Set("tde_Status", tdeInfo.TDEStatus)
+	d.Set("tde_Status", tdeInfo["TDEStatus"])
 
 	return nil
 }
@@ -775,11 +785,10 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil && !NotFoundError(err) {
-			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}) {
+			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}) || IsEOFError(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
