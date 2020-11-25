@@ -188,8 +188,6 @@ func resourceAliyunNetworkAclEntriesUpdate(d *schema.ResourceData, meta interfac
 	request := vpc.CreateUpdateNetworkAclEntriesRequest()
 	request.RegionId = client.RegionId
 	request.NetworkAclId = networkAclId
-	request.UpdateIngressAclEntries = requests.NewBoolean(true)
-	request.UpdateEgressAclEntries = requests.NewBoolean(true)
 	if d.HasChange("ingress") {
 		ingress := []vpc.UpdateNetworkAclEntriesIngressAclEntries{}
 		for _, e := range d.Get("ingress").([]interface{}) {
