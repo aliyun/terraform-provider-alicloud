@@ -107,9 +107,10 @@ The following arguments are supported:
 * `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
 * `worker_data_disks` - (Optional) The data disk configurations of worker nodes, such as the disk type and disk size.
   * `category`: the type of the data disks. Valid values:
-    * cloud: basic disks.
-    * cloud_efficiency: ultra disks.
-    * cloud_ssd: SSDs.
+      * cloud : basic disks.
+      * cloud_efficiency : ultra disks.
+      * cloud_ssd : SSDs.
+      * cloud_essd : ESSDs.
   * `size`: the size of a data disk. Unit: GiB.
   * `encrypted`: specifies whether to encrypt data disks. Valid values: true and false.
 * `install_cloud_monitor` - (Optional) Install cloud monitor agent on ECS. default: `true`.
@@ -187,18 +188,12 @@ variable "cluster_addons" {
 
 ### Computed params (No need to configure)
 
+You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.104.1, we've written it to tf state file. For more information, see `certificate_authority`.
+
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
-
-### Timeouts
-
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 60 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status). 
-* `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.
-* `delete` - (Defaults to 60 mins) Used when terminating the kubernetes cluster. 
 
 ## Attributes Reference
 
@@ -211,17 +206,24 @@ The following attributes are exported:
 * `slb_intranet` - The ID of private load balancer where the current cluster master node is located.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
-* `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
+* `worker_nodes` - List of cluster worker nodes.
+  * `id` - ID of the node.
+  * `name` - Node name.
+  * `private_ip` - The private IP address of node.
 * `version` - The Kubernetes server version for the cluster.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
+* `certificate_authority` - (Available in 1.104.1+) Nested attribute containing certificate-authority-data for your cluster. It contains several attributes to `certificate_authority`.
+  * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
+  * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
+  * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
 
-### Block Nodes
+## Timeouts
 
-The following arguments are supported in the `worker_nodes` configuration block:
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `id` - ID of the node.
-* `name` - Node name.
-* `private_ip` - The private IP address of node.
+* `create` - (Defaults to 60 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status). 
+* `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.
+* `delete` - (Defaults to 60 mins) Used when terminating the kubernetes cluster. 
 
 ## Import
 

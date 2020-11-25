@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -13,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 
 	"strconv"
@@ -24,6 +24,7 @@ import (
 	aliyungoecs "github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -504,6 +505,26 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"cluster_ca_cert": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"certificate_authority": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cluster_cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_key": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
 			},
 			"connections": {
 				Type:     schema.TypeMap,
@@ -1020,6 +1041,25 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	var masterNodes []map[string]interface{}
 	var workerNodes []map[string]interface{}
+	var defaultNodePoolId string
+	var nodePoolDetails interface{}
+	// get the default nodepool id
+	if err := invoker.Run(func() error {
+		var err error
+		nodePoolDetails, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			nodePools, err := csClient.DescribeClusterNodePools(d.Id())
+			return *nodePools, err
+		})
+		return err
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
+	}
+
+	for _, v := range nodePoolDetails.([]cs.NodePoolDetail) {
+		if v.BasicNodePool.NodePoolInfo.Name == "default-nodepool" {
+			defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
+		}
+	}
 
 	pageNumber := 1
 	for {
@@ -1030,7 +1070,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		if err := invoker.Run(func() error {
 			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 				requestInfo = csClient
-				nodes, paginationResult, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}, "")
+				nodes, paginationResult, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}, defaultNodePoolId)
 				return []interface{}{nodes, paginationResult}, err
 			})
 			response = raw
@@ -1052,7 +1092,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 				if err := invoker.Run(func() error {
 					raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 						requestInfo = csClient
-						nodes, _, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}, "")
+						nodes, _, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}, defaultNodePoolId)
 						return nodes, err
 					})
 					response = raw
@@ -1116,51 +1156,23 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("worker_nodes", workerNodes)
 	d.Set("worker_number", int64(len(workerNodes)))
 
-	// Get slb information
+	// Get slb information and set connect
 	connection := make(map[string]string)
-
-	if len(masterNodes) != 0 {
-		request := slb.CreateDescribeLoadBalancersRequest()
-		request.ServerId = masterNodes[0]["id"].(string)
-
-		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DescribeLoadBalancers(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		lbs, _ := raw.(*slb.DescribeLoadBalancersResponse)
-		for _, lb := range lbs.LoadBalancers.LoadBalancer {
-			if strings.ToLower(lb.AddressType) == strings.ToLower(string(Internet)) {
-				d.Set("slb_internet", lb.LoadBalancerId)
-				connection["api_server_internet"] = fmt.Sprintf("https://%s:6443", lb.Address)
-				connection["master_public_ip"] = lb.Address
-			} else {
-				d.Set("slb_intranet", lb.LoadBalancerId)
-				connection["api_server_intranet"] = fmt.Sprintf("https://%s:6443", lb.Address)
-
-				reqVpc := vpc.CreateDescribeEipAddressesRequest()
-				reqVpc.AssociatedInstanceId = lb.LoadBalancerId
-				reqVpc.AssociatedInstanceType = "SlbInstance"
-				raw, err = client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-					return vpcClient.DescribeEipAddresses(reqVpc)
-				})
-				eip, _ := raw.(*vpc.DescribeEipAddressesResponse)
-				if eip != nil && len(eip.EipAddresses.EipAddress) > 0 {
-					eipAddr := eip.EipAddresses.EipAddress[0].IpAddress
-					connection["master_public_ip"] = eipAddr
-					connection["api_server_internet"] = fmt.Sprintf("https://%s:6443", eipAddr)
-				}
-			}
-		}
-	}
-
+	masterURL := object.MasterURL
+	endPoint := make(map[string]string)
+	_ = json.Unmarshal([]byte(masterURL), &endPoint)
+	connection["api_server_internet"] = endPoint["api_server_endpoint"]
+	connection["api_server_intranet"] = endPoint["intranet_api_server_endpoint"]
+	connection["master_public_ip"] = strings.Split(strings.Split(endPoint["api_server_endpoint"], ":")[1], "/")[2]
 	if object.Profile != EdgeProfile {
 		connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", d.Id(), object.RegionId)
 	}
 
 	d.Set("connections", connection)
+	d.Set("slb_internet", connection["master_public_ip"])
+	d.Set("slb_intranet", strings.Split(strings.Split(endPoint["intranet_api_server_endpoint"], ":")[1], "/")[2])
+
+	// set nat gateway
 	natRequest := vpc.CreateDescribeNatGatewaysRequest()
 	natRequest.VpcId = object.VpcId
 	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
@@ -1175,6 +1187,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("nat_gateway_id", nat.NatGateways.NatGateway[0].NatGatewayId)
 	}
 
+	// get cluster conn certs
 	var requestInfo *cs.Client
 	var response interface{}
 	if err := invoker.Run(func() error {
@@ -1193,6 +1206,8 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		addDebug("GetClusterCerts", response, requestInfo, requestMap)
 	}
 	cert, _ := response.(cs.ClusterCerts)
+
+	// write cluster conn authority to local file
 	if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
 		if err := writeToFile(ce.(string), cert.Cert); err != nil {
 			return WrapError(err)
@@ -1209,28 +1224,33 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	var config cs.ClusterConfig
-	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		if err := invoker.Run(func() error {
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				requestInfo = csClient
-				return csClient.GetClusterConfig(d.Id())
-			})
-			response = raw
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterConfig", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			requestMap := make(map[string]interface{})
-			requestMap["Id"] = d.Id()
-			addDebug("GetClusterConfig", response, requestInfo, requestMap)
-		}
-		config, _ = response.(cs.ClusterConfig)
+	var config *cs.ClusterConfig
+	if err := invoker.Run(func() error {
+		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			requestInfo = csClient
+			return csClient.DescribeClusterUserConfig(d.Id(), false)
+		})
+		response = raw
+		return err
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterConfig", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["Id"] = d.Id()
+		addDebug("GetClusterConfig", response, requestInfo, requestMap)
+	}
+	config, _ = response.(*cs.ClusterConfig)
 
+	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
 		if err := writeToFile(file.(string), config.Config); err != nil {
 			return WrapError(err)
 		}
+	}
+
+	// write cluster conn authority to tf state
+	if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(config)); err != nil {
+		return fmt.Errorf("error setting certificate_authority: %s", err)
 	}
 
 	return nil
@@ -1696,4 +1716,22 @@ func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, 
 	d.SetPartial("worker_number")
 
 	return allHostName[len(allHostName)-count:], nil
+}
+
+func flattenAlicloudCSCertificate(certificate *cs.ClusterConfig) map[string]string {
+	if certificate == nil {
+		return map[string]string{}
+	}
+
+	kubeConfig := make(map[string]interface{})
+	_ = yaml.Unmarshal([]byte(certificate.Config), &kubeConfig)
+
+	m := make(map[string]string)
+	m["cluster_cert"] = kubeConfig["clusters"].([]interface{})[0].(map[interface{}]interface{})["cluster"].(map[interface{}]interface{})["certificate-authority-data"].(string)
+	m["client_cert"] = kubeConfig["users"].([]interface{})[0].(map[interface{}]interface{})["user"].(map[interface{}]interface{})["client-certificate-data"].(string)
+	m["client_key"] = kubeConfig["users"].([]interface{})[0].(map[interface{}]interface{})["user"].(map[interface{}]interface{})["client-key-data"].(string)
+
+	log.Printf("[DEBUG] m: %#v\n", m)
+
+	return m
 }
