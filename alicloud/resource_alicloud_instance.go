@@ -266,7 +266,16 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if PostPaidDiffSuppressFunc(k, old, new, d) {
+						return true
+					}
+					o, n := d.GetChange("period")
+					if o != nil && n != nil && o.(int) != n.(int) {
+						return true
+					}
+					return false
+				},
 			},
 			"period_unit": {
 				Type:             schema.TypeString,
