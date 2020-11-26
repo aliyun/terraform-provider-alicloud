@@ -98,6 +98,7 @@ type Config struct {
 	ActiontrailEndpoint     string
 	ConfigEndpoint          string
 	FnfEndpoint             string
+	RosEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {
