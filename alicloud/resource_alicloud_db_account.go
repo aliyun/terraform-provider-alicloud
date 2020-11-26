@@ -100,7 +100,7 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 		}
 		request["AccountPassword"] = decryptResp.Plaintext
 	}
-	if v, ok := d.GetOk("AccountType"); ok {
+	if v, ok := d.GetOk("type"); ok {
 		request["AccountType"] = v
 	}
 	// Description will not be set when account type is normal and it is a API bug
