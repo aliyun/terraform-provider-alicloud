@@ -16,8 +16,9 @@ import (
 
 func init() {
 	resource.AddTestSweepers("alicloud_fnf_flow", &resource.Sweeper{
-		Name: "alicloud_fnf_flow",
-		F:    testSweepFnfFlow,
+		Name:         "alicloud_fnf_flow",
+		F:            testSweepFnfFlow,
+		Dependencies: []string{"alicloud_fnf_schedule"},
 	})
 }
 
@@ -97,6 +98,7 @@ func TestAccAlicloudFnfFlow_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.FnfSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -107,14 +109,14 @@ func TestAccAlicloudFnfFlow_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"definition":  `version: v1beta1\ntype: flow\nsteps:\n  - type: pass\n    name: helloworld`,
 					"description": "tf-testaccFnFFlow983041",
-					"name":        "tf-testaccFnFFlow983041",
+					"name":        "${var.name}",
 					"type":        "FDL",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"definition":  strings.Replace(`version: v1beta1\ntype: flow\nsteps:\n  - type: pass\n    name: helloworld`, `\n`, "\n", -1),
 						"description": "tf-testaccFnFFlow983041",
-						"name":        "tf-testaccFnFFlow983041",
+						"name":        name,
 						"type":        "FDL",
 					}),
 				),

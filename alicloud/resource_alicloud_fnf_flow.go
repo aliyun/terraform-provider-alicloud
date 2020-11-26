@@ -89,13 +89,13 @@ func resourceAlicloudFnfFlowCreate(d *schema.ResourceData, meta interface{}) err
 			return resource.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
-
-		d.SetId(fmt.Sprint(response["Name"]))
 		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fnf_flow", action, AlibabaCloudSdkGoERROR)
 	}
+
+	d.SetId(fmt.Sprint(response["Name"]))
 
 	return resourceAlicloudFnfFlowRead(d, meta)
 }

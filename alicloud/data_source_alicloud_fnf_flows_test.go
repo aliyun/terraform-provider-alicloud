@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestAccAlicloudFnfFlowsDataSource(t *testing.T) {
 			"flows.#":             "1",
 			"flows.0.definition":  strings.Replace(`version: v1beta1\ntype: flow\nsteps:\n  - type: pass\n    name: helloworld`, `\n`, "\n", -1),
 			"flows.0.description": `tf-testaccFnFFlow983041`,
-			"flows.0.name":        `tf-testaccFnFFlow983041`,
+			"flows.0.name":        CHECKSET,
 			"flows.0.role_arn":    CHECKSET,
 			"flows.0.type":        `FDL`,
 		}
@@ -59,7 +60,11 @@ func TestAccAlicloudFnfFlowsDataSource(t *testing.T) {
 		existMapFunc: existAlicloudFnfFlowsDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudFnfFlowsDataSourceNameMapFunc,
 	}
-	alicloudFnfFlowsCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
+
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.FnfSupportRegions)
+	}
+	alicloudFnfFlowsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudFnfFlowsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -95,7 +100,7 @@ resource "alicloud_ram_role" "default" {
 resource "alicloud_fnf_flow" "default" {
 definition = "version: v1beta1\ntype: flow\nsteps:\n  - type: pass\n    name: helloworld"
 description = "tf-testaccFnFFlow983041"
-name = "tf-testaccFnFFlow983041"
+name = var.name
 role_arn = "${alicloud_ram_role.default.arn}"
 type = "FDL"
 }
