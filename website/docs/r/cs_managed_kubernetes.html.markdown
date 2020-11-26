@@ -364,7 +364,7 @@ variable "cluster_addons" {
 
 ### Computed params (No need to configure)
 
-You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.104.1, we've written it to tf state file. For more information, see `certificate_authority`.
+You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.105.0, we've written it to tf state file. About its use，see export attribute certificate_authority.
 
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
@@ -407,6 +407,10 @@ The following attributes are exported:
   * `service_domain` - Service Access Domain.
 * `version` - The Kubernetes server version for the cluster.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
+* `certificate_authority` - (Available in 1.105.0+) Nested attribute containing certificate authority data for your cluster.
+  * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
+  * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
+  * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
 
 ## Timeouts
 
