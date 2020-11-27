@@ -196,6 +196,11 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"scaling_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -458,6 +463,7 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("image_id", object.ImageId)
 	d.Set("node_name_mode", object.NodeNameMode)
 	d.Set("user_data", object.UserData)
+	d.Set("scaling_group_id", object.ScalingGroupId)
 
 	if sg, ok := d.GetOk("max"); ok && sg.(string) != "" {
 		d.Set("max", object.MaxInstance)
