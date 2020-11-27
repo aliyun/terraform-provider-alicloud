@@ -125,10 +125,11 @@ func (s *VpcService) DescribeVpcWithTeadsl(id string) (object map[string]interfa
 		"RegionId": s.client.RegionId,
 		"VpcId":    id,
 	}
-
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidVpcID.NotFound", "Forbidden.VpcNotFound"}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
