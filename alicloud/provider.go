@@ -337,6 +337,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_route_services":                    dataSourceAlicloudCenRouteServices(),
 			"alicloud_kvstore_accounts":                      dataSourceAlicloudKvstoreAccounts(),
 			"alicloud_cms_group_metric_rules":                dataSourceAlicloudCmsGroupMetricRules(),
+			"alicloud_fnf_flows":                             dataSourceAlicloudFnfFlows(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -595,6 +596,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_actiontrail":                         resourceAlicloudActiontrailTrail(),
 			"alicloud_alidns_domain":                       resourceAlicloudAlidnsDomain(),
 			"alicloud_alidns_instance":                     resourceAlicloudAlidnsInstance(),
+			"alicloud_edas_k8s_application":                resourceAlicloudEdasK8sApplication(),
 			"alicloud_config_rule":                         resourceAlicloudConfigRule(),
 			"alicloud_config_configuration_recorder":       resourceAlicloudConfigConfigurationRecorder(),
 			"alicloud_config_delivery_channel":             resourceAlicloudConfigDeliveryChannel(),
@@ -603,6 +605,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kvstore_connection":                  resourceAlicloudKvstoreConnection(),
 			"alicloud_cms_alarm_contact_group":             resourceAlicloudCmsAlarmContactGroup(),
 			"alicloud_cms_group_metric_rule":               resourceAlicloudCmsGroupMetricRule(),
+			"alicloud_fnf_flow":                            resourceAlicloudFnfFlow(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -745,6 +748,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.MseEndpoint = strings.TrimSpace(endpoints["mse"].(string))
 		config.ConfigEndpoint = strings.TrimSpace(endpoints["config"].(string))
 		config.RKvstoreEndpoint = strings.TrimSpace(endpoints["r_kvstore"].(string))
+		config.FnfEndpoint = strings.TrimSpace(endpoints["fnf"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -937,6 +941,8 @@ func init() {
 		"config_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom config endpoints.",
 
 		"r_kvstore_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom r_kvstore endpoints.",
+
+		"fnf_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom fnf endpoints.",
 	}
 }
 
@@ -981,6 +987,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"fnf": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["fnf_endpoint"],
+				},
+
 				"r_kvstore": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1379,6 +1392,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["mse"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["config"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["r_kvstore"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["fnf"].(string)))
 	return hashcode.String(buf.String())
 }
 

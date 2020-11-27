@@ -174,6 +174,14 @@ func TestAccAlicloudRamRole_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccRamRoleMaxSessionDurationConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_session_duration": "7200",
+					}),
+				),
+			},
 		},
 	})
 }
@@ -235,6 +243,34 @@ func testAccRamRoleCreateConfig(rand int) string {
 	  force = true
 	}`, defaultRegionToTest, rand)
 }
+
+func testAccRamRoleMaxSessionDurationConfig(rand int) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_role" "default" {
+	  name = "tf-testAcc%sRamRoleConfig-%d"
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "apigateway.aliyuncs.com", 
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
+	  description = "this is a test"
+	  force = true
+	  max_session_duration = 7200
+	}`, defaultRegionToTest, rand)
+}
+
 func testAccRamRoleNameConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_role" "default" {

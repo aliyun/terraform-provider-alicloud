@@ -105,3 +105,5 @@ var HBaseClassicSupportedRegions = []Region{Hangzhou, Beijing, Shanghai, Shenzhe
 var EdasSupportedRegions = []Region{Hangzhou, Beijing, Shanghai, Shenzhen, Zhangjiakou, Qingdao, Hongkong}
 var CloudConfigSupportedRegions = []Region{Shanghai, APSouthEast1}
 var DBReadwriteSplittingConnectionSupportedRegions = []Region{APSouthEast1}
+var KVstoreClassicNetworkInstanceSupportRegions = []Region{}
+var FnfSupportRegions = []Region{Hangzhou, Beijing, Shanghai, Shenzhen, USWest1}

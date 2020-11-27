@@ -72,7 +72,7 @@ func resourceAlicloudDBAccountPrivilegeCreate(d *schema.ResourceData, meta inter
 		for _, db := range dbList {
 			if err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 				if err := rdsService.GrantAccountPrivilege(d.Id(), db.(string)); err != nil {
-					if IsExpectedErrors(err, OperationDeniedDBStatus) {
+					if IsExpectedErrors(err, OperationDeniedDBStatus) || IsEOFError(err) {
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)

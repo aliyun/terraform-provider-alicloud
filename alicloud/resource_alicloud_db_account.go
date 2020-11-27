@@ -100,7 +100,7 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 		}
 		request["AccountPassword"] = decryptResp.Plaintext
 	}
-	if v, ok := d.GetOk("AccountType"); ok {
+	if v, ok := d.GetOk("type"); ok {
 		request["AccountType"] = v
 	}
 	// Description will not be set when account type is normal and it is a API bug
@@ -116,12 +116,10 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) || IsEOFError(err) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}

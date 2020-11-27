@@ -107,6 +107,7 @@ groups:
       - Config
       - Alidns
       - NetworkAcl
+      - Fnf
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -137,6 +138,7 @@ groups:
       - CR
       # Function Compute
       - FC
+      - Fnf
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -1387,6 +1389,19 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "NetworkAcl"
+
+  - name: Fnf
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 1330
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Fnf"
 
   - name: SweeperAfter
     plan:

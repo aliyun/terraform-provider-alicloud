@@ -243,21 +243,16 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"zone_id":    "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
 					"vswitch_id": "${data.alicloud_vswitches.update.ids.0}",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"zone_id":    CHECKSET,
 						"vswitch_id": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_release_protection": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_release_protection": "true",
 					}),
 				),
 			},
@@ -297,6 +292,16 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_release_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_release_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":              "redis.master.small.default",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -319,6 +324,11 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 					"backup_period":             []string{"Wednesday"},
 					"backup_time":               "11:00Z-12:00Z",
 					"private_connection_prefix": "privateconnectionstringprefixupdate",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -430,16 +440,17 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"engine_version": "4.0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"engine_version": "4.0",
-					}),
-				),
-			},
+			// Currently, the memcache only support version 2.8
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"engine_version": "4.0",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"engine_version": "4.0",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -474,21 +485,16 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"zone_id":    "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
 					"vswitch_id": "${data.alicloud_vswitches.update.ids.0}",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"zone_id":    CHECKSET,
 						"vswitch_id": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_release_protection": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_release_protection": "true",
 					}),
 				),
 			},
@@ -528,6 +534,16 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_release_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_release_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":              "memcache.master.small.default",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -545,6 +561,11 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 					"backup_period":             []string{"Wednesday"},
 					"backup_time":               "11:00Z-12:00Z",
 					"private_connection_prefix": "privateconnectionstringprefix1update",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -586,6 +607,7 @@ func TestAccAlicloudKVStoreRedisInstance_classictest(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.KVstoreClassicNetworkInstanceSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -801,6 +823,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_classictest(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.KVstoreClassicNetworkInstanceSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1046,6 +1069,7 @@ func TestAccAlicloudKVStoreRedisInstance_classicmulti(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.KVstoreClassicNetworkInstanceSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

@@ -98,7 +98,6 @@ func resourceAlicloudDBReadWriteSplittingConnectionCreate(d *schema.ResourceData
 		}
 	}
 	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	conn, err := client.NewRdsClient()
 	if err != nil {
 		return WrapError(err)
@@ -106,7 +105,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionCreate(d *schema.ResourceData
 	if err := resource.Retry(60*time.Minute, func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, DBReadInstanceNotReadyStatus) {
+			if IsExpectedErrors(err, DBReadInstanceNotReadyStatus) || IsEOFError(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -238,11 +237,10 @@ func resourceAlicloudDBReadWriteSplittingConnectionUpdate(d *schema.ResourceData
 			return WrapError(err)
 		}
 		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		if err := resource.Retry(30*time.Minute, func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, DBReadInstanceNotReadyStatus) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, DBReadInstanceNotReadyStatus) || IsEOFError(err) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -276,11 +274,10 @@ func resourceAlicloudDBReadWriteSplittingConnectionDelete(d *schema.ResourceData
 		return WrapError(err)
 	}
 	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	if err := resource.Retry(30*time.Minute, func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) || IsEOFError(err) {
 				return resource.RetryableError(err)
 			}
 			if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidRwSplitNetType.NotFound"}) {

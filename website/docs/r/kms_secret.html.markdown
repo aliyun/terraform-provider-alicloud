@@ -55,7 +55,8 @@ The following arguments are supported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when creating the KMS Secret. 
-
+* `update` - (Defaults to 1 mins, Available in 1.105.0+) Used when updating the KMS Secret. 
+* `delete` - (Defaults to 1 mins, Available in 1.105.0+) Used when deleting the KMS Secret. 
 
 ## Import
 
