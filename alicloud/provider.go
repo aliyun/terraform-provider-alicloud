@@ -338,6 +338,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_kvstore_accounts":                      dataSourceAlicloudKvstoreAccounts(),
 			"alicloud_cms_group_metric_rules":                dataSourceAlicloudCmsGroupMetricRules(),
 			"alicloud_fnf_flows":                             dataSourceAlicloudFnfFlows(),
+			"alicloud_fnf_schedules":                         dataSourceAlicloudFnfSchedules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -606,6 +607,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_alarm_contact_group":             resourceAlicloudCmsAlarmContactGroup(),
 			"alicloud_cms_group_metric_rule":               resourceAlicloudCmsGroupMetricRule(),
 			"alicloud_fnf_flow":                            resourceAlicloudFnfFlow(),
+			"alicloud_fnf_schedule":                        resourceAlicloudFnfSchedule(),
 		},
 
 		ConfigureFunc: providerConfigure,
