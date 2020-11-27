@@ -84,3 +84,4 @@ The following attributes are exported:
 * `connections` - Map of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
 * `version` - The Kubernetes server version for the cluster.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
+* `scaling_group_id` - (Available in 1.105.0+) Id of the Scaling Group.
