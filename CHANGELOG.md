@@ -1,40 +1,41 @@
-## 1.105.0 (Unreleased)
+## 1.106.0 (Unreleased)
+## 1.105.0 (November 28, 2020)
 
-- **New Resource:** `alicloud_fnf_schedule` [GH-3078]
-- **New Resource:** `alicloud_fnf_flow` [GH-3057]
-- **New Resource:** `alicloud_edas_k8s_application` [GH-3039]
-- **Data Source:** `alicloud_fnf_schedules` [GH-3078]
-- **Data Source:** `alicloud_fnf_flows` [GH-3057]
+- **New Resource:** `alicloud_fnf_schedule` ([#3078](https://github.com/aliyun/terraform-provider-alicloud/issues/3078))
+- **New Resource:** `alicloud_fnf_flow` ([#3057](https://github.com/aliyun/terraform-provider-alicloud/issues/3057))
+- **New Resource:** `alicloud_edas_k8s_application` ([#3039](https://github.com/aliyun/terraform-provider-alicloud/issues/3039))
+- **Data Source:** `alicloud_fnf_schedules` ([#3078](https://github.com/aliyun/terraform-provider-alicloud/issues/3078))
+- **Data Source:** `alicloud_fnf_flows` ([#3057](https://github.com/aliyun/terraform-provider-alicloud/issues/3057))
 
 IMPROVEMENTS:
 
-- resource/alicloud_cs_kubernetes_node_pool：supports outputing asg id [GH-3082]
-- test/alicloud_kvstore_instance_test: Not test upgrade 2.0 to 4.0 for memcache [GH-3077]
-- resource/alicloud_ram_role: add attribute max_session_duration [GH-3074]
-- Add support to create fnf_flow region for test case and adjust the samplevalue of name in testcase [GH-3073]
-- add fnf_flow ci test [GH-3071]
-- resource/alicloud_kvstore_instance: Skip test for classic network instance [GH-3069]
-- resource/alicloud_kms_secret: Add retry strategy for update and delete [GH-3068]
-- resource/mongodb_sharding_instance: add tags argument [GH-3061]
-- resource/waf_instance,waf_domain: upgrade to teadsl sdk [GH-3059]
-- resource/alicloud_kvstore_instance: Support modify private connection string [GH-3058]
-- Update sdk to 1.61.684 and compatible with cms_alarm attribute type [GH-3055]
-- add a method to check whether an error is EOF [GH-3054]
-- enlarge sdk connect timeout to avoid network error [GH-3052]
-- resource/alicloud_db_readwrite_splitting_connection:upgrade resource teadsl sdk [GH-3051]
-- update changelog [GH-3050]
-- resource/alicloud_hbase_instance: supports more resource attributes [GH-3035]
-- make sure LB is active before creating vgroups [GH-2700]
+- resource/alicloud_cs_kubernetes_node_pool：supports outputing asg id ([#3082](https://github.com/aliyun/terraform-provider-alicloud/issues/3082))
+- test/alicloud_kvstore_instance_test: Not test upgrade 2.0 to 4.0 for memcache ([#3077](https://github.com/aliyun/terraform-provider-alicloud/issues/3077))
+- resource/alicloud_ram_role: add attribute max_session_duration ([#3074](https://github.com/aliyun/terraform-provider-alicloud/issues/3074))
+- Add support to create fnf_flow region for test case and adjust the samplevalue of name in testcase ([#3073](https://github.com/aliyun/terraform-provider-alicloud/issues/3073))
+- add fnf_flow ci test ([#3071](https://github.com/aliyun/terraform-provider-alicloud/issues/3071))
+- resource/alicloud_kvstore_instance: Skip test for classic network instance ([#3069](https://github.com/aliyun/terraform-provider-alicloud/issues/3069))
+- resource/alicloud_kms_secret: Add retry strategy for update and delete ([#3068](https://github.com/aliyun/terraform-provider-alicloud/issues/3068))
+- resource/mongodb_sharding_instance: add tags argument ([#3061](https://github.com/aliyun/terraform-provider-alicloud/issues/3061))
+- resource/waf_instance,waf_domain: upgrade to teadsl sdk ([#3059](https://github.com/aliyun/terraform-provider-alicloud/issues/3059))
+- resource/alicloud_kvstore_instance: Support modify private connection string ([#3058](https://github.com/aliyun/terraform-provider-alicloud/issues/3058))
+- Update sdk to 1.61.684 and compatible with cms_alarm attribute type ([#3055](https://github.com/aliyun/terraform-provider-alicloud/issues/3055))
+- add a method to check whether an error is EOF ([#3054](https://github.com/aliyun/terraform-provider-alicloud/issues/3054))
+- enlarge sdk connect timeout to avoid network error ([#3052](https://github.com/aliyun/terraform-provider-alicloud/issues/3052))
+- resource/alicloud_db_readwrite_splitting_connection:upgrade resource teadsl sdk ([#3051](https://github.com/aliyun/terraform-provider-alicloud/issues/3051))
+- update changelog ([#3050](https://github.com/aliyun/terraform-provider-alicloud/issues/3050))
+- resource/alicloud_hbase_instance: supports more resource attributes ([#3035](https://github.com/aliyun/terraform-provider-alicloud/issues/3035))
+- make sure LB is active before creating vgroups ([#2700](https://github.com/aliyun/terraform-provider-alicloud/issues/2700))
 
 BUG FIXES:
 
-- resource/alicloud_db_instance: fix db eof error [GH-3081]
-- fix var name for account type in alicloud_db_account [GH-3076]
-- resource/alicloud_instance: fix the period diff error when auto_renew is true [GH-3072]
-- fix managedK8s connections return null, Detach the default node pool node and support: certificate_authority [GH-3070]
-- resource/alicloud_db_backup_policy: fix InvalidParameters error [GH-3067]
-- fix acl update only ingress or egress error [GH-3064]
-- fix rds teadsl setting autoretry and add `Post https` error retry [GH-3053]
+- resource/alicloud_db_instance: fix db eof error ([#3081](https://github.com/aliyun/terraform-provider-alicloud/issues/3081))
+- fix var name for account type in alicloud_db_account ([#3076](https://github.com/aliyun/terraform-provider-alicloud/issues/3076))
+- resource/alicloud_instance: fix the period diff error when auto_renew is true ([#3072](https://github.com/aliyun/terraform-provider-alicloud/issues/3072))
+- fix managedK8s connections return null, Detach the default node pool node and support: certificate_authority ([#3070](https://github.com/aliyun/terraform-provider-alicloud/issues/3070))
+- resource/alicloud_db_backup_policy: fix InvalidParameters error ([#3067](https://github.com/aliyun/terraform-provider-alicloud/issues/3067))
+- fix acl update only ingress or egress error ([#3064](https://github.com/aliyun/terraform-provider-alicloud/issues/3064))
+- fix rds teadsl setting autoretry and add `Post https` error retry ([#3053](https://github.com/aliyun/terraform-provider-alicloud/issues/3053))
 
 ## 1.104.0 (November 20, 2020)
 

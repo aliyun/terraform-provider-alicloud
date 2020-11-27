@@ -29,6 +29,7 @@ require (
 	github.com/keybase/go-crypto v0.0.0-20190416182011-b785b22cc757 // indirect
 	github.com/klauspost/compress v0.0.0-20180801095237-b50017755d44 // indirect
 	github.com/klauspost/cpuid v1.2.0 // indirect
+	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.0 // indirect
