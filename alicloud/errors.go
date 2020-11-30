@@ -207,6 +207,18 @@ func NeedRetry(err error) bool {
 	return false
 }
 
+func IsExpectedErrorCodes(code string, errorCodes []string) bool {
+	if code == "" {
+		return false
+	}
+	for _, v := range errorCodes {
+		if v == code {
+			return true
+		}
+	}
+	return false
+}
+
 func IsThrottling(err error) bool {
 	if err == nil {
 		return false

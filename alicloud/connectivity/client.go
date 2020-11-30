@@ -159,6 +159,7 @@ type AliyunClient struct {
 	onsConn                      *ons.Client
 	cmsConn                      *cms.Client
 	r_kvstoreConn                *r_kvstore.Client
+	maxcomputeConn               *maxcompute.Client
 }
 
 type ApiVersion string
@@ -1736,40 +1737,6 @@ func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, err
 	return do(client.cbnConn)
 }
 
-func (client *AliyunClient) WithMaxComputeClient(do func(*maxcompute.Client) (interface{}, error)) (interface{}, error) {
-	goSdkMutex.Lock()
-	defer goSdkMutex.Unlock()
-
-	// Initialize the MaxCompute client if necessary
-	if client.maxcomputeconn == nil {
-		endpoint := client.config.MaxComputeEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, MAXCOMPUTECode)
-		}
-		if strings.HasPrefix(endpoint, "http") {
-			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
-		}
-		if endpoint == "" {
-			endpoint = "maxcompute.aliyuncs.com"
-		}
-
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(MAXCOMPUTECode), endpoint)
-		}
-		maxcomputeconn, err := maxcompute.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(false))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the MaxCompute client: %#v", err)
-		}
-
-		maxcomputeconn.AppendUserAgent(Terraform, terraformVersion)
-		maxcomputeconn.AppendUserAgent(Provider, providerVersion)
-		maxcomputeconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		client.maxcomputeconn = maxcomputeconn
-	}
-
-	return do(client.maxcomputeconn)
-}
-
 func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the edas client if necessary
 	if client.edasconn == nil {
@@ -2255,6 +2222,29 @@ func (client *AliyunClient) NewDcdnClient() (*rpc.Client, error) {
 			} else {
 				log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
 			}
+		}
+	}
+	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
+		endpoint = client.config.Endpoints[productCode].(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+
+func (client *AliyunClient) NewOdpsClient() (*rpc.Client, error) {
+	productCode := "odps"
+	endpoint := ""
+	if client.config.Endpoints[productCode] == nil {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
 		}
 	}
 	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {

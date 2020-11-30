@@ -14,6 +14,7 @@ import (
 type ServiceCode string
 
 const (
+	MaxcomputeCode      = ServiceCode("MAXCOMPUTE")
 	CmsCode             = ServiceCode("CMS")
 	RKvstoreCode        = ServiceCode("RKVSTORE")
 	OnsCode             = ServiceCode("ONS")

@@ -106,5 +106,6 @@ var EdasSupportedRegions = []Region{Hangzhou, Beijing, Shanghai, Shenzhen, Zhang
 var CloudConfigSupportedRegions = []Region{Shanghai, APSouthEast1}
 var DBReadwriteSplittingConnectionSupportedRegions = []Region{APSouthEast1}
 var KVstoreClassicNetworkInstanceSupportRegions = []Region{}
+var MaxComputeSupportRegions = []Region{}
 var FnfSupportRegions = []Region{Hangzhou, Beijing, Shanghai, Shenzhen, USWest1}
 var PrivateLinkRegions = []Region{EUCentral1}
