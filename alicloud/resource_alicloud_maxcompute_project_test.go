@@ -3,6 +3,8 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
@@ -15,6 +17,8 @@ func TestAccAlicloudMaxcompute_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			// Currently does not support creating projects with sub-accounts
+			testAccPreCheckWithRegions(t, true, connectivity.MaxComputeSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -23,7 +27,7 @@ func TestAccAlicloudMaxcompute_basic(t *testing.T) {
 				Config: testAccMaxcomputeConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":               name,
+						"project_name":       name,
 						"specification_type": "OdpsStandard",
 						"order_type":         "PayAsYouGo",
 					}),
@@ -41,7 +45,7 @@ func TestAccAlicloudMaxcompute_basic(t *testing.T) {
 
 const testAccMaxcomputeConfigBasic = `
 resource "alicloud_maxcompute_project" "default"{
-  name      = "tf_testAccMCProject"
+  project_name      = "tf_testAccWWQProject"
   specification_type = "OdpsStandard"
   order_type = "PayAsYouGo"
 }
@@ -56,6 +60,8 @@ func TestAccAlicloudMaxcompute_multi(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			// Currently does not support creating projects with sub-accounts
+			testAccPreCheckWithRegions(t, true, connectivity.MaxComputeSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -64,7 +70,7 @@ func TestAccAlicloudMaxcompute_multi(t *testing.T) {
 				Config: testAccMaxcomputeConfigMulti,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":               name + "4",
+						"project_name":       name + "4",
 						"specification_type": "OdpsStandard",
 						"order_type":         "PayAsYouGo",
 					}),
@@ -77,7 +83,7 @@ func TestAccAlicloudMaxcompute_multi(t *testing.T) {
 const testAccMaxcomputeConfigMulti = `
 resource "alicloud_maxcompute_project" "default"{
   count = "5"
-  name      = "tf_testAccMCProject${count.index}"
+  project_name      = "tf_testAccMCProject${count.index}"
   specification_type = "OdpsStandard"
   order_type = "PayAsYouGo"
 }

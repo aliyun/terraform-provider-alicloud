@@ -1,71 +1,49 @@
-// Package alicloud common functions used by maxcompute
 package alicloud
 
 import (
-	"strings"
-	"time"
+	"fmt"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/maxcompute"
+	"github.com/PaesslerAG/jsonpath"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-type MaxComputeService struct {
+type MaxcomputeService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *MaxComputeService) DescribeMaxComputeProject(id string) (*maxcompute.GetProjectResponse, error) {
-	response := &maxcompute.GetProjectResponse{}
-	request := maxcompute.CreateGetProjectRequest()
-
-	request.RegionName = s.client.RegionId
-	request.ProjectName = id
-
-	raw, err := s.client.WithMaxComputeClient(func(MaxComputeClient *maxcompute.Client) (interface{}, error) {
-		return MaxComputeClient.GetProject(request)
-	})
+func (s *MaxcomputeService) DescribeMaxcomputeProject(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewOdpsClient()
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_maxcompute_project", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response = raw.(*maxcompute.GetProjectResponse)
-
-	if response.Code != "200" {
-		if isProjectNotExistError(response.Data) {
-			return response, WrapErrorf(err, NotFoundMsg, AliyunMaxComputeSdkGo)
-		}
-
-		return response, WrapError(Error("%v", response))
+	action := "GetProject"
+	request := map[string]interface{}{
+		"RegionName":  s.client.RegionId,
+		"ProjectName": id,
 	}
-
-	return response, nil
-}
-
-func (s *MaxComputeService) WaitForMaxComputeProject(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-
-	for {
-		response, err := s.DescribeMaxComputeProject(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, response.Data, id, ProviderERROR)
-		}
-
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-12"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return
 	}
-}
-
-func isProjectNotExistError(data string) bool {
-	if strings.Contains(data, "Project not found") {
-		return true
+	addDebug(action, response, request)
+	if IsExpectedErrorCodes(fmt.Sprintf("%v", response["Code"]), []string{"102", "403"}) {
+		err = WrapErrorf(Error(GetNotFoundMessage("MaxcomputeProject", id)), NotFoundMsg, ProviderERROR)
+		return object, err
 	}
-
-	return false
+	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
+		err = Error("GetProject failed for " + response["Message"].(string))
+		return object, err
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }
