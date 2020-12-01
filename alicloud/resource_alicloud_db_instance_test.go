@@ -177,6 +177,21 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"parameters": []interface{}{
+						map[string]interface{}{
+							"name":  "delayed_insert_timeout",
+							"value": "70",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"maintain_time": "22:00Z-02:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -315,6 +330,12 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 					"instance_charge_type":       "Postpaid",
 					"security_group_ids":         []string{},
 					"auto_upgrade_minor_version": "Manual",
+					"parameters": []interface{}{
+						map[string]interface{}{
+							"name":  "delayed_insert_timeout",
+							"value": "70",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -334,6 +355,7 @@ func TestAccAlicloudDBInstanceMysql(t *testing.T) {
 						"security_group_id":          "",
 						"security_group_ids.#":       "0",
 						"auto_upgrade_minor_version": "Manual",
+						"parameters.#":               "1",
 					}),
 				),
 			},

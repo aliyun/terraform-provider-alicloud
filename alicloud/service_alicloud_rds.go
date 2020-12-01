@@ -1132,16 +1132,21 @@ func (s *RdsService) WaitForDBParameter(instanceId string, timeout int, expects 
 		if err != nil {
 			return WrapError(err)
 		}
-
 		var actuals = make(map[string]string)
 		dBInstanceParameters := object["RunningParameters"].(map[string]interface{})["DBInstanceParameter"].([]interface{})
 		for _, i := range dBInstanceParameters {
 			i := i.(map[string]interface{})
+			if i["ParameterName"] == nil || i["ParameterValue"] == nil {
+				continue
+			}
 			actuals[i["ParameterName"].(string)] = i["ParameterValue"].(string)
 		}
 		dBInstanceParameters = object["ConfigParameters"].(map[string]interface{})["DBInstanceParameter"].([]interface{})
 		for _, i := range dBInstanceParameters {
 			i := i.(map[string]interface{})
+			if i["ParameterName"] == nil || i["ParameterValue"] == nil {
+				continue
+			}
 			actuals[i["ParameterName"].(string)] = i["ParameterValue"].(string)
 		}
 
