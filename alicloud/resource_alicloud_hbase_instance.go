@@ -84,7 +84,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			"core_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.Any(validation.IntBetween(400, 8000), validation.IntInSlice([]int{0})),
+				ValidateFunc: validation.Any(validation.IntBetween(20, 8000), validation.IntInSlice([]int{0})),
 				Default:      400,
 			},
 			"pay_type": {
@@ -301,7 +301,7 @@ func resourceAlicloudHBaseInstanceCreate(d *schema.ResourceData, meta interface{
 	d.SetId(response.ClusterId)
 
 	stateConf := BuildStateConf([]string{Hb_LAUNCHING, Hb_CREATING}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutCreate),
-		10*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_CREATE_FAILED}))
+		5*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_CREATE_FAILED}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
@@ -530,25 +530,36 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("master_instance_type") || d.HasChange("core_instance_type") {
 		request := hbase.CreateModifyInstanceTypeRequest()
 		request.ClusterId = d.Id()
-		request.MasterInstanceType = d.Get("master_instance_type").(string)
-		request.CoreInstanceType = d.Get("core_instance_type").(string)
+		typeChange := false
+		if d.HasChange("master_instance_type") &&
+			d.Get("engine") != "bds" && d.Get("core_instance_quantity").(int) > 1 {
+			request.MasterInstanceType = d.Get("master_instance_type").(string)
+			typeChange = true
+		}
 
-		raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
-			return client.ModifyInstanceType(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		if d.HasChange("core_instance_type") {
+			request.CoreInstanceType = d.Get("core_instance_type").(string)
+			typeChange = true
 		}
-		// Cumbersome operation，async call, wait for state change
-		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{Hb_LEVEL_MODIFY}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
-			5*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_LEVEL_MODIFY_FAILED}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+
+		if typeChange {
+			raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
+				return client.ModifyInstanceType(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			// Cumbersome operation，async call, wait for state change
+			// wait instance status is running after modifying
+			stateConf := BuildStateConf([]string{Hb_LEVEL_MODIFY}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+				5*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_LEVEL_MODIFY_FAILED}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			d.SetPartial("master_instance_type")
+			d.SetPartial("core_instance_type")
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("master_instance_type")
-		d.SetPartial("core_instance_type")
 	}
 
 	if d.HasChange("core_disk_size") && d.Get("engine") != "bds" {
