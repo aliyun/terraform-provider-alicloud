@@ -1163,15 +1163,18 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	_ = json.Unmarshal([]byte(masterURL), &endPoint)
 	connection["api_server_internet"] = endPoint["api_server_endpoint"]
 	connection["api_server_intranet"] = endPoint["intranet_api_server_endpoint"]
-	connection["master_public_ip"] = strings.Split(strings.Split(endPoint["api_server_endpoint"], ":")[1], "/")[2]
+	if endPoint["api_server_endpoint"] != "" {
+		connection["master_public_ip"] = strings.Split(strings.Split(endPoint["api_server_endpoint"], ":")[1], "/")[2]
+	}
 	if object.Profile != EdgeProfile {
 		connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", d.Id(), object.RegionId)
 	}
 
 	d.Set("connections", connection)
 	d.Set("slb_internet", connection["master_public_ip"])
-	d.Set("slb_intranet", strings.Split(strings.Split(endPoint["intranet_api_server_endpoint"], ":")[1], "/")[2])
-
+	if endPoint["intranet_api_server_endpoint"] != "" {
+		d.Set("slb_intranet", strings.Split(strings.Split(endPoint["intranet_api_server_endpoint"], ":")[1], "/")[2])
+	}
 	// set nat gateway
 	natRequest := vpc.CreateDescribeNatGatewaysRequest()
 	natRequest.VpcId = object.VpcId
