@@ -77,7 +77,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			},
 			"core_disk_type": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "cloud_efficiency", "local_hdd_pro", "local_ssd_pro", "-"}, false),
 			},
@@ -576,7 +576,7 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 		// Cumbersome operation，async call, wait for state change
 		// wait instance status is running after modifying
 		stateConf := BuildStateConf([]string{Hb_DISK_RESIZING}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
-			1*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_DISK_RESIZE_FAILED}))
+			2*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_DISK_RESIZE_FAILED}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
