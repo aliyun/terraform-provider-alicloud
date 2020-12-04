@@ -81,6 +81,22 @@ func dataSourceAlicloudRosStacks() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"parameters": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"parameter_key": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"parameter_value": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
 						"parent_stack_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -119,6 +135,10 @@ func dataSourceAlicloudRosStacks() *schema.Resource {
 						},
 						"status_reason": {
 							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"tags": {
+							Type:     schema.TypeMap,
 							Computed: true,
 						},
 						"template_description": {
@@ -235,7 +255,7 @@ func dataSourceAlicloudRosStacksRead(d *schema.ResourceData, meta interface{}) e
 			"parent_stack_id":      object["ParentStackId"],
 			"stack_drift_status":   object["StackDriftStatus"],
 			"id":                   fmt.Sprint(object["StackId"]),
-			"stack_id":             object["StackId"],
+			"stack_id":             fmt.Sprint(object["StackId"]),
 			"stack_name":           object["StackName"],
 			"status_reason":        object["StatusReason"],
 			"timeout_in_minutes":   formatInt(object["TimeoutInMinutes"]),
@@ -258,6 +278,20 @@ func dataSourceAlicloudRosStacksRead(d *schema.ResourceData, meta interface{}) e
 		}
 		mapping["deletion_protection"] = getResp["DeletionProtection"]
 		mapping["description"] = getResp["Description"]
+
+		parameters := make([]map[string]interface{}, 0)
+		if parametersList, ok := getResp["Parameters"].([]interface{}); ok {
+			for _, v := range parametersList {
+				if m1, ok := v.(map[string]interface{}); ok {
+					temp1 := map[string]interface{}{
+						"parameter_key":   m1["ParameterKey"],
+						"parameter_value": m1["ParameterValue"],
+					}
+					parameters = append(parameters, temp1)
+				}
+			}
+		}
+		mapping["parameters"] = parameters
 		mapping["ram_role_name"] = getResp["RamRoleName"]
 		mapping["root_stack_id"] = getResp["RootStackId"]
 		mapping["status"] = getResp["Status"]
@@ -268,6 +302,12 @@ func dataSourceAlicloudRosStacksRead(d *schema.ResourceData, meta interface{}) e
 		}
 		b, err := json.Marshal(getResp1["StackPolicyBody"])
 		mapping["stack_policy_body"] = string(b)
+
+		getResp2, err := rosService.ListTagResources(id, "stack")
+		if err != nil {
+			return WrapError(err)
+		}
+		mapping["tags"] = tagsToMap(getResp2)
 
 		ids = append(ids, fmt.Sprint(object["StackId"]))
 		names = append(names, object["StackName"].(string))

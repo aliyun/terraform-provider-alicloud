@@ -95,6 +95,8 @@ func TestAccAlicloudRosStacksDataSource(t *testing.T) {
 			"stacks.0.root_stack_id":        "",
 			"stacks.0.stack_drift_status":   "",
 			"stacks.0.stack_name":           name,
+			"stacks.0.tags.%":               "2",
+			"stacks.0.parameters.#":         "6",
 			"stacks.0.stack_policy_body":    CHECKSET,
 			"stacks.0.timeout_in_minutes":   "60",
 			"stacks.0.template_description": CHECKSET,

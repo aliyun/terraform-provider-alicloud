@@ -40,6 +40,7 @@ The following arguments are supported:
 * `show_nested_stack` - (Optional, ForceNew) The show nested stack.
 * `stack_name` - (Optional, ForceNew) StackName.
 * `status` - (Optional, ForceNew) The status of Stack. Valid Values: `CREATE_COMPLETE`, `CREATE_FAILED`, `CREATE_IN_PROGRESS`, `DELETE_COMPLETE`, `DELETE_FAILED`, `DELETE_IN_PROGRESS`, `ROLLBACK_COMPLETE`, `ROLLBACK_FAILED`, `ROLLBACK_IN_PROGRESS`.
+* `tags` - (Optional) Query the instance bound to the tag. The format of the incoming value is `json` string, including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty. Format example `{"key1":"value1"}`.
 
 ## Argument Reference
 
@@ -62,3 +63,6 @@ The following attributes are exported in addition to the arguments listed above:
 	* `status_reason` - Status Reason.
 	* `template_description` - Template Description.
 	* `timeout_in_minutes` - Specifies whether to use the values that were passed last time for the parameters that you do not specify in the current request.
+	* `parameters` - The parameters.
+		* `parameter_key` - The key of parameters.
+		* `parameter_value` - The value of parameters.
