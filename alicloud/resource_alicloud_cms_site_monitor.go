@@ -119,8 +119,20 @@ func resourceAlicloudCmsSiteMonitorCreate(d *schema.ResourceData, meta interface
 		request.IspCities = bytes.NewBuffer(b).String()
 	}
 
-	_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.CreateSiteMonitor(request)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.CreateSiteMonitor(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ExceedingQuota"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), request.RpcRequest, request)
+		return nil
 	})
 	if err != nil {
 		return WrapError(err)
@@ -200,8 +212,20 @@ func resourceAlicloudCmsSiteMonitorUpdate(d *schema.ResourceData, meta interface
 		request.IspCities = bytes.NewBuffer(b).String()
 	}
 
-	_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.ModifySiteMonitor(request)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.ModifySiteMonitor(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ExceedingQuota"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), request.RpcRequest, request)
+		return nil
 	})
 	if err != nil {
 		return WrapError(err)
@@ -218,12 +242,17 @@ func resourceAlicloudCmsSiteMonitorDelete(d *schema.ResourceData, meta interface
 	request.TaskIds = d.Id()
 	request.IsDeleteAlarms = "false"
 
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	return resource.Retry(3*time.Minute, func() *resource.RetryError {
 		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
 			return cmsClient.DeleteSiteMonitors(request)
 		})
 
 		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ExceedingQuota"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
 			return resource.NonRetryableError(fmt.Errorf("Deleting site monitor got an error: %#v", err))
 		}
 
