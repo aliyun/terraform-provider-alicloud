@@ -1,4 +1,13 @@
 ## 1.106.0 (Unreleased)
+
+- **New Resource:** `alicloud_ros_change_set` [GH-3083]
+- **Data Source:** `alicloud_hbase_instance_types` [GH-3091]
+- **Data Source:** `alicloud_ros_change_sets` [GH-3083]
+
+BUG FIXES:
+
+- fix create dbinstance type conversion error [GH-3089] 
+
 ## 1.105.0 (November 28, 2020)
 
 - **New Resource:** `alicloud_fnf_schedule` ([#3078](https://github.com/aliyun/terraform-provider-alicloud/issues/3078))
