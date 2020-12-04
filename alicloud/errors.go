@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/alibabacloud-go/tea/tea"
 	"regexp"
 	"strings"
 
@@ -197,6 +198,10 @@ func IsEOFError(err error) bool {
 	if e, ok := err.(*common.Error); ok {
 		re := regexp.MustCompile("^Post https://.*EOF$")
 		return re.MatchString(e.Message)
+	}
+	if e, ok := err.(*tea.SDKError); ok {
+		re := regexp.MustCompile("^code: 5[\\d]{2}")
+		return re.MatchString(*e.Message)
 	}
 	return false
 }
