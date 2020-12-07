@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/base64"
 	"fmt"
+	"log"
 	"regexp"
 	"time"
 
@@ -200,6 +201,56 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"maintenance_window": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+						"maintenance_time": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"duration": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"weekly_period": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"management": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"auto_repair": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"auto_upgrade": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"surge": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"max_unavailable": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -213,6 +264,13 @@ func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta int
 	var raw interface{}
 
 	clusterId := d.Get("cluster_id").(string)
+	// First, check whether the maintenance window is modified
+	if _, ok := d.GetOk("maintenance_window"); ok {
+		err := modifyMaintenanceWindow(d, meta)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "PrepareMaintenanceWindowArgs", err)
+		}
+	}
 	// prepare args and set default value
 	args, err := buildNodePoolArgs(d, meta)
 	if err != nil {
@@ -410,6 +468,13 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.AutoScaling.MinInstance = d.Get("min").(int64)
 	}
 
+	if d.HasChange("management") {
+		update = true
+		if v, ok := d.Get("management").([]interface{}); len(v) > 0 && ok {
+			args.Management = setManagedNodepoolConfig(v)
+		}
+	}
+
 	if update {
 
 		var resoponse interface{}
@@ -435,6 +500,13 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("maintenance_window") {
+		err := modifyMaintenanceWindow(d, meta)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "ModifyMaintenanceWindow", err)
 		}
 	}
 
@@ -474,7 +546,7 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("max", object.MaxInstance)
 	}
 	if _, ok := d.GetOk("enable_auto_scaling"); ok {
-		d.Set("enable_auto_scaling", object.Enable)
+		d.Set("enable_auto_scaling", object.AutoScaling.Enable)
 	}
 	if sg, ok := d.GetOk("min"); ok && sg.(string) != "" {
 		d.Set("min", object.MinInstance)
@@ -506,6 +578,30 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
+	// set manage nodepool configuration
+	if err := d.Set("management", flattenManagementNodepoolConfig(object.Management)); err != nil {
+		return WrapError(err)
+	}
+
+	// set maintenance window
+	if _, ok := d.GetOk("maintenance_window"); ok {
+		parts, err := ParseResourceId(d.Id(), 2)
+		if err != nil {
+			return WrapError(err)
+		}
+		maintenanceInfo, err := csService.DescribeCsKubernetes(parts[0])
+		if err != nil {
+			if NotFoundError(err) {
+				d.SetId("")
+				return nil
+			}
+			return WrapError(err)
+		}
+		if err := d.Set("maintenance_window", flattenMaintenanceWindowConfig(maintenanceInfo.MaintenanceWindow)); err != nil {
+			return WrapError(err)
+		}
+	}
+
 	return nil
 }
 
@@ -518,6 +614,9 @@ func resourceAlicloudCSNodePoolDelete(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapError(err)
 	}
+
+	// first, remove all nodes
+	removeNodePoolNodes(d, meta, parts)
 
 	var response interface{}
 	err = resource.Retry(30*time.Minute, func() *resource.RetryError {
@@ -633,6 +732,13 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 		}
 	}
 
+	// set manage nodepool params
+	if v, ok := d.GetOk("management"); ok {
+		if management, ok := v.([]interface{}); len(management) > 0 && ok {
+			creationArgs.Management = setManagedNodepoolConfig(management)
+		}
+	}
+
 	return creationArgs, nil
 }
 
@@ -727,6 +833,54 @@ func setNodePoolTaints(config *cs.KubernetesConfig, d *schema.ResourceData) erro
 	return nil
 }
 
+func setManagedNodepoolConfig(l []interface{}) cs.Management {
+	config := cs.Management{}
+	if len(l) == 0 || l[0] == nil {
+		return config
+	}
+
+	// Once "management" is set, we think of it as creating a managed node pool
+	config.Enable = true
+
+	m := l[0].(map[string]interface{})
+	if v, ok := m["auto_repair"].(bool); ok {
+		config.AutoRepair = v
+	}
+	if v, ok := m["auto_upgrade"].(bool); ok {
+		config.UpgradeConf.AutoUpgrade = v
+	}
+	if v, ok := m["surge"].(int); ok {
+		config.UpgradeConf.Surge = int64(v)
+	}
+	if v, ok := m["max_unavailable"].(int); ok {
+		config.UpgradeConf.MaxUnavailable = int64(v)
+	}
+
+	return config
+}
+
+func flattenManagementNodepoolConfig(config cs.Management) (m []map[string]interface{}) {
+	m = append(m, map[string]interface{}{
+		"auto_repair":     config.AutoRepair,
+		"auto_upgrade":    config.UpgradeConf.AutoUpgrade,
+		"surge":           config.UpgradeConf.Surge,
+		"max_unavailable": config.UpgradeConf.MaxUnavailable,
+	})
+
+	return
+}
+
+func flattenMaintenanceWindowConfig(config cs.MaintenanceWindow) (m []map[string]interface{}) {
+	m = append(m, map[string]interface{}{
+		"enable":           config.Enable,
+		"maintenance_time": config.MaintenanceTime,
+		"duration":         config.Duration,
+		"weekly_period":    config.WeeklyPeriod,
+	})
+
+	return
+}
+
 func flattenNodeDataDisksConfig(config []cs.NodePoolDataDisk) (m []map[string]interface{}) {
 	if config == nil {
 		return []map[string]interface{}{}
@@ -774,6 +928,7 @@ func flattenLabelsConfig(config []cs.Label) (m []map[string]interface{}) {
 }
 
 func flattenTagsConfig(config []cs.Tag) map[string]string {
+	log.Printf("TAG: %+++v\n", config)
 	m := make(map[string]string, len(config))
 	if len(config) < 0 {
 		return m
@@ -782,7 +937,7 @@ func flattenTagsConfig(config []cs.Tag) map[string]string {
 	for _, tag := range config {
 		m[tag.Key] = tag.Value
 	}
-
+	log.Printf("TAG flatten: %+++v\n", m)
 	return m
 }
 
@@ -818,6 +973,13 @@ func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []str
 
 	// remove nodes
 	removeNodesName := allNodeName[len(allNodeName)-count:]
+	if count == 0 {
+		removeNodesName = allNodeName
+	}
+	if len(removeNodesName) == 0 {
+		return removeNodesName, nil
+	}
+
 	removeNodesArgs := &cs.DeleteKubernetesClusterNodesRequest{
 		Nodes:       removeNodesName,
 		ReleaseNode: true,
@@ -842,4 +1004,47 @@ func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []str
 	d.SetPartial("node_count")
 
 	return allHostName[len(allHostName)-count:], nil
+}
+
+func modifyMaintenanceWindow(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	invoker := NewInvoker()
+
+	var requestInfo cs.ModifyClusterArgs
+	var response interface{}
+
+	clusterId := d.Get("cluster_id").(string)
+	maintenanceWindowConfig := d.Get("maintenance_window").([]interface{})
+	m := maintenanceWindowConfig[0].(map[string]interface{})
+
+	if v, ok := m["enable"].(bool); ok {
+		requestInfo.MaintenanceWindow.Enable = v
+	}
+	if v, ok := m["maintenance_time"].(string); ok {
+		requestInfo.MaintenanceWindow.MaintenanceTime = cs.MaintenanceTime(v)
+	}
+	if v, ok := m["duration"].(string); ok {
+		requestInfo.MaintenanceWindow.Duration = v
+	}
+	if v, ok := m["weekly_period"].(string); ok {
+		requestInfo.MaintenanceWindow.WeeklyPeriod = cs.WeeklyPeriod(v)
+	}
+
+	if err := invoker.Run(func() error {
+		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.ModifyCluster(clusterId, &requestInfo)
+		})
+		return err
+	}); err != nil && !IsExpectedErrors(err, []string{"ErrorModifyDeletionProtectionFailed"}) {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = d.Id()
+		requestMap["maintenance_window"] = requestInfo.DeletionProtection
+		addDebug("ModifyCluster", response, requestInfo, requestMap)
+	}
+	d.SetPartial("maintenance_window")
+
+	return nil
 }
