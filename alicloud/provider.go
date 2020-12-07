@@ -280,6 +280,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_zones":                         dataSourceAlicloudPolarDBZones(),
 			"alicloud_hbase_instances":                       dataSourceAlicloudHBaseInstances(),
 			"alicloud_hbase_zones":                           dataSourceAlicloudHBaseZones(),
+			"alicloud_hbase_instance_types":                  dataSourceAlicloudHBaseInstanceTypes(),
 			"alicloud_adb_clusters":                          dataSourceAlicloudAdbClusters(),
 			"alicloud_adb_zones":                             dataSourceAlicloudAdbZones(),
 			"alicloud_cen_flowlogs":                          dataSourceAlicloudCenFlowlogs(),
@@ -340,6 +341,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fnf_flows":                             dataSourceAlicloudFnfFlows(),
 			"alicloud_fnf_schedules":                         dataSourceAlicloudFnfSchedules(),
 			"alicloud_ros_change_sets":                       dataSourceAlicloudRosChangeSets(),
+			"alicloud_ros_stacks":                            dataSourceAlicloudRosStacks(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -610,6 +612,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fnf_flow":                            resourceAlicloudFnfFlow(),
 			"alicloud_fnf_schedule":                        resourceAlicloudFnfSchedule(),
 			"alicloud_ros_change_set":                      resourceAlicloudRosChangeSet(),
+			"alicloud_ros_stack":                           resourceAlicloudRosStack(),
 		},
 
 		ConfigureFunc: providerConfigure,

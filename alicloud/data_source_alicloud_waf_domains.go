@@ -230,10 +230,10 @@ func dataSourceAlicloudWafDomainsRead(d *schema.ResourceData, meta interface{}) 
 		mapping["cluster_type"] = convertClusterTypeResponse(formatInt(getResp["ClusterType"]))
 		mapping["cname"] = getResp["Cname"]
 		mapping["connection_time"] = getResp["ConnectionTime"]
-		mapping["http2_port"] = converJsonStringToStringList(getResp["Http2Port"])
-		mapping["http_port"] = converJsonStringToStringList(getResp["HttpPort"])
+		mapping["http2_port"] = convertJsonStringToStringList(getResp["Http2Port"])
+		mapping["http_port"] = convertJsonStringToStringList(getResp["HttpPort"])
 		mapping["http_to_user_ip"] = convertHttpToUserIpResponse(formatInt(getResp["HttpToUserIp"]))
-		mapping["https_port"] = converJsonStringToStringList(getResp["HttpsPort"])
+		mapping["https_port"] = convertJsonStringToStringList(getResp["HttpsPort"])
 		mapping["https_redirect"] = convertHttpsRedirectResponse(formatInt(getResp["HttpsRedirect"]))
 		mapping["is_access_product"] = convertIsAccessProductResponse(formatInt(getResp["IsAccessProduct"]))
 		mapping["load_balancing"] = convertLoadBalancingResponse(formatInt(getResp["LoadBalancing"]))

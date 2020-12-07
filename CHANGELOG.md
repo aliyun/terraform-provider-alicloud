@@ -1,4 +1,20 @@
-## 1.106.0 (Unreleased)
+## 1.107.0 (Unreleased)
+## 1.106.0 (December 28, 2020)
+
+- **New Resource:** `alicloud_ros_change_set` ([#3083](https://github.com/aliyun/terraform-provider-alicloud/issues/3083))
+- **Data Source:** `alicloud_hbase_instance_types` ([#3091](https://github.com/aliyun/terraform-provider-alicloud/issues/3091))
+- **Data Source:** `alicloud_ros_change_sets` ([#3083](https://github.com/aliyun/terraform-provider-alicloud/issues/3083))
+
+IMPROVEMENTS:
+
+- Add flow contral retry for alicloud_cms_site_monitor ([#3099](https://github.com/aliyun/terraform-provider-alicloud/issues/3099))
+- update ci pipeline ([#3098](https://github.com/aliyun/terraform-provider-alicloud/issues/3098))
+- datasource/ros: update datasource testcase name. ([#3097](https://github.com/aliyun/terraform-provider-alicloud/issues/3097))
+
+BUG FIXES:
+
+- fix create dbinstance type conversion error ([#3089](https://github.com/aliyun/terraform-provider-alicloud/issues/3089))
+
 ## 1.105.0 (November 28, 2020)
 
 - **New Resource:** `alicloud_fnf_schedule` ([#3078](https://github.com/aliyun/terraform-provider-alicloud/issues/3078))

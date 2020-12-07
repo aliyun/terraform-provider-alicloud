@@ -110,11 +110,23 @@ func (s *CmsService) DescribeSiteMonitor(id, keyword string) (siteMonitor cms.Si
 	listRequest := cms.CreateDescribeSiteMonitorListRequest()
 	listRequest.Keyword = keyword
 	listRequest.TaskId = id
-	raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.DescribeSiteMonitorList(listRequest)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.DescribeSiteMonitorList(listRequest)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ExceedingQuota"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err != nil {
-		return siteMonitor, err
+		return siteMonitor, WrapError(err)
 	}
 	list := raw.(*cms.DescribeSiteMonitorListResponse)
 	if len(list.SiteMonitors.SiteMonitor) < 1 {
@@ -133,12 +145,23 @@ func (s *CmsService) GetIspCities(id string) (ispCities IspCities, err error) {
 	request := cms.CreateDescribeSiteMonitorAttributeRequest()
 	request.TaskId = id
 
-	raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.DescribeSiteMonitorAttribute(request)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.DescribeSiteMonitorAttribute(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ExceedingQuota"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
-
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 
 	response := raw.(*cms.DescribeSiteMonitorAttributeResponse)

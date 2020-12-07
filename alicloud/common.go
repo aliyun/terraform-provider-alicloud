@@ -338,7 +338,7 @@ func convertListToJsonString(configured []interface{}) string {
 	return result
 }
 
-func converJsonStringToStringList(src interface{}) (result []interface{}) {
+func convertJsonStringToStringList(src interface{}) (result []interface{}) {
 	if err, ok := src.([]interface{}); !ok {
 		panic(err)
 	}
