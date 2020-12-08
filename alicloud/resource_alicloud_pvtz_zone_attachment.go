@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
@@ -80,7 +81,7 @@ func resourceAlicloudPvtzZoneAttachmentCreate(d *schema.ResourceData, meta inter
 		return WrapError(err)
 	}
 
-	d.SetId(zone.ZoneId)
+	d.SetId(fmt.Sprint(zone["ZoneId"]))
 
 	return resourceAlicloudPvtzZoneAttachmentUpdate(d, meta)
 }
@@ -163,14 +164,15 @@ func resourceAlicloudPvtzZoneAttachmentRead(d *schema.ResourceData, meta interfa
 
 		return WrapError(err)
 	}
-	vpcs := object.BindVpcs.Vpc
+	vpcs := object["BindVpcs"].(map[string]interface{})["Vpc"].([]interface{})
 	vpcIds := make([]string, 0)
 	vpcMaps := make([]map[string]interface{}, 0)
 	for _, vpc := range vpcs {
-		vpcIds = append(vpcIds, vpc.VpcId)
+		vpc := vpc.(map[string]interface{})
+		vpcIds = append(vpcIds, vpc["VpcId"].(string))
 		vpcMap := map[string]interface{}{
-			"vpc_id":    vpc.VpcId,
-			"region_id": vpc.RegionId,
+			"vpc_id":    vpc["VpcId"],
+			"region_id": vpc["RegionId"],
 		}
 		vpcMaps = append(vpcMaps, vpcMap)
 	}
