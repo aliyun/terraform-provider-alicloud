@@ -3,7 +3,6 @@ package alicloud
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
 	"regexp"
 	"time"
 
@@ -235,14 +234,17 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 						"auto_repair": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Default:  true,
 						},
 						"auto_upgrade": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Default:  true,
 						},
 						"surge": {
 							Type:     schema.TypeInt,
 							Optional: true,
+							Default:  0,
 						},
 						"max_unavailable": {
 							Type:     schema.TypeInt,
@@ -926,7 +928,6 @@ func flattenLabelsConfig(config []cs.Label) (m []map[string]interface{}) {
 }
 
 func flattenTagsConfig(config []cs.Tag) map[string]string {
-	log.Printf("TAG: %+++v\n", config)
 	m := make(map[string]string, len(config))
 	if len(config) < 0 {
 		return m
@@ -935,7 +936,7 @@ func flattenTagsConfig(config []cs.Tag) map[string]string {
 	for _, tag := range config {
 		m[tag.Key] = tag.Value
 	}
-	log.Printf("TAG flatten: %+++v\n", m)
+
 	return m
 }
 
