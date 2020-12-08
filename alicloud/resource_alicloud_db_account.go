@@ -119,7 +119,7 @@ func resourceAlicloudDBAccountCreate(d *schema.ResourceData, meta interface{}) e
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) || IsEOFError(err) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}

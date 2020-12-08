@@ -105,7 +105,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionCreate(d *schema.ResourceData
 	if err := resource.Retry(60*time.Minute, func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, DBReadInstanceNotReadyStatus) || IsEOFError(err) {
+			if IsExpectedErrors(err, DBReadInstanceNotReadyStatus) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -240,7 +240,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionUpdate(d *schema.ResourceData
 		if err := resource.Retry(30*time.Minute, func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, DBReadInstanceNotReadyStatus) || IsEOFError(err) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, DBReadInstanceNotReadyStatus) || NeedRetry(err) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -277,7 +277,7 @@ func resourceAlicloudDBReadWriteSplittingConnectionDelete(d *schema.ResourceData
 	if err := resource.Retry(30*time.Minute, func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) || IsEOFError(err) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidRwSplitNetType.NotFound"}) {

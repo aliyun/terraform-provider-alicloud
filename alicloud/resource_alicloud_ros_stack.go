@@ -404,7 +404,7 @@ func resourceAlicloudRosStackDelete(d *schema.ResourceData, meta interface{}) er
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsEOFError(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

@@ -182,7 +182,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) || IsEOFError(err) {
+				if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) || NeedRetry(err) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -227,7 +227,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InvalidOrderTask.NotSupport", "OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) || IsEOFError(err) {
+				if IsExpectedErrors(err, []string{"InvalidOrderTask.NotSupport", "OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) || NeedRetry(err) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -321,7 +321,7 @@ func resourceAlicloudDBReadonlyInstanceDelete(d *schema.ResourceData, meta inter
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"RwSplitNetType.Exist", "OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) || IsEOFError(err) {
+			if IsExpectedErrors(err, []string{"RwSplitNetType.Exist", "OperationDenied.DBInstanceStatus", "OperationDenied.MasterDBInstanceState"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

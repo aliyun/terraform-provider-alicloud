@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"github.com/alibabacloud-go/tea/tea"
 	"regexp"
 	"strings"
+
+	"github.com/alibabacloud-go/tea/tea"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 
@@ -191,7 +192,7 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 	return false
 }
 
-func IsEOFError(err error) bool {
+func NeedRetry(err error) bool {
 	if err == nil {
 		return false
 	}

@@ -597,7 +597,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InvalidOrderTask.NotSupport"}) || IsEOFError(err) {
+				if IsExpectedErrors(err, []string{"InvalidOrderTask.NotSupport"}) || NeedRetry(err) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -788,7 +788,7 @@ func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil && !NotFoundError(err) {
-			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}) || IsEOFError(err) {
+			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
