@@ -92,33 +92,24 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 			// check: scale out
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"node_count":       "2",
-					"system_disk_size": "80",
-					"data_disks":       []map[string]string{{"size": "40", "category": "cloud"}},
-					"management":       []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "1"}},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"node_count":                   "2",
-						"system_disk_size":             "80",
-						"data_disks.#":                 "1",
-						"data_disks.0.size":            "40",
-						"data_disks.0.category":        "cloud",
-						"management.#":                 "1",
-						"management.0.auto_repair":     "true",
-						"management.0.auto_upgrade":    "true",
-						"management.0.surge":           "0",
-						"management.0.max_unavailable": "1",
-					}),
-				),
-			},
-			// check: modify the maintenance window
-			{
-				Config: testAccConfig(map[string]interface{}{
+					"node_count":         "2",
+					"system_disk_size":   "80",
+					"data_disks":         []map[string]string{{"size": "40", "category": "cloud"}},
+					"management":         []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "1"}},
 					"maintenance_window": []map[string]string{{"enable": "false", "maintenance_time": "", "duration": "", "weekly_period": ""}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"node_count":                            "2",
+						"system_disk_size":                      "80",
+						"data_disks.#":                          "1",
+						"data_disks.0.size":                     "40",
+						"data_disks.0.category":                 "cloud",
+						"management.#":                          "1",
+						"management.0.auto_repair":              "true",
+						"management.0.auto_upgrade":             "true",
+						"management.0.surge":                    "0",
+						"management.0.max_unavailable":          "1",
 						"maintenance_window.#":                  "1",
 						"maintenance_window.0.enable":           "false",
 						"maintenance_window.0.maintenance_time": "",

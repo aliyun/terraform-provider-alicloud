@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"github.com/alibabacloud-go/tea/tea"
 	"regexp"
 	"strings"
+
+	"github.com/alibabacloud-go/tea/tea"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 

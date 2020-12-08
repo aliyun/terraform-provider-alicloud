@@ -584,22 +584,20 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	// set maintenance window
-	if _, ok := d.GetOk("maintenance_window"); ok {
-		parts, err := ParseResourceId(d.Id(), 2)
-		if err != nil {
-			return WrapError(err)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	maintenanceInfo, err := csService.DescribeCsKubernetes(parts[0])
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
 		}
-		maintenanceInfo, err := csService.DescribeCsKubernetes(parts[0])
-		if err != nil {
-			if NotFoundError(err) {
-				d.SetId("")
-				return nil
-			}
-			return WrapError(err)
-		}
-		if err := d.Set("maintenance_window", flattenMaintenanceWindowConfig(maintenanceInfo.MaintenanceWindow)); err != nil {
-			return WrapError(err)
-		}
+		return WrapError(err)
+	}
+	if err := d.Set("maintenance_window", flattenMaintenanceWindowConfig(maintenanceInfo.MaintenanceWindow)); err != nil {
+		return WrapError(err)
 	}
 
 	return nil
