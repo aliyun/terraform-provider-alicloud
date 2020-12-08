@@ -1,11 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"time"
 
-	"runtime"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -21,52 +21,68 @@ func resourceAlicloudPvtzZone() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Update: schema.DefaultTimeout(1 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"remark": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"proxy_pattern": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ZONE", "RECORD"}, false),
-				Default:      "ZONE",
-			},
-			"user_client_ip": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"is_ptr": {
+				Type:     schema.TypeBool,
+				Computed: true,
 			},
 			"lang": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"zh", "en", "jp"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"en", "jp", "zh"}, false),
 			},
-			"creation_time": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"update_time": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"is_ptr": {
-				Type:     schema.TypeBool,
-				Computed: true,
+			"proxy_pattern": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"RECORD", "ZONE"}, false),
+				Default:      "ZONE",
 			},
 			"record_count": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
+			"remark": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+			},
+			"user_client_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"zone_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"name"},
+			},
+			"name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				Deprecated:    "Field 'name' has been deprecated from version 1.107.0. Use 'zone_name' instead.",
+				ConflictsWith: []string{"zone_name"},
+			},
+			"creation_time": {
+				Type:     schema.TypeString,
 				Computed: true,
+				Removed:  "Field 'creation_time' has been removed from provider version 1.107.0",
+			},
+			"update_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Removed:  "Field 'update_time' has been removed from provider version 1.107.0",
 			},
 		},
 	}
@@ -74,171 +90,196 @@ func resourceAlicloudPvtzZone() *schema.Resource {
 
 func resourceAlicloudPvtzZoneCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "AddZone"
+	request := make(map[string]interface{})
+	conn, err := client.NewPvtzClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
 
-	request := pvtz.CreateAddZoneRequest()
-	request.RegionId = client.RegionId
-	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
-		request.ZoneName = v.(string)
+	if v, ok := d.GetOk("proxy_pattern"); ok {
+		request["ProxyPattern"] = v
 	}
-	if v, ok := d.GetOk("proxy_pattern"); ok && v.(string) != "" {
-		request.ProxyPattern = v.(string)
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
-	if v, ok := d.GetOk("user_client_ip"); ok && v.(string) != "" {
-		request.UserClientIp = v.(string)
+
+	if v, ok := d.GetOk("user_client_ip"); ok {
+		request["UserClientIp"] = v
 	}
-	if v, ok := d.GetOk("lang"); ok && v.(string) != "" {
-		request.Lang = v.(string)
+
+	if v, ok := d.GetOk("zone_name"); ok {
+		request["ZoneName"] = v
+	} else if v, ok := d.GetOk("name"); ok {
+		request["ZoneName"] = v
 	}
-	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
-		request.ResourceGroupId = v.(string)
-	}
-	// API AddZone has a throttling limitation 5qps which one use only can send 5 requests in one second.
-	var response *pvtz.AddZoneResponse
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-			return pvtzClient.AddZone(request)
-		})
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, "System.Busy"}) {
-				time.Sleep(5 * time.Second)
+			if IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || IsEOFError(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ = raw.(*pvtz.AddZoneResponse)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pvtz_zone", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pvtz_zone", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(response.ZoneId)
+	d.SetId(fmt.Sprint(response["ZoneId"]))
 
 	return resourceAlicloudPvtzZoneUpdate(d, meta)
-
 }
-
 func resourceAlicloudPvtzZoneRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	pvtzService := PvtzService{client}
 	object, err := pvtzService.DescribePvtzZone(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_private_zone_zone pvtzService.DescribePvtzZone Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-
 		return WrapError(err)
 	}
-
-	d.Set("name", object.ZoneName)
-	d.Set("remark", object.Remark)
-	d.Set("creation_time", object.CreateTime)
-	d.Set("update_time", object.UpdateTime)
-	d.Set("is_ptr", object.IsPtr)
-	d.Set("record_count", object.RecordCount)
-	d.Set("proxy_pattern", object.ProxyPattern)
-
+	d.Set("is_ptr", object["IsPtr"])
+	d.Set("proxy_pattern", object["ProxyPattern"])
+	d.Set("record_count", formatInt(object["RecordCount"]))
+	d.Set("remark", object["Remark"])
+	d.Set("zone_name", object["ZoneName"])
+	d.Set("name", object["ZoneName"])
 	return nil
 }
-
 func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
 	d.Partial(true)
-	if d.HasChange("remark") {
-		request := pvtz.CreateUpdateZoneRemarkRequest()
-		request.ZoneId = d.Id()
-		request.Remark = d.Get("remark").(string)
 
-		client := meta.(*connectivity.AliyunClient)
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-				return pvtzClient.UpdateZoneRemark(request)
-			})
-			if err != nil {
-				if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, "System.Busy"}) {
-					time.Sleep(5 * time.Second)
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	update := false
+	request := map[string]interface{}{
+		"ZoneId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("proxy_pattern") {
+		update = true
+	}
+	request["ProxyPattern"] = d.Get("proxy_pattern")
+	if update {
+		if _, ok := d.GetOk("lang"); ok {
+			request["Lang"] = d.Get("lang")
 		}
-		d.SetPartial("remark")
-	}
-
-	if d.IsNewResource() {
-		d.Partial(false)
-		return resourceAlicloudPvtzZoneRead(d, meta)
-	}
-	if d.HasChange("proxy_pattern") || d.HasChange("user_client_ip") || d.HasChange("lang") {
-		request := pvtz.CreateSetProxyPatternRequest()
-		request.ZoneId = d.Id()
-		request.ProxyPattern = d.Get("proxy_pattern").(string)
-		request.UserClientIp = d.Get("user_client_ip").(string)
-		request.Lang = d.Get("lang").(string)
-
-		client := meta.(*connectivity.AliyunClient)
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-				return pvtzClient.SetProxyPattern(request)
-			})
+		if _, ok := d.GetOk("user_client_ip"); ok {
+			request["UserClientIp"] = d.Get("user_client_ip")
+		}
+		action := "SetProxyPattern"
+		conn, err := client.NewPvtzClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, "System.Busy"}) {
-					time.Sleep(5 * time.Second)
+				if IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || IsEOFError(err) {
+					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			addDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("proxy_pattern")
-		d.SetPartial("user_client_ip")
-		d.SetPartial("lang")
+	}
+	update = false
+	updateZoneRemarkReq := map[string]interface{}{
+		"ZoneId": d.Id(),
+	}
+	if d.HasChange("remark") {
+		update = true
+		updateZoneRemarkReq["Remark"] = d.Get("remark")
+	}
+	if update {
+		if _, ok := d.GetOk("lang"); ok {
+			updateZoneRemarkReq["Lang"] = d.Get("lang")
+		}
+		if _, ok := d.GetOk("user_client_ip"); ok {
+			updateZoneRemarkReq["UserClientIp"] = d.Get("user_client_ip")
+		}
+		action := "UpdateZoneRemark"
+		conn, err := client.NewPvtzClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, updateZoneRemarkReq, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || IsEOFError(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("remark")
 	}
 	d.Partial(false)
 	return resourceAlicloudPvtzZoneRead(d, meta)
 }
-
 func resourceAlicloudPvtzZoneDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	pvtzService := PvtzService{client}
-	runtime.Caller(0)
-	request := pvtz.CreateDeleteZoneRequest()
-	request.ZoneId = d.Id()
+	action := "DeleteZone"
+	var response map[string]interface{}
+	conn, err := client.NewPvtzClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"ZoneId": d.Id(),
+	}
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-			return pvtzClient.DeleteZone(request)
-		})
-
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
+	if v, ok := d.GetOk("user_client_ip"); ok {
+		request["UserClientIp"] = v
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, "System.Busy", "Zone.VpcExists"}) {
-				time.Sleep(time.Duration(2) * time.Second)
+			if IsExpectedErrors(err, []string{"System.Busy", "Throttling.User", "Zone.VpcExists"}) || IsEOFError(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
-
 	})
-
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
+		if IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-
-	return WrapError(pvtzService.WaitForPvtzZone(d.Id(), Deleted, DefaultTimeout))
+	return nil
 }

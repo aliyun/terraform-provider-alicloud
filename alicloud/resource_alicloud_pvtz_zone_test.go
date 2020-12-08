@@ -139,12 +139,12 @@ func TestAccAlicloudPvtzZone_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":              name,
+					"zone_name":         name,
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":              name,
+						"zone_name":         name,
 						"proxy_pattern":     "ZONE",
 						"user_client_ip":    NOSET,
 						"lang":              NOSET,
@@ -270,8 +270,8 @@ func TestAccAlicloudPvtzZone_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":  fmt.Sprintf("tf-testacc%d${count.index}.test.com", rand),
-					"count": "5",
+					"zone_name": fmt.Sprintf("tf-testacc%d${count.index}.test.com", rand),
+					"count":     "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -289,5 +289,5 @@ func resourcePvtzZoneConfigDependence(name string) string {
 }
 
 var pvtzZoneBasicMap = map[string]string{
-	"name": CHECKSET,
+	"zone_name": CHECKSET,
 }
