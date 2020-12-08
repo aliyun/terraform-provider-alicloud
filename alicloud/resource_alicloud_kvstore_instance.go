@@ -937,7 +937,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	update = false
 	modifyDBInstanceConnectionStringReq := r_kvstore.CreateModifyDBInstanceConnectionStringRequest()
 	modifyDBInstanceConnectionStringReq.DBInstanceId = d.Id()
-	if d.HasChange("private_connection_prefix") {
+	if !d.IsNewResource() && d.HasChange("private_connection_prefix") {
 		update = true
 	}
 	modifyDBInstanceConnectionStringReq.NewConnectionString = d.Get("private_connection_prefix").(string)
