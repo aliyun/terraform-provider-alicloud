@@ -342,6 +342,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fnf_schedules":                         dataSourceAlicloudFnfSchedules(),
 			"alicloud_ros_change_sets":                       dataSourceAlicloudRosChangeSets(),
 			"alicloud_ros_stacks":                            dataSourceAlicloudRosStacks(),
+			"alicloud_ros_stack_groups":                      dataSourceAlicloudRosStackGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -613,6 +614,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fnf_schedule":                        resourceAlicloudFnfSchedule(),
 			"alicloud_ros_change_set":                      resourceAlicloudRosChangeSet(),
 			"alicloud_ros_stack":                           resourceAlicloudRosStack(),
+			"alicloud_ros_stack_group":                     resourceAlicloudRosStackGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
