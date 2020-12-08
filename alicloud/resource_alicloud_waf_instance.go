@@ -163,7 +163,7 @@ func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{})
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsEOFError(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -261,7 +261,7 @@ func resourceAlicloudWafInstanceUpdate(d *schema.ResourceData, meta interface{})
 		err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if IsEOFError(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -299,7 +299,7 @@ func resourceAlicloudWafInstanceDelete(d *schema.ResourceData, meta interface{})
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsEOFError(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

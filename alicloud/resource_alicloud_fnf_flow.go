@@ -82,7 +82,7 @@ func resourceAlicloudFnfFlowCreate(d *schema.ResourceData, meta interface{}) err
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalServerError"}) || IsEOFError(err) {
+			if IsExpectedErrors(err, []string{"InternalServerError"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -154,7 +154,7 @@ func resourceAlicloudFnfFlowUpdate(d *schema.ResourceData, meta interface{}) err
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ConcurrentUpdateError", "InternalServerError"}) || IsEOFError(err) {
+				if IsExpectedErrors(err, []string{"ConcurrentUpdateError", "InternalServerError"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -185,7 +185,7 @@ func resourceAlicloudFnfFlowDelete(d *schema.ResourceData, meta interface{}) err
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-03-15"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalServerError"}) || IsEOFError(err) {
+			if IsExpectedErrors(err, []string{"InternalServerError"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
