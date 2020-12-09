@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -84,7 +86,11 @@ func TestAccAlicloudConfigDeliveryChannelsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeConfigDeliveryChannelsRecordsMapFunc,
 	}
 
-	configDeliveryChannelsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, statusConf, allConf)
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
+	}
+
+	configDeliveryChannelsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, statusConf, allConf)
 
 }
 

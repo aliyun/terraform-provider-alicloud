@@ -74,14 +74,18 @@ type DescribePriceRequest struct {
 	DataDisk3Size              requests.Integer `position:"Query" name:"DataDisk.3.Size"`
 	ResourceOwnerId            requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	DataDisk3Category          string           `position:"Query" name:"DataDisk.3.Category"`
+	Isp                        string           `position:"Query" name:"Isp"`
 	DataDisk4Size              requests.Integer `position:"Query" name:"DataDisk.4.Size"`
 	PriceUnit                  string           `position:"Query" name:"PriceUnit"`
 	Period                     requests.Integer `position:"Query" name:"Period"`
 	DataDisk1PerformanceLevel  string           `position:"Query" name:"DataDisk.1.PerformanceLevel"`
+	AssuranceTimes             string           `position:"Query" name:"AssuranceTimes"`
 	OwnerId                    requests.Integer `position:"Query" name:"OwnerId"`
+	InstanceCpuCoreCount       requests.Integer `position:"Query" name:"InstanceCpuCoreCount"`
 	InternetChargeType         string           `position:"Query" name:"InternetChargeType"`
 	InstanceNetworkType        string           `position:"Query" name:"InstanceNetworkType"`
 	InstanceAmount             requests.Integer `position:"Query" name:"InstanceAmount"`
+	InstanceTypeList           *[]string        `position:"Query" name:"InstanceTypeList"  type:"Repeated"`
 	DataDisk3PerformanceLevel  string           `position:"Query" name:"DataDisk.3.PerformanceLevel"`
 	ImageId                    string           `position:"Query" name:"ImageId"`
 	IoOptimized                string           `position:"Query" name:"IoOptimized"`
@@ -119,7 +123,7 @@ func CreateDescribePriceRequest() (request *DescribePriceRequest) {
 	request = &DescribePriceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "DescribePrice", "ecs", "openAPI")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "DescribePrice", "", "")
 	request.Method = requests.POST
 	return
 }

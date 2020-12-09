@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"strconv"
+	"fmt"
 
-	waf_openapi "github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -31,10 +32,10 @@ func dataSourceAlicloudWafInstances() *schema.Resource {
 				ForceNew: true,
 			},
 			"status": {
-				Type:         schema.TypeString,
+				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"0", "1"}, false),
+				ValidateFunc: validation.IntInSlice([]int{0, 1}),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -87,14 +88,15 @@ func dataSourceAlicloudWafInstances() *schema.Resource {
 func dataSourceAlicloudWafInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := waf_openapi.CreateDescribeInstanceInfosRequest()
+	action := "DescribeInstanceInfos"
+	request := make(map[string]interface{})
 	if v, ok := d.GetOk("instance_source"); ok {
-		request.InstanceSource = v.(string)
+		request["InstanceSource"] = v
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
-		request.ResourceGroupId = v.(string)
+		request["ResourceGroupId"] = v
 	}
-	var objects []waf_openapi.InstanceInfo
+	var objects []map[string]interface{}
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
@@ -105,24 +107,32 @@ func dataSourceAlicloudWafInstancesRead(d *schema.ResourceData, meta interface{}
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	status, statusOk := d.GetOk("status")
-	var response *waf_openapi.DescribeInstanceInfosResponse
-	raw, err := client.WithWafOpenapiClient(func(waf_openapiClient *waf_openapi.Client) (interface{}, error) {
-		return waf_openapiClient.DescribeInstanceInfos(request)
-	})
+	status, statusOk := d.GetOkExists("status")
+	var response map[string]interface{}
+	conn, err := client.NewWafClient()
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_waf_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ = raw.(*waf_openapi.DescribeInstanceInfosResponse)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_waf_instances", action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
 
-	for _, item := range response.InstanceInfos {
+	resp, err := jsonpath.Get("$.InstanceInfos", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceInfos", response)
+	}
+	for _, v := range resp.([]interface{}) {
+		item := v.(map[string]interface{})
 		if len(idsMap) > 0 {
-			if _, ok := idsMap[item.InstanceId]; !ok {
+			if _, ok := idsMap[fmt.Sprint(item["InstanceId"])]; !ok {
 				continue
 			}
 		}
-		if statusOk && status != "" && status != strconv.Itoa(item.Status) {
+		if statusOk && status.(int) != formatInt(item["Status"]) {
 			continue
 		}
 		objects = append(objects, item)
@@ -131,16 +141,16 @@ func dataSourceAlicloudWafInstancesRead(d *schema.ResourceData, meta interface{}
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"end_date":          object.EndDate,
-			"in_debt":           object.InDebt,
-			"id":                object.InstanceId,
-			"instance_id":       object.InstanceId,
-			"remain_day":        object.RemainDay,
-			"status":            object.Status,
-			"subscription_type": object.SubscriptionType,
-			"trial":             object.Trial,
+			"end_date":          formatInt(object["EndDate"]),
+			"in_debt":           formatInt(object["InDebt"]),
+			"id":                fmt.Sprint(object["InstanceId"]),
+			"instance_id":       object["InstanceId"],
+			"remain_day":        formatInt(object["RemainDay"]),
+			"status":            formatInt(object["Status"]),
+			"subscription_type": object["SubscriptionType"],
+			"trial":             formatInt(object["Trial"]),
 		}
-		ids = append(ids, object.InstanceId)
+		ids = append(ids, fmt.Sprint(object["InstanceId"]))
 		s = append(s, mapping)
 	}
 

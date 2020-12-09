@@ -62,6 +62,30 @@ resource "alicloud_kvstore_instance" "example" {
 }
 ```
 
+Modify Private Connection String
+```terraform
+resource "alicloud_kvstore_instance" "example" {
+  db_instance_name      = "tf-test-basic"
+  vswitch_id            = "vsw-123456"
+  security_ips          = [
+    "10.23.12.24"]
+  instance_type         = "Redis"
+  engine_version        = "4.0"
+  config = {
+    appendonly = "yes",
+    lazyfree-lazy-eviction = "yes",
+  }
+  tags = {
+    Created = "TF",
+    For = "Test",
+  }
+  resource_group_id     = "rg-123456"
+  zone_id               = "cn-beijing-h"
+  instance_class        = "redis.master.large.default"
+  private_connection_prefix = "privateconnectionstringprefix"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -114,6 +138,10 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `instance_release_protection`- (Optional, ForceNew, Available in 1.101.0+) Whether to open the release protection.
 * `global_instance_id`- (Optional, Available in 1.101.0+) The ID of distributed cache.
 * `global_instance`- (Optional, ForceNew, Available in 1.101.0+) Whether to create a distributed cache. Default to: `false`.
+* `backup_period`- (Optional, Available in 1.104.0+) Backup period. 
+* `backup_time`- (Optional, Available in 1.104.0+) Backup time, the format is HH:mmZ-HH:mmZ (UTC time).
+* `enable_backup_log`- (Optional, Available in 1.104.0+) Turn on or off incremental backup. Valid values: `1`, `0`. Default to `0`
+* `private_connection_prefix`- (Optional, Available in 1.105.0+) Private network connection prefix, used to modify the private network connection address. Only supports updating private network connections for existing instance.
 
 -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
@@ -132,6 +160,7 @@ The following attributes are exported:
 * `end_time` - The expiration time of the prepaid instance.
 * `qps` - Theoretical maximum QPS value.
 * `status` - The status of KVStore DBInstance.
+* `connection_domain`- Intranet connection address of the KVStore instance.
 
 ### Timeouts
 

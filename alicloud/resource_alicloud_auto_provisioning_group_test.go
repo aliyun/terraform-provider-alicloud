@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -15,37 +16,20 @@ func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testAccautoprovisioninggroup-%d", rand)
 	var basicMap = map[string]string{
-		"auto_provisioning_group_name":               name,
 		"launch_template_id":                         CHECKSET,
 		"total_target_capacity":                      "4",
 		"pay_as_you_go_target_capacity":              "1",
-		"pay_as_you_go_allocation_strategy":          "lowest-price",
 		"spot_target_capacity":                       "2",
-		"spot_allocation_strategy":                   "lowest-price",
-		"spot_instance_interruption_behavior":        "stop",
-		"spot_instance_pools_to_use_count":           "2",
-		"auto_provisioning_group_type":               "maintain",
-		"excess_capacity_termination_policy":         "no-termination",
-		"default_target_capacity_type":               "Spot",
-		"terminate_instances_with_expiration":        "false",
-		"launch_template_version":                    "1",
-		"terminate_instances":                        "false",
-		"max_spot_price":                             "3.14",
-		"launch_template_config.0.instance_type":     "ecs.n1.small",
 		"launch_template_config.0.vswitch_id":        CHECKSET,
 		"launch_template_config.0.weighted_capacity": "1",
 		"launch_template_config.0.max_price":         "2",
-		"launch_template_config.0.priority":          "0",
-		"description":                                "test",
-		"valid_from":                                 "2020-05-01T15:10:20Z",
-		"valid_until":                                "2020-06-01T15:10:20Z",
 	}
 	resourceId := "alicloud_auto_provisioning_group.default"
 	ra := resourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeEcsAutoProvisioningGroup")
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAutoProvisioningGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAutoProvisioningGroupConfigDependence)
@@ -63,31 +47,14 @@ func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"auto_provisioning_group_name":        name,
-					"launch_template_id":                  "${alicloud_launch_template.template.id}",
-					"total_target_capacity":               "4",
-					"pay_as_you_go_target_capacity":       "1",
-					"pay_as_you_go_allocation_strategy":   "lowest-price",
-					"spot_target_capacity":                "2",
-					"spot_allocation_strategy":            "lowest-price",
-					"spot_instance_interruption_behavior": "stop",
-					"spot_instance_pools_to_use_count":    "2",
-					"auto_provisioning_group_type":        "maintain",
-					"excess_capacity_termination_policy":  "no-termination",
-					"default_target_capacity_type":        "Spot",
-					"terminate_instances_with_expiration": "false",
-					"launch_template_version":             "1",
-					"terminate_instances":                 "false",
-					"max_spot_price":                      "3.14",
-					"description":                         "test",
-					"valid_from":                          "2020-05-01T15:10:20Z",
-					"valid_until":                         "2020-06-01T15:10:20Z",
+					"launch_template_id":            "${alicloud_launch_template.template.id}",
+					"total_target_capacity":         "4",
+					"pay_as_you_go_target_capacity": "1",
+					"spot_target_capacity":          "2",
 					"launch_template_config": []map[string]string{{
-						"instance_type":     "ecs.n1.small",
-						"vswitch_id":        "${data.alicloud_vswitches.default.ids[0]}",
+						"vswitch_id":        "${alicloud_vswitch.default.id}",
 						"weighted_capacity": "1",
 						"max_price":         "2",
-						"priority":          "0",
 					}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -98,6 +65,36 @@ func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "auto_provisioning_group",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "auto_provisioning_group",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_provisioning_group_name": "auto_provisioning_group_test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_provisioning_group_name": "auto_provisioning_group_test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_spot_price": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_spot_price": "2",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -126,16 +123,6 @@ func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"terminate_instances_with_expiration": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"max_spot_price": "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"max_spot_price": "2",
 					}),
 				),
 			},
@@ -171,35 +158,25 @@ func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"auto_provisioning_group_name": name + "-update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"auto_provisioning_group_name": name + "-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"auto_provisioning_group_name":        name,
 					"spot_target_capacity":                "2",
 					"pay_as_you_go_target_capacity":       "1",
 					"total_target_capacity":               "4",
-					"max_spot_price":                      "3",
 					"terminate_instances_with_expiration": "false",
 					"default_target_capacity_type":        "Spot",
 					"excess_capacity_termination_policy":  "no-termination",
+					"auto_provisioning_group_name":        "auto_provisioning_group",
+					"max_spot_price":                      "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"auto_provisioning_group_name":        name,
 						"spot_target_capacity":                "2",
 						"pay_as_you_go_target_capacity":       "1",
 						"total_target_capacity":               "4",
-						"max_spot_price":                      "3",
 						"terminate_instances_with_expiration": "false",
 						"default_target_capacity_type":        "Spot",
 						"excess_capacity_termination_policy":  "no-termination",
+						"auto_provisioning_group_name":        "auto_provisioning_group",
+						"max_spot_price":                      "2",
 					}),
 				),
 			},
@@ -208,6 +185,67 @@ func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
 
 }
 
+func TestAccAlicloudAutoProvisioningGroup_valid(t *testing.T) {
+	var v ecs.AutoProvisioningGroup
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testAccautoprovisioninggroup-%d", rand)
+	validFrom := time.Now().Format("2006-01-02T15:04:05Z")
+	validUntil := time.Now().AddDate(0, 1, 0).Format("2006-01-02T15:04:05Z")
+	var basicMap = map[string]string{
+		"launch_template_id":                         CHECKSET,
+		"total_target_capacity":                      "4",
+		"pay_as_you_go_target_capacity":              "1",
+		"spot_target_capacity":                       "2",
+		"launch_template_config.0.vswitch_id":        CHECKSET,
+		"launch_template_config.0.weighted_capacity": "1",
+		"launch_template_config.0.max_price":         "2",
+		"valid_from":                                 validFrom,
+		"valid_until":                                validUntil,
+	}
+	resourceId := "alicloud_auto_provisioning_group.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAutoProvisioningGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAutoProvisioningGroupConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithNoDefaultVpc(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"launch_template_id":            "${alicloud_launch_template.template.id}",
+					"total_target_capacity":         "4",
+					"pay_as_you_go_target_capacity": "1",
+					"spot_target_capacity":          "2",
+					"valid_from":                    validFrom,
+					"valid_until":                   validUntil,
+					"launch_template_config": []map[string]string{{
+						"vswitch_id":        "${alicloud_vswitch.default.id}",
+						"weighted_capacity": "1",
+						"max_price":         "2",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+
+}
 func resourceAutoProvisioningGroupConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	%s
@@ -219,9 +257,5 @@ func resourceAutoProvisioningGroupConfigDependence(name string) string {
           image_id                      = "${data.alicloud_images.default.images.0.id}"
           instance_type                 = "ecs.n1.tiny"
           security_group_id             = "${alicloud_security_group.default.id}"
-    }
-    data "alicloud_vswitches" "default" {
-		  zone_id = "${data.alicloud_zones.default.ids[0]}"
-          name_regex = "default-tf-testAcc-00"
     }`, EcsInstanceCommonTestCase, name)
 }

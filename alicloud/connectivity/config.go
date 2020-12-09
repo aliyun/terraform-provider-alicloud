@@ -21,6 +21,7 @@ var securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-cred
 
 // Config of aliyun
 type Config struct {
+	SourceIp        string
 	AccessKey       string
 	SecretKey       string
 	EcsRoleName     string
@@ -96,6 +97,8 @@ type Config struct {
 	MseEndpoint             string
 	ActiontrailEndpoint     string
 	ConfigEndpoint          string
+	FnfEndpoint             string
+	RosEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {
@@ -251,6 +254,10 @@ func (c *Config) getTeaDslSdkConfig(stsSupported bool) (config rpc.Config, err e
 
 	credentialConfig.Type = &credentialType
 	credential, err := credential.NewCredential(credentialConfig)
-	config.SetCredential(credential).SetRegionId(c.RegionId).SetProtocol(c.Protocol)
+	config.SetCredential(credential).
+		SetRegionId(c.RegionId).
+		SetProtocol(c.Protocol).
+		SetReadTimeout(30000).
+		SetConnectTimeout(30000)
 	return
 }

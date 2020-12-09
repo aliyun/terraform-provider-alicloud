@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -57,7 +56,18 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"worker_instance_charge_type": "PostPaid",
 					"slb_internet_enabled":        "true",
 					"cluster_spec":                "ack.pro.small",
-					"resource_group_id":           fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"deletion_protection":         "true",
+					"timezone":                    "Asia/Shanghai",
+					"os_type":                     "Linux",
+					"platform":                    "CentOS",
+					"node_port_range":             "30000-32767",
+					"cluster_domain":              "cluster.local",
+					"custom_san":                  "www.terraform.io",
+					"encryption_provider_key":     "${data.alicloud_kms_keys.default.keys.0.id}",
+					"runtime":                     map[string]interface{}{"Name": "docker", "Version": "19.03.5"},
+					"rds_instances":               []string{"${alicloud_db_instance.default.id}"},
+					"taints":                      []map[string]string{{"key": "tf-key1", "value": "tf-value1", "effect": "NoSchedule"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -72,7 +82,21 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 						"worker_data_disk_category": "cloud_ssd",
 						"slb_internet_enabled":      "true",
 						"cluster_spec":              "ack.pro.small",
-						"resource_group_id":         fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+						"resource_group_id":         CHECKSET,
+						"deletion_protection":       "true",
+						"timezone":                  "Asia/Shanghai",
+						"os_type":                   "Linux",
+						"platform":                  "CentOS",
+						"node_port_range":           "30000-32767",
+						"cluster_domain":            "cluster.local",
+						"custom_san":                "www.terraform.io",
+						"rds_instances.#":           "1",
+						"taints.#":                  "1",
+						"taints.0.key":              "tf-key1",
+						"taints.0.value":            "tf-value1",
+						"taints.0.effect":           "NoSchedule",
+						"runtime.Name":              "docker",
+						"runtime.Version":           "19.03.5",
 					}),
 				),
 			},
@@ -85,7 +109,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
 					"worker_instance_charge_type", "worker_instance_types", "log_config",
 					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes",
-					"cpu_policy", "proxy_mode"},
+					"cpu_policy", "proxy_mode", "cluster_domain", "custom_san", "node_port_range", "os_type", "platform", "timezone", "runtime", "taints", "encryption_provider_key", "rds_instances"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -99,11 +123,41 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"name": "tf-managed-k8s",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": "tf-managed-k8s",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"worker_number": "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"worker_number": "5",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"worker_number": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"worker_number": "3",
 					}),
 				),
 			},
@@ -128,6 +182,10 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role = "Worker"
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_kms_keys" "default" {}
+
 resource "alicloud_vpc" "default" {
   name = "${var.name}"
   cidr_block = "10.1.0.0/21"
@@ -144,6 +202,18 @@ resource "alicloud_log_project" "log" {
   name        = "${var.name}"
   description = "created by terraform for managedkubernetes cluster"
 }
+
+resource "alicloud_db_instance" "default" {
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  instance_type        = "rds.mysql.s2.large"
+  instance_storage     = "30"
+  instance_charge_type = "Postpaid"
+  instance_name        = "${var.name}"
+  vswitch_id           = "${alicloud_vswitch.default.id}"
+  monitoring_period    = "60"
+}
+
 `, name)
 }
 
@@ -216,7 +286,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
 					"worker_instance_charge_type", "worker_instance_types", "log_config",
 					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes",
-					"cpu_policy", "proxy_mode"},
+					"cpu_policy", "proxy_mode", "cluster_domain", "custom_san", "node_port_range", "os_type", "platform", "timezone", "runtime", "taints", "encryption_provider_key", "rds_instances"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

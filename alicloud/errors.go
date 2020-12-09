@@ -1,7 +1,10 @@
 package alicloud
 
 import (
+	"regexp"
 	"strings"
+
+	"github.com/alibabacloud-go/tea/tea"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 
@@ -189,6 +192,21 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 	return false
 }
 
+func NeedRetry(err error) bool {
+	if err == nil {
+		return false
+	}
+	if e, ok := err.(*common.Error); ok {
+		re := regexp.MustCompile("^Post https://.*EOF$")
+		return re.MatchString(e.Message)
+	}
+	if e, ok := err.(*tea.SDKError); ok {
+		re := regexp.MustCompile("^code: 5[\\d]{2}")
+		return re.MatchString(*e.Message)
+	}
+	return false
+}
+
 func IsThrottling(err error) bool {
 	if err == nil {
 		return false
@@ -317,11 +335,13 @@ func WrapComplexError(cause, err error, filepath string, fileline int) error {
 const DefaultErrorMsg = "Resource %s %s Failed!!! %s"
 const RequestIdMsg = "RequestId: %s"
 const NotFoundMsg = ResourceNotfound + "!!! %s"
+const NotFoundWithResponse = ResourceNotfound + "!!! Response: %v"
 const DefaultTimeoutMsg = "Resource %s %s Timeout!!! %s"
 const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"
 const WaitTimeoutMsg = "Resource %s %s Timeout In %d Seconds. Got: %s Expected: %s !!! %s"
 const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"
 const IdMsg = "Resource id：%s "
+const FailedGetAttributeMsg = "Getting resource %s attribute by path %s failed!!! Body: %v."
 
 const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n\n"
 const FailedToReachTargetStatus = "Failed to reach target status. Current status is %s."

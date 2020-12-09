@@ -1,24 +1,67 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"fmt"
+	"regexp"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func dataSourceAlicloudPvtzZones() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudPvtzZonesRead,
-
 		Schema: map[string]*schema.Schema{
 			"keyword": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
+			},
+			"lang": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"en", "jp", "zh"}, false),
+			},
+			"query_region_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"query_vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"search_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"LIKE", "EXACT"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.ValidateRegexp,
+				ForceNew:     true,
+			},
+			"names": {
+				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
@@ -26,29 +69,36 @@ func dataSourceAlicloudPvtzZones() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"names": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
 			"zones": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"id": {
-							Type:     schema.TypeString,
+						"bind_vpcs": {
+							Type:     schema.TypeList,
 							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"region_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"region_name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"vpc_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"vpc_name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
 						},
-						"name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"remark": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"record_count": {
+						"create_timestamp": {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
@@ -56,21 +106,63 @@ func dataSourceAlicloudPvtzZones() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
+						"proxy_pattern": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"record_count": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"remark": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"slave_dns": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"update_timestamp": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"zone_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"zone_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"creation_time": {
 							Type:     schema.TypeString,
 							Computed: true,
+							Removed:  "Field 'creation_time' has been removed from provider version 1.107.0",
 						},
 						"update_time": {
 							Type:     schema.TypeString,
 							Computed: true,
-						},
-						"bind_vpcs": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem:     &schema.Resource{Schema: outputShortVpcsSchema()},
+							Removed:  "Field 'update_time' has been removed from provider version 1.107.0",
 						},
 					},
 				},
+			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -78,18 +170,38 @@ func dataSourceAlicloudPvtzZones() *schema.Resource {
 
 func dataSourceAlicloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	pvtzService := PvtzService{client}
-	request := pvtz.CreateDescribeZonesRequest()
-	request.RegionId = client.RegionId
-	if keyword, ok := d.GetOk("keyword"); ok {
-		request.Keyword = keyword.(string)
+
+	action := "DescribeZones"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("keyword"); ok {
+		request["Keyword"] = v
 	}
-
-	request.PageNumber = requests.NewInteger(1)
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-
-	var pvtzZones []pvtz.Zone
-	pvtzZoneBindVpcs := make(map[string][]map[string]interface{})
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
+	if v, ok := d.GetOk("query_region_id"); ok {
+		request["QueryRegionId"] = v
+	}
+	if v, ok := d.GetOk("query_vpc_id"); ok {
+		request["QueryVpcId"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOk("search_mode"); ok {
+		request["SearchMode"] = v
+	}
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
+	var zoneNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		zoneNameRegex = r
+	}
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
@@ -100,99 +212,110 @@ func dataSourceAlicloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) e
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-
-	invoker := PvtzInvoker()
-
+	var response map[string]interface{}
+	conn, err := client.NewPvtzClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		var raw interface{}
-		var err error
-		err = invoker.Run(func() error {
-			raw, err = client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-				return pvtzClient.DescribeZones(request)
-			})
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			return err
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_pvtz_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_pvtz_zones", action, AlibabaCloudSdkGoERROR)
 		}
-		response, _ := raw.(*pvtz.DescribeZonesResponse)
-		if response == nil || len(response.Zones.Zone) < 1 {
-			break
-		}
+		addDebug(action, response, request)
 
-		for _, key := range response.Zones.Zone {
-			if len(idsMap) > 0 {
-				if _, ok := idsMap[key.ZoneId]; !ok {
+		resp, err := jsonpath.Get("$.Zones.Zone", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Zones.Zone", response)
+		}
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
+			if zoneNameRegex != nil {
+				if !zoneNameRegex.MatchString(item["ZoneName"].(string)) {
 					continue
 				}
 			}
-			pvtzZones = append(pvtzZones, key)
-
-			object, err := pvtzService.DescribePvtzZone(key.ZoneId)
-
-			if err != nil {
-				return WrapError(err)
-			}
-
-			var vpcs []map[string]interface{}
-			for _, vpc := range object.BindVpcs.Vpc {
-				mapping := map[string]interface{}{
-					"region_id": vpc.RegionId,
-					"vpc_id":    vpc.VpcId,
-					"vpc_name":  vpc.VpcName,
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["ZoneId"])]; !ok {
+					continue
 				}
-
-				vpcs = append(vpcs, mapping)
 			}
-			pvtzZoneBindVpcs[key.ZoneId] = vpcs
+			objects = append(objects, item)
+		}
+		if len(resp.([]interface{})) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	ids := make([]string, 0)
+	names := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"create_timestamp":  formatInt(object["CreateTimestamp"]),
+			"is_ptr":            object["IsPtr"],
+			"proxy_pattern":     object["ProxyPattern"],
+			"record_count":      formatInt(object["RecordCount"]),
+			"remark":            object["Remark"],
+			"resource_group_id": object["ResourceGroupId"],
+			"update_timestamp":  formatInt(object["UpdateTimestamp"]),
+			"id":                fmt.Sprint(object["ZoneId"]),
+			"zone_id":           fmt.Sprint(object["ZoneId"]),
+			"zone_name":         object["ZoneName"],
+			"name":              object["ZoneName"],
+		}
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			ids = append(ids, fmt.Sprint(object["ZoneId"]))
+			names = append(names, object["ZoneName"].(string))
+			s = append(s, mapping)
+			continue
 		}
 
-		page, err := getNextpageNumber(request.PageNumber)
+		pvtzService := PvtzService{client}
+		id := fmt.Sprint(object["ZoneId"])
+		getResp, err := pvtzService.DescribePvtzZone(id)
 		if err != nil {
 			return WrapError(err)
 		}
-		request.PageNumber = page
-	}
 
-	return pvtzZoneDescriptionAttributes(d, pvtzZones, pvtzZoneBindVpcs)
-}
-
-func pvtzZoneDescriptionAttributes(d *schema.ResourceData, pvtzZones []pvtz.Zone, pvtzZoneBindVpcs map[string][]map[string]interface{}) error {
-	var names []string
-	var ids []string
-	var s []map[string]interface{}
-	for _, key := range pvtzZones {
-		mapping := map[string]interface{}{
-			"id":            key.ZoneId,
-			"name":          key.ZoneName,
-			"remark":        key.Remark,
-			"record_count":  key.RecordCount,
-			"is_ptr":        key.IsPtr,
-			"creation_time": key.CreateTime,
-			"update_time":   key.UpdateTime,
-			"bind_vpcs":     pvtzZoneBindVpcs[key.ZoneId],
+		vpc := make([]map[string]interface{}, 0)
+		if vpcList, ok := getResp["BindVpcs"].(map[string]interface{})["Vpc"].([]interface{}); ok {
+			for _, v := range vpcList {
+				if m1, ok := v.(map[string]interface{}); ok {
+					temp1 := map[string]interface{}{
+						"region_id":   m1["RegionId"],
+						"region_name": m1["RegionName"],
+						"vpc_id":      m1["VpcId"],
+						"vpc_name":    m1["VpcName"],
+					}
+					vpc = append(vpc, temp1)
+				}
+			}
 		}
-
-		names = append(names, key.ZoneName)
-		ids = append(ids, key.ZoneId)
+		mapping["bind_vpcs"] = vpc
+		mapping["slave_dns"] = getResp["SlaveDns"]
+		ids = append(ids, fmt.Sprint(object["ZoneId"]))
+		names = append(names, object["ZoneName"].(string))
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(names))
-	if err := d.Set("zones", s); err != nil {
-		return WrapError(err)
-	}
+	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
+
 	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 
-	// create a json file in current directory and write data source to it.
+	if err := d.Set("zones", s); err != nil {
+		return WrapError(err)
+	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
+
 	return nil
 }

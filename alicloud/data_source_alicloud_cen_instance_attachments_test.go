@@ -98,17 +98,18 @@ variable "name" {
 	default = "tf-testAccCen%d"
 }
 
-data "alicloud_vpcs" "default" {
-  is_default = true
+resource "alicloud_vpc" "default" {
+  name       = "tf-testaccCenInstanceAttachment"
+  cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_cen_instance" "default" {
-  name = var.name
+  cen_instance_name = var.name
   description = "for test"
 }
 
 resource "alicloud_cen_instance_attachment" "default" {
-  child_instance_id = data.alicloud_vpcs.default.vpcs.0.id
+  child_instance_id = alicloud_vpc.default.id
   child_instance_region_id = "%s"
   instance_id = alicloud_cen_instance.default.id
   child_instance_type = "VPC"

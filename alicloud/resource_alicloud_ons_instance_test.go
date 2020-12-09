@@ -83,7 +83,7 @@ func testSweepOnsInstance(region string) error {
 }
 
 func TestAccAlicloudOnsInstance_basic(t *testing.T) {
-	var v ons.InstanceBaseInfo
+	var v map[string]interface{}
 	resourceId := "alicloud_ons_instance.default"
 	ra := resourceAttrInit(resourceId, OnsInstanceMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -117,6 +117,19 @@ func TestAccAlicloudOnsInstance_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "1",
+						"tags.Created": "TF",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -156,7 +169,6 @@ func TestAccAlicloudOnsInstance_basic(t *testing.T) {
 
 var OnsInstanceMap = map[string]string{
 	"instance_type": CHECKSET,
-	"release_time":  CHECKSET,
 	"status":        CHECKSET,
 }
 

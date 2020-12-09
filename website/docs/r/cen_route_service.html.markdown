@@ -23,11 +23,11 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  example = "tf-test"
+  default = "tf-test"
 }
 
 data "alicloud_vpcs" "example" {
-  is_example = true
+  is_default = true
 }
 
 resource "alicloud_cen_instance" "example" {

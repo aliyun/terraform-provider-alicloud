@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -32,7 +35,7 @@ func (s *CmsService) BuildCmsAlarmRequest(id string) *requests.CommonRequest {
 	return request
 }
 
-func (s *CmsService) DescribeAlarm(id string) (alarm cms.Alarm, err error) {
+func (s *CmsService) DescribeAlarm(id string) (alarm cms.AlarmInDescribeMetricRuleList, err error) {
 	request := cms.CreateDescribeMetricRuleListRequest()
 	request.RuleIds = id
 
@@ -107,11 +110,23 @@ func (s *CmsService) DescribeSiteMonitor(id, keyword string) (siteMonitor cms.Si
 	listRequest := cms.CreateDescribeSiteMonitorListRequest()
 	listRequest.Keyword = keyword
 	listRequest.TaskId = id
-	raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.DescribeSiteMonitorList(listRequest)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.DescribeSiteMonitorList(listRequest)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ExceedingQuota"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err != nil {
-		return siteMonitor, err
+		return siteMonitor, WrapError(err)
 	}
 	list := raw.(*cms.DescribeSiteMonitorListResponse)
 	if len(list.SiteMonitors.SiteMonitor) < 1 {
@@ -130,12 +145,23 @@ func (s *CmsService) GetIspCities(id string) (ispCities IspCities, err error) {
 	request := cms.CreateDescribeSiteMonitorAttributeRequest()
 	request.TaskId = id
 
-	raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.DescribeSiteMonitorAttribute(request)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+			return cmsClient.DescribeSiteMonitorAttribute(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ExceedingQuota"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
-
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 
 	response := raw.(*cms.DescribeSiteMonitorAttributeResponse)
@@ -159,7 +185,7 @@ func (s *CmsService) DescribeCmsAlarmContact(id string) (object cms.Contact, err
 		return cmsClient.DescribeContactList(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ContactNotExists"}) {
+		if IsExpectedErrors(err, []string{"ContactNotExists", "ResourceNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContact", id)), NotFoundMsg, ProviderERROR)
 			return
 		}
@@ -226,4 +252,44 @@ func (s *CmsService) DescribeCmsAlarmContactGroup(id string) (object cms.Contact
 	}
 	err = WrapErrorf(Error(GetNotFoundMessage("CmsAlarmContactGroup", id)), NotFoundMsg, ProviderERROR)
 	return
+}
+
+func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCmsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeMetricRuleList"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"RuleIds":  id,
+	}
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"GroupMetricRuleNotExists"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("CmsGroupMetricRule", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	if !response["Success"].(bool) {
+		err = Error("DescribeMetricRuleList failed for " + response["Message"].(string))
+		return object, err
+	}
+	v, err := jsonpath.Get("$.Alarms.Alarm", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Alarms.Alarm", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["RuleId"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }

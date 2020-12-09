@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	waf_openapi "github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudWafInstance_basic(t *testing.T) {
-	var v waf_openapi.DescribeInstanceInfoResponse
+	var v map[string]interface{}
 	resourceId := "alicloud_waf_instance.default"
 	ra := resourceAttrInit(resourceId, WafInstanceMap)
 	serviceFunc := func() interface{} {

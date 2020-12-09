@@ -153,6 +153,16 @@ func resourceAliyunInstance() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
 			},
+			"system_disk_name": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(2, 128),
+			},
+			"system_disk_description": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(2, 256),
+			},
 			"system_disk_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -256,7 +266,16 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if PostPaidDiffSuppressFunc(k, old, new, d) {
+						return true
+					}
+					o, n := d.GetChange("period")
+					if o != nil && n != nil && o.(int) != n.(int) {
+						return true
+					}
+					return false
+				},
 			},
 			"period_unit": {
 				Type:             schema.TypeString,
@@ -901,6 +920,14 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	if v, ok := d.GetOk("availability_zone"); ok && v.(string) != "" {
 		request.ZoneId = v.(string)
 	}
+
+	DiskName := d.Get("system_disk_name").(string)
+
+	Description := d.Get("system_disk_description").(string)
+
+	request.SystemDiskDiskName = DiskName
+
+	request.SystemDiskDescription = Description
 
 	request.SystemDiskCategory = string(systemDiskCategory)
 	request.SystemDiskSize = strconv.Itoa(d.Get("system_disk_size").(int))

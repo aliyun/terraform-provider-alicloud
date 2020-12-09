@@ -1,7 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
@@ -14,26 +18,33 @@ type OnsService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *OnsService) DescribeOnsInstance(id string) (object ons.InstanceBaseInfo, err error) {
-	request := ons.CreateOnsInstanceBaseInfoRequest()
-	request.RegionId = s.client.RegionId
-
-	request.InstanceId = id
-
-	raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.OnsInstanceBaseInfo(request)
-	})
+func (s *OnsService) DescribeOnsInstance(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewOnsClient()
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDomainName.NoExist"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("OnsInstance", id)), NotFoundMsg, ProviderERROR)
-			return
-		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		return nil, WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ons.OnsInstanceBaseInfoResponse)
-	return response.InstanceBaseInfo, nil
+	action := "OnsInstanceBaseInfo"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"InstanceId": id,
+	}
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"INSTANCE_NOT_FOUNDError", "InvalidDomainName.NoExist"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("OnsInstance", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.InstanceBaseInfo", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceBaseInfo", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }
 
 func (s *OnsService) DescribeOnsTopic(id string) (object ons.PublishInfoDo, err error) {
@@ -157,70 +168,82 @@ func (s *OnsService) WaitForOnsGroup(id string, status Status, timeout int) erro
 	}
 }
 
-func (s *OnsService) ListTagResources(id string) (object ons.ListTagResourcesResponse, err error) {
-	request := ons.CreateListTagResourcesRequest()
-	request.RegionId = s.client.RegionId
-
-	request.InstanceId = id
-	request.ResourceType = "INSTANCE"
-	request.ResourceId = &[]string{id}
-
-	raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-		return onsClient.ListTagResources(request)
-	})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDomainName.NoExist"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("OnsInstance", id)), NotFoundMsg, ProviderERROR)
-			return
-		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ons.ListTagResourcesResponse)
-	return *response, nil
-}
-
 func (s *OnsService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
-	oldItems, newItems := d.GetChange("tags")
-	added := make([]ons.TagResourcesTag, 0)
-	for key, value := range newItems.(map[string]interface{}) {
-		added = append(added, ons.TagResourcesTag{
-			Key:   key,
-			Value: value.(string),
-		})
-	}
-	removed := make([]string, 0)
-	for key, _ := range oldItems.(map[string]interface{}) {
-		removed = append(removed, key)
-	}
-	if len(removed) > 0 {
-		request := ons.CreateUntagResourcesRequest()
-		request.RegionId = s.client.RegionId
-		request.ResourceId = &[]string{d.Id()}
-		request.ResourceType = resourceType
-		request.TagKey = &removed
-		raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.UntagResources(request)
-		})
-		addDebug(request.GetActionName(), raw)
+
+	if d.HasChange("tags") {
+		added, removed := parsingTags(d)
+		conn, err := s.client.NewOnsClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-	}
-	if len(added) > 0 {
-		request := ons.CreateTagResourcesRequest()
-		request.RegionId = s.client.RegionId
-		request.ResourceId = &[]string{d.Id()}
-		request.ResourceType = resourceType
-		request.Tag = &added
-		raw, err := s.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
-			return onsClient.TagResources(request)
-		})
-		addDebug(request.GetActionName(), raw)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
 		}
+		if len(removedTagKeys) > 0 {
+			action := "UnTagResources"
+			request := map[string]interface{}{
+				"RegionId":     s.client.RegionId,
+				"ResourceType": resourceType,
+				"ResourceId.1": d.Id(),
+			}
+			for i, key := range removed {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if IsThrottling(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		if len(added) > 0 {
+			action := "TagResources"
+			request := map[string]interface{}{
+				"RegionId":     s.client.RegionId,
+				"ResourceType": string(resourceType),
+				"ResourceId.1": d.Id(),
+			}
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = value
+				count++
+			}
+
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if IsThrottling(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		d.SetPartial("tags")
 	}
 	return nil
 }
@@ -359,4 +382,50 @@ func (s *OnsService) SetResourceTagsForGroup(d *schema.ResourceData, resourceTyp
 		}
 	}
 	return nil
+}
+
+func (s *OnsService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
+	conn, err := s.client.NewOnsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListTagResources"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"ResourceType": resourceType,
+		"ResourceId.1": id,
+	}
+	tags := make([]interface{}, 0)
+	var response map[string]interface{}
+
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{Throttling}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			v, err := jsonpath.Get("$.TagResources", response)
+			if err != nil {
+				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
+			}
+			tags = append(tags, v.([]interface{})...)
+			return nil
+		})
+		if err != nil {
+			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return
+		}
+		if response["NextToken"] == nil {
+			break
+		}
+		request["NextToken"] = response["NextToken"]
+	}
+
+	return tags, nil
 }

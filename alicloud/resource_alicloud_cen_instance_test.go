@@ -23,6 +23,7 @@ func init() {
 		Dependencies: []string{
 			"alicloud_cen_bandwidth_package",
 			"alicloud_cen_flowlog",
+			"alicloud_cen_instance_attachment",
 		},
 	})
 }

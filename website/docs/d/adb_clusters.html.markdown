@@ -23,7 +23,7 @@ data "alicloud_adb_clusters" "adb_clusters_ds" {
 }
 
 output "first_adb_cluster_id" {
-  value = "${data.alicloud_adb_clusters.adb_clusters_ds.clusters.0.id}"
+  value = data.alicloud_adb_clusters.adb_clusters_ds.clusters.0.id
 }
 ```
 
@@ -33,6 +33,7 @@ The following arguments are supported:
 
 * `description_regex` - (Optional) A regex string to filter results by cluster description.
 * `ids` - (Optional) A list of ADB cluster IDs. 
+* `status` - (Optional, ForceNew, Available in v1.102.0+) The status of the cluster. Valid values: `Preparing`, `Creating`, `Restoring`, `Running`, `Deleting`, `ClassChanging`, `NetAddressCreating`, `NetAddressDeleting`. For more information, see [Cluster status](https://www.alibabacloud.com/help/doc-detail/143075.htm).
 * `tags` - (Optional, Available in v1.68.0+) A mapping of tags to assign to the resource.
       - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
       - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.

@@ -148,6 +148,38 @@ func (s *FcService) DescribeFcTrigger(id string) (*fc.GetTriggerOutput, error) {
 	return response, err
 }
 
+func (s *FcService) DescribeFcAlias(id string) (*fc.GetAliasOutput, error) {
+	response := &fc.GetAliasOutput{}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	service, name := parts[0], parts[1]
+	request := &fc.GetAliasInput{
+		ServiceName: &service,
+		AliasName:   &name,
+	}
+	var requestInfo *fc.Client
+	raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+		requestInfo = fcClient
+		return fcClient.GetAlias(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ServiceNotFound", "AliasNotFound"}) {
+			err = WrapErrorf(err, NotFoundMsg, FcGoSdk)
+		} else {
+			err = WrapErrorf(err, DefaultErrorMsg, id, "GetAlias", FcGoSdk)
+		}
+		return response, err
+	}
+	addDebug("GetAlias", raw, requestInfo, request)
+	response, _ = raw.(*fc.GetAliasOutput)
+	if *response.AliasName == "" {
+		err = WrapErrorf(Error(GetNotFoundMessage("FcAlias", id)), NotFoundMsg, FcGoSdk)
+	}
+	return response, err
+}
+
 func removeSpaceAndEnter(s string) string {
 	if Trim(s) == "" {
 		return Trim(s)

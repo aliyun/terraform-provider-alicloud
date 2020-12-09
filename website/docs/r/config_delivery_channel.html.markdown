@@ -14,6 +14,8 @@ For information about Alicloud Config Delivery Channel and how to use it, see [W
 
 -> **NOTE:** Available in v1.99.0+.
 
+-> **NOTE:** The Cloud Config region only support `cn-shanghai` and `ap-northeast-1`.
+
 -> **NOTE:** Once each type of delivery channel is created, it does not support destroyed by terraform. Only support through the `status` attribute control enable and disable.
 
 ## Example Usage
@@ -68,6 +70,15 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - This ID of Config Delivery Channel.  
+
+### Timeouts
+
+-> **NOTE:** Available in 1.104.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 3 mins) Used when create the Config Delivery Channel.
+* `update` - (Defaults to 3 mins) Used when update the Config Delivery Channel.
 
 ## Import
 

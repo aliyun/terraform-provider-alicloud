@@ -527,6 +527,7 @@ type KubernetesNodeType struct {
 	HostName           string   `json:"host_name"`
 	ImageId            string   `json:"image_id"`
 	InstanceId         string   `json:"instance_id"`
+	NodeName           string   `json:"node_name"`
 }
 
 type GetKubernetesClusterNodesResponse struct {
@@ -535,9 +536,14 @@ type GetKubernetesClusterNodesResponse struct {
 	Nodes []KubernetesNodeType `json:"nodes"`
 }
 
-func (client *Client) GetKubernetesClusterNodes(id string, pagination common.Pagination) (nodes []KubernetesNodeType, paginationResult *PaginationResult, err error) {
+// GetKubernetesClusterNodes is used to get cluster nodes or node pool nodes
+func (client *Client) GetKubernetesClusterNodes(id string, pagination common.Pagination, nodepoolId string) (nodes []KubernetesNodeType, paginationResult *PaginationResult, err error) {
 	response := &GetKubernetesClusterNodesResponse{}
-	err = client.Invoke("", http.MethodGet, "/clusters/"+id+"/nodes?pageNumber="+strconv.Itoa(pagination.PageNumber)+"&pageSize="+strconv.Itoa(pagination.PageSize), nil, nil, &response)
+	if nodepoolId != "" {
+		err = client.Invoke("", http.MethodGet, "/clusters/"+id+"/nodes?nodepool_id="+nodepoolId+"&pageNumber="+strconv.Itoa(pagination.PageNumber)+"&pageSize="+strconv.Itoa(pagination.PageSize), nil, nil, &response)
+	} else {
+		err = client.Invoke("", http.MethodGet, "/clusters/"+id+"/nodes?pageNumber="+strconv.Itoa(pagination.PageNumber)+"&pageSize="+strconv.Itoa(pagination.PageSize), nil, nil, &response)
+	}
 	if err != nil {
 		return nil, nil, err
 	}
