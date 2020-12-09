@@ -326,3 +326,34 @@ func (s *RosService) RosStackGroupStateRefreshFunc(id string, failStates []strin
 		return object, object["Status"].(string), nil
 	}
 }
+
+func (s *RosService) DescribeRosTemplate(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRosClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetTemplate"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"TemplateId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ChangeSetNotFound", "StackNotFound", "TemplateNotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("RosTemplate", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}

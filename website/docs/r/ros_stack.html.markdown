@@ -65,6 +65,7 @@ The following arguments are supported:
 * `template_version` - (Optional) The version of the template.
 * `timeout_in_minutes` - (Optional) The timeout period that is specified for the stack creation request. Default to: `60`.
 * `use_previous_parameters` - (Optional) Specifies whether to use the values that were passed last time for the parameters that you do not specify in the current request.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 #### Block parameters
 
