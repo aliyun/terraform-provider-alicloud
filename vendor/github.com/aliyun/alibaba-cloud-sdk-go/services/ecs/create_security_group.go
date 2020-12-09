@@ -73,6 +73,7 @@ type CreateSecurityGroupRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer          `position:"Query" name:"ResourceOwnerId"`
 	ClientToken          string                    `position:"Query" name:"ClientToken"`
+	ServiceManaged       requests.Boolean          `position:"Query" name:"ServiceManaged"`
 	Description          string                    `position:"Query" name:"Description"`
 	SecurityGroupName    string                    `position:"Query" name:"SecurityGroupName"`
 	ResourceGroupId      string                    `position:"Query" name:"ResourceGroupId"`
@@ -102,7 +103,7 @@ func CreateCreateSecurityGroupRequest() (request *CreateSecurityGroupRequest) {
 	request = &CreateSecurityGroupRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "CreateSecurityGroup", "ecs", "openAPI")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "CreateSecurityGroup", "", "")
 	request.Method = requests.POST
 	return
 }

@@ -83,7 +83,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 			},
 			"scheduler": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"wrr", "wlc", "rr"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"wrr", "wlc", "rr", "sch"}, false),
 				Optional:     true,
 				Default:      WRRScheduler,
 			},
@@ -253,6 +253,11 @@ func resourceAliyunSlbListener() *schema.Resource {
 				DiffSuppressFunc: sslCertificateIdDiffSuppressFunc,
 			},
 
+			"ca_certificate_id": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: sslCertificateIdDiffSuppressFunc,
+			},
 			//http, https
 			"gzip": {
 				Type:             schema.TypeBool,
@@ -399,6 +404,10 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 				return WrapError(Error(`'server_certificate_id': required field is not set when the protocol is 'https'.`))
 			}
 			request.QueryParams["ServerCertificateId"] = scId
+
+			if caId, ok := d.GetOk("ca_certificate_id"); ok && caId.(string) != "" {
+				request.QueryParams["CACertificateId"] = caId.(string)
+			}
 		}
 	}
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
@@ -718,6 +727,11 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 				httpsArgs.QueryParams["TLSCipherPolicy"] = d.Get("tls_cipher_policy").(string)
 				update = true
 			}
+		}
+
+		if d.HasChange("ca_certificate_id") {
+			httpsArgs.QueryParams["CACertificateId"] = d.Get("ca_certificate_id").(string)
+			update = true
 		}
 	}
 
@@ -1044,7 +1058,9 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 		d.Set("ssl_certificate_id", val.(string))
 		d.Set("server_certificate_id", val.(string))
 	}
-
+	if val, ok := listener["CACertificateId"]; ok {
+		d.Set("ca_certificate_id", val.(string))
+	}
 	if val, ok := listener["EnableHttp2"]; ok {
 		d.Set("enable_http2", val.(string))
 	}

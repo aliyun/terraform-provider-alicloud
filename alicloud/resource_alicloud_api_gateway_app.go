@@ -72,11 +72,23 @@ func resourceAliyunApigatewayAppCreate(d *schema.ResourceData, meta interface{})
 func resourceAliyunApigatewayAppRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudApiService := CloudApiService{client}
-	tags, err := cloudApiService.DescribeTags(d.Id(), nil, TagResourceApp)
-	if err != nil {
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		tags, err := cloudApiService.DescribeTags(d.Id(), nil, TagResourceApp)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"NotFoundResourceId"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		d.Set("tags", cloudApiService.tagsToMap(tags))
+		return nil
+	}); err != nil {
 		return WrapError(err)
 	}
-	d.Set("tags", cloudApiService.tagsToMap(tags))
+
 	if err := resource.Retry(3*time.Second, func() *resource.RetryError {
 		object, err := cloudApiService.DescribeApiGatewayApp(d.Id())
 		if err != nil {

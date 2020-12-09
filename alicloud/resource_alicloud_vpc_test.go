@@ -156,7 +156,11 @@ func TestAccAlicloudVpcBasic(t *testing.T) {
 				Config: testAccCheckVpcConfigBasic(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf_testAccVpcConfigName%d", rand),
+						"name":              fmt.Sprintf("tf_testAccVpcConfigName%d", rand),
+						"resource_group_id": CHECKSET,
+						"router_id":         CHECKSET,
+						"router_table_id":   CHECKSET,
+						"route_table_id":    CHECKSET,
 					}),
 				),
 			},

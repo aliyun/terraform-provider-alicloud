@@ -5,50 +5,44 @@ import (
 	"testing"
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudKVStoreAccountUpdateV4(t *testing.T) {
-	var v *r_kvstore.Account
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testAccKVstoreAccount-%d", rand)
-	var basicMap = map[string]string{
-		"instance_id":      CHECKSET,
-		"account_name":     "tftestnormal",
-		"account_password": "YourPassword_123",
-		"account_type":     "Normal",
-	}
+func TestAccAlicloudKvstoreAccount_basic(t *testing.T) {
+	var v r_kvstore.Account
 	resourceId := "alicloud_kvstore_account.default"
-	ra := resourceAttrInit(resourceId, basicMap)
-	serviceFunc := func() interface{} {
-		return &KvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeKVstoreAccount")
+	ra := resourceAttrInit(resourceId, KvstoreAccountMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreAccount")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceKVstoreAccountConfigDependenceV4)
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sKvstoreAccounttftestnormal%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreAccountBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
-		// module name
 		IDRefreshName: resourceId,
-
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":      "${alicloud_kvstore_instance.instance.id}",
-					"account_name":     "tftestnormal",
+					"account_name":     "tftest",
 					"account_password": "YourPassword_123",
+					"instance_id":      "${alicloud_kvstore_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"account_name":     "tftest",
+						"account_password": "YourPassword_123",
+						"instance_id":      CHECKSET,
+					}),
 				),
 			},
 			{
@@ -56,26 +50,6 @@ func TestAccAlicloudKVStoreAccountUpdateV4(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"account_password"},
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "from terraform",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "from terraform",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"account_privilege": "RoleRepl",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_privilege": "RoleRepl",
-					}),
-				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -89,15 +63,35 @@ func TestAccAlicloudKVStoreAccountUpdateV4(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":       "tf test",
-					"account_password":  "YourPassword_123",
 					"account_privilege": "RoleReadOnly",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":       "tf test",
-						"account_password":  "YourPassword_123",
 						"account_privilege": "RoleReadOnly",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "terraform_test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "terraform_test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password":  "YourPassword_123",
+					"account_privilege": "RoleReadWrite",
+					"description":       "terraform_test_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password":  "YourPassword_123",
+						"account_privilege": "RoleReadWrite",
+						"description":       "terraform_test_update",
 					}),
 				),
 			},
@@ -105,44 +99,39 @@ func TestAccAlicloudKVStoreAccountUpdateV4(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKVStoreAccountUpdateV5(t *testing.T) {
-	var v *r_kvstore.Account
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testAccKVstoreAccount-%d", rand)
-	var basicMap = map[string]string{
-		"instance_id":      CHECKSET,
-		"account_name":     "tftestnormal",
-		"account_password": "YourPassword_123",
-		"account_type":     "Normal",
-	}
+func TestAccAlicloudKvstoreAccount_basic_v5(t *testing.T) {
+	var v r_kvstore.Account
 	resourceId := "alicloud_kvstore_account.default"
-	ra := resourceAttrInit(resourceId, basicMap)
-	serviceFunc := func() interface{} {
-		return &KvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeKVstoreAccount")
+	ra := resourceAttrInit(resourceId, KvstoreAccountMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreAccount")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceKVstoreAccountConfigDependenceV5)
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sKvstoreAccounttftestnormal%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreAccountBasicdependenceV5)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
-		// module name
 		IDRefreshName: resourceId,
-
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":      "${alicloud_kvstore_instance.instance.id}",
-					"account_name":     "tftestnormal",
+					"account_name":     "tftest",
 					"account_password": "YourPassword_123",
+					"instance_id":      "${alicloud_kvstore_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"account_name":     "tftest",
+						"account_password": "YourPassword_123",
+						"instance_id":      CHECKSET,
+					}),
 				),
 			},
 			{
@@ -150,26 +139,6 @@ func TestAccAlicloudKVStoreAccountUpdateV5(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"account_password"},
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "from terraform",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "from terraform",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"account_privilege": "RoleReadOnly",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_privilege": "RoleReadOnly",
-					}),
-				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -183,15 +152,35 @@ func TestAccAlicloudKVStoreAccountUpdateV5(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":       "tf test",
-					"account_password":  "YourPassword_123",
 					"account_privilege": "RoleReadOnly",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":       "tf test",
-						"account_password":  "YourPassword_123",
 						"account_privilege": "RoleReadOnly",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "terraform_test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "terraform_test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password":  "YourPassword_123",
+					"account_privilege": "RoleReadWrite",
+					"description":       "terraform_test_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password":  "YourPassword_123",
+						"account_privilege": "RoleReadWrite",
+						"description":       "terraform_test_update",
 					}),
 				),
 			},
@@ -199,37 +188,40 @@ func TestAccAlicloudKVStoreAccountUpdateV5(t *testing.T) {
 	})
 }
 
-func resourceKVstoreAccountConfigDependenceV4(name string) string {
+var KvstoreAccountMap = map[string]string{
+	"account_privilege": "RoleReadWrite",
+	"status":            CHECKSET,
+}
+
+func KvstoreAccountBasicdependence(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_zones" "default" {
-		available_resource_creation = "KVStore"
+	data "alicloud_kvstore_zones" "default"{
+		instance_charge_type = "PostPaid"
 	}
 	variable "name" {
 		default = "%v"
 	}
-	resource "alicloud_kvstore_instance" "instance" {
-		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+	resource "alicloud_kvstore_instance" "default" {
+		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
 		instance_class = "redis.master.small.default"
-		instance_name  = "${var.name}"
-		instance_charge_type = "PostPaid"
+		instance_name  = var.name
 		engine_version = "4.0"
 	}
 	`, name)
 }
 
-func resourceKVstoreAccountConfigDependenceV5(name string) string {
+func KvstoreAccountBasicdependenceV5(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_zones" "default" {
-		available_resource_creation = "KVStore"
+	data "alicloud_kvstore_zones" "default"{
+		instance_charge_type = "PostPaid"
 	}
 	variable "name" {
 		default = "%v"
 	}
-	resource "alicloud_kvstore_instance" "instance" {
-		availability_zone = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)-1)%%length(data.alicloud_zones.default.zones)], "id")}"
+	resource "alicloud_kvstore_instance" "default" {
+		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
 		instance_class = "redis.master.small.default"
-		instance_name  = "${var.name}"
-		instance_charge_type = "PostPaid"
+		instance_name  = var.name
 		engine_version = "5.0"
 	}
 	`, name)

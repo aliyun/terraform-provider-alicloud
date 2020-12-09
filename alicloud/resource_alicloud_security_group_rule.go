@@ -155,6 +155,22 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	}
 	d.SetId(sgId + ":" + direction + ":" + ptl + ":" + port + ":" + nicType + ":" + cidr_ip + ":" + policy + ":" + strconv.Itoa(priority))
 
+	// wait the rule exist
+	ecsService := EcsService{client}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(60*time.Second, func() *resource.RetryError {
+		_, err := ecsService.DescribeSecurityGroupRule(d.Id())
+		if err == nil {
+			return resource.NonRetryableError(err)
+		} else {
+			wait()
+			return resource.RetryableError(err)
+		}
+	})
+	if err != nil {
+		return WrapError(err)
+	}
+
 	return resourceAliyunSecurityGroupRuleRead(d, meta)
 }
 

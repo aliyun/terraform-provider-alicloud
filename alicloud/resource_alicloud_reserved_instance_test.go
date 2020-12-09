@@ -43,7 +43,7 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 					"offering_type":   "All Upfront",
 					"name":            name,
 					"description":     "ReservedInstance",
-					"zone_id":         "cn-shanghai-g",
+					"zone_id":         "cn-hangzhou-h",
 					"scope":           "Zone",
 					"period":          "1",
 				}),
@@ -55,11 +55,16 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 						"offering_type":   "All Upfront",
 						"name":            name,
 						"description":     "ReservedInstance",
-						"zone_id":         "cn-shanghai-g",
+						"zone_id":         "cn-hangzhou-h",
 						"scope":           "Zone",
-						"period":          "1",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "period_unit"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

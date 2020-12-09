@@ -2,7 +2,7 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
+	"log"
 	"time"
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
@@ -12,33 +12,55 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudKVstoreAccount() *schema.Resource {
+func resourceAlicloudKvstoreAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudKVStoreAccountCreate,
-		Read:   resourceAlicloudKVStoreAccountRead,
-		Update: resourceAlicloudKVStoreAccountUpdate,
-		Delete: resourceAlicloudKVStoreAccountDelete,
+		Create: resourceAlicloudKvstoreAccountCreate,
+		Read:   resourceAlicloudKvstoreAccountRead,
+		Update: resourceAlicloudKvstoreAccountUpdate,
+		Delete: resourceAlicloudKvstoreAccountDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(6 * time.Minute),
+			Update: schema.DefaultTimeout(6 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"instance_id": {
-				Type:     schema.TypeString,
-				ForceNew: true,
-				Required: true,
-			},
-
 			"account_name": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
+				ForceNew: true,
 			},
-
 			"account_password": {
 				Type:      schema.TypeString,
 				Optional:  true,
 				Sensitive: true,
+			},
+			"account_privilege": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"RoleReadOnly", "RoleReadWrite", "RoleRepl"}, false),
+				Default:      "RoleReadWrite",
+			},
+			"account_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Normal"}, false),
+				Default:      "Normal",
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"instance_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"kms_encrypted_password": {
 				Type:             schema.TypeString,
@@ -53,166 +75,141 @@ func resourceAlicloudKVstoreAccount() *schema.Resource {
 				},
 				Elem: schema.TypeString,
 			},
-			"account_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Normal"}, false),
-				ForceNew:     true,
-				Default:      "Normal",
-			},
-			"account_privilege": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"RoleReadOnly", "RoleReadWrite", "RoleRepl"}, false),
-				Default:      "RoleReadWrite",
-			},
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 		},
 	}
 }
 
-func resourceAlicloudKVStoreAccountCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudKvstoreAccountCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	kvstoreService := KvstoreService{client}
+	r_kvstoreService := R_kvstoreService{client}
+
 	request := r_kvstore.CreateCreateAccountRequest()
-	request.RegionId = client.RegionId
-	request.InstanceId = d.Get("instance_id").(string)
 	request.AccountName = d.Get("account_name").(string)
-
-	password := d.Get("account_password").(string)
-	kmsPassword := d.Get("kms_encrypted_password").(string)
-
-	if password == "" && kmsPassword == "" {
+	request.AccountPassword = d.Get("account_password").(string)
+	if request.AccountPassword == "" {
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			request.AccountPassword = decryptResp.Plaintext
+		}
+	}
+	if request.AccountPassword == "" {
 		return WrapError(Error("One of the 'account_password' and 'kms_encrypted_password' should be set."))
 	}
-
-	if password != "" {
-		request.AccountPassword = password
-	} else {
-		kmsService := KmsService{client}
-		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
-		if err != nil {
-			return WrapError(err)
-		}
-		request.AccountPassword = decryptResp.Plaintext
+	if v, ok := d.GetOk("account_privilege"); ok {
+		request.AccountPrivilege = v.(string)
 	}
-	request.AccountType = d.Get("account_type").(string)
 
-	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
+	if v, ok := d.GetOk("account_type"); ok {
+		request.AccountType = v.(string)
+	}
+
+	if v, ok := d.GetOk("description"); ok {
 		request.AccountDescription = v.(string)
 	}
-	// wait instance running before modifying
-	if err := kvstoreService.WaitForKVstoreInstance(request.InstanceId, Normal, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
-	}
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.CreateAccount(request)
+
+	request.InstanceId = d.Get("instance_id").(string)
+	wait := incrementalWait(3*time.Second, 30*time.Second)
+	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+			return r_kvstoreClient.CreateAccount(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) {
+			if IsExpectedErrors(err, []string{"OperationDeniedDBStatus"}) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(request.GetActionName(), raw)
+		response, _ := raw.(*r_kvstore.CreateAccountResponse)
+		d.SetId(fmt.Sprintf("%v:%v", response.InstanceId, response.AcountName))
 		return nil
 	})
-
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kvstore_account", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	d.SetId(fmt.Sprintf("%s%s%s", request.InstanceId, COLON_SEPARATED, request.AccountName))
-
-	if err := kvstoreService.WaitForKVstoreAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, r_kvstoreService.KvstoreAccountStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudKVStoreAccountRead(d, meta)
+	return resourceAlicloudKvstoreAccountRead(d, meta)
 }
-
-func resourceAlicloudKVStoreAccountRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudKvstoreAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	kvstoreService := KvstoreService{client}
-	object, err := kvstoreService.DescribeKVstoreAccount(d.Id())
+	r_kvstoreService := R_kvstoreService{client}
+	object, err := r_kvstoreService.DescribeKvstoreAccount(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_kvstore_account r_kvstoreService.DescribeKvstoreAccount Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-
-	d.Set("instance_id", object.InstanceId)
-	d.Set("account_name", object.AccountName)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("account_name", parts[1])
+	d.Set("instance_id", parts[0])
 	d.Set("account_type", object.AccountType)
 	d.Set("description", object.AccountDescription)
-	d.Set("account_privilege", object.DatabasePrivileges.DatabasePrivilege[0].AccountPrivilege)
-
+	d.Set("status", object.AccountStatus)
+	if len(object.DatabasePrivileges.DatabasePrivilege) > 0 {
+		d.Set("account_privilege", object.DatabasePrivileges.DatabasePrivilege[0].AccountPrivilege)
+	}
 	return nil
 }
-
-func resourceAlicloudKVStoreAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudKvstoreAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	kvstoreService := KvstoreService{client}
-	d.Partial(true)
-	parts := strings.Split(d.Id(), COLON_SEPARATED)
-	instanceId := parts[0]
-	accountName := parts[1]
-
-	if d.HasChange("description") {
-		if err := kvstoreService.WaitForKVstoreAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
-			return WrapError(err)
-		}
-		request := r_kvstore.CreateModifyAccountDescriptionRequest()
-		request.RegionId = client.RegionId
-		request.InstanceId = instanceId
-		request.AccountName = accountName
-		request.AccountDescription = d.Get("description").(string)
-
-		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.ModifyAccountDescription(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("description")
+	r_kvstoreService := R_kvstoreService{client}
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
 	}
+	d.Partial(true)
 
 	if d.HasChange("account_privilege") {
-		if err := kvstoreService.WaitForKVstoreAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
-			return WrapError(err)
-		}
 		request := r_kvstore.CreateGrantAccountPrivilegeRequest()
-		request.RegionId = client.RegionId
-		request.InstanceId = instanceId
-		request.AccountName = accountName
+		request.AccountName = parts[1]
+		request.InstanceId = parts[0]
 		request.AccountPrivilege = d.Get("account_privilege").(string)
-
-		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.GrantAccountPrivilege(request)
+		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+			return r_kvstoreClient.GrantAccountPrivilege(request)
 		})
+		addDebug(request.GetActionName(), raw)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 120*time.Second, r_kvstoreService.KvstoreAccountStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 		d.SetPartial("account_privilege")
 	}
-
-	if d.HasChange("account_password") || d.HasChange("kms_encrypted_password") {
-		if err := kvstoreService.WaitForKVstoreAccount(d.Id(), Available, DefaultTimeoutMedium); err != nil {
-			return WrapError(err)
+	if d.HasChange("description") {
+		request := r_kvstore.CreateModifyAccountDescriptionRequest()
+		request.AccountName = parts[1]
+		request.InstanceId = parts[0]
+		request.AccountDescription = d.Get("description").(string)
+		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+			return r_kvstoreClient.ModifyAccountDescription(request)
+		})
+		addDebug(request.GetActionName(), raw)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		d.SetPartial("description")
+	}
+	if d.HasChange("account_password") || d.HasChange("kms_encrypted_password") {
 		request := r_kvstore.CreateResetAccountPasswordRequest()
-		request.RegionId = client.RegionId
-		request.InstanceId = instanceId
-		request.AccountName = accountName
-
+		request.AccountName = parts[1]
+		request.InstanceId = parts[0]
 		password := d.Get("account_password").(string)
 		kmsPassword := d.Get("kms_encrypted_password").(string)
 
@@ -229,50 +226,44 @@ func resourceAlicloudKVStoreAccountUpdate(d *schema.ResourceData, meta interface
 				return WrapError(err)
 			}
 			request.AccountPassword = decryptResp.Plaintext
-
 		}
-
-		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-			return rkvClient.ResetAccountPassword(request)
+		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+			return r_kvstoreClient.ResetAccountPassword(request)
 		})
+		addDebug(request.GetActionName(), raw)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 120*time.Second, r_kvstoreService.KvstoreAccountStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 		d.SetPartial("kms_encrypted_password")
 		d.SetPartial("kms_encryption_context")
 		d.SetPartial("account_password")
 	}
-
 	d.Partial(false)
-	return resourceAlicloudKVStoreAccountRead(d, meta)
+	return resourceAlicloudKvstoreAccountRead(d, meta)
 }
-
-func resourceAlicloudKVStoreAccountDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudKvstoreAccountDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	kvstoreService := KvstoreService{client}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := r_kvstore.CreateDeleteAccountRequest()
-	request.RegionId = client.RegionId
-	request.InstanceId = parts[0]
 	request.AccountName = parts[1]
-
-	raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-		return rkvClient.DeleteAccount(request)
+	request.InstanceId = parts[0]
+	raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+		return r_kvstoreClient.DeleteAccount(request)
 	})
+	addDebug(request.GetActionName(), raw)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidAccountName.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidAccountName.NotFound", "InvalidInstanceId.NotFound"}) {
 			return nil
-		} else {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	return kvstoreService.WaitForKVstoreAccount(d.Id(), Deleted, DefaultTimeoutMedium)
+	return nil
 }

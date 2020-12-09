@@ -250,7 +250,7 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_instance" "default" {
   count = "${var.number}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  image_id = "${data.alicloud_images.default.images.1.id}"
+  image_id = "${data.alicloud_images.default.images.0.id}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   system_disk_category = "cloud_ssd"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"

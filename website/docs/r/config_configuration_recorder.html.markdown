@@ -14,6 +14,8 @@ For information about Alicloud Config Configuration Recorder and how to use it, 
 
 -> **NOTE:** Available in v1.99.0+.
 
+-> **NOTE:** The Cloud Config region only support `cn-shanghai` and `ap-northeast-1`.
+
 ## Example Usage
 
 ```terraform
@@ -52,5 +54,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 Alicloud Config Configuration Recorder can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_config_recorder.example 122378463********
+$ terraform import alicloud_config_configuration_recorder.example 122378463********
 ```

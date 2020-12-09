@@ -96,11 +96,11 @@ func (s *CloudApiService) WaitForApiGatewayApp(id string, status Status, timeout
 				return WrapError(err)
 			}
 		}
-		if string(object.AppId) == id && status != Deleted {
+		if fmt.Sprint(object.AppId) == id && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, string(object.AppId), id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, fmt.Sprint(object.AppId), id, ProviderERROR)
 		}
 	}
 }

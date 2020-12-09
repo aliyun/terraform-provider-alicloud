@@ -39,6 +39,14 @@ The following attributes are exported:
 * `id` - The ID of KVStore DBInstance.
 * `connection_string` - The public connection string of KVStore DBInstance.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 2 mins) Used when creating the KVStore connection (until it reaches the initial `Normal` status). 
+* `update` - (Defaults to 2 mins) Used when updating the KVStore connection (until it reaches the initial `Normal` status). 
+* `delete` - (Defaults to 2 mins) Used when deleting the KVStore connection (until it reaches the initial `Normal` status). 
+
 ## Import
 
 KVStore connection can be imported using the id, e.g.

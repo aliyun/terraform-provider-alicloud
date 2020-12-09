@@ -338,6 +338,16 @@ func convertListToJsonString(configured []interface{}) string {
 	return result
 }
 
+func convertJsonStringToStringList(src interface{}) (result []interface{}) {
+	if err, ok := src.([]interface{}); !ok {
+		panic(err)
+	}
+	for _, v := range src.([]interface{}) {
+		result = append(result, fmt.Sprint(formatInt(v)))
+	}
+	return
+}
+
 // Convert the result for an array and returns a comma separate
 func convertListToCommaSeparate(configured []interface{}) string {
 	if len(configured) < 1 {
@@ -915,4 +925,31 @@ func checkWaitForReady(object interface{}, conditions map[string]interface{}) (b
 		}
 	}
 	return true, values, nil
+}
+
+// When using teadsl, we need to convert float, int64 and int32 to int for comparison.
+func formatInt(src interface{}) int {
+	if src == nil {
+		return 0
+	}
+	attrType := reflect.TypeOf(src)
+	switch attrType.String() {
+	case "float64":
+		return int(src.(float64))
+	case "float32":
+		return int(src.(float32))
+	case "int64":
+		return int(src.(int64))
+	case "int32":
+		return int(src.(int32))
+	case "string":
+		v, err := strconv.Atoi(src.(string))
+		if err != nil {
+			panic(err)
+		}
+		return v
+	default:
+		panic(fmt.Sprintf("Not support type %s", attrType.String()))
+	}
+	return 0
 }

@@ -65,10 +65,10 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 			"descriptions.0":           fmt.Sprintf("tf-testAcc%sDRDSInstancesDataSource-%d", defaultRegionToTest, rand),
 			"instances.#":              "1",
 			"instances.0.description":  fmt.Sprintf("tf-testAcc%sDRDSInstancesDataSource-%d", defaultRegionToTest, rand),
-			"instances.0.type":         "PRIVATE",
+			"instances.0.type":         "1",
 			"instances.0.zone_id":      CHECKSET,
 			"instances.0.id":           CHECKSET,
-			"instances.0.network_type": "VPC",
+			"instances.0.network_type": "vpc",
 			"instances.0.create_time":  CHECKSET,
 		}
 	}
@@ -107,15 +107,14 @@ func dataSourceDRDSInstancesConfigDependence(name string) string {
         is_default = "true"
 	}
 	data "alicloud_vswitches" "default" {
-	  zone_id = "${data.alicloud_zones.default.zones.0.id}"
 	  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
 	}
  	resource "alicloud_drds_instance" "default" {
   		description = "${var.name}"
-  		zone_id = "${data.alicloud_zones.default.zones.0.id}"
+  		zone_id = "${data.alicloud_vswitches.default.vswitches.0.zone_id}"
   		instance_series = "drds.sn1.4c8g"
   		instance_charge_type = "PostPaid"
-		vswitch_id = "${data.alicloud_vswitches.default.ids[0]}"
+		vswitch_id = "${data.alicloud_vswitches.default.vswitches.0.id}"
   		specification = "drds.sn1.4c8g.8C16G"
 }
  `, name)

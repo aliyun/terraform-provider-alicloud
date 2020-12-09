@@ -468,5 +468,5 @@ func imageTagsMappings(d *schema.ResourceData, imageId string, meta interface{})
 		return nil
 	}
 
-	return tagsToMap(tags)
+	return ecsTagsToMap(tags)
 }

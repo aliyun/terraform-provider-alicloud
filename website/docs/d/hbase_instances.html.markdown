@@ -43,21 +43,21 @@ The following attributes are exported in addition to the arguments listed above:
   * `name` - The name of the HBase instance.
   * `region_id` - Region ID the instance belongs to. 
   * `zone_id` - Zone ID the instance belongs to.
-  * `engine` - the engine of the instance.
-  * `engine_version` - the engine_version of the instance.
+  * `engine` - The engine of the instance.
+  * `engine_version` - The engine_version of the instance.
   * `network_type` - Classic network or VPC.
-  * `master_instance_type` - hbase.sn1.large, hbase.sn1.large, hbase.n1.2xlarge and so on.
-  * `master_node_count` - the node count of master
-  * `core_instance_type` - hbase.sn1.large, hbase.sn1.large, hbase.n1.2xlarge and so on.
-  * `core_node_count` - same with "core_instance_quantity"
-  * `core_disk_type` - cloud_ssd or cloud_efficiency
-  * `core_disk_size` - core node disk size, unit:GB.
+  * `master_instance_type` - Like hbase.sn1.large, hbase.sn1.large, hbase.n1.2xlarge and so on.
+  * `master_node_count` - The node count of master
+  * `core_instance_type` - Like hbase.sn1.large, hbase.sn1.large, hbase.n1.2xlarge and so on.
+  * `core_node_count` - Same with "core_instance_quantity"
+  * `core_disk_type` - Cloud_ssd or cloud_efficiency
+  * `core_disk_size` - Core node disk size, unit:GB.
   * `vpc_id` - VPC ID the instance belongs to.
   * `vswitch_id` - VSwitch ID the instance belongs to.
   * `pay_type` - Billing method. Value options are `PostPaid` for  Pay-As-You-Go and `PrePaid` for yearly or monthly subscription.
   * `status` - Status of the instance.
-  * `backup_status` - the Backup Status of the instance.
-  * `create_time` - the create time of the instance.
-  * `expire_time` - the expire time of the instance.
-  * `deletion_protection` - the switch of delete protection.
+  * `backup_status` - The Backup Status of the instance.
+  * `created_time` - The created time of the instance.
+  * `expire_time` - The expire time of the instance.
+  * `deletion_protection` - The switch of delete protection.
   * `tags` - A mapping of tags to assign to the resource.

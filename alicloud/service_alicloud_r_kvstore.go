@@ -23,10 +23,10 @@ func (s *R_kvstoreService) DescribeInstanceSSL(id string) (object r_kvstore.Desc
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
-			return
+			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		return object, err
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*r_kvstore.DescribeInstanceSSLResponse)
@@ -45,17 +45,17 @@ func (s *R_kvstoreService) DescribeSecurityIps(id string) (object r_kvstore.Secu
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
-			return
+			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		return object, err
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*r_kvstore.DescribeSecurityIpsResponse)
 
 	if len(response.SecurityIpGroups.SecurityIpGroup) < 1 {
 		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-		return
+		return object, err
 	}
 	return response.SecurityIpGroups.SecurityIpGroup[0], nil
 }
@@ -129,22 +129,22 @@ func (s *R_kvstoreService) DescribeInstanceAutoRenewalAttribute(id string) (obje
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
-			return
+			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		return object, err
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*r_kvstore.DescribeInstanceAutoRenewalAttributeResponse)
 
 	if len(response.Items.Item) < 1 {
 		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-		return
+		return object, err
 	}
 	return response.Items.Item[0], nil
 }
 
-func (s *R_kvstoreService) DescribeSecurityGroupConfiguration(id string) (object r_kvstore.EcsSecurityGroupRelation, err error) {
+func (s *R_kvstoreService) DescribeSecurityGroupConfiguration(id string) (object r_kvstore.ItemsInDescribeSecurityGroupConfiguration, err error) {
 	request := r_kvstore.CreateDescribeSecurityGroupConfigurationRequest()
 	request.RegionId = s.client.RegionId
 
@@ -156,19 +156,19 @@ func (s *R_kvstoreService) DescribeSecurityGroupConfiguration(id string) (object
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
-			return
+			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		return object, err
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*r_kvstore.DescribeSecurityGroupConfigurationResponse)
 
 	if len(response.Items.EcsSecurityGroupRelation) < 1 {
 		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-		return
+		return object, err
 	}
-	return response.Items.EcsSecurityGroupRelation[0], nil
+	return response.Items, nil
 }
 
 func (s *R_kvstoreService) DescribeKvstoreInstance(id string) (object r_kvstore.DBInstanceAttribute, err error) {
@@ -183,17 +183,17 @@ func (s *R_kvstoreService) DescribeKvstoreInstance(id string) (object r_kvstore.
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
-			return
+			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		return object, err
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*r_kvstore.DescribeInstanceAttributeResponse)
 
 	if len(response.Instances.DBInstanceAttribute) < 1 {
 		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-		return
+		return object, err
 	}
 	return response.Instances.DBInstanceAttribute[0], nil
 }
@@ -252,4 +252,78 @@ func (s *R_kvstoreService) DescribeKvstoreConnection(id string) (object r_kvstor
 	}
 	err = WrapErrorf(Error("The instance is not bound to the public IP"), DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	return
+}
+
+func (s *R_kvstoreService) DescribeKvstoreAccount(id string) (object r_kvstore.Account, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := r_kvstore.CreateDescribeAccountsRequest()
+	request.RegionId = s.client.RegionId
+	request.AccountName = parts[1]
+	request.InstanceId = parts[0]
+
+	raw, err := s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+		return r_kvstoreClient.DescribeAccounts(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreAccount", id)), NotFoundMsg, ProviderERROR)
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*r_kvstore.DescribeAccountsResponse)
+
+	if len(response.Accounts.Account) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreAccount", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+		return
+	}
+	return response.Accounts.Account[0], nil
+}
+
+func (s *R_kvstoreService) KvstoreAccountStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeKvstoreAccount(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.AccountStatus == failState {
+				return object, object.AccountStatus, WrapError(Error(FailedToReachTargetStatus, object.AccountStatus))
+			}
+		}
+		return object, object.AccountStatus, nil
+	}
+}
+
+func (s *R_kvstoreService) DescribeBackupPolicy(id string) (object r_kvstore.DescribeBackupPolicyResponse, err error) {
+	request := r_kvstore.CreateDescribeBackupPolicyRequest()
+	request.RegionId = s.client.RegionId
+
+	request.InstanceId = id
+
+	raw, err := s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+		return r_kvstoreClient.DescribeBackupPolicy(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*r_kvstore.DescribeBackupPolicyResponse)
+	return *response, nil
 }

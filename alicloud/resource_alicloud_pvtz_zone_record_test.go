@@ -58,6 +58,16 @@ func TestAccAlicloudPvtzZoneRecord_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"remark": "pvtz_zone_remark",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"remark": "pvtz_zone_remark",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"type": "TXT",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -92,6 +102,7 @@ func TestAccAlicloudPvtzZoneRecord_basic(t *testing.T) {
 					"value":    "bbb.test.com",
 					"priority": "2",
 					"ttl":      REMOVEKEY,
+					"remark":   "pvtz_zone_describe",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -99,6 +110,7 @@ func TestAccAlicloudPvtzZoneRecord_basic(t *testing.T) {
 						"value":    "bbb.test.com",
 						"priority": "2",
 						"ttl":      "60",
+						"remark":   "pvtz_zone_describe",
 					}),
 				),
 			},

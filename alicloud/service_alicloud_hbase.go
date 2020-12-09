@@ -21,6 +21,9 @@ const (
 	Hb_NODE_RESIZING_FAILED = "NODE_RESIZE_FAILED"
 	Hb_DISK_RESIZING        = "HBASE_EXPANDING"
 	Hb_DISK_RESIZE_FAILED   = "DISK_RESIZING_FAILED"
+	Hb_LEVEL_MODIFY         = "INSTANCE_LEVEL_MODIFY"
+	Hb_LEVEL_MODIFY_FAILED  = "INSTANCE_LEVEL_MODIFY_FAILED"
+	Hb_HBASE_COLD_EXPANDING = "HBASE_COLD_EXPANDING"
 )
 
 type HBaseService struct {
@@ -166,6 +169,23 @@ func (s *HBaseService) DescribeIpWhitelist(id string) (instance hbase.DescribeIp
 	return *response, nil
 }
 
+func (s *HBaseService) DescribeSecurityGroups(id string) (object hbase.DescribeSecurityGroupsResponse, err error) {
+	request := hbase.CreateDescribeSecurityGroupsRequest()
+	request.RegionId = s.client.RegionId
+	request.ClusterId = id
+
+	raw, err := s.client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
+		return client.DescribeSecurityGroups(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*hbase.DescribeSecurityGroupsResponse)
+	return *response, nil
+}
+
 func (s *HBaseService) HBaseClusterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeHBaseInstance(id)
@@ -198,4 +218,38 @@ func (s *HBaseService) ModifyClusterDeletionProtection(clusterId string, protect
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
+}
+
+func (s *HBaseService) DescribeEndpoints(id string) (object hbase.DescribeEndpointsResponse, err error) {
+	request := hbase.CreateDescribeEndpointsRequest()
+	request.RegionId = s.client.RegionId
+	request.ClusterId = id
+
+	raw, err := s.client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
+		return client.DescribeEndpoints(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*hbase.DescribeEndpointsResponse)
+	return *response, nil
+}
+
+func (s *HBaseService) DescribeClusterConnection(id string) (object hbase.DescribeClusterConnectionResponse, err error) {
+	request := hbase.CreateDescribeClusterConnectionRequest()
+	request.RegionId = s.client.RegionId
+	request.ClusterId = id
+
+	raw, err := s.client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
+		return client.DescribeClusterConnection(request)
+	})
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*hbase.DescribeClusterConnectionResponse)
+	return *response, nil
 }

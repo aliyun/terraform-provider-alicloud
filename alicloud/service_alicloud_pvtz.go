@@ -3,6 +3,9 @@ package alicloud
 import (
 	"strconv"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"time"
@@ -16,49 +19,45 @@ type PvtzService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *PvtzService) DescribePvtzZone(id string) (zone pvtz.DescribeZoneInfoResponse, err error) {
-	request := pvtz.CreateDescribeZoneInfoRequest()
-	request.RegionId = s.client.RegionId
-	request.ZoneId = id
-
-	var response *pvtz.DescribeZoneInfoResponse
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-			return pvtzClient.DescribeZoneInfo(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, "System.Busy"}) {
-				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ = raw.(*pvtz.DescribeZoneInfoResponse)
-		return nil
-	})
+func (s *PvtzService) DescribePvtzZone(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewPvtzClient()
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
-			return zone, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		return nil, WrapError(err)
+	}
+	action := "DescribeZoneInfo"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"ZoneId":   id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("PvtzZone", id)), NotFoundMsg, ProviderERROR)
+			return object, err
 		}
-		return zone, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
 	}
-	if response.ZoneId != id {
-		return zone, WrapErrorf(Error(GetNotFoundMessage("PvtzZone", id)), NotFoundMsg, ProviderERROR)
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
-	zone = *response
-
-	return
+	object = v.(map[string]interface{})
+	return object, nil
 }
 
-func (s *PvtzService) DescribePvtzZoneAttachment(id string) (object pvtz.DescribeZoneInfoResponse, err error) {
+func (s *PvtzService) DescribePvtzZoneAttachment(id string) (object map[string]interface{}, err error) {
 	object, err = s.DescribePvtzZone(id)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-
-	if len(object.BindVpcs.Vpc) < 1 {
+	vpcs := object["BindVpcs"].(map[string]interface{})["Vpc"].([]interface{})
+	if len(vpcs) < 1 {
 		err = WrapErrorf(Error(GetNotFoundMessage("PvtzZoneAttachment", id)), NotFoundMsg, ProviderERROR)
 	}
 
@@ -75,11 +74,13 @@ func (s *PvtzService) WaitForZoneAttachment(id string, vpcIdMap map[string]strin
 		}
 
 		equal := true
-		if len(object.BindVpcs.Vpc) == len(vpcIdMap) {
-			for _, vpc := range object.BindVpcs.Vpc {
-				if _, ok := vpcIdMap[vpc.VpcId]; !ok {
+		vpcs := object["BindVpcs"].(map[string]interface{})["Vpc"].([]interface{})
+		if len(vpcs) == len(vpcIdMap) {
+			for _, vpc := range vpcs {
+				vpc := vpc.(map[string]interface{})
+				if _, ok := vpcIdMap[vpc["VpcId"].(string)]; !ok {
 					equal = false
-					vpcId = vpc.VpcId
+					vpcId = vpc["VpcId"].(string)
 					break
 				}
 			}
@@ -170,11 +171,11 @@ func (s *PvtzService) WaitForPvtzZone(id string, status Status, timeout int) err
 				return WrapError(err)
 			}
 		}
-		if object.ZoneId == id {
+		if object["ZoneId"] == id {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ZoneId, id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object["ZoneId"], id, ProviderERROR)
 		}
 
 	}
@@ -194,11 +195,11 @@ func (s *PvtzService) WaitForPvtzZoneAttachment(id string, status Status, timeou
 				return WrapError(err)
 			}
 		}
-		if object.ZoneId == id {
+		if object["ZoneId"] == id {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ZoneId, id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object["ZoneId"], id, ProviderERROR)
 		}
 
 	}

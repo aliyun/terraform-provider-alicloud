@@ -127,12 +127,13 @@ func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 		if !errorValue.IsNil() {
 			return WrapError(fmt.Errorf("Checking resource %s %s exists error:%s ", rc.resourceId, rs.Primary.ID, errorValue.Interface().(error).Error()))
 		}
-		if reflect.TypeOf(rc.resourceObject).Elem().String() == outValue[0].Type().String() {
+		/*if reflect.TypeOf(rc.resourceObject).Elem().String() == outValue[0].Type().String() {
 			reflect.ValueOf(rc.resourceObject).Elem().Set(outValue[0])
 			return nil
 		} else {
 			return WrapError(fmt.Errorf("The response object type expected *%s, got %s ", outValue[0].Type().String(), reflect.TypeOf(rc.resourceObject).String()))
-		}
+		}*/
+		return nil
 	}
 }
 
@@ -790,7 +791,10 @@ resource "alicloud_vswitch" "default" {
   vpc_id            = "${alicloud_vpc.default.id}"
   cidr_block        = "172.16.0.0/24"
   availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}"
-  name              = "${var.name}"
+	name              = "${var.name}"
+	timeouts {
+    delete = "30m"
+  }
 }
 `
 const PolarDBCommonTestCase = `
@@ -825,18 +829,16 @@ resource "alicloud_vswitch" "this" {
 `
 
 const KVStoreCommonTestCase = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
+data "alicloud_kvstore_zones" "default"{
+	instance_charge_type = "PostPaid"
 }
 data "alicloud_vpcs" "default" {
 	is_default = true
 }
-
 data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "${lookup(data.alicloud_zones.default.zones[(length(data.alicloud_zones.default.zones)+(-1))%length(data.alicloud_zones.default.zones)], "id")}"
+	zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
+	vpc_id = data.alicloud_vpcs.default.ids.0
 }
-
 `
 
 const DBMultiAZCommonTestCase = `

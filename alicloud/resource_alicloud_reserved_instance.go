@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"strings"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -181,7 +183,7 @@ func resourceAliCloudReservedInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("scope", reservedInstances.Scope)
 	d.Set("zone_id", reservedInstances.ZoneId)
 	d.Set("instance_amount", reservedInstances.InstanceAmount)
-	d.Set("platform", reservedInstances.Platform)
+	d.Set("platform", strings.Title(reservedInstances.Platform))
 	d.Set("offering_type", reservedInstances.OfferingType)
 	d.Set("name", reservedInstances.ReservedInstanceName)
 	d.Set("description", reservedInstances.Description)
@@ -189,6 +191,7 @@ func resourceAliCloudReservedInstanceRead(d *schema.ResourceData, meta interface
 
 	return WrapError(err)
 }
+
 func resourceAliCloudReservedInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	// PurchaseReservedInstancesOffering can not be release.
 	return nil

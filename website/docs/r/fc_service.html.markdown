@@ -40,23 +40,22 @@ resource "alicloud_log_store" "foo" {
 
 resource "alicloud_ram_role" "role" {
   name     = var.name
-  document = <<DEFINITION
+  document = <<EOF
   {
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Effect": "Allow",
-      "Principal": {
-        "Service": [
-          "fc.aliyuncs.com"
-        ]
-      }
-    }
-  ],
-  "Version": "1"
-}
-  
-DEFINITION
+      "Statement": [
+        {
+          "Action": "sts:AssumeRole",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": [
+              "fc.aliyuncs.com"
+            ]
+          }
+        }
+      ],
+      "Version": "1"
+  }
+  EOF
   description = "this is a test"
   force       = true
 }

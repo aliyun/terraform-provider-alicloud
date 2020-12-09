@@ -2,16 +2,108 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/config"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+func init() {
+	resource.AddTestSweepers("alicloud_config_rule", &resource.Sweeper{
+		Name: "alicloud_config_rule",
+		F:    testSweepConfigRule,
+	})
+}
+
+func testSweepConfigRule(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "Error getting Alicloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf-test",
+	}
+
+	request := make(map[string]interface{})
+	var response map[string]interface{}
+	action := "ListConfigRules"
+	conn, err := client.NewConfigClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var ruleIds []string
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &runtime)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"Throttling.User"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve config rule in service list: %s", err)
+			return err
+		}
+		resp, err := jsonpath.Get("$.ConfigRules.ConfigRuleList", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ConfigRules.ConfigRuleList", response)
+		}
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
+			ruleIds = append(ruleIds, item["ConfigRuleName"].(string))
+		}
+		if len(resp.([]interface{})) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	for _, ruleId := range ruleIds {
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(ruleId), strings.ToLower(prefix)) {
+				skip = false
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping config rule: %s ", ruleId)
+			continue
+		}
+		action = "DeleteConfigRules"
+		request := map[string]interface{}{
+			"ConfigRuleIds": ruleId,
+		}
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve config rule (%s): %s", ruleId, err)
+			continue
+		}
+		log.Printf("[INFO] Delete config rule success: %s ", ruleId)
+	}
+	return nil
+}
+
 func TestAccAlicloudConfigRule_basic(t *testing.T) {
-	var v config.ConfigRule
+	var v map[string]interface{}
 	resourceId := "alicloud_config_rule.default"
 	ra := resourceAttrInit(resourceId, ConfigRuleMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -24,7 +116,7 @@ func TestAccAlicloudConfigRule_basic(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ConfigRuleBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -52,10 +144,9 @@ func TestAccAlicloudConfigRule_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       false,
-				ImportStateVerifyIgnore: []string{"scope_compliance_resource_id", "scope_compliance_resource_types", "source_detail_message_type", "source_maximum_execution_frequency"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -110,16 +201,16 @@ func TestAccAlicloudConfigRule_basic(t *testing.T) {
 			//		}),
 			//	),
 			//},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"source_detail_message_type": "ScheduledNotification",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"source_detail_message_type": "ScheduledNotification",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"source_detail_message_type": "ScheduledNotification",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"source_detail_message_type": "ScheduledNotification",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"source_maximum_execution_frequency": "One_Hour",

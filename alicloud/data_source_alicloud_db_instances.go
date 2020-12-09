@@ -183,6 +183,18 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"master_zone": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"zone_id_slave_a": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"zone_id_slave_b": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -316,10 +328,18 @@ func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, dbi []rds
 			"readonly_instance_ids":    readOnlyInstanceIDs,
 			"vpc_id":                   item.VpcId,
 			"vswitch_id":               item.VSwitchId,
-			"connection_string":        instance.ConnectionString,
-			"port":                     instance.Port,
-			"db_instance_storage_type": instance.DBInstanceStorageType,
-			"instance_storage":         instance.DBInstanceStorage,
+			"connection_string":        instance["ConnectionString"],
+			"port":                     instance["Port"],
+			"db_instance_storage_type": instance["DBInstanceStorageType"],
+			"instance_storage":         instance["DBInstanceStorage"],
+			"master_zone":              instance["MasterZone"],
+		}
+		slaveZones := instance["SlaveZones"].(map[string]interface{})["SlaveZone"].([]interface{})
+		if len(slaveZones) == 2 {
+			mapping["zone_id_slave_a"] = slaveZones[0].(map[string]interface{})["ZoneId"]
+			mapping["zone_id_slave_b"] = slaveZones[1].(map[string]interface{})["ZoneId"]
+		} else if len(slaveZones) == 1 {
+			mapping["zone_id_slave_a"] = slaveZones[0].(map[string]interface{})["ZoneId"]
 		}
 
 		ids = append(ids, item.DBInstanceId)

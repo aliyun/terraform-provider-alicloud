@@ -172,6 +172,7 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 				MinItems: 2,
 				MaxItems: 32,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -376,6 +377,7 @@ func resourceAlicloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 		d.Set("security_group_id", groupIp.Items.RdsEcsSecurityGroupRel[0].SecurityGroupId)
 	}
 
+	d.Set("tags", ddsService.tagsInAttributeToMap(instance.Tags.Tag))
 	return nil
 }
 
@@ -420,6 +422,10 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("security_group_id")
+	}
+
+	if err := ddsService.setInstanceTags(d); err != nil {
+		return WrapError(err)
 	}
 
 	if d.IsNewResource() {

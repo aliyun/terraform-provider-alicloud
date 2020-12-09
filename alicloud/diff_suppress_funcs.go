@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -262,6 +263,22 @@ func redisPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) b
 func redisPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if strings.ToLower(d.Get("payment_type").(string)) == "prepaid" && d.Get("auto_renew").(bool) {
 		return false
+	}
+	return true
+}
+
+func redisSecurityGroupIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	oldArray := strings.Split(old, ",")
+	newArray := strings.Split(new, ",")
+	if len(oldArray) != len(newArray) {
+		return false
+	}
+	sort.Strings(oldArray)
+	sort.Strings(newArray)
+	for i := range newArray {
+		if newArray[i] != oldArray[i] {
+			return false
+		}
 	}
 	return true
 }

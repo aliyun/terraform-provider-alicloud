@@ -6,6 +6,10 @@ cloud.google.com/go/internal/optional
 cloud.google.com/go/internal/trace
 cloud.google.com/go/internal/version
 cloud.google.com/go/storage
+# github.com/PaesslerAG/gval v1.0.0
+github.com/PaesslerAG/gval
+# github.com/PaesslerAG/jsonpath v0.1.1
+github.com/PaesslerAG/jsonpath
 # github.com/Sirupsen/logrus v0.0.0-20181010200618-458213699411 => github.com/sirupsen/logrus v0.0.0-20181010200618-458213699411
 github.com/Sirupsen/logrus
 # github.com/agext/levenshtein v1.2.2
@@ -21,7 +25,7 @@ github.com/alibabacloud-go/tea-rpc/client
 github.com/alibabacloud-go/tea-rpc-utils/service
 # github.com/alibabacloud-go/tea-utils v1.3.4
 github.com/alibabacloud-go/tea-utils/service
-# github.com/aliyun/alibaba-cloud-sdk-go v1.61.557
+# github.com/aliyun/alibaba-cloud-sdk-go v1.61.684
 github.com/aliyun/alibaba-cloud-sdk-go/sdk
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials
@@ -43,7 +47,6 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/cbn
 github.com/aliyun/alibaba-cloud-sdk-go/services/cdn
 github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi
 github.com/aliyun/alibaba-cloud-sdk-go/services/cms
-github.com/aliyun/alibaba-cloud-sdk-go/services/config
 github.com/aliyun/alibaba-cloud-sdk-go/services/cr
 github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee
 github.com/aliyun/alibaba-cloud-sdk-go/services/cs
@@ -81,7 +84,6 @@ github.com/aliyun/alibaba-cloud-sdk-go/services/sls
 github.com/aliyun/alibaba-cloud-sdk-go/services/smartag
 github.com/aliyun/alibaba-cloud-sdk-go/services/sts
 github.com/aliyun/alibaba-cloud-sdk-go/services/vpc
-github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi
 github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost
 github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit
 # github.com/aliyun/aliyun-datahub-sdk-go v0.0.0-20180929121038-c1c85baca7c0
@@ -157,7 +159,7 @@ github.com/bgentry/speakeasy
 github.com/cenkalti/backoff
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/denverdino/aliyungo v0.0.0-20201012074500-9311540c3f72
+# github.com/denverdino/aliyungo v0.0.0-20201127010231-19d40697f3a3
 github.com/denverdino/aliyungo/cdn
 github.com/denverdino/aliyungo/common
 github.com/denverdino/aliyungo/cs
@@ -394,8 +396,6 @@ github.com/valyala/fasthttp/stackless
 # github.com/vmihailenco/msgpack v4.0.1+incompatible
 github.com/vmihailenco/msgpack
 github.com/vmihailenco/msgpack/codes
-# github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
-github.com/yalp/jsonpath
 # github.com/zclconf/go-cty v1.1.0
 github.com/zclconf/go-cty/cty
 github.com/zclconf/go-cty/cty/convert
@@ -583,7 +583,7 @@ gopkg.in/ini.v1
 gopkg.in/natefinch/lumberjack.v2
 # gopkg.in/resty.v1 v1.12.0
 gopkg.in/resty.v1
-# gopkg.in/yaml.v2 v2.2.8
+# gopkg.in/yaml.v2 v2.3.0
 gopkg.in/yaml.v2
 # k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
 k8s.io/api/admissionregistration/v1beta1
