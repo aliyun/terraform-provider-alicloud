@@ -1,5 +1,18 @@
 ## 1.107.0 (Unreleased)
-## 1.106.0 (December 28, 2020)
+
+- **New Resource:** `alicloud_ros_stack_group` ([GH-3109])
+- **Data Source:** `alicloud_ros_stack_groups` ([GH-3109])
+
+IMPROVEMENTS:
+
+- Resource/pvtz_zone: Change IsEOFError to NeedRetry ([GH-3108])
+- resource/alicloud_kvstore_instance: Add a restriction !d.IsNewResource for the update of param private_connection_prefix. ([GH-3107])
+- Error: Change IsEOFError to NeedRerty ([GH-3106])
+- resource/alicloud_hbase_instance: change core_disk_instance to optional ([GH-3105])
+- Resource/security_group_rule: Add retry wait for rule exist. ([GH-3102])
+- datasource/ros_stacks: Add tags and parameters for output. ([GH-3101])
+
+## 1.106.0 (December 4, 2020)
 
 - **New Resource:** `alicloud_ros_change_set` ([#3083](https://github.com/aliyun/terraform-provider-alicloud/issues/3083))
 - **Data Source:** `alicloud_hbase_instance_types` ([#3091](https://github.com/aliyun/terraform-provider-alicloud/issues/3091))
