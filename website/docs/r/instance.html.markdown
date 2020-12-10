@@ -114,6 +114,7 @@ Terraform will autogenerate a default name is `ECS-Instance`.
 * `system_disk_name` - (Optional, Available in 1.101.0+) The name of the system disk. The name must be 2 to 128 characters in length and can contain letters, digits, periods (.), colons (:), underscores (_), and hyphens (-). It must start with a letter and cannot start with http:// or https://.
 * `system_disk_description` - (Optional, Available in 1.101.0+) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `system_disk_size` - (Optional) Size of the system disk, measured in GiB. Value range: [20, 500]. The specified value must be equal to or greater than max{20, Imagesize}. Default value: max{40, ImageSize}. 
+* `system_disk_performance_level` (Optional) The performance level of the ESSD used as the system disk, Valid values: `PL0`, `PL1`, `PL2`, `PL3`, Default to `PL0`;For more information about ESSD, See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/122389.htm).
 * `system_disk_auto_snapshot_policy_id` - (Optional, ForceNew, Available in 1.73.0+) The ID of the automatic snapshot policy applied to the system disk.
 * `description` - (Optional) Description of the instance, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `internet_charge_type` - (Optional) Internet charge type of the instance, Valid values are `PayByBandwidth`, `PayByTraffic`. Default is `PayByTraffic`. At present, 'PrePaid' instance cannot change the value to "PayByBandwidth" from "PayByTraffic".
@@ -192,6 +193,11 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
         - `cloud_essd`: The ESSD cloud disk.
         - `ephemeral_ssd`: The local SSD disk.
         Default to `cloud_efficiency`.
+    * `performance_level` - (Optional, ForceNew) The performance level of the ESSD used as data disk:
+        - `PL1`: A single ESSD can deliver up to 50,000 random read/write IOPS.
+        - `PL2`: A single ESSD can deliver up to 100,000 random read/write IOPS.
+        - `PL3`: A single ESSD can deliver up to 1,000,000 random read/write IOPS.
+        Default to `PL1`.
     * `encrypted` -(Optional, Bool, ForceNew) Encrypted the data in this disk. Default value: `false`.
     * `kms_key_id` - (Optional, Available in 1.90.1+) The KMS key ID corresponding to the Nth data disk.
     * `snapshot_id` - (Optional, ForceNew) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
