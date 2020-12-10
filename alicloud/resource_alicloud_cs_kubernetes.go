@@ -452,7 +452,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"cluster_domain": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "cluster.local",
 				ForceNew:    true,
 				Description: "cluster local domain",
 			},
@@ -1029,6 +1028,15 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("cluster_spec", object.ClusterSpec)
 
 	d.Set("deletion_protection", object.DeletionProtection)
+	if d.Get("os_type") == "" {
+		d.Set("os_type", "Linux")
+	}
+	if d.Get("platform") == "" {
+		d.Set("platform", "CentOS")
+	}
+	if d.Get("node_port_range") == "" {
+		d.Set("node_port_range", "30000-32767")
+	}
 	//d.Set("os_type", object.OSType)
 	// d.Set("platform", object.Platform)
 	// d.Set("timezone", object.TimeZone)
