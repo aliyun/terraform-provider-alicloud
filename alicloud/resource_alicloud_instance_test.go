@@ -1203,10 +1203,11 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 					"role_name":            "${alicloud_ram_role.default.name}",
 					"data_disks": []map[string]string{
 						{
-							"name":        "disk1",
-							"size":        "20",
-							"category":    "cloud_efficiency",
-							"description": "disk1",
+							"name":              "disk1",
+							"size":              "20",
+							"category":          "cloud_essd",
+							"performance_level": "PL1",
+							"description":       "disk1",
 						},
 						{
 							"name":        "disk2",
@@ -1246,7 +1247,7 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "data_disks", "dry_run", "force_delete",
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "system_disk_performance_level", "data_disks", "dry_run", "force_delete",
 					"include_data_disks"},
 			},
 		},

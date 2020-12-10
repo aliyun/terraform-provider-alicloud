@@ -163,6 +163,13 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
+			"system_disk_performance_level": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          PL0,
+				DiffSuppressFunc: ecsSystemDiskPerformanceLevelSuppressFunc,
+				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+			},
 			"system_disk_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -229,6 +236,13 @@ func resourceAliyunInstance() *schema.Resource {
 							Optional:     true,
 							ForceNew:     true,
 							ValidateFunc: validation.StringLenBetween(2, 256),
+						},
+						"performance_level": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							Default:      PL1,
+							ValidateFunc: validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 						},
 					},
 				},
@@ -929,6 +943,8 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 
 	request.SystemDiskDescription = Description
 
+	request.SystemDiskPerformanceLevel = d.Get("system_disk_performance_level").(string)
+
 	request.SystemDiskCategory = string(systemDiskCategory)
 	request.SystemDiskSize = strconv.Itoa(d.Get("system_disk_size").(int))
 
@@ -1085,6 +1101,9 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 			dataDiskRequest.Category = disk["category"].(string)
 			if dataDiskRequest.Category == string(DiskEphemeralSSD) {
 				dataDiskRequest.DeleteWithInstance = ""
+			}
+			if performanceLevel, ok := disk["performance_level"]; ok && dataDiskRequest.Category == string(DiskCloudESSD) {
+				dataDiskRequest.PerformanceLevel = performanceLevel.(string)
 			}
 
 			dataDiskRequests = append(dataDiskRequests, dataDiskRequest)

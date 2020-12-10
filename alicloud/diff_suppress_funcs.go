@@ -339,6 +339,13 @@ func ecsSpotStrategyDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 	return true
 }
 
+func ecsSystemDiskPerformanceLevelSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("system_disk_category").(string) == string(DiskCloudESSD) {
+		return false
+	}
+	return true
+}
+
 func ecsSpotPriceLimitDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if d.Get("instance_charge_type").(string) == "PostPaid" && d.Get("spot_strategy").(string) == "SpotWithPriceLimit" {
 		return false
