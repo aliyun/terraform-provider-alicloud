@@ -1,4 +1,21 @@
 ## 1.108.0 (Unreleased)
+
+- **New Resource:** `alicloud_ros_template` [GH-3113]
+- **Data Source:** `alicloud_kms_service` [GH-3116]
+- **Data Source:** `alicloud_ros_templates` [GH-3113]
+
+IMPROVEMENTS:
+
+- add ecs instance system_disk_performance_level and datadisk performamce_level params [GH-3120]
+- Cleanup after release 1.107.0 [GH-3115]
+- resource/alicloud_pvtz_zone: change to tea dsl sdk [GH-3094]
+
+BUG FIXES:
+
+- fix product pvtz gettting endpoint bug [GH-3122]
+- BugFix: v1.103.2 upgrade error, connections return error [GH-3118]
+- resource/alicloud_instance: fix period does not work bug [GH-3114]
+
 ## 1.107.0 (December 8, 2020)
 
 - **New Resource:** `alicloud_ros_stack_group` ([[#3109](https://github.com/aliyun/terraform-provider-alicloud/issues/3109)])
