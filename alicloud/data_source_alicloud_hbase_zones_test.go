@@ -10,14 +10,6 @@ func TestAccAlicloudHBaseZonesDataSource_basic(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_hbase_zones.default"
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceHBaseZonesConfigDependence)
-
-	multiConfig := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"multi": "true",
-		}),
-	}
-
 	var existHBaseZonesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":   CHECKSET,
@@ -38,9 +30,5 @@ func TestAccAlicloudHBaseZonesDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeHBaseZonesMapFunc,
 	}
 
-	HBaseZonesCheckInfo.dataSourceTestCheck(t, rand, multiConfig)
-}
-
-func dataSourceHBaseZonesConfigDependence(name string) string {
-	return ""
+	HBaseZonesCheckInfo.dataSourceTestCheck(t, rand)
 }

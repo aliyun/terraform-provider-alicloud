@@ -40,6 +40,7 @@ The following arguments are supported:
 * `value` - (Required) The value of the Private Zone Record.
 * `ttl` - (Optional) The ttl of the Private Zone Record.
 * `priority` - (Optional) The priority of the Private Zone Record. At present, only can "MX" record support it. Valid values: [1-50]. Default to 1.
+* `remark` - (Optional, Available in 1.103.2+) The remark of the Private Zone Record.
 
 ## Attributes Reference
 

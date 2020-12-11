@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -22,6 +23,10 @@ func resourceAlicloudAlidnsRecord() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(4 * time.Minute),
+			Delete: schema.DefaultTimeout(6 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"domain_name": {
 				Type:     schema.TypeString,
@@ -33,10 +38,9 @@ func resourceAlicloudAlidnsRecord() *schema.Resource {
 				Optional: true,
 			},
 			"line": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"default", "telecom", "unicom", "mobile", "oversea", "edu", "drpeng", "btvn"}, false),
-				Default:      "default",
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "default",
 			},
 			"priority": {
 				Type:             schema.TypeInt,
@@ -138,6 +142,7 @@ func resourceAlicloudAlidnsRecordRead(d *schema.ResourceData, meta interface{}) 
 	object, err := alidnsService.DescribeAlidnsRecord(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_alidns_record alidnsService.DescribeAlidnsRecord Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -263,12 +268,14 @@ func resourceAlicloudAlidnsRecordDelete(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("user_client_ip"); ok {
 		request.UserClientIp = v.(string)
 	}
-	err := resource.Retry(300*time.Second, func() *resource.RetryError {
+	wait := incrementalWait(3*time.Second, 10*time.Second)
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		raw, err := client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
 			return alidnsClient.DeleteDomainRecord(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"RecordForbidden.DNSChange", "InternalError"}) {
+			if IsExpectedErrors(err, []string{"InternalError", "RecordForbidden.DNSChange"}) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

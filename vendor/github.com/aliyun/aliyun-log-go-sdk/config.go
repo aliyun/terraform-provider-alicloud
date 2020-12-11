@@ -21,5 +21,5 @@ const (
 	RequestIDHeader = "x-log-requestid"
 
 	GetLogsQueryInfo = "X-Log-Query-Info"
-
+	HasSQLHeader     = "x-log-has-sql"
 )

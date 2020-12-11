@@ -21,7 +21,6 @@ import (
 )
 
 // AuthorizeApplication invokes the edas.AuthorizeApplication API synchronously
-// api document: https://help.aliyun.com/api/edas/authorizeapplication.html
 func (client *Client) AuthorizeApplication(request *AuthorizeApplicationRequest) (response *AuthorizeApplicationResponse, err error) {
 	response = CreateAuthorizeApplicationResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) AuthorizeApplication(request *AuthorizeApplicationRequest)
 }
 
 // AuthorizeApplicationWithChan invokes the edas.AuthorizeApplication API asynchronously
-// api document: https://help.aliyun.com/api/edas/authorizeapplication.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AuthorizeApplicationWithChan(request *AuthorizeApplicationRequest) (<-chan *AuthorizeApplicationResponse, <-chan error) {
 	responseChan := make(chan *AuthorizeApplicationResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) AuthorizeApplicationWithChan(request *AuthorizeApplication
 }
 
 // AuthorizeApplicationWithCallback invokes the edas.AuthorizeApplication API asynchronously
-// api document: https://help.aliyun.com/api/edas/authorizeapplication.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AuthorizeApplicationWithCallback(request *AuthorizeApplicationRequest, callback func(response *AuthorizeApplicationResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

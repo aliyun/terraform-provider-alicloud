@@ -70,6 +70,14 @@ func dataSourceAlicloudFcFunctions() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"initializer": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"initialization_timeout": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 						"memory_size": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -86,6 +94,18 @@ func dataSourceAlicloudFcFunctions() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"instance_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"instance_concurrency": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"ca_port": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 						"creation_time": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -93,6 +113,27 @@ func dataSourceAlicloudFcFunctions() *schema.Resource {
 						"last_modification_time": {
 							Type:     schema.TypeString,
 							Computed: true,
+						},
+						"custom_container_config": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"image": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"command": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"args": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -114,6 +155,9 @@ func dataSourceAlicloudFcFunctionsRead(d *schema.ResourceData, meta interface{})
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
@@ -153,6 +197,42 @@ func dataSourceAlicloudFcFunctionsRead(d *schema.ResourceData, meta interface{})
 				"environment_variables":  function.EnvironmentVariables,
 			}
 
+			if function.Initializer != nil {
+				mapping["initializer"] = *function.Initializer
+			}
+
+			if function.InitializationTimeout != nil {
+				mapping["initialization_timeout"] = *function.InitializationTimeout
+			}
+
+			if function.InstanceConcurrency != nil {
+				mapping["instance_concurrency"] = *function.InstanceConcurrency
+			}
+
+			if function.InstanceType != nil {
+				mapping["instance_type"] = *function.InstanceType
+			}
+
+			if function.CAPort != nil {
+				mapping["ca_port"] = *function.CAPort
+			}
+
+			if function.CustomContainerConfig != nil {
+				var cfgList []map[string]interface{}
+				cfg := map[string]interface{}{
+					"image": *function.CustomContainerConfig.Image,
+				}
+				if function.CustomContainerConfig.Command != nil {
+					cfg["command"] = *function.CustomContainerConfig.Command
+				}
+				if function.CustomContainerConfig.Args != nil {
+					cfg["args"] = *function.CustomContainerConfig.Args
+				}
+				cfgList = append(cfgList, cfg)
+				mapping["custom_container_config"] = cfgList
+			}
+
+			// Filter by function name.
 			nameRegex, ok := d.GetOk("name_regex")
 			if ok && nameRegex.(string) != "" {
 				var r *regexp.Regexp
@@ -163,6 +243,7 @@ func dataSourceAlicloudFcFunctionsRead(d *schema.ResourceData, meta interface{})
 					continue
 				}
 			}
+			// Filter by function id.
 			if len(idsMap) > 0 {
 				if _, ok := idsMap[*function.FunctionID]; !ok {
 					continue

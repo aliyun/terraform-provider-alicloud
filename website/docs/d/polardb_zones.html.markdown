@@ -15,7 +15,7 @@ This data source provides availability zones for PolarDB that can be accessed by
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_polardb_zones" "zones_ids" {}
 ```

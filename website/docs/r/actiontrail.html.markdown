@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_actiontrail
 
+-> **DEPRECATED:**  This resource has been renamed to [alicloud_actiontrail_trail](https://www.terraform.io/docs/providers/alicloud/r/actiontrail_trail.html) from version 1.95.0. 
+
 Provides a new resource to manage [Action Trail](https://www.alibabacloud.com/help/doc-detail/28804.htm).
 
 -> **NOTE:** Available in 1.35.0+

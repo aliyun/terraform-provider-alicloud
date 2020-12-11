@@ -21,7 +21,6 @@ import (
 )
 
 // RunInstances invokes the ecs.RunInstances API synchronously
-// api document: https://help.aliyun.com/api/ecs/runinstances.html
 func (client *Client) RunInstances(request *RunInstancesRequest) (response *RunInstancesResponse, err error) {
 	response = CreateRunInstancesResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) RunInstances(request *RunInstancesRequest) (response *RunI
 }
 
 // RunInstancesWithChan invokes the ecs.RunInstances API asynchronously
-// api document: https://help.aliyun.com/api/ecs/runinstances.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RunInstancesWithChan(request *RunInstancesRequest) (<-chan *RunInstancesResponse, <-chan error) {
 	responseChan := make(chan *RunInstancesResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) RunInstancesWithChan(request *RunInstancesRequest) (<-chan
 }
 
 // RunInstancesWithCallback invokes the ecs.RunInstances API asynchronously
-// api document: https://help.aliyun.com/api/ecs/runinstances.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RunInstancesWithCallback(request *RunInstancesRequest, callback func(response *RunInstancesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -76,81 +71,87 @@ func (client *Client) RunInstancesWithCallback(request *RunInstancesRequest, cal
 // RunInstancesRequest is the request struct for api RunInstances
 type RunInstancesRequest struct {
 	*requests.RpcRequest
-	UniqueSuffix                   requests.Boolean                `position:"Query" name:"UniqueSuffix"`
-	SecurityEnhancementStrategy    string                          `position:"Query" name:"SecurityEnhancementStrategy"`
-	MinAmount                      requests.Integer                `position:"Query" name:"MinAmount"`
-	DeletionProtection             requests.Boolean                `position:"Query" name:"DeletionProtection"`
-	ResourceGroupId                string                          `position:"Query" name:"ResourceGroupId"`
-	HostName                       string                          `position:"Query" name:"HostName"`
-	Password                       string                          `position:"Query" name:"Password"`
-	DeploymentSetGroupNo           requests.Integer                `position:"Query" name:"DeploymentSetGroupNo"`
-	SystemDiskAutoSnapshotPolicyId string                          `position:"Query" name:"SystemDisk.AutoSnapshotPolicyId"`
-	CpuOptionsCore                 requests.Integer                `position:"Query" name:"CpuOptions.Core"`
-	Period                         requests.Integer                `position:"Query" name:"Period"`
-	DryRun                         requests.Boolean                `position:"Query" name:"DryRun"`
-	CpuOptionsNuma                 string                          `position:"Query" name:"CpuOptions.Numa"`
-	OwnerId                        requests.Integer                `position:"Query" name:"OwnerId"`
-	SpotStrategy                   string                          `position:"Query" name:"SpotStrategy"`
-	PrivateIpAddress               string                          `position:"Query" name:"PrivateIpAddress"`
-	PeriodUnit                     string                          `position:"Query" name:"PeriodUnit"`
-	AutoRenew                      requests.Boolean                `position:"Query" name:"AutoRenew"`
-	InternetChargeType             string                          `position:"Query" name:"InternetChargeType"`
-	InternetMaxBandwidthIn         requests.Integer                `position:"Query" name:"InternetMaxBandwidthIn"`
-	Affinity                       string                          `position:"Query" name:"Affinity"`
-	ImageId                        string                          `position:"Query" name:"ImageId"`
-	SpotInterruptionBehavior       string                          `position:"Query" name:"SpotInterruptionBehavior"`
-	IoOptimized                    string                          `position:"Query" name:"IoOptimized"`
-	SecurityGroupId                string                          `position:"Query" name:"SecurityGroupId"`
-	SystemDiskPerformanceLevel     string                          `position:"Query" name:"SystemDisk.PerformanceLevel"`
-	PasswordInherit                requests.Boolean                `position:"Query" name:"PasswordInherit"`
-	InstanceType                   string                          `position:"Query" name:"InstanceType"`
-	HibernationConfigured          requests.Boolean                `position:"Query" name:"HibernationConfigured"`
-	Arn                            *[]RunInstancesArn              `position:"Query" name:"Arn"  type:"Repeated"`
-	ResourceOwnerAccount           string                          `position:"Query" name:"ResourceOwnerAccount"`
-	SystemDiskDiskName             string                          `position:"Query" name:"SystemDisk.DiskName"`
-	DedicatedHostId                string                          `position:"Query" name:"DedicatedHostId"`
-	SecurityGroupIds               *[]string                       `position:"Query" name:"SecurityGroupIds"  type:"Repeated"`
-	SpotDuration                   requests.Integer                `position:"Query" name:"SpotDuration"`
-	SystemDiskSize                 string                          `position:"Query" name:"SystemDisk.Size"`
-	ImageFamily                    string                          `position:"Query" name:"ImageFamily"`
-	LaunchTemplateName             string                          `position:"Query" name:"LaunchTemplateName"`
-	ResourceOwnerId                requests.Integer                `position:"Query" name:"ResourceOwnerId"`
-	HpcClusterId                   string                          `position:"Query" name:"HpcClusterId"`
-	HttpPutResponseHopLimit        requests.Integer                `position:"Query" name:"HttpPutResponseHopLimit"`
-	KeyPairName                    string                          `position:"Query" name:"KeyPairName"`
-	SpotPriceLimit                 requests.Float                  `position:"Query" name:"SpotPriceLimit"`
-	StorageSetPartitionNumber      requests.Integer                `position:"Query" name:"StorageSetPartitionNumber"`
-	Tag                            *[]RunInstancesTag              `position:"Query" name:"Tag"  type:"Repeated"`
-	AutoRenewPeriod                requests.Integer                `position:"Query" name:"AutoRenewPeriod"`
-	LaunchTemplateId               string                          `position:"Query" name:"LaunchTemplateId"`
-	Ipv6AddressCount               requests.Integer                `position:"Query" name:"Ipv6AddressCount"`
-	CapacityReservationPreference  string                          `position:"Query" name:"CapacityReservationPreference"`
-	VSwitchId                      string                          `position:"Query" name:"VSwitchId"`
-	InstanceName                   string                          `position:"Query" name:"InstanceName"`
-	ZoneId                         string                          `position:"Query" name:"ZoneId"`
-	Ipv6Address                    *[]string                       `position:"Query" name:"Ipv6Address"  type:"Repeated"`
-	ClientToken                    string                          `position:"Query" name:"ClientToken"`
-	InternetMaxBandwidthOut        requests.Integer                `position:"Query" name:"InternetMaxBandwidthOut"`
-	Description                    string                          `position:"Query" name:"Description"`
-	CpuOptionsThreadsPerCore       requests.Integer                `position:"Query" name:"CpuOptions.ThreadsPerCore"`
-	SystemDiskCategory             string                          `position:"Query" name:"SystemDisk.Category"`
-	CapacityReservationId          string                          `position:"Query" name:"CapacityReservationId"`
-	UserData                       string                          `position:"Query" name:"UserData"`
-	HttpEndpoint                   string                          `position:"Query" name:"HttpEndpoint"`
-	InstanceChargeType             string                          `position:"Query" name:"InstanceChargeType"`
-	NetworkInterface               *[]RunInstancesNetworkInterface `position:"Query" name:"NetworkInterface"  type:"Repeated"`
-	DeploymentSetId                string                          `position:"Query" name:"DeploymentSetId"`
-	Amount                         requests.Integer                `position:"Query" name:"Amount"`
-	OwnerAccount                   string                          `position:"Query" name:"OwnerAccount"`
-	Tenancy                        string                          `position:"Query" name:"Tenancy"`
-	RamRoleName                    string                          `position:"Query" name:"RamRoleName"`
-	AutoReleaseTime                string                          `position:"Query" name:"AutoReleaseTime"`
-	CreditSpecification            string                          `position:"Query" name:"CreditSpecification"`
-	DataDisk                       *[]RunInstancesDataDisk         `position:"Query" name:"DataDisk"  type:"Repeated"`
-	LaunchTemplateVersion          requests.Integer                `position:"Query" name:"LaunchTemplateVersion"`
-	StorageSetId                   string                          `position:"Query" name:"StorageSetId"`
-	HttpTokens                     string                          `position:"Query" name:"HttpTokens"`
-	SystemDiskDescription          string                          `position:"Query" name:"SystemDisk.Description"`
+	UniqueSuffix                          requests.Boolean                `position:"Query" name:"UniqueSuffix"`
+	SecurityEnhancementStrategy           string                          `position:"Query" name:"SecurityEnhancementStrategy"`
+	MinAmount                             requests.Integer                `position:"Query" name:"MinAmount"`
+	DeletionProtection                    requests.Boolean                `position:"Query" name:"DeletionProtection"`
+	ResourceGroupId                       string                          `position:"Query" name:"ResourceGroupId"`
+	PrivatePoolOptionsMatchCriteria       string                          `position:"Query" name:"PrivatePoolOptions.MatchCriteria"`
+	HostName                              string                          `position:"Query" name:"HostName"`
+	Password                              string                          `position:"Query" name:"Password"`
+	DeploymentSetGroupNo                  requests.Integer                `position:"Query" name:"DeploymentSetGroupNo"`
+	SystemDiskAutoSnapshotPolicyId        string                          `position:"Query" name:"SystemDisk.AutoSnapshotPolicyId"`
+	CpuOptionsCore                        requests.Integer                `position:"Query" name:"CpuOptions.Core"`
+	Period                                requests.Integer                `position:"Query" name:"Period"`
+	DryRun                                requests.Boolean                `position:"Query" name:"DryRun"`
+	CpuOptionsNuma                        string                          `position:"Query" name:"CpuOptions.Numa"`
+	OwnerId                               requests.Integer                `position:"Query" name:"OwnerId"`
+	SpotStrategy                          string                          `position:"Query" name:"SpotStrategy"`
+	PrivateIpAddress                      string                          `position:"Query" name:"PrivateIpAddress"`
+	PeriodUnit                            string                          `position:"Query" name:"PeriodUnit"`
+	AutoRenew                             requests.Boolean                `position:"Query" name:"AutoRenew"`
+	InternetChargeType                    string                          `position:"Query" name:"InternetChargeType"`
+	InternetMaxBandwidthIn                requests.Integer                `position:"Query" name:"InternetMaxBandwidthIn"`
+	Affinity                              string                          `position:"Query" name:"Affinity"`
+	ImageId                               string                          `position:"Query" name:"ImageId"`
+	SpotInterruptionBehavior              string                          `position:"Query" name:"SpotInterruptionBehavior"`
+	NetworkInterfaceQueueNumber           requests.Integer                `position:"Query" name:"NetworkInterfaceQueueNumber"`
+	IoOptimized                           string                          `position:"Query" name:"IoOptimized"`
+	SecurityGroupId                       string                          `position:"Query" name:"SecurityGroupId"`
+	SystemDiskPerformanceLevel            string                          `position:"Query" name:"SystemDisk.PerformanceLevel"`
+	PasswordInherit                       requests.Boolean                `position:"Query" name:"PasswordInherit"`
+	InstanceType                          string                          `position:"Query" name:"InstanceType"`
+	HibernationConfigured                 requests.Boolean                `position:"Query" name:"HibernationConfigured"`
+	Arn                                   *[]RunInstancesArn              `position:"Query" name:"Arn"  type:"Repeated"`
+	SchedulerOptions                      string                          `position:"Query" name:"SchedulerOptions"`
+	ResourceOwnerAccount                  string                          `position:"Query" name:"ResourceOwnerAccount"`
+	SystemDiskDiskName                    string                          `position:"Query" name:"SystemDisk.DiskName"`
+	DedicatedHostId                       string                          `position:"Query" name:"DedicatedHostId"`
+	SecurityGroupIds                      *[]string                       `position:"Query" name:"SecurityGroupIds"  type:"Repeated"`
+	SpotDuration                          requests.Integer                `position:"Query" name:"SpotDuration"`
+	SystemDiskSize                        string                          `position:"Query" name:"SystemDisk.Size"`
+	ImageFamily                           string                          `position:"Query" name:"ImageFamily"`
+	LaunchTemplateName                    string                          `position:"Query" name:"LaunchTemplateName"`
+	ResourceOwnerId                       requests.Integer                `position:"Query" name:"ResourceOwnerId"`
+	HpcClusterId                          string                          `position:"Query" name:"HpcClusterId"`
+	HttpPutResponseHopLimit               requests.Integer                `position:"Query" name:"HttpPutResponseHopLimit"`
+	Isp                                   string                          `position:"Query" name:"Isp"`
+	KeyPairName                           string                          `position:"Query" name:"KeyPairName"`
+	SpotPriceLimit                        requests.Float                  `position:"Query" name:"SpotPriceLimit"`
+	StorageSetPartitionNumber             requests.Integer                `position:"Query" name:"StorageSetPartitionNumber"`
+	Tag                                   *[]RunInstancesTag              `position:"Query" name:"Tag"  type:"Repeated"`
+	PrivatePoolOptionsId                  string                          `position:"Query" name:"PrivatePoolOptions.Id"`
+	AutoRenewPeriod                       requests.Integer                `position:"Query" name:"AutoRenewPeriod"`
+	LaunchTemplateId                      string                          `position:"Query" name:"LaunchTemplateId"`
+	Ipv6AddressCount                      requests.Integer                `position:"Query" name:"Ipv6AddressCount"`
+	CapacityReservationPreference         string                          `position:"Query" name:"CapacityReservationPreference"`
+	VSwitchId                             string                          `position:"Query" name:"VSwitchId"`
+	InstanceName                          string                          `position:"Query" name:"InstanceName"`
+	ZoneId                                string                          `position:"Query" name:"ZoneId"`
+	Ipv6Address                           *[]string                       `position:"Query" name:"Ipv6Address"  type:"Repeated"`
+	ClientToken                           string                          `position:"Query" name:"ClientToken"`
+	InternetMaxBandwidthOut               requests.Integer                `position:"Query" name:"InternetMaxBandwidthOut"`
+	Description                           string                          `position:"Query" name:"Description"`
+	CpuOptionsThreadsPerCore              requests.Integer                `position:"Query" name:"CpuOptions.ThreadsPerCore"`
+	SystemDiskCategory                    string                          `position:"Query" name:"SystemDisk.Category"`
+	CapacityReservationId                 string                          `position:"Query" name:"CapacityReservationId"`
+	UserData                              string                          `position:"Query" name:"UserData"`
+	HttpEndpoint                          string                          `position:"Query" name:"HttpEndpoint"`
+	InstanceChargeType                    string                          `position:"Query" name:"InstanceChargeType"`
+	NetworkInterface                      *[]RunInstancesNetworkInterface `position:"Query" name:"NetworkInterface"  type:"Repeated"`
+	DeploymentSetId                       string                          `position:"Query" name:"DeploymentSetId"`
+	Amount                                requests.Integer                `position:"Query" name:"Amount"`
+	OwnerAccount                          string                          `position:"Query" name:"OwnerAccount"`
+	Tenancy                               string                          `position:"Query" name:"Tenancy"`
+	RamRoleName                           string                          `position:"Query" name:"RamRoleName"`
+	AutoReleaseTime                       string                          `position:"Query" name:"AutoReleaseTime"`
+	CreditSpecification                   string                          `position:"Query" name:"CreditSpecification"`
+	DataDisk                              *[]RunInstancesDataDisk         `position:"Query" name:"DataDisk"  type:"Repeated"`
+	LaunchTemplateVersion                 requests.Integer                `position:"Query" name:"LaunchTemplateVersion"`
+	SchedulerOptionsManagedPrivateSpaceId string                          `position:"Query" name:"SchedulerOptions.ManagedPrivateSpaceId"`
+	StorageSetId                          string                          `position:"Query" name:"StorageSetId"`
+	HttpTokens                            string                          `position:"Query" name:"HttpTokens"`
+	SystemDiskDescription                 string                          `position:"Query" name:"SystemDisk.Description"`
 }
 
 // RunInstancesArn is a repeated param struct in RunInstancesRequest
@@ -174,6 +175,7 @@ type RunInstancesNetworkInterface struct {
 	SecurityGroupIds     *[]string `name:"SecurityGroupIds" type:"Repeated"`
 	NetworkInterfaceName string    `name:"NetworkInterfaceName"`
 	Description          string    `name:"Description"`
+	QueueNumber          string    `name:"QueueNumber"`
 }
 
 // RunInstancesDataDisk is a repeated param struct in RunInstancesRequest
@@ -205,7 +207,7 @@ func CreateRunInstancesRequest() (request *RunInstancesRequest) {
 	request = &RunInstancesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "RunInstances", "ecs", "openAPI")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "RunInstances", "", "")
 	request.Method = requests.POST
 	return
 }

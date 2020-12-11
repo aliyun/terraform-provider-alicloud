@@ -1,5 +1,5 @@
 ---
-subcategory: "Alidns"
+subcategory: "DNS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alidns_record"
 sidebar_current: "docs-alicloud-resource-alidns-record"
@@ -17,7 +17,7 @@ Provides a Alidns Record resource. For information about Alidns Domain Record an
 
 ## Example Usage
 
-```
+```terraform
 # Create a new Domain Record
 resource "alicloud_alidns_record" "record" {
   domain_name = "domainname"
@@ -39,7 +39,7 @@ The following arguments are supported:
 * `value` - (Required) The value of domain record, When the `type` is `MX`,`NS`,`CNAME`,`SRV`, the server will treat the `value` as a fully qualified domain name, so it's no need to add a `.` at the end.
 * `ttl` - (Optional) The effective time of domain record. Its scope depends on the edition of the cloud resolution. Free is `[600, 86400]`, Basic is `[120, 86400]`, Standard is `[60, 86400]`, Ultimate is `[10, 86400]`, Exclusive is `[1, 86400]`. Default value is `600`.
 * `priority` - (Optional) The priority of domain record. Valid values: `[1-10]`. When the `type` is `MX`, this parameter is required.
-* `line` - (Optional) The resolution line of domain record. Valid values: `default`, `telecom`, `unicom`, `mobile`, `oversea`, `edu`, `drpeng`, `btvn`. When the `type` is `FORWORD_URL`, this parameter must be `default`. Default value is `default`. For checking all resolution lines enumeration please visit [Alibaba Cloud DNS doc](https://www.alibabacloud.com/help/doc-detail/34339.htm) or using alicloud_dns_resolution_lines in data source to get the value. 
+* `line` - (Optional) The resolution line of domain record. When the `type` is `FORWORD_URL`, this parameter must be `default`. Default value is `default`. For checking all resolution lines enumeration please visit [Alibaba Cloud DNS doc](https://www.alibabacloud.com/help/doc-detail/34339.htm) or using alicloud_dns_resolution_lines in data source to get the value. 
 * `lang` - (Optional) User language. 
 * `remark` - (Optional) The remark of the domain record. 
 * `status` - (Optional) The status of the domain record. Valid values: `ENABLE`,`DISABLE`. 
@@ -50,6 +50,16 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The id of Domain Record.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.99.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `Create` - (Defaults to 4 mins) Used when terminating the Alidns record instance.  
+* `delete` - (Defaults to 6 mins) Used when terminating the Alidns record instance.  
+
 
 ## Import
 

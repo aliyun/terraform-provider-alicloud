@@ -215,7 +215,7 @@ func resourceAliyunEipDelete(d *schema.ResourceData, meta interface{}) error {
 			return vpcClient.ReleaseEipAddress(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectEipStatus"}) {
+			if IsExpectedErrors(err, []string{"IncorrectEipStatus", "TaskConflict.AssociateGlobalAccelerationInstance"}) {
 				return resource.RetryableError(err)
 			} else if IsExpectedErrors(err, []string{"InvalidAllocationId.NotFound"}) {
 				return nil

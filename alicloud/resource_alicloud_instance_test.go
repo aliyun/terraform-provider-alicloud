@@ -319,6 +319,18 @@ func TestAccAlicloudInstanceBasic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_name":        fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_name", rand),
+					"system_disk_description": fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_description", rand),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_name":        fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_name", rand),
+						"system_disk_description": fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_description", rand),
+					}),
+				),
+			},
 			// private_ip cannot be set separately from vpc
 			/*{
 				Config: testAccConfig(map[string]interface{}{
@@ -1191,10 +1203,11 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 					"role_name":            "${alicloud_ram_role.default.name}",
 					"data_disks": []map[string]string{
 						{
-							"name":        "disk1",
-							"size":        "20",
-							"category":    "cloud_efficiency",
-							"description": "disk1",
+							"name":              "disk1",
+							"size":              "20",
+							"category":          "cloud_essd",
+							"performance_level": "PL1",
+							"description":       "disk1",
 						},
 						{
 							"name":        "disk2",
@@ -1234,7 +1247,7 @@ func TestAccAlicloudInstanceDataDisks(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "data_disks", "dry_run", "force_delete",
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "system_disk_performance_level", "data_disks", "dry_run", "force_delete",
 					"include_data_disks"},
 			},
 		},

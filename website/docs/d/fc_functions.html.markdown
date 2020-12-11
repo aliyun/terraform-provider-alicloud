@@ -52,3 +52,12 @@ The following attributes are exported in addition to the arguments listed above:
   * `creation_time` - Function creation time.
   * `last_modification_time` - Function last modification time.
   * `environment_variables` -  A map that defines environment variables for the function.
+  * `initializer` - The entry point of the function's [initialization](https://www.alibabacloud.com/help/doc-detail/157704.htm).
+  * `initialization_timeout` - The maximum length of time, in seconds, that the function's initialization should be run for.
+  * `instance_type` - The instance type of the function.
+  * `instance_concurrency` - The maximum number of requests can be executed concurrently within the single function instance.
+  * `ca_port` - The port that the function listen to, only valid for [custom runtime](https://www.alibabacloud.com/help/doc-detail/132044.htm) and [custom container runtime](https://www.alibabacloud.com/help/doc-detail/179368.htm).
+  * `custom_container_config` - The configuration for custom container runtime. It contains following attributes:
+    * `image` - The container image address.
+    * `command` - The entry point of the container, which specifies the actual command run by the container.
+    * `args` - The args field specifies the arguments passed to the command.

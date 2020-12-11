@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -39,7 +40,7 @@ func resourceAlicloudResourceManagerPolicyAttachment() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"IMSUser", "IMSGroup", "ServiceRole"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"IMSGroup", "IMSUser", "ServiceRole"}, false),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -59,7 +60,6 @@ func resourceAlicloudResourceManagerPolicyAttachmentCreate(d *schema.ResourceDat
 	request.PrincipalName = d.Get("principal_name").(string)
 	request.PrincipalType = d.Get("principal_type").(string)
 	request.ResourceGroupId = d.Get("resource_group_id").(string)
-
 	raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
 		return resourcemanagerClient.AttachPolicy(request)
 	})
@@ -67,14 +67,17 @@ func resourceAlicloudResourceManagerPolicyAttachmentCreate(d *schema.ResourceDat
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_policy_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw)
-	d.SetId(fmt.Sprintf("%v:%v:%v:%v", request.PolicyName, request.PolicyType, request.PrincipalName, request.PrincipalType))
+	d.SetId(fmt.Sprintf("%v:%v:%v:%v:%v", request.PolicyName, request.PolicyType, request.PrincipalName, request.PrincipalType, request.ResourceGroupId))
 
 	return resourceAlicloudResourceManagerPolicyAttachmentRead(d, meta)
 }
 func resourceAlicloudResourceManagerPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourcemanagerService := ResourcemanagerService{client}
-	object, err := resourcemanagerService.DescribeResourceManagerPolicyAttachment(d.Id())
+	if len(strings.Split(d.Id(), ":")) != 5 {
+		d.SetId(fmt.Sprintf("%v:%v", d.Id(), d.Get("resource_group_id").(string)))
+	}
+	_, err := resourcemanagerService.DescribeResourceManagerPolicyAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_resource_manager_policy_attachment resourcemanagerService.DescribeResourceManagerPolicyAttachment Failed!!! %s", err)
@@ -83,7 +86,7 @@ func resourceAlicloudResourceManagerPolicyAttachmentRead(d *schema.ResourceData,
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 4)
+	parts, err := ParseResourceId(d.Id(), 5)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -91,12 +94,15 @@ func resourceAlicloudResourceManagerPolicyAttachmentRead(d *schema.ResourceData,
 	d.Set("policy_type", parts[1])
 	d.Set("principal_name", parts[2])
 	d.Set("principal_type", parts[3])
-	d.Set("resource_group_id", object.ResourceGroupId)
+	d.Set("resource_group_id", parts[4])
 	return nil
 }
 func resourceAlicloudResourceManagerPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 4)
+	if len(strings.Split(d.Id(), ":")) != 5 {
+		d.SetId(fmt.Sprintf("%v:%v", d.Id(), d.Get("resource_group_id").(string)))
+	}
+	parts, err := ParseResourceId(d.Id(), 5)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -105,7 +111,7 @@ func resourceAlicloudResourceManagerPolicyAttachmentDelete(d *schema.ResourceDat
 	request.PolicyType = parts[1]
 	request.PrincipalName = parts[2]
 	request.PrincipalType = parts[3]
-	request.ResourceGroupId = d.Get("resource_group_id").(string)
+	request.ResourceGroupId = parts[4]
 	raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
 		return resourcemanagerClient.DetachPolicy(request)
 	})

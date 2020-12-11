@@ -11,7 +11,8 @@ import (
 	"fmt"
 )
 
-func TestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
+// Skip this testcase because of the account cannot purchase non-internal products.
+func SkipTestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 	idConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
@@ -29,6 +30,16 @@ func TestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
 			"name_regex": `"${alicloud_cen_bandwidth_package.default.name}-fake"`,
 		}),
 	}
+	statusRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_cen_bandwidth_package.default.name}"`,
+			"status":     `"InUse"`,
+		}),
+		fakeConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
+			"name_regex": `"${alicloud_cen_bandwidth_package.default.name}-fake"`,
+			"status":     `"Idle"`,
+		}),
+	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_cen_bandwidth_package.default.id}"]`,
@@ -42,18 +53,21 @@ func TestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
 			"instance_id": `"${alicloud_cen_bandwidth_package_attachment.default.instance_id}"`,
 			"name_regex":  `"${alicloud_cen_bandwidth_package.default.name}"`,
 			"ids":         `["${alicloud_cen_bandwidth_package.default.id}"]`,
+			"status":      `"InUse"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{
 			"instance_id": `"${alicloud_cen_bandwidth_package_attachment.default.instance_id}-fake"`,
 			"name_regex":  `"${alicloud_cen_bandwidth_package.default.name}"`,
 			"ids":         `["${alicloud_cen_bandwidth_package.default.id}"]`,
+			"status":      `"Idle"`,
 		}),
 	}
 	preCheck := func() {
+		testAccPreCheck(t)
 		testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 	}
-	cenBandwidthPackagesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idConf, nameRegexConf, idsConf, allConf)
+	cenBandwidthPackagesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idConf, nameRegexConf, statusRegexConf, idsConf, allConf)
 }
 
 func testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -72,10 +86,9 @@ resource "alicloud_cen_instance" "default" {
 
 resource "alicloud_cen_bandwidth_package" "default" {
     bandwidth = 5
-	name = "${var.name}"
-    geographic_region_ids = [
-		"China",
-		"Asia-Pacific"]
+	cen_bandwidth_package_name = "${var.name}"
+    geographic_region_a_id = "China"
+    geographic_region_b_id = "China"
 }
 
 resource "alicloud_cen_bandwidth_package_attachment" "default" {
@@ -93,35 +106,30 @@ data "alicloud_cen_bandwidth_packages" "default" {
 
 var existCenBandwidthPackagesMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"ids.#":                                    "1",
-		"packages.#":                               "1",
-		"packages.0.geographic_region_a_id":        "Asia-Pacific",
-		"packages.0.geographic_region_b_id":        "China",
-		"packages.0.status":                        "InUse",
-		"packages.0.bandwidth":                     "5",
-		"packages.0.business_status":               "Normal",
-		"packages.0.bandwidth_package_charge_type": "POSTPAY",
-		"packages.0.description":                   "",
-		"packages.0.name":                          CHECKSET,
-		"packages.0.creation_time":                 CHECKSET,
-		"packages.0.id":                            CHECKSET,
-		"packages.0.instance_id":                   CHECKSET,
-	}
-}
-var existCenBandwidthPackagesMapFunc_multi = func(rand int) map[string]string {
-	return map[string]string{
-		"ids.#":                                    "6",
-		"packages.#":                               "6",
-		"packages.0.geographic_region_a_id":        "China",
-		"packages.0.geographic_region_b_id":        "China",
-		"packages.0.status":                        CHECKSET,
-		"packages.0.bandwidth":                     "5",
-		"packages.0.business_status":               "Normal",
-		"packages.0.bandwidth_package_charge_type": "POSTPAY",
-		"packages.0.description":                   "",
-		"packages.0.name":                          CHECKSET,
-		"packages.0.creation_time":                 CHECKSET,
-		"packages.0.id":                            CHECKSET,
+		"ids.#":                                       "1",
+		"packages.#":                                  "1",
+		"packages.0.geographic_region_a_id":           "China",
+		"packages.0.geographic_region_b_id":           "China",
+		"packages.0.status":                           "InUse",
+		"packages.0.bandwidth":                        "5",
+		"packages.0.business_status":                  "Normal",
+		"packages.0.bandwidth_package_charge_type":    "POSTPAY",
+		"packages.0.description":                      "",
+		"packages.0.instance_id":                      CHECKSET,
+		"packages.0.name":                             fmt.Sprintf("tf-testAcc%sCenBandwidthLimitsDataSource-%d", defaultRegionToTest, rand),
+		"packages.0.id":                               CHECKSET,
+		"packages.0.cen_bandwidth_package_id":         CHECKSET,
+		"packages.0.cen_bandwidth_package_name":       fmt.Sprintf("tf-testAcc%sCenBandwidthLimitsDataSource-%d", defaultRegionToTest, rand),
+		"packages.0.cen_ids.#":                        "1",
+		"packages.0.expired_time":                     CHECKSET,
+		"packages.0.geographic_span_id":               CHECKSET,
+		"packages.0.has_reservation_data":             CHECKSET,
+		"packages.0.is_cross_border":                  CHECKSET,
+		"packages.0.payment_type":                     "POSTPAY",
+		"packages.0.reservation_active_time":          "",
+		"packages.0.reservation_bandwidth":            "",
+		"packages.0.reservation_internet_charge_type": "",
+		"packages.0.reservation_order_type":           "",
 	}
 }
 
@@ -135,10 +143,5 @@ var fakeCenBandwidthPackagesMapFunc = func(rand int) map[string]string {
 var cenBandwidthPackagesCheckInfo = dataSourceAttr{
 	resourceId:   "data.alicloud_cen_bandwidth_packages.default",
 	existMapFunc: existCenBandwidthPackagesMapFunc,
-	fakeMapFunc:  fakeCenBandwidthPackagesMapFunc,
-}
-var cenBandwidthPackagesCheckInfo_multi = dataSourceAttr{
-	resourceId:   "data.alicloud_cen_bandwidth_packages.default",
-	existMapFunc: existCenBandwidthPackagesMapFunc_multi,
 	fakeMapFunc:  fakeCenBandwidthPackagesMapFunc,
 }

@@ -94,7 +94,7 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 	request.RegionId = string(client.Region)
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-	var allfss []nas.DescribeFileSystemsFileSystem1
+	var allfss []nas.FileSystem
 	invoker := NewInvoker()
 	for {
 		var raw interface{}
@@ -130,6 +130,9 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 			if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
 				id_found := false
 				for _, id := range v.([]interface{}) {
+					if id == nil {
+						continue
+					}
 					if string(file_system.FileSystemId) == id.(string) {
 						id_found = true
 						break
@@ -155,7 +158,7 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 	return fileSystemsDecriptionAttributes(d, allfss, meta)
 }
 
-func fileSystemsDecriptionAttributes(d *schema.ResourceData, fssSetTypes []nas.DescribeFileSystemsFileSystem1, meta interface{}) error {
+func fileSystemsDecriptionAttributes(d *schema.ResourceData, fssSetTypes []nas.FileSystem, meta interface{}) error {
 	var ids []string
 	var descriptions []string
 	var s []map[string]interface{}

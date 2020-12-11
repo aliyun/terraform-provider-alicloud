@@ -112,6 +112,9 @@ func dataSourceAlicloudVpnCgwsRead(d *schema.ResourceData, meta interface{}) err
 	var ids []string
 	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
 		for _, item := range v.([]interface{}) {
+			if item == nil {
+				continue
+			}
 			ids = append(ids, strings.Trim(item.(string), " "))
 		}
 	}

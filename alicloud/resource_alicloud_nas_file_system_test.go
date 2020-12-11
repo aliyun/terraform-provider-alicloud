@@ -37,7 +37,7 @@ func testSweepNasFileSystem(region string) error {
 		"tf_testAcc",
 	}
 
-	var filesystems []nas.DescribeFileSystemsFileSystem1
+	var filesystems []nas.FileSystem
 	req := nas.CreateDescribeFileSystemsRequest()
 	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
@@ -109,7 +109,7 @@ func testSweepNasFileSystem(region string) error {
 }
 
 func TestAccAlicloudNas_FileSystem_basic(t *testing.T) {
-	var v nas.DescribeFileSystemsFileSystem1
+	var v nas.FileSystem
 	resourceID := "alicloud_nas_file_system.default"
 	ra := resourceAttrInit(resourceID, map[string]string{})
 	serviceFunc := func() interface{} {
@@ -155,7 +155,7 @@ func TestAccAlicloudNas_FileSystem_basic(t *testing.T) {
 }
 
 func TestAccAlicloudNas_FileSystem_basicT(t *testing.T) {
-	var v nas.DescribeFileSystemsFileSystem1
+	var v nas.FileSystem
 	resourceID := "alicloud_nas_file_system.default"
 	ra := resourceAttrInit(resourceID, map[string]string{})
 	serviceFunc := func() interface{} {
@@ -201,7 +201,7 @@ func TestAccAlicloudNas_FileSystem_basicT(t *testing.T) {
 }
 
 func TestAccAlicloudNas_FileSystem_multi(t *testing.T) {
-	var v nas.DescribeFileSystemsFileSystem1
+	var v nas.FileSystem
 	resourceID := "alicloud_nas_file_system.default.2"
 	ra := resourceAttrInit(resourceID, map[string]string{})
 	serviceFunc := func() interface{} {
@@ -242,7 +242,7 @@ func TestAccAlicloudNas_FileSystem_multi(t *testing.T) {
 	})
 }
 
-func testAccCheckNasExists(n string, nas *nas.DescribeFileSystemsFileSystem1) resource.TestCheckFunc {
+func testAccCheckNasExists(n string, nas *nas.FileSystem) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

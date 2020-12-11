@@ -51,6 +51,7 @@ The following arguments are supported:
 * `document` - (Optional, Conflicts with `services`, `ram_users` and `version`) Authorization strategy of the RAM role. It is required when the `services` and `ram_users` are not specified.
 * `description` - (Optional, Forces new resource) Description of the RAM role. This name can have a string of 1 to 1024 characters.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
+* `max_session_duration` - (Optional, Available in 1.105.0+) The maximum session duration of the RAM role. Valid values: 3600 to 43200. Unit: seconds. Default value: 3600. The default value is used if the parameter is not specified.
 
 ## Attributes Reference
 

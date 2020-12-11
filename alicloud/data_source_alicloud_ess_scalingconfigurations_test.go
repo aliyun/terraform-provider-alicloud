@@ -61,6 +61,7 @@ func TestAccAlicloudEssScalingconfigurationsDataSource(t *testing.T) {
 			"configurations.0.instance_type":              CHECKSET,
 			"configurations.0.security_group_id":          CHECKSET,
 			"configurations.0.creation_time":              CHECKSET,
+			"configurations.0.credit_specification":       CHECKSET,
 			"configurations.0.system_disk_category":       CHECKSET,
 			"configurations.0.system_disk_size":           CHECKSET,
 			"configurations.0.internet_max_bandwidth_in":  CHECKSET,

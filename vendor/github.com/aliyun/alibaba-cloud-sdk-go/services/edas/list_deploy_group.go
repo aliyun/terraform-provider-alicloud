@@ -21,7 +21,6 @@ import (
 )
 
 // ListDeployGroup invokes the edas.ListDeployGroup API synchronously
-// api document: https://help.aliyun.com/api/edas/listdeploygroup.html
 func (client *Client) ListDeployGroup(request *ListDeployGroupRequest) (response *ListDeployGroupResponse, err error) {
 	response = CreateListDeployGroupResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ListDeployGroup(request *ListDeployGroupRequest) (response
 }
 
 // ListDeployGroupWithChan invokes the edas.ListDeployGroup API asynchronously
-// api document: https://help.aliyun.com/api/edas/listdeploygroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ListDeployGroupWithChan(request *ListDeployGroupRequest) (<-chan *ListDeployGroupResponse, <-chan error) {
 	responseChan := make(chan *ListDeployGroupResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ListDeployGroupWithChan(request *ListDeployGroupRequest) (
 }
 
 // ListDeployGroupWithCallback invokes the edas.ListDeployGroup API asynchronously
-// api document: https://help.aliyun.com/api/edas/listdeploygroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ListDeployGroupWithCallback(request *ListDeployGroupRequest, callback func(response *ListDeployGroupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

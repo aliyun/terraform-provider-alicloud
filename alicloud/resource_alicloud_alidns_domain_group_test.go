@@ -100,11 +100,11 @@ func TestAccAlicloudAlidnsDomainGroup_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"group_name": "${var.name}",
+					"domain_group_name": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"group_name": name,
+						"domain_group_name": name,
 					}),
 				),
 			},
@@ -115,11 +115,11 @@ func TestAccAlicloudAlidnsDomainGroup_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"group_name": fmt.Sprintf("tf-testaccdns%d", rand-1),
+					"domain_group_name": fmt.Sprintf("tf-testaccdns%d", rand-1),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"group_name": fmt.Sprintf("tf-testaccdns%d", rand-1),
+						"domain_group_name": fmt.Sprintf("tf-testaccdns%d", rand-1),
 					}),
 				),
 			},
@@ -135,13 +135,13 @@ func TestAccAlicloudAlidnsDomainGroup_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"group_name": fmt.Sprintf("tf-testaccdns%d", rand+1),
-					"lang":       "en",
+					"domain_group_name": fmt.Sprintf("tf-testaccdns%d", rand+1),
+					"lang":              "en",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"group_name": fmt.Sprintf("tf-testaccdns%d", rand+1),
-						"lang":       "en",
+						"domain_group_name": fmt.Sprintf("tf-testaccdns%d", rand+1),
+						"lang":              "en",
 					}),
 				),
 			},

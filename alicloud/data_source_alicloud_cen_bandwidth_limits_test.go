@@ -14,7 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudCenBandwidthLimitsDataSource(t *testing.T) {
+// Skip this testcase because of the account cannot purchase non-internal products.
+func SkipTestAccAlicloudCenBandwidthLimitsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 	idConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenBandwidthLimitsDataSourceConfig(rand, map[string]string{
@@ -106,12 +107,14 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_type = "VPC""
     child_instance_region_id = "cn-beijing"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_type = "VPC""
     child_instance_region_id = "us-west-1"
 }
 

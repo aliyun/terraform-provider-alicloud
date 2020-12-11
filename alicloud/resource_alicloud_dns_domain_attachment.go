@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
@@ -8,12 +9,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudDnsDomainAttachment() *schema.Resource {
+func resourceAlicloudAlidnsDomainAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDnsDomainAttachmentCreate,
-		Read:   resourceAlicloudDnsDomainAttachmentRead,
-		Update: resourceAlicloudDnsDomainAttachmentUpdate,
-		Delete: resourceAlicloudDnsdomainAttachmentDelete,
+		Create: resourceAlicloudAlidnsDomainAttachmentCreate,
+		Read:   resourceAlicloudAlidnsDomainAttachmentRead,
+		Update: resourceAlicloudAlidnsDomainAttachmentUpdate,
+		Delete: resourceAlicloudAlidnsdomainAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -32,18 +33,19 @@ func resourceAlicloudDnsDomainAttachment() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDnsDomainAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlidnsDomainAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	d.SetId(d.Get("instance_id").(string))
-	return resourceAlicloudDnsDomainAttachmentUpdate(d, meta)
+	return resourceAlicloudAlidnsDomainAttachmentUpdate(d, meta)
 }
 
-func resourceAlicloudDnsDomainAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlidnsDomainAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dnsService := DnsService{client}
 
-	object, err := dnsService.DescribeDnsDomainAttachment(d.Id())
+	object, err := dnsService.DescribeAlidnsDomainAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_alidns_domain_attachment alidnsService.DescribeAlidnsDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -54,7 +56,7 @@ func resourceAlicloudDnsDomainAttachmentRead(d *schema.ResourceData, meta interf
 	return nil
 
 }
-func resourceAlicloudDnsDomainAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlidnsDomainAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dnsService := DnsService{client}
 
@@ -109,10 +111,10 @@ func resourceAlicloudDnsDomainAttachmentUpdate(d *schema.ResourceData, meta inte
 	if err := dnsService.WaitForAlidnsDomainAttachment(d.Id(), map[string]interface{}{"Domain": d.Get("domain_names").(*schema.Set).List()}, false, DefaultTimeoutMedium); err != nil {
 		return WrapError(err)
 	}
-	return resourceAlicloudDnsDomainAttachmentRead(d, meta)
+	return resourceAlicloudAlidnsDomainAttachmentRead(d, meta)
 }
 
-func resourceAlicloudDnsdomainAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlidnsdomainAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dnsService := DnsService{client}
 

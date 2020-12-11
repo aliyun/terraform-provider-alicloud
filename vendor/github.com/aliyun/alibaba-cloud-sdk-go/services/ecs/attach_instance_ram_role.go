@@ -21,7 +21,6 @@ import (
 )
 
 // AttachInstanceRamRole invokes the ecs.AttachInstanceRamRole API synchronously
-// api document: https://help.aliyun.com/api/ecs/attachinstanceramrole.html
 func (client *Client) AttachInstanceRamRole(request *AttachInstanceRamRoleRequest) (response *AttachInstanceRamRoleResponse, err error) {
 	response = CreateAttachInstanceRamRoleResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) AttachInstanceRamRole(request *AttachInstanceRamRoleReques
 }
 
 // AttachInstanceRamRoleWithChan invokes the ecs.AttachInstanceRamRole API asynchronously
-// api document: https://help.aliyun.com/api/ecs/attachinstanceramrole.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AttachInstanceRamRoleWithChan(request *AttachInstanceRamRoleRequest) (<-chan *AttachInstanceRamRoleResponse, <-chan error) {
 	responseChan := make(chan *AttachInstanceRamRoleResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) AttachInstanceRamRoleWithChan(request *AttachInstanceRamRo
 }
 
 // AttachInstanceRamRoleWithCallback invokes the ecs.AttachInstanceRamRole API asynchronously
-// api document: https://help.aliyun.com/api/ecs/attachinstanceramrole.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AttachInstanceRamRoleWithCallback(request *AttachInstanceRamRoleRequest, callback func(response *AttachInstanceRamRoleResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -98,7 +93,7 @@ func CreateAttachInstanceRamRoleRequest() (request *AttachInstanceRamRoleRequest
 	request = &AttachInstanceRamRoleRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "AttachInstanceRamRole", "ecs", "openAPI")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "AttachInstanceRamRole", "", "")
 	request.Method = requests.POST
 	return
 }

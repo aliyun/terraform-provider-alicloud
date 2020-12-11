@@ -46,12 +46,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `build_package_id` - The package ID of Enterprise Distributed Application Service (EDAS) Container.
   * `cluster_id` - The ID of the cluster that you want to create the application.
   * `cluster_type` -  The type of the cluster that you want to create. Valid values: 1: Swarm cluster. 2: ECS cluster. 3: Kubernates cluster.
-  * `instance_count` -  Number of instances.
-  * `running_instance_count` - Number of running instances.
-  * `health_check_url` - The URL for health checking of the application.
-  * `create_time` - Application's creation time.
-  * `slb_id` - The ID of the SLB instance that is going to be bound.
-  * `slb_ip` - The IP address that is allocated to the bound SLB instance.
-  * `slb_port` - The port of intranet SLB.
   * `region_id` - The ID of the namespace the application belongs to.
 

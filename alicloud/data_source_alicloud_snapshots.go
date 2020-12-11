@@ -143,6 +143,7 @@ func dataSourceAlicloudSnapshots() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": tagsSchema(),
 					},
 				},
 			},
@@ -236,13 +237,15 @@ func dataSourceAlicloudSnapshotsRead(d *schema.ResourceData, meta interface{}) e
 		filteredSnapshots = allSnapshots
 	}
 
-	return snapshotsDescriptionAttributes(d, filteredSnapshots)
+	return snapshotsDescriptionAttributes(d, filteredSnapshots, meta)
 }
 
-func snapshotsDescriptionAttributes(d *schema.ResourceData, snapshots []ecs.Snapshot) error {
+func snapshotsDescriptionAttributes(d *schema.ResourceData, snapshots []ecs.Snapshot, meta interface{}) error {
 	var s []map[string]interface{}
 	var ids []string
 	var names []string
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 	for _, snapshot := range snapshots {
 		mapping := map[string]interface{}{
 			"id":               snapshot.SnapshotId,
@@ -259,6 +262,7 @@ func snapshotsDescriptionAttributes(d *schema.ResourceData, snapshots []ecs.Snap
 			"creation_time":    snapshot.CreationTime,
 			"status":           snapshot.Status,
 			"usage":            snapshot.Usage,
+			"tags":             ecsService.tagsToMap(snapshot.Tags.Tag),
 		}
 		s = append(s, mapping)
 		ids = append(ids, snapshot.SnapshotId)

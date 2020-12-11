@@ -170,6 +170,8 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 						"name":                      "",
 						"storage_engine":            "WiredTiger",
 						"instance_charge_type":      "PostPaid",
+						"tags.%":                    "1",
+						"tags.Created":              "TF",
 					}),
 				),
 			},
@@ -553,6 +555,9 @@ resource "alicloud_mongodb_sharding_instance" "default" {
   }
   mongo_list {
     node_class = "dds.mongos.mid"
+  }
+  tags = {
+    Created = "TF"
   }
 }`
 

@@ -105,6 +105,9 @@ func dataSourceAlicloudEipsRead(d *schema.ResourceData, meta interface{}) error 
 	ipsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}

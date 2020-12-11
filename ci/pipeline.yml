@@ -57,6 +57,8 @@ groups:
       - Datahub
       # Cdn
       - Cdn
+      # Dcdn
+      - Dcdn
       # Api Gateway
       - ApiGateway
       # Mns
@@ -73,10 +75,10 @@ groups:
       - Kms
       # Sls
       - Log
-      # ActionTrail
-      - ActionTrail
+      # Actiontrail
+      - Actiontrail
       # SSL Certificate
-      - Cas
+      - CasCertificate
       # MongoDB
       - MongoDB
       # Ddoscoo
@@ -95,12 +97,18 @@ groups:
       - Market
       - PolarDB
       - HBase
+      - Cassandra
       - Adb
       - Maxcompute
       - Dms
       - Waf
       - Edas
       - ResourceManager
+      - Config
+      - Alidns
+      - NetworkAcl
+      - Fnf
+      - Ros
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -131,6 +139,7 @@ groups:
       - CR
       # Function Compute
       - FC
+      - Fnf
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -148,6 +157,7 @@ groups:
       - Cdn
       # Ots
       - Ots
+      - Ros
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -166,6 +176,7 @@ groups:
       - Gpdb
       - PolarDB
       - HBase
+      - Cassandra
       - Adb
       - Dms
       - Sweeper-1
@@ -198,6 +209,7 @@ groups:
       # Cloud Connect network
       - CloudConnectNetwork
       - Sag
+      - NetworkAcl
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -209,6 +221,7 @@ groups:
     jobs:
       # Dns and Pvtz
       - Dns
+      - Alidns
       - Pvtz
       - Sweeper-1
       - Sweeper-2
@@ -235,11 +248,12 @@ groups:
       - Ram
       # Kms
       - Kms
-      # ActionTrail
-      - ActionTrail
+      # Actiontrail
+      - Actiontrail
       # Cms
       - Cms
       - ResourceManager
+      - Config
       - Sweeper-1
       - Sweeper-2
       - Sweeper-3
@@ -277,7 +291,7 @@ groups:
   - name: Security
     jobs:
       # SSL Certificate
-      - Cas
+      - CasCertificate
       # Ddoscoo
       - Ddoscoo
       - Ddosbgp
@@ -478,7 +492,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 06
+        resource: 06Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -655,7 +669,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 19
+        resource: 19Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -915,7 +929,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 1730
+        resource: 1730Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -963,7 +977,7 @@ jobs:
           <<: *run-params
           TEST_CASE_CODE: "Nas"
 
-  - name: ActionTrail
+  - name: Actiontrail
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -974,9 +988,9 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "ActionTrail"
+          TEST_CASE_CODE: "Actiontrail"
 
-  - name: Cas
+  - name: CasCertificate
     plan:
       - <<: *clone-provider
       - get: trigger
@@ -987,7 +1001,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Cas"
+          TEST_CASE_CODE: "CasCertificate"
 
   - name: MongoDB
     plan:
@@ -1201,7 +1215,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 17
+        resource: 17Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1214,7 +1228,7 @@ jobs:
       - <<: *clone-provider
       - get: trigger
         trigger: true
-        resource: 0030
+        resource: 0030Thu
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1312,6 +1326,97 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "EcsDedicatedHost"
+
+  - name: Dcdn
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0830
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Dcdn"
+
+  - name: Cassandra
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 0930
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Cassandra"
+
+  - name: Config
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 1030
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Config"
+
+  - name: Alidns
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 1130
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Alidns"
+
+  - name: NetworkAcl
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 1230
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "NetworkAcl"
+
+  - name: Fnf
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 1330
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Fnf"
+
+  - name: Ros
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 1430
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_CODE: "Ros"
 
   - name: SweeperAfter
     plan:
@@ -1721,4 +1826,36 @@ resources:
     start: 11:30 PM
     stop: 11:50 PM
 #    days: [Sunday, Monday, Tuesday, Saturday]
+    location: {{time_location}}
+
+- name: 0030Thu
+  type: time
+  source:
+    start: 00:30 AM
+    stop: 10:50 PM
+    days: [Thursday]
+    location: {{time_location}}
+
+- name: 06Thu
+  type: time
+  source:
+    start: 06:00 AM
+    stop: 10:50 PM
+    days: [Thursday]
+    location: {{time_location}}
+
+- name: 1730Thu
+  type: time
+  source:
+    start: 05:30 PM
+    stop: 10:50 PM
+    days: [Thursday]
+    location: {{time_location}}
+
+- name: 19Thu
+  type: time
+  source:
+    start: 07:00 PM
+    stop: 10:50 PM
+    days: [Thursday]
     location: {{time_location}}

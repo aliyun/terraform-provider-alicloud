@@ -171,6 +171,7 @@ func testAccCenInstanceGrantBasic(access, secret, uid1, uid2 string, rand int) s
         provider = "alicloud.account2"
         instance_id = "${alicloud_cen_instance.cen.id}"
         child_instance_id = "${alicloud_vpc.vpc.id}"
+	    child_instance_type = "VPC"
         child_instance_region_id = "cn-qingdao"
         child_instance_owner_id = "%s"
         depends_on = [

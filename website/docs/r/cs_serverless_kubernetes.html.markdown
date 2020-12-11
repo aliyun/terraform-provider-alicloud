@@ -32,7 +32,7 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "my-first-k8s"
 }
@@ -74,6 +74,7 @@ The following arguments are supported:
 
 * `name` - (Optional) The kubernetes cluster's name. It is the only in one Alicloud account.
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
+* `version` - (Optional, Available since 1.97.0) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used.
 * `vpc_id` - (Required, ForceNew) The vpc where new kubernetes cluster will be located. Specify one vpc's id, if it is not specified, a new VPC  will be built.
 * `vswitch_ids` - (Required, ForceNew) The vswitches where new kubernetes cluster will be located.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true.
@@ -89,6 +90,7 @@ The following arguments are supported:
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
 * `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 
 
 #### Addons 
@@ -102,6 +104,7 @@ It is a new field since 1.91.0. You can specific network plugin,log component,in
       content {
         name                    = lookup(addons.value, "name", var.cluster_addons)
         config                  = lookup(addons.value, "config", var.cluster_addons)
+        disabled                = lookup(addons.value, "disabled", var.cluster_addons)
       }
   }
 ```

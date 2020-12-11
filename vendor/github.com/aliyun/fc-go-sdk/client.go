@@ -130,130 +130,129 @@ func (c *Client) DeleteService(input *DeleteServiceInput) (*DeleteServiceOutput,
 
 // PublishServiceVersion publishes service version
 func (c *Client) PublishServiceVersion(input *PublishServiceVersionInput) (*PublishServiceVersionOutput, error) {
-       if input == nil {
-               input = new(PublishServiceVersionInput)
-       }
-       var output = new(PublishServiceVersionOutput)
-       httpResponse, err := c.sendRequest(input, http.MethodPost)
-       if err != nil {
-               return nil, err
-       }
-       output.Header = httpResponse.Header()
-       json.Unmarshal(httpResponse.Body(), output)
-       return output, nil
+	if input == nil {
+		input = new(PublishServiceVersionInput)
+	}
+	var output = new(PublishServiceVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPost)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
 }
 
 // ListServiceVersions returns list of service versions
 func (c *Client) ListServiceVersions(input *ListServiceVersionsInput) (*ListServiceVersionsOutput, error) {
-       if input == nil {
-               input = new(ListServiceVersionsInput)
-       }
+	if input == nil {
+		input = new(ListServiceVersionsInput)
+	}
 
-       var output = new(ListServiceVersionsOutput)
-       httpResponse, err := c.sendRequest(input, http.MethodGet)
-       if err != nil {
-               return nil, err
-       }
+	var output = new(ListServiceVersionsOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
 
-       output.Header = httpResponse.Header()
-       json.Unmarshal(httpResponse.Body(), output)
-       return output, nil
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
 }
 
 // DeleteServiceVersion marks service version as deleted
 func (c *Client) DeleteServiceVersion(input *DeleteServiceVersionInput) (*DeleteServiceVersionOutput, error) {
-       if input == nil {
-               input = new(DeleteServiceVersionInput)
-       }
-       var output = new(DeleteServiceVersionOutput)
-       httpResponse, err := c.sendRequest(input, http.MethodDelete)
-       if err != nil {
-               return nil, err
-       }
-       output.Header = httpResponse.Header()
-       return output, nil
+	if input == nil {
+		input = new(DeleteServiceVersionInput)
+	}
+	var output = new(DeleteServiceVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodDelete)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	return output, nil
 }
 
 // CreateAlias creates alias
 func (c *Client) CreateAlias(input *CreateAliasInput) (*CreateAliasOutput, error) {
-       if input == nil {
-               input = new(CreateAliasInput)
-       }
+	if input == nil {
+		input = new(CreateAliasInput)
+	}
 
-       var output = new(CreateAliasOutput)
-       httpResponse, err := c.sendRequest(input, http.MethodPost)
-       if err != nil {
-               return nil, err
-       }
-       output.Header = httpResponse.Header()
-       json.Unmarshal(httpResponse.Body(), output)
-       return output, nil
+	var output = new(CreateAliasOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPost)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
 }
 
 // UpdateAlias updates alias
 func (c *Client) UpdateAlias(input *UpdateAliasInput) (*UpdateAliasOutput, error) {
-       if input == nil {
-               input = new(UpdateAliasInput)
-       }
+	if input == nil {
+		input = new(UpdateAliasInput)
+	}
 
-       var output = new(UpdateAliasOutput)
-       httpResponse, err := c.sendRequest(input, http.MethodPut)
-       if err != nil {
-               return nil, err
-       }
-       output.Header = httpResponse.Header()
-       json.Unmarshal(httpResponse.Body(), output)
-       return output, nil
+	var output = new(UpdateAliasOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPut)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
 }
 
 // GetAlias returns alias metadata from fc
 func (c *Client) GetAlias(input *GetAliasInput) (*GetAliasOutput, error) {
-       if input == nil {
-               input = new(GetAliasInput)
-       }
+	if input == nil {
+		input = new(GetAliasInput)
+	}
 
-       var output = new(GetAliasOutput)
-       httpResponse, err := c.sendRequest(input, http.MethodGet)
-       if err != nil {
-               return nil, err
-       }
+	var output = new(GetAliasOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
 
-       output.Header = httpResponse.Header()
-       json.Unmarshal(httpResponse.Body(), output)
-       return output, nil
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
 }
 
 // ListAliases returns list of aliases from fc
 func (c *Client) ListAliases(input *ListAliasesInput) (*ListAliasesOutput, error) {
-       if input == nil {
-               input = new(ListAliasesInput)
-       }
+	if input == nil {
+		input = new(ListAliasesInput)
+	}
 
-       var output = new(ListAliasesOutput)
-       httpResponse, err := c.sendRequest(input, http.MethodGet)
-       if err != nil {
-               return nil, err
-       }
+	var output = new(ListAliasesOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
 
-       output.Header = httpResponse.Header()
-       json.Unmarshal(httpResponse.Body(), output)
-       return output, nil
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
 }
 
 // DeleteAlias deletes service
 func (c *Client) DeleteAlias(input *DeleteAliasInput) (*DeleteAliasOutput, error) {
-       if input == nil {
-               input = new(DeleteAliasInput)
-       }
-       var output = new(DeleteAliasOutput)
-       httpResponse, err := c.sendRequest(input, http.MethodDelete)
-       if err != nil {
-               return nil, err
-       }
-       output.Header = httpResponse.Header()
-       return output, nil
+	if input == nil {
+		input = new(DeleteAliasInput)
+	}
+	var output = new(DeleteAliasOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodDelete)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	return output, nil
 }
-
 
 // CreateFunction creates function
 func (c *Client) CreateFunction(input *CreateFunctionInput) (*CreateFunctionOutput, error) {
@@ -432,6 +431,105 @@ func (c *Client) ListTriggers(input *ListTriggersInput) (*ListTriggersOutput, er
 	return output, nil
 }
 
+// TagResource make a resource with tags
+func (c *Client) TagResource(input *TagResourceInput) (*TagResourceOut, error) {
+	if input == nil {
+		input = new(TagResourceInput)
+	}
+
+	var output = new(TagResourceOut)
+	httpResponse, err := c.sendRequest(input, http.MethodPost)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// GetResourceTags ...
+func (c *Client) GetResourceTags(input *GetResourceTagsInput) (*GetResourceTagsOut, error) {
+	if input == nil {
+		input = new(GetResourceTagsInput)
+	}
+
+	var output = new(GetResourceTagsOut)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// UnTagResource ...
+func (c *Client) UnTagResource(input *UnTagResourceInput) (*UnTagResourceOut, error) {
+	if input == nil {
+		input = new(UnTagResourceInput)
+	}
+
+	var output = new(UnTagResourceOut)
+	httpResponse, err := c.sendRequest(input, http.MethodDelete)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// PutProvisionConfig put provision config
+func (c *Client) PutProvisionConfig(input *PutProvisionConfigInput) (*PutProvisionConfigOutput, error) {
+	if input == nil {
+		input = new(PutProvisionConfigInput)
+	}
+
+	var output = new(PutProvisionConfigOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPut)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// GetProvisionConfig return provision config from fc
+func (c *Client) GetProvisionConfig(input *GetProvisionConfigInput) (*GetProvisionConfigOutput, error) {
+	if input == nil {
+		input = new(GetProvisionConfigInput)
+	}
+
+	var output = new(GetProvisionConfigOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// ListProvisionConfigs return list of provision configs from fc
+func (c *Client) ListProvisionConfigs(input *ListProvisionConfigsInput) (*ListProvisionConfigsOutput, error) {
+	if input == nil {
+		input = new(ListProvisionConfigsInput)
+	}
+
+	var output = new(ListProvisionConfigsOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
 // InvokeFunction : invoke function in fc
 func (c *Client) InvokeFunction(input *InvokeFunctionInput) (*InvokeFunctionOutput, error) {
 	if input == nil {
@@ -446,6 +544,103 @@ func (c *Client) InvokeFunction(input *InvokeFunctionInput) (*InvokeFunctionOutp
 	output.Header = httpResponse.Header()
 	output.Payload = httpResponse.Body()
 
+	return output, nil
+}
+
+// ListReservedCapacities returns list of reserved capacity from fc
+func (c *Client) ListReservedCapacities(input *ListReservedCapacitiesInput) (*ListReservedCapacitiesOutput, error) {
+	if input == nil {
+		input = new(ListReservedCapacitiesInput)
+	}
+
+	var output = new(ListReservedCapacitiesOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// CreateCustomDomain creates custom domain
+func (c *Client) CreateCustomDomain(input *CreateCustomDomainInput) (*CreateCustomDomainOutput, error) {
+	if input == nil {
+		input = new(CreateCustomDomainInput)
+	}
+
+	var output = new(CreateCustomDomainOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPost)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// UpdateCustomDomain updates custom domain
+func (c *Client) UpdateCustomDomain(input *UpdateCustomDomainInput) (*UpdateCustomDomainOutput, error) {
+	if input == nil {
+		input = new(UpdateCustomDomainInput)
+	}
+
+	var output = new(UpdateCustomDomainOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPut)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// GetCustomDomain returns custom domain metadata from fc
+func (c *Client) GetCustomDomain(input *GetCustomDomainInput) (*GetCustomDomainOutput, error) {
+	if input == nil {
+		input = new(GetCustomDomainInput)
+	}
+
+	var output = new(GetCustomDomainOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// DeleteCustomDomain deletes custom domain
+func (c *Client) DeleteCustomDomain(input *DeleteCustomDomainInput) (*DeleteCustomDomainOutput, error) {
+	if input == nil {
+		input = new(DeleteCustomDomainInput)
+	}
+	var output = new(DeleteCustomDomainOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodDelete)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	return output, nil
+}
+
+// ListCustomDomains returns list of custom domains from fc
+func (c *Client) ListCustomDomains(input *ListCustomDomainsInput) (*ListCustomDomainsOutput, error) {
+	if input == nil {
+		input = new(ListCustomDomainsInput)
+	}
+
+	var output = new(ListCustomDomainsOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
 	return output, nil
 }
 
@@ -501,4 +696,69 @@ func (c *Client) sendRequest(input ServiceInput, httpMethod string) (*resty.Resp
 		return nil, serviceError
 	}
 	return resp, nil
+}
+
+// GetFunctionAsyncInvokeConfig returns async config from fc
+func (c *Client) GetFunctionAsyncInvokeConfig(input *GetFunctionAsyncInvokeConfigInput) (*GetFunctionAsyncInvokeConfigOutput, error) {
+	if input == nil {
+		input = new(GetFunctionAsyncInvokeConfigInput)
+	}
+
+	var output = new(GetFunctionAsyncInvokeConfigOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// ListFunctionAsyncInvokeConfigs returns list of async configs from fc
+func (c *Client) ListFunctionAsyncInvokeConfigs(input *ListFunctionAsyncInvokeConfigsInput) (*ListFunctionAsyncInvokeConfigsOutput, error) {
+	if input == nil {
+		input = new(ListFunctionAsyncInvokeConfigsInput)
+	}
+
+	var output = new(ListFunctionAsyncInvokeConfigsOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+
+// PutFunctionAsyncInvokeConfig creates or updates an async config
+func (c *Client) PutFunctionAsyncInvokeConfig(input *PutFunctionAsyncInvokeConfigInput) (*PutFunctionAsyncInvokeConfigOutput, error) {
+	if input == nil {
+		input = new(PutFunctionAsyncInvokeConfigInput)
+	}
+
+	var output = new(PutFunctionAsyncInvokeConfigOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPut)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// DeleteFunctionAsyncInvokeConfig deletes async config
+func (c *Client) DeleteFunctionAsyncInvokeConfig(input *DeleteFunctionAsyncInvokeConfigInput) (*DeleteFunctionAsyncInvokeConfigOutput, error) {
+	if input == nil {
+		input = new(DeleteFunctionAsyncInvokeConfigInput)
+	}
+	var output = new(DeleteFunctionAsyncInvokeConfigOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodDelete)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	return output, nil
 }

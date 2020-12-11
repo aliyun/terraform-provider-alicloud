@@ -16,18 +16,18 @@ Filters support regular expression for the account name, searches by clusterId.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_polardb_clusters" "polardb_clusters_ds" {
   description_regex = "pc-\\w+"
   status     = "Running"
 }
 
 data "alicloud_polardb_accounts" "default" {
-  db_cluster_id    = "${data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id}"
+  db_cluster_id    = data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id
 }
 
-output "ends" {
-    value = "${data.alicloud_polardb_accounts.default.accounts[0].account_name}"
+output "account" {
+    value = data.alicloud_polardb_accounts.default.accounts[0].account_name
 }
 ```
 

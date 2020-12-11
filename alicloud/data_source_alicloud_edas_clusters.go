@@ -117,6 +117,9 @@ func dataSourceAlicloudEdasClustersRead(d *schema.ResourceData, meta interface{}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, id := range v.([]interface{}) {
+			if id == nil {
+				continue
+			}
 			idsMap[Trim(id.(string))] = Trim(id.(string))
 		}
 	}

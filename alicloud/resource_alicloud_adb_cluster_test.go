@@ -17,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-var adbClusterConnectionStringRegexp = "am-[a-z-A-Z-0-9]+.[a-z]+.ads.aliyuncs.com"
+var adbClusterConnectionStringRegexp = "am-[a-z-A-Z-0-9]+.ads.aliyuncs.com"
 
 func init() {
 	resource.AddTestSweepers("alicloud_adb_cluster", &resource.Sweeper{

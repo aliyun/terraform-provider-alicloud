@@ -50,6 +50,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `internet_charge_type` - Internet charge type of the scaling configuration.
   * `internet_max_bandwidth_in` - Internet max bandwidth in of the scaling configuration.
   * `internet_max_bandwidth_out` - Internet max bandwidth of the scaling configuration.
+  * `credit_specification` - Performance mode of the t5 burstable instance.
   * `system_disk_category` - System disk category of the scaling configuration.
   * `system_disk_size` - System disk size of the scaling configuration.
   * `data_disks` - Data disks of the scaling configuration.

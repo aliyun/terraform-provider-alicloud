@@ -1,5 +1,5 @@
 ---
-subcategory: "Alidns"
+subcategory: "DNS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alidns_domain_groups"
 sidebar_current: "docs-alicloud-datasource-alidns-domain-groups"
@@ -15,7 +15,7 @@ This data source provides a list of Alidns Domain Groups in an Alibaba Cloud acc
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_alidns_domain_groups" "example" {
   ids = ["c5ef2bc43064445787adf182af2****"]
 }

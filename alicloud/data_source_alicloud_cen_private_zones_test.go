@@ -39,12 +39,12 @@ func TestAccAlicloudCenPrivateZonesDataSource(t *testing.T) {
 		existConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id":         `"${alicloud_cen_instance.default.id}"`,
 			"ids":            `[split(":",alicloud_cen_private_zone.default.id)[1]]`,
-			"host_region_id": `"cn-hangzhou"`,
+			"host_region_id": fmt.Sprintf(`"%s"`, defaultRegionToTest),
 		}),
 		fakeConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id":         `"${alicloud_cen_instance.default.id}"`,
 			"ids":            `[split(":",alicloud_cen_private_zone.default.id)[1]]`,
-			"host_region_id": `"cn-hangzhou-fake"`,
+			"host_region_id": `"fake"`,
 		}),
 	}
 
@@ -53,13 +53,13 @@ func TestAccAlicloudCenPrivateZonesDataSource(t *testing.T) {
 			"cen_id":         `"${alicloud_cen_instance.default.id}"`,
 			"ids":            `[split(":",alicloud_cen_private_zone.default.id)[1]]`,
 			"status":         `"Active"`,
-			"host_region_id": `"cn-hangzhou"`,
+			"host_region_id": fmt.Sprintf(`"%s"`, defaultRegionToTest),
 		}),
 		fakeConfig: testAccCheckAlicloudCenPrivateZonesSourceConfig(rand, map[string]string{
 			"cen_id":         `"${alicloud_cen_instance.default.id}"`,
 			"ids":            `[split(":",alicloud_cen_private_zone.default.id)[1]]`,
 			"status":         `"Active"`,
-			"host_region_id": `"cn-hangzhou-fake"`,
+			"host_region_id": `"fake"`,
 		}),
 	}
 
@@ -69,8 +69,8 @@ func TestAccAlicloudCenPrivateZonesDataSource(t *testing.T) {
 			"zones.#":                          "1",
 			"zones.0.cen_id":                   CHECKSET,
 			"zones.0.private_zone_dns_servers": CHECKSET,
-			"zones.0.access_region_id":         "cn-hangzhou",
-			"zones.0.host_region_id":           "cn-hangzhou",
+			"zones.0.access_region_id":         defaultRegionToTest,
+			"zones.0.host_region_id":           defaultRegionToTest,
 			"zones.0.host_vpc_id":              CHECKSET,
 			"zones.0.status":                   "Active",
 		}
@@ -89,7 +89,11 @@ func TestAccAlicloudCenPrivateZonesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeCenPrivateZonesRecordsMapFunc,
 	}
 
-	cenPrivateZonesRecordsCheckInfo.dataSourceTestCheck(t, rand, idsConf, statusConf, hostRegionIdConf, allConf)
+	preCheck := func() {
+		testAccPreCheck(t)
+	}
+
+	cenPrivateZonesRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, hostRegionIdConf, allConf)
 
 }
 
@@ -112,11 +116,12 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
   instance_id              = alicloud_cen_instance.default.id
   child_instance_id        = alicloud_vpc.default.id
+  child_instance_type      = "VPC"
   child_instance_region_id = "%[2]s"
 }
 
 resource "alicloud_cen_private_zone" "default" {
-  access_region_id = "cn-hangzhou"
+  access_region_id = "%[2]s"
   cen_id           = alicloud_cen_instance.default.id
   host_region_id   = "%[2]s"
   host_vpc_id      = alicloud_vpc.default.id

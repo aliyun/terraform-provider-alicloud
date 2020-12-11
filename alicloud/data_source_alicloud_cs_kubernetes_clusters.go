@@ -526,7 +526,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 			if err := invoker.Run(func() error {
 				raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 					requestInfo = csClient
-					nodes, paginationResult, err := csClient.GetKubernetesClusterNodes(ct.ClusterID, common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
+					nodes, paginationResult, err := csClient.GetKubernetesClusterNodes(ct.ClusterID, common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}, "")
 					return []interface{}{nodes, paginationResult}, err
 				})
 				response = raw
@@ -548,7 +548,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 					if err := invoker.Run(func() error {
 						raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 							requestInfo = csClient
-							nodes, _, err := csClient.GetKubernetesClusterNodes(ct.ClusterID, common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge})
+							nodes, _, err := csClient.GetKubernetesClusterNodes(ct.ClusterID, common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}, "")
 							return nodes, err
 						})
 						response = raw

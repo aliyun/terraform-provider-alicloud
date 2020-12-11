@@ -324,11 +324,9 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		}
 		for _, r := range regions.Regions.Region {
 			for _, zonid := range r.Zones.Zone {
-				if multi && strings.Contains(zonid.Id, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
-					zoneIds = append(zoneIds, zonid.Id)
-					continue
+				if r.RegionId == string(client.Region) {
+					hbaseZones[zonid.Id] = r.RegionId
 				}
-				hbaseZones[zonid.Id] = r.RegionId
 			}
 		}
 	}

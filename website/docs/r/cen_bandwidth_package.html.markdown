@@ -17,14 +17,12 @@ For information about CEN and how to use it, see [Manage bandwidth packages](htt
 
 Basic Usage
 
-```
-resource "alicloud_cen_bandwidth_package" "foo" {
-  name      = "tf-testAccCenBandwidthPackageConfig"
-  bandwidth = 5
-  geographic_region_ids = [
-    "China",
-    "Asia-Pacific",
-  ]
+```terraform
+resource "alicloud_cen_bandwidth_package" "example" {   
+    bandwidth                  = 5
+    cen_bandwidth_package_name = "tf-testAccCenBandwidthPackageConfig"
+    geographic_region_a_id     = "China"
+    geographic_region_b_id     = "China"
 }
 ```
 ## Argument Reference
@@ -32,11 +30,15 @@ resource "alicloud_cen_bandwidth_package" "foo" {
 The following arguments are supported:
 
 * `bandwidth` - (Required) The bandwidth in Mbps of the bandwidth package. Cannot be less than 2Mbps.
-* `geographic_region_ids` - (Required) List of the two areas to connect. Valid value: China | North-America | Asia-Pacific | Europe | Middle-East | Australia.
-* `name` - (Optional) The name of the bandwidth package. Defaults to null.
+* `geographic_region_ids` - (Required, Deprecated in 1.98.0+) Field `geographic_region_ids` has been deprecated from version 1.97.0. Use `geographic_region_a_id` and `geographic_region_b_id` instead.
+* `name` - (Optional, Deprecated in 1.98.0+) Field 'name' has been deprecated from version 1.97.0. Use `cen_bandwidth_package_name` and instead.
 * `description` - (Optional) The description of the bandwidth package. Default to null.
-* `charge_type` - (Optional) The billing method. Valid value: PostPaid | PrePaid. Default to PostPaid. If set to PrePaid, the bandwidth package can't be deleted before expired time.
-* `period` - (Optional) The purchase period in month. Valid value: 1, 2, 3, 6, 12. Default to 1.
+* `charge_type` - (Optional, Deprecated in 1.98.0+) Field `charge_type` has been deprecated from version 1.97.0. Use `payment_type` and instead.
+* `period` - (Optional) The purchase period in month. Valid value: `1`, `2`, `3`, `6`, `12`. Default to `1`.
+* `geographic_region_a_id` - (Required, ForceNew, Available in 1.98.0+) The area A to which the network instance belongs. Valid values: `China` | `North-America` | `Asia-Pacific` | `Europe` | `Australia`.
+* `geographic_region_b_id` - (Required, ForceNew, Available in 1.98.0+) The area B to which the network instance belongs. Valid values: `China` | `North-America` | `Asia-Pacific` | `Europe` | `Australia`.
+* `payment_type` - (Optional, Available in 1.98.0+) The billing method. Valid value: `PostPaid` | `PrePaid`. Default to `PostPaid`. If set to PrePaid, the bandwidth package can't be deleted before expired time.
+* `cen_bandwidth_package_name` - (Optional, Available in 1.98.0+) The name of the bandwidth package. Defaults to null.
 
 ->**NOTE:** PrePaid mode will deduct fees from the account directly and the bandwidth package can't be deleted before expired time. 
 
@@ -48,7 +50,16 @@ The following attributes are exported:
 
 * `id` - The ID of the bandwidth package.
 * `expired_time` - The time of the bandwidth package to expire.
-* `status` - The status of the bandwidth, including "InUse" and "Idle".
+* `status` - The association status of the bandwidth package.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.98.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 11 mins) Used when creating the CEN bandwidth package. (until it reaches the initial `Idle` status).
+* `delete` - (Defaults to 11 mins) Used when delete the CEN bandwidth package.
 
 ## Import
 

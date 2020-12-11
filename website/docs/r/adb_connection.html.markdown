@@ -65,7 +65,7 @@ resource "alicloud_adb_connection" "connection" {
 The following arguments are supported:
 
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster that can run database.
-* `connection_prefix` - (ForceNew) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 30 characters. Default to <db_cluster_id> + 'tf'.
+* `connection_prefix` - (ForceNew) Prefix of the cluster public endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter. Default to `<db_cluster_id> + tf`.
 
 ## Attributes Reference
 

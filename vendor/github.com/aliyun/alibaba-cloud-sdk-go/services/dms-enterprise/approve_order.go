@@ -21,7 +21,6 @@ import (
 )
 
 // ApproveOrder invokes the dms_enterprise.ApproveOrder API synchronously
-// api document: https://help.aliyun.com/api/dms-enterprise/approveorder.html
 func (client *Client) ApproveOrder(request *ApproveOrderRequest) (response *ApproveOrderResponse, err error) {
 	response = CreateApproveOrderResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ApproveOrder(request *ApproveOrderRequest) (response *Appr
 }
 
 // ApproveOrderWithChan invokes the dms_enterprise.ApproveOrder API asynchronously
-// api document: https://help.aliyun.com/api/dms-enterprise/approveorder.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ApproveOrderWithChan(request *ApproveOrderRequest) (<-chan *ApproveOrderResponse, <-chan error) {
 	responseChan := make(chan *ApproveOrderResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ApproveOrderWithChan(request *ApproveOrderRequest) (<-chan
 }
 
 // ApproveOrderWithCallback invokes the dms_enterprise.ApproveOrder API asynchronously
-// api document: https://help.aliyun.com/api/dms-enterprise/approveorder.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ApproveOrderWithCallback(request *ApproveOrderRequest, callback func(response *ApproveOrderResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -77,6 +72,7 @@ func (client *Client) ApproveOrderWithCallback(request *ApproveOrderRequest, cal
 type ApproveOrderRequest struct {
 	*requests.RpcRequest
 	ApprovalType       string           `position:"Query" name:"ApprovalType"`
+	Comment            string           `position:"Query" name:"Comment"`
 	Tid                requests.Integer `position:"Query" name:"Tid"`
 	WorkflowInstanceId requests.Integer `position:"Query" name:"WorkflowInstanceId"`
 }
@@ -96,6 +92,7 @@ func CreateApproveOrderRequest() (request *ApproveOrderRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("dms-enterprise", "2018-11-01", "ApproveOrder", "dmsenterprise", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

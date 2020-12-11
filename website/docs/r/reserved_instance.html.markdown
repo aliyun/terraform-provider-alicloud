@@ -15,7 +15,7 @@ Provides an Reserved Instance resource.
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_reserved_instance" "default" {
   instance_type      ="ecs.g6.large"
   instance_amount    ="1"
@@ -23,7 +23,7 @@ resource "alicloud_reserved_instance" "default" {
   offering_type      ="All Upfront"
   name               =name
   description        ="ReservedInstance"
-  zone_id            ="cn-shanghai-g"
+  zone_id            ="cn-hangzhou-h"
   scope              ="Zone"
   period             ="1"
 }

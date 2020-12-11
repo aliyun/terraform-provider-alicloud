@@ -21,7 +21,6 @@ import (
 )
 
 // QueryEccInfo invokes the edas.QueryEccInfo API synchronously
-// api document: https://help.aliyun.com/api/edas/queryeccinfo.html
 func (client *Client) QueryEccInfo(request *QueryEccInfoRequest) (response *QueryEccInfoResponse, err error) {
 	response = CreateQueryEccInfoResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) QueryEccInfo(request *QueryEccInfoRequest) (response *Quer
 }
 
 // QueryEccInfoWithChan invokes the edas.QueryEccInfo API asynchronously
-// api document: https://help.aliyun.com/api/edas/queryeccinfo.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) QueryEccInfoWithChan(request *QueryEccInfoRequest) (<-chan *QueryEccInfoResponse, <-chan error) {
 	responseChan := make(chan *QueryEccInfoResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) QueryEccInfoWithChan(request *QueryEccInfoRequest) (<-chan
 }
 
 // QueryEccInfoWithCallback invokes the edas.QueryEccInfo API asynchronously
-// api document: https://help.aliyun.com/api/edas/queryeccinfo.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) QueryEccInfoWithCallback(request *QueryEccInfoRequest, callback func(response *QueryEccInfoResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

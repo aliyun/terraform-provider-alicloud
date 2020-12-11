@@ -96,7 +96,7 @@ func testSweepOnsTopic(region string) error {
 }
 
 func TestAccAlicloudOnsTopic_basic(t *testing.T) {
-	var v *ons.PublishInfoDo
+	var v ons.PublishInfoDo
 	resourceId := "alicloud_ons_topic.default"
 	ra := resourceAttrInit(resourceId, onsTopicBasicMap)
 	serviceFunc := func() interface{} {
@@ -137,10 +137,23 @@ func TestAccAlicloudOnsTopic_basic(t *testing.T) {
 			},
 
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"perm"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "1",
+						"tags.Created": "TF",
+					}),
+				),
 			},
 
 			{

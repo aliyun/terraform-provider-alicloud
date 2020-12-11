@@ -23,7 +23,7 @@ type ConsumerGroup struct {
 type ConsumerGroupCheckPoint struct {
 	ShardID    int    `json:"shard"`
 	CheckPoint string `json:"checkpoint"`
-	UpdateTime int    `json:"updateTime"`
+	UpdateTime int64    `json:"updateTime"`
 	Consumer   string `json:"consumer"`
 }
 

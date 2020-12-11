@@ -21,7 +21,6 @@ import (
 )
 
 // InstallAgent invokes the edas.InstallAgent API synchronously
-// api document: https://help.aliyun.com/api/edas/installagent.html
 func (client *Client) InstallAgent(request *InstallAgentRequest) (response *InstallAgentResponse, err error) {
 	response = CreateInstallAgentResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) InstallAgent(request *InstallAgentRequest) (response *Inst
 }
 
 // InstallAgentWithChan invokes the edas.InstallAgent API asynchronously
-// api document: https://help.aliyun.com/api/edas/installagent.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) InstallAgentWithChan(request *InstallAgentRequest) (<-chan *InstallAgentResponse, <-chan error) {
 	responseChan := make(chan *InstallAgentResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) InstallAgentWithChan(request *InstallAgentRequest) (<-chan
 }
 
 // InstallAgentWithCallback invokes the edas.InstallAgent API asynchronously
-// api document: https://help.aliyun.com/api/edas/installagent.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) InstallAgentWithCallback(request *InstallAgentRequest, callback func(response *InstallAgentResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

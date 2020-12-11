@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -22,8 +23,8 @@ func resourceAlicloudCenVbrHealthCheck() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(6 * time.Minute),
-			Update: schema.DefaultTimeout(6 * time.Minute),
 			Delete: schema.DefaultTimeout(6 * time.Minute),
+			Update: schema.DefaultTimeout(6 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"cen_id": {
@@ -75,17 +76,21 @@ func resourceAlicloudCenVbrHealthCheckCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("health_check_interval"); ok {
 		request.HealthCheckInterval = requests.NewInteger(v.(int))
 	}
+
 	if v, ok := d.GetOk("health_check_source_ip"); ok {
 		request.HealthCheckSourceIp = v.(string)
 	}
+
 	request.HealthCheckTargetIp = d.Get("health_check_target_ip").(string)
 	if v, ok := d.GetOk("healthy_threshold"); ok {
 		request.HealthyThreshold = requests.NewInteger(v.(int))
 	}
+
 	request.VbrInstanceId = d.Get("vbr_instance_id").(string)
 	if v, ok := d.GetOk("vbr_instance_owner_id"); ok {
 		request.VbrInstanceOwnerId = requests.NewInteger(v.(int))
 	}
+
 	request.VbrInstanceRegionId = d.Get("vbr_instance_region_id").(string)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -115,6 +120,7 @@ func resourceAlicloudCenVbrHealthCheckRead(d *schema.ResourceData, meta interfac
 	object, err := cbnService.DescribeCenVbrHealthCheck(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cen_vbr_health_check cbnService.DescribeCenVbrHealthCheck Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -171,7 +177,7 @@ func resourceAlicloudCenVbrHealthCheckUpdate(d *schema.ResourceData, meta interf
 				return cbnClient.EnableCenVbrHealthCheck(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InstanceStatus.NotSupport", "Operation.Blocking", "InvalidOperation.CenInstanceStatus"}) {
+				if IsExpectedErrors(err, []string{"Operation.Blocking", "InvalidOperation.CenInstanceStatus", "InstanceStatus.NotSupport"}) {
 					wait()
 					return resource.RetryableError(err)
 				}

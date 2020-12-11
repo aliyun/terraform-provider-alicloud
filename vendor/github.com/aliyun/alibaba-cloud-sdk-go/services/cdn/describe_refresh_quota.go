@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeRefreshQuota invokes the cdn.DescribeRefreshQuota API synchronously
-// api document: https://help.aliyun.com/api/cdn/describerefreshquota.html
 func (client *Client) DescribeRefreshQuota(request *DescribeRefreshQuotaRequest) (response *DescribeRefreshQuotaResponse, err error) {
 	response = CreateDescribeRefreshQuotaResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeRefreshQuota(request *DescribeRefreshQuotaRequest)
 }
 
 // DescribeRefreshQuotaWithChan invokes the cdn.DescribeRefreshQuota API asynchronously
-// api document: https://help.aliyun.com/api/cdn/describerefreshquota.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRefreshQuotaWithChan(request *DescribeRefreshQuotaRequest) (<-chan *DescribeRefreshQuotaResponse, <-chan error) {
 	responseChan := make(chan *DescribeRefreshQuotaResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeRefreshQuotaWithChan(request *DescribeRefreshQuota
 }
 
 // DescribeRefreshQuotaWithCallback invokes the cdn.DescribeRefreshQuota API asynchronously
-// api document: https://help.aliyun.com/api/cdn/describerefreshquota.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRefreshQuotaWithCallback(request *DescribeRefreshQuotaRequest, callback func(response *DescribeRefreshQuotaResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -83,17 +78,19 @@ type DescribeRefreshQuotaRequest struct {
 // DescribeRefreshQuotaResponse is the response struct for api DescribeRefreshQuota
 type DescribeRefreshQuotaResponse struct {
 	*responses.BaseResponse
-	RequestId     string `json:"RequestId" xml:"RequestId"`
-	UrlQuota      string `json:"UrlQuota" xml:"UrlQuota"`
-	DirQuota      string `json:"DirQuota" xml:"DirQuota"`
-	UrlRemain     string `json:"UrlRemain" xml:"UrlRemain"`
-	DirRemain     string `json:"DirRemain" xml:"DirRemain"`
-	PreloadQuota  string `json:"PreloadQuota" xml:"PreloadQuota"`
-	BlockQuota    string `json:"BlockQuota" xml:"BlockQuota"`
-	PreloadRemain string `json:"PreloadRemain" xml:"PreloadRemain"`
-	BlockRemain   string `json:"BlockRemain" xml:"BlockRemain"`
-	RegexQuota    string `json:"RegexQuota" xml:"RegexQuota"`
-	RegexRemain   string `json:"RegexRemain" xml:"RegexRemain"`
+	RequestId         string `json:"RequestId" xml:"RequestId"`
+	UrlQuota          string `json:"UrlQuota" xml:"UrlQuota"`
+	DirQuota          string `json:"DirQuota" xml:"DirQuota"`
+	UrlRemain         string `json:"UrlRemain" xml:"UrlRemain"`
+	DirRemain         string `json:"DirRemain" xml:"DirRemain"`
+	PreloadQuota      string `json:"PreloadQuota" xml:"PreloadQuota"`
+	BlockQuota        string `json:"BlockQuota" xml:"BlockQuota"`
+	PreloadRemain     string `json:"PreloadRemain" xml:"PreloadRemain"`
+	BlockRemain       string `json:"BlockRemain" xml:"BlockRemain"`
+	RegexQuota        string `json:"RegexQuota" xml:"RegexQuota"`
+	RegexRemain       string `json:"RegexRemain" xml:"RegexRemain"`
+	PreloadEdgeQuota  string `json:"PreloadEdgeQuota" xml:"PreloadEdgeQuota"`
+	PreloadEdgeRemain string `json:"PreloadEdgeRemain" xml:"PreloadEdgeRemain"`
 }
 
 // CreateDescribeRefreshQuotaRequest creates a request to invoke DescribeRefreshQuota API

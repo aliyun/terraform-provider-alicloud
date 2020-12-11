@@ -124,7 +124,8 @@ func testSweepCenBandwidthPackage(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCenBandwidthPackage_basic(t *testing.T) {
+// Skip this testcase because of the account cannot purchase non-internal products.
+func SkipTestAccAlicloudCenBandwidthPackage_basic(t *testing.T) {
 	var cenBwp cbn.CenBandwidthPackage
 
 	resourceId := "alicloud_cen_bandwidth_package.default"
@@ -216,7 +217,8 @@ func TestAccAlicloudCenBandwidthPackage_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenBandwidthPackage_multi(t *testing.T) {
+// Skip this testcase because of the account cannot purchase non-internal products.
+func SkipTestAccAlicloudCenBandwidthPackage_multi(t *testing.T) {
 	var cenBwp cbn.CenBandwidthPackage
 
 	resourceId := "alicloud_cen_bandwidth_package.default"
@@ -259,6 +261,95 @@ func TestAccAlicloudCenBandwidthPackage_multi(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCenBandwidthPackage_upgrade(t *testing.T) {
+	var v cbn.CenBandwidthPackage
+	resourceId := "alicloud_cen_bandwidth_package.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenBandwidthPackage")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCen%sBandwidthPackage-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCenBandwidthPackageConfigDependence_upgrade)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth":              "5",
+					"geographic_region_a_id": "China",
+					"geographic_region_b_id": "China",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth":              "5",
+						"geographic_region_a_id": "China",
+						"geographic_region_b_id": "China",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cen_bandwidth_package_name": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cen_bandwidth_package_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth":              "5",
+					"geographic_region_a_id": "China",
+					"geographic_region_b_id": "China",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth":              "5",
+						"geographic_region_a_id": "China",
+						"geographic_region_b_id": "China",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var cenBandwidthPackageBasicMap = map[string]string{
 	"bandwidth": "5",
 }
@@ -281,8 +372,8 @@ resource "alicloud_cen_bandwidth_package" "default1" {
 
 func testAccCheckCenBandwidthPackageRegionId(cenBwp *cbn.CenBandwidthPackage, regionAId string, regionBId string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		responseRegionAId := convertGeographicRegionId(cenBwp.GeographicRegionAId)
-		responseRegionBId := convertGeographicRegionId(cenBwp.GeographicRegionBId)
+		responseRegionAId := convertGeographicRegionAIdResponse(cenBwp.GeographicRegionAId)
+		responseRegionBId := convertGeographicRegionBIdResponse(cenBwp.GeographicRegionBId)
 		if (responseRegionAId == regionAId && responseRegionBId == regionBId) ||
 			(responseRegionAId == regionBId && responseRegionBId == regionAId) {
 			return nil
@@ -290,4 +381,11 @@ func testAccCheckCenBandwidthPackageRegionId(cenBwp *cbn.CenBandwidthPackage, re
 			return fmt.Errorf("CEN Bandwidth Package %s geographic region ID error", cenBwp.CenBandwidthPackageId)
 		}
 	}
+}
+
+func resourceCenBandwidthPackageConfigDependence_upgrade(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}`, name)
 }

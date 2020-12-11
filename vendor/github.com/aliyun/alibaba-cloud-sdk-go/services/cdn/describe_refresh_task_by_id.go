@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeRefreshTaskById invokes the cdn.DescribeRefreshTaskById API synchronously
-// api document: https://help.aliyun.com/api/cdn/describerefreshtaskbyid.html
 func (client *Client) DescribeRefreshTaskById(request *DescribeRefreshTaskByIdRequest) (response *DescribeRefreshTaskByIdResponse, err error) {
 	response = CreateDescribeRefreshTaskByIdResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeRefreshTaskById(request *DescribeRefreshTaskByIdRe
 }
 
 // DescribeRefreshTaskByIdWithChan invokes the cdn.DescribeRefreshTaskById API asynchronously
-// api document: https://help.aliyun.com/api/cdn/describerefreshtaskbyid.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRefreshTaskByIdWithChan(request *DescribeRefreshTaskByIdRequest) (<-chan *DescribeRefreshTaskByIdResponse, <-chan error) {
 	responseChan := make(chan *DescribeRefreshTaskByIdResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeRefreshTaskByIdWithChan(request *DescribeRefreshTa
 }
 
 // DescribeRefreshTaskByIdWithCallback invokes the cdn.DescribeRefreshTaskById API asynchronously
-// api document: https://help.aliyun.com/api/cdn/describerefreshtaskbyid.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRefreshTaskByIdWithCallback(request *DescribeRefreshTaskByIdRequest, callback func(response *DescribeRefreshTaskByIdResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -76,18 +71,14 @@ func (client *Client) DescribeRefreshTaskByIdWithCallback(request *DescribeRefre
 // DescribeRefreshTaskByIdRequest is the request struct for api DescribeRefreshTaskById
 type DescribeRefreshTaskByIdRequest struct {
 	*requests.RpcRequest
-	PageNumber requests.Integer `position:"Query" name:"PageNumber"`
-	PageSize   requests.Integer `position:"Query" name:"PageSize"`
-	TaskId     string           `position:"Query" name:"TaskId"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
+	TaskId  string           `position:"Query" name:"TaskId"`
+	OwnerId requests.Integer `position:"Query" name:"OwnerId"`
 }
 
 // DescribeRefreshTaskByIdResponse is the response struct for api DescribeRefreshTaskById
 type DescribeRefreshTaskByIdResponse struct {
 	*responses.BaseResponse
 	RequestId  string    `json:"RequestId" xml:"RequestId"`
-	PageNumber int64     `json:"PageNumber" xml:"PageNumber"`
-	PageSize   int64     `json:"PageSize" xml:"PageSize"`
 	TotalCount int64     `json:"TotalCount" xml:"TotalCount"`
 	Tasks      []CDNTask `json:"Tasks" xml:"Tasks"`
 }

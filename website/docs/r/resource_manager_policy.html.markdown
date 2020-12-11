@@ -45,7 +45,6 @@ The following arguments are supported:
 ## Attributes Reference
 
 * `id` - The resource ID of policy. The value is same as `policy_name`.
-* `create_date` - The time when the policy was created.
 * `policy_type` - The type of the policy. Valid values: `Custom`, `System`.
 
 ## Import

@@ -14,12 +14,16 @@ This data source provides the server load balancers of the current Alibaba Cloud
 ## Example Usage
 
 ```
+resource "alicloud_slb" "default" {
+  name = "sample_slb"
+}
+
 data "alicloud_slbs" "slbs_ds" {
   name_regex = "sample_slb"
 }
 
 output "first_slb_id" {
-  value = "${data.alicloud_slbs.slbs_ds.slbs.0.id}"
+  value = data.alicloud_slbs.slbs_ds.slbs[0].id
 }
 ```
 

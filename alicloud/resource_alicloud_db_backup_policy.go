@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -192,18 +192,18 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	d.Set("instance_id", d.Id())
-	d.Set("backup_time", object.PreferredBackupTime)
-	d.Set("backup_period", strings.Split(object.PreferredBackupPeriod, ","))
-	d.Set("retention_period", object.BackupRetentionPeriod)
-	d.Set("preferred_backup_time", object.PreferredBackupTime)
-	d.Set("preferred_backup_period", strings.Split(object.PreferredBackupPeriod, ","))
-	d.Set("backup_retention_period", object.BackupRetentionPeriod)
-	d.Set("log_backup", object.BackupLog == "Enable")
-	d.Set("enable_backup_log", object.EnableBackupLog == "1")
-	d.Set("log_retention_period", object.LogBackupRetentionPeriod)
-	d.Set("log_backup_retention_period", object.LogBackupRetentionPeriod)
-	d.Set("local_log_retention_hours", object.LocalLogRetentionHours)
-	d.Set("local_log_retention_space", object.LocalLogRetentionSpace)
+	d.Set("backup_time", object["PreferredBackupTime"])
+	d.Set("backup_period", strings.Split(object["PreferredBackupPeriod"].(string), ","))
+	d.Set("retention_period", formatInt(object["BackupRetentionPeriod"]))
+	d.Set("preferred_backup_time", object["PreferredBackupTime"])
+	d.Set("preferred_backup_period", strings.Split(object["PreferredBackupPeriod"].(string), ","))
+	d.Set("backup_retention_period", formatInt(object["BackupRetentionPeriod"]))
+	d.Set("log_backup", object["BackupLog"] == "Enable")
+	d.Set("enable_backup_log", object["EnableBackupLog"] == "1")
+	d.Set("log_retention_period", formatInt(object["LogBackupRetentionPeriod"]))
+	d.Set("log_backup_retention_period", formatInt(object["LogBackupRetentionPeriod"]))
+	d.Set("local_log_retention_hours", formatInt(object["LocalLogRetentionHours"]))
+	d.Set("local_log_retention_space", formatInt(object["LocalLogRetentionSpace"]))
 	instance, err := rdsService.DescribeDBInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -213,16 +213,16 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	// At present, the sql server database does not support setting high_space_usage_protection and it`s has default value
-	if instance.Engine == "SQLServer" {
+	if instance["Engine"] == "SQLServer" {
 		d.Set("high_space_usage_protection", "Enable")
 	} else {
-		d.Set("high_space_usage_protection", object.HighSpaceUsageProtection)
+		d.Set("high_space_usage_protection", object["HighSpaceUsageProtection"])
 	}
-	d.Set("log_backup_frequency", object.LogBackupFrequency)
-	d.Set("compress_type", object.CompressType)
-	d.Set("archive_backup_retention_period", object.ArchiveBackupRetentionPeriod)
-	d.Set("archive_backup_keep_count", object.ArchiveBackupKeepCount)
-	d.Set("archive_backup_keep_policy", object.ArchiveBackupKeepPolicy)
+	d.Set("log_backup_frequency", object["LogBackupFrequency"])
+	d.Set("compress_type", object["CompressType"])
+	d.Set("archive_backup_retention_period", formatInt(object["ArchiveBackupRetentionPeriod"]))
+	d.Set("archive_backup_keep_count", formatInt(object["ArchiveBackupKeepCount"]))
+	d.Set("archive_backup_keep_policy", object["ArchiveBackupKeepPolicy"])
 	return nil
 }
 
@@ -251,7 +251,7 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 		}
 		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 			if err := rdsService.ModifyDBBackupPolicy(d, updateForData, updateForLog); err != nil {
-				if IsExpectedErrors(err, OperationDeniedDBStatus) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -268,13 +268,20 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
-	request := rds.CreateModifyBackupPolicyRequest()
-	request.RegionId = client.RegionId
-	request.DBInstanceId = d.Id()
-	request.PreferredBackupPeriod = "Tuesday,Thursday,Saturday"
-	request.BackupRetentionPeriod = "7"
-	request.PreferredBackupTime = "02:00Z-03:00Z"
-	request.EnableBackupLog = "1"
+	conn, err := client.NewRdsClient()
+	if err != nil {
+		return err
+	}
+	action := "ModifyBackupPolicy"
+	request := map[string]interface{}{
+		"RegionId":              client.RegionId,
+		"DBInstanceId":          d.Id(),
+		"PreferredBackupPeriod": "Tuesday,Thursday,Saturday",
+		"BackupRetentionPeriod": "7",
+		"PreferredBackupTime":   "02:00Z-03:00Z",
+		"EnableBackupLog":       "1",
+		"SourceIp":              client.SourceIp,
+	}
 	instance, err := rdsService.DescribeDBInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -282,22 +289,18 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 		}
 		return WrapError(err)
 	}
-	if instance.Engine != "SQLServer" {
-		request.LogBackupRetentionPeriod = "7"
+	if instance["Engine"] != "SQLServer" {
+		request["LogBackupRetentionPeriod"] = "7"
 	}
-	if instance.Engine == "MySQL" && instance.DBInstanceStorageType == "local_ssd" {
-		request.ArchiveBackupRetentionPeriod = "0"
-		request.ArchiveBackupKeepCount = "1"
-		request.ArchiveBackupKeepPolicy = "ByMonth"
+	if instance["Engine"] == "MySQL" && instance["DBInstanceStorageType"] == "local_ssd" {
+		request["ArchiveBackupRetentionPeriod"] = "0"
+		request["ArchiveBackupKeepCount"] = "1"
+		request["ArchiveBackupKeepPolicy"] = "ByMonth"
 	}
-
-	raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-		return rdsClient.ModifyBackupPolicy(request)
-	})
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
+	addDebug(action, response, request)
 	return rdsService.WaitForDBInstance(d.Id(), Running, DefaultTimeoutMedium)
 }

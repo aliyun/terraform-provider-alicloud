@@ -66,34 +66,6 @@ func dataSourceAlicloudEdasApplications() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
-						"instance_count": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"running_instance_count": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"health_check_url": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"create_time": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"slb_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"slb_ip": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"slb_port": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
 						"region_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -115,6 +87,9 @@ func dataSourceAlicloudEdasApplicationsRead(d *schema.ResourceData, meta interfa
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, id := range v.([]interface{}) {
+			if id == nil {
+				continue
+			}
 			idsMap[Trim(id.(string))] = Trim(id.(string))
 		}
 	}
@@ -165,20 +140,13 @@ func edasApplicationAttributes(d *schema.ResourceData, apps []edas.Application) 
 
 	for _, app := range apps {
 		mapping := map[string]interface{}{
-			"app_name":               app.Name,
-			"app_id":                 app.AppId,
-			"application_type":       app.ApplicationType,
-			"build_package_id":       app.BuildPackageId,
-			"cluster_id":             app.ClusterId,
-			"cluster_type":           app.ClusterType,
-			"instance_count":         app.InstanceCount,
-			"running_instance_count": app.RunningInstanceCount,
-			"health_check_url":       app.HealthCheckUrl,
-			"create_time":            app.CreateTime,
-			"slb_id":                 app.SlbId,
-			"slb_ip":                 app.SlbIp,
-			"slb_port":               app.SlbPort,
-			"region_id":              app.RegionId,
+			"app_name":         app.Name,
+			"app_id":           app.AppId,
+			"application_type": app.ApplicationType,
+			"build_package_id": app.BuildPackageId,
+			"cluster_id":       app.ClusterId,
+			"cluster_type":     app.ClusterType,
+			"region_id":        app.RegionId,
 		}
 		appIds = append(appIds, app.AppId)
 		names = append(names, app.Name)

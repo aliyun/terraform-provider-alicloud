@@ -111,7 +111,7 @@ func testSweepCenBandwidthLimit(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
+func SkipTestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
 	var v cbn.CenInterRegionBandwidthLimit
 	resourceId := "alicloud_cen_bandwidth_limit.default"
 	var providers []*schema.Provider
@@ -157,7 +157,8 @@ func TestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenBandwidthLimit_multi(t *testing.T) {
+// Skip this testcase because of the account cannot purchase non-internal products.
+func SkipTestAccAlicloudCenBandwidthLimit_multi(t *testing.T) {
 	var v cbn.CenInterRegionBandwidthLimit
 	resourceId := "alicloud_cen_bandwidth_limit.default"
 	var providers []*schema.Provider
@@ -255,12 +256,14 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
 
@@ -327,12 +330,14 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
 
@@ -409,18 +414,21 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
 
 resource "alicloud_cen_instance_attachment" "default2" {
     instance_id = "${alicloud_cen_instance.default.id}"
     child_instance_id = "${alicloud_vpc.default2.id}"
+    child_instance_type = "VPC"
     child_instance_region_id = "cn-hangzhou"
 }
 

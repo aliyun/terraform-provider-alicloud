@@ -13,7 +13,7 @@ Provides an RDS readonly instance resource.
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "Rds"
 }
@@ -95,7 +95,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 20 mins) Used when creating the db instance (until it reaches the initial `Running` status). 
+* `create` - (Defaults to 60 mins) Used when creating the db instance (until it reaches the initial `Running` status). 
 * `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status). 
 * `delete` - (Defaults to 20 mins) Used when terminating the db instance. 
 

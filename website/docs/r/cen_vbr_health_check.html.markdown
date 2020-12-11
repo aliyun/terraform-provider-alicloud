@@ -20,15 +20,16 @@ For information about CEN VBR HealthCheck and how to use it, see [Manage CEN VBR
 
 Basic Usage
 
-```
+```terraform
 # Create a cen vbr HealrhCheck resource and use it.
 resource "alicloud_cen_instance" "default" {
-  name = "test_name"
+  cen_instance_name = "test_name"
 }
 
 resource "alicloud_cen_instance_attachment" "default" {
   instance_id              = alicloud_cen_instance.default.id
   child_instance_id        = "vbr-xxxxx"
+  child_instance_type      = "VBR"
   child_instance_region_id = "cn-hangzhou"
 }
 
@@ -63,6 +64,16 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - ID of the resource, formatted as `<vbr_instance_id>:<vbr_instance_region_id>`.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.98.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 6 mins) Used when create the CEN VBR Health Check. (until it reaches the available status).
+* `update` - (Defaults to 6 mins) Used when update the CEN VBR Health Check.
+* `delete` - (Defaults to 6 mins) Used when delete the CEN VBR Health Check.
 
 ## Import
 

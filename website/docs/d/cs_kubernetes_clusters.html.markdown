@@ -69,6 +69,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `log_config` - A list of one element containing information about the associated log store. It contains the following attributes:
     * `type` - Type of collecting logs.
     * `project` - Log Service project name.
+  * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 
 ### Block Nodes
 

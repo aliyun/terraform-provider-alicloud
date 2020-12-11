@@ -46,6 +46,61 @@ func dataSourceAlicloudImages() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "Available",
+				ValidateFunc: validation.StringInSlice([]string{"Available", "Creating", "Waiting", "UnAvailable", "CreateFailed", "Deprecated"}, false),
+			},
+			"is_support_io_optimized": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"is_support_cloud_init": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"dry_run": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"snapshot_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"image_family": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"instance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"usage": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"instance", "none"}, false),
+			},
+			"os_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"windows", "linux"}, false),
+			},
+			"architecture": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"i386", "x86_64"}, false),
+			},
+			"action_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"CreateEcs", "CreateOS"}, false),
+			},
+			"tags": tagsSchema(),
 			// Computed values.
 			"images": {
 				Type:     schema.TypeList,
@@ -189,6 +244,65 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 
 	if ownersOk {
 		request.ImageOwnerAlias = owners.(string)
+	}
+
+	if status, ok := d.GetOk("status"); ok && status.(string) != "" {
+		request.Status = status.(string)
+	}
+
+	if v, ok := d.GetOk("snapshot_id"); ok && v.(string) != "" {
+		request.SnapshotId = v.(string)
+	}
+
+	if v, ok := d.GetOk("image_family"); ok && v.(string) != "" {
+		request.ImageFamily = v.(string)
+	}
+
+	if v, ok := d.GetOk("instance_type"); ok && v.(string) != "" {
+		request.InstanceType = v.(string)
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+		request.ResourceGroupId = v.(string)
+	}
+
+	if v, ok := d.GetOk("usage"); ok && v.(string) != "" {
+		request.Usage = v.(string)
+	}
+
+	if v, ok := d.GetOk("architecture"); ok && v.(string) != "" {
+		request.Architecture = v.(string)
+	}
+
+	if v, ok := d.GetOk("os_type"); ok && v.(string) != "" {
+		request.OSType = v.(string)
+	}
+
+	if v, ok := d.GetOk("action_type"); ok && v.(string) != "" {
+		request.ActionType = v.(string)
+	}
+
+	if v, ok := d.GetOk("is_support_io_optimized"); ok {
+		request.IsSupportIoOptimized = requests.NewBoolean(v.(bool))
+	}
+
+	if v, ok := d.GetOk("is_support_cloud_init"); ok {
+		request.IsSupportCloudinit = requests.NewBoolean(v.(bool))
+	}
+
+	if v, ok := d.GetOk("dry_run"); ok {
+		request.DryRun = requests.NewBoolean(v.(bool))
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		var reqTags []ecs.DescribeImagesTag
+		for k, v := range v.(map[string]interface{}) {
+			reqTags = append(reqTags, ecs.DescribeImagesTag{
+				Key:   k,
+				Value: v.(string),
+			})
+		}
+		request.Tag = &reqTags
 	}
 
 	var allImages []ecs.Image
@@ -354,5 +468,5 @@ func imageTagsMappings(d *schema.ResourceData, imageId string, meta interface{})
 		return nil
 	}
 
-	return tagsToMap(tags)
+	return ecsTagsToMap(tags)
 }

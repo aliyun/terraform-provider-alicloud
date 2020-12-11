@@ -100,6 +100,11 @@ func resourceAliyunDisk() *schema.Resource {
 				Optional: true,
 			},
 
+			"performance_level": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -138,6 +143,10 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("kms_key_id"); ok && v.(string) != "" {
 		request.KMSKeyId = v.(string)
+	}
+
+	if v, ok := d.GetOk("performance_level"); ok && v.(string) != "" {
+		request.PerformanceLevel = v.(string)
 	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
@@ -200,18 +209,30 @@ func resourceAliyunDiskRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("description", object.Description)
 	d.Set("snapshot_id", object.SourceSnapshotId)
 	d.Set("kms_key_id", object.KMSKeyId)
+	d.Set("performance_level", object.PerformanceLevel)
 	d.Set("encrypted", object.Encrypted)
 	d.Set("delete_auto_snapshot", object.DeleteAutoSnapshot)
 	d.Set("delete_with_instance", object.DeleteWithInstance)
 	d.Set("enable_auto_snapshot", object.EnableAutoSnapshot)
 	d.Set("resource_group_id", object.ResourceGroupId)
-	d.Set("tags", ecsService.tagsToMap(object.Tags.Tag))
+	tags, err := ecsService.ListTagResources(d.Id(), "disk")
+	if err != nil {
+		return WrapError(err)
+	} else {
+		d.Set("tags", tagsToMap(tags))
+	}
 
 	return nil
 }
 
 func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+
+	if d.HasChange("performance_level") {
+		request := ecs.CreateModifyDiskSpecRequest()
+		request.PerformanceLevel = d.Get("performance_level").(string)
+		d.SetPartial("performance_level")
+	}
 
 	d.Partial(true)
 

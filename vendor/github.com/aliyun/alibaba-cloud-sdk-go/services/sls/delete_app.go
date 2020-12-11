@@ -21,7 +21,6 @@ import (
 )
 
 // DeleteApp invokes the sls.DeleteApp API synchronously
-// api document: https://help.aliyun.com/api/sls/deleteapp.html
 func (client *Client) DeleteApp(request *DeleteAppRequest) (response *DeleteAppResponse, err error) {
 	response = CreateDeleteAppResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DeleteApp(request *DeleteAppRequest) (response *DeleteAppR
 }
 
 // DeleteAppWithChan invokes the sls.DeleteApp API asynchronously
-// api document: https://help.aliyun.com/api/sls/deleteapp.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteAppWithChan(request *DeleteAppRequest) (<-chan *DeleteAppResponse, <-chan error) {
 	responseChan := make(chan *DeleteAppResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DeleteAppWithChan(request *DeleteAppRequest) (<-chan *Dele
 }
 
 // DeleteAppWithCallback invokes the sls.DeleteApp API asynchronously
-// api document: https://help.aliyun.com/api/sls/deleteapp.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteAppWithCallback(request *DeleteAppRequest, callback func(response *DeleteAppResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -93,7 +88,8 @@ func CreateDeleteAppRequest() (request *DeleteAppRequest) {
 	request = &DeleteAppRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Sls", "2019-10-23", "DeleteApp", "sls", "openAPI")
+	request.InitWithApiInfo("Sls", "2019-10-23", "DeleteApp", "", "")
+	request.Method = requests.POST
 	return
 }
 

@@ -62,8 +62,8 @@ The following arguments are supported:
 ## Attributes Reference
 
 * `id` - The resource ID of policy version. The value is "`<policy_name>`:`<version_id>`".
-* `version_id` - The ID of the policy version.
-* `create_date` - The time when the policy version was created.
+* `version_id` - (Removed from version 1.100.0) The ID of the policy version.
+* `create_date` - (Removed from version 1.100.0) The time when the policy version was created.
 
 ## Import
 

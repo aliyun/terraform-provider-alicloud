@@ -21,7 +21,6 @@ import (
 )
 
 // UntagResources invokes the dds.UntagResources API synchronously
-// api document: https://help.aliyun.com/api/dds/untagresources.html
 func (client *Client) UntagResources(request *UntagResourcesRequest) (response *UntagResourcesResponse, err error) {
 	response = CreateUntagResourcesResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) UntagResources(request *UntagResourcesRequest) (response *
 }
 
 // UntagResourcesWithChan invokes the dds.UntagResources API asynchronously
-// api document: https://help.aliyun.com/api/dds/untagresources.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UntagResourcesWithChan(request *UntagResourcesRequest) (<-chan *UntagResourcesResponse, <-chan error) {
 	responseChan := make(chan *UntagResourcesResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) UntagResourcesWithChan(request *UntagResourcesRequest) (<-
 }
 
 // UntagResourcesWithCallback invokes the dds.UntagResources API asynchronously
-// api document: https://help.aliyun.com/api/dds/untagresources.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UntagResourcesWithCallback(request *UntagResourcesRequest, callback func(response *UntagResourcesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -77,6 +72,7 @@ func (client *Client) UntagResourcesWithCallback(request *UntagResourcesRequest,
 type UntagResourcesRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	All                  requests.Boolean `position:"Query" name:"All"`
 	ResourceId           *[]string        `position:"Query" name:"ResourceId"  type:"Repeated"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`

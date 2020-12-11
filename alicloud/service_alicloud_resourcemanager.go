@@ -245,7 +245,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicyVersion(id string)
 }
 
 func (s *ResourcemanagerService) DescribeResourceManagerPolicyAttachment(id string) (object resourcemanager.PolicyAttachment, err error) {
-	parts, err := ParseResourceId(id, 4)
+	parts, err := ParseResourceId(id, 5)
 	if err != nil {
 		err = WrapError(err)
 		return
@@ -256,6 +256,7 @@ func (s *ResourcemanagerService) DescribeResourceManagerPolicyAttachment(id stri
 	request.PolicyType = parts[1]
 	request.PrincipalName = parts[2]
 	request.PrincipalType = parts[3]
+	request.ResourceGroupId = parts[4]
 
 	raw, err := s.client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
 		return resourcemanagerClient.ListPolicyAttachments(request)

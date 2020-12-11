@@ -16,7 +16,7 @@ Details for [alarm rule](https://www.alibabacloud.com/help/doc-detail/28608.htm)
 
 Basic Usage
 
-```
+```terraform 
 resource "alicloud_cms_alarm" "basic" {
   name    = "tf-testAccCmsAlarm_basic"
   project = "acs_ecs_dashboard"
@@ -25,14 +25,15 @@ resource "alicloud_cms_alarm" "basic" {
     instanceId = "i-bp1247,i-bp11gd"
     device     = "/dev/vda1,/dev/vdb1"
   }
-  statistics         = "Average"
+  escalations_critical {
+    statistics = "Average"
+    comparison_operator = "<="
+    threshold = 35
+    times = 2
+  }
   period             = 900
-  operator           = "<="
-  threshold          = 35
-  triggered_count    = 2
   contact_groups     = ["test-group"]
   effective_interval = "0:00-2:00"
-  notify_type        = 1
   webhook            = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
 }
 ```
@@ -61,6 +62,8 @@ The following arguments are supported:
 * `notify_type` - Notification type. Valid value [0, 1]. The value 0 indicates TradeManager+email, and the value 1 indicates that TradeManager+email+SMS
 * `enabled` - Whether to enable alarm rule. Default to true.
 * `webhook`- (Optional, Available in 1.46.0+) The webhook that should be called when the alarm is triggered. Currently, only http protocol is supported. Default is empty string.
+
+-> **NOTE:** Each resource supports the creation of one of the following three levels.
 
 #### Block escalations critical alarm
 

@@ -21,7 +21,6 @@ import (
 )
 
 // StopInstances invokes the ecs.StopInstances API synchronously
-// api document: https://help.aliyun.com/api/ecs/stopinstances.html
 func (client *Client) StopInstances(request *StopInstancesRequest) (response *StopInstancesResponse, err error) {
 	response = CreateStopInstancesResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) StopInstances(request *StopInstancesRequest) (response *St
 }
 
 // StopInstancesWithChan invokes the ecs.StopInstances API asynchronously
-// api document: https://help.aliyun.com/api/ecs/stopinstances.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) StopInstancesWithChan(request *StopInstancesRequest) (<-chan *StopInstancesResponse, <-chan error) {
 	responseChan := make(chan *StopInstancesResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) StopInstancesWithChan(request *StopInstancesRequest) (<-ch
 }
 
 // StopInstancesWithCallback invokes the ecs.StopInstances API asynchronously
-// api document: https://help.aliyun.com/api/ecs/stopinstances.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) StopInstancesWithCallback(request *StopInstancesRequest, callback func(response *StopInstancesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -99,7 +94,7 @@ func CreateStopInstancesRequest() (request *StopInstancesRequest) {
 	request = &StopInstancesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "StopInstances", "ecs", "openAPI")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "StopInstances", "", "")
 	request.Method = requests.POST
 	return
 }

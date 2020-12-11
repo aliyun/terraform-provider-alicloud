@@ -18,6 +18,16 @@ func TestAccAlicloudAdbClustersDataSource(t *testing.T) {
 			"description_regex": `"^test1234"`,
 		}),
 	}
+	statusConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudAdbClusterDataSourceConfig(rand, map[string]string{
+			"description_regex": `"${alicloud_adb_cluster.default.description}"`,
+			"status":            `"Running"`,
+		}),
+		fakeConfig: testAccCheckAlicloudAdbClusterDataSourceConfig(rand, map[string]string{
+			"description_regex": `"${alicloud_adb_cluster.default.description}"`,
+			"status":            `"Creating"`,
+		}),
+	}
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAdbClusterDataSourceConfig(rand, map[string]string{
 			"description_regex": `"${alicloud_adb_cluster.default.description}"`,
@@ -37,16 +47,18 @@ func TestAccAlicloudAdbClustersDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAdbClusterDataSourceConfig(rand, map[string]string{
 			"description_regex": `"${alicloud_adb_cluster.default.description}"`,
+			"status":            `"Running"`,
 			"tags": `{ 
 						"key1" = "value1" 
 						"key2" = "value2" 
 					}`,
 		}),
 		fakeConfig: testAccCheckAlicloudAdbClusterDataSourceConfig(rand, map[string]string{
-			"description_regex": `"${alicloud_adb_cluster.default.description}"`,
+			"description_regex": `"^test1234"`,
+			"status":            `"Creating"`,
 			"tags": `{ 
-						"key1" = "value1" 
-						"key2" = "value2" 
+						"key1" = "value1_fake" 
+						"key2" = "value2_fake" 
 					}`,
 		}),
 	}
@@ -88,7 +100,7 @@ func TestAccAlicloudAdbClustersDataSource(t *testing.T) {
 		testAccPreCheckWithNoDefaultVswitch(t)
 	}
 
-	AdbClusterCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameConf, tagsConf, allConf)
+	AdbClusterCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameConf, statusConf, tagsConf, allConf)
 }
 
 func testAccCheckAlicloudAdbClusterDataSourceConfig(rand int, attrMap map[string]string) string {

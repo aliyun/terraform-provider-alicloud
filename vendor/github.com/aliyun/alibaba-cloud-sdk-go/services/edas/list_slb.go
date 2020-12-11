@@ -21,7 +21,6 @@ import (
 )
 
 // ListSlb invokes the edas.ListSlb API synchronously
-// api document: https://help.aliyun.com/api/edas/listslb.html
 func (client *Client) ListSlb(request *ListSlbRequest) (response *ListSlbResponse, err error) {
 	response = CreateListSlbResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ListSlb(request *ListSlbRequest) (response *ListSlbRespons
 }
 
 // ListSlbWithChan invokes the edas.ListSlb API asynchronously
-// api document: https://help.aliyun.com/api/edas/listslb.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ListSlbWithChan(request *ListSlbRequest) (<-chan *ListSlbResponse, <-chan error) {
 	responseChan := make(chan *ListSlbResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ListSlbWithChan(request *ListSlbRequest) (<-chan *ListSlbR
 }
 
 // ListSlbWithCallback invokes the edas.ListSlb API asynchronously
-// api document: https://help.aliyun.com/api/edas/listslb.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ListSlbWithCallback(request *ListSlbRequest, callback func(response *ListSlbResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

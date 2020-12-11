@@ -171,6 +171,9 @@ func dataSourceAlicloudEssScalingGroupsRead(d *schema.ResourceData, meta interfa
 	ids, okIds := d.GetOk("ids")
 	if okIds {
 		for _, i := range ids.([]interface{}) {
+			if i == nil {
+				continue
+			}
 			idsMap[i.(string)] = i.(string)
 		}
 	}

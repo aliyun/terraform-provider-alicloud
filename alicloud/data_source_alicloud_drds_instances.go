@@ -105,6 +105,9 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}
@@ -118,7 +121,7 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 
-	for _, item := range response.Instances.Instance {
+	for _, item := range response.Data.Instance {
 		if regexString != nil {
 			if !regexString.MatchString(item.Description) {
 				continue

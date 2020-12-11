@@ -21,7 +21,6 @@ import (
 )
 
 // ModifyResourceGroup invokes the r_kvstore.ModifyResourceGroup API synchronously
-// api document: https://help.aliyun.com/api/r-kvstore/modifyresourcegroup.html
 func (client *Client) ModifyResourceGroup(request *ModifyResourceGroupRequest) (response *ModifyResourceGroupResponse, err error) {
 	response = CreateModifyResourceGroupResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ModifyResourceGroup(request *ModifyResourceGroupRequest) (
 }
 
 // ModifyResourceGroupWithChan invokes the r_kvstore.ModifyResourceGroup API asynchronously
-// api document: https://help.aliyun.com/api/r-kvstore/modifyresourcegroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyResourceGroupWithChan(request *ModifyResourceGroupRequest) (<-chan *ModifyResourceGroupResponse, <-chan error) {
 	responseChan := make(chan *ModifyResourceGroupResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ModifyResourceGroupWithChan(request *ModifyResourceGroupRe
 }
 
 // ModifyResourceGroupWithCallback invokes the r_kvstore.ModifyResourceGroup API asynchronously
-// api document: https://help.aliyun.com/api/r-kvstore/modifyresourcegroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyResourceGroupWithCallback(request *ModifyResourceGroupRequest, callback func(response *ModifyResourceGroupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -79,10 +74,12 @@ type ModifyResourceGroupRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ClientToken          string           `position:"Query" name:"ClientToken"`
 	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
+	Product              string           `position:"Query" name:"Product"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	InstanceId           string           `position:"Query" name:"InstanceId"`
+	Category             string           `position:"Query" name:"Category"`
 }
 
 // ModifyResourceGroupResponse is the response struct for api ModifyResourceGroup

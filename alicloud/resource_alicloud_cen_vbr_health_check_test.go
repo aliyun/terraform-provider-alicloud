@@ -135,6 +135,7 @@ resource "alicloud_cen_instance" "default" {
 resource "alicloud_cen_instance_attachment" "default" {
   instance_id = "${alicloud_cen_instance.default.id}"
   child_instance_id = "%s"
+  child_instance_type = "VBR"
   child_instance_region_id = "%s"
 }
 `, name, os.Getenv("VBR_INSTANCE_ID"), os.Getenv("VBR_INSTANCE_REGION_ID"))

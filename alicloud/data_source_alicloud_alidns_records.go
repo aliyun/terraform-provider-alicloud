@@ -40,11 +40,10 @@ func dataSourceAlicloudAlidnsRecords() *schema.Resource {
 				ForceNew: true,
 			},
 			"line": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"default", "telecom", "unicom", "mobile", "oversea", "edu", "drpeng", "btvn"}, false),
-				Default:      "default",
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Default:  "default",
 			},
 			"order_by": {
 				Type:     schema.TypeString,
@@ -210,6 +209,9 @@ func dataSourceAlicloudAlidnsRecordsRead(d *schema.ResourceData, meta interface{
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}

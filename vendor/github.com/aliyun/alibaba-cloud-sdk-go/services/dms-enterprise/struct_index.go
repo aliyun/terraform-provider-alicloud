@@ -17,9 +17,11 @@ package dms_enterprise
 
 // Index is a nested struct in dms_enterprise response
 type Index struct {
-	IndexId      string `json:"IndexId" xml:"IndexId"`
-	TableId      string `json:"TableId" xml:"TableId"`
-	IndexName    string `json:"IndexName" xml:"IndexName"`
-	IndexType    string `json:"IndexType" xml:"IndexType"`
-	IndexComment string `json:"IndexComment" xml:"IndexComment"`
+	IndexName    string   `json:"IndexName" xml:"IndexName"`
+	IndexType    string   `json:"IndexType" xml:"IndexType"`
+	Unique       bool     `json:"Unique" xml:"Unique"`
+	TableId      string   `json:"TableId" xml:"TableId"`
+	IndexId      string   `json:"IndexId" xml:"IndexId"`
+	IndexComment string   `json:"IndexComment" xml:"IndexComment"`
+	IndexColumns []string `json:"IndexColumns" xml:"IndexColumns"`
 }

@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeRunningLogRecords invokes the dds.DescribeRunningLogRecords API synchronously
-// api document: https://help.aliyun.com/api/dds/describerunninglogrecords.html
 func (client *Client) DescribeRunningLogRecords(request *DescribeRunningLogRecordsRequest) (response *DescribeRunningLogRecordsResponse, err error) {
 	response = CreateDescribeRunningLogRecordsResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeRunningLogRecords(request *DescribeRunningLogRecor
 }
 
 // DescribeRunningLogRecordsWithChan invokes the dds.DescribeRunningLogRecords API asynchronously
-// api document: https://help.aliyun.com/api/dds/describerunninglogrecords.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRunningLogRecordsWithChan(request *DescribeRunningLogRecordsRequest) (<-chan *DescribeRunningLogRecordsResponse, <-chan error) {
 	responseChan := make(chan *DescribeRunningLogRecordsResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeRunningLogRecordsWithChan(request *DescribeRunning
 }
 
 // DescribeRunningLogRecordsWithCallback invokes the dds.DescribeRunningLogRecords API asynchronously
-// api document: https://help.aliyun.com/api/dds/describerunninglogrecords.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRunningLogRecordsWithCallback(request *DescribeRunningLogRecordsRequest, callback func(response *DescribeRunningLogRecordsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -79,12 +74,12 @@ type DescribeRunningLogRecordsRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	StartTime            string           `position:"Query" name:"StartTime"`
 	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 	DBInstanceId         string           `position:"Query" name:"DBInstanceId"`
 	RoleType             string           `position:"Query" name:"RoleType"`
 	NodeId               string           `position:"Query" name:"NodeId"`
-	SQLId                requests.Integer `position:"Query" name:"SQLId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	EndTime              string           `position:"Query" name:"EndTime"`

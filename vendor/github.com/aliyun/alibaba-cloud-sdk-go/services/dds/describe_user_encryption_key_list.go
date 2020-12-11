@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeUserEncryptionKeyList invokes the dds.DescribeUserEncryptionKeyList API synchronously
-// api document: https://help.aliyun.com/api/dds/describeuserencryptionkeylist.html
 func (client *Client) DescribeUserEncryptionKeyList(request *DescribeUserEncryptionKeyListRequest) (response *DescribeUserEncryptionKeyListResponse, err error) {
 	response = CreateDescribeUserEncryptionKeyListResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeUserEncryptionKeyList(request *DescribeUserEncrypt
 }
 
 // DescribeUserEncryptionKeyListWithChan invokes the dds.DescribeUserEncryptionKeyList API asynchronously
-// api document: https://help.aliyun.com/api/dds/describeuserencryptionkeylist.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeUserEncryptionKeyListWithChan(request *DescribeUserEncryptionKeyListRequest) (<-chan *DescribeUserEncryptionKeyListResponse, <-chan error) {
 	responseChan := make(chan *DescribeUserEncryptionKeyListResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeUserEncryptionKeyListWithChan(request *DescribeUse
 }
 
 // DescribeUserEncryptionKeyListWithCallback invokes the dds.DescribeUserEncryptionKeyList API asynchronously
-// api document: https://help.aliyun.com/api/dds/describeuserencryptionkeylist.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeUserEncryptionKeyListWithCallback(request *DescribeUserEncryptionKeyListRequest, callback func(response *DescribeUserEncryptionKeyListResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -82,6 +77,7 @@ type DescribeUserEncryptionKeyListRequest struct {
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	TargetRegionId       string           `position:"Query" name:"TargetRegionId"`
 }
 
 // DescribeUserEncryptionKeyListResponse is the response struct for api DescribeUserEncryptionKeyList

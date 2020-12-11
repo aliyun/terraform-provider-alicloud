@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -19,6 +18,7 @@ func dataSourceAlicloudHBaseZones() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+				Removed:  "Field 'multi' has been removed from provider version 1.99.0.",
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -42,6 +42,7 @@ func dataSourceAlicloudHBaseZones() *schema.Resource {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
+							Removed:  "Field 'multi_zone_ids' has been removed from provider version 1.99.0.",
 						},
 					},
 				},
@@ -52,7 +53,6 @@ func dataSourceAlicloudHBaseZones() *schema.Resource {
 
 func dataSourceAlicloudHBaseZonesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	multi := d.Get("multi").(bool)
 	var zoneIds []string
 
 	request := hbase.CreateDescribeRegionsRequest()
@@ -70,13 +70,8 @@ func dataSourceAlicloudHBaseZonesRead(d *schema.ResourceData, meta interface{}) 
 	}
 	for _, r := range regions.Regions.Region {
 		for _, zonid := range r.Zones.Zone {
-			if multi && strings.Contains(zonid.Id, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
+			if r.RegionId == string(client.Region) {
 				zoneIds = append(zoneIds, zonid.Id)
-				continue
-			}
-			if !multi && !strings.Contains(zonid.Id, MULTI_IZ_SYMBOL) && r.RegionId == string(client.Region) {
-				zoneIds = append(zoneIds, zonid.Id)
-				continue
 			}
 		}
 	}
@@ -85,19 +80,9 @@ func dataSourceAlicloudHBaseZonesRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	var s []map[string]interface{}
-	if !multi {
-		for _, zoneId := range zoneIds {
-			mapping := map[string]interface{}{"id": zoneId}
-			s = append(s, mapping)
-		}
-	} else {
-		for _, zoneId := range zoneIds {
-			mapping := map[string]interface{}{
-				"id":             zoneId,
-				"multi_zone_ids": splitMultiZoneId(zoneId),
-			}
-			s = append(s, mapping)
-		}
+	for _, zoneId := range zoneIds {
+		mapping := map[string]interface{}{"id": zoneId}
+		s = append(s, mapping)
 	}
 	d.SetId(dataResourceIdHash(zoneIds))
 	if err := d.Set("zones", s); err != nil {

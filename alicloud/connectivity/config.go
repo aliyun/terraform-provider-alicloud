@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"strings"
 
+	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
+	credential "github.com/aliyun/credentials-go/credentials"
 	"github.com/jmespath/go-jmespath"
 )
 
@@ -19,6 +21,7 @@ var securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-cred
 
 // Config of aliyun
 type Config struct {
+	SourceIp        string
 	AccessKey       string
 	SecretKey       string
 	EcsRoleName     string
@@ -33,50 +36,50 @@ type Config struct {
 	RamRoleSessionName       string
 	RamRolePolicy            string
 	RamRoleSessionExpiration int
-
-	EcsEndpoint           string
-	RdsEndpoint           string
-	SlbEndpoint           string
-	VpcEndpoint           string
-	CenEndpoint           string
-	EssEndpoint           string
-	OssEndpoint           string
-	OnsEndpoint           string
-	AlikafkaEndpoint      string
-	DnsEndpoint           string
-	RamEndpoint           string
-	CsEndpoint            string
-	CrEndpoint            string
-	CdnEndpoint           string
-	KmsEndpoint           string
-	OtsEndpoint           string
-	CmsEndpoint           string
-	PvtzEndpoint          string
-	StsEndpoint           string
-	LogEndpoint           string
-	DrdsEndpoint          string
-	DdsEndpoint           string
-	GpdbEnpoint           string
-	KVStoreEndpoint       string
-	PolarDBEndpoint       string
-	FcEndpoint            string
-	ApigatewayEndpoint    string
-	DatahubEndpoint       string
-	MnsEndpoint           string
-	LocationEndpoint      string
-	ElasticsearchEndpoint string
-	NasEndpoint           string
-	ActionTrailEndpoint   string
-	BssOpenApiEndpoint    string
-	DdoscooEndpoint       string
-	DdosbgpEndpoint       string
-	SagEndpoint           string
-	EmrEndpoint           string
-	CasEndpoint           string
-	MarketEndpoint        string
-	HBaseEndpoint         string
-	AdbEndpoint           string
-	MaxComputeEndpoint    string
+	Endpoints                map[string]interface{}
+	RKvstoreEndpoint         string
+	EcsEndpoint              string
+	RdsEndpoint              string
+	SlbEndpoint              string
+	VpcEndpoint              string
+	CenEndpoint              string
+	EssEndpoint              string
+	OssEndpoint              string
+	OnsEndpoint              string
+	AlikafkaEndpoint         string
+	DnsEndpoint              string
+	RamEndpoint              string
+	CsEndpoint               string
+	CrEndpoint               string
+	CdnEndpoint              string
+	KmsEndpoint              string
+	OtsEndpoint              string
+	CmsEndpoint              string
+	PvtzEndpoint             string
+	StsEndpoint              string
+	LogEndpoint              string
+	DrdsEndpoint             string
+	DdsEndpoint              string
+	GpdbEnpoint              string
+	KVStoreEndpoint          string
+	PolarDBEndpoint          string
+	FcEndpoint               string
+	ApigatewayEndpoint       string
+	DatahubEndpoint          string
+	MnsEndpoint              string
+	LocationEndpoint         string
+	ElasticsearchEndpoint    string
+	NasEndpoint              string
+	BssOpenApiEndpoint       string
+	DdoscooEndpoint          string
+	DdosbgpEndpoint          string
+	SagEndpoint              string
+	EmrEndpoint              string
+	CasEndpoint              string
+	MarketEndpoint           string
+	HBaseEndpoint            string
+	AdbEndpoint              string
+	MaxComputeEndpoint       string
 
 	edasEndpoint            string
 	SkipRegionValidation    bool
@@ -92,6 +95,10 @@ type Config struct {
 	OosEndpoint             string
 	DcdnEndpoint            string
 	MseEndpoint             string
+	ActiontrailEndpoint     string
+	ConfigEndpoint          string
+	FnfEndpoint             string
+	RosEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {
@@ -216,4 +223,41 @@ func (c *Config) MakeConfigByEcsRoleName() error {
 	}
 	c.AccessKey, c.SecretKey, c.SecurityToken = accessKey, secretKey, token
 	return nil
+}
+
+func (c *Config) getTeaDslSdkConfig(stsSupported bool) (config rpc.Config, err error) {
+	credentialType := ""
+	credentialConfig := &credential.Config{}
+	config.SetRegionId(c.RegionId)
+	config.SetUserAgent(fmt.Sprintf("%s/%s %s/%s %s/%s", Terraform, terraformVersion, Provider, providerVersion, Module, c.ConfigurationSource))
+
+	if c.AccessKey != "" && c.SecretKey != "" {
+		credentialType = "access_key"
+		credentialConfig.AccessKeyId = &c.AccessKey     // AccessKeyId
+		credentialConfig.AccessKeySecret = &c.SecretKey // AccessKeySecret
+
+		if stsSupported && c.SecurityToken != "" {
+			credentialType = "sts"
+			credentialConfig.SecurityToken = &c.SecurityToken // STS Token
+		} else if c.RamRoleArn != "" {
+			log.Printf("[INFO] Assume RAM Role specified in provider block assume_role { ... }")
+			credentialType = "ram_role_arn"
+			credentialConfig.RoleArn = &c.RamRoleArn
+			credentialConfig.RoleSessionName = &c.RamRoleSessionName
+			credentialConfig.RoleSessionExpiration = &c.RamRoleSessionExpiration
+			credentialConfig.Policy = &c.RamRolePolicy
+		}
+	} else if c.EcsRoleName != "" {
+		credentialType = "ecs_ram_role"
+		credentialConfig.RoleName = &c.EcsRoleName
+	}
+
+	credentialConfig.Type = &credentialType
+	credential, err := credential.NewCredential(credentialConfig)
+	config.SetCredential(credential).
+		SetRegionId(c.RegionId).
+		SetProtocol(c.Protocol).
+		SetReadTimeout(30000).
+		SetConnectTimeout(30000)
+	return
 }

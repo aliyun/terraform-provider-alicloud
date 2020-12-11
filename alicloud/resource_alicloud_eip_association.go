@@ -1,8 +1,11 @@
 package alicloud
 
 import (
+	"log"
 	"strings"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -14,6 +17,7 @@ func resourceAliyunEipAssociation() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunEipAssociationCreate,
 		Read:   resourceAliyunEipAssociationRead,
+		Update: resourceAliyunEipAssociationUpdate,
 		Delete: resourceAliyunEipAssociationDelete,
 
 		Schema: map[string]*schema.Schema{
@@ -36,6 +40,12 @@ func resourceAliyunEipAssociation() *schema.Resource {
 				Computed: true,
 			},
 
+			"force": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
 			"private_ip_address": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -55,7 +65,8 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	request.AllocationId = Trim(d.Get("allocation_id").(string))
 	request.InstanceId = Trim(d.Get("instance_id").(string))
 	request.InstanceType = EcsInstance
-	request.ClientToken = buildClientToken(request.GetActionName())
+	// There is a product api bug about clientToken and after fixed , the clientToken will be opened again.
+	//request.ClientToken = buildClientToken(request.GetActionName())
 
 	if strings.HasPrefix(request.InstanceId, "lb-") {
 		request.InstanceType = SlbInstance
@@ -69,7 +80,7 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	if privateIPAddress, ok := d.GetOk("private_ip_address"); ok {
 		request.PrivateIpAddress = privateIPAddress.(string)
 	}
-	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.AssociateEipAddress(request)
 		})
@@ -113,6 +124,12 @@ func resourceAliyunEipAssociationRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("instance_id", object.InstanceId)
 	d.Set("allocation_id", object.AllocationId)
 	d.Set("instance_type", object.InstanceType)
+	d.Set("force", d.Get("force").(bool))
+	return nil
+}
+
+func resourceAliyunEipAssociationUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] The update method is used to ensure that the force parameter does not need to add forcenew.")
 	return nil
 }
 
@@ -133,6 +150,7 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 	request.AllocationId = allocationId
 	request.InstanceId = instanceId
 	request.InstanceType = EcsInstance
+	request.Force = requests.NewBoolean(d.Get("force").(bool))
 	request.ClientToken = buildClientToken(request.GetActionName())
 
 	if strings.HasPrefix(instanceId, "lb-") {

@@ -5,11 +5,12 @@ import (
 	"strings"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -69,34 +70,37 @@ func resourceAlicloudDBConnectionCreate(d *schema.ResourceData, meta interface{}
 	if prefix == "" {
 		prefix = fmt.Sprintf("%stf", instanceId)
 	}
+	action := "AllocateInstancePublicConnection"
+	request := map[string]interface{}{
+		"RegionId":               client.RegionId,
+		"DBInstanceId":           instanceId,
+		"ConnectionStringPrefix": prefix,
+		"Port":                   d.Get("port"),
+		"SourceIp":               client.SourceIp,
+	}
 
-	request := rds.CreateAllocateInstancePublicConnectionRequest()
-	request.RegionId = client.RegionId
-	request.DBInstanceId = instanceId
-	request.ConnectionStringPrefix = prefix
-	request.Port = d.Get("port").(string)
-	var raw interface{}
-	var err error
+	conn, err := client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
 	err = resource.Retry(8*time.Minute, func() *resource.RetryError {
-		raw, err = client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.AllocateInstancePublicConnection(request)
-		})
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
-
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_db_connection", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_db_connection", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%s%s%s", instanceId, COLON_SEPARATED, request.ConnectionStringPrefix))
+	d.SetId(fmt.Sprintf("%s%s%v", instanceId, COLON_SEPARATED, request["ConnectionStringPrefix"]))
 
 	if err := rdsService.WaitForDBConnection(d.Id(), Available, DefaultTimeoutMedium); err != nil {
 		return WrapError(err)
@@ -132,9 +136,9 @@ func resourceAlicloudDBConnectionRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("instance_id", parts[0])
 	d.Set("connection_prefix", parts[1])
-	d.Set("port", object.Port)
-	d.Set("connection_string", object.ConnectionString)
-	d.Set("ip_address", object.IPAddress)
+	d.Set("port", object["Port"])
+	d.Set("connection_string", object["ConnectionString"])
+	d.Set("ip_address", object["IPAddress"])
 
 	return nil
 }
@@ -154,34 +158,40 @@ func resourceAlicloudDBConnectionUpdate(d *schema.ResourceData, meta interface{}
 	}
 
 	if d.HasChange("port") {
-		request := rds.CreateModifyDBInstanceConnectionStringRequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = parts[0]
+		action := "ModifyDBInstanceConnectionString"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": parts[0],
+			"SourceIp":     client.SourceIp,
+		}
 		object, err := rdsService.DescribeDBConnection(d.Id())
 		if err != nil {
 			return WrapError(err)
 		}
-		request.CurrentConnectionString = object.ConnectionString
-		request.ConnectionStringPrefix = parts[1]
-		request.Port = d.Get("port").(string)
+		request["CurrentConnectionString"] = object["ConnectionString"]
+		request["ConnectionStringPrefix"] = parts[1]
+		request["Port"] = d.Get("port")
+		runtime := util.RuntimeOptions{}
+		conn, err := client.NewRdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
 		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-				return rdsClient.ModifyDBInstanceConnectionString(request)
-			})
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, OperationDeniedDBStatus) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			addDebug(action, response, request)
 			return nil
 		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
 		// wait instance running after modifying
-		if err := rdsService.WaitForDBInstance(request.DBInstanceId, Running, DefaultTimeoutMedium); err != nil {
+		if err := rdsService.WaitForDBInstance(request["DBInstanceId"].(string), Running, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -198,28 +208,31 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 	}
 
 	split := strings.Split(d.Id(), COLON_SEPARATED)
-	request := rds.CreateReleaseInstancePublicConnectionRequest()
-	request.RegionId = client.RegionId
-	request.DBInstanceId = split[0]
-
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	action := "ReleaseInstancePublicConnection"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": split[0],
+		"SourceIp":     client.SourceIp,
+	}
+	conn, err := client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		object, err := rdsService.DescribeDBConnection(d.Id())
 		if err != nil {
 			return resource.NonRetryableError(WrapError(err))
 		}
-		request.CurrentConnectionString = object.ConnectionString
-		var raw interface{}
-		raw, err = client.WithRdsClient(func(rdsClient *rds.Client) (interface{}, error) {
-			return rdsClient.ReleaseInstancePublicConnection(request)
-		})
-
+		request["CurrentConnectionString"] = object["ConnectionString"]
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
+			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
 	})
 
@@ -227,7 +240,7 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 		if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidCurrentConnectionString.NotFound", "AtLeastOneNetTypeExists"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	return rdsService.WaitForDBConnection(d.Id(), Deleted, DefaultTimeoutMedium)
