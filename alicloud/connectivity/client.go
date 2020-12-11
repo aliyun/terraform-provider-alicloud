@@ -2199,10 +2199,11 @@ func (client *AliyunClient) NewRosClient() (*rpc.Client, error) {
 
 func (client *AliyunClient) NewPvtzClient() (*rpc.Client, error) {
 	productCode := "pvtz"
-	endpoint := ""
+	endpoint := "pvtz.aliyuncs.com"
 	if client.config.Endpoints[productCode] == nil {
 		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
+			client.config.Endpoints[productCode] = endpoint
 		}
 	}
 	if client.config.Endpoints[productCode] != nil && client.config.Endpoints[productCode].(string) != "" {
