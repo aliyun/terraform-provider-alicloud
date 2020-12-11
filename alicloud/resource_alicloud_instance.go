@@ -166,7 +166,7 @@ func resourceAliyunInstance() *schema.Resource {
 			"system_disk_performance_level": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				Default:          PL0,
+				Default:          "PL0",
 				DiffSuppressFunc: ecsSystemDiskPerformanceLevelSuppressFunc,
 				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 			},
@@ -241,7 +241,7 @@ func resourceAliyunInstance() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ForceNew:     true,
-							Default:      PL1,
+							Default:      "PL1",
 							ValidateFunc: validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 						},
 					},

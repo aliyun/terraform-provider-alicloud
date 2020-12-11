@@ -111,15 +111,6 @@ const (
 	DiskResizeTypeOnline  = DiskResizeType("online")
 )
 
-type PerformanceLevel string
-
-const (
-	PL0 = PerformanceLevel("PL0")
-	PL1 = PerformanceLevel("PL1")
-	PL2 = PerformanceLevel("PL2")
-	PL3 = PerformanceLevel("PL3")
-)
-
 type ImageOwnerAlias string
 
 const (

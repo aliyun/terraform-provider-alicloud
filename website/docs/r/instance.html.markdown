@@ -194,6 +194,7 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
         - `ephemeral_ssd`: The local SSD disk.
         Default to `cloud_efficiency`.
     * `performance_level` - (Optional, ForceNew) The performance level of the ESSD used as data disk:
+        - `PL0`: A single ESSD can deliver up to 10,000 random read/write IOPS.
         - `PL1`: A single ESSD can deliver up to 50,000 random read/write IOPS.
         - `PL2`: A single ESSD can deliver up to 100,000 random read/write IOPS.
         - `PL3`: A single ESSD can deliver up to 1,000,000 random read/write IOPS.
