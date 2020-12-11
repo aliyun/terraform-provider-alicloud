@@ -345,6 +345,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ros_stacks":                            dataSourceAlicloudRosStacks(),
 			"alicloud_ros_stack_groups":                      dataSourceAlicloudRosStackGroups(),
 			"alicloud_ros_templates":                         dataSourceAlicloudRosTemplates(),
+			"alicloud_privatelink_vpc_endpoint_services":     dataSourceAlicloudPrivatelinkVpcEndpointServices(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -618,6 +619,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ros_stack":                           resourceAlicloudRosStack(),
 			"alicloud_ros_stack_group":                     resourceAlicloudRosStackGroup(),
 			"alicloud_ros_template":                        resourceAlicloudRosTemplate(),
+			"alicloud_privatelink_vpc_endpoint_service":    resourceAlicloudPrivatelinkVpcEndpointService(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -762,6 +764,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.RKvstoreEndpoint = strings.TrimSpace(endpoints["r_kvstore"].(string))
 		config.FnfEndpoint = strings.TrimSpace(endpoints["fnf"].(string))
 		config.RosEndpoint = strings.TrimSpace(endpoints["ros"].(string))
+		config.PrivatelinkEndpoint = strings.TrimSpace(endpoints["privatelink"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -958,6 +961,8 @@ func init() {
 		"fnf_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom fnf endpoints.",
 
 		"ros_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ros endpoints.",
+
+		"privatelink_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom privatelink endpoints.",
 	}
 }
 
@@ -1002,6 +1007,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"privatelink": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["privatelink_endpoint"],
+				},
+
 				"fnf": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -1416,6 +1428,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["r_kvstore"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["fnf"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ros"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["privatelink"].(string)))
 	return hashcode.String(buf.String())
 }
 

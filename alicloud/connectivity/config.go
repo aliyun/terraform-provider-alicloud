@@ -99,6 +99,7 @@ type Config struct {
 	ConfigEndpoint          string
 	FnfEndpoint             string
 	RosEndpoint             string
+	PrivatelinkEndpoint     string
 }
 
 func (c *Config) loadAndValidate() error {
