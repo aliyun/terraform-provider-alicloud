@@ -346,6 +346,13 @@ func ecsSpotPriceLimitDiffSuppressFunc(k, old, new string, d *schema.ResourceDat
 	return true
 }
 
+func ecsSystemDiskPerformanceLevelSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("system_disk_category").(string) == string(DiskCloudESSD) {
+		return false
+	}
+	return true
+}
+
 func ecsSecurityGroupRulePortRangeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	protocol := d.Get("ip_protocol").(string)
 	if protocol == "tcp" || protocol == "udp" {
