@@ -337,6 +337,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"cluster_domain": {
 				Type:        schema.TypeString,
 				Optional:    true,
+				Default:     "cluster.local",
 				ForceNew:    true,
 				Description: "cluster local domain ",
 			},
