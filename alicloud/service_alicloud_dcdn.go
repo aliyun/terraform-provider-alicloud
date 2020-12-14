@@ -3,7 +3,8 @@ package alicloud
 import (
 	"encoding/json"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -13,15 +14,15 @@ type DcdnService struct {
 }
 
 func (s *DcdnService) convertSourcesToString(v []interface{}) (string, error) {
-	arrayMaps := make([]dcdn.Source, len(v))
+	arrayMaps := make([]interface{}, len(v))
 	for i, vv := range v {
 		item := vv.(map[string]interface{})
-		arrayMaps[i] = dcdn.Source{
-			Content:  item["content"].(string),
-			Port:     item["port"].(int),
-			Priority: item["priority"].(string),
-			Type:     item["type"].(string),
-			Weight:   item["weight"].(string),
+		arrayMaps[i] = map[string]interface{}{
+			"Content":  item["content"],
+			"Port":     item["port"],
+			"Priority": item["priority"],
+			"Type":     item["type"],
+			"Weight":   item["weight"],
 		}
 	}
 	maps, err := json.Marshal(arrayMaps)
@@ -31,49 +32,69 @@ func (s *DcdnService) convertSourcesToString(v []interface{}) (string, error) {
 	return string(maps), nil
 }
 
-func (s *DcdnService) DescribeDcdnDomainCertificateInfo(id string) (object dcdn.CertInfo, err error) {
-	request := dcdn.CreateDescribeDcdnDomainCertificateInfoRequest()
-	request.RegionId = s.client.RegionId
-
-	request.DomainName = id
-
-	raw, err := s.client.WithDcdnClient(func(dcdnClient *dcdn.Client) (interface{}, error) {
-		return dcdnClient.DescribeDcdnDomainCertificateInfo(request)
-	})
+func (s *DcdnService) DescribeDcdnDomainCertificateInfo(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewDcdnClient()
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, WrapError(err)
+	}
+	action := "DescribeDcdnDomainCertificateInfo"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"DomainName": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*dcdn.DescribeDcdnDomainCertificateInfoResponse)
-
-	if len(response.CertInfos.CertInfo) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("DcdnDomain", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-		return
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.CertInfos.CertInfo", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CertInfos.CertInfo", response)
 	}
-	return response.CertInfos.CertInfo[0], nil
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("DCDN", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["DomainName"].(string) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("DCDN", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
-func (s *DcdnService) DescribeDcdnDomain(id string) (object dcdn.DomainDetail, err error) {
-	request := dcdn.CreateDescribeDcdnDomainDetailRequest()
-	request.RegionId = s.client.RegionId
-
-	request.DomainName = id
-
-	raw, err := s.client.WithDcdnClient(func(dcdnClient *dcdn.Client) (interface{}, error) {
-		return dcdnClient.DescribeDcdnDomainDetail(request)
-	})
+func (s *DcdnService) DescribeDcdnDomain(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewDcdnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDcdnDomainDetail"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"DomainName": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("DcdnDomain", id)), NotFoundMsg, ProviderERROR)
-			return
+			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*dcdn.DescribeDcdnDomainDetailResponse)
-	return response.DomainDetail, nil
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.DomainDetail", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DomainDetail", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }
 
 func (s *DcdnService) DcdnDomainStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
@@ -88,10 +109,10 @@ func (s *DcdnService) DcdnDomainStateRefreshFunc(id string, failStates []string)
 		}
 
 		for _, failState := range failStates {
-			if object.DomainStatus == failState {
-				return object, object.DomainStatus, WrapError(Error(FailedToReachTargetStatus, object.DomainStatus))
+			if object["DomainStatus"].(string) == failState {
+				return object, object["DomainStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["DomainStatus"].(string)))
 			}
 		}
-		return object, object.DomainStatus, nil
+		return object, object["DomainStatus"].(string), nil
 	}
 }
