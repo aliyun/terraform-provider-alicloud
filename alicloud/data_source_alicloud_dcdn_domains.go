@@ -1,10 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -168,31 +169,32 @@ func dataSourceAlicloudDcdnDomains() *schema.Resource {
 func dataSourceAlicloudDcdnDomainsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := dcdn.CreateDescribeDcdnUserDomainsRequest()
+	action := "DescribeDcdnUserDomains"
+	request := make(map[string]interface{})
 	if v, ok := d.GetOk("change_end_time"); ok {
-		request.ChangeEndTime = v.(string)
+		request["ChangeEndTime"] = v
 	}
 	if v, ok := d.GetOk("change_start_time"); ok {
-		request.ChangeStartTime = v.(string)
+		request["ChangeStartTime"] = v
 	}
 	if v, ok := d.GetOkExists("check_domain_show"); ok {
-		request.CheckDomainShow = requests.NewBoolean(v.(bool))
+		request["CheckDomainShow"] = v
 	}
 	if v, ok := d.GetOk("domain_search_type"); ok {
-		request.DomainSearchType = v.(string)
+		request["DomainSearchType"] = v
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
-		request.ResourceGroupId = v.(string)
+		request["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("security_token"); ok {
-		request.SecurityToken = v.(string)
+		request["SecurityToken"] = v
 	}
 	if v, ok := d.GetOk("status"); ok {
-		request.DomainStatus = v.(string)
+		request["DomainStatus"] = v
 	}
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	var objects []dcdn.PageData
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
 	var domainNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -211,103 +213,95 @@ func dataSourceAlicloudDcdnDomainsRead(d *schema.ResourceData, meta interface{})
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	var response *dcdn.DescribeDcdnUserDomainsResponse
+	var response map[string]interface{}
+	conn, err := client.NewDcdnClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		raw, err := client.WithDcdnClient(func(dcdnClient *dcdn.Client) (interface{}, error) {
-			return dcdnClient.DescribeDcdnUserDomains(request)
-		})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dcdn_domains", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dcdn_domains", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
-		response, _ = raw.(*dcdn.DescribeDcdnUserDomainsResponse)
+		addDebug(action, response, request)
 
-		for _, item := range response.Domains.PageData {
+		resp, err := jsonpath.Get("$.Domains.PageData", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Domains.PageData", response)
+		}
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
 			if domainNameRegex != nil {
-				if !domainNameRegex.MatchString(item.DomainName) {
+				if !domainNameRegex.MatchString(item["DomainName"].(string)) {
 					continue
 				}
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[item.DomainName]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["DomainName"])]; !ok {
 					continue
 				}
 			}
 			objects = append(objects, item)
 		}
-		if len(response.Domains.PageData) < PageSizeLarge {
+		if len(resp.([]interface{})) < PageSizeLarge {
 			break
 		}
-
-		page, err := getNextpageNumber(request.PageNumber)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.PageNumber = page
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	ids := make([]string, len(objects))
-	names := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-	for i, object := range objects {
+	ids := make([]string, 0)
+	names := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"cname":             object.Cname,
-			"id":                object.DomainName,
-			"domain_name":       object.DomainName,
-			"gmt_modified":      object.GmtModified,
-			"resource_group_id": object.ResourceGroupId,
-			"ssl_protocol":      object.SSLProtocol,
-			"status":            object.DomainStatus,
+			"cname":             object["Cname"],
+			"id":                fmt.Sprint(object["DomainName"]),
+			"domain_name":       fmt.Sprint(object["DomainName"]),
+			"gmt_modified":      object["GmtModified"],
+			"resource_group_id": object["ResourceGroupId"],
+			"ssl_protocol":      object["SSLProtocol"],
+			"status":            object["DomainStatus"],
 		}
-
-		var sourcesList []map[string]interface{}
-		for _, v := range object.Sources.Source {
-			sourcesList = append(sourcesList, map[string]interface{}{
-				"content":  v.Content,
-				"enabled":  v.Enabled,
-				"port":     v.Port,
-				"priority": v.Priority,
-				"type":     v.Type,
-				"weight":   v.Weight,
-			})
+		if v, ok := object["Sources"].(map[string]interface{})["Source"].([]interface{}); ok {
+			source := make([]map[string]interface{}, 0)
+			for _, val := range v {
+				item := val.(map[string]interface{})
+				source = append(source, map[string]interface{}{
+					"content":  item["Content"],
+					"port":     item["Port"],
+					"priority": item["Priority"],
+					"type":     item["Type"],
+					"weight":   item["Weight"],
+				})
+			}
+			mapping["sources"] = source
 		}
-		mapping["sources"] = sourcesList
-		ids[i] = object.DomainName
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
-			names[i] = object.DomainName
-			s[i] = mapping
+			ids = append(ids, fmt.Sprint(object["DomainName"]))
+			names = append(names, object["DomainName"].(string))
+			s = append(s, mapping)
 			continue
 		}
 
-		request := dcdn.CreateDescribeDcdnDomainCertificateInfoRequest()
-		request.RegionId = client.RegionId
-		request.DomainName = object.DomainName
-		raw, err := client.WithDcdnClient(func(dcdnClient *dcdn.Client) (interface{}, error) {
-			return dcdnClient.DescribeDcdnDomainCertificateInfo(request)
-		})
+		dcdnService := DcdnService{client}
+		id := fmt.Sprint(object["DomainName"])
+		getResp, err := dcdnService.DescribeDcdnDomainCertificateInfo(id)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dcdn_domains", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		responseGet, _ := raw.(*dcdn.DescribeDcdnDomainCertificateInfoResponse)
-		mapping["cert_name"] = responseGet.CertInfos.CertInfo[0].CertName
-		mapping["ssl_pub"] = responseGet.CertInfos.CertInfo[0].SSLPub
-
-		request1 := dcdn.CreateDescribeDcdnDomainDetailRequest()
-		request1.RegionId = client.RegionId
-		request1.DomainName = object.DomainName
-		raw1, err := client.WithDcdnClient(func(dcdnClient *dcdn.Client) (interface{}, error) {
-			return dcdnClient.DescribeDcdnDomainDetail(request1)
-		})
+		mapping["cert_name"] = getResp["CertName"]
+		mapping["ssl_pub"] = getResp["SSLPub"]
+		getResp1, err := dcdnService.DescribeDcdnDomain(id)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dcdn_domains", request1.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-		addDebug(request1.GetActionName(), raw1, request1.RpcRequest, request1)
-		responseGet1, _ := raw1.(*dcdn.DescribeDcdnDomainDetailResponse)
-		mapping["description"] = responseGet1.DomainDetail.Description
-		mapping["scope"] = responseGet1.DomainDetail.Scope
+		mapping["description"] = getResp1["Description"]
+		mapping["scope"] = getResp1["Scope"]
 
-		names[i] = object.DomainName
-		s[i] = mapping
+		ids = append(ids, fmt.Sprint(object["DomainName"]))
+		names = append(names, object["DomainName"].(string))
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
