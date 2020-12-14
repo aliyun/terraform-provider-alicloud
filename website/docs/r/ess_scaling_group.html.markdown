@@ -115,10 +115,11 @@ The following arguments are supported:
     - The Server Load Balancer instance attached with VPC-type ECS instances cannot be attached to the scaling group.
     - The default weight of an ECS instance attached to the Server Load Balancer instance is 50.
 * `multi_az_policy` - (Optional, ForceNew) Multi-AZ scaling group ECS instance expansion and contraction strategy. PRIORITY, BALANCE or COST_OPTIMIZED(Available in 1.54.0+).
-* `on_demand_base_capacity` - (Optional, Available in 1.54.0+) The minimum amount of the Auto Scaling group's capacity that must be fulfilled by On-Demand Instances. This base portion is provisioned first as your group scales.
-* `on_demand_percentage_above_base_capacity` - (Optional, Available in 1.54.0+) Controls the percentages of On-Demand Instances and Spot Instances for your additional capacity beyond OnDemandBaseCapacity.  
-* `spot_instance_pools` - (Optional, Available in 1.54.0+) The number of Spot pools to use to allocate your Spot capacity. The Spot pools is composed of instance types of lowest price.
-* `spot_instance_remedy` - (Optional, Available in 1.54.0+) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.            
+* `on_demand_base_capacity` - (Optional, Available in v1.54.0+) The minimum amount of the Auto Scaling group's capacity that must be fulfilled by On-Demand Instances. This base portion is provisioned first as your group scales.
+* `on_demand_percentage_above_base_capacity` - (Optional, Available in v1.54.0+) Controls the percentages of On-Demand Instances and Spot Instances for your additional capacity beyond OnDemandBaseCapacity.  
+* `spot_instance_pools` - (Optional, Available in v1.54.0+) The number of Spot pools to use to allocate your Spot capacity. The Spot pools is composed of instance types of lowest price.
+* `spot_instance_remedy` - (Optional, Available in v1.54.0+) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
+* `group_deletion_protection` - (Optional, Available in v1.102.0+) Specifies whether the scaling group deletion protection is enabled. `true` or `false`, Default value: `false`.            
 
 -> **NOTE:** When detach loadbalancers, instances in group will be remove from loadbalancer's `Default Server Group`; On the contrary, When attach loadbalancers, instances in group will be added to loadbalancer's `Default Server Group`.
 

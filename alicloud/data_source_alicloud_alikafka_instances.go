@@ -104,6 +104,10 @@ func dataSourceAlicloudAlikafkaInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"end_point": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"security_group": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -125,6 +129,9 @@ func dataSourceAlicloudAlikafkaInstancesRead(d *schema.ResourceData, meta interf
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[Trim(vv.(string))] = Trim(vv.(string))
 		}
 	}
@@ -190,6 +197,7 @@ func alikafkaInstancesDecriptionAttributes(d *schema.ResourceData, instancesInfo
 			"paid_type":      paidType,
 			"spec_type":      item.SpecType,
 			"zone_id":        item.ZoneId,
+			"end_point":      item.EndPoint,
 			"security_group": item.SecurityGroup,
 		}
 

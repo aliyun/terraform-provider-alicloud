@@ -77,3 +77,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `connection_string` - (Available in 1.70.3+) RDS database connection string.
   * `instance_storage` - (Available in 1.70.3+) User-defined DB instance storage space.
   * `db_instance_storage_type` - (Available in 1.70.3+) The storage type of the instance.
+  * `master_zone` - (Available in 1.101.0+) The master zone of the instance.
+  * `zone_id_slave_a` - (Available in 1.101.0+) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones. 
+  * `zone_id_slave_b` - (Available in 1.101.0+) The region ID of the log instance if you create a log instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.

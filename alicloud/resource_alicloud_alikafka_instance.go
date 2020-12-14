@@ -88,6 +88,10 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"end_point": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"tags": tagsSchema(),
 		},
 	}
@@ -238,6 +242,7 @@ func resourceAlicloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("paid_type", PostPaid)
 	d.Set("spec_type", object.SpecType)
 	d.Set("security_group", object.SecurityGroup)
+	d.Set("end_point", object.EndPoint)
 	if object.PaidType == 0 {
 		d.Set("paid_type", PrePaid)
 	}

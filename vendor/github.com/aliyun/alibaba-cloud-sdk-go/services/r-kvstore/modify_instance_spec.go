@@ -21,7 +21,6 @@ import (
 )
 
 // ModifyInstanceSpec invokes the r_kvstore.ModifyInstanceSpec API synchronously
-// api document: https://help.aliyun.com/api/r-kvstore/modifyinstancespec.html
 func (client *Client) ModifyInstanceSpec(request *ModifyInstanceSpecRequest) (response *ModifyInstanceSpecResponse, err error) {
 	response = CreateModifyInstanceSpecResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ModifyInstanceSpec(request *ModifyInstanceSpecRequest) (re
 }
 
 // ModifyInstanceSpecWithChan invokes the r_kvstore.ModifyInstanceSpec API asynchronously
-// api document: https://help.aliyun.com/api/r-kvstore/modifyinstancespec.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyInstanceSpecWithChan(request *ModifyInstanceSpecRequest) (<-chan *ModifyInstanceSpecResponse, <-chan error) {
 	responseChan := make(chan *ModifyInstanceSpecResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ModifyInstanceSpecWithChan(request *ModifyInstanceSpecRequ
 }
 
 // ModifyInstanceSpecWithCallback invokes the r_kvstore.ModifyInstanceSpec API asynchronously
-// api document: https://help.aliyun.com/api/r-kvstore/modifyinstancespec.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyInstanceSpecWithCallback(request *ModifyInstanceSpecRequest, callback func(response *ModifyInstanceSpecResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -77,6 +72,7 @@ func (client *Client) ModifyInstanceSpecWithCallback(request *ModifyInstanceSpec
 type ModifyInstanceSpecRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ClientToken          string           `position:"Query" name:"ClientToken"`
 	CouponNo             string           `position:"Query" name:"CouponNo"`
 	InstanceClass        string           `position:"Query" name:"InstanceClass"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
@@ -84,6 +80,7 @@ type ModifyInstanceSpecRequest struct {
 	BusinessInfo         string           `position:"Query" name:"BusinessInfo"`
 	AutoPay              requests.Boolean `position:"Query" name:"AutoPay"`
 	FromApp              string           `position:"Query" name:"FromApp"`
+	MajorVersion         string           `position:"Query" name:"MajorVersion"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`

@@ -13,9 +13,12 @@ Provides a RAM User access key resource.
 
 -> **NOTE:**  You should set the `secret_file` if you want to get the access key.  
 
+-> **NOTE:**  From version 1.98.0, if not set `pgp_key`, the resource will output the access key secret to field `secret` and please protect your backend state file judiciously
+
 ## Example Usage
 
-```
+Output the secret to a file.
+```terraform
 # Create a new RAM access key for user.
 resource "alicloud_ram_user" "user" {
   name         = "user_test"
@@ -31,6 +34,29 @@ resource "alicloud_ram_access_key" "ak" {
   secret_file = "/xxx/xxx/xxx.txt"
 }
 ```
+
+Using `pgp_key` to encrypt the secret.
+```terraform
+# Create a new RAM access key for user.
+resource "alicloud_ram_user" "user" {
+  name         = "user_test"
+  display_name = "user_display_name"
+  mobile       = "86-18688888888"
+  email        = "hello.uuu@aaa.com"
+  comments     = "yoyoyo"
+  force        = true
+}
+
+resource "alicloud_ram_access_key" "encrypt" {
+  user_name   = alicloud_ram_user.user.name
+  pgp_key = "keybase:some_person_that_exists"
+}
+
+output "secret" {
+  value = alicloud_ram_access_key.encrypt.encrypted_secret
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -46,5 +72,9 @@ The following attributes are exported:
 
 * `id` - The access key ID.
 * `status` - The access key status.
+* `secret` (Available in 1.98.0+) - The secret access key. Note that this will be written to the state file. 
+If you use this, please protect your backend state file judiciously. 
+Alternatively, you may supply a `pgp_key` instead, which will prevent the secret from being stored in plaintext, 
+at the cost of preventing the use of the secret key in automation.
 * `key_fingerprint` - The fingerprint of the PGP key used to encrypt the secret
 * `encrypted_secret` - The encrypted secret, base64 encoded. ~> NOTE: The encrypted secret may be decrypted using the command line, for example: `terraform output encrypted_secret | base64 --decode | keybase pgp decrypt`.

@@ -156,7 +156,6 @@ data "alicloud_instance_types" "default" {
 
 data "alicloud_images" "default" {
 	name_regex = "^ubuntu_18.*64"
-	most_recent = true
 	owners = "system"
 }
 
@@ -184,7 +183,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_instance" "default" {
   vswitch_id = "${alicloud_vswitch.default.id}"
-  image_id = "${data.alicloud_images.default.images.0.id}"
+  image_id = "${data.alicloud_images.default.images.1.id}"
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   system_disk_category = "cloud_ssd"
   instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
@@ -203,6 +202,7 @@ resource "alicloud_eip" "default" {
 resource "alicloud_eip_association" "default" {
   allocation_id = "${alicloud_eip.default.id}"
   instance_id = "${alicloud_instance.default.id}"
+  force = true
 }
 `, rand)
 }
@@ -218,7 +218,6 @@ data "alicloud_instance_types" "default" {
 
 data "alicloud_images" "default" {
 	name_regex = "^ubuntu_18.*64"
-	most_recent = true
 	owners = "system"
 }
 

@@ -204,6 +204,48 @@ func TestAccAlicloudNatGatewayBasic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudNatGatewayEnhanced(t *testing.T) {
+	var v vpc.NatGateway
+	resourceId := "alicloud_nat_gateway.default"
+	ra := resourceAttrInit(resourceId, testAccCheckNatGatewayBasicMap)
+	serviceFunc := func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckNatGatewayDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNatGatewayConfig_natType(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"nat_type": "Enhanced",
+						"name":     fmt.Sprintf("tf-testAccNatGatewayConfig%d", rand),
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period"},
+			},
+		},
+	})
+}
+
 func testAccNatGatewayConfigBasic(rand int) string {
 	return fmt.Sprintf(
 		`
@@ -354,6 +396,40 @@ resource "alicloud_nat_gateway" "default" {
 	name = "${var.name}_change"
 	description = "${var.name}_description"
 	specification = "Middle"
+}
+`, rand)
+}
+
+func testAccNatGatewayConfig_natType(rand int) string {
+	return fmt.Sprintf(
+		`
+variable "name" {
+	default = "tf-testAccNatGatewayConfig%d"
+}
+
+resource "alicloud_vpc" "default" {
+ name       = var.name
+ cidr_block = "10.0.0.0/8"
+}
+
+data "alicloud_enhanced_nat_available_zones" "default"{
+}
+
+resource "alicloud_vswitch" "default" {
+ name              = var.name
+ availability_zone = data.alicloud_enhanced_nat_available_zones.default.zones.0.zone_id
+ cidr_block        = "10.10.0.0/20"
+ vpc_id            = alicloud_vpc.default.id
+}
+
+resource "alicloud_nat_gateway" "default" {
+ depends_on           = [alicloud_vswitch.default]
+ vpc_id               = alicloud_vpc.default.id
+ specification        = "Small"
+ name                 = var.name
+ instance_charge_type = "PostPaid"
+ vswitch_id           = alicloud_vswitch.default.id
+ nat_type             = "Enhanced"
 }
 `, rand)
 }

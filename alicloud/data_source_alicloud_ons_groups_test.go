@@ -16,12 +16,44 @@ func TestAccAlicloudOnsGroupsDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id":    "${alicloud_ons_instance.default.id}",
-			"group_id_regex": "${alicloud_ons_group.default.group_id}",
+			"instance_id": "${alicloud_ons_instance.default.id}",
+			"name_regex":  "${alicloud_ons_group.default.group_id}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id":    "${alicloud_ons_instance.default.id}",
-			"group_id_regex": "${alicloud_ons_group.default.group_id}_fake",
+			"instance_id": "${alicloud_ons_instance.default.id}",
+			"name_regex":  "${alicloud_ons_group.default.group_id}_fake",
+		}),
+	}
+
+	groupTypeRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"instance_id": "${alicloud_ons_instance.default.id}",
+			"name_regex":  "${alicloud_ons_group.default.group_id}",
+			"group_type":  "tcp",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"instance_id": "${alicloud_ons_instance.default.id}",
+			"name_regex":  "${alicloud_ons_group.default.group_id}_fake",
+			"group_type":  "http",
+		}),
+	}
+
+	tagRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"instance_id": "${alicloud_ons_instance.default.id}",
+			"name_regex":  "${alicloud_ons_group.default.group_id}",
+			"tags": map[string]interface{}{
+				"Created": "TF",
+				"For":     "acceptance test",
+			},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"instance_id": "${alicloud_ons_instance.default.id}",
+			"name_regex":  "${alicloud_ons_group.default.group_id}_fake",
+			"tags": map[string]interface{}{
+				"Created": "TF-fake",
+				"For":     "acceptance test",
+			},
 		}),
 	}
 
@@ -48,7 +80,7 @@ func TestAccAlicloudOnsGroupsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeOnsGroupsMapFunc,
 	}
 
-	onsGroupsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf)
+	onsGroupsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, groupTypeRegexConf, tagRegexConf)
 }
 
 func dataSourceOnsGroupsConfigDependence(name string) string {
@@ -58,14 +90,17 @@ variable "group_id" {
 }
 
 resource "alicloud_ons_instance" "default" {
-name = "tf-testaccOnsInstanceGroupbasic"
+name = "tf-testacc%[1]v"
 }
 
 resource "alicloud_ons_group" "default" {
   instance_id = "${alicloud_ons_instance.default.id}"
   group_id = "${var.group_id}"
   remark = "alicloud_ons_group_remark"
-  read_enable = "true"
+  tags	 = {
+	Created = "TF"
+	For 	= "acceptance test"
+  }
 }
 `, name)
 }

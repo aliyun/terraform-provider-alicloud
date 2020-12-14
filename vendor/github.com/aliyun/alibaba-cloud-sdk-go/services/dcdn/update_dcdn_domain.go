@@ -21,7 +21,6 @@ import (
 )
 
 // UpdateDcdnDomain invokes the dcdn.UpdateDcdnDomain API synchronously
-// api document: https://help.aliyun.com/api/dcdn/updatedcdndomain.html
 func (client *Client) UpdateDcdnDomain(request *UpdateDcdnDomainRequest) (response *UpdateDcdnDomainResponse, err error) {
 	response = CreateUpdateDcdnDomainResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) UpdateDcdnDomain(request *UpdateDcdnDomainRequest) (respon
 }
 
 // UpdateDcdnDomainWithChan invokes the dcdn.UpdateDcdnDomain API asynchronously
-// api document: https://help.aliyun.com/api/dcdn/updatedcdndomain.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateDcdnDomainWithChan(request *UpdateDcdnDomainRequest) (<-chan *UpdateDcdnDomainResponse, <-chan error) {
 	responseChan := make(chan *UpdateDcdnDomainResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) UpdateDcdnDomainWithChan(request *UpdateDcdnDomainRequest)
 }
 
 // UpdateDcdnDomainWithCallback invokes the dcdn.UpdateDcdnDomain API asynchronously
-// api document: https://help.aliyun.com/api/dcdn/updatedcdndomain.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateDcdnDomainWithCallback(request *UpdateDcdnDomainRequest, callback func(response *UpdateDcdnDomainResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -96,6 +91,7 @@ func CreateUpdateDcdnDomainRequest() (request *UpdateDcdnDomainRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("dcdn", "2018-01-15", "UpdateDcdnDomain", "", "")
+	request.Method = requests.POST
 	return
 }
 

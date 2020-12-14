@@ -2,10 +2,12 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/resourcemanager"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudResourceManagerPolicy() *schema.Resource {
@@ -18,10 +20,6 @@ func resourceAlicloudResourceManagerPolicy() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"create_date": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"default_version": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -34,9 +32,14 @@ func resourceAlicloudResourceManagerPolicy() *schema.Resource {
 				ForceNew: true,
 			},
 			"policy_document": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.ValidateJsonString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
 			},
 			"policy_name": {
 				Type:     schema.TypeString,
@@ -58,9 +61,9 @@ func resourceAlicloudResourceManagerPolicyCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("description"); ok {
 		request.Description = v.(string)
 	}
+
 	request.PolicyDocument = d.Get("policy_document").(string)
 	request.PolicyName = d.Get("policy_name").(string)
-
 	raw, err := client.WithResourcemanagerClient(func(resourcemanagerClient *resourcemanager.Client) (interface{}, error) {
 		return resourcemanagerClient.CreatePolicy(request)
 	})
@@ -79,6 +82,7 @@ func resourceAlicloudResourceManagerPolicyRead(d *schema.ResourceData, meta inte
 	object, err := resourcemanagerService.DescribeResourceManagerPolicy(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_resource_manager_policy resourcemanagerService.DescribeResourceManagerPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -86,7 +90,6 @@ func resourceAlicloudResourceManagerPolicyRead(d *schema.ResourceData, meta inte
 	}
 
 	d.Set("policy_name", d.Id())
-	d.Set("create_date", object.CreateDate)
 	d.Set("default_version", object.DefaultVersion)
 	d.Set("description", object.Description)
 	d.Set("policy_type", object.PolicyType)

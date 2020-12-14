@@ -105,7 +105,7 @@ func (s *ElasticsearchService) TriggerNetwork(d *schema.ResourceData, content ma
 
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InternalServerError"}
 	raw, err := s.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.TriggerNetwork(request)
 	})
@@ -189,7 +189,9 @@ func (s *ElasticsearchService) DescribeElasticsearchTags(id string) (tags map[st
 func (s *ElasticsearchService) tagsToMap(tagSet []elasticsearch.TagResourceItem) (tags map[string]string) {
 	result := make(map[string]string)
 	for _, t := range tagSet {
-		result[t.TagKey] = t.TagValue
+		if !elasticsearchTagIgnored(t.TagKey, t.TagValue) {
+			result[t.TagKey] = t.TagValue
+		}
 	}
 
 	return result
@@ -254,8 +256,15 @@ func updateInstanceTags(d *schema.ResourceData, meta interface{}) error {
 	n := nraw.(map[string]interface{})
 	remove, add := elasticsearchService.diffElasticsearchTags(o, n)
 
-	if len(remove) > 0 {
-		tagKeys, err := json.Marshal(remove)
+	// 对系统 Tag 进行过滤
+	removeTagKeys := make([]string, 0)
+	for _, v := range remove {
+		if !elasticsearchTagIgnored(v, "") {
+			removeTagKeys = append(removeTagKeys, v)
+		}
+	}
+	if len(removeTagKeys) > 0 {
+		tagKeys, err := json.Marshal(removeTagKeys)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -604,4 +613,119 @@ func filterWhitelist(destIPs []string, localIPs *schema.Set) []string {
 		}
 	}
 	return whitelist
+}
+
+func updateClientNode(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
+
+	content := make(map[string]interface{})
+	content["isHaveClientNode"] = true
+
+	spec := make(map[string]interface{})
+	spec["spec"] = d.Get("client_node_spec")
+	if d.Get("client_node_amount") == nil {
+		spec["amount"] = "2"
+	} else {
+		spec["amount"] = d.Get("client_node_amount")
+	}
+
+	spec["disk"] = "20"
+	spec["diskType"] = "cloud_efficiency"
+	content["clientNodeConfiguration"] = spec
+
+	data, err := json.Marshal(content)
+	if err != nil {
+		return WrapError(err)
+	}
+	request := elasticsearch.CreateUpdateInstanceRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
+	request.RegionId = client.RegionId
+	request.InstanceId = d.Id()
+	request.SetContent(data)
+	request.SetContentType("application/json")
+
+	// retry
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
+	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.UpdateInstance(request)
+	})
+
+	if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return nil
+}
+
+func openHttps(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
+
+	request := elasticsearch.CreateOpenHttpsRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
+	request.RegionId = client.RegionId
+	request.InstanceId = d.Id()
+	request.SetContentType("application/json")
+
+	// retry
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
+	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.OpenHttps(request)
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
+}
+
+func closeHttps(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	elasticsearchService := ElasticsearchService{client}
+
+	request := elasticsearch.CreateCloseHttpsRequest()
+	request.ClientToken = buildClientToken(request.GetActionName())
+	request.RegionId = client.RegionId
+	request.InstanceId = d.Id()
+	request.SetContentType("application/json")
+
+	// retry
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
+	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+		return elasticsearchClient.CloseHttps(request)
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf.PollInterval = 5 * time.Second
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }

@@ -88,6 +88,7 @@ resource "alicloud_cen_instance" "cen" {
 resource "alicloud_cen_instance_attachment" "attach" {
   instance_id              = alicloud_cen_instance.cen.id
   child_instance_id        = alicloud_vpc.vpc.id
+  child_instance_type      = "VPC"
   child_instance_region_id = "cn-hangzhou"
   depends_on               = [alicloud_vswitch.default]
 }

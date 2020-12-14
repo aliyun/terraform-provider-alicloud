@@ -224,6 +224,7 @@ func TestAccAlicloudEssScalingGroup_costoptimized(t *testing.T) {
 		"on_demand_base_capacity":                  "10",
 		"spot_instance_pools":                      "10",
 		"spot_instance_remedy":                     "false",
+		"group_deletion_protection":                "false",
 		"on_demand_percentage_above_base_capacity": "10",
 	}
 
@@ -260,6 +261,14 @@ func TestAccAlicloudEssScalingGroup_costoptimized(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccEssScalingGroupDeletionProtection(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"group_deletion_protection": "true",
+					}),
+				),
+			},
+			{
 				Config: testAccEssScalingGroupOnDemandBaseCapacity(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -279,7 +288,8 @@ func TestAccAlicloudEssScalingGroup_costoptimized(t *testing.T) {
 				Config: testAccEssScalingGroupSpotInstancePools(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spot_instance_pools": "8",
+						"spot_instance_pools":       "8",
+						"group_deletion_protection": "false",
 					}),
 				),
 			},
@@ -1209,6 +1219,36 @@ func testAccEssScalingGroupSpotInstanceRemedy(common string, rand int) string {
     }`, common, rand)
 }
 
+func testAccEssScalingGroupDeletionProtection(common string, rand int) string {
+	return fmt.Sprintf(`
+    %s
+    variable "name" {
+        default = "tf-testAccEssScalingGroup-%d"
+    }
+    
+    resource "alicloud_vswitch" "default2" {
+          vpc_id = "${alicloud_vpc.default.id}"
+          cidr_block = "172.16.1.0/24"
+          availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+          name = "${var.name}-bar"
+    }
+    
+    resource "alicloud_ess_scaling_group" "default" {
+        min_size = 1
+        max_size = 1
+        scaling_group_name = "${var.name}"
+        default_cooldown = 20
+        vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+        removal_policies = ["OldestInstance", "NewestInstance"]
+        multi_az_policy = "COST_OPTIMIZED"
+        on_demand_base_capacity = "10"
+        on_demand_percentage_above_base_capacity = "10"
+        spot_instance_pools = "10"
+		spot_instance_remedy = true
+		group_deletion_protection = true
+    }`, common, rand)
+}
+
 func testAccEssScalingGroupOnDemandBaseCapacity(common string, rand int) string {
 	return fmt.Sprintf(`
     %s
@@ -1235,6 +1275,7 @@ func testAccEssScalingGroupOnDemandBaseCapacity(common string, rand int) string 
         on_demand_percentage_above_base_capacity = "10"
         spot_instance_pools = "10"
 		spot_instance_remedy = true
+		group_deletion_protection = true
     }`, common, rand)
 }
 
@@ -1264,6 +1305,7 @@ func testAccEssScalingGroupOnDemandPercentageAboveBaseCapacity(common string, ra
         on_demand_percentage_above_base_capacity = "8"
         spot_instance_pools = "10"
 		spot_instance_remedy = true
+		group_deletion_protection = true
     }`, common, rand)
 }
 
@@ -1293,5 +1335,6 @@ func testAccEssScalingGroupSpotInstancePools(common string, rand int) string {
         on_demand_percentage_above_base_capacity = "8"
         spot_instance_pools = "8"
 		spot_instance_remedy = true
+		group_deletion_protection = false
     }`, common, rand)
 }

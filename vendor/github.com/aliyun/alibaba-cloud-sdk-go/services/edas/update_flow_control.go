@@ -21,7 +21,6 @@ import (
 )
 
 // UpdateFlowControl invokes the edas.UpdateFlowControl API synchronously
-// api document: https://help.aliyun.com/api/edas/updateflowcontrol.html
 func (client *Client) UpdateFlowControl(request *UpdateFlowControlRequest) (response *UpdateFlowControlResponse, err error) {
 	response = CreateUpdateFlowControlResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) UpdateFlowControl(request *UpdateFlowControlRequest) (resp
 }
 
 // UpdateFlowControlWithChan invokes the edas.UpdateFlowControl API asynchronously
-// api document: https://help.aliyun.com/api/edas/updateflowcontrol.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateFlowControlWithChan(request *UpdateFlowControlRequest) (<-chan *UpdateFlowControlResponse, <-chan error) {
 	responseChan := make(chan *UpdateFlowControlResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) UpdateFlowControlWithChan(request *UpdateFlowControlReques
 }
 
 // UpdateFlowControlWithCallback invokes the edas.UpdateFlowControl API asynchronously
-// api document: https://help.aliyun.com/api/edas/updateflowcontrol.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateFlowControlWithCallback(request *UpdateFlowControlRequest, callback func(response *UpdateFlowControlResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

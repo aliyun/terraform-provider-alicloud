@@ -293,6 +293,9 @@ const LOCAL_HOST_IP = "127.0.0.1"
 func expandStringList(configured []interface{}) []string {
 	vs := make([]string, 0, len(configured))
 	for _, v := range configured {
+		if v == nil {
+			continue
+		}
 		vs = append(vs, v.(string))
 	}
 	return vs
@@ -323,6 +326,9 @@ func convertListToJsonString(configured []interface{}) string {
 	}
 	result := "["
 	for i, v := range configured {
+		if v == nil {
+			continue
+		}
 		result += "\"" + v.(string) + "\""
 		if i < len(configured)-1 {
 			result += ","
@@ -330,6 +336,16 @@ func convertListToJsonString(configured []interface{}) string {
 	}
 	result += "]"
 	return result
+}
+
+func convertJsonStringToStringList(src interface{}) (result []interface{}) {
+	if err, ok := src.([]interface{}); !ok {
+		panic(err)
+	}
+	for _, v := range src.([]interface{}) {
+		result = append(result, fmt.Sprint(formatInt(v)))
+	}
+	return
 }
 
 // Convert the result for an array and returns a comma separate
@@ -346,6 +362,18 @@ func convertListToCommaSeparate(configured []interface{}) string {
 		result += v.(string) + rail
 	}
 	return result
+}
+
+func convertBoolToString(configured bool) string {
+	return strconv.FormatBool(configured)
+}
+
+func convertIntergerToString(configured int) string {
+	return strconv.Itoa(configured)
+}
+
+func convertFloat64ToString(configured float64) string {
+	return strconv.FormatFloat(configured, 'E', -1, 64)
 }
 
 func convertJsonStringToList(configured string) ([]interface{}, error) {
@@ -392,6 +420,10 @@ func BoolPointer(b bool) *bool {
 }
 
 func Int32Pointer(i int32) *int32 {
+	return &i
+}
+
+func Int64Pointer(i int64) *int64 {
 	return &i
 }
 
@@ -893,4 +925,31 @@ func checkWaitForReady(object interface{}, conditions map[string]interface{}) (b
 		}
 	}
 	return true, values, nil
+}
+
+// When using teadsl, we need to convert float, int64 and int32 to int for comparison.
+func formatInt(src interface{}) int {
+	if src == nil {
+		return 0
+	}
+	attrType := reflect.TypeOf(src)
+	switch attrType.String() {
+	case "float64":
+		return int(src.(float64))
+	case "float32":
+		return int(src.(float32))
+	case "int64":
+		return int(src.(int64))
+	case "int32":
+		return int(src.(int32))
+	case "string":
+		v, err := strconv.Atoi(src.(string))
+		if err != nil {
+			panic(err)
+		}
+		return v
+	default:
+		panic(fmt.Sprintf("Not support type %s", attrType.String()))
+	}
+	return 0
 }

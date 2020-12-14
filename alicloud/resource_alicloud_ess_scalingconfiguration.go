@@ -109,6 +109,14 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.IntBetween(0, 100),
 			},
+			"credit_specification": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(CreditSpecificationStandard),
+					string(CreditSpecificationUnlimited),
+				}, false),
+			},
 			"system_disk_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -431,6 +439,11 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		d.SetPartial("internet_max_bandwidth_out")
 	}
 
+	if d.HasChange("credit_specification") {
+		request.CreditSpecification = d.Get("credit_specification").(string)
+		d.SetPartial("credit_specification")
+	}
+
 	if d.HasChange("system_disk_category") {
 		request.SystemDiskCategory = d.Get("system_disk_category").(string)
 		d.SetPartial("system_disk_category")
@@ -627,6 +640,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("internet_charge_type", object.InternetChargeType)
 	d.Set("internet_max_bandwidth_in", object.InternetMaxBandwidthIn)
 	d.Set("internet_max_bandwidth_out", object.InternetMaxBandwidthOut)
+	d.Set("credit_specification", object.CreditSpecification)
 	d.Set("system_disk_category", object.SystemDiskCategory)
 	d.Set("system_disk_size", object.SystemDiskSize)
 	d.Set("system_disk_name", object.SystemDiskName)
@@ -821,6 +835,10 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 	}
 
 	request.InternetMaxBandwidthOut = requests.NewInteger(d.Get("internet_max_bandwidth_out").(int))
+
+	if v := d.Get("credit_specification").(string); v != "" {
+		request.CreditSpecification = v
+	}
 
 	if v := d.Get("system_disk_category").(string); v != "" {
 		request.SystemDiskCategory = v

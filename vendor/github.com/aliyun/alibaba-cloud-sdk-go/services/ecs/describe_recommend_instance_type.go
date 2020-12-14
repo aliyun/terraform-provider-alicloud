@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeRecommendInstanceType invokes the ecs.DescribeRecommendInstanceType API synchronously
-// api document: https://help.aliyun.com/api/ecs/describerecommendinstancetype.html
 func (client *Client) DescribeRecommendInstanceType(request *DescribeRecommendInstanceTypeRequest) (response *DescribeRecommendInstanceTypeResponse, err error) {
 	response = CreateDescribeRecommendInstanceTypeResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeRecommendInstanceType(request *DescribeRecommendIn
 }
 
 // DescribeRecommendInstanceTypeWithChan invokes the ecs.DescribeRecommendInstanceType API asynchronously
-// api document: https://help.aliyun.com/api/ecs/describerecommendinstancetype.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRecommendInstanceTypeWithChan(request *DescribeRecommendInstanceTypeRequest) (<-chan *DescribeRecommendInstanceTypeResponse, <-chan error) {
 	responseChan := make(chan *DescribeRecommendInstanceTypeResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeRecommendInstanceTypeWithChan(request *DescribeRec
 }
 
 // DescribeRecommendInstanceTypeWithCallback invokes the ecs.DescribeRecommendInstanceType API asynchronously
-// api document: https://help.aliyun.com/api/ecs/describerecommendinstancetype.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRecommendInstanceTypeWithCallback(request *DescribeRecommendInstanceTypeRequest, callback func(response *DescribeRecommendInstanceTypeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -112,7 +107,7 @@ func CreateDescribeRecommendInstanceTypeRequest() (request *DescribeRecommendIns
 	request = &DescribeRecommendInstanceTypeRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "DescribeRecommendInstanceType", "ecs", "openAPI")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "DescribeRecommendInstanceType", "", "")
 	request.Method = requests.POST
 	return
 }

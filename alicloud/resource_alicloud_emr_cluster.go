@@ -47,6 +47,15 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 				Default:      "PostPaid",
 				ValidateFunc: validation.StringInSlice([]string{string(PrePaid), string(PostPaid)}, false),
 			},
+			"period": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      1,
+				ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("charge_type").(string) == "PostPaid"
+				},
+			},
 			"tags": tagsSchema(),
 			"host_group": {
 				Type:     schema.TypeSet,
@@ -264,6 +273,10 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 		request.ChargeType = chargeType.(string)
 	}
 
+	if period, ok := d.GetOk("period"); ok {
+		request.Period = requests.NewInteger(period.(int))
+	}
+
 	if keyPairName, ok := d.GetOk("key_pair_name"); ok {
 		request.KeyPairName = keyPairName.(string)
 	}
@@ -320,16 +333,13 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 
 	var hostGroups []emr.CreateClusterV2HostGroup
 	if groups, ok := d.GetOk("host_group"); ok {
+		nodeChecker := map[string]int{}
 		for _, group := range groups.(*schema.Set).List() {
 			kv := group.(map[string]interface{})
 			hostGroup := emr.CreateClusterV2HostGroup{}
 
 			if v, ok := kv["period"]; ok {
 				hostGroup.Period = strconv.Itoa(v.(int))
-			}
-			// PostPaid emr cluster, period must be null
-			if hostGroup.Period == "0" {
-				hostGroup.Period = "null"
 			}
 
 			if v, ok := kv["sys_disk_capacity"]; ok {
@@ -382,9 +392,20 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 
 			if v, ok := kv["host_group_type"]; ok {
 				hostGroup.HostGroupType = v.(string)
+				if nodeCount, exist := kv["node_count"]; exist {
+					count, _ := strconv.Atoi(nodeCount.(string))
+					nodeChecker[v.(string)] = count
+				}
 			}
 
 			hostGroups = append(hostGroups, hostGroup)
+		}
+		// Gateway emr cluster do not need to check
+		if request.ClusterType != "GATEWAY" {
+			if nodeChecker["MASTER"] < 1 || nodeChecker["CORE"] < 2 {
+				return WrapError(Error("%s emr cluster must contains 1 MASTER node and 2 CORE node.",
+					request.ClusterType))
+			}
 		}
 	}
 	request.HostGroup = &hostGroups

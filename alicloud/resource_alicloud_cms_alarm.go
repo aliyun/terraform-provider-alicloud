@@ -271,29 +271,18 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 	}
 	d.Set("operator", oper)
 	d.Set("threshold", alarm.Escalations.Critical.Threshold)
-	if alarm.Escalations.Critical.Times != "" {
-		if count, err := strconv.Atoi(alarm.Escalations.Critical.Times); err != nil {
-			return WrapError(err)
-		} else {
-			d.Set("triggered_count", count)
-		}
-	}
+	d.Set("triggered_count", alarm.Escalations.Critical.Times)
 
 	escalationsCritical := make([]map[string]interface{}, 1)
-	if alarm.Escalations.Critical.Times != "" {
-		if count, err := strconv.Atoi(alarm.Escalations.Critical.Times); err != nil {
-			return WrapError(err)
-		} else {
-			mapping := map[string]interface{}{
-				"statistics":          alarm.Escalations.Critical.Statistics,
-				"comparison_operator": convertOperator(alarm.Escalations.Critical.ComparisonOperator),
-				"threshold":           alarm.Escalations.Critical.Threshold,
-				"times":               count,
-			}
-			escalationsCritical[0] = mapping
-			d.Set("escalations_critical", escalationsCritical)
-		}
+
+	mapping := map[string]interface{}{
+		"statistics":          alarm.Escalations.Critical.Statistics,
+		"comparison_operator": convertOperator(alarm.Escalations.Critical.ComparisonOperator),
+		"threshold":           alarm.Escalations.Critical.Threshold,
+		"times":               alarm.Escalations.Critical.Times,
 	}
+	escalationsCritical[0] = mapping
+	d.Set("escalations_critical", escalationsCritical)
 
 	escalationsWarn := make([]map[string]interface{}, 1)
 	if alarm.Escalations.Warn.Times != "" {
@@ -330,11 +319,9 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("effective_interval", alarm.EffectiveInterval)
 	//d.Set("start_time", parts[0])
 	//d.Set("end_time", parts[1])
-	if silence, err := strconv.Atoi(alarm.SilenceTime); err != nil {
-		return fmt.Errorf("Atoi SilenceTime got an error: %#v.", err)
-	} else {
-		d.Set("silence_time", silence)
-	}
+
+	d.Set("silence_time", alarm.SilenceTime)
+
 	d.Set("status", alarm.AlertState)
 	d.Set("enabled", alarm.EnableState)
 	d.Set("webhook", alarm.Webhook)
@@ -466,8 +453,20 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		request := cms.CreateEnableMetricRulesRequest()
 		request.RuleId = &[]string{d.Id()}
 
-		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.EnableMetricRules(request)
+		wait := incrementalWait(1*time.Second, 2*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+				return cmsClient.EnableMetricRules(request)
+			})
+
+			if err != nil {
+				if IsExpectedErrors(err, []string{ThrottlingUser}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(fmt.Errorf("Enabling alarm got an error: %#v", err))
+			}
+			return nil
 		})
 		if err != nil {
 			return fmt.Errorf("Enabling alarm got an error: %#v", err)
@@ -476,8 +475,20 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		request := cms.CreateDisableMetricRulesRequest()
 		request.RuleId = &[]string{d.Id()}
 
-		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DisableMetricRules(request)
+		wait := incrementalWait(1*time.Second, 2*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
+				return cmsClient.DisableMetricRules(request)
+			})
+
+			if err != nil {
+				if IsExpectedErrors(err, []string{ThrottlingUser}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(fmt.Errorf("Disableing alarm got an error: %#v", err))
+			}
+			return nil
 		})
 		if err != nil {
 			return fmt.Errorf("Disableing alarm got an error: %#v", err)

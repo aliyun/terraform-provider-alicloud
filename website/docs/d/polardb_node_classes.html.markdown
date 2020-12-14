@@ -15,20 +15,20 @@ This data source provides the PolarDB node classes resource available info of Al
 
 ## Example Usage
 
-```tf
+```terraform
 data "alicloud_zones" "resources" {
   available_resource_creation = "PolarDB"
 }
 
 data "alicloud_polardb_node_classes" "resources" {
-  zone_id              = "${data.alicloud_zones.resources.zones.0.id}"
-  pay_type             = "Postpaid"
+  zone_id              = data.alicloud_zones.resources.zones.0.id
+  pay_type             = "PostPaid"
   db_type              = "MySQL"
   db_version           = "5.6"
 }
 
-output "first_polardb_node_class" {
-  value = "${data.alicloud_polardb_node_classes.resources.classes}"
+output "polardb_node_classes" {
+  value = data.alicloud_polardb_node_classes.resources.classes
 }
 ```
 

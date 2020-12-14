@@ -111,6 +111,39 @@ func dataSourceAlicloudFcServices() *schema.Resource {
 							},
 							MaxItems: 1,
 						},
+						"nas_config": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"user_id": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"group_id": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"mount_points": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"server_addr": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"mount_dir": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+											},
+										},
+									},
+								},
+							},
+							MaxItems: 1,
+						},
 					},
 				},
 			},
@@ -148,6 +181,9 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 		idsMap := make(map[string]string)
 		if v, ok := d.GetOk("ids"); ok {
 			for _, vv := range v.([]interface{}) {
+				if vv == nil {
+					continue
+				}
 				idsMap[vv.(string)] = vv.(string)
 			}
 		}
@@ -181,6 +217,24 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 				})
 			}
 			mapping["vpc_config"] = vpcConfigMappings
+
+			var nasConfigMappings []map[string]interface{}
+			if service.NASConfig != nil {
+				nasConfig := map[string]interface{}{
+					"user_id":  *service.NASConfig.UserID,
+					"group_id": *service.NASConfig.GroupID,
+				}
+				var mountPoints []map[string]interface{}
+				for _, v := range service.NASConfig.MountPoints {
+					mountPoints = append(mountPoints, map[string]interface{}{
+						"server_addr": v.ServerAddr,
+						"mount_dir":   v.MountDir,
+					})
+				}
+				nasConfig["mount_points"] = mountPoints
+				nasConfigMappings = append(nasConfigMappings, nasConfig)
+			}
+			mapping["nas_config"] = nasConfigMappings
 
 			nameRegex, ok := d.GetOk("name_regex")
 			if ok && nameRegex.(string) != "" {

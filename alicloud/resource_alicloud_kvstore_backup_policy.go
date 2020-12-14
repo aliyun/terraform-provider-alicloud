@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -18,6 +19,9 @@ func resourceAlicloudKVStoreBackupPolicy() *schema.Resource {
 		Delete: resourceAlicloudKVStoreBackupPolicyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Update: schema.DefaultTimeout(40 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
@@ -71,6 +75,8 @@ func resourceAlicloudKVStoreBackupPolicyRead(d *schema.ResourceData, meta interf
 }
 
 func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	r_kvstoreService := R_kvstoreService{client}
 	if d.HasChange("backup_time") || d.HasChange("backup_period") {
 		client := meta.(*connectivity.AliyunClient)
 		kvstoreService := KvstoreService{client}
@@ -89,6 +95,10 @@ func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 		// There is a random error and need waiting some seconds to ensure the update is success
 		_, err = kvstoreService.DescribeKVstoreBackupPolicy(d.Id())
 		if err != nil {
@@ -102,6 +112,7 @@ func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta inte
 func resourceAlicloudKVStoreBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 	// In case of a delete we are resetting to default values which is Monday - Sunday each 3am-4am
 	client := meta.(*connectivity.AliyunClient)
+	r_kvstoreService := R_kvstoreService{client}
 	request := r_kvstore.CreateModifyBackupPolicyRequest()
 	request.RegionId = client.RegionId
 	request.InstanceId = d.Id()
@@ -116,5 +127,9 @@ func resourceAlicloudKVStoreBackupPolicyDelete(d *schema.ResourceData, meta inte
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 	return nil
 }

@@ -15,7 +15,7 @@ Provides a PolarDB account privilege resource and used to grant several database
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "PolarDB"
 }
@@ -40,7 +40,7 @@ resource "alicloud_vswitch" "default" {
   name              = var.name
 }
 
-resource "alicloud_polardb_cluster" "default" {
+resource "alicloud_polardb_cluster" "cluster" {
   db_type       = "MySQL"
   db_version    = "8.0"
   pay_type      = "PostPaid"
@@ -50,24 +50,22 @@ resource "alicloud_polardb_cluster" "default" {
 }
 
 resource "alicloud_polardb_database" "db" {
-  count       = 2
-  instance_id = alicloud_polardb_instance.cluster.id
-  name        = "tfaccountpri_${count.index}"
-  description = "from terraform"
+  db_cluster_id  = alicloud_polardb_cluster.cluster.id
+  db_name        = "tftestdatabase"
 }
 
 resource "alicloud_polardb_account" "account" {
-  instance_id = alicloud_polardb_instance.cluster.id
-  name        = "tftestprivilege"
-  password    = "Test12345"
-  description = "from terraform"
+  db_cluster_id         = alicloud_polardb_cluster.cluster.id
+  account_name          = "tftestnormal"
+  account_password      = "Test12345"
+  account_description   = var.name
 }
 
 resource "alicloud_polardb_account_privilege" "privilege" {
-  cluster_id    = alicloud_polardb_instance.cluster.id
-  account_name  = alicloud_polardb_account.account.name
-  privilege     = "ReadOnly"
-  db_names      = alicloud_polardb_database.db.*.name
+  db_cluster_id         = alicloud_polardb_cluster.cluster.id
+  account_name          = alicloud_polardb_account.account.account_name
+  account_privilege     = "ReadOnly"
+  db_names              = [alicloud_polardb_database.db.db_name]
 }
 ```
 
@@ -77,7 +75,7 @@ The following arguments are supported:
 
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster in which account belongs.
 * `account_name` - (Required, ForceNew) A specified account name.
-* `account_privilege` - (Optional, ForceNew) The privilege of one account access database. Valid values: ["ReadOnly", "ReadWrite"]. Default to "ReadOnly".
+* `account_privilege` - (Optional, ForceNew) The privilege of one account access database. Valid values: ["ReadOnly", "ReadWrite"], ["DMLOnly", "DDLOnly"] added since version v1.101.0. Default to "ReadOnly".
 * `db_names` - (Required) List of specified database name.
 
 ## Attributes Reference

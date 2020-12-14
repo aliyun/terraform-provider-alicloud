@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"regexp"
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -14,6 +15,12 @@ func dataSourceAlicloudDmsEnterpriseUsers() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudDmsEnterpriseUsersRead,
 		Schema: map[string]*schema.Schema{
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.ValidateRegexp,
+				ForceNew:     true,
+			},
 			"role": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -42,6 +49,11 @@ func dataSourceAlicloudDmsEnterpriseUsers() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -52,10 +64,6 @@ func dataSourceAlicloudDmsEnterpriseUsers() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"mobile": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"nick_name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -89,6 +97,14 @@ func dataSourceAlicloudDmsEnterpriseUsers() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"user_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"nick_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -115,10 +131,21 @@ func dataSourceAlicloudDmsEnterpriseUsersRead(d *schema.ResourceData, meta inter
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	var objects []dms_enterprise.User
+	var userNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		userNameRegex = r
+	}
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
@@ -134,6 +161,11 @@ func dataSourceAlicloudDmsEnterpriseUsersRead(d *schema.ResourceData, meta inter
 		response, _ = raw.(*dms_enterprise.ListUsersResponse)
 
 		for _, item := range response.UserList.User {
+			if userNameRegex != nil {
+				if !userNameRegex.MatchString(item.NickName) {
+					continue
+				}
+			}
 			if len(idsMap) > 0 {
 				if _, ok := idsMap[strconv.FormatInt(item.Uid, 10)]; !ok {
 					continue
@@ -151,25 +183,32 @@ func dataSourceAlicloudDmsEnterpriseUsersRead(d *schema.ResourceData, meta inter
 		}
 		request.PageNumber = page
 	}
-	ids := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-	for i, object := range objects {
+	ids := make([]string, 0)
+	names := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
 			"mobile":     object.Mobile,
-			"nick_name":  object.NickName,
 			"parent_uid": object.ParentUid,
 			"role_ids":   object.RoleIdList.RoleIds,
 			"role_names": object.RoleNameList.RoleNames,
 			"status":     object.State,
 			"id":         strconv.FormatInt(object.Uid, 10),
 			"user_id":    object.UserId,
+			"user_name":  object.NickName,
+			"nick_name":  object.NickName,
 		}
-		ids[i] = strconv.FormatInt(object.Uid, 10)
-		s[i] = mapping
+		ids = append(ids, strconv.FormatInt(object.Uid, 10))
+		names = append(names, object.NickName)
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 

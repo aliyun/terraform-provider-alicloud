@@ -1,5 +1,5 @@
 ---
-subcategory: "Alidns"
+subcategory: "DNS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alidns_records"
 sidebar_current: "docs-alicloud-datasource-alidns-records"
@@ -15,7 +15,7 @@ This data source provides a list of Alidns Domain Records in an Alibaba Cloud ac
 
 ## Example Usage
 
-```
+```terraform 
 data "alicloud_alidns_records" "records_ds" {
   domain_name       = "xiaozhu.top"
   ids               = [1978593525779****]
@@ -34,7 +34,7 @@ The following arguments are supported:
 
 * `domain_name` - (Required) The domain name associated to the records. 
 * `type` - (Optional) Record type. Valid values: `A`, `NS`, `MX`, `TXT`, `CNAME`, `SRV`, `AAAA`, `REDIRECT_URL`, `FORWORD_URL` .
-* `line` - (Optional) ISP line. Valid values: `default`, `telecom`, `unicom`, `mobile`, `oversea`, `edu`, `drpeng`, `btvn`, .etc. For checking all resolution lines enumeration please visit [Alibaba Cloud DNS doc](https://www.alibabacloud.com/help/doc-detail/34339.htm) 
+* `line` - (Optional) ISP line. For checking all resolution lines enumeration please visit [Alibaba Cloud DNS doc](https://www.alibabacloud.com/help/doc-detail/34339.htm) 
 * `status` - (Optional) Record status. Valid values: `ENABLE` and `DISABLE`.
 * `is_locked` - (Optional, type: bool) Whether the record is locked or not.
 * `ids` - (Optional) A list of record IDs.

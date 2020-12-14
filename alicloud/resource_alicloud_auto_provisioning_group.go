@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -36,6 +37,7 @@ func resourceAlicloudAutoProvisioningGroup() *schema.Resource {
 			"auto_provisioning_group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"auto_provisioning_group_type": {
 				Type:         schema.TypeString,
@@ -62,6 +64,7 @@ func resourceAlicloudAutoProvisioningGroup() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"pay_as_you_go_allocation_strategy": {
 				Type:         schema.TypeString,
@@ -80,11 +83,13 @@ func resourceAlicloudAutoProvisioningGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"valid_until": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"terminate_instances_with_expiration": {
 				Type:     schema.TypeBool,
@@ -100,6 +105,7 @@ func resourceAlicloudAutoProvisioningGroup() *schema.Resource {
 			"max_spot_price": {
 				Type:     schema.TypeFloat,
 				Optional: true,
+				Computed: true,
 			},
 			"pay_as_you_go_target_capacity": {
 				Type:     schema.TypeString,
@@ -119,6 +125,7 @@ func resourceAlicloudAutoProvisioningGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -145,11 +152,12 @@ func resourceAlicloudAutoProvisioningGroup() *schema.Resource {
 						},
 						"weighted_capacity": {
 							Type:     schema.TypeString,
-							Optional: true,
+							Required: true,
 						},
 						"priority": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -213,13 +221,13 @@ func resourceAlicloudAutoProvisioningGroupRead(d *schema.ResourceData, meta inte
 	d.Set("valid_until", object.ValidUntil)
 	d.Set("status", object.Status)
 	d.Set("state", object.State)
-	d.Set("pay_as_you_go_target_capacity", object.TargetCapacitySpecification.PayAsYouGoTargetCapacity)
+	d.Set("pay_as_you_go_target_capacity", fmt.Sprintf("%v", object.TargetCapacitySpecification.PayAsYouGoTargetCapacity))
 	d.Set("pay_as_you_go_allocation_strategy", object.PayAsYouGoOptions.AllocationStrategy)
-	d.Set("spot_target_capacity", object.TargetCapacitySpecification.SpotTargetCapacity)
+	d.Set("spot_target_capacity", fmt.Sprintf("%v", object.TargetCapacitySpecification.SpotTargetCapacity))
 	d.Set("spot_allocation_strategy", object.SpotOptions.AllocationStrategy)
 	d.Set("spot_instance_interruption_behavior", object.SpotOptions.InstanceInterruptionBehavior)
 	d.Set("spot_instance_pools_to_use_count", object.SpotOptions.InstancePoolsToUseCount)
-	d.Set("total_target_capacity", object.TargetCapacitySpecification.TotalTargetCapacity)
+	d.Set("total_target_capacity", fmt.Sprintf("%v", object.TargetCapacitySpecification.TotalTargetCapacity))
 	d.Set("default_target_capacity_type", object.TargetCapacitySpecification.DefaultTargetCapacityType)
 	d.Set("launch_template_version", object.LaunchTemplateVersion)
 	launch_template_config := []map[string]interface{}{}
@@ -227,12 +235,12 @@ func resourceAlicloudAutoProvisioningGroupRead(d *schema.ResourceData, meta inte
 	for _, mappara := range object.LaunchTemplateConfigs.LaunchTemplateConfig {
 		para["instance_type"] = mappara.InstanceType
 		para["vswitch_id"] = mappara.VSwitchId
-		para["weighted_capacity"] = mappara.WeightedCapacity
-		para["max_price"] = mappara.MaxPrice
-		para["priority"] = mappara.Priority
+		para["weighted_capacity"] = fmt.Sprintf("%v", mappara.WeightedCapacity)
+		para["max_price"] = fmt.Sprintf("%v", mappara.MaxPrice)
+		para["priority"] = fmt.Sprintf("%v", mappara.Priority)
 	}
 	launch_template_config = append(launch_template_config, para)
-	d.Set("launch_template_config", object.LaunchTemplateConfigs.LaunchTemplateConfig)
+	d.Set("launch_template_config", launch_template_config)
 
 	return nil
 }
@@ -245,7 +253,7 @@ func resourceAlicloudAutoProvisioningGroupUpdate(d *schema.ResourceData, meta in
 	request.AutoProvisioningGroupId = d.Id()
 
 	if d.HasChange("excess_capacity_termination_policy") {
-		if v, ok := d.GetOk("excessCapacity_termination_policy"); ok {
+		if v, ok := d.GetOk("excess_capacity_termination_policy"); ok {
 			request.ExcessCapacityTerminationPolicy = v.(string)
 		}
 	}
@@ -321,7 +329,7 @@ func resourceAlicloudAutoProvisioningGroupDelete(d *schema.ResourceData, meta in
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	return WrapError(ecsService.WaitForAutoProvisioningGroup(d.Id(), "deleted", DefaultTimeout))
+	return WrapError(ecsService.WaitForAutoProvisioningGroup(d.Id(), Deleted, DefaultTimeoutMedium))
 }
 
 func buildAlicloudAutoProvisioningGroupArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateAutoProvisioningGroupRequest, error) {
@@ -388,14 +396,12 @@ func buildAlicloudAutoProvisioningGroupArgs(d *schema.ResourceData, meta interfa
 	for _, c := range confs {
 		cc := c.(map[string]interface{})
 		conf := ecs.CreateAutoProvisioningGroupLaunchTemplateConfig{
-			MaxPrice:  cc["max_price"].(string),
-			VSwitchId: cc["vswitch_id"].(string),
+			MaxPrice:         cc["max_price"].(string),
+			VSwitchId:        cc["vswitch_id"].(string),
+			WeightedCapacity: cc["weighted_capacity"].(string),
 		}
 		if v, ok := cc["instance_type"]; ok && v.(string) != "" {
 			conf.InstanceType = cc["instance_type"].(string)
-		}
-		if v, ok := cc["weighted_capacity"]; ok && v.(string) != "" {
-			conf.WeightedCapacity = cc["weighted_capacity"].(string)
 		}
 		if v, ok := cc["priority"]; ok && v.(string) != "" {
 			conf.Priority = cc["priority"].(string)

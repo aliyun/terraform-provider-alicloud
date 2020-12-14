@@ -1,15 +1,16 @@
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ons"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudOnsGroup() *schema.Resource {
@@ -21,164 +22,188 @@ func resourceAlicloudOnsGroup() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(4 * time.Minute),
+			Delete: schema.DefaultTimeout(4 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
+			"group_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ValidateFunc:  validateOnsGroupId,
+				ConflictsWith: []string{"group_id"},
+			},
+			"group_id": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ValidateFunc:  validateOnsGroupId,
+				Deprecated:    "Field 'group_id' has been deprecated from version 1.98.0. Use 'group_name' instead.",
+				ConflictsWith: []string{"group_name"},
+			},
+			"group_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"http", "tcp"}, false),
+				Default:      "tcp",
+			},
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"group_id": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validateOnsGroupId,
-			},
-			"remark": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(1, 256),
-			},
 			"read_enable": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"remark": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringLenBetween(1, 256),
+			},
+			"tags": tagsSchema(),
 		},
 	}
 }
 
 func resourceAlicloudOnsGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	onsService := OnsService{client}
-
-	instanceId := d.Get("instance_id").(string)
-	groupId := d.Get("group_id").(string)
 
 	request := ons.CreateOnsGroupCreateRequest()
-	request.RegionId = client.RegionId
-	request.GroupId = groupId
-	request.InstanceId = instanceId
+	if v, ok := d.GetOk("group_name"); ok {
+		request.GroupId = v.(string)
+	} else if v, ok := d.GetOk("group_id"); ok {
+		request.GroupId = v.(string)
+	} else {
+		return WrapError(Error(`[ERROR] Argument "group_id" or "group_name" must be set one!`))
+	}
 
+	if v, ok := d.GetOk("group_type"); ok {
+		request.GroupType = v.(string)
+	}
+
+	request.InstanceId = d.Get("instance_id").(string)
 	if v, ok := d.GetOk("remark"); ok {
 		request.Remark = v.(string)
 	}
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		raw, err := client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 			return onsClient.OnsGroupCreate(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
-				time.Sleep(10 * time.Second)
+			if IsExpectedErrors(err, []string{"Throttling.User"}) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(request.GetActionName(), raw)
+		d.SetId(fmt.Sprintf("%v:%v", request.InstanceId, request.GroupId))
 		return nil
 	})
-
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ons_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(instanceId + ":" + groupId)
-
-	if err = onsService.WaitForOnsGroup(d.Id(), Available, DefaultTimeout); err != nil {
-		return WrapError(err)
-	}
-	return resourceAlicloudOnsGroupRead(d, meta)
+	return resourceAlicloudOnsGroupUpdate(d, meta)
 }
-
 func resourceAlicloudOnsGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	onsService := OnsService{client}
-
 	object, err := onsService.DescribeOnsGroup(d.Id())
-
 	if err != nil {
-		// Handle exceptions
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ons_group onsService.DescribeOnsGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-
-	d.Set("instance_id", object.InstanceId)
-	d.Set("group_id", object.GroupId)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("group_name", parts[1])
+	d.Set("group_id", parts[1])
+	d.Set("instance_id", parts[0])
+	d.Set("group_type", object.GroupType)
 	d.Set("remark", object.Remark)
 
+	tags := make(map[string]string)
+	for _, t := range object.Tags.Tag {
+		tags[t.Key] = t.Value
+	}
+	d.Set("tags", tags)
 	return nil
 }
-
 func resourceAlicloudOnsGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	onsService := OnsService{client}
-
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
-	instanceId := parts[0]
-	groupId := parts[1]
+	d.Partial(true)
 
-	request := ons.CreateOnsGroupConsumerUpdateRequest()
-	request.RegionId = client.RegionId
-	request.InstanceId = instanceId
-	request.GroupId = groupId
-
+	if d.HasChange("tags") {
+		if err := onsService.SetResourceTagsForGroup(d, "GROUP"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
 	if d.HasChange("read_enable") {
-		readEnable := d.Get("read_enable").(bool)
-		request.ReadEnable = requests.NewBoolean(readEnable)
-		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
+		request := ons.CreateOnsGroupConsumerUpdateRequest()
+		request.GroupId = parts[1]
+		request.InstanceId = parts[0]
+		request.ReadEnable = requests.NewBoolean(d.Get("read_enable").(bool))
+		raw, err := client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 			return onsClient.OnsGroupConsumerUpdate(request)
 		})
+		addDebug(request.GetActionName(), raw)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("read_enable")
 	}
-
+	d.Partial(false)
 	return resourceAlicloudOnsGroupRead(d, meta)
 }
-
 func resourceAlicloudOnsGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	onsService := OnsService{client}
-
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
-	instanceId := parts[0]
-	groupId := parts[1]
-
 	request := ons.CreateOnsGroupDeleteRequest()
-	request.RegionId = client.RegionId
-	request.InstanceId = instanceId
-	request.GroupId = groupId
-
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := onsService.client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
+	request.GroupId = parts[1]
+	request.InstanceId = parts[0]
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		raw, err := client.WithOnsClient(func(onsClient *ons.Client) (interface{}, error) {
 			return onsClient.OnsGroupDelete(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
-				time.Sleep(10 * time.Second)
+			if IsExpectedErrors(err, []string{"Throttling.User"}) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(request.GetActionName(), raw)
 		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	return WrapError(onsService.WaitForOnsGroup(d.Id(), Deleted, DefaultTimeoutMedium))
+	return nil
 }

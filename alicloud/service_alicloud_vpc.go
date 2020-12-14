@@ -9,6 +9,10 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
+	"fmt"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -110,9 +114,93 @@ func (s *VpcService) DescribeVpc(id string) (v vpc.Vpc, err error) {
 	return
 }
 
+func (s *VpcService) DescribeVpcWithTeadsl(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	action := "DescribeVpcs"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"VpcId":    id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	invoker := NewInvoker()
+	err = invoker.Run(func() error {
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidVpcID.NotFound", "Forbidden.VpcNotFound"}) {
+				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
+			return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+
+		v, err := jsonpath.Get("$.Vpcs.Vpc", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, id, "$.Vpcs.Vpc", response)
+		}
+		if len(v.([]interface{})) < 1 || v.([]interface{})[0].(map[string]interface{})["VpcId"].(string) != id {
+			return WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+		}
+		object = v.([]interface{})[0].(map[string]interface{})
+		return nil
+	})
+	return
+}
+
+func (s *VpcService) ListTagResources(resourceId, resourceType string) (object interface{}, err error) {
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListTagResources"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"ResourceId.1": resourceId,
+		"ResourceType": resourceType,
+		"MaxResults":   PageSizeLarge,
+	}
+	tags := make([]interface{}, 0)
+
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{Throttling}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			v, err := jsonpath.Get("$.TagResources.TagResource", response)
+			if err != nil {
+				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, resourceId, "$.TagResources.TagResource", response))
+			}
+			tags = append(tags, v.([]interface{})...)
+			nextToken, _ := jsonpath.Get("$.NextToken", response)
+			request["NextToken"] = nextToken
+			return nil
+		})
+		if err != nil {
+			err = WrapErrorf(err, DefaultErrorMsg, resourceId, action, AlibabaCloudSdkGoERROR)
+			return
+		}
+		if request["NextToken"].(string) == "" {
+			break
+		}
+	}
+
+	return tags, nil
+}
+
 func (s *VpcService) VpcStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeVpc(id)
+		object, err := s.DescribeVpcWithTeadsl(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -121,13 +209,14 @@ func (s *VpcService) VpcStateRefreshFunc(id string, failStates []string) resourc
 			return nil, "", WrapError(err)
 		}
 
+		status := object["Status"].(string)
 		for _, failState := range failStates {
-			if object.Status == failState {
-				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			if status == failState {
+				return object, status, WrapError(Error(FailedToReachTargetStatus, status))
 			}
 		}
 
-		return object, object.Status, nil
+		return object, status, nil
 	}
 }
 
@@ -453,7 +542,7 @@ func (s *VpcService) WaitForCenInstanceGrant(id string, status Status, timeout i
 				return WrapError(err)
 			}
 		}
-		if object.CenInstanceId == instanceId && string(object.CenOwnerId) == ownerId && status != Deleted {
+		if object.CenInstanceId == instanceId && fmt.Sprint(object.CenOwnerId) == ownerId && status != Deleted {
 			break
 		}
 		if time.Now().After(deadline) {
@@ -1091,27 +1180,26 @@ func (s *VpcService) DescribeTags(resourceId string, resourceTags map[string]int
 
 func (s *VpcService) setInstanceTags(d *schema.ResourceData, resourceType TagResourceType) error {
 	if d.HasChange("tags") {
-		oraw, nraw := d.GetChange("tags")
-		o := oraw.(map[string]interface{})
-		n := nraw.(map[string]interface{})
-		create, remove := s.diffTags(s.tagsFromMap(o), s.tagsFromMap(n))
+		added, removed := parsingTags(d)
+		conn, err := s.client.NewVpcClient()
+		if err != nil {
+			return WrapError(err)
+		}
 
-		if len(remove) > 0 {
-			var tagKey []string
-			for _, v := range remove {
-				tagKey = append(tagKey, v.Key)
+		if len(removed) > 0 {
+			action := "UnTagResources"
+			request := map[string]interface{}{
+				"RegionId":     s.client.RegionId,
+				"ResourceId.1": d.Id(),
+				"ResourceType": string(resourceType),
 			}
-			request := vpc.CreateUnTagResourcesRequest()
-			request.ResourceId = &[]string{d.Id()}
-			request.ResourceType = string(resourceType)
-			request.TagKey = &tagKey
-			request.RegionId = s.client.RegionId
+			for i, key := range removed {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				raw, err := s.client.WithVpcClient(func(client *vpc.Client) (interface{}, error) {
-					return client.UnTagResources(request)
-				})
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
 					if IsThrottling(err) {
 						wait()
@@ -1120,26 +1208,31 @@ func (s *VpcService) setInstanceTags(d *schema.ResourceData, resourceType TagRes
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				addDebug(action, response, request)
 				return nil
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 		}
 
-		if len(create) > 0 {
-			request := vpc.CreateTagResourcesRequest()
-			request.ResourceId = &[]string{d.Id()}
-			request.Tag = &create
-			request.ResourceType = string(resourceType)
-			request.RegionId = s.client.RegionId
+		if len(added) > 0 {
+			action := "TagResources"
+			request := map[string]interface{}{
+				"RegionId":     s.client.RegionId,
+				"ResourceId.1": d.Id(),
+				"ResourceType": string(resourceType),
+			}
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value	", count)] = value
+				count++
+			}
 
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				raw, err := s.client.WithVpcClient(func(client *vpc.Client) (interface{}, error) {
-					return client.TagResources(request)
-				})
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
 					if IsThrottling(err) {
 						wait()
@@ -1148,11 +1241,11 @@ func (s *VpcService) setInstanceTags(d *schema.ResourceData, resourceType TagRes
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				addDebug(action, response, request)
 				return nil
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 		}
 
@@ -1183,36 +1276,4 @@ func (s *VpcService) ignoreTag(t vpc.TagResource) bool {
 		}
 	}
 	return false
-}
-
-func (s *VpcService) diffTags(oldTags, newTags []vpc.TagResourcesTag) ([]vpc.TagResourcesTag, []vpc.TagResourcesTag) {
-	// First, we're creating everything we have
-	create := make(map[string]interface{})
-	for _, t := range newTags {
-		create[t.Key] = t.Value
-	}
-
-	// Build the list of what to remove
-	var remove []vpc.TagResourcesTag
-	for _, t := range oldTags {
-		old, ok := create[t.Key]
-		if !ok || old != t.Value {
-			// Delete it!
-			remove = append(remove, t)
-		}
-	}
-
-	return s.tagsFromMap(create), remove
-}
-
-func (s *VpcService) tagsFromMap(m map[string]interface{}) []vpc.TagResourcesTag {
-	result := make([]vpc.TagResourcesTag, 0, len(m))
-	for k, v := range m {
-		result = append(result, vpc.TagResourcesTag{
-			Key:   k,
-			Value: v.(string),
-		})
-	}
-
-	return result
 }

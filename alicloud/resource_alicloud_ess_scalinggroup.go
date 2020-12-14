@@ -113,6 +113,11 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"group_deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -175,6 +180,7 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("on_demand_percentage_above_base_capacity", object.OnDemandPercentageAboveBaseCapacity)
 	d.Set("spot_instance_pools", object.SpotInstancePools)
 	d.Set("spot_instance_remedy", object.SpotInstanceRemedy)
+	d.Set("group_deletion_protection", object.GroupDeletionProtection)
 	var polices []string
 	if len(object.RemovalPolicies.RemovalPolicy) > 0 {
 		for _, v := range object.RemovalPolicies.RemovalPolicy {
@@ -264,6 +270,10 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		request.SpotInstanceRemedy = requests.NewBoolean(d.Get("spot_instance_remedy").(bool))
 	}
 
+	if d.HasChange("group_deletion_protection") {
+		request.GroupDeletionProtection = requests.NewBoolean(d.Get("group_deletion_protection").(bool))
+	}
+
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.ModifyScalingGroup(request)
 	})
@@ -281,6 +291,7 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	d.SetPartial("on_demand_percentage_above_base_capacity")
 	d.SetPartial("spot_instance_pools")
 	d.SetPartial("spot_instance_remedy")
+	d.SetPartial("group_deletion_protection")
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if d.HasChange("loadbalancer_ids") {
@@ -381,6 +392,10 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("spot_instance_remedy"); ok {
 		request.SpotInstanceRemedy = requests.NewBoolean(v.(bool))
+	}
+
+	if v, ok := d.GetOk("group_deletion_protection"); ok {
+		request.GroupDeletionProtection = requests.NewBoolean(v.(bool))
 	}
 
 	return request, nil

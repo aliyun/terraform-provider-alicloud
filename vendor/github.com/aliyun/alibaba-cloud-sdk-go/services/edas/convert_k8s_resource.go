@@ -21,7 +21,6 @@ import (
 )
 
 // ConvertK8sResource invokes the edas.ConvertK8sResource API synchronously
-// api document: https://help.aliyun.com/api/edas/convertk8sresource.html
 func (client *Client) ConvertK8sResource(request *ConvertK8sResourceRequest) (response *ConvertK8sResourceResponse, err error) {
 	response = CreateConvertK8sResourceResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ConvertK8sResource(request *ConvertK8sResourceRequest) (re
 }
 
 // ConvertK8sResourceWithChan invokes the edas.ConvertK8sResource API asynchronously
-// api document: https://help.aliyun.com/api/edas/convertk8sresource.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ConvertK8sResourceWithChan(request *ConvertK8sResourceRequest) (<-chan *ConvertK8sResourceResponse, <-chan error) {
 	responseChan := make(chan *ConvertK8sResourceResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ConvertK8sResourceWithChan(request *ConvertK8sResourceRequ
 }
 
 // ConvertK8sResourceWithCallback invokes the edas.ConvertK8sResource API asynchronously
-// api document: https://help.aliyun.com/api/edas/convertk8sresource.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ConvertK8sResourceWithCallback(request *ConvertK8sResourceRequest, callback func(response *ConvertK8sResourceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {

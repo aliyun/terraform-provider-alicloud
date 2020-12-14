@@ -89,7 +89,7 @@ func TestAccAlicloudOssBucketObject_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"server_side_encryption": "KMS",
-					"kms_key_id":             "423a0d8a-0c28-4899-be56-32217cb95e88",
+					"kms_key_id":             "${data.alicloud_kms_keys.enabled.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -128,7 +128,11 @@ func resourceOssBucketObjectConfigDependence(name string) string {
 	return fmt.Sprintf(`
 resource "alicloud_oss_bucket" "default" {
 	bucket = "%s"
-}`, name)
+}
+data "alicloud_kms_keys" "enabled" {
+	status = "Enabled"
+}
+`, name)
 }
 
 var ossBucketObjectBasicMap = map[string]string{

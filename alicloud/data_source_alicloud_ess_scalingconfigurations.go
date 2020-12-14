@@ -83,6 +83,10 @@ func dataSourceAlicloudEssScalingConfigurations() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"credit_specification": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"system_disk_category": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -177,6 +181,9 @@ func dataSourceAlicloudEssScalingConfigurationsRead(d *schema.ResourceData, meta
 	ids, okIds := d.GetOk("ids")
 	if okIds {
 		for _, i := range ids.([]interface{}) {
+			if i == nil {
+				continue
+			}
 			idsMap[i.(string)] = i.(string)
 		}
 	}
@@ -220,6 +227,7 @@ func scalingConfigurationsDescriptionAttribute(d *schema.ResourceData, scalingCo
 			"internet_charge_type":       scalingConfiguration.InternetChargeType,
 			"internet_max_bandwidth_in":  scalingConfiguration.InternetMaxBandwidthIn,
 			"internet_max_bandwidth_out": scalingConfiguration.InternetMaxBandwidthOut,
+			"credit_specification":       scalingConfiguration.CreditSpecification,
 			"system_disk_category":       scalingConfiguration.SystemDiskCategory,
 			"system_disk_size":           scalingConfiguration.SystemDiskSize,
 			"data_disks":                 essService.flattenDataDiskMappings(scalingConfiguration.DataDisks.DataDisk),

@@ -10,6 +10,8 @@ import (
 
 	"strconv"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -1336,30 +1338,6 @@ func (s *EcsService) DescribeImageShareByImageId(id string) (imageShare *ecs.Des
 	return resp, nil
 }
 
-func (s *EcsService) WaitForAutoProvisioningGroup(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-
-	for {
-		object, err := s.DescribeAutoProvisioningGroup(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-		if object.Status == string(status) {
-			return nil
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
-		}
-	}
-}
-
 func (s *EcsService) DescribeAutoProvisioningGroup(id string) (group ecs.AutoProvisioningGroup, err error) {
 	request := ecs.CreateDescribeAutoProvisioningGroupsRequest()
 	ids := []string{id}
@@ -1381,6 +1359,53 @@ func (s *EcsService) DescribeAutoProvisioningGroup(id string) (group ecs.AutoPro
 	}
 	err = WrapErrorf(Error(GetNotFoundMessage("AutoProvisioningGroup", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 	return
+}
+
+func (s *EcsService) ListTagResources(resourceId, resourceType string) (object interface{}, err error) {
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListTagResources"
+
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"ResourceId.1": resourceId,
+		"ResourceType": resourceType,
+	}
+	tags := make([]interface{}, 0)
+
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{Throttling}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			v, err := jsonpath.Get("$.TagResources.TagResource", response)
+			if err != nil {
+				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, resourceId, "$.TagResources.TagResource", response))
+			}
+			tags = append(tags, v.([]interface{})...)
+			nextToken, _ := jsonpath.Get("$.NextToken", response)
+			request["NextToken"] = nextToken
+			return nil
+		})
+		if err != nil {
+			err = WrapErrorf(err, DefaultErrorMsg, resourceId, action, AlibabaCloudSdkGoERROR)
+			return
+		}
+		if request["NextToken"].(string) == "" {
+			break
+		}
+	}
+
+	return tags, nil
 }
 
 func (s *EcsService) tagsToMap(tags []ecs.Tag) map[string]string {
@@ -1519,5 +1544,25 @@ func (s *EcsService) EcsDedicatedHostStateRefreshFunc(id string, failStates []st
 			}
 		}
 		return object, object.Status, nil
+	}
+}
+
+func (s *EcsService) WaitForAutoProvisioningGroup(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeAutoProvisioningGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AutoProvisioningGroupId, id, ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 }

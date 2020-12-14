@@ -388,12 +388,14 @@ resource "alicloud_vpc" "vpc01" {
 resource "alicloud_cen_instance_attachment" "default00" {
 	instance_id = "${alicloud_cen_instance.default.id}"
 	child_instance_id = "${alicloud_vpc.vpc00.id}"
+	child_instance_type = "VPC"
 	child_instance_region_id = "${var.child_region}"
 }
 
 resource "alicloud_cen_instance_attachment" "default01" {
 	instance_id = "${alicloud_cen_instance.default.id}"
 	child_instance_id = "${alicloud_vpc.vpc01.id}"
+	child_instance_type = "VPC"
 	child_instance_region_id = "${var.child_region}"
 }
 
@@ -443,12 +445,14 @@ resource "alicloud_vpc" "vpc01" {
 resource "alicloud_cen_instance_attachment" "default00" {
 	instance_id = "${alicloud_cen_instance.default.id}"
 	child_instance_id = "${alicloud_vpc.vpc00.id}"
+	child_instance_type = "VPC"
 	child_instance_region_id = "${var.vpc_region_00}"
 }
 
 resource "alicloud_cen_instance_attachment" "default01" {
 	instance_id = "${alicloud_cen_instance.default.id}"
 	child_instance_id = "${alicloud_vpc.vpc01.id}"
+	child_instance_type = "VPC"
 	child_instance_region_id = "${var.vpc_region_01}"
 }
 

@@ -21,7 +21,6 @@ import (
 )
 
 // ListIndexes invokes the dms_enterprise.ListIndexes API synchronously
-// api document: https://help.aliyun.com/api/dms-enterprise/listindexes.html
 func (client *Client) ListIndexes(request *ListIndexesRequest) (response *ListIndexesResponse, err error) {
 	response = CreateListIndexesResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ListIndexes(request *ListIndexesRequest) (response *ListIn
 }
 
 // ListIndexesWithChan invokes the dms_enterprise.ListIndexes API asynchronously
-// api document: https://help.aliyun.com/api/dms-enterprise/listindexes.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ListIndexesWithChan(request *ListIndexesRequest) (<-chan *ListIndexesResponse, <-chan error) {
 	responseChan := make(chan *ListIndexesResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ListIndexesWithChan(request *ListIndexesRequest) (<-chan *
 }
 
 // ListIndexesWithCallback invokes the dms_enterprise.ListIndexes API asynchronously
-// api document: https://help.aliyun.com/api/dms-enterprise/listindexes.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ListIndexesWithCallback(request *ListIndexesRequest, callback func(response *ListIndexesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -84,11 +79,11 @@ type ListIndexesRequest struct {
 // ListIndexesResponse is the response struct for api ListIndexes
 type ListIndexesResponse struct {
 	*responses.BaseResponse
-	RequestId    string    `json:"RequestId" xml:"RequestId"`
-	Success      bool      `json:"Success" xml:"Success"`
-	ErrorMessage string    `json:"ErrorMessage" xml:"ErrorMessage"`
-	ErrorCode    string    `json:"ErrorCode" xml:"ErrorCode"`
-	IndexList    IndexList `json:"IndexList" xml:"IndexList"`
+	RequestId    string                 `json:"RequestId" xml:"RequestId"`
+	Success      bool                   `json:"Success" xml:"Success"`
+	ErrorMessage string                 `json:"ErrorMessage" xml:"ErrorMessage"`
+	ErrorCode    string                 `json:"ErrorCode" xml:"ErrorCode"`
+	IndexList    IndexListInListIndexes `json:"IndexList" xml:"IndexList"`
 }
 
 // CreateListIndexesRequest creates a request to invoke ListIndexes API
@@ -97,6 +92,7 @@ func CreateListIndexesRequest() (request *ListIndexesRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("dms-enterprise", "2018-11-01", "ListIndexes", "dmsenterprise", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

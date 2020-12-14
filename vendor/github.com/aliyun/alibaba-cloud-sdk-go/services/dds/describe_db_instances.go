@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeDBInstances invokes the dds.DescribeDBInstances API synchronously
-// api document: https://help.aliyun.com/api/dds/describedbinstances.html
 func (client *Client) DescribeDBInstances(request *DescribeDBInstancesRequest) (response *DescribeDBInstancesResponse, err error) {
 	response = CreateDescribeDBInstancesResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeDBInstances(request *DescribeDBInstancesRequest) (
 }
 
 // DescribeDBInstancesWithChan invokes the dds.DescribeDBInstances API asynchronously
-// api document: https://help.aliyun.com/api/dds/describedbinstances.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDBInstancesWithChan(request *DescribeDBInstancesRequest) (<-chan *DescribeDBInstancesResponse, <-chan error) {
 	responseChan := make(chan *DescribeDBInstancesResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeDBInstancesWithChan(request *DescribeDBInstancesRe
 }
 
 // DescribeDBInstancesWithCallback invokes the dds.DescribeDBInstances API asynchronously
-// api document: https://help.aliyun.com/api/dds/describedbinstances.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDBInstancesWithCallback(request *DescribeDBInstancesRequest, callback func(response *DescribeDBInstancesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -93,6 +88,7 @@ type DescribeDBInstancesRequest struct {
 	ExpireTime            string                    `position:"Query" name:"ExpireTime"`
 	ResourceOwnerAccount  string                    `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount          string                    `position:"Query" name:"OwnerAccount"`
+	ConnectionDomain      string                    `position:"Query" name:"ConnectionDomain"`
 	OwnerId               requests.Integer          `position:"Query" name:"OwnerId"`
 	DBInstanceType        string                    `position:"Query" name:"DBInstanceType"`
 	DBInstanceClass       string                    `position:"Query" name:"DBInstanceClass"`

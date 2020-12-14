@@ -21,7 +21,6 @@ import (
 )
 
 // CreateAutoProvisioningGroup invokes the ecs.CreateAutoProvisioningGroup API synchronously
-// api document: https://help.aliyun.com/api/ecs/createautoprovisioninggroup.html
 func (client *Client) CreateAutoProvisioningGroup(request *CreateAutoProvisioningGroupRequest) (response *CreateAutoProvisioningGroupResponse, err error) {
 	response = CreateCreateAutoProvisioningGroupResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) CreateAutoProvisioningGroup(request *CreateAutoProvisionin
 }
 
 // CreateAutoProvisioningGroupWithChan invokes the ecs.CreateAutoProvisioningGroup API asynchronously
-// api document: https://help.aliyun.com/api/ecs/createautoprovisioninggroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateAutoProvisioningGroupWithChan(request *CreateAutoProvisioningGroupRequest) (<-chan *CreateAutoProvisioningGroupResponse, <-chan error) {
 	responseChan := make(chan *CreateAutoProvisioningGroupResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) CreateAutoProvisioningGroupWithChan(request *CreateAutoPro
 }
 
 // CreateAutoProvisioningGroupWithCallback invokes the ecs.CreateAutoProvisioningGroup API asynchronously
-// api document: https://help.aliyun.com/api/ecs/createautoprovisioninggroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateAutoProvisioningGroupWithCallback(request *CreateAutoProvisioningGroupRequest, callback func(response *CreateAutoProvisioningGroupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -124,7 +119,7 @@ func CreateCreateAutoProvisioningGroupRequest() (request *CreateAutoProvisioning
 	request = &CreateAutoProvisioningGroupRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Ecs", "2014-05-26", "CreateAutoProvisioningGroup", "ecs", "openAPI")
+	request.InitWithApiInfo("Ecs", "2014-05-26", "CreateAutoProvisioningGroup", "", "")
 	request.Method = requests.POST
 	return
 }

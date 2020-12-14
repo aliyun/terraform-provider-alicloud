@@ -17,23 +17,22 @@ Provides a Private Zone resource.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_pvtz_zone" "foo" {
-  name = "foo.test.com"
+  zone_name = "foo.test.com"
 }
 ```
 ## Argument Reference
 
 The following arguments are supported:
 
-* `name` - (Optional, ForceNew) The name of the Private Zone.
+* `name` - (Optional, ForceNew, Deprecated in v1.107.0+) The name of the Private Zone.
+* `zone_name` - (Optional, ForceNew) The zone_name of the Private Zone.
 * `remark` - (Optional) The remark of the Private Zone.
 * `proxy_pattern` - (Optional, Available in 1.69.0+) The recursive DNS proxy. Valid values:
     - ZONE: indicates that the recursive DNS proxy is disabled.
     - RECORD: indicates that the recursive DNS proxy is enabled.
-    
-    Default to "ZONE"
-
+    Default to "ZONE".
 * `user_client_ip` - (Optional, Available in 1.69.0+) The IP address of the client.
 * `lang` - (Optional, Available in 1.69.0+) The language. Valid values: "zh", "en", "jp".
 * `resource_group_id` - (Optional, ForceNew, Available in v1.86.0+) The Id of resource group which the Private Zone belongs.
@@ -44,6 +43,7 @@ The following attributes are exported:
 
 * `id` - The ID of the Private Zone.
 * `record_count` - The count of the Private Zone Record.
+* `is_ptr` - Whether the Private Zone is ptr.
 
 ## Import
 

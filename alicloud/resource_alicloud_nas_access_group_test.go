@@ -36,7 +36,7 @@ func testSweepNasAccessGroup(region string) error {
 		"tf_testAcc",
 	}
 
-	var ag []nas.DescribeAccessGroupsAccessGroup1
+	var ag []nas.AccessGroup
 	req := nas.CreateDescribeAccessGroupsRequest()
 	req.RegionId = client.RegionId
 	req.PageSize = requests.NewInteger(PageSizeLarge)
@@ -94,7 +94,7 @@ func testSweepNasAccessGroup(region string) error {
 }
 
 func TestAccAlicloudNas_AccessGroup_Upgrade(t *testing.T) {
-	var v nas.DescribeAccessGroupsAccessGroup1
+	var v nas.AccessGroup
 	rand := acctest.RandIntRange(10000, 999999)
 	resourceID := "alicloud_nas_access_group.default"
 	ra := resourceAttrInit(resourceID, map[string]string{})
@@ -147,7 +147,7 @@ func TestAccAlicloudNas_AccessGroup_Upgrade(t *testing.T) {
 }
 
 func TestAccAlicloudNas_AccessGroup_update(t *testing.T) {
-	var v nas.DescribeAccessGroupsAccessGroup1
+	var v nas.AccessGroup
 	rand := acctest.RandIntRange(10000, 999999)
 	resourceID := "alicloud_nas_access_group.default"
 	ra := resourceAttrInit(resourceID, map[string]string{})
@@ -198,7 +198,7 @@ func TestAccAlicloudNas_AccessGroup_update(t *testing.T) {
 }
 
 func TestAccAlicloudNas_AccessGroup_Classicupdate(t *testing.T) {
-	var v nas.DescribeAccessGroupsAccessGroup1
+	var v nas.AccessGroup
 	rand := acctest.RandIntRange(10000, 999999)
 	resourceID := "alicloud_nas_access_group.default"
 	ra := resourceAttrInit(resourceID, map[string]string{})
@@ -249,7 +249,7 @@ func TestAccAlicloudNas_AccessGroup_Classicupdate(t *testing.T) {
 }
 
 func TestAccAlicloudNas_AccessGroup_multi(t *testing.T) {
-	var v nas.DescribeAccessGroupsAccessGroup1
+	var v nas.AccessGroup
 	rand1 := acctest.RandIntRange(10000, 499999)
 	rand2 := acctest.RandIntRange(50000, 499999)
 	resourceID := "alicloud_nas_access_group.default.9"
@@ -292,7 +292,7 @@ func TestAccAlicloudNas_AccessGroup_multi(t *testing.T) {
 	})
 }
 
-func testAccCheckAccessGroupExists(n string, nas *nas.DescribeAccessGroupsAccessGroup1) resource.TestCheckFunc {
+func testAccCheckAccessGroupExists(n string, nas *nas.AccessGroup) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

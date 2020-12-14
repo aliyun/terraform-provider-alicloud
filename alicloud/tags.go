@@ -56,6 +56,59 @@ func tagsSchemaWithIgnore() *schema.Schema {
 	}
 }
 
+func parsingTags(d *schema.ResourceData) (map[string]interface{}, []string) {
+	oraw, nraw := d.GetChange("tags")
+	removedTags := oraw.(map[string]interface{})
+	addedTags := nraw.(map[string]interface{})
+	// Build the list of what to remove
+	removed := make([]string, 0)
+	for key, value := range removedTags {
+		old, ok := addedTags[key]
+		if !ok || old != value {
+			// Delete it!
+			removed = append(removed, key)
+		}
+	}
+
+	return addedTags, removed
+}
+
+func tagsToMap(tags interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	if tags == nil || len(tags.([]interface{})) < 1 {
+		return result
+	}
+	for _, tag := range tags.([]interface{}) {
+		t := tag.(map[string]interface{})
+		var tagKey string
+		var tagValue interface{}
+		if v, ok := t["TagKey"]; ok {
+			tagKey = v.(string)
+			tagValue = t["TagValue"]
+		} else if v, ok := t["Key"]; ok {
+			tagKey = v.(string)
+			tagValue = t["Value"]
+		}
+		if !tagIgnored(tagKey, tagValue) {
+			result[tagKey] = tagValue
+		}
+	}
+	return result
+}
+
+func tagIgnored(tagKey string, tagValue interface{}) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, tagKey)
+		ok, _ := regexp.MatchString(v, tagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", tagKey, tagValue)
+			return true
+		}
+	}
+	return false
+}
+
 // setTags is a helper to set the tags for a resource. It expects the
 // tags field to be named "tags"
 func setTags(client *connectivity.AliyunClient, resourceType TagResourceType, d *schema.ResourceData) error {
@@ -341,7 +394,7 @@ func gpdbTagsFromMap(m map[string]interface{}) []gpdb.TagResourcesTag {
 	return result
 }
 
-func tagsToMap(tags []ecs.Tag) map[string]string {
+func ecsTagsToMap(tags []ecs.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		if !ecsTagIgnored(t) {
@@ -355,7 +408,9 @@ func tagsToMap(tags []ecs.Tag) map[string]string {
 func elasticsearchTagsToMap(tags []elasticsearch.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
-		result[t.TagKey] = t.TagValue
+		if !elasticsearchTagIgnored(t.TagKey, t.TagValue) {
+			result[t.TagKey] = t.TagValue
+		}
 	}
 
 	return result
@@ -504,6 +559,32 @@ func slbTagIgnored(t slb.TagResource) bool {
 		ok, _ := regexp.MatchString(v, t.TagKey)
 		if ok {
 			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
+}
+
+func elasticsearchTagIgnored(tagKey, tagValue string) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, tagKey)
+		ok, _ := regexp.MatchString(v, tagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", tagKey, tagValue)
+			return true
+		}
+	}
+	return false
+}
+
+func ignoredTags(tagKey, tagValue string) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, tagKey)
+		ok, _ := regexp.MatchString(v, tagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", tagKey, tagValue)
 			return true
 		}
 	}

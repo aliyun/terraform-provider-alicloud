@@ -21,7 +21,6 @@ import (
 )
 
 // GetDatabase invokes the dms_enterprise.GetDatabase API synchronously
-// api document: https://help.aliyun.com/api/dms-enterprise/getdatabase.html
 func (client *Client) GetDatabase(request *GetDatabaseRequest) (response *GetDatabaseResponse, err error) {
 	response = CreateGetDatabaseResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) GetDatabase(request *GetDatabaseRequest) (response *GetDat
 }
 
 // GetDatabaseWithChan invokes the dms_enterprise.GetDatabase API asynchronously
-// api document: https://help.aliyun.com/api/dms-enterprise/getdatabase.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) GetDatabaseWithChan(request *GetDatabaseRequest) (<-chan *GetDatabaseResponse, <-chan error) {
 	responseChan := make(chan *GetDatabaseResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) GetDatabaseWithChan(request *GetDatabaseRequest) (<-chan *
 }
 
 // GetDatabaseWithCallback invokes the dms_enterprise.GetDatabase API asynchronously
-// api document: https://help.aliyun.com/api/dms-enterprise/getdatabase.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) GetDatabaseWithCallback(request *GetDatabaseRequest, callback func(response *GetDatabaseResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -99,6 +94,7 @@ func CreateGetDatabaseRequest() (request *GetDatabaseRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("dms-enterprise", "2018-11-01", "GetDatabase", "dmsenterprise", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

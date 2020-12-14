@@ -26,6 +26,12 @@ func dataSourceAlicloudAdbClusters() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Preparing", "Creating", "Restoring", "Running", "Deleting", "ClassChanging", "NetAddressCreating", "NetAddressDeleting"}, false),
+			},
 			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
@@ -118,6 +124,7 @@ func dataSourceAlicloudAdbClustersRead(d *schema.ResourceData, meta interface{})
 	request.RegionId = client.RegionId
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
+	request.DBClusterStatus = d.Get("status").(string)
 
 	var dbi []adb.DBClusterInDescribeDBClusters
 
@@ -134,6 +141,9 @@ func dataSourceAlicloudAdbClustersRead(d *schema.ResourceData, meta interface{})
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}

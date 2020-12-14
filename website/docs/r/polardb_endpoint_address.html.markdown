@@ -16,7 +16,7 @@ Provides a PolarDB endpoint address resource to allocate an Internet endpoint ad
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "PolarDB"
 }
@@ -68,7 +68,7 @@ The following arguments are supported:
 
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster that can run database.
 * `db_endpoint_id` - (Required, ForceNew) The Id of endpoint that can run database.
-* `connection_prefix` - (Optional) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 30 characters. Default to <db_endpoint_id> + 'tf'.
+* `connection_prefix` - (Optional) Prefix of the specified endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter.
 * `net_type` - (Optional, ForceNew) Internet connection net type. Valid value: `Public`. Default to `Public`. Currently supported only `Public`.
 
 ## Attributes Reference

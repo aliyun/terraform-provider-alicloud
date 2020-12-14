@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -40,43 +41,57 @@ func testSweepApiGatewayGroup(region string) error {
 	}
 
 	req := cloudapi.CreateDescribeApiGroupsRequest()
-	raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-		return cloudApiClient.DescribeApiGroups(req)
-	})
-	if err != nil {
-		log.Printf("[ERROR] Describe Api Groups: %s", err)
-		return nil
-	}
-	apiGroups, _ := raw.(*cloudapi.DescribeApiGroupsResponse)
-
+	req.PageNumber = requests.NewInteger(1)
+	req.PageSize = requests.NewInteger(PageSizeLarge)
 	sweeped := false
 
-	for _, v := range apiGroups.ApiGroupAttributes.ApiGroupAttribute {
-		name := v.GroupName
-		id := v.GroupId
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping api group: %s", name)
-			continue
-		}
-		sweeped = true
-
-		log.Printf("[INFO] Deleting Api Group: %s", name)
-
-		req := cloudapi.CreateDeleteApiGroupRequest()
-		req.GroupId = id
-		_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
-			return cloudApiClient.DeleteApiGroup(req)
+	for {
+		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+			return cloudApiClient.DescribeApiGroups(req)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Api Group (%s): %s", name, err)
+			log.Printf("[ERROR] Describe Api Groups: %s", err)
+			return nil
 		}
+		response, _ := raw.(*cloudapi.DescribeApiGroupsResponse)
+
+		for _, v := range response.ApiGroupAttributes.ApiGroupAttribute {
+			name := v.GroupName
+			id := v.GroupId
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping api group: %s", name)
+				continue
+			}
+			sweeped = true
+
+			log.Printf("[INFO] Deleting Api Group: %s", name)
+
+			req := cloudapi.CreateDeleteApiGroupRequest()
+			req.GroupId = id
+			_, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+				return cloudApiClient.DeleteApiGroup(req)
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Api Group (%s): %s", name, err)
+			}
+		}
+
+		if len(response.ApiGroupAttributes.ApiGroupAttribute) < PageSizeLarge {
+			break
+		}
+
+		page, err := getNextpageNumber(req.PageNumber)
+		if err != nil {
+			return WrapError(err)
+		}
+		req.PageNumber = page
 	}
 	if sweeped {
 		time.Sleep(5 * time.Second)

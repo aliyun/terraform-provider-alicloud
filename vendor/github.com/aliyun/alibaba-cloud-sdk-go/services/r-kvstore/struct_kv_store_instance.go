@@ -40,7 +40,7 @@ type KVStoreInstance struct {
 	PrivateIp           string                  `json:"PrivateIp" xml:"PrivateIp"`
 	CreateTime          string                  `json:"CreateTime" xml:"CreateTime"`
 	EndTime             string                  `json:"EndTime" xml:"EndTime"`
-	HasRenewChangeOrder string                  `json:"HasRenewChangeOrder" xml:"HasRenewChangeOrder"`
+	HasRenewChangeOrder bool                    `json:"HasRenewChangeOrder" xml:"HasRenewChangeOrder"`
 	IsRds               bool                    `json:"IsRds" xml:"IsRds"`
 	InstanceType        string                  `json:"InstanceType" xml:"InstanceType"`
 	ArchitectureType    string                  `json:"ArchitectureType" xml:"ArchitectureType"`
@@ -51,5 +51,7 @@ type KVStoreInstance struct {
 	ConnectionMode      string                  `json:"ConnectionMode" xml:"ConnectionMode"`
 	VpcCloudInstanceId  string                  `json:"VpcCloudInstanceId" xml:"VpcCloudInstanceId"`
 	ResourceGroupId     string                  `json:"ResourceGroupId" xml:"ResourceGroupId"`
+	ShardCount          int                     `json:"ShardCount" xml:"ShardCount"`
+	ProxyCount          int                     `json:"ProxyCount" xml:"ProxyCount"`
 	Tags                TagsInDescribeInstances `json:"Tags" xml:"Tags"`
 }

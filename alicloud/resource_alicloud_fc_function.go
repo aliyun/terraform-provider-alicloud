@@ -107,6 +107,50 @@ func resourceAlicloudFCFunction() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"initializer": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"initialization_timeout": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  3,
+			},
+			"instance_concurrency": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  1,
+			},
+			"ca_port": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"instance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "e1",
+			},
+			"custom_container_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"image": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"command": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"args": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -128,13 +172,17 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 		ServiceName: StringPointer(serviceName),
 	}
 	object := fc.FunctionCreateObject{
-		FunctionName: StringPointer(name),
-		Description:  StringPointer(d.Get("description").(string)),
-		Runtime:      StringPointer(d.Get("runtime").(string)),
-		Handler:      StringPointer(d.Get("handler").(string)),
-		Timeout:      Int32Pointer(int32(d.Get("timeout").(int))),
-		MemorySize:   Int32Pointer(int32(d.Get("memory_size").(int))),
+		FunctionName:          StringPointer(name),
+		Description:           StringPointer(d.Get("description").(string)),
+		Runtime:               StringPointer(d.Get("runtime").(string)),
+		Handler:               StringPointer(d.Get("handler").(string)),
+		Timeout:               Int32Pointer(int32(d.Get("timeout").(int))),
+		MemorySize:            Int32Pointer(int32(d.Get("memory_size").(int))),
+		Initializer:           StringPointer(d.Get("initializer").(string)),
+		InitializationTimeout: Int32Pointer(int32(d.Get("initialization_timeout").(int))),
+		InstanceType:          StringPointer(d.Get("instance_type").(string)),
 	}
+	// Set function environment variables.
 	if variables := d.Get("environment_variables").(map[string]interface{}); len(variables) > 0 {
 		byteVar, err := json.Marshal(variables)
 		if err != nil {
@@ -145,11 +193,29 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 	}
-	code, err := getFunctionCode(d)
-	if err != nil {
-		return WrapError(err)
+	if strings.EqualFold(*object.Runtime, "custom-container") {
+		// Set custom container config.
+		cfg, err := parseCustomContainerConfig(d)
+		if err != nil {
+			return WrapError(err)
+		}
+		object.CustomContainerConfig = cfg
+	} else {
+		// Set function code.
+		code, err := getFunctionCode(d)
+		if err != nil {
+			return WrapError(err)
+		}
+		object.Code = code
 	}
-	object.Code = code
+	// Set CA port if the runtime is custom runtime or custom container.
+	if strings.EqualFold(*object.Runtime, "custom") || strings.EqualFold(*object.Runtime, "custom-container") {
+		object.CAPort = Int32Pointer(int32(d.Get("ca_port").(int)))
+	}
+	// Disable instance concurrency for python runtime.
+	if !strings.EqualFold(*object.Runtime, "python2.7") && !strings.EqualFold(*object.Runtime, "python3") {
+		object.InstanceConcurrency = Int32Pointer(int32(d.Get("instance_concurrency").(int)))
+	}
 	request.FunctionCreateObject = object
 
 	var function *fc.CreateFunctionOutput
@@ -210,6 +276,22 @@ func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("timeout", object.Timeout)
 	d.Set("last_modified", object.LastModifiedTime)
 	d.Set("environment_variables", object.EnvironmentVariables)
+	d.Set("initializer", object.Initializer)
+	d.Set("initialization_timeout", object.InitializationTimeout)
+	d.Set("instance_concurrency", object.InstanceConcurrency)
+	d.Set("instance_type", object.InstanceType)
+	d.Set("ca_port", object.CAPort)
+	var customContainerConfig []map[string]interface{}
+	if object.CustomContainerConfig != nil {
+		customContainerConfig = append(customContainerConfig, map[string]interface{}{
+			"image":   object.CustomContainerConfig.Image,
+			"command": object.CustomContainerConfig.Command,
+			"args":    object.CustomContainerConfig.Args,
+		})
+	}
+	if err := d.Set("custom_container_config", customContainerConfig); err != nil {
+		return WrapError(err)
+	}
 
 	return nil
 }
@@ -239,9 +321,10 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		request.Timeout = Int32Pointer(int32(d.Get("timeout").(int)))
 	}
+	runtime := StringPointer(d.Get("runtime").(string))
 	if d.HasChange("runtime") {
 		update = true
-		request.Runtime = StringPointer(d.Get("runtime").(string))
+		request.Runtime = runtime
 	}
 	if d.HasChange("environment_variables") {
 		update = true
@@ -254,16 +337,46 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 	}
+	if d.HasChange("initializer") {
+		update = true
+		request.Initializer = StringPointer(d.Get("initializer").(string))
+	}
+	if d.HasChange("initialization_timeout") {
+		update = true
+		request.InitializationTimeout = Int32Pointer(int32(d.Get("initialization_timeout").(int)))
+	}
+	if d.HasChange("instance_concurrency") {
+		update = true
+		request.InstanceConcurrency = Int32Pointer(int32(d.Get("instance_concurrency").(int)))
+	}
+	if d.HasChange("instance_type") {
+		update = true
+		request.InstanceType = StringPointer(d.Get("instance_type").(string))
+	}
+	if d.HasChange("ca_port") {
+		update = true
+		request.CAPort = Int32Pointer(int32(d.Get("ca_port").(int)))
+	}
+	if d.HasChange("custom_container_config") {
+		update = true
+		config, err := parseCustomContainerConfig(d)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.CustomContainerConfig = config
+	}
 
 	if update {
 		split := strings.Split(d.Id(), COLON_SEPARATED)
 		request.ServiceName = StringPointer(split[0])
 		request.FunctionName = StringPointer(split[1])
-		code, err := getFunctionCode(d)
-		if err != nil {
-			return WrapError(err)
+		if !strings.EqualFold(*runtime, "custom-container") {
+			code, err := getFunctionCode(d)
+			if err != nil {
+				return WrapError(err)
+			}
+			request.Code = code
 		}
-		request.Code = code
 		var requestInfo *fc.Client
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			requestInfo = fcClient
@@ -321,4 +434,19 @@ func getFunctionCode(d *schema.ResourceData) (*fc.Code, error) {
 		code.WithOSSBucketName(bucket.(string)).WithOSSObjectName(key.(string))
 	}
 	return code, nil
+}
+
+// The first return value is nil when the "custom_container_config" is not been set.
+func parseCustomContainerConfig(d *schema.ResourceData) (config *fc.CustomContainerConfig, err error) {
+	c := fc.NewCustomContainerConfig()
+	if v, ok := d.GetOk("custom_container_config"); ok {
+		config, ok := v.([]interface{})[0].(map[string]interface{})
+		if ok {
+			return c.WithImage(config["image"].(string)).WithCommand(config["command"].(string)).WithArgs(config["args"].(string)), nil
+		} else {
+			return nil, Error("Failed to parse custom_container_config")
+		}
+	}
+	// The "custom_container_config" has not been set.
+	return nil, nil
 }

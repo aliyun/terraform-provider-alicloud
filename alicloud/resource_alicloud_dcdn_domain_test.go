@@ -79,7 +79,7 @@ func testSweepDcdnDomain(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDCDNDomain_basic(t *testing.T) {
+func TestAccAlicloudDcdnDomain_basic(t *testing.T) {
 	var v dcdn.DomainDetail
 	resourceId := "alicloud_dcdn_domain.default"
 	ra := resourceAttrInit(resourceId, DcdnDomainMap)

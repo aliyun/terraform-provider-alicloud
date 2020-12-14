@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -577,7 +579,17 @@ func resourceAliyunApigatewayApiDelete(d *schema.ResourceData, meta interface{})
 	request.GroupId = parts[0]
 
 	for _, stageName := range ApiGatewayStageNames {
-		err := cloudApiService.AbolishApi(d.Id(), stageName)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			err := cloudApiService.AbolishApi(d.Id(), stageName)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ConcurrencyLockTimeout"}) {
+					time.Sleep(3 * time.Second)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
 		if err != nil {
 			return WrapError(err)
 		}

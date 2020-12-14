@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -255,6 +256,33 @@ func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 	return true
 }
 
+func redisPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return strings.ToLower(d.Get("payment_type").(string)) == "postpaid"
+}
+
+func redisPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if strings.ToLower(d.Get("payment_type").(string)) == "prepaid" && d.Get("auto_renew").(bool) {
+		return false
+	}
+	return true
+}
+
+func redisSecurityGroupIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	oldArray := strings.Split(old, ",")
+	newArray := strings.Split(new, ",")
+	if len(oldArray) != len(newArray) {
+		return false
+	}
+	sort.Strings(oldArray)
+	sort.Strings(newArray)
+	for i := range newArray {
+		if newArray[i] != oldArray[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func elasticsearchEnablePublicDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return d.Get("enable_public").(bool) == false
 }
@@ -313,6 +341,13 @@ func ecsSpotStrategyDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 
 func ecsSpotPriceLimitDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if d.Get("instance_charge_type").(string) == "PostPaid" && d.Get("spot_strategy").(string) == "SpotWithPriceLimit" {
+		return false
+	}
+	return true
+}
+
+func ecsSystemDiskPerformanceLevelSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("system_disk_category").(string) == string(DiskCloudESSD) {
 		return false
 	}
 	return true

@@ -80,11 +80,9 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_disk_category": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  DiskCloudEfficiency,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          DiskCloudEfficiency,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_data_disk_size": {
@@ -95,10 +93,8 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
 			},
 			"worker_data_disk_category": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(DiskCloudEfficiency), string(DiskCloudSSD)}, false),
+				Type:             schema.TypeString,
+				Optional:         true,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"worker_instance_charge_type": {
@@ -255,9 +251,8 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
 			"image_id": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: imageIdSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"install_cloud_monitor": {
 				Type:             schema.TypeBool,
@@ -310,6 +305,99 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Default:          true,
 				DiffSuppressFunc: csForceUpdateSuppressFunc,
 			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"timezone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"os_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "Linux",
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Windows", "Linux"}, false),
+			},
+			"platform": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "CentOS",
+				ForceNew: true,
+			},
+			"node_port_range": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "30000-32767",
+				ForceNew: true,
+			},
+			"cluster_domain": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "cluster.local",
+				ForceNew:    true,
+				Description: "cluster local domain ",
+			},
+			"runtime": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "docker",
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "19.03.5",
+						},
+					},
+				},
+			},
+			"taints": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"effect": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"NoSchedule", "NoExecute", "PreferNoSchedule"}, false),
+						},
+					},
+				},
+			},
+			"rds_instances": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"custom_san": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"encryption_provider_key": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "disk encryption key, only in ack-pro",
+			},
 			// computed parameters
 			"kube_config": {
 				Type:     schema.TypeString,
@@ -326,6 +414,26 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"cluster_ca_cert": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"certificate_authority": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cluster_cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"client_key": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
 			},
 			"connections": {
 				Type:     schema.TypeMap,
@@ -500,6 +608,22 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				ForceNew: true,
+			},
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"cluster_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ack.standard", "ack.pro.small"}, false),
 			},
 		},
 	}

@@ -152,9 +152,11 @@ func resourceAlicloudKeyPairRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("key_name", keyPair.KeyPairName)
 	d.Set("resource_group_id", keyPair.ResourceGroupId)
 	d.Set("finger_print", keyPair.KeyPairFingerPrint)
-	tags := keyPair.Tags.Tag
-	if len(tags) > 0 {
-		err = d.Set("tags", ecsService.tagsToMap(tags))
+	tags, err := ecsService.ListTagResources(d.Id(), "keypair")
+	if err != nil {
+		return WrapError(err)
+	} else {
+		d.Set("tags", tagsToMap(tags))
 	}
 	return nil
 }

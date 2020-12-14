@@ -32,6 +32,12 @@ func dataSourceAlicloudCenInstances() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Active", "Creating", "Deleting"}, false),
+			},
 			"tags": tagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
@@ -55,11 +61,15 @@ func dataSourceAlicloudCenInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"description": {
+						"cen_instance_name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"description": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -86,6 +96,18 @@ func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 
 	request := cbn.CreateDescribeCensRequest()
+	if v, ok := d.GetOk("tags"); ok {
+		tags := make([]cbn.DescribeCensTag, len(v.(map[string]interface{})))
+		i := 0
+		for key, value := range v.(map[string]interface{}) {
+			tags[i] = cbn.DescribeCensTag{
+				Key:   key,
+				Value: value.(string),
+			}
+			i++
+		}
+		request.Tag = &tags
+	}
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	var objects []cbn.Cen
@@ -100,13 +122,14 @@ func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	tagsMap := make(map[string]interface{})
-	if v, ok := d.GetOk("tags"); ok && len(v.(map[string]interface{})) > 0 {
-		tagsMap = v.(map[string]interface{})
-	}
+	status, statusOk := d.GetOk("status")
+	var response *cbn.DescribeCensResponse
 	for {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DescribeCens(request)
@@ -115,7 +138,7 @@ func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw)
-		response, _ := raw.(*cbn.DescribeCensResponse)
+		response, _ = raw.(*cbn.DescribeCensResponse)
 
 		for _, item := range response.Cens.Cen {
 			if nameRegex != nil {
@@ -128,20 +151,8 @@ func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}
 					continue
 				}
 			}
-			if len(tagsMap) > 0 {
-				if len(item.Tags.Tag) != len(tagsMap) {
-					continue
-				}
-				match := true
-				for _, tag := range item.Tags.Tag {
-					if v, ok := tagsMap[tag.Key]; !ok || v.(string) != tag.Value {
-						match = false
-						break
-					}
-				}
-				if !match {
-					continue
-				}
+			if statusOk && status != "" && status != item.Status {
+				continue
 			}
 			objects = append(objects, item)
 		}
@@ -155,37 +166,39 @@ func dataSourceAlicloudCenInstancesRead(d *schema.ResourceData, meta interface{}
 		}
 		request.PageNumber = page
 	}
-	ids := make([]string, len(objects))
-	names := make([]string, len(objects))
-	s := make([]map[string]interface{}, len(objects))
-
-	for i, object := range objects {
+	ids := make([]string, 0)
+	names := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
 			"cen_bandwidth_package_ids": object.CenBandwidthPackageIds.CenBandwidthPackageId,
 			"id":                        object.CenId,
 			"cen_id":                    object.CenId,
-			"description":               object.Description,
+			"cen_instance_name":         object.Name,
 			"name":                      object.Name,
+			"description":               object.Description,
 			"protection_level":          object.ProtectionLevel,
 			"status":                    object.Status,
 		}
+		ids = append(ids, object.CenId)
 		tags := make(map[string]string)
 		for _, t := range object.Tags.Tag {
 			tags[t.Key] = t.Value
 		}
 		mapping["tags"] = tags
-		ids[i] = object.CenId
-		names[i] = object.Name
-		s[i] = mapping
+		names = append(names, object.Name)
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
+
 	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
+
 	if err := d.Set("instances", s); err != nil {
 		return WrapError(err)
 	}

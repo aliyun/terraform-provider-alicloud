@@ -163,7 +163,7 @@ func resourceAliyunNetworkInterfaceRead(d *schema.ResourceData, meta interface{}
 	}
 
 	if len(tags) > 0 {
-		d.Set("tags", tagsToMap(tags))
+		d.Set("tags", ecsTagsToMap(tags))
 	}
 
 	return nil

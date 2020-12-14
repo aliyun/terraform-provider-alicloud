@@ -223,13 +223,17 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 	if !d.IsNewResource() && d.HasChange("scope") {
 		request := dcdn.CreateModifyDCdnDomainSchdmByPropertyRequest()
 		request.DomainName = d.Id()
-		request.Property = d.Get("scope").(string)
+		request.Property = fmt.Sprintf(`{"coverage":"%s"}`, d.Get("scope").(string))
 		raw, err := client.WithDcdnClient(func(dcdnClient *dcdn.Client) (interface{}, error) {
 			return dcdnClient.ModifyDCdnDomainSchdmByProperty(request)
 		})
 		addDebug(request.GetActionName(), raw)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, dcdnService.DcdnDomainStateRefreshFunc(d.Id(), []string{"configure_failed"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("scope")
 	}
@@ -246,12 +250,12 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if !d.IsNewResource() && d.HasChange("sources") {
 		update = true
+		sources, err := dcdnService.convertSourcesToString(d.Get("sources").(*schema.Set).List())
+		if err != nil {
+			return WrapError(err)
+		}
+		request.Sources = sources
 	}
-	sources, err := dcdnService.convertSourcesToString(d.Get("sources").(*schema.Set).List())
-	if err != nil {
-		return WrapError(err)
-	}
-	request.Sources = sources
 	if !d.IsNewResource() && d.HasChange("top_level_domain") {
 		update = true
 		request.TopLevelDomain = d.Get("top_level_domain").(string)
@@ -263,6 +267,10 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		addDebug(request.GetActionName(), raw)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, dcdnService.DcdnDomainStateRefreshFunc(d.Id(), []string{"configure_failed"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("resource_group_id")
 		d.SetPartial("security_token")

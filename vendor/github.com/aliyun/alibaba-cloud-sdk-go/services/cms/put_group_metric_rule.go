@@ -21,7 +21,6 @@ import (
 )
 
 // PutGroupMetricRule invokes the cms.PutGroupMetricRule API synchronously
-// api document: https://help.aliyun.com/api/cms/putgroupmetricrule.html
 func (client *Client) PutGroupMetricRule(request *PutGroupMetricRuleRequest) (response *PutGroupMetricRuleResponse, err error) {
 	response = CreatePutGroupMetricRuleResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) PutGroupMetricRule(request *PutGroupMetricRuleRequest) (re
 }
 
 // PutGroupMetricRuleWithChan invokes the cms.PutGroupMetricRule API asynchronously
-// api document: https://help.aliyun.com/api/cms/putgroupmetricrule.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) PutGroupMetricRuleWithChan(request *PutGroupMetricRuleRequest) (<-chan *PutGroupMetricRuleResponse, <-chan error) {
 	responseChan := make(chan *PutGroupMetricRuleResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) PutGroupMetricRuleWithChan(request *PutGroupMetricRuleRequ
 }
 
 // PutGroupMetricRuleWithCallback invokes the cms.PutGroupMetricRule API asynchronously
-// api document: https://help.aliyun.com/api/cms/putgroupmetricrule.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) PutGroupMetricRuleWithCallback(request *PutGroupMetricRuleRequest, callback func(response *PutGroupMetricRuleResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -89,6 +84,7 @@ type PutGroupMetricRuleRequest struct {
 	EscalationsWarnTimes                  requests.Integer `position:"Query" name:"Escalations.Warn.Times"`
 	Period                                string           `position:"Query" name:"Period"`
 	EscalationsWarnThreshold              string           `position:"Query" name:"Escalations.Warn.Threshold"`
+	ContactGroups                         string           `position:"Query" name:"ContactGroups"`
 	EscalationsCriticalStatistics         string           `position:"Query" name:"Escalations.Critical.Statistics"`
 	GroupId                               string           `position:"Query" name:"GroupId"`
 	EscalationsInfoTimes                  requests.Integer `position:"Query" name:"Escalations.Info.Times"`

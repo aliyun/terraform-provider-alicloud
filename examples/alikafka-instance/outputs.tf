@@ -62,3 +62,8 @@ output "zone_id" {
   description = "The Zone to launch the kafka instance."
   value       = "${alicloud_alikafka_instance.default.zone_id}"
 }
+
+output "end_point" {
+  description = "The EndPoint to access the kafka instance."
+  value       = "${alicloud_alikafka_instance.default.end_point}"
+}

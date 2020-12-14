@@ -3,6 +3,8 @@ package alicloud
 import (
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
@@ -37,6 +39,12 @@ func resourceAlicloudRamRole() *schema.Resource {
 				Set:           schema.HashString,
 				ConflictsWith: []string{"document"},
 				Deprecated:    "Field 'ram_users' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
+			},
+			"max_session_duration": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      3600,
+				ValidateFunc: validation.IntBetween(3600, 43200),
 			},
 			"services": {
 				Type:     schema.TypeSet,
@@ -134,6 +142,10 @@ func resourceAlicloudRamRoleUpdate(d *schema.ResourceData, meta interface{}) err
 		}
 		request.NewAssumeRolePolicyDocument = document
 	}
+	if d.HasChange("max_session_duration") {
+		attributeUpdate = true
+		request.NewMaxSessionDuration = requests.NewInteger(d.Get("max_session_duration").(int))
+	}
 
 	if attributeUpdate {
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -175,6 +187,7 @@ func resourceAlicloudRamRoleRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("description", role.Description)
 	d.Set("version", rolePolicy.Version)
 	d.Set("document", role.AssumeRolePolicyDocument)
+	d.Set("max_session_duration", role.MaxSessionDuration)
 	return nil
 }
 
@@ -268,6 +281,10 @@ func buildAlicloudRamRoleCreateArgs(d *schema.ResourceData, meta interface{}) (*
 
 	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
 		request.Description = v.(string)
+	}
+
+	if v, ok := d.GetOk("max_session_duration"); ok {
+		request.MaxSessionDuration = requests.NewInteger(v.(int))
 	}
 
 	return request, nil

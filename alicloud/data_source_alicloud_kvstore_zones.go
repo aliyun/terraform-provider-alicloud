@@ -28,6 +28,13 @@ func dataSourceAlicloudKVStoreZones() *schema.Resource {
 				Default:      PostPaid,
 				ValidateFunc: validation.StringInSlice([]string{"PrePaid", "PostPaid"}, false),
 			},
+			"engine": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:      "redis",
+				ValidateFunc: validation.StringInSlice([]string{"redis", "memcache"}, false),
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -67,6 +74,7 @@ func dataSourceAlicloudKVStoreZoneRead(d *schema.ResourceData, meta interface{})
 	request := r_kvstore.CreateDescribeAvailableResourceRequest()
 	request.RegionId = client.RegionId
 	request.InstanceChargeType = instanceChargeType
+	request.Engine = d.Get("engine").(string)
 	raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.DescribeAvailableResource(request)
 	})

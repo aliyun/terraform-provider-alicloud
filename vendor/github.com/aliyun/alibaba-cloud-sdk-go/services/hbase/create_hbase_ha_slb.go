@@ -21,7 +21,6 @@ import (
 )
 
 // CreateHbaseHaSlb invokes the hbase.CreateHbaseHaSlb API synchronously
-// api document: https://help.aliyun.com/api/hbase/createhbasehaslb.html
 func (client *Client) CreateHbaseHaSlb(request *CreateHbaseHaSlbRequest) (response *CreateHbaseHaSlbResponse, err error) {
 	response = CreateCreateHbaseHaSlbResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) CreateHbaseHaSlb(request *CreateHbaseHaSlbRequest) (respon
 }
 
 // CreateHbaseHaSlbWithChan invokes the hbase.CreateHbaseHaSlb API asynchronously
-// api document: https://help.aliyun.com/api/hbase/createhbasehaslb.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateHbaseHaSlbWithChan(request *CreateHbaseHaSlbRequest) (<-chan *CreateHbaseHaSlbResponse, <-chan error) {
 	responseChan := make(chan *CreateHbaseHaSlbResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) CreateHbaseHaSlbWithChan(request *CreateHbaseHaSlbRequest)
 }
 
 // CreateHbaseHaSlbWithCallback invokes the hbase.CreateHbaseHaSlb API asynchronously
-// api document: https://help.aliyun.com/api/hbase/createhbasehaslb.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateHbaseHaSlbWithCallback(request *CreateHbaseHaSlbRequest, callback func(response *CreateHbaseHaSlbResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -76,10 +71,11 @@ func (client *Client) CreateHbaseHaSlbWithCallback(request *CreateHbaseHaSlbRequ
 // CreateHbaseHaSlbRequest is the request struct for api CreateHbaseHaSlb
 type CreateHbaseHaSlbRequest struct {
 	*requests.RpcRequest
-	HaTypes   string `position:"Query" name:"HaTypes"`
-	HbaseType string `position:"Query" name:"HbaseType"`
-	BdsId     string `position:"Query" name:"BdsId"`
-	HaId      string `position:"Query" name:"HaId"`
+	ClientToken string `position:"Query" name:"ClientToken"`
+	HaTypes     string `position:"Query" name:"HaTypes"`
+	HbaseType   string `position:"Query" name:"HbaseType"`
+	BdsId       string `position:"Query" name:"BdsId"`
+	HaId        string `position:"Query" name:"HaId"`
 }
 
 // CreateHbaseHaSlbResponse is the response struct for api CreateHbaseHaSlb

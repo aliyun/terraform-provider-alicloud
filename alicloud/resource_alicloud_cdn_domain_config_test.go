@@ -14,7 +14,7 @@ import (
 )
 
 func TestAccAlicloudCdnDomainConfig_ip_allow_list(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -64,17 +64,16 @@ func TestAccAlicloudCdnDomainConfig_ip_allow_list(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_referer_white_list(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -124,17 +123,16 @@ func TestAccAlicloudCdnDomainConfig_referer_white_list(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_referer_black_list(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -184,17 +182,16 @@ func TestAccAlicloudCdnDomainConfig_referer_black_list(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -265,17 +262,16 @@ func TestAccAlicloudCdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_oss_auth(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -322,17 +318,16 @@ func TestAccAlicloudCdnDomainConfig_oss_auth(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_ip_black_list(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -383,17 +378,16 @@ func TestAccAlicloudCdnDomainConfig_ip_black_list(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_ip_white_list(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -444,17 +438,16 @@ func TestAccAlicloudCdnDomainConfig_ip_white_list(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_error_page(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -514,17 +507,16 @@ func TestAccAlicloudCdnDomainConfig_error_page(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_set_req_host_header(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -575,17 +567,16 @@ func TestAccAlicloudCdnDomainConfig_set_req_host_header(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_set_hashkey_args(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -636,17 +627,16 @@ func TestAccAlicloudCdnDomainConfig_set_hashkey_args(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_aliauth(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -707,17 +697,16 @@ func TestAccAlicloudCdnDomainConfig_aliauth(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_set_resp_header(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -778,17 +767,16 @@ func TestAccAlicloudCdnDomainConfig_set_resp_header(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_https_force(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -839,17 +827,16 @@ func TestAccAlicloudCdnDomainConfig_https_force(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_http_force(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -900,17 +887,16 @@ func TestAccAlicloudCdnDomainConfig_http_force(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_https_option(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -961,17 +947,16 @@ func TestAccAlicloudCdnDomainConfig_https_option(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_l2_oss_key(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1022,17 +1007,16 @@ func TestAccAlicloudCdnDomainConfig_l2_oss_key(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_forward_scheme(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1093,17 +1077,16 @@ func TestAccAlicloudCdnDomainConfig_forward_scheme(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_green_manager(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1154,17 +1137,16 @@ func TestAccAlicloudCdnDomainConfig_green_manager(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_tmd_signature(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1274,78 +1256,78 @@ func TestAccAlicloudCdnDomainConfig_tmd_signature(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudCdnDomainConfig_dynamic(t *testing.T) {
-	var v *cdn.DomainConfig
-
-	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc%s%d.xiaozhu.com", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
-	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
-		"arg_name":  "enable",
-		"arg_value": "on",
-	}))
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
-					"function_name": "dynamic",
-					"function_args": []map[string]interface{}{
-						{
-							"arg_name":  "enable",
-							"arg_value": "on",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"domain_name":   name,
-						"function_name": "dynamic",
-						"function_args." + hashcode1 + ".arg_name":  "enable",
-						"function_args." + hashcode1 + ".arg_value": "on",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
-			},
-		},
-	})
-}
+// Skip test due to product function conflict.
+//func TestAccAlicloudCdnDomainConfig_dynamic(t *testing.T) {
+//	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+//
+//	resourceId := "alicloud_cdn_domain_config.default"
+//	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+//
+//	serviceFunc := func() interface{} {
+//		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+//	}
+//	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+//
+//	rac := resourceAttrCheckInit(rc, ra)
+//
+//	testAccCheck := rac.resourceAttrMapUpdateSet()
+//	rand := acctest.RandIntRange(1000000, 9999999)
+//	name := fmt.Sprintf("tf-testacc%s%d.xiaozhu.com", defaultRegionToTest, rand)
+//	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+//	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
+//		"arg_name":  "enable",
+//		"arg_value": "on",
+//	}))
+//
+//	resource.Test(t, resource.TestCase{
+//		PreCheck: func() {
+//			testAccPreCheck(t)
+//		},
+//		// module name
+//		IDRefreshName: resourceId,
+//		Providers:     testAccProviders,
+//		CheckDestroy:  rac.checkResourceDestroy(),
+//		Steps: []resource.TestStep{
+//			{
+//				Config: testAccConfig(map[string]interface{}{
+//					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+//					"function_name": "dynamic",
+//					"function_args": []map[string]interface{}{
+//						{
+//							"arg_name":  "enable",
+//							"arg_value": "on",
+//						},
+//					},
+//				}),
+//				Check: resource.ComposeTestCheckFunc(
+//					testAccCheck(map[string]string{
+//						"domain_name":   name,
+//						"function_name": "dynamic",
+//						"function_args." + hashcode1 + ".arg_name":  "enable",
+//						"function_args." + hashcode1 + ".arg_value": "on",
+//					}),
+//				),
+//			},
+//			{
+//				ResourceName:            resourceId,
+//				ImportState:             true,
+//				ImportStateVerify:       true,
+//				ImportStateVerifyIgnore: []string{"domain_name"},
+//			},
+//		},
+//	})
+//}
 
 func TestAccAlicloudCdnDomainConfig_set_req_header(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1406,17 +1388,16 @@ func TestAccAlicloudCdnDomainConfig_set_req_header(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_range(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1467,17 +1448,16 @@ func TestAccAlicloudCdnDomainConfig_range(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_video_seek(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1528,17 +1508,16 @@ func TestAccAlicloudCdnDomainConfig_video_seek(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_https_tls_version(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1589,17 +1568,16 @@ func TestAccAlicloudCdnDomainConfig_https_tls_version(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_HSTS(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1660,17 +1638,16 @@ func TestAccAlicloudCdnDomainConfig_HSTS(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_filetype_force_ttl_code(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1731,17 +1708,16 @@ func TestAccAlicloudCdnDomainConfig_filetype_force_ttl_code(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_path_force_ttl_code(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1802,17 +1778,16 @@ func TestAccAlicloudCdnDomainConfig_path_force_ttl_code(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_gzip(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1863,17 +1838,16 @@ func TestAccAlicloudCdnDomainConfig_gzip(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_tesla(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1924,17 +1898,16 @@ func TestAccAlicloudCdnDomainConfig_tesla(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_https_origin_sni(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -1994,17 +1967,16 @@ func TestAccAlicloudCdnDomainConfig_https_origin_sni(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_brotli(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -2075,7 +2047,7 @@ func TestAccAlicloudCdnDomainConfig_brotli(t *testing.T) {
 }
 
 func TestAccAlicloudCdnDomainConfig_ali_ua(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -2136,17 +2108,16 @@ func TestAccAlicloudCdnDomainConfig_ali_ua(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
 func TestAccAlicloudCdnDomainConfig_host_redirect(t *testing.T) {
-	var v *cdn.DomainConfig
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
@@ -2217,10 +2188,9 @@ func TestAccAlicloudCdnDomainConfig_host_redirect(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -2251,7 +2221,7 @@ func resourceCdnDomainConfigDependence_oss(name string) string {
 	  cdn_type = "web"
       scope = "overseas"
       sources {
-         content = "www.aliyuntest.com"
+         content = "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}"
          type = "oss"
          priority = 20
          port = 80
@@ -2270,7 +2240,7 @@ var cdnDomainConfigBasicMap = map[string]string{
 	"function_name": CHECKSET,
 }
 
-func checkFunctionArgs(resourceId string, configP **cdn.DomainConfig) resource.TestCheckFunc {
+func checkFunctionArgs(resourceId string, configP **cdn.DomainConfigInDescribeCdnDomainConfigs) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		config := *configP
 		hashcodeFunc := func(args *cdn.FunctionArg) string {

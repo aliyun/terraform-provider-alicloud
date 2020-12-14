@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeTags invokes the dds.DescribeTags API synchronously
-// api document: https://help.aliyun.com/api/dds/describetags.html
 func (client *Client) DescribeTags(request *DescribeTagsRequest) (response *DescribeTagsResponse, err error) {
 	response = CreateDescribeTagsResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeTags(request *DescribeTagsRequest) (response *Desc
 }
 
 // DescribeTagsWithChan invokes the dds.DescribeTags API asynchronously
-// api document: https://help.aliyun.com/api/dds/describetags.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeTagsWithChan(request *DescribeTagsRequest) (<-chan *DescribeTagsResponse, <-chan error) {
 	responseChan := make(chan *DescribeTagsResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeTagsWithChan(request *DescribeTagsRequest) (<-chan
 }
 
 // DescribeTagsWithCallback invokes the dds.DescribeTags API asynchronously
-// api document: https://help.aliyun.com/api/dds/describetags.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeTagsWithCallback(request *DescribeTagsRequest, callback func(response *DescribeTagsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -77,13 +72,12 @@ func (client *Client) DescribeTagsWithCallback(request *DescribeTagsRequest, cal
 type DescribeTagsRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	NextToken            string           `position:"Query" name:"NextToken"`
-	Product              string           `position:"Query" name:"Product"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	ResourceType         string           `position:"Query" name:"ResourceType"`
-	Category             string           `position:"Query" name:"Category"`
 }
 
 // DescribeTagsResponse is the response struct for api DescribeTags

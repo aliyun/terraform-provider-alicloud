@@ -21,7 +21,6 @@ import (
 )
 
 // SetDcdnDomainCertificate invokes the dcdn.SetDcdnDomainCertificate API synchronously
-// api document: https://help.aliyun.com/api/dcdn/setdcdndomaincertificate.html
 func (client *Client) SetDcdnDomainCertificate(request *SetDcdnDomainCertificateRequest) (response *SetDcdnDomainCertificateResponse, err error) {
 	response = CreateSetDcdnDomainCertificateResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) SetDcdnDomainCertificate(request *SetDcdnDomainCertificate
 }
 
 // SetDcdnDomainCertificateWithChan invokes the dcdn.SetDcdnDomainCertificate API asynchronously
-// api document: https://help.aliyun.com/api/dcdn/setdcdndomaincertificate.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SetDcdnDomainCertificateWithChan(request *SetDcdnDomainCertificateRequest) (<-chan *SetDcdnDomainCertificateResponse, <-chan error) {
 	responseChan := make(chan *SetDcdnDomainCertificateResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) SetDcdnDomainCertificateWithChan(request *SetDcdnDomainCer
 }
 
 // SetDcdnDomainCertificateWithCallback invokes the dcdn.SetDcdnDomainCertificate API asynchronously
-// api document: https://help.aliyun.com/api/dcdn/setdcdndomaincertificate.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SetDcdnDomainCertificateWithCallback(request *SetDcdnDomainCertificateRequest, callback func(response *SetDcdnDomainCertificateResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -100,6 +95,7 @@ func CreateSetDcdnDomainCertificateRequest() (request *SetDcdnDomainCertificateR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("dcdn", "2018-01-15", "SetDcdnDomainCertificate", "", "")
+	request.Method = requests.POST
 	return
 }
 

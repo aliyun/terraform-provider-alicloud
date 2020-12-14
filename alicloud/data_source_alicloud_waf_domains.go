@@ -1,9 +1,10 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 
-	waf_openapi "github.com/aliyun/alibaba-cloud-sdk-go/services/waf-openapi"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -157,12 +158,11 @@ func dataSourceAlicloudWafDomains() *schema.Resource {
 func dataSourceAlicloudWafDomainsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := waf_openapi.CreateDescribeDomainNamesRequest()
-	if v, ok := d.GetOk("instance_id"); ok {
-		request.InstanceId = v.(string)
-	}
+	action := "DescribeDomainNames"
+	request := make(map[string]interface{})
+	request["InstanceId"] = d.Get("instance_id")
 	if v, ok := d.GetOk("resource_group_id"); ok {
-		request.ResourceGroupId = v.(string)
+		request["ResourceGroupId"] = v
 	}
 	var domainNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -176,80 +176,84 @@ func dataSourceAlicloudWafDomainsRead(d *schema.ResourceData, meta interface{}) 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	var response *waf_openapi.DescribeDomainNamesResponse
-	raw, err := client.WithWafOpenapiClient(func(waf_openapiClient *waf_openapi.Client) (interface{}, error) {
-		return waf_openapiClient.DescribeDomainNames(request)
-	})
+	var response map[string]interface{}
+	conn, err := client.NewWafClient()
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_waf_domains", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ = raw.(*waf_openapi.DescribeDomainNamesResponse)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_waf_domains", action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
 
 	ids := make([]string, 0)
 	names := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
-	for _, object := range response.DomainNames {
+	for _, object := range response["DomainNames"].([]interface{}) {
 		if domainNameRegex != nil {
-			if !domainNameRegex.MatchString(object) {
+			if !domainNameRegex.MatchString(object.(string)) {
 				continue
 			}
 		}
 		if len(idsMap) > 0 {
-			if _, ok := idsMap[object]; !ok {
+			if _, ok := idsMap[object.(string)]; !ok {
 				continue
 			}
 		}
 		mapping := map[string]interface{}{
-			"id":          object,
+			"id":          fmt.Sprint(object),
 			"domain_name": object,
 			"domain":      object,
 		}
-		ids = append(ids, object)
+		ids = append(ids, fmt.Sprint(object.(string)))
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
-			names = append(names, object)
+			names = append(names, object.(string))
 			s = append(s, mapping)
 			continue
 		}
-		request := waf_openapi.CreateDescribeDomainRequest()
-		request.RegionId = client.RegionId
-		request.Domain = object
-		request.InstanceId = d.Get("instance_id").(string)
-		raw, err := client.WithWafOpenapiClient(func(waf_openapiClient *waf_openapi.Client) (interface{}, error) {
-			return waf_openapiClient.DescribeDomain(request)
-		})
+
+		waf_openapiService := Waf_openapiService{client}
+		id := fmt.Sprint(request["InstanceId"], ":", object.(string))
+		getResp, err := waf_openapiService.DescribeWafDomain(id)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_waf_domains", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		responseGet, _ := raw.(*waf_openapi.DescribeDomainResponse)
-		mapping["cluster_type"] = convertClusterTypeResponse(responseGet.Domain.ClusterType)
-		mapping["cname"] = responseGet.Domain.Cname
-		mapping["connection_time"] = responseGet.Domain.ConnectionTime
-		mapping["http2_port"] = responseGet.Domain.Http2Port
-		mapping["http_port"] = responseGet.Domain.HttpPort
-		mapping["http_to_user_ip"] = convertHttpToUserIpResponse(responseGet.Domain.HttpToUserIp)
-		mapping["https_port"] = responseGet.Domain.HttpsPort
-		mapping["https_redirect"] = convertHttpsRedirectResponse(responseGet.Domain.HttpsRedirect)
-		mapping["is_access_product"] = convertIsAccessProductResponse(responseGet.Domain.IsAccessProduct)
-		mapping["load_balancing"] = convertLoadBalancingResponse(responseGet.Domain.LoadBalancing)
-		logHeaders := make([]map[string]interface{}, len(responseGet.Domain.LogHeaders))
-		for i, v := range responseGet.Domain.LogHeaders {
-			logHeaders[i] = map[string]interface{}{
-				"key":   v.K,
-				"value": v.V,
+		mapping["cluster_type"] = convertClusterTypeResponse(formatInt(getResp["ClusterType"]))
+		mapping["cname"] = getResp["Cname"]
+		mapping["connection_time"] = getResp["ConnectionTime"]
+		mapping["http2_port"] = convertJsonStringToStringList(getResp["Http2Port"])
+		mapping["http_port"] = convertJsonStringToStringList(getResp["HttpPort"])
+		mapping["http_to_user_ip"] = convertHttpToUserIpResponse(formatInt(getResp["HttpToUserIp"]))
+		mapping["https_port"] = convertJsonStringToStringList(getResp["HttpsPort"])
+		mapping["https_redirect"] = convertHttpsRedirectResponse(formatInt(getResp["HttpsRedirect"]))
+		mapping["is_access_product"] = convertIsAccessProductResponse(formatInt(getResp["IsAccessProduct"]))
+		mapping["load_balancing"] = convertLoadBalancingResponse(formatInt(getResp["LoadBalancing"]))
+		if v, ok := getResp["LogHeaders"].([]interface{}); ok {
+			logHeaders := make([]map[string]interface{}, 0)
+			for _, val := range v {
+				item := val.(map[string]interface{})
+				logHeaders = append(logHeaders, map[string]interface{}{
+					"key":   item["k"].(string),
+					"value": item["v"].(string),
+				})
 			}
+			mapping["log_headers"] = logHeaders
 		}
-		mapping["log_headers"] = logHeaders
-		mapping["read_time"] = responseGet.Domain.ReadTime
-		mapping["resource_group_id"] = responseGet.Domain.ResourceGroupId
-		mapping["source_ips"] = responseGet.Domain.SourceIps
-		mapping["version"] = responseGet.Domain.Version
-		mapping["write_time"] = responseGet.Domain.WriteTime
-		names = append(names, object)
+		mapping["read_time"] = getResp["ReadTime"]
+		mapping["resource_group_id"] = getResp["ResourceGroupId"]
+		mapping["source_ips"] = getResp["SourceIps"]
+		mapping["version"] = getResp["Version"]
+		mapping["write_time"] = getResp["WriteTime"]
+		names = append(names, object.(string))
 		s = append(s, mapping)
 	}
 

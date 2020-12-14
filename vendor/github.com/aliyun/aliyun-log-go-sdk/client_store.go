@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/go-kit/kit/log/level"
 )
 
 func convertLogstore(c *Client, project, logstore string) *LogStore {
@@ -226,4 +230,225 @@ func (c *Client) GetIndexString(project, logstore string) (string, error) {
 func (c *Client) DeleteIndex(project, logstore string) error {
 	ls := convertLogstore(c, project, logstore)
 	return ls.DeleteIndex()
+}
+
+// ListSubStore ...
+func (c *Client) ListSubStore(project, logstore string) (sortedSubStores []string, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+
+	uri := fmt.Sprintf("/logstores/%v/substores", logstore)
+	r, err := c.request(project, "GET", uri, h, nil)
+	if err != nil {
+		return
+	}
+	defer r.Body.Close()
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return
+	}
+
+	if r.StatusCode != http.StatusOK {
+		errMsg := &Error{}
+		err = json.Unmarshal(buf, errMsg)
+		if err != nil {
+			err = fmt.Errorf("failed to remove config from machine group")
+			if IsDebugLevelMatched(1) {
+				dump, _ := httputil.DumpResponse(r, true)
+				level.Error(Logger).Log("msg", string(dump))
+			}
+			return
+		}
+		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
+		return
+	}
+
+	type sortedSubStoreList struct {
+		SubStores []string `json:"substores"`
+	}
+
+	body := &sortedSubStoreList{}
+	err = json.Unmarshal(buf, body)
+	if err != nil {
+		return
+	}
+
+	sortedSubStores = body.SubStores
+	return
+}
+
+// GetSubStore ...
+func (c *Client) GetSubStore(project, logstore, name string) (sortedSubStore *SubStore, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/substores/%s", logstore, name)
+	r, err := c.request(project, "GET", uri, h, nil)
+	if err != nil {
+		return
+	}
+	defer r.Body.Close()
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return
+	}
+
+	if r.StatusCode != http.StatusOK {
+		errMsg := &Error{}
+		err = json.Unmarshal(buf, errMsg)
+		if err != nil {
+			err = fmt.Errorf("failed to remove config from machine group")
+			if IsDebugLevelMatched(1) {
+				dump, _ := httputil.DumpResponse(r, true)
+				level.Error(Logger).Log("msg", string(dump))
+			}
+			return
+		}
+		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
+		return
+	}
+	sortedSubStore = &SubStore{}
+	err = json.Unmarshal(buf, sortedSubStore)
+	if err != nil {
+		sortedSubStore = nil
+		return
+	}
+	return
+}
+
+// CreateSubStore ...
+func (c *Client) CreateSubStore(project, logstore string, sss *SubStore) (err error) {
+	body, err := json.Marshal(sss)
+	if err != nil {
+		return NewClientError(err)
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate",
+	}
+	r, err := c.request(project, "POST", fmt.Sprintf("/logstores/%s/substores", logstore), h, body)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, err = ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return
+}
+
+// UpdateSubStore ...
+func (c *Client) UpdateSubStore(project, logstore string, sss *SubStore) (err error) {
+	body, err := json.Marshal(sss)
+	if err != nil {
+		return NewClientError(err)
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate",
+	}
+	r, err := c.request(project, "PUT", fmt.Sprintf("/logstores/%s/substores/%s", logstore, sss.Name), h, body)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, err = ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return
+}
+
+// DeleteSubStore ...
+func (c *Client) DeleteSubStore(project, logstore string, name string) (err error) {
+
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+	r, err := c.request(project, "DELETE", fmt.Sprintf("/logstores/%s/substores/%s", logstore, name), h, nil)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return
+}
+
+// GetSubStoreTTL ...
+func (c *Client) GetSubStoreTTL(project, logstore string) (ttl int, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/substores/storage/ttl", logstore)
+	r, err := c.request(project, "GET", uri, h, nil)
+	if err != nil {
+		return
+	}
+	defer r.Body.Close()
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return
+	}
+
+	if r.StatusCode != http.StatusOK {
+		errMsg := &Error{}
+		err = json.Unmarshal(buf, errMsg)
+		if err != nil {
+			err = fmt.Errorf("failed to remove config from machine group")
+			if IsDebugLevelMatched(1) {
+				dump, _ := httputil.DumpResponse(r, true)
+				level.Error(Logger).Log("msg", string(dump))
+			}
+			return
+		}
+		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
+		return
+	}
+
+	type ttlDef struct {
+		TTL int `json:"ttl"`
+	}
+
+	var ttlIns ttlDef
+	err = json.Unmarshal(buf, &ttlIns)
+	if err != nil {
+		return
+	}
+	return ttlIns.TTL, err
+}
+
+// UpdateSubStoreTTL ...
+func (c *Client) UpdateSubStoreTTL(project, logstore string, ttl int) (err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+	r, err := c.request(project, "PUT", fmt.Sprintf("/logstores/%s/substores/storage/ttl?ttl=%d", logstore, ttl), h, nil)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return
 }
