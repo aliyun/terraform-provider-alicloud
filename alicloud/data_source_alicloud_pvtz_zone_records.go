@@ -1,32 +1,62 @@
 package alicloud
 
 import (
-	"strconv"
+	"fmt"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudPvtzZoneRecordsRead,
-
 		Schema: map[string]*schema.Schema{
-			"zone_id": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
 			"keyword": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
+			},
+			"lang": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"search_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"DISABLE", "ENABLE"}, false),
+			},
+			"tag": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"user_client_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
-				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
+				Optional: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -38,14 +68,30 @@ func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"priority": {
 							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"record_id": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"remark": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"rr": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"resource_record": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"type": {
+						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -53,15 +99,11 @@ func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
-						"priority": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"value": {
+						"type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"status": {
+						"value": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -74,24 +116,29 @@ func dataSourceAlicloudPvtzZoneRecords() *schema.Resource {
 
 func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := pvtz.CreateDescribeZoneRecordsRequest()
-	request.RegionId = client.RegionId
-	if zoneId, ok := d.GetOk("zone_id"); ok {
-		request.ZoneId = zoneId.(string)
+
+	action := "DescribeZoneRecords"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("keyword"); ok {
+		request["Keyword"] = v
 	}
-
-	if keyword, ok := d.GetOk("keyword"); ok {
-		request.Keyword = keyword.(string)
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
 	}
+	if v, ok := d.GetOk("search_mode"); ok {
+		request["SearchMode"] = v
+	}
+	if v, ok := d.GetOk("tag"); ok {
+		request["Tag"] = v
+	}
+	if v, ok := d.GetOk("user_client_ip"); ok {
+		request["UserClientIp"] = v
+	}
+	request["ZoneId"] = d.Get("zone_id")
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
 
-	request.PageNumber = requests.NewInteger(1)
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-
-	var pvtzZoneRecords []pvtz.Record
-	var ids []string
-
-	invoker := PvtzInvoker()
-	// ids
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -101,71 +148,82 @@ func dataSourceAlicloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-
+	status, statusOk := d.GetOk("status")
+	var response map[string]interface{}
+	conn, err := client.NewPvtzClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	for {
-		var raw interface{}
-		var err error
-		err = invoker.Run(func() error {
-			raw, err = client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-				return pvtzClient.DescribeZoneRecords(request)
-			})
-			return err
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"System.Busy", "ServiceUnavailable", "Throttling.User"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
 		})
-
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_pvtz_zone_records", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_pvtz_zone_records", action, AlibabaCloudSdkGoERROR)
 		}
 
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-		response, _ := raw.(*pvtz.DescribeZoneRecordsResponse)
-		if len(response.Records.Record) < 1 {
-			break
+		resp, err := jsonpath.Get("$.Records.Record", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Records.Record", response)
 		}
-
-		for _, key := range response.Records.Record {
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[strconv.FormatInt(key.RecordId, 10)]; !ok {
+				if _, ok := idsMap[fmt.Sprint(formatInt(item["RecordId"]))]; !ok {
 					continue
 				}
 			}
-			pvtzZoneRecords = append(pvtzZoneRecords, key)
-			ids = append(ids, strconv.FormatInt(key.RecordId, 10))
+			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+				continue
+			}
+			objects = append(objects, item)
 		}
-
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
-		} else {
-			request.PageNumber = page
+		if len(resp.([]interface{})) < PageSizeLarge {
+			break
 		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	ids := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"id":              fmt.Sprint(formatInt(object["RecordId"]), ":", request["ZoneId"]),
+			"priority":        formatInt(object["Priority"]),
+			"record_id":       formatInt(object["RecordId"]),
+			"remark":          object["Remark"],
+			"rr":              object["Rr"],
+			"resource_record": object["Rr"],
+			"status":          object["Status"],
+			"ttl":             formatInt(object["Ttl"]),
+			"type":            object["Type"],
+			"value":           object["Value"],
+		}
+		ids = append(ids, fmt.Sprint(formatInt(object["RecordId"])))
+		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	var zoneRecords []map[string]interface{}
-
-	for _, r := range pvtzZoneRecords {
-		mapping := map[string]interface{}{
-			"id":              r.RecordId,
-			"resource_record": r.Rr,
-			"type":            r.Type,
-			"status":          r.Status,
-			"value":           r.Value,
-			"ttl":             r.Ttl,
-			"priority":        r.Priority,
-		}
-
-		zoneRecords = append(zoneRecords, mapping)
-	}
-	if err := d.Set("records", zoneRecords); err != nil {
-		return WrapError(err)
-	}
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
 
-	// create a json file in current directory and write data source to it.
+	if err := d.Set("records", s); err != nil {
+		return WrapError(err)
+	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), zoneRecords)
+		writeToFile(output.(string), s)
 	}
 
 	return nil

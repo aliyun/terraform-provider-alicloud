@@ -1,17 +1,16 @@
 package alicloud
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
@@ -95,66 +94,72 @@ func (s *PvtzService) WaitForZoneAttachment(id string, vpcIdMap map[string]strin
 	return nil
 }
 
-func (s *PvtzService) DescribePvtzZoneRecord(id string) (record pvtz.Record, err error) {
+func (s *PvtzService) DescribePvtzZoneRecord(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewPvtzClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeZoneRecords"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		return record, WrapError(err)
+		err = WrapError(err)
+		return
 	}
-	request := pvtz.CreateDescribeZoneRecordsRequest()
-	request.RegionId = s.client.RegionId
-	request.ZoneId = parts[1]
-	request.PageNumber = requests.NewInteger(1)
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-
-	recordIdStr := parts[0]
-	var response *pvtz.DescribeZoneRecordsResponse
-
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"ZoneId":     parts[1],
+		"PageNumber": "1",
+		"PageSize":   "20",
+	}
 	for {
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err := s.client.WithPvtzClient(func(pvtzClient *pvtz.Client) (interface{}, error) {
-				return pvtzClient.DescribeZoneRecords(request)
-			})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-01"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{ServiceUnavailable, ThrottlingUser, "System.Busy"}) {
-					time.Sleep(5 * time.Second)
+				if IsExpectedErrors(err, []string{"System.Busy", "ServiceUnavailable", "Throttling.User"}) {
+					wait()
 					return resource.RetryableError(err)
 				}
+				if IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
+					err = WrapErrorf(Error(GetNotFoundMessage("PvtzZoneRecord", id)), NotFoundMsg, ProviderERROR)
+					return resource.NonRetryableError(err)
+				}
+				err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			response, _ = raw.(*pvtz.DescribeZoneRecordsResponse)
 			return nil
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
-				return record, WrapErrorf(Error(GetNotFoundMessage("ZoneRecord", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return
+		}
+		addDebug(action, response, request)
+		v, err := jsonpath.Get("$.Records.Record", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Records.Record", response)
+		}
+		if len(v.([]interface{})) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("PrivateZone", id)), NotFoundWithResponse, response)
+		}
+		for _, v := range v.([]interface{}) {
+			if fmt.Sprint(formatInt(v.(map[string]interface{})["RecordId"])) == parts[0] {
+				return v.(map[string]interface{}), nil
 			}
-			return record, WrapErrorf(err, DefaultErrorMsg, recordIdStr, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-
-		if len(response.Records.Record) < 1 {
-			return record, WrapErrorf(Error(GetNotFoundMessage("ZoneRecord", id)), NotFoundMsg, ProviderERROR)
-		}
-
-		for _, rec := range response.Records.Record {
-			if strconv.FormatInt(rec.RecordId, 10) == parts[0] {
-				record = rec
-				return record, nil
-			}
-		}
-		if len(response.Records.Record) < PageSizeLarge {
+		size, _ := strconv.Atoi(request["PageSize"].(string))
+		if len(v.([]interface{})) < size {
 			break
 		}
-
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return record, WrapError(err)
+		number, _ := strconv.Atoi(request["PageNumber"].(string))
+		if page, err := getNextpageNumber(requests.NewInteger(number)); err != nil {
+			return object, WrapError(err)
 		} else {
-			request.PageNumber = page
+			request["PageNumber"] = page
 		}
 	}
-
-	return record, WrapErrorf(Error(GetNotFoundMessage("ZoneRecord", recordIdStr)), NotFoundMsg, ProviderERROR)
-
+	return
 }
 
 func (s *PvtzService) WaitForPvtzZone(id string, status Status, timeout int) error {
@@ -223,11 +228,11 @@ func (s *PvtzService) WaitForPvtzZoneRecord(id string, status Status, timeout in
 				return WrapError(err)
 			}
 		}
-		if strconv.FormatInt(object.RecordId, 10) == parts[0] {
+		if strconv.FormatInt(object["RecordId"].(int64), 10) == parts[0] {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, strconv.FormatInt(object.RecordId, 10), id, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, strconv.FormatInt(object["RecordId"].(int64), 10), id, ProviderERROR)
 		}
 
 	}
