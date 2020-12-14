@@ -23,6 +23,7 @@ func resourceAlicloudPrivatelinkVpcEndpointService() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(6 * time.Minute),
+			Delete: schema.DefaultTimeout(6 * time.Minute),
 			Update: schema.DefaultTimeout(4 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -252,11 +253,11 @@ func resourceAlicloudPrivatelinkVpcEndpointServiceDelete(d *schema.ResourceData,
 		request["DryRun"] = v
 	}
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"EndpointServiceConnectionDependence"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

@@ -92,3 +92,117 @@ func (s *PrivatelinkService) PrivatelinkVpcEndpointServiceStateRefreshFunc(id st
 		return object, object["ServiceStatus"].(string), nil
 	}
 }
+
+func (s *PrivatelinkService) ListVpcEndpointSecurityGroups(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewPrivatelinkClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListVpcEndpointSecurityGroups"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"EndpointId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpoint", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *PrivatelinkService) ListVpcEndpointZones(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewPrivatelinkClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListVpcEndpointZones"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"EndpointId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpoint", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *PrivatelinkService) DescribePrivatelinkVpcEndpoint(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewPrivatelinkClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetVpcEndpointAttribute"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"EndpointId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	request["ClientToken"] = buildClientToken("GetVpcEndpointAttribute")
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpoint", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *PrivatelinkService) PrivatelinkVpcEndpointStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribePrivatelinkVpcEndpoint(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["EndpointStatus"].(string) == failState {
+				return object, object["EndpointStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["EndpointStatus"].(string)))
+			}
+		}
+		return object, object["EndpointStatus"].(string), nil
+	}
+}
