@@ -919,6 +919,7 @@ func TestAccAlicloudDBInstancePostgreSQL(t *testing.T) {
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"security_group_ids":   []string{},
 					"monitoring_period":    "60",
+					"encryption_key":       "${alicloud_kms_key.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -969,6 +970,11 @@ resource "alicloud_security_group" "default" {
 	count = 2
 	name   = var.name
 	vpc_id = alicloud_vpc.default.id
+}
+
+resource "alicloud_kms_key" "default" {
+  pending_window_in_days  = "7"
+  key_state               = "Enabled"
 }
 `, RdsCommonTestCase, name)
 }
