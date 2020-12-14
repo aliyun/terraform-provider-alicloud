@@ -14,9 +14,7 @@ import (
 
 	"strconv"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -238,7 +236,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"encryption_key": {
 				Type:     schema.TypeString,
 				Optional: true,
-				},
+			},
 			"zone_id_slave_a": {
 				Type:     schema.TypeString,
 				Optional: true,
