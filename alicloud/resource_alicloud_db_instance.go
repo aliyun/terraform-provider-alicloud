@@ -832,13 +832,13 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 
 	if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
-		request.EncryptionKey = v.(string)
+		request["EncryptionKey"] = v.(string)
 
 		roleArn, err := findKmsRoleArn(client, v.(string))
 		if err != nil {
 			return nil, err
 		}
-		request.RoleARN = roleArn
+		request["RoleARN"] = roleArn
 	}
 
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
