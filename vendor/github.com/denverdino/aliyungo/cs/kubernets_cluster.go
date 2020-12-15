@@ -26,10 +26,23 @@ const (
 	UpgradeStep_Success     = "success"
 )
 
+type WeeklyPeriod string
+type MaintenanceTime string
+
+// maintenance window
+type MaintenanceWindow struct {
+	Enable          bool            `json:"enable"`
+	MaintenanceTime MaintenanceTime `json:"maintenance_time"`
+	Duration        string          `json:"duration"`
+	Recurrence      string          `json:"recurrence,omitempty"`
+	WeeklyPeriod    WeeklyPeriod    `json:"weekly_period"`
+}
+
 //modify cluster,include DeletionProtection and so on
 type ModifyClusterArgs struct {
-	DeletionProtection bool   `json:"deletion_protection"`
-	ResourceGroupId    string `json:"resource_group_id"`
+	DeletionProtection bool              `json:"deletion_protection"`
+	ResourceGroupId    string            `json:"resource_group_id"`
+	MaintenanceWindow  MaintenanceWindow `json:"maintenance_window"`
 }
 
 type UpgradeClusterArgs struct {
@@ -167,14 +180,15 @@ type ClusterArgs struct {
 
 	Taints []Taint `json:"taints"`
 
-	ApiAudiences          string   `json:"api_audiences,omitempty"`
-	ServiceAccountIssuer  string   `json:"service_account_issuer,omitempty"`
-	CustomSAN             string   `json:"custom_san,omitempty"`
-	ClusterSpec           string   `json:"cluster_spec"`
-	Timezone              string   `json:"timezone"`
-	ClusterDomain         string   `json:"cluster_domain"`
-	RdsInstances          []string `json:"rds_instances"`
-	EncryptionProviderKey string   `json:"encryption_provider_key"`
+	ApiAudiences          string            `json:"api_audiences,omitempty"`
+	ServiceAccountIssuer  string            `json:"service_account_issuer,omitempty"`
+	CustomSAN             string            `json:"custom_san,omitempty"`
+	ClusterSpec           string            `json:"cluster_spec"`
+	Timezone              string            `json:"timezone"`
+	ClusterDomain         string            `json:"cluster_domain"`
+	RdsInstances          []string          `json:"rds_instances"`
+	EncryptionProviderKey string            `json:"encryption_provider_key"`
+	MaintenanceWindow     MaintenanceWindow `json:"maintenance_window"`
 }
 
 //addon
@@ -423,10 +437,11 @@ type KubernetesClusterDetail struct {
 	Created time.Time `json:"created"`
 	Updated time.Time `json:"updated"`
 
-	WorkerRamRoleName string `json:"worker_ram_role_name"`
-	ClusterSpec       string `json:"cluster_spec"`
-	OSType            string `json:"os_type"`
-	MasterURL         string `json:"master_url"`
+	WorkerRamRoleName string            `json:"worker_ram_role_name"`
+	ClusterSpec       string            `json:"cluster_spec"`
+	OSType            string            `json:"os_type"`
+	MasterURL         string            `json:"master_url"`
+	MaintenanceWindow MaintenanceWindow `json:"maintenance_window"`
 }
 
 //GetMetaData

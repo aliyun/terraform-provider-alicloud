@@ -159,7 +159,7 @@ github.com/bgentry/speakeasy
 github.com/cenkalti/backoff
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/denverdino/aliyungo v0.0.0-20201127010231-19d40697f3a3
+# github.com/denverdino/aliyungo v0.0.0-20201215054313-f635de23c5e0
 github.com/denverdino/aliyungo/cdn
 github.com/denverdino/aliyungo/common
 github.com/denverdino/aliyungo/cs

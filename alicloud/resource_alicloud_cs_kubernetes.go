@@ -1001,6 +1001,15 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("deletion_protection")
 	}
 
+	// modify cluster maintenance window
+	if !d.IsNewResource() && d.HasChange("maintenance_window") {
+		var mw cs.MaintenanceWindow
+		if v := d.Get("maintenance_window").([]interface{}); len(v) > 0 {
+			mw = expandMaintenanceWindowConfig(v)
+		}
+		_ = modifyMaintenanceWindow(d, meta, mw)
+	}
+
 	UpgradeAlicloudKubernetesCluster(d, meta)
 	d.Partial(false)
 	return resourceAlicloudCSKubernetesRead(d, meta)
@@ -1050,6 +1059,9 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	// d.Set("taints", object.Taits)
 	// d.Set("rds_instances", object.RdsInstances)
 	// d.Set("node_port_range", object.NodePortRange)
+	if d.Get("maintenance_window") != "" {
+		d.Set("maintenance_window", flattenMaintenanceWindowConfig(&object.MaintenanceWindow))
+	}
 
 	var masterNodes []map[string]interface{}
 	var workerNodes []map[string]interface{}
@@ -1490,12 +1502,17 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		workerDiskSize = int64(d.Get("worker_disk_size").(int))
 	}
 
-	creationArgs.WorkerArgs = cs.WorkerArgs{
-		WorkerVSwitchIds:         expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
-		WorkerInstanceTypes:      expandStringList(d.Get("worker_instance_types").([]interface{})),
-		NumOfNodes:               int64(d.Get("worker_number").(int)),
-		WorkerSystemDiskCategory: aliyungoecs.DiskCategory(d.Get("worker_disk_category").(string)),
-		// TODO support other params
+	if v, ok := d.GetOk("worker_vswitch_ids"); ok {
+		creationArgs.WorkerArgs.WorkerVSwitchIds = expandStringList(v.([]interface{}))
+	}
+	if v, ok := d.GetOk("worker_instance_types"); ok {
+		creationArgs.WorkerArgs.WorkerInstanceTypes = expandStringList(v.([]interface{}))
+	}
+	if v, ok := d.GetOk("worker_number"); ok {
+		creationArgs.WorkerArgs.NumOfNodes = int64(v.(int))
+	}
+	if v, ok := d.GetOk("worker_disk_category"); ok {
+		creationArgs.WorkerArgs.WorkerSystemDiskCategory = aliyungoecs.DiskCategory(v.(string))
 	}
 
 	if dds, ok := d.GetOk("worker_data_disks"); ok {
@@ -1556,6 +1573,11 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		if v := taints.([]interface{}); len(v) > 0 {
 			creationArgs.Taints = expandKubernetesTaintsConfig(v)
 		}
+	}
+
+	// Cluster maintenance window. Effective only in the professional managed cluster
+	if v := d.Get("maintenance_window").([]interface{}); len(v) > 0 {
+		creationArgs.MaintenanceWindow = expandMaintenanceWindowConfig(v)
 	}
 
 	return creationArgs, nil
@@ -1748,4 +1770,71 @@ func flattenAlicloudCSCertificate(certificate *cs.ClusterConfig) map[string]stri
 	m["client_key"] = kubeConfig["users"].([]interface{})[0].(map[interface{}]interface{})["user"].(map[interface{}]interface{})["client-key-data"].(string)
 
 	return m
+}
+
+// ACK pro maintenance window
+func expandMaintenanceWindowConfig(l []interface{}) (config cs.MaintenanceWindow) {
+	if len(l) == 0 || l[0] == nil {
+		return
+	}
+
+	m := l[0].(map[string]interface{})
+
+	if v, ok := m["enable"]; ok {
+		config.Enable = v.(bool)
+	}
+	if v, ok := m["maintenance_time"]; ok && v != "" {
+		config.MaintenanceTime = cs.MaintenanceTime(v.(string))
+	}
+	if v, ok := m["duration"]; ok && v != "" {
+		config.Duration = v.(string)
+	}
+	if v, ok := m["weekly_period"]; ok && v != "" {
+		config.WeeklyPeriod = cs.WeeklyPeriod(v.(string))
+	}
+
+	return
+}
+
+func flattenMaintenanceWindowConfig(config *cs.MaintenanceWindow) (m []map[string]interface{}) {
+	if config == nil {
+		return []map[string]interface{}{}
+	}
+
+	m = append(m, map[string]interface{}{
+		"enable":           config.Enable,
+		"maintenance_time": config.MaintenanceTime,
+		"duration":         config.Duration,
+		"weekly_period":    config.WeeklyPeriod,
+	})
+
+	return
+}
+
+func modifyMaintenanceWindow(d *schema.ResourceData, meta interface{}, mw cs.MaintenanceWindow) error {
+	client := meta.(*connectivity.AliyunClient)
+	invoker := NewInvoker()
+
+	var response interface{}
+	var requestInfo cs.ModifyClusterArgs
+
+	requestInfo.MaintenanceWindow = mw
+
+	if err := invoker.Run(func() error {
+		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.ModifyCluster(d.Id(), &requestInfo)
+		})
+		return err
+	}); err != nil && !IsExpectedErrors(err, []string{"ErrorModifyMaintenanceWindowFailed"}) {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = d.Id()
+		requestMap["maintenance_window"] = requestInfo.DeletionProtection
+		addDebug("ModifyCluster", response, requestInfo, requestMap)
+	}
+	d.SetPartial("maintenance_window")
+
+	return nil
 }
