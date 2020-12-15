@@ -279,16 +279,7 @@ func resourceAliyunInstance() *schema.Resource {
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if PostPaidDiffSuppressFunc(k, old, new, d) {
-						return true
-					}
-					o, n := d.GetChange("period")
-					if o != nil && n != nil && o.(int) != n.(int) {
-						return true
-					}
-					return false
-				},
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"period_unit": {
 				Type:             schema.TypeString,
@@ -609,7 +600,12 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		if err != nil {
 			return WrapError(err)
 		}
-		d.Set("period", period)
+		thisPeriod := d.Get("period").(int)
+		if thisPeriod != 0 && thisPeriod != period {
+			d.Set("period", thisPeriod)
+		} else {
+			d.Set("period", period)
+		}
 		d.Set("period_unit", periodUnit)
 	}
 
