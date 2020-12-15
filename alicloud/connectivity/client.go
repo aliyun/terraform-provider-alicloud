@@ -2239,7 +2239,7 @@ func (client *AliyunClient) NewPrivatelinkClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %!s(MISSING) client: %!v(MISSING)", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
 	}
 	return conn, nil
 }
