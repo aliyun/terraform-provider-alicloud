@@ -468,7 +468,7 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("max", object.MaxInstance)
 	}
 	if _, ok := d.GetOk("enable_auto_scaling"); ok {
-		d.Set("enable_auto_scaling", object.Enable)
+		d.Set("enable_auto_scaling", object.AutoScaling.Enable)
 	}
 	if sg, ok := d.GetOk("min"); ok && sg.(string) != "" {
 		d.Set("min", object.MinInstance)
