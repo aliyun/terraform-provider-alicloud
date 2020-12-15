@@ -200,6 +200,37 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"management": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"auto_repair": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"auto_upgrade": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"surge": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntBetween(0, 1000),
+						},
+						"surge_percentage": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntBetween(0, 100),
+						},
+						"max_unavailable": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -272,7 +303,6 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if d.HasChange("node_count") {
-		update = true
 		oldV, newV := d.GetChange("node_count")
 
 		oldValue, ok := oldV.(int)
@@ -285,8 +315,12 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 
 		if newValue < oldValue {
-			return WrapErrorf(fmt.Errorf("node_count can not be less than before"), "scaleOutFailed %d:%d", newValue, oldValue)
+			_ = removeNodePoolNodes(d, meta, parts)
+			// The removal of a node is logically independent.
+			// The removal of a node should not involve parameter changes.
+			return resourceAlicloudCSNodePoolRead(d, meta)
 		}
+		update = true
 		args.Count = int64(newValue) - int64(oldValue)
 	}
 	args.NodePoolInfo.Name = d.Get("name").(string)
@@ -404,6 +438,10 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.AutoScaling.MinInstance = d.Get("min").(int64)
 	}
 
+	if v, ok := d.Get("management").([]interface{}); len(v) > 0 && ok {
+		args.Management = setManagedNodepoolConfig(v)
+	}
+
 	if update {
 
 		var resoponse interface{}
@@ -500,6 +538,10 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
+	if err := d.Set("management", flattenManagementNodepoolConfig(&object.Management)); err != nil {
+		return WrapError(err)
+	}
+
 	return nil
 }
 
@@ -512,6 +554,9 @@ func resourceAlicloudCSNodePoolDelete(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapError(err)
 	}
+
+	// delete all nodes
+	_ = removeNodePoolNodes(d, meta, parts)
 
 	var response interface{}
 	err = resource.Retry(30*time.Minute, func() *resource.RetryError {
@@ -627,6 +672,13 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 		}
 	}
 
+	// set manage nodepool params
+	if v, ok := d.GetOk("management"); ok {
+		if management, ok := v.([]interface{}); len(management) > 0 && ok {
+			creationArgs.Management = setManagedNodepoolConfig(management)
+		}
+	}
+
 	return creationArgs, nil
 }
 
@@ -721,6 +773,50 @@ func setNodePoolTaints(config *cs.KubernetesConfig, d *schema.ResourceData) erro
 	return nil
 }
 
+func setManagedNodepoolConfig(l []interface{}) (config cs.Management) {
+	if len(l) == 0 || l[0] == nil {
+		return config
+	}
+
+	m := l[0].(map[string]interface{})
+
+	// Once "management" is set, we think of it as creating a managed node pool
+	config.Enable = true
+
+	if v, ok := m["auto_repair"].(bool); ok {
+		config.AutoRepair = v
+	}
+	if v, ok := m["auto_upgrade"].(bool); ok {
+		config.UpgradeConf.AutoUpgrade = v
+	}
+	if v, ok := m["surge"].(int); ok {
+		config.UpgradeConf.Surge = int64(v)
+	}
+	if v, ok := m["surge_percentage"].(int); ok {
+		config.UpgradeConf.SurgePercentage = int64(v)
+	}
+	if v, ok := m["max_unavailable"].(int); ok {
+		config.UpgradeConf.MaxUnavailable = int64(v)
+	}
+
+	return config
+}
+
+func flattenManagementNodepoolConfig(config *cs.Management) (m []map[string]interface{}) {
+	if config == nil {
+		return
+	}
+	m = append(m, map[string]interface{}{
+		"auto_repair":      config.AutoRepair,
+		"auto_upgrade":     config.UpgradeConf.AutoUpgrade,
+		"surge":            config.UpgradeConf.Surge,
+		"surge_percentage": config.UpgradeConf.SurgePercentage,
+		"max_unavailable":  config.UpgradeConf.MaxUnavailable,
+	})
+
+	return
+}
+
 func flattenNodeDataDisksConfig(config []cs.NodePoolDataDisk) (m []map[string]interface{}) {
 	if config == nil {
 		return []map[string]interface{}{}
@@ -728,8 +824,9 @@ func flattenNodeDataDisksConfig(config []cs.NodePoolDataDisk) (m []map[string]in
 
 	for _, disks := range config {
 		m = append(m, map[string]interface{}{
-			"size":     disks.Size,
-			"category": disks.Category,
+			"size":      disks.Size,
+			"category":  disks.Category,
+			"encrypted": disks.Encrypted,
 		})
 	}
 
@@ -778,4 +875,63 @@ func flattenTagsConfig(config []cs.Tag) map[string]string {
 	}
 
 	return m
+}
+
+func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []string) error {
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
+	invoker := NewInvoker()
+
+	var response interface{}
+	// list all nodes of the nodepool
+	if err := invoker.Run(func() error {
+		var err error
+		response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			nodes, _, err := csClient.GetKubernetesClusterNodes(parseId[0], common.Pagination{PageNumber: 1, PageSize: PageSizeLarge}, parseId[1])
+			return nodes, err
+		})
+		return err
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
+	}
+
+	ret := response.([]cs.KubernetesNodeType)
+	// filter out nodes
+	var allNodeName []string
+	for _, value := range ret {
+		allNodeName = append(allNodeName, value.NodeName)
+	}
+
+	// remove nodes
+	removeNodesName := allNodeName
+	if d.HasChange("node_count") {
+		o, n := d.GetChange("node_count")
+		count := o.(int) - n.(int)
+		removeNodesName = allNodeName[:count]
+	}
+
+	removeNodesArgs := &cs.DeleteKubernetesClusterNodesRequest{
+		Nodes:       removeNodesName,
+		ReleaseNode: true,
+		DrainNode:   false,
+	}
+	if err := invoker.Run(func() error {
+		var err error
+		response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			resp, err := csClient.DeleteKubernetesClusterNodes(parseId[0], removeNodesArgs)
+			return resp, err
+		})
+		return err
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteKubernetesClusterNodes", DenverdinoAliyungo)
+	}
+
+	stateConf := BuildStateConf([]string{"removing"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	d.SetPartial("node_count")
+
+	return nil
 }
