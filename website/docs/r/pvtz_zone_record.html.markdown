@@ -24,7 +24,7 @@ resource "alicloud_pvtz_zone" "zone" {
 
 resource "alicloud_pvtz_zone_record" "foo" {
   zone_id         = alicloud_pvtz_zone.zone.id
-  resource_record = "www"
+  rr              = "www"
   type            = "CNAME"
   value           = "bbb.test.com"
   ttl             = 60
@@ -35,12 +35,27 @@ resource "alicloud_pvtz_zone_record" "foo" {
 The following arguments are supported:
 
 * `zone_id` - (Required, ForceNew) The name of the Private Zone Record.
-* `resource_record` - (Required, ForceNew) The resource record of the Private Zone Record.
-* `type` - (Required) The type of the Private Zone Record. Valid values: A, CNAME, TXT, MX, PTR.
+* `lang` - (Optional, Available in 1.109.0+) User language.
+* `resource_record` - (Optional, ForceNew, Deprecated in v1.109.0+) The resource record of the Private Zone Record.
+* `rr` - (Optional, ForceNew) The rr of the Private Zone Record.
+* `type` - (Required) The type of the Private Zone Record. Valid values: A, CNAME, TXT, MX, PTR, SRV.
 * `value` - (Required) The value of the Private Zone Record.
-* `ttl` - (Optional) The ttl of the Private Zone Record.
-* `priority` - (Optional) The priority of the Private Zone Record. At present, only can "MX" record support it. Valid values: [1-50]. Default to 1.
+* `ttl` - (Optional) The ttl of the Private Zone Record. Default to `60`.
+* `priority` - (Optional) The priority of the Private Zone Record. At present, only can "MX" record support it. Valid values: [1-99]. Default to 1.
 * `remark` - (Optional, Available in 1.103.2+) The remark of the Private Zone Record.
+* `status` - (Optional, Available in 1.109.0+) Resolve record status. Value:
+    - ENABLE: enable resolution.
+    - DISABLE: pause parsing.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.109.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins) Used when creating the Private Zone Record.
+* `update` - (Defaults to 1 mins) Used when updating the Private Zone Record.
+* `delete` - (Defaults to 1 mins) Used when terminating the Private Zone Record. 
 
 ## Attributes Reference
 

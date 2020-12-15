@@ -51,7 +51,7 @@ func TestAccAlicloudPvtzZoneRecordsDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"zone_id": "${alicloud_pvtz_zone_record.foo.zone_id}",
-			"ids":     []string{"${alicloud_pvtz_zone_record.foo.record_id}"},
+			"ids":     []string{"${alicloud_pvtz_zone_record.foo.record_id}-fake"},
 			"keyword": "${alicloud_pvtz_zone_record.foo.value}-fake",
 		}),
 	}
@@ -62,12 +62,15 @@ func TestAccAlicloudPvtzZoneRecordsDataSource(t *testing.T) {
 			"ids.0":                     CHECKSET,
 			"records.#":                 "1",
 			"records.0.id":              CHECKSET,
+			"records.0.record_id":       CHECKSET,
+			"records.0.rr":              "www",
 			"records.0.resource_record": "www",
 			"records.0.type":            "A",
 			"records.0.ttl":             "60",
 			"records.0.priority":        "0",
 			"records.0.value":           "2.2.2.2",
 			"records.0.status":          "ENABLE",
+			"records.0.remark":          "",
 		}
 	}
 
@@ -95,7 +98,7 @@ func dataSourcePvtzZoneRecordsConfigDependence(name string) string {
 
 	resource "alicloud_pvtz_zone_record" "foo" {
 		zone_id = "${alicloud_pvtz_zone.basic.id}"
-		resource_record = "www"
+		rr = "www"
 		type = "A"
 		value = "2.2.2.2"
 		ttl = "60"

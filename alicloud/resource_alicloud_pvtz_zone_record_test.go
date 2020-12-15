@@ -40,10 +40,10 @@ func TestAccAlicloudPvtzZoneRecord_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_record": "www",
-					"type":            "A",
-					"value":           "2.2.2.2",
-					"zone_id":         "${alicloud_pvtz_zone.default.id}",
+					"rr":      "www",
+					"type":    "A",
+					"value":   "2.2.2.2",
+					"zone_id": "${alicloud_pvtz_zone.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -55,6 +55,26 @@ func TestAccAlicloudPvtzZoneRecord_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "DISABLE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "DISABLE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rr": "aaa",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rr": "aaa",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -103,6 +123,8 @@ func TestAccAlicloudPvtzZoneRecord_basic(t *testing.T) {
 					"priority": "2",
 					"ttl":      REMOVEKEY,
 					"remark":   "pvtz_zone_describe",
+					"rr":       "www",
+					"status":   "ENABLE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -111,6 +133,8 @@ func TestAccAlicloudPvtzZoneRecord_basic(t *testing.T) {
 						"priority": "2",
 						"ttl":      "60",
 						"remark":   "pvtz_zone_describe",
+						"rr":       "www",
+						"status":   "ENABLE",
 					}),
 				),
 			},
@@ -161,11 +185,11 @@ func TestAccAlicloudPvtzZoneRecord_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_record": "www",
-					"type":            "A",
-					"value":           "2.2.2.${count.index}",
-					"zone_id":         "${alicloud_pvtz_zone.default.id}",
-					"count":           "5",
+					"rr":      "www",
+					"type":    "A",
+					"value":   "2.2.2.${count.index}",
+					"zone_id": "${alicloud_pvtz_zone.default.id}",
+					"count":   "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -183,9 +207,9 @@ func resourcePvtzZoneRecordConfigDependence(name string) string {
 }
 
 var pvtzZoneRecordBasicMap = map[string]string{
-	"resource_record": "www",
-	"type":            "A",
-	"value":           CHECKSET,
-	"zone_id":         CHECKSET,
-	"ttl":             "60",
+	"rr":      "www",
+	"type":    "A",
+	"value":   CHECKSET,
+	"zone_id": CHECKSET,
+	"ttl":     "60",
 }
