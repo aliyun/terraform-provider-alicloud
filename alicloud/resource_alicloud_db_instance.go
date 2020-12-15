@@ -837,7 +837,7 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 
 			roleArn, err := findKmsRoleArn(client, v.(string))
 			if err != nil {
-				return nil, err
+				return nil, WrapError(err)
 			}
 			request["RoleARN"] = roleArn
 		}
