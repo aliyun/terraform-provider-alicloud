@@ -42,25 +42,38 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                 name,
-					"cluster_id":           "c24bc7a1c7ca045998ae8b4fa88184eb3",
-					"vswitch_ids":          []string{"vsw-2ze3ds0mdip0hdz8ia7qx"},
-					"instance_types":       []string{"ecs.n4.large"},
+					"cluster_id":           "${alicloud_cs_managed_kubernetes.default.0.id}",
+					"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+					"instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"node_count":           "1",
-					"password":             "Test12345",
+					"key_name":             "${alicloud_key_pair.default.key_name}",
 					"system_disk_category": "cloud_efficiency",
 					"system_disk_size":     "40",
 					"data_disks":           []map[string]string{{"size": "100", "category": "cloud_ssd"}},
+					"tags":                 map[string]interface{}{"Created": "TF", "Foo": "Bar"},
+					"management":           []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "0"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                  name,
-						"node_count":            "1",
-						"password":              "Test12345",
-						"system_disk_category":  "cloud_efficiency",
-						"system_disk_size":      "40",
-						"data_disks.#":          "1",
-						"data_disks.0.size":     "100",
-						"data_disks.0.category": "cloud_ssd",
+						"name":                         name,
+						"cluster_id":                   CHECKSET,
+						"vswitch_ids.#":                "1",
+						"instance_types.#":             "1",
+						"node_count":                   "1",
+						"key_name":                     CHECKSET,
+						"system_disk_category":         "cloud_efficiency",
+						"system_disk_size":             "40",
+						"data_disks.#":                 "1",
+						"data_disks.0.size":            "100",
+						"data_disks.0.category":        "cloud_ssd",
+						"tags.%":                       "2",
+						"tags.Created":                 "TF",
+						"tags.Foo":                     "Bar",
+						"management.#":                 "1",
+						"management.0.auto_repair":     "true",
+						"management.0.auto_upgrade":    "true",
+						"management.0.surge":           "0",
+						"management.0.max_unavailable": "0",
 					}),
 				),
 			},
@@ -70,46 +83,37 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"password"},
 			},
+			// check: scale out
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "acceptance Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "acceptance Test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       REMOVEKEY,
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
+					"node_count":       "2",
 					"system_disk_size": "80",
-					"data_disks":       []map[string]string{{"size": "100", "category": "cloud_ssd"}, {"size": "200", "category": "cloud_efficiency"}},
+					"data_disks":       []map[string]string{{"size": "40", "category": "cloud"}},
+					"management":       []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "1", "max_unavailable": "1"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"system_disk_size":      "80",
-						"data_disks.#":          "2",
-						"data_disks.0.size":     "100",
-						"data_disks.0.category": "cloud_ssd",
-						"data_disks.1.size":     "200",
-						"data_disks.1.category": "cloud_efficiency",
+						"node_count":                   "2",
+						"system_disk_size":             "80",
+						"data_disks.#":                 "1",
+						"data_disks.0.size":            "40",
+						"data_disks.0.category":        "cloud",
+						"management.#":                 "1",
+						"management.0.auto_repair":     "true",
+						"management.0.auto_upgrade":    "true",
+						"management.0.surge":           "1",
+						"management.0.max_unavailable": "1",
+					}),
+				),
+			},
+			// check: remove nodes
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"node_count": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"node_count": "1",
 					}),
 				),
 			},
@@ -130,5 +134,51 @@ variable "name" {
 	default = "%s"
 }
 
+data "alicloud_zones" default {
+  available_resource_creation  = "VSwitch"
+}
+
+data "alicloud_instance_types" "default" {
+	availability_zone          = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count             = 2
+	memory_size                = 4
+	kubernetes_node_role       = "Worker"
+}
+
+resource "alicloud_vpc" "default" {
+  name                         = "${var.name}"
+  cidr_block                   = "10.1.0.0/21"
+}
+
+resource "alicloud_vswitch" "default" {
+  name                         = "${var.name}"
+  vpc_id                       = "${alicloud_vpc.default.id}"
+  cidr_block                   = "10.1.1.0/24"
+  availability_zone            = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_key_pair" "default" {
+	key_name                   = "${var.name}"
+}
+
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name                         = "${var.name}"
+  count                        = 1
+  cluster_spec                 = "ack.pro.small"
+  is_enterprise_security_group = true
+  worker_number                = 2
+  password                     = "Hello1234"
+  pod_cidr                     = "172.20.0.0/16"
+  service_cidr                 = "172.21.0.0/20"
+  worker_vswitch_ids           = ["${alicloud_vswitch.default.id}"]
+  worker_instance_types        = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+  
+  maintenance_window {
+    enable            = true
+    maintenance_time  = "03:00:00Z"
+    duration          = "3h"
+    weekly_period     = "Thursday"
+  }
+}
 `, name)
 }

@@ -194,15 +194,11 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `worker_auto_renew` - (Optional) Enable worker payment auto-renew, defaults to false.
 * `worker_auto_renew_period` - (Optional) Worker payment auto-renew period,, it can be one of {1, 2, 3, 6, 12}.
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
+* `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [40~32768] in GB. Default to 40.
 * `worker_data_disks` - (Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size.
-  * `category`: the type of the data disks. Valid values:
-      * cloud: basic disks.
-      * cloud_efficiency: ultra disks.
-      * cloud_ssd: SSDs.
-      * cloud_essd: essd.
+  * `category`: the type of the data disks. Valid values: cloud, cloud_efficiency, cloud_ssd and cloud_essd. Default to cloud_efficiency.
   * `size`: the size of a data disk, at least 40. Unit: GiB.
-  * `encrypted`: specifies whether to encrypt data disks. Valid values: true and false.
+  * `encrypted`: specifies whether to encrypt data disks. Valid values: true and false. Default to false.
 * `node_name_mode` - (Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be `aliyun.com00055test`.
 * `node_port_range`- (Optional, ForceNew, Available in 1.103.2+) The service port range of nodes, valid values: `30000` to `65535`. Default to `30000-32767`.
 * `os_type` - (Optional, ForceNew, Available in 1.103.2+) The operating system of the nodes that run pods, its valid value is either `Linux` or `Windows`. Default to `Linux`.
