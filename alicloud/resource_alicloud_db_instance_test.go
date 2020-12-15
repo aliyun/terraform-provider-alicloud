@@ -976,6 +976,7 @@ resource "alicloud_kms_key" "default" {
   pending_window_in_days  = "7"
   key_state               = "Enabled"
 }
+
 `, RdsCommonTestCase, name)
 }
 
