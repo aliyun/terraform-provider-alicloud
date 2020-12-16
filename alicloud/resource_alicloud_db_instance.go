@@ -236,6 +236,9 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"encryption_key": {
 				Type:     schema.TypeString,
 				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("engine").(string) != "PostgreSQL"
+				},
 			},
 			"zone_id_slave_a": {
 				Type:     schema.TypeString,
