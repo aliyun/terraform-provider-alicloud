@@ -61,8 +61,8 @@ resource "alicloud_db_connection" "foo" {
 The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) The Id of instance that can run database.
-* `connection_prefix` - (ForceNew) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 30 characters. Default to <instance_id> + 'tf'.
-* `port` - (Optional) Internet connection port. Valid value: [3001-3999]. Default to 3306.
+* `connection_prefix` - (ForceNew) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 40 characters. Default to <instance_id> + 'tf'.
+* `port` - (Optional) Internet connection port. Valid value: [1000-5999]. Default to 3306.
 
 ## Attributes Reference
 

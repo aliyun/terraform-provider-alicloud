@@ -70,7 +70,7 @@ The following arguments are supported:
 * `log_retention_period` - (Deprecated) It has been deprecated from version 1.69.0, and use field 'log_backup_retention_period' instead.
 * `log_backup_retention_period` - (Optional, available in 1.69.0+) Instance log backup retention days. Valid when the `enable_backup_log` is `1`. Valid values: [7-730]. Default to 7. It cannot be larger than `backup_retention_period`.
 * `local_log_retention_hours` - (Optional, available in 1.69.0+) Instance log backup local retention hours. Valid when the `enable_backup_log` is `true`. Valid values: [0-7*24].
-* `local_log_retention_space` - (Optional, available in 1.69.0+) Instance log backup local retention space. Valid when the `enable_backup_log` is `true`. Valid values: [5-50].
+* `local_log_retention_space` - (Optional, available in 1.69.0+) Instance log backup local retention space. Valid when the `enable_backup_log` is `true`. Valid values: [0-50].
 * `high_space_usage_protection` - (Optional, available in 1.69.0+) Instance high space usage protection policy. Valid when the `enable_backup_log` is `true`. Valid values are `Enable`, `Disable`.
 * `log_backup_frequency` - (Optional, available in 1.69.0+) Instance log backup frequency. Valid when the instance engine is `SQLServer`. Valid values are `LogInterval`.
 * `compress_type` - (Optional, available in 1.69.0+) The compress type of instance policy. Valid values are `1`, `4`, `8`.
