@@ -94,7 +94,6 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 
 			"log_retention_period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntBetween(7, 730),
 				Optional:         true,
 				Computed:         true,
 				DiffSuppressFunc: logRetentionPeriodDiffSuppressFunc,
@@ -104,7 +103,6 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 
 			"log_backup_retention_period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntBetween(7, 730),
 				Optional:         true,
 				Computed:         true,
 				DiffSuppressFunc: logRetentionPeriodDiffSuppressFunc,
@@ -120,7 +118,7 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 
 			"local_log_retention_space": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntBetween(5, 50),
+				ValidateFunc:     validation.IntBetween(0, 50),
 				Computed:         true,
 				Optional:         true,
 				DiffSuppressFunc: enableBackupLogDiffSuppressFunc,
