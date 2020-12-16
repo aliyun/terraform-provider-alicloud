@@ -79,7 +79,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "cloud_efficiency", "local_hdd_pro", "local_ssd_pro", "-"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"cloud_ssd", "cloud_essd_pl1", "cloud_efficiency", "local_hdd_pro", "local_ssd_pro", "-"}, false),
 			},
 			"core_disk_size": {
 				Type:         schema.TypeInt,
@@ -240,8 +240,14 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 	request.DiskType = Trim(d.Get("core_disk_type").(string))
 	request.DiskSize = requests.NewInteger(d.Get("core_disk_size").(int))
 	request.PayType = Trim(d.Get("pay_type").(string))
-	request.PeriodUnit = "month"
-	request.Period = requests.NewInteger(d.Get("duration").(int))
+	if d.Get("duration").(int) > 9 {
+		request.PeriodUnit = "year"
+		request.Period = requests.NewInteger(d.Get("duration").(int) / 12)
+	} else {
+		request.PeriodUnit = "month"
+		request.Period = requests.NewInteger(d.Get("duration").(int))
+	}
+
 	if d.Get("auto_renew").(bool) {
 		request.AutoRenewPeriod = requests.NewInteger(1)
 	}
@@ -634,7 +640,7 @@ func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{
 	request := hbase.CreateDeleteInstanceRequest()
 	request.ClusterId = d.Id()
 	request.ImmediateDeleteFlag = requests.NewBoolean(true)
-	err := resource.Retry(10*5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(20*time.Second, func() *resource.RetryError {
 		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
 			return hbaseClient.DeleteInstance(request)
 		})
@@ -644,6 +650,9 @@ func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{
 				return resource.NonRetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"Forbidden"}) {
+				return resource.NonRetryableError(err)
+			}
+			if IsExpectedErrors(err, []string{"protected"}) {
 				return resource.NonRetryableError(err)
 			}
 			return resource.RetryableError(err)
