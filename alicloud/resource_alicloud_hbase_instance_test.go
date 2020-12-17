@@ -123,6 +123,7 @@ resource "alicloud_hbase_instance" "default" {
   pay_type = "PostPaid"
   cold_storage_size = 0
   deletion_protection = false
+  immediate_delete_flag = true
 }
 `
 
@@ -143,6 +144,7 @@ resource "alicloud_hbase_instance" "default" {
   pay_type = "PostPaid"
   cold_storage_size = 0
   deletion_protection = false
+  immediate_delete_flag = true
 }
 `
 
@@ -165,6 +167,7 @@ resource "alicloud_hbase_instance" "default" {
   maintain_start_time = "04:00Z"
   maintain_end_time = "06:00Z"
   deletion_protection = false
+  immediate_delete_flag = true
 }`
 
 const resourceHBaseConfigClassicTags = `
@@ -186,6 +189,7 @@ resource "alicloud_hbase_instance" "default" {
   maintain_start_time = "04:00Z"
   maintain_end_time = "06:00Z"
   deletion_protection = false
+  immediate_delete_flag = true
   tags = {
     Created = "TF"
     For     = "acceptance test"
@@ -214,6 +218,7 @@ resource "alicloud_hbase_instance" "default" {
   vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
   deletion_protection = false
+  immediate_delete_flag = true
 }
 `
 
@@ -239,6 +244,7 @@ resource "alicloud_hbase_instance" "default" {
   vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
   deletion_protection = false
+  immediate_delete_flag = true
 }
 `
 
@@ -266,6 +272,7 @@ resource "alicloud_hbase_instance" "default" {
   maintain_start_time = "04:00Z"
   maintain_end_time = "06:00Z"
   deletion_protection = false
+  immediate_delete_flag = true
 }
 `
 
@@ -293,6 +300,7 @@ resource "alicloud_hbase_instance" "default" {
   maintain_start_time = "04:00Z"
   maintain_end_time = "06:00Z"
   deletion_protection = false
+  immediate_delete_flag = true
   tags = {
     Created = "TF"
     For     = "acceptance test"
@@ -323,6 +331,7 @@ resource "alicloud_hbase_instance" "default" {
   maintain_start_time = "04:00Z"
   maintain_end_time = "06:00Z"
   deletion_protection = false
+  immediate_delete_flag = true
   tags = {
     Created = "TF"
     For     = "acceptance test"
@@ -354,6 +363,7 @@ resource "alicloud_hbase_instance" "default" {
   maintain_start_time = "04:00Z"
   maintain_end_time = "06:00Z"
   deletion_protection = false
+  immediate_delete_flag = true
   ip_white  = "192.168.1.1"
   tags = {
     Created = "TF"
@@ -386,6 +396,7 @@ resource "alicloud_hbase_instance" "default" {
   maintain_start_time = "04:00Z"
   maintain_end_time = "06:00Z"
   deletion_protection = false
+  immediate_delete_flag = true
   ip_white  = "192.168.1.1"
   security_groups = ["sg-wz9cd2g3teciwyvntvnk"]
   tags = {
@@ -418,6 +429,7 @@ resource "alicloud_hbase_instance" "default" {
   maintain_start_time = "04:00Z"
   maintain_end_time = "06:00Z"
   deletion_protection = false
+  immediate_delete_flag = true
   account = "admin"
   password = "admin!@#"
   ip_white  = "192.168.1.1"
@@ -453,6 +465,7 @@ resource "alicloud_hbase_instance" "default" {
   maintain_start_time = "04:00Z"
   maintain_end_time = "06:00Z"
   deletion_protection = false
+  immediate_delete_flag = true
   account = "admin"
   password = "admin!@#"
   ip_white  = "192.168.1.1"
@@ -488,6 +501,7 @@ resource "alicloud_hbase_instance" "default" {
   vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
   deletion_protection = false
+  immediate_delete_flag = true
 }
 `
 
@@ -515,6 +529,7 @@ resource "alicloud_hbase_instance" "default" {
   vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
   deletion_protection = false
+  immediate_delete_flag = true
 }
 `
 
@@ -553,9 +568,10 @@ func TestAccAlicloudHBaseInstanceClassic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"immediate_delete_flag"},
 			},
 			{
 				Config: resourceHBaseConfigClassicName,
@@ -627,9 +643,10 @@ func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"immediate_delete_flag"},
 			},
 			{
 				Config: resourceHBaseConfigVpcName,

@@ -21,5 +21,6 @@ resource "alicloud_hbase_instance" "default" {
   maintain_start_time     = var.maintain_start_time
   maintain_end_time     = var.maintain_end_time
   deletion_protection     = var.deletion_protection
+  immediate_delete_flag    = var.immediate_delete_flag
   ip_white                = var.ip_white
 }
