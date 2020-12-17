@@ -347,6 +347,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ros_templates":                         dataSourceAlicloudRosTemplates(),
 			"alicloud_privatelink_vpc_endpoint_services":     dataSourceAlicloudPrivatelinkVpcEndpointServices(),
 			"alicloud_privatelink_vpc_endpoints":             dataSourceAlicloudPrivatelinkVpcEndpoints(),
+			"alicloud_privatelink_vpc_endpoint_connections":  dataSourceAlicloudPrivatelinkVpcEndpointConnections(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -622,6 +623,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ros_template":                        resourceAlicloudRosTemplate(),
 			"alicloud_privatelink_vpc_endpoint_service":    resourceAlicloudPrivatelinkVpcEndpointService(),
 			"alicloud_privatelink_vpc_endpoint":            resourceAlicloudPrivatelinkVpcEndpoint(),
+			"alicloud_privatelink_vpc_endpoint_connection": resourceAlicloudPrivatelinkVpcEndpointConnection(),
 		},
 
 		ConfigureFunc: providerConfigure,
