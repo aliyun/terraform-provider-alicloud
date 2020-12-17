@@ -52,19 +52,20 @@ The following arguments are supported:
 * `engine_version` - (Required, ForceNew) HBase major version. hbase:1.1/2.0, hbaseue:2.0, bds:1.0, unsupport other engine temporarily. Value options can refer to the latest docs [CreateInstance](https://help.aliyun.com/document_detail/144607.html).
 * `master_instance_type`, `core_instance_type` - (Required, ForceNew) Instance specification. See [Instance specifications](https://help.aliyun.com/document_detail/53532.html), or you can call describeInstanceType api.
 * `core_instance_quantity`- (Optional) Default=2. If core_instance_quantity > 1, this is cluster's instance. If core_instance_quantity = 1, this is a single instance.
-* `core_disk_type`-  (Optional, ForceNew) Valid values are `cloud_ssd`, `cloud_essd_pl1`, `cloud_efficiency`, `local_hdd_pro`, `local_ssd_pro`，`-`, local_disk size is fixed. When engine=bds, no need to set disk type.
+* `core_disk_type`-  (Optional, ForceNew) Valid values are `cloud_ssd`, `cloud_essd_pl1`, `cloud_efficiency`, `local_hdd_pro`, `local_ssd_pro`，`-`, ``, local_disk size is fixed. When engine=bds, no need to set disk type(or empty string).
 * `core_disk_size` -  (Optional) User-defined HBase instance one core node's storage. Valid when engine=hbase/hbaseue. Bds engine no need core_disk_size, space.Unit: GB. Value range:
   - Custom storage space, value range: [20, 8000].
   - Cluster min=400GB, 40-GB increments.
   - Single min=20GB, 1-GB increments.
-* `pay_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, System default to `PostPaid`.
-* `duration` - (Optional, ForceNew) 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 60, valid when pay_type = PrePaid,  unit: month.
+* `pay_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, System default to `PostPaid`. You can also convert PostPaid to PrePaid. Not support convert PrePaid to PostPaid.
+* `duration` - (Optional, ForceNew) 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, valid when pay_type = PrePaid,  unit: month. 12, 24, 36 mean 1, 2, 3 years.
 * `auto_renew` - (Optional, ForceNew) Valid values are `true`, `false`, system default to `false`, valid when pay_type = PrePaid.
 * `vswitch_id` - (Optional, ForceNew) If vswitch_id is not empty, that mean net_type = vpc and has a same region. If vswitch_id is empty, net_type=classic.
 * `cold_storage_size` - (Optional, ForceNew) 0 or 800+. 0 means is_cold_storage = false. 800+ means is_cold_storage = true.
 * `maintain_start_time` - (Optional, Available in 1.73.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time), for example 02:00Z.
 * `maintain_end_time` - (Optional, Available in 1.73.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time), for example 04:00Z.
 * `deletion_protection` - (Optional, Available in 1.73.0) The switch of delete protection. True: delete protect, False: no delete protect. You must set false when you want to delete cluster.
+* `immediate_delete_flag` - (Optional, Available in 1.109.0) The switch of delete immediate. True: delete immediate, False: delete delay. You will not found the cluster no matter set true or false.
 * `tags` - (Optional, Available in 1.73.0) A mapping of tags to assign to the resource.
 * `account` - (Optional, Available in 1.105.0+) The account of the cluster web ui.
 * `password` - (Optional, Available in 1.105.0+) The password of the cluster web ui account.

@@ -121,6 +121,7 @@ resource "alicloud_hbase_instance" "default" {
   vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
   cold_storage_size = 0
   deletion_protection = false
+  immediate_delete_flag = true
   tags = {
     Created = "TF"
     For     = "acceptance test"
