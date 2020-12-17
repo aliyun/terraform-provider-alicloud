@@ -93,6 +93,66 @@ func (s *PrivatelinkService) PrivatelinkVpcEndpointServiceStateRefreshFunc(id st
 	}
 }
 
+func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointConnection(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewPrivatelinkClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListVpcEndpointConnections"
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"EndpointId": parts[1],
+		"ServiceId":  parts[0],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointConnection", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.Connections", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Connections", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("PrivateLink", id)), NotFoundWithResponse, response)
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *PrivatelinkService) PrivatelinkVpcEndpointConnectionStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribePrivatelinkVpcEndpointConnection(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["ConnectionStatus"].(string) == failState {
+				return object, object["ConnectionStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["ConnectionStatus"].(string)))
+			}
+		}
+		return object, object["ConnectionStatus"].(string), nil
+	}
+}
+
 func (s *PrivatelinkService) ListVpcEndpointSecurityGroups(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewPrivatelinkClient()
