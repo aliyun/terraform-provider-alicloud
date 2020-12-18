@@ -14,6 +14,7 @@ import (
 
 	"strconv"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -231,6 +232,13 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"ssl_status": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"encryption_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("engine").(string) != "PostgreSQL"
+				},
 			},
 			"zone_id_slave_a": {
 				Type:     schema.TypeString,
@@ -826,6 +834,18 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		request["ResourceGroupId"] = v
 	}
 
+	if request["Engine"] == "PostgreSQL" {
+		if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
+			request["EncryptionKey"] = v.(string)
+
+			roleArn, err := findKmsRoleArn(client, v.(string))
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			request["RoleARN"] = roleArn
+		}
+	}
+
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
 		request["ZoneId"] = Trim(zone.(string))
 	}
@@ -902,4 +922,20 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	request["ClientToken"] = fmt.Sprintf("Terraform-Alicloud-%d-%s", time.Now().Unix(), uuid)
 
 	return request, nil
+}
+
+func findKmsRoleArn(client *connectivity.AliyunClient, k string) (string, error) {
+	request := kms.CreateDescribeKeyRequest()
+	request.KeyId = k
+
+	raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
+		return kmsClient.DescribeKey(request)
+	})
+	if err != nil {
+		return "", WrapErrorf(err, DataDefaultErrorMsg, k, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	key, _ := raw.(*kms.DescribeKeyResponse)
+	return strings.Join([]string{"acs:ram::", key.KeyMetadata.Creator, ":role/aliyunrdsinstanceencryptiondefaultrole"}, ""), nil
 }

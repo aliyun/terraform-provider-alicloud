@@ -21,7 +21,7 @@ data "alicloud_db_zones" "zones_ids" {}
 
 # Create an RDS instance with the first matched zone
 resource "alicloud_db_instance" "db" {
-    zone_id = data.alicloud_db_zones.zones_ids.zones[0]
+    zone_id = ${data.alicloud_db_zones.zones_ids.zones.0.id}
 
   # Other properties...
 }
